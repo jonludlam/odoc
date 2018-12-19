@@ -187,21 +187,51 @@ module Css = struct
     Term.info ~doc "css"
 end
 
+module Link : sig
+  val cmd : unit Term.t
+  val info : Term.info
+end = struct
+
+  let link directories output_file input_file =
+    let env = Env.create ~important_digests:false ~directories in
+    let input = Fs.File.of_string input_file in
+    let output = Fs.File.of_string output_file in
+    Link.from_odoc ~env ~output ~input
+
+  let cmd =
+    let input =
+      let doc = "Input file" in
+      Arg.(required & opt (some file) None & info ~doc ~docv:"file.odoc" ["i"])
+    in
+    let dst_file =
+      let doc = "Output file path. Non-existing intermediate directories are
+                 created. If absent outputs a $(i,BASE).odoc file in the same
+                 directory as the input file where $(i,BASE) is the basename
+                 of the input file (for mld files the \"page-\" prefix will be
+                 added if not already present in the input basename)."
+      in
+      Arg.(required & opt (some string) None & info ~docs ~docv:"PATH" ~doc ["o"])
+    in
+    Term.(const link $ odoc_file_directories $ dst_file $ input)
+
+  let info =
+    Term.info ~doc:"Links odoc files to generated fully realised odoc files" "link"
+
+
+end
+
 module Html : sig
   val cmd : unit Term.t
   val info: Term.info
 end = struct
 
-  let html semantic_uris closed_details _hidden directories output_dir index_for
+  let html semantic_uris closed_details _hidden directories output_dir
         syntax theme_uri input_file =
     Html.Tree.Relative_link.semantic_uris := semantic_uris;
     Html.Tree.open_details := not closed_details;
     let env = Env.create ~important_digests:false ~directories in
     let file = Fs.File.of_string input_file in
-    match index_for with
-    | None -> Html_page.from_odoc ~env ~syntax ~theme_uri ~output:output_dir file
-    | Some pkg_name ->
-      Html_page.from_mld ~env ~syntax ~output:output_dir ~package:pkg_name file
+    Html_page.from_odoc ~env ~syntax ~theme_uri ~output:output_dir file
 
   let cmd =
     let input =
@@ -218,16 +248,6 @@ end = struct
       in
       Arg.(value & flag (info ~doc ["closed-details"]))
     in
-    let index_for =
-      let doc = "DEPRECATED: you should use 'odoc compile' to process .mld \
-		 files. When this argument is given, then the input file is \
-		 expected to be a .mld file. The output will be a \
-                 \"index.html\" file in the output directory. \
-                 PKG is using to correctly resolve and link references inside \
-		 the input file"
-      in
-      Arg.(value & opt (some string) None & info ~docv:"PKG" ~doc ["index-for"])
-    in
     let theme_uri =
       let doc = "Where to look for theme files (e.g. `URI/odoc.css'). \
                  Relative URIs are resolved using `--output-dir' as a target." in
@@ -240,7 +260,7 @@ end = struct
       Arg.(value & opt (pconv convert_syntax) (Html.Tree.OCaml) @@ info ~docv:"SYNTAX" ~doc ["syntax"])
     in
     Term.(const html $ semantic_uris $ closed_details $ hidden $
-          odoc_file_directories $ dst ~create:true () $ index_for $ syntax $ theme_uri $ input)
+          odoc_file_directories $ dst ~create:true () $ syntax $ theme_uri $ input)
 
   let info =
     Term.info ~doc:"Generates an html file from an odoc one" "html"
@@ -404,6 +424,7 @@ let () =
     ; Targets.Compile.(cmd, info)
     ; Targets.Html.(cmd, info)
     ; Targets.Support_files.(cmd, info)
+    ; Link.(cmd, info)
     ]
   in
   let default =

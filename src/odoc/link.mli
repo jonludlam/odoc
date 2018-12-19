@@ -1,5 +1,5 @@
 (*
- * Copyright (c) 2014 Leo White <leo@lpw25.net>
+ * Copyright (c) 2018 Jon Ludlam <jon@recoil.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,10 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+val link_page : env:Env.builder -> Page.t -> Page.t
 
-(** Produces .html files from a .odoc file. *)
+val link_comp_unit : env:Env.builder -> Compilation_unit.t -> Compilation_unit.t
 
-val from_odoc :
-  env:Env.builder -> ?syntax:Html.Tree.syntax -> ?theme_uri:Html.Tree.uri -> output:Fs.Directory.t ->
-  Fs.File.t -> unit
-
+val from_odoc : env:Env.builder -> output:Fs.File.t -> input:Fs.File.t -> unit
