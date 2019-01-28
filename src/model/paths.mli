@@ -243,6 +243,8 @@ module Identifier : sig
 
       val hash : t -> int
     end
+
+    type t = Paths_types.Identifier.path_any
   end
 
 
@@ -380,6 +382,7 @@ module rec Path : sig
     val is_hidden : t -> bool    
   end
 
+  type t = Paths_types.Path.any
 
   val module_ : Module.t -> ModuleName.t -> Module.t
 
@@ -478,8 +481,7 @@ module Fragment : sig
     val path : Path.Module.t -> t -> Path.Type.t
   end
 
-  (** {2 Explicit coercions} *)
-
+  type t = Paths_types.Fragment.any
 end
 
 
@@ -714,6 +716,7 @@ module rec Reference : sig
       val rebase : Identifier.Signature.t -> t -> t
     end
 
+    type t = Paths_types.Resolved_reference.any
   end
 
 
@@ -871,5 +874,10 @@ module rec Reference : sig
       val hash : t -> int
     end
 
+    type t = Paths_types.Reference.any
+
+    val hash : t -> int
+
+    val equal : t -> t -> bool
 end
 

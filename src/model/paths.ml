@@ -424,6 +424,7 @@ module Identifier = struct
         fun t -> hash (t : t :> Paths_types.Identifier.any)
     end
 
+    type t = Paths_types.Identifier.path_any
   end
 
   let to_reversed i =
@@ -442,9 +443,9 @@ end
 
 module Path = struct
 
-  type t = Paths_types.Resolved_path.any
+  type t = Paths_types.Path.any
 
-  let rec equal_resolved_path : t -> t -> bool =
+  let rec equal_resolved_path : Paths_types.Resolved_path.any -> Paths_types.Resolved_path.any -> bool =
     let open Paths_types.Resolved_path in
     fun p1 p2 ->
       match p1, p2 with
@@ -2266,6 +2267,7 @@ module Reference = struct
       let rebase _id t = t
     end
 
+  type t = Paths_types.Resolved_reference.any
 
     (*    let rec rebase : type k. Reversed.t -> k t -> k t =
           fun new_base t ->
@@ -2557,5 +2559,4 @@ module Reference = struct
     let equal : t -> t -> bool = fun t1 t2 -> equal (t1 :> Paths_types.Reference.any) (t2 :> Paths_types.Reference.any)
     let hash : t -> int = fun t -> hash (t :> Paths_types.Reference.any)
   end
-
 end
