@@ -20,8 +20,8 @@ module Name : Name = struct
 
     let to_string s = s
 
-    let of_string s =
-      match s with
+    let of_string s = s
+(*      match s with
       | "asr" | "land" | "lnot" | "lor" | "lsl" | "lsr"
       | "lxor" | "mod" -> "(" ^ s ^ ")"
       | _ ->
@@ -30,7 +30,7 @@ module Name : Name = struct
             | 'a'..'z' | '\223'..'\246' | '\248'..'\255' | '_'
             | 'A'..'Z' | '\192'..'\214' | '\216'..'\222' -> s
             | _ -> "(" ^ s ^ ")"
-        else s
+        else s *)
     
     let of_ident id = of_string (Ident.name id)
 
