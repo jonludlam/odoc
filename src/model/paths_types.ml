@@ -415,15 +415,18 @@ sig
   ]
 
   type tag_class_signature = [
+    | tag_unknown
     | tag_class
     | tag_class_type
   ]
 
   type tag_datatype = [
+    | tag_unknown
     | tag_type
   ]
 
   type tag_parent = [
+    | tag_unknown
     | tag_module
     | tag_module_type
     | tag_class
@@ -432,6 +435,7 @@ sig
   ]
 
   type tag_label_parent = [
+    | tag_unknown
     | tag_module
     | tag_module_type
     | tag_class
@@ -487,21 +491,21 @@ sig
 
   type module_ = [
     | `Resolved of Resolved_reference.module_
-    | `Root of UnitName.t * tag_module
+    | `Root of UnitName.t * [ tag_module | tag_unknown ]
     | `Dot of label_parent * string
     | `Module of signature * ModuleName.t
   ]
 
   type module_type = [
     | `Resolved of Resolved_reference.module_type
-    | `Root of UnitName.t * tag_module_type
+    | `Root of UnitName.t * [tag_module_type | tag_unknown ]
     | `Dot of label_parent * string
     | `ModuleType of signature * ModuleTypeName.t
   ]
 
   type type_ = [
     | `Resolved of Resolved_reference.type_
-    | `Root of UnitName.t * [ tag_type | tag_class | tag_class_type ]
+    | `Root of UnitName.t * [ tag_type | tag_class | tag_class_type | tag_unknown ]
     | `Dot of label_parent * string
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t
@@ -510,7 +514,7 @@ sig
 
   type constructor = [
     | `Resolved of Resolved_reference.constructor
-    | `Root of UnitName.t * [ tag_constructor | tag_extension | tag_exception ]
+    | `Root of UnitName.t * [ tag_constructor | tag_extension | tag_exception | tag_unknown ]
     | `Dot of label_parent * string
     | `Constructor of datatype * ConstructorName.t
     | `Extension of signature * ExtensionName.t
@@ -519,14 +523,14 @@ sig
 
   type field = [
     | `Resolved of Resolved_reference.field
-    | `Root of UnitName.t * tag_field
+    | `Root of UnitName.t * [ tag_field | tag_unknown ]
     | `Dot of label_parent * string
     | `Field of parent * FieldName.t
   ]
 
   type extension = [
     | `Resolved of Resolved_reference.extension
-    | `Root of UnitName.t * [ tag_extension | tag_exception ]
+    | `Root of UnitName.t * [ tag_extension | tag_exception | tag_unknown ]
     | `Dot of label_parent * string
     | `Extension of signature * ExtensionName.t
     | `Exception of signature * ExceptionName.t
@@ -534,28 +538,28 @@ sig
 
   type exception_ = [
     | `Resolved of Resolved_reference.exception_
-    | `Root of UnitName.t * tag_exception
+    | `Root of UnitName.t * [ tag_exception | tag_unknown ]
     | `Dot of label_parent * string
     | `Exception of signature * ExceptionName.t
   ]
 
   type value = [
     | `Resolved of Resolved_reference.value
-    | `Root of UnitName.t * tag_value
+    | `Root of UnitName.t * [ tag_value | tag_unknown ]
     | `Dot of label_parent * string
     | `Value of signature * ValueName.t
   ]
 
   type class_ = [
     | `Resolved of Resolved_reference.class_
-    | `Root of UnitName.t * tag_class
+    | `Root of UnitName.t * [ tag_class | tag_unknown ]
     | `Dot of label_parent * string
     | `Class of signature * ClassName.t
   ]
 
   type class_type = [
     | `Resolved of Resolved_reference.class_type
-    | `Root of UnitName.t * [ tag_class | tag_class_type ]
+    | `Root of UnitName.t * [ tag_class | tag_class_type | tag_unknown ]
     | `Dot of label_parent * string
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t
@@ -563,28 +567,28 @@ sig
 
   type method_ = [
     | `Resolved of Resolved_reference.method_
-    | `Root of UnitName.t * tag_method
+    | `Root of UnitName.t * [ tag_method | tag_unknown ]
     | `Dot of label_parent * string
     | `Method of class_signature * MethodName.t
   ]
 
   type instance_variable = [
     | `Resolved of Resolved_reference.instance_variable
-    | `Root of UnitName.t * tag_instance_variable
+    | `Root of UnitName.t * [ tag_instance_variable | tag_unknown ]
     | `Dot of label_parent * string
     | `InstanceVariable of class_signature * InstanceVariableName.t
   ]
 
   type label = [
     | `Resolved of Resolved_reference.label
-    | `Root of UnitName.t * tag_label
+    | `Root of UnitName.t * [ tag_label | tag_unknown ]
     | `Dot of label_parent * string
     | `Label of label_parent * LabelName.t
   ]
 
   type page = [
     | `Resolved of Resolved_reference.page
-    | `Root of UnitName.t * tag_page
+    | `Root of UnitName.t * [ tag_page | tag_unknown ]
     | `Dot of label_parent * string
   ]
 
@@ -708,6 +712,8 @@ sig
   type type_ = [
     | `Identifier of Identifier.reference_type
     | s_type
+    | s_class
+    | s_class_type
   ]
 
   type constructor = [

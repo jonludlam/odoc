@@ -36,7 +36,7 @@ module Identifier = struct
 
   type t = Paths_types.Identifier.any
 
-  let name = function
+  let name : [< t] -> string = function
     | `Root(_, name) -> UnitName.to_string name
     | `Page(_, name) -> PageName.to_string name
     | `Module(_, name) -> ModuleName.to_string name
@@ -437,6 +437,79 @@ module Identifier = struct
     loop [] i
 
   let signature_of_module m = (m : Module.t :> Signature.t)
+
+  let page_of_t : t -> Page.t = function
+    | #Page.t as result -> result
+    | _ -> assert false
+
+  let signature_of_t : t -> Signature.t = function
+      | #Signature.t as result -> result
+      | _ -> assert false
+
+  let class_signature_of_t : t -> ClassSignature.t = function
+      | #ClassSignature.t as result -> result
+      | _ -> assert false
+
+  let datatype_of_t : t -> DataType.t = function
+      | #DataType.t as result -> result
+      | _ -> assert false
+
+  let module_of_t : t -> Module.t = function
+      | #Module.t as result -> result
+      | _ -> assert false
+
+  let module_type_of_t : t -> ModuleType.t = function
+      | #ModuleType.t as result -> result
+      | _ -> assert false
+
+  let type_of_t : t -> Type.t = function
+      | #Type.t as result -> result
+      | _ -> assert false
+
+  let constructor_of_t : t -> Constructor.t = function
+      | #Constructor.t as result -> result
+      | _ -> assert false
+
+  let field_of_t : t -> Field.t = function
+      | #Field.t as result -> result
+      | _ -> assert false
+
+  let extension_of_t : t -> Extension.t = function
+      | #Extension.t as result -> result
+      | _ -> assert false
+
+  let exception_of_t : t -> Exception.t = function
+      | #Exception.t as result -> result
+      | _ -> assert false
+
+  let value_of_t : t -> Value.t = function
+      | #Value.t as result -> result
+      | _ -> assert false
+
+  let class_of_t : t -> Class.t = function
+      | #Class.t as result -> result
+      | _ -> assert false
+
+  let class_type_of_t : t -> ClassType.t = function
+      | #ClassType.t as result -> result
+      | _ -> assert false
+
+  let method_of_t : t -> Method.t = function
+      | #Method.t as result -> result
+      | _ -> assert false
+
+  let instance_variable_of_t : t -> InstanceVariable.t = function
+      | #InstanceVariable.t as result -> result
+      | _ -> assert false
+
+  let label_of_t : t -> Label.t = function
+      | #Label.t as result -> result
+      | _ -> assert false
+
+  let parent_of_t : t -> Parent.t = function
+      | #Parent.t as result -> result
+      | _ -> assert false
+
 end
 
 
@@ -654,7 +727,7 @@ module Path = struct
 
       let is_hidden m = is_resolved_hidden (m : t :> Paths_types.Resolved_path.any)
 
-      let rec identifier = function
+        let rec identifier = function
         | `Identifier id -> id
         | `Subst(_, p) -> identifier p
         | `SubstAlias(_, p) -> identifier p
@@ -853,6 +926,42 @@ module Path = struct
           (id : Identifier.Path.ClassType.t :> Identifier.t)
           (t : t :> Paths_types.Resolved_path.any)
     end
+
+    let module_of_t : t -> Module.t = function
+        | `Identifier (#Identifier.Path.Module.t)
+        | #Paths_types.Resolved_path.module_no_id as x -> x
+        | _ -> assert false
+
+    let module_type_of_t : t -> ModuleType.t = function
+        | `Identifier (#Identifier.Path.ModuleType.t)
+        | #Paths_types.Resolved_path.module_type_no_id as x -> x
+        | _ -> assert false
+
+    let type_of_t : t -> Type.t = function
+        | `Identifier (#Identifier.Path.Type.t)
+        | #Paths_types.Resolved_path.type_no_id as x -> x
+        | _ -> assert false
+
+    let class_type_of_t : t -> ClassType.t = function
+        | `Identifier (#Identifier.Path.ClassType.t)
+        | #Paths_types.Resolved_path.class_type_no_id as x -> x
+        | _ -> assert false
+
+
+    let rec identifier : t -> Identifier.t = function
+      | `Identifier id -> id
+      | `Subst(_, p) -> identifier (p :> t)
+      | `SubstAlias(_, p) -> identifier (p :> t)
+      | `Hidden p -> identifier (p :> t)
+      | `Module(m, n) -> `Module(parent_module_identifier m, n)
+      | `Canonical(_, `Resolved p) -> identifier (p :> t)
+      | `Canonical(p, _) -> identifier (p :> t)
+      | `Apply(m, _) -> identifier (m :> t)
+      | `Type(m, n) -> `Type(parent_module_identifier m, n)
+      | `ModuleType(m, n) -> `ModuleType(parent_module_identifier m, n)
+      | `Class(m, n) -> `Class(parent_module_identifier m, n)
+      | `ClassType(m, n) -> `ClassType(parent_module_identifier m, n)
+
   end
 
   module Module =
@@ -923,6 +1032,29 @@ module Path = struct
       is_path_hidden (t : t :> Paths_types.Path.any)
   end
 
+  let module_of_t : t -> Module.t = function
+    | `Resolved (`Identifier (#Identifier.Module.t))
+    | `Root _
+    | `Forward _
+    | `Dot (_,_)
+    | `Apply (_,_) as x -> x
+    | _ -> assert false
+
+  let module_type_of_t : t -> ModuleType.t = function
+    | `Resolved (`Identifier (#Identifier.ModuleType.t))
+    | `Dot (_,_) as x -> x
+    | _ -> assert false
+
+  let type_of_t : t -> Type.t = function
+    | `Resolved (`Identifier (#Identifier.Type.t))
+    | `Dot (_,_) as x -> x
+    | _ -> assert false
+
+  let class_type_of_t : t -> ClassType.t = function
+    | `Resolved (`Identifier (#Identifier.ClassType.t))
+    | `Dot (_,_) as x -> x
+    | _ -> assert false
+
   let module_ : Module.t -> ModuleName.t -> Module.t = fun p name ->
     match p with
     | `Resolved p -> `Resolved (`Module(p, name))
@@ -937,6 +1069,12 @@ module Path = struct
     match p with
     | `Resolved p -> `Resolved (`ModuleType(p, name))
     | p -> `Dot(p, ModuleTypeName.to_string name)
+
+  let is_hidden = is_path_hidden
+
+  let equal = equal_path
+
+  let hash = hash_path
 end
 
 
@@ -1202,6 +1340,29 @@ module Fragment = struct
 
     end
 
+    let signature_of_t : t -> Signature.t = function
+      | #Signature.t as x -> x
+      | _ -> assert false
+
+    let module_of_t : t -> Module.t = function
+      | #Module.t as x -> x
+      | _ -> assert false
+
+    let type_of_t : t -> Type.t = function
+      | #Type.t as x -> x
+      | _ -> assert false
+
+    let rec identifier : Identifier.Signature.t -> t -> Identifier.t =
+      fun root -> function
+        | `Root -> (root :> Identifier.t)
+        | `Subst(_, p) -> identifier root (p :> t)
+        | `SubstAlias(_, p) -> identifier root (p :> t)
+        | `Module(m, n) -> `Module (Signature.identifier root m, n)
+        | `Type(m, n) -> `Type(Signature.identifier root m, n)
+        | `Class(m, n) -> `Class(Signature.identifier root m, n)
+        | `ClassType(m, n) -> `ClassType(Signature.identifier root m, n)
+
+
   end
 
   type t = Paths_types.Fragment.any
@@ -1338,6 +1499,20 @@ module Fragment = struct
 
   end
 
+  let signature_of_t : t -> Signature.t = function
+    | `Resolved (#Resolved.Signature.t) 
+    | `Dot (_,_) as x -> x
+    | _ -> assert false
+
+  let module_of_t : t -> Module.t = function
+    | `Resolved (#Resolved.Module.t) 
+    | `Dot (_,_) as x -> x
+    | _ -> assert false
+
+  let type_of_t : t -> Type.t = function
+    | `Resolved (#Resolved.Type.t) 
+    | `Dot (_,_) as x -> x
+    | _ -> assert false
 
 end
 
@@ -1974,12 +2149,16 @@ module Reference = struct
       let identifier : t -> Identifier.Path.Type.t = function
         | `Identifier id -> id
         | `Type(s, n) -> `Type(parent_signature_identifier s, n)
+        | `Class(s,n) -> `Class(parent_signature_identifier s, n)
+        | `ClassType(s,n) -> `ClassType(parent_signature_identifier s, n)
 
       let rebase : Reversed.t -> t -> t =
         fun new_base t ->
         match t with
         | `Identifier _ -> t
         | `Type (mp, s) -> (rebase_single_type new_base (`Type (mp, s)) :> t)
+        | `Class (s, n) -> (rebase_single_class new_base (`Class (s, n)) :> t)
+        | `ClassType (s, n) -> (rebase_single_class_type new_base (`ClassType (s, n)) :> t)
 
       let rebase id t =
         let rev = Identifier.to_reversed id in
@@ -2267,91 +2446,120 @@ module Reference = struct
       let rebase _id t = t
     end
 
-  type t = Paths_types.Resolved_reference.any
+    type t = Paths_types.Resolved_reference.any
 
-    (*    let rec rebase : type k. Reversed.t -> k t -> k t =
-          fun new_base t ->
-            match t with
-            | Identifier _ -> t
-            | SubstAlias _ -> t (* TODO: rewrite necessary? *)
-            | Module (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.Module(id, s))
-              | Stop mp' -> Module (mp', s)
-              end
-            | Canonical (p, Types.Reference.Resolved rp) ->
-              begin match rebase_module_reference new_base (signature_of_module rp) with
-              | Continue (id, _) -> ident_module id
-              | Stop rp ->
-                (* Easier to reexport a canonical than get the type for rp right... *)
-                Canonical (p, Types.Reference.Resolved rp)
-              end
-            | Canonical (rp, p) ->
-              begin match rebase_module_reference new_base rp with
-              | Stop rp' -> Canonical (rp', p)
-              | _ ->
-                (* We might come back at some point with a resolved rhs? So we don't want to
-                   drop it. *)
-                t
-              end
-            | ModuleType (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.ModuleType (id, s))
-              | Stop mp' -> ModuleType (mp', s)
-              end
-            | Type (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.Type (id, s))
-              | Stop mp' -> Type (mp', s)
-              end
-            | Constructor (parent, s) ->
-              Constructor(rebase new_base parent, s)
-            | Field (parent, s) ->
-              Field(rebase new_base parent, s)
-            | Extension (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.Extension (id, s))
-              | Stop mp' -> Extension (mp', s)
-              end
-            | Exception (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.Exception (id, s))
-              | Stop mp' -> Exception (mp', s)
-              end
-            | Value (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.Value (id, s))
-              | Stop mp' -> Value (mp', s)
-              end
-            | Class (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.Class (id, s))
-              | Stop mp' -> Class (mp', s)
-              end
-            | ClassType (mp, s) ->
-              begin match rebase_signature_reference new_base mp with
-              | Continue (id, _) ->
-                Identifier (Identifier.ClassType (id, s))
-              | Stop mp' -> ClassType (mp', s)
-              end
-            | Method (mp, s) ->
-                Method (rebase new_base mp, s)
-            | InstanceVariable (mp, s) ->
-                InstanceVariable (rebase new_base mp, s)
-            | Label (mp, s) ->
-                Label (rebase new_base mp, s)
+    let rec identifier : t -> Identifier.t = function
+      | `Identifier id -> id
+      | `SubstAlias(_, p) -> identifier (p :> t)
+      | `Module(s, n) -> `Module(parent_signature_identifier s, n)
+      | `Canonical(_, `Resolved p) -> identifier (p :> t)
+      | `Canonical(p, _) -> identifier (p :> t)
+      | `ModuleType(s, n) -> `ModuleType(parent_signature_identifier s, n)
+      | `Field(p, n) -> `Field(parent_identifier p, n)
+      | `Type(s, n) -> `Type(parent_signature_identifier s, n)
+      | `Constructor(s, n) -> `Constructor(parent_type_identifier s, n)
+      | `Extension(p,q) -> `Extension(parent_signature_identifier p, q)
+      | `Exception(p,q) -> `Exception(parent_signature_identifier p, q)
+      | `Value(p,q) -> `Value(parent_signature_identifier p, q)
+      | `Class(p,q) -> `Class(parent_signature_identifier p, q)
+      | `ClassType(p,q) -> `ClassType(parent_signature_identifier p, q)
+      | `Method(p,q) -> `Method(parent_class_signature_identifier p, q)
+      | `InstanceVariable(p,q) -> `InstanceVariable(parent_class_signature_identifier p, q)
+      | `Label(p,q) -> `Label(label_parent_identifier p, q)
 
-          let rebase id t =
-          let rev = Identifier.to_reversed id in
-          rebase rev t
-    *)
+    let module_of_t : t -> Module.t = function
+      | `Identifier (#Identifier.Module.t)
+      | #Paths_types.Resolved_reference.module_no_id as x -> x
+      | _ -> assert false
+
+    let module_type_of_t : t -> ModuleType.t = function
+      | `Identifier (#Identifier.ModuleType.t)
+      | #Paths_types.Resolved_reference.s_module_type as x -> x
+      | _ -> assert false
+
+    let signature_of_t : t -> Signature.t = function
+      | `Identifier (#Identifier.Signature.t)
+      | #Paths_types.Resolved_reference.signature_no_id as x -> x
+      | _ -> assert false
+
+    let class_signature_of_t : t -> ClassSignature.t = function
+      | `Identifier (#Identifier.ClassSignature.t)
+      | #Paths_types.Resolved_reference.class_signature_no_id as x -> x
+      | _ -> assert false
+
+    let parent_of_t : t -> Parent.t = function
+      | `Identifier (#Identifier.Parent.t)
+      | #Paths_types.Resolved_reference.parent_no_id as x -> x
+      | _ -> assert false
+
+    let label_parent_of_t : t -> LabelParent.t = function
+      | `Identifier (#Identifier.LabelParent.t)
+      | #Paths_types.Resolved_reference.parent_no_id as x -> x
+      | _ -> assert false
+
+    let type_of_t : t -> Type.t = function
+      | `Identifier (#Identifier.Type.t)
+      | #Paths_types.Resolved_reference.s_type as x -> x
+      | _ -> assert false
+
+    let datatype_of_t : t -> DataType.t = function
+      | `Identifier (#Identifier.DataType.t)
+      | #Paths_types.Resolved_reference.s_type as x -> x
+      | _ -> assert false
+
+    let constructor_of_t : t -> Constructor.t = function
+      | `Identifier (#Identifier.Constructor.t)
+      | #Paths_types.Resolved_reference.s_constructor
+      | #Paths_types.Resolved_reference.s_extension
+      | #Paths_types.Resolved_reference.s_exception as x -> x
+      | _ -> assert false
+
+    let field_of_t : t -> Field.t = function
+      | `Identifier (#Identifier.Field.t)
+      | #Paths_types.Resolved_reference.s_field as x -> x
+      | _ -> assert false
+
+    let extension_of_t : t -> Extension.t = function
+      | `Identifier (#Paths_types.Identifier.reference_extension)
+      | #Paths_types.Resolved_reference.s_extension
+      | #Paths_types.Resolved_reference.s_exception as x -> x
+      | _ -> assert false
+
+    let exception_of_t : t -> Exception.t = function
+      | `Identifier (#Paths_types.Identifier.reference_exception)
+      | #Paths_types.Resolved_reference.s_exception as x -> x
+      | _ -> assert false
+
+    let value_of_t : t -> Value.t = function
+      | `Identifier (#Paths_types.Identifier.reference_value)
+      | #Paths_types.Resolved_reference.s_value as x -> x
+      | _ -> assert false
+
+    let class_of_t : t -> Class.t = function
+      | `Identifier (#Paths_types.Identifier.reference_class)
+      | #Paths_types.Resolved_reference.s_class as x -> x
+      | _ -> assert false
+
+    let class_type_of_t : t -> ClassType.t = function
+      | `Identifier (#Paths_types.Identifier.reference_class_type)
+      | #Paths_types.Resolved_reference.s_class_type as x -> x
+      | _ -> assert false
+
+    let method_of_t : t -> Method.t = function
+      | `Identifier (#Paths_types.Identifier.reference_method)
+      | #Paths_types.Resolved_reference.s_method as x -> x
+      | _ -> assert false
+
+    let instance_variable_of_t : t -> InstanceVariable.t = function
+      | `Identifier (#Paths_types.Identifier.reference_instance_variable)
+      | #Paths_types.Resolved_reference.s_instance_variable as x -> x
+      | _ -> assert false
+
+    let label_of_t : t -> Label.t = function
+      | `Identifier (#Paths_types.Identifier.reference_label)
+      | #Paths_types.Resolved_reference.s_label as x -> x
+      | _ -> assert false
+
   end
 
 (*
@@ -2559,4 +2767,162 @@ module Reference = struct
     let equal : t -> t -> bool = fun t1 t2 -> equal (t1 :> Paths_types.Reference.any) (t2 :> Paths_types.Reference.any)
     let hash : t -> int = fun t -> hash (t :> Paths_types.Reference.any)
   end
+
+  let module_of_t : t -> Module.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.module_))
+  | `Resolved (#Paths_types.Resolved_reference.module_no_id)
+  | `Root (_,#Paths_types.Reference.tag_module)
+  | `Dot (_,_)
+  | `Module (_, _) as x -> x
+  | _ -> assert false
+
+let module_type_of_t : t -> ModuleType.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.module_type))
+  | `Resolved (#Paths_types.Resolved_reference.s_module_type)
+  | `Root (_,#Paths_types.Reference.tag_module_type)
+  | `Dot (_,_)
+  | `ModuleType (_, _) as x -> x
+  | _ -> assert false
+
+let signature_of_t : t -> Signature.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.signature))
+  | `Resolved (#Paths_types.Resolved_reference.signature_no_id)
+  | `Root (_,#Paths_types.Reference.tag_signature)
+  | `Dot (_,_)
+  | `ModuleType (_,_)
+  | `Module (_, _) as x -> x
+  | _ -> assert false
+
+let class_signature_of_t : t -> ClassSignature.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.class_signature))
+  | `Resolved (#Paths_types.Resolved_reference.class_signature_no_id)
+  | `Root (_,#Paths_types.Reference.tag_class_signature)
+  | `Dot (_,_)
+  | `ClassType (_,_)
+  | `Class (_, _) as x -> x
+  | _ -> assert false
+
+let parent_of_t : t -> Parent.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.parent))
+  | `Resolved (#Paths_types.Resolved_reference.parent_no_id)
+  | `Root (_,#Paths_types.Reference.tag_parent)
+  | `Dot (_,_)
+  | `ClassType (_,_)
+  | `ModuleType (_,_)
+  | `Module (_, _)
+  | `Type (_,_)
+  | `Class (_, _) as x -> x
+  | _ -> assert false
+
+let label_parent_of_t : t -> LabelParent.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.label_parent))
+  | `Resolved (#Paths_types.Resolved_reference.parent_no_id) (* Nb, parent_no_id would be equal to label_parent_no_id if it existed! *)
+  | `Root (_,#Paths_types.Reference.tag_label_parent)
+  | `Dot (_,_)
+  | `ClassType (_,_)
+  | `ModuleType (_,_)
+  | `Module (_, _)
+  | `Type (_,_)
+  | `Class (_, _) as x -> x
+  | _ -> assert false
+
+let type_of_t : t -> Type.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.type_))
+  | `Resolved (#Paths_types.Resolved_reference.s_type)
+  | `Root (_,#Paths_types.Reference.tag_type)
+  | `Dot (_,_)
+  | `Type (_,_) as x -> x
+  | _ -> assert false
+
+let datatype_of_t : t -> DataType.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.datatype))
+  | `Resolved (#Paths_types.Resolved_reference.s_type)
+  | `Root (_,#Paths_types.Reference.tag_datatype)
+  | `Dot (_,_)
+  | `Type (_,_) as x -> x
+  | _ -> assert false
+
+let constructor_of_t : t -> Constructor.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_constructor))
+  | `Resolved (#Paths_types.Resolved_reference.constructor_no_id)
+  | `Root (_,#Paths_types.Reference.tag_constructor)
+  | `Dot (_,_)
+  | `Constructor (_,_)
+  | `Extension (_,_)
+  | `Exception (_,_) as x -> x
+  | _ -> assert false
+
+let field_of_t : t -> Field.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_field))
+  | `Resolved (#Paths_types.Resolved_reference.s_field)
+  | `Root (_,#Paths_types.Reference.tag_field)
+  | `Dot (_,_)
+  | `Field (_,_) as x -> x
+  | _ -> assert false
+
+let extension_of_t : t -> Extension.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_extension))
+  | `Resolved (#Paths_types.Resolved_reference.extension_no_id)
+  | `Root (_,#Paths_types.Reference.tag_extension)
+  | `Dot (_,_)
+  | `Extension (_,_)
+  | `Exception (_,_) as x -> x
+  | _ -> assert false
+
+let exception_of_t : t -> Exception.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_exception))
+  | `Resolved (#Paths_types.Resolved_reference.s_exception)
+  | `Root (_,#Paths_types.Reference.tag_exception)
+  | `Dot (_,_)
+  | `Exception (_,_) as x -> x
+  | _ -> assert false
+
+let value_of_t : t -> Value.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_value))
+  | `Resolved (#Paths_types.Resolved_reference.s_value)
+  | `Root (_,#Paths_types.Reference.tag_value)
+  | `Dot (_,_)
+  | `Value (_,_) as x -> x
+  | _ -> assert false
+
+let class_of_t : t -> Class.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_class))
+  | `Resolved (#Paths_types.Resolved_reference.s_class)
+  | `Root (_,#Paths_types.Reference.tag_class)
+  | `Dot (_,_)
+  | `Class (_,_) as x -> x
+  | _ -> assert false
+
+let class_type_of_t : t -> ClassType.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_class_type))
+  | `Resolved (#Paths_types.Resolved_reference.class_type_no_id)
+  | `Root (_,#Paths_types.Reference.tag_class_type)
+  | `Dot (_,_)
+  | `Class (_,_) 
+  | `ClassType (_,_) as x -> x 
+  | _ -> assert false
+
+let method_of_t : t -> Method.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_method))
+  | `Resolved (#Paths_types.Resolved_reference.s_method)
+  | `Root (_,#Paths_types.Reference.tag_method)
+  | `Dot (_,_)
+  | `Method (_,_) as x -> x 
+  | _ -> assert false
+
+let instance_variable_of_t : t -> InstanceVariable.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_instance_variable))
+  | `Resolved (#Paths_types.Resolved_reference.s_instance_variable)
+  | `Root (_,#Paths_types.Reference.tag_instance_variable)
+  | `Dot (_,_)
+  | `InstanceVariable (_,_) as x -> x 
+  | _ -> assert false
+
+let label_of_t : t -> Label.t = function
+  | `Resolved (`Identifier (#Paths_types.Identifier.reference_label))
+  | `Resolved (#Paths_types.Resolved_reference.s_label)
+  | `Root (_,#Paths_types.Reference.tag_label)
+  | `Dot (_,_)
+  | `Label (_,_) as x -> x 
+  | _ -> assert false
 end

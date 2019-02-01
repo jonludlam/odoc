@@ -277,8 +277,6 @@ class virtual reference : object
   method reference_resolved_label : Reference.Resolved.Label.t ->
     Reference.Resolved.Label.t
 
-  method reference : Reference.t -> Reference.t
-
   method reference_root_name : UnitName.t -> UnitName.t
 
   method reference_dot_name : string -> string
@@ -345,6 +343,8 @@ class virtual reference : object
     Reference.InstanceVariable.t
 
   method reference_label : Reference.Label.t -> Reference.Label.t
+
+  method reference_any : Reference.t -> Reference.t
 
 end
 

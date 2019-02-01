@@ -247,14 +247,49 @@ module Identifier : sig
     type t = Paths_types.Identifier.path_any
   end
 
-
   type t = Paths_types.Identifier.any
+
+  val page_of_t : t -> Page.t
+
+  val signature_of_t : t -> Signature.t
+
+  val class_signature_of_t : t -> ClassSignature.t
+
+  val datatype_of_t : t -> DataType.t
+
+  val module_of_t : t -> Module.t
+
+  val module_type_of_t : t -> ModuleType.t
+
+  val type_of_t : t -> Type.t
+
+  val constructor_of_t : t -> Constructor.t
+
+  val field_of_t : t -> Field.t
+
+  val extension_of_t : t -> Extension.t
+
+  val exception_of_t : t -> Exception.t
+
+  val value_of_t : t -> Value.t
+
+  val class_of_t : t -> Class.t
+
+  val class_type_of_t : t -> ClassType.t
+
+  val method_of_t : t -> Method.t
+
+  val instance_variable_of_t : t -> InstanceVariable.t
+
+  val label_of_t : t -> Label.t
+
+  val parent_of_t : t -> Parent.t
 
   val equal : t -> t -> bool
 
   val hash : t -> int
   
-  val name : t -> string
+  val name : [< t] -> string
 end
 
 (** Normal OCaml paths (i.e. the ones present in types) *)
@@ -336,10 +371,19 @@ module rec Path : sig
 
     type t = Paths_types.Resolved_path.any
 
+    val module_of_t : t -> Module.t
+
+    val module_type_of_t : t -> ModuleType.t
+
+    val type_of_t : t -> Type.t
+
+    val class_type_of_t : t -> ClassType.t
+
     val equal : t -> t -> bool
 
     val hash : t -> int
 
+    val identifier : t -> Identifier.t
   end
 
   module Module : sig
@@ -384,11 +428,25 @@ module rec Path : sig
 
   type t = Paths_types.Path.any
 
+  val module_of_t : t -> Module.t
+
+  val module_type_of_t : t -> ModuleType.t
+
+  val type_of_t : t -> Type.t
+
+  val class_type_of_t : t -> ClassType.t
+
   val module_ : Module.t -> ModuleName.t -> Module.t
 
   val apply : Module.t -> Module.t -> Module.t
 
   val module_type : Module.t -> ModuleTypeName.t -> ModuleType.t
+
+  val is_hidden : t -> bool
+
+  val equal : t -> t -> bool
+
+  val hash : t -> int
 end
 
 (** OCaml path fragments for specifying module substitutions *)
@@ -443,6 +501,14 @@ module Fragment : sig
 
     type t = Paths_types.Resolved_fragment.any
 
+    val identifier : Identifier.Signature.t -> t -> Identifier.t
+
+    val signature_of_t : t -> Signature.t
+
+    val module_of_t : t -> Module.t
+
+    val type_of_t : t -> Type.t
+
   end
 
   module Signature : sig
@@ -482,6 +548,13 @@ module Fragment : sig
   end
 
   type t = Paths_types.Fragment.any
+
+  val signature_of_t : t -> Signature.t
+
+  val module_of_t : t -> Module.t
+
+  val type_of_t : t -> Type.t
+
 end
 
 
@@ -717,6 +790,44 @@ module rec Reference : sig
     end
 
     type t = Paths_types.Resolved_reference.any
+
+    val module_of_t : t -> Module.t
+
+    val module_type_of_t : t -> ModuleType.t
+
+    val signature_of_t : t -> Signature.t
+
+    val class_signature_of_t : t -> ClassSignature.t
+
+    val parent_of_t : t -> Parent.t
+
+    val label_parent_of_t : t -> LabelParent.t
+
+    val type_of_t : t -> Type.t
+
+    val datatype_of_t : t -> DataType.t
+
+    val constructor_of_t : t -> Constructor.t
+
+    val field_of_t : t -> Field.t
+
+    val extension_of_t : t -> Extension.t
+
+    val exception_of_t : t -> Exception.t
+
+    val value_of_t : t -> Value.t
+  
+    val class_of_t : t -> Class.t
+
+    val class_type_of_t : t -> ClassType.t
+
+    val method_of_t : t -> Method.t
+
+    val instance_variable_of_t : t -> InstanceVariable.t
+
+    val label_of_t : t -> Label.t
+
+    val identifier : t -> Identifier.t
   end
 
 
@@ -875,6 +986,42 @@ module rec Reference : sig
     end
 
     type t = Paths_types.Reference.any
+
+    val module_of_t : t -> Module.t
+
+    val module_type_of_t : t -> ModuleType.t
+
+    val signature_of_t : t -> Signature.t
+
+    val class_signature_of_t : t -> ClassSignature.t
+
+    val parent_of_t : t -> Parent.t
+
+    val label_parent_of_t : t -> LabelParent.t
+
+    val type_of_t : t -> Type.t
+
+    val datatype_of_t : t -> DataType.t
+
+    val constructor_of_t : t -> Constructor.t
+
+    val field_of_t : t -> Field.t
+
+    val extension_of_t : t -> Extension.t
+
+    val exception_of_t : t -> Exception.t
+
+    val value_of_t : t -> Value.t
+  
+    val class_of_t : t -> Class.t
+
+    val class_type_of_t : t -> ClassType.t
+
+    val method_of_t : t -> Method.t
+
+    val instance_variable_of_t : t -> InstanceVariable.t
+
+    val label_of_t : t -> Label.t
 
     val hash : t -> int
 

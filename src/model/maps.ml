@@ -29,398 +29,6 @@ let pair_map f g p =
     else p
 
 (* It would be much nicer not to have to have these functions *)
-let identifier_page_of_t : Identifier.t -> Identifier.Page.t = function
-    | #Identifier.Page.t as result -> result
-    | _ -> assert false
-
-let identifier_signature_of_t : Identifier.t -> Identifier.Signature.t = function
-    | #Identifier.Signature.t as result -> result
-    | _ -> assert false
-
-let identifier_class_signature_of_t : Identifier.t -> Identifier.ClassSignature.t = function
-    | #Identifier.ClassSignature.t as result -> result
-    | _ -> assert false
-
-let identifier_datatype_of_t : Identifier.t -> Identifier.DataType.t = function
-    | #Identifier.DataType.t as result -> result
-    | _ -> assert false
-
-let identifier_module_of_t : Identifier.t -> Identifier.Module.t = function
-    | #Identifier.Module.t as result -> result
-    | _ -> assert false
-
-let identifier_module_type_of_t : Identifier.t -> Identifier.ModuleType.t = function
-    | #Identifier.ModuleType.t as result -> result
-    | _ -> assert false
-
-let identifier_type_of_t : Identifier.t -> Identifier.Type.t = function
-    | #Identifier.Type.t as result -> result
-    | _ -> assert false
-
-let identifier_constructor_of_t : Identifier.t -> Identifier.Constructor.t = function
-    | #Identifier.Constructor.t as result -> result
-    | _ -> assert false
-
-let identifier_field_of_t : Identifier.t -> Identifier.Field.t = function
-    | #Identifier.Field.t as result -> result
-    | _ -> assert false
-
-let identifier_extension_of_t : Identifier.t -> Identifier.Extension.t = function
-    | #Identifier.Extension.t as result -> result
-    | _ -> assert false
-
-let identifier_exception_of_t : Identifier.t -> Identifier.Exception.t = function
-    | #Identifier.Exception.t as result -> result
-    | _ -> assert false
-
-let identifier_value_of_t : Identifier.t -> Identifier.Value.t = function
-    | #Identifier.Value.t as result -> result
-    | _ -> assert false
-
-let identifier_class_of_t : Identifier.t -> Identifier.Class.t = function
-    | #Identifier.Class.t as result -> result
-    | _ -> assert false
-
-let identifier_class_type_of_t : Identifier.t -> Identifier.ClassType.t = function
-    | #Identifier.ClassType.t as result -> result
-    | _ -> assert false
-
-let identifier_method_of_t : Identifier.t -> Identifier.Method.t = function
-    | #Identifier.Method.t as result -> result
-    | _ -> assert false
-
-let identifier_instance_variable_of_t : Identifier.t -> Identifier.InstanceVariable.t = function
-    | #Identifier.InstanceVariable.t as result -> result
-    | _ -> assert false
-
-let identifier_label_of_t : Identifier.t -> Identifier.Label.t = function
-    | #Identifier.Label.t as result -> result
-    | _ -> assert false
-
-let identifier_parent_of_t : Identifier.t -> Identifier.Parent.t = function
-    | #Identifier.Parent.t as result -> result
-    | _ -> assert false
-
-let path_resolved_module_of_t : Path.Resolved.t -> Path.Resolved.Module.t = function
-    | `Identifier (#Identifier.Path.Module.t)
-    | #Paths_types.Resolved_path.module_no_id as x -> x
-    | _ -> assert false
-
-let path_resolved_module_type_of_t : Path.Resolved.t -> Path.Resolved.ModuleType.t = function
-    | `Identifier (#Identifier.Path.ModuleType.t)
-    | #Paths_types.Resolved_path.module_type_no_id as x -> x
-    | _ -> assert false
-
-let path_resolved_type_of_t : Path.Resolved.t -> Path.Resolved.Type.t = function
-    | `Identifier (#Identifier.Path.Type.t)
-    | #Paths_types.Resolved_path.type_no_id as x -> x
-    | _ -> assert false
-
-let path_resolved_class_type_of_t : Path.Resolved.t -> Path.Resolved.ClassType.t = function
-    | `Identifier (#Identifier.Path.ClassType.t)
-    | #Paths_types.Resolved_path.class_type_no_id as x -> x
-    | _ -> assert false
-
-let path_module_of_t : Path.t -> Path.Module.t = function
-  | `Resolved (`Identifier (#Identifier.Module.t))
-  | `Root _
-  | `Forward _
-  | `Dot (_,_)
-  | `Apply (_,_) as x -> x
-  | _ -> assert false
-
-let path_module_type_of_t : Path.t -> Path.ModuleType.t = function
-  | `Resolved (`Identifier (#Identifier.ModuleType.t))
-  | `Dot (_,_) as x -> x
-  | _ -> assert false
-
-let path_type_of_t : Path.t -> Path.Type.t = function
-  | `Resolved (`Identifier (#Identifier.Type.t))
-  | `Dot (_,_) as x -> x
-  | _ -> assert false
-
-let path_class_type_of_t : Path.t -> Path.ClassType.t = function
-  | `Resolved (`Identifier (#Identifier.ClassType.t))
-  | `Dot (_,_) as x -> x
-  | _ -> assert false
-
-let fragment_resolved_signature_of_t : Fragment.Resolved.t -> Fragment.Resolved.Signature.t = function
-  | #Fragment.Resolved.Signature.t as x -> x
-  | _ -> assert false
-
-let fragment_resolved_module_of_t : Fragment.Resolved.t -> Fragment.Resolved.Module.t = function
-  | #Fragment.Resolved.Module.t as x -> x
-  | _ -> assert false
-
-let fragment_resolved_type_of_t : Fragment.Resolved.t -> Fragment.Resolved.Type.t = function
-  | #Fragment.Resolved.Type.t as x -> x
-  | _ -> assert false
-
-let fragment_signature_of_t : Fragment.t -> Fragment.Signature.t = function
-  | `Resolved (#Fragment.Resolved.Signature.t) 
-  | `Dot (_,_) as x -> x
-  | _ -> assert false
-
-let fragment_module_of_t : Fragment.t -> Fragment.Module.t = function
-  | `Resolved (#Fragment.Resolved.Module.t) 
-  | `Dot (_,_) as x -> x
-  | _ -> assert false
-
-let fragment_type_of_t : Fragment.t -> Fragment.Type.t = function
-  | `Resolved (#Fragment.Resolved.Type.t) 
-  | `Dot (_,_) as x -> x
-  | _ -> assert false
-
-let reference_resolved_module_of_t : Reference.Resolved.t -> Reference.Resolved.Module.t = function
-  | `Identifier (#Identifier.Module.t)
-  | #Paths_types.Resolved_reference.module_no_id as x -> x
-  | _ -> assert false
-
-let reference_resolved_module_type_of_t : Reference.Resolved.t -> Reference.Resolved.ModuleType.t = function
-  | `Identifier (#Identifier.ModuleType.t)
-  | #Paths_types.Resolved_reference.s_module_type as x -> x
-  | _ -> assert false
-
-let reference_resolved_signature_of_t : Reference.Resolved.t -> Reference.Resolved.Signature.t = function
-  | `Identifier (#Identifier.Signature.t)
-  | #Paths_types.Resolved_reference.signature_no_id as x -> x
-  | _ -> assert false
-
-let reference_resolved_class_signature_of_t : Reference.Resolved.t -> Reference.Resolved.ClassSignature.t = function
-  | `Identifier (#Identifier.ClassSignature.t)
-  | #Paths_types.Resolved_reference.class_signature_no_id as x -> x
-  | _ -> assert false
-
-let reference_resolved_parent_of_t : Reference.Resolved.t -> Reference.Resolved.Parent.t = function
-  | `Identifier (#Identifier.Parent.t)
-  | #Paths_types.Resolved_reference.parent_no_id as x -> x
-  | _ -> assert false
-
-let reference_resolved_label_parent_of_t : Reference.Resolved.t -> Reference.Resolved.LabelParent.t = function
-  | `Identifier (#Identifier.LabelParent.t)
-  | #Paths_types.Resolved_reference.parent_no_id as x -> x
-  | _ -> assert false
-
-let reference_resolved_type_of_t : Reference.Resolved.t -> Reference.Resolved.Type.t = function
-  | `Identifier (#Identifier.Type.t)
-  | #Paths_types.Resolved_reference.s_type as x -> x
-  | _ -> assert false
-
-let reference_resolved_datatype_of_t : Reference.Resolved.t -> Reference.Resolved.DataType.t = function
-  | `Identifier (#Identifier.DataType.t)
-  | #Paths_types.Resolved_reference.s_type as x -> x
-  | _ -> assert false
-
-let reference_resolved_constructor_of_t : Reference.Resolved.t -> Reference.Resolved.Constructor.t = function
-  | `Identifier (#Identifier.Constructor.t)
-  | #Paths_types.Resolved_reference.s_constructor
-  | #Paths_types.Resolved_reference.s_extension
-  | #Paths_types.Resolved_reference.s_exception as x -> x
-  | _ -> assert false
-
-let reference_resolved_field_of_t : Reference.Resolved.t -> Reference.Resolved.Field.t = function
-  | `Identifier (#Identifier.Field.t)
-  | #Paths_types.Resolved_reference.s_field as x -> x
-  | _ -> assert false
-
-let reference_resolved_extension_of_t : Reference.Resolved.t -> Reference.Resolved.Extension.t = function
-  | `Identifier (#Paths_types.Identifier.reference_extension)
-  | #Paths_types.Resolved_reference.s_extension
-  | #Paths_types.Resolved_reference.s_exception as x -> x
-  | _ -> assert false
-
-let reference_resolved_exception_of_t : Reference.Resolved.t -> Reference.Resolved.Exception.t = function
-  | `Identifier (#Paths_types.Identifier.reference_exception)
-  | #Paths_types.Resolved_reference.s_exception as x -> x
-  | _ -> assert false
-
-let reference_resolved_value_of_t : Reference.Resolved.t -> Reference.Resolved.Value.t = function
-  | `Identifier (#Paths_types.Identifier.reference_value)
-  | #Paths_types.Resolved_reference.s_value as x -> x
-  | _ -> assert false
-
-let reference_resolved_class_of_t : Reference.Resolved.t -> Reference.Resolved.Class.t = function
-  | `Identifier (#Paths_types.Identifier.reference_class)
-  | #Paths_types.Resolved_reference.s_class as x -> x
-  | _ -> assert false
-
-let reference_resolved_class_type_of_t : Reference.Resolved.t -> Reference.Resolved.ClassType.t = function
-  | `Identifier (#Paths_types.Identifier.reference_class_type)
-  | #Paths_types.Resolved_reference.s_class_type as x -> x
-  | _ -> assert false
-
-let reference_resolved_method_of_t : Reference.Resolved.t -> Reference.Resolved.Method.t = function
-  | `Identifier (#Paths_types.Identifier.reference_method)
-  | #Paths_types.Resolved_reference.s_method as x -> x
-  | _ -> assert false
-
-let reference_resolved_instance_variable_of_t : Reference.Resolved.t -> Reference.Resolved.InstanceVariable.t = function
-  | `Identifier (#Paths_types.Identifier.reference_instance_variable)
-  | #Paths_types.Resolved_reference.s_instance_variable as x -> x
-  | _ -> assert false
-
-let reference_resolved_label_of_t : Reference.Resolved.t -> Reference.Resolved.Label.t = function
-  | `Identifier (#Paths_types.Identifier.reference_label)
-  | #Paths_types.Resolved_reference.s_label as x -> x
-  | _ -> assert false
-
-let reference_module_of_t : Reference.t -> Reference.Module.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.module_))
-  | `Resolved (#Paths_types.Resolved_reference.module_no_id)
-  | `Root (_,#Paths_types.Reference.tag_module)
-  | `Dot (_,_)
-  | `Module (_, _) as x -> x
-  | _ -> assert false
-
-let reference_module_type_of_t : Reference.t -> Reference.ModuleType.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.module_type))
-  | `Resolved (#Paths_types.Resolved_reference.s_module_type)
-  | `Root (_,#Paths_types.Reference.tag_module_type)
-  | `Dot (_,_)
-  | `ModuleType (_, _) as x -> x
-  | _ -> assert false
-
-let reference_signature_of_t : Reference.t -> Reference.Signature.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.signature))
-  | `Resolved (#Paths_types.Resolved_reference.signature_no_id)
-  | `Root (_,#Paths_types.Reference.tag_signature)
-  | `Dot (_,_)
-  | `ModuleType (_,_)
-  | `Module (_, _) as x -> x
-  | _ -> assert false
-
-let reference_class_signature_of_t : Reference.t -> Reference.ClassSignature.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.class_signature))
-  | `Resolved (#Paths_types.Resolved_reference.class_signature_no_id)
-  | `Root (_,#Paths_types.Reference.tag_class_signature)
-  | `Dot (_,_)
-  | `ClassType (_,_)
-  | `Class (_, _) as x -> x
-  | _ -> assert false
-
-let reference_parent_of_t : Reference.t -> Reference.Parent.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.parent))
-  | `Resolved (#Paths_types.Resolved_reference.parent_no_id)
-  | `Root (_,#Paths_types.Reference.tag_parent)
-  | `Dot (_,_)
-  | `ClassType (_,_)
-  | `ModuleType (_,_)
-  | `Module (_, _)
-  | `Type (_,_)
-  | `Class (_, _) as x -> x
-  | _ -> assert false
-
-let reference_label_parent_of_t : Reference.t -> Reference.LabelParent.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.label_parent))
-  | `Resolved (#Paths_types.Resolved_reference.parent_no_id) (* Nb, parent_no_id would be equal to label_parent_no_id if it existed! *)
-  | `Root (_,#Paths_types.Reference.tag_label_parent)
-  | `Dot (_,_)
-  | `ClassType (_,_)
-  | `ModuleType (_,_)
-  | `Module (_, _)
-  | `Type (_,_)
-  | `Class (_, _) as x -> x
-  | _ -> assert false
-
-let reference_type_of_t : Reference.t -> Reference.Type.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.type_))
-  | `Resolved (#Paths_types.Resolved_reference.s_type)
-  | `Root (_,#Paths_types.Reference.tag_type)
-  | `Dot (_,_)
-  | `Type (_,_) as x -> x
-  | _ -> assert false
-
-let reference_datatype_of_t : Reference.t -> Reference.DataType.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.datatype))
-  | `Resolved (#Paths_types.Resolved_reference.s_type)
-  | `Root (_,#Paths_types.Reference.tag_datatype)
-  | `Dot (_,_)
-  | `Type (_,_) as x -> x
-  | _ -> assert false
-
-let reference_constructor_of_t : Reference.t -> Reference.Constructor.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_constructor))
-  | `Resolved (#Paths_types.Resolved_reference.constructor_no_id)
-  | `Root (_,#Paths_types.Reference.tag_constructor)
-  | `Dot (_,_)
-  | `Constructor (_,_)
-  | `Extension (_,_)
-  | `Exception (_,_) as x -> x
-  | _ -> assert false
-
-let reference_field_of_t : Reference.t -> Reference.Field.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_field))
-  | `Resolved (#Paths_types.Resolved_reference.s_field)
-  | `Root (_,#Paths_types.Reference.tag_field)
-  | `Dot (_,_)
-  | `Field (_,_) as x -> x
-  | _ -> assert false
-
-let reference_extension_of_t : Reference.t -> Reference.Extension.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_extension))
-  | `Resolved (#Paths_types.Resolved_reference.extension_no_id)
-  | `Root (_,#Paths_types.Reference.tag_extension)
-  | `Dot (_,_)
-  | `Extension (_,_)
-  | `Exception (_,_) as x -> x
-  | _ -> assert false
-
-let reference_exception_of_t : Reference.t -> Reference.Exception.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_exception))
-  | `Resolved (#Paths_types.Resolved_reference.s_exception)
-  | `Root (_,#Paths_types.Reference.tag_exception)
-  | `Dot (_,_)
-  | `Exception (_,_) as x -> x
-  | _ -> assert false
-
-let reference_value_of_t : Reference.t -> Reference.Value.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_value))
-  | `Resolved (#Paths_types.Resolved_reference.s_value)
-  | `Root (_,#Paths_types.Reference.tag_value)
-  | `Dot (_,_)
-  | `Value (_,_) as x -> x
-  | _ -> assert false
-
-let reference_class_of_t : Reference.t -> Reference.Class.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_class))
-  | `Resolved (#Paths_types.Resolved_reference.s_class)
-  | `Root (_,#Paths_types.Reference.tag_class)
-  | `Dot (_,_)
-  | `Class (_,_) as x -> x
-  | _ -> assert false
-
-let reference_class_type_of_t : Reference.t -> Reference.ClassType.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_class_type))
-  | `Resolved (#Paths_types.Resolved_reference.class_type_no_id)
-  | `Root (_,#Paths_types.Reference.tag_class_type)
-  | `Dot (_,_)
-  | `Class (_,_) 
-  | `ClassType (_,_) as x -> x 
-  | _ -> assert false
-
-let reference_method_of_t : Reference.t -> Reference.Method.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_method))
-  | `Resolved (#Paths_types.Resolved_reference.s_method)
-  | `Root (_,#Paths_types.Reference.tag_method)
-  | `Dot (_,_)
-  | `Method (_,_) as x -> x 
-  | _ -> assert false
-
-let reference_instance_variable_of_t : Reference.t -> Reference.InstanceVariable.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_instance_variable))
-  | `Resolved (#Paths_types.Resolved_reference.s_instance_variable)
-  | `Root (_,#Paths_types.Reference.tag_instance_variable)
-  | `Dot (_,_)
-  | `InstanceVariable (_,_) as x -> x 
-  | _ -> assert false
-
-let reference_label_of_t : Reference.t -> Reference.Label.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_label))
-  | `Resolved (#Paths_types.Resolved_reference.s_label)
-  | `Root (_,#Paths_types.Reference.tag_label)
-  | `Dot (_,_)
-  | `Label (_,_) as x -> x 
-  | _ -> assert false
 
 
 
@@ -585,75 +193,75 @@ class virtual identifier = object (self)
 
   method identifier_parent : Identifier.Parent.t -> Identifier.Parent.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_parent_of_t
+    Identifier.parent_of_t
 
   method identifier_page : Identifier.Page.t -> Identifier.Page.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_page_of_t
+    Identifier.page_of_t
 
   method identifier_signature : Identifier.Signature.t -> Identifier.Signature.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_signature_of_t
+    Identifier.signature_of_t
 
   method identifier_class_signature : Identifier.ClassSignature.t -> Identifier.ClassSignature.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_class_signature_of_t
+    Identifier.class_signature_of_t
     
   method identifier_datatype : Identifier.DataType.t -> Identifier.DataType.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_datatype_of_t
+    Identifier.datatype_of_t
   
   method identifier_module : Identifier.Module.t -> Identifier.Module.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_module_of_t
+    Identifier.module_of_t
     
   method identifier_module_type : Identifier.ModuleType.t -> Identifier.ModuleType.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_module_type_of_t
+    Identifier.module_type_of_t
     
   method identifier_type : Identifier.Type.t -> Identifier.Type.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_type_of_t
+    Identifier.type_of_t
     
   method identifier_constructor : Identifier.Constructor.t -> Identifier.Constructor.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_constructor_of_t
+    Identifier.constructor_of_t
     
   method identifier_field : Identifier.Field.t -> Identifier.Field.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_field_of_t
+    Identifier.field_of_t
     
   method identifier_extension : Identifier.Extension.t -> Identifier.Extension.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_extension_of_t
+    Identifier.extension_of_t
     
   method identifier_exception : Identifier.Exception.t -> Identifier.Exception.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_exception_of_t
+    Identifier.exception_of_t
     
   method identifier_value : Identifier.Value.t -> Identifier.Value.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_value_of_t
+    Identifier.value_of_t
     
   method identifier_class : Identifier.Class.t -> Identifier.Class.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_class_of_t
+    Identifier.class_of_t
     
   method identifier_class_type : Identifier.ClassType.t -> Identifier.ClassType.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_class_type_of_t
+    Identifier.class_type_of_t
     
   method identifier_method : Identifier.Method.t -> Identifier.Method.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_method_of_t
+    Identifier.method_of_t
     
   method identifier_instance_variable : Identifier.InstanceVariable.t -> Identifier.InstanceVariable.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_instance_variable_of_t
+    Identifier.instance_variable_of_t
   
   method identifier_label : Identifier.Label.t -> Identifier.Label.t = fun id ->
     self#identifier (id :> Identifier.t) |>
-    identifier_label_of_t
+    Identifier.label_of_t
     
 end
 
@@ -733,19 +341,19 @@ class virtual path = object (self)
 
   method path_resolved_module : Path.Resolved.Module.t -> Path.Resolved.Module.t = fun p ->
     self#path_resolved (p :> Path.Resolved.t) |>
-    path_resolved_module_of_t
+    Path.Resolved.module_of_t
 
   method path_resolved_module_type : Path.Resolved.ModuleType.t -> Path.Resolved.ModuleType.t = fun p ->
     self#path_resolved (p :> Path.Resolved.t) |>
-    path_resolved_module_type_of_t
+    Path.Resolved.module_type_of_t
 
   method path_resolved_type : Path.Resolved.Type.t -> Path.Resolved.Type.t = fun p ->
     self#path_resolved (p :> Path.Resolved.t) |>
-    path_resolved_type_of_t
+    Path.Resolved.type_of_t
 
   method path_resolved_class_type : Path.Resolved.ClassType.t -> Path.Resolved.ClassType.t = fun p ->
     self#path_resolved (p :> Path.Resolved.t) |>
-    path_resolved_class_type_of_t
+    Path.Resolved.class_type_of_t
 
   method path : Path.t -> Path.t =
     fun p ->
@@ -779,19 +387,19 @@ class virtual path = object (self)
 
   method path_module : Path.Module.t -> Path.Module.t = fun p ->
     self#path (p :> Path.t) |> 
-    path_module_of_t
+    Path.module_of_t
 
   method path_module_type : Path.ModuleType.t -> Path.ModuleType.t = fun p ->
     self#path (p :> Path.t) |>
-    path_module_type_of_t
+    Path.module_type_of_t
 
   method path_type : Path.Type.t -> Path.Type.t = fun p ->
     self#path (p :> Path.t) |>
-    path_type_of_t
+    Path.type_of_t
 
   method path_class_type : Path.ClassType.t -> Path.ClassType.t = fun p ->
     self#path (p :> Path.t) |>
-    path_class_type_of_t
+    Path.class_type_of_t
 
 end
 
@@ -850,15 +458,15 @@ class virtual fragment = object (self)
 
   method fragment_resolved_signature : Fragment.Resolved.Signature.t -> Fragment.Resolved.Signature.t = fun p ->
     self#fragment_resolved (p :> Fragment.Resolved.t) |>
-    fragment_resolved_signature_of_t
+    Fragment.Resolved.signature_of_t
      
   method fragment_resolved_module : Fragment.Resolved.Module.t -> Fragment.Resolved.Module.t = fun p ->
     self#fragment_resolved (p :> Fragment.Resolved.t) |>
-    fragment_resolved_module_of_t
+    Fragment.Resolved.module_of_t
 
   method fragment_resolved_type : Fragment.Resolved.Type.t -> Fragment.Resolved.Type.t = fun p ->
     self#fragment_resolved (p :> Fragment.Resolved.t) |>
-    fragment_resolved_type_of_t
+    Fragment.Resolved.type_of_t
 
   method fragment : Fragment.t -> Fragment.t =
     fun p ->
@@ -877,15 +485,15 @@ class virtual fragment = object (self)
 
   method fragment_signature : Fragment.Signature.t -> Fragment.Signature.t = fun p ->
     self#fragment (p :> Fragment.t) |>
-    fragment_signature_of_t
+    Fragment.signature_of_t
 
   method fragment_module : Fragment.Module.t -> Fragment.Module.t = fun p ->
     self#fragment (p :> Fragment.t) |>
-    fragment_module_of_t
+    Fragment.module_of_t
 
   method fragment_type : Fragment.Type.t -> Fragment.Type.t = fun p ->
     self#fragment (p :> Fragment.t) |>
-    fragment_type_of_t
+    Fragment.type_of_t
 
 end
 
@@ -905,7 +513,7 @@ class virtual reference = object (self)
               if id != id' then `Identifier id'
               else r
         | `SubstAlias(sub, orig) ->
-            let sub' = self#path_resolved (sub :> Path.Resolved.t) |> path_resolved_module_of_t in
+            let sub' = self#path_resolved_module sub in
             let orig' = self#reference_resolved_module orig in
               if sub != sub' || orig != orig' then
                 `SubstAlias(sub', orig')
@@ -1023,79 +631,79 @@ class virtual reference = object (self)
 
   method reference_resolved_signature : Reference.Resolved.Signature.t -> Reference.Resolved.Signature.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_signature_of_t
+    Reference.Resolved.signature_of_t
 
   method reference_resolved_class_signature : Reference.Resolved.ClassSignature.t -> Reference.Resolved.ClassSignature.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_class_signature_of_t
+    Reference.Resolved.class_signature_of_t
 
   method reference_resolved_module : Reference.Resolved.Module.t -> Reference.Resolved.Module.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_module_of_t
+    Reference.Resolved.module_of_t
 
   method reference_resolved_parent : Reference.Resolved.Parent.t -> Reference.Resolved.Parent.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_parent_of_t
+    Reference.Resolved.parent_of_t
 
   method reference_resolved_label_parent : Reference.Resolved.LabelParent.t -> Reference.Resolved.LabelParent.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_label_parent_of_t
+    Reference.Resolved.label_parent_of_t
 
   method reference_resolved_module_type
            : Reference.Resolved.ModuleType.t -> Reference.Resolved.ModuleType.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_module_type_of_t
+    Reference.Resolved.module_type_of_t
 
   method reference_resolved_type : Reference.Resolved.Type.t -> Reference.Resolved.Type.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_type_of_t
+    Reference.Resolved.type_of_t
 
   method reference_resolved_datatype : Reference.Resolved.DataType.t -> Reference.Resolved.DataType.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_datatype_of_t
+    Reference.Resolved.datatype_of_t
 
   method reference_resolved_constructor : Reference.Resolved.Constructor.t -> Reference.Resolved.Constructor.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_constructor_of_t
+    Reference.Resolved.constructor_of_t
 
   method reference_resolved_field : Reference.Resolved.Field.t -> Reference.Resolved.Field.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_field_of_t
+    Reference.Resolved.field_of_t
 
   method reference_resolved_extension : Reference.Resolved.Extension.t -> Reference.Resolved.Extension.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_extension_of_t
+    Reference.Resolved.extension_of_t
 
   method reference_resolved_exception : Reference.Resolved.Exception.t -> Reference.Resolved.Exception.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_exception_of_t
+    Reference.Resolved.exception_of_t
 
   method reference_resolved_value : Reference.Resolved.Value.t -> Reference.Resolved.Value.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_value_of_t
+    Reference.Resolved.value_of_t
 
   method reference_resolved_class : Reference.Resolved.Class.t -> Reference.Resolved.Class.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_class_of_t
+    Reference.Resolved.class_of_t
 
   method reference_resolved_class_type : Reference.Resolved.ClassType.t -> Reference.Resolved.ClassType.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_class_type_of_t
+    Reference.Resolved.class_type_of_t
 
   method reference_resolved_method : Reference.Resolved.Method.t -> Reference.Resolved.Method.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_method_of_t
+    Reference.Resolved.method_of_t
 
   method reference_resolved_instance_variable
            : Reference.Resolved.InstanceVariable.t -> Reference.Resolved.InstanceVariable.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_instance_variable_of_t
+    Reference.Resolved.instance_variable_of_t
 
   method reference_resolved_label : Reference.Resolved.Label.t -> Reference.Resolved.Label.t = fun r ->
     self#reference_resolved (r :> Reference.Resolved.t) |>
-    reference_resolved_label_of_t
+    Reference.Resolved.label_of_t
 
-  method reference : Reference.t -> Reference.t =
+  method reference_any : Reference.t -> Reference.t =
     fun r ->
         match r with
         | `Resolved res ->
@@ -1208,76 +816,76 @@ class virtual reference = object (self)
   method reference_label_name name = name
 
   method reference_signature : Reference.Signature.t -> Reference.Signature.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_signature_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.signature_of_t
 
   method reference_class_signature : Reference.ClassSignature.t -> Reference.ClassSignature.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_class_signature_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.class_signature_of_t
 
   method reference_label_parent : Reference.LabelParent.t -> Reference.LabelParent.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_label_parent_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.label_parent_of_t
 
   method reference_parent : Reference.Parent.t -> Reference.Parent.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_parent_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.parent_of_t
 
   method reference_datatype : Reference.DataType.t -> Reference.DataType.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_datatype_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.datatype_of_t
 
   method reference_module : Reference.Module.t -> Reference.Module.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_module_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.module_of_t
 
   method reference_module_type : Reference.ModuleType.t -> Reference.ModuleType.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_module_type_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.module_type_of_t
 
   method reference_type : Reference.Type.t -> Reference.Type.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_type_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.type_of_t
 
   method reference_constructor : Reference.Constructor.t -> Reference.Constructor.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_constructor_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.constructor_of_t
 
   method reference_field : Reference.Field.t -> Reference.Field.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_field_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.field_of_t
 
   method reference_extension : Reference.Extension.t -> Reference.Extension.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_extension_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.extension_of_t
 
   method reference_exception : Reference.Exception.t -> Reference.Exception.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_exception_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.exception_of_t
 
   method reference_value : Reference.Value.t -> Reference.Value.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_value_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.value_of_t
 
   method reference_class : Reference.Class.t -> Reference.Class.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_class_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.class_of_t
 
   method reference_class_type : Reference.ClassType.t -> Reference.ClassType.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_class_type_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.class_type_of_t
 
   method reference_method : Reference.Method.t -> Reference.Method.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_method_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.method_of_t
 
   method reference_instance_variable : Reference.InstanceVariable.t -> Reference.InstanceVariable.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_instance_variable_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.instance_variable_of_t
 
   method reference_label : Reference.Label.t -> Reference.Label.t = fun r ->
-    self#reference (r :> Reference.t) |>
-    reference_label_of_t
+    self#reference_any (r :> Reference.t) |>
+    Reference.label_of_t
 
 end
 
