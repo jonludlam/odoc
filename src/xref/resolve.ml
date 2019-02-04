@@ -57,13 +57,6 @@ let rec add_subst_alias :
   | _ ->
     `SubstAlias(subp, orig)
 
-type t_canon = [
-  | `Canonical of Path.Resolved.Module.t * Path.Module.t
-]
-type t_hidden = [
-  | `Hidden of Path.Resolved.Module.t
-]
-
 let rec find_with_path_substs
   : 'b 'c. (Sig.t -> 'b) -> (Path.Resolved.Module.t -> 'b -> 'c)
     -> (Path.Resolved.Module.t -> 'c) -> Identifier.Signature.t option
@@ -103,14 +96,14 @@ let rec find_with_path_substs
           end
       with Not_found -> unresolved pr
 
-and resolve_only_canonical_path :
-  Identifier.Signature.t option -> _ -> t_canon -> [ t_canon | t_hidden ] =
+and resolve_canonical_path_module :
+  Identifier.Signature.t option -> _ -> Path.Resolved.Module.t -> Path.Resolved.Module.t =
   fun ident tbl p ->
     match p with
     | `Canonical (orig, cano) ->
       let orig' = resolve_resolved_path_module ident tbl orig in
       let cano' = resolve_module_path ident tbl cano in
-      if orig == orig' && cano == cano' then (p :> [ t_canon | t_hidden ] )
+      if orig == orig' && cano == cano' then (p :> Path.Resolved.Module.t)
       else (
         let cano' =
           match ident, cano' with
@@ -126,12 +119,6 @@ and resolve_only_canonical_path :
           `Hidden c
         | _, _ -> c
       )
-
-and resolve_canonical_path_module :
-  Identifier.Signature.t option -> _ -> Path.Resolved.Module.t -> Path.Resolved.Module.t =
-  fun ident tbl p ->
-    match p with
-    | `Canonical (_orig, _cano) as p' -> (resolve_only_canonical_path ident tbl p' :> Path.Resolved.Module.t)
     | _ -> p
 
 and resolve_parent_module_path ident tbl (p : Path.Module.t) : parent_module_path =

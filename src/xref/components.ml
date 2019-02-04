@@ -1643,12 +1643,6 @@ end = Parent
 
 and Element : sig
 
-  type kind =
-    [ `Module | `ModuleType | `Type
-    | `Constructor | `Field | `Extension
-    | `Exception | `Value | `Class | `ClassType
-    | `Method | `InstanceVariable | `Label ]
-
   type mod_t = { canonical : (Path.Module.t * Reference.Module.t) option
         ; hidden : bool }
 
