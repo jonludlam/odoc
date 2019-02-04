@@ -19,6 +19,8 @@
 module Comment = Model.Comment
 module Html = Tyxml.Html
 
+open Model.Names
+
 type flow = Html_types.flow5_without_header_footer
 type phrasing = Html_types.phrasing
 type non_link_phrasing = Html_types.phrasing_without_interactive
@@ -32,48 +34,48 @@ module Reference = struct
 
   let rec render_resolved : Reference.Resolved.t -> string =
     fun r ->
-      let open Model.Names in
+      let open Reference.Resolved in
       match r with
       | `Identifier id -> Identifier.name id
-      | `SubstAlias(_, r) -> render_resolved (r :> Reference.Resolved.t)
-      | `Module (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ModuleName.to_string s)
-      | `Canonical (_, `Resolved r) -> render_resolved (r :> Reference.Resolved.t)
-      | `Canonical (p, _) -> render_resolved (p :> Reference.Resolved.t)
-      | `ModuleType (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ModuleTypeName.to_string s)
-      | `Type (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (TypeName.to_string s)
-      | `Constructor (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ConstructorName.to_string s)
-      | `Field (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (FieldName.to_string s)
-      | `Extension (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ExtensionName.to_string s)
-      | `Exception (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ExceptionName.to_string s)
-      | `Value (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ValueName.to_string s)
-      | `Class (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ClassName.to_string s)
-      | `ClassType (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ "." ^ (ClassTypeName.to_string s)
+      | `SubstAlias(_, r) -> render_resolved (r :> t)
+      | `Module (r, s) -> render_resolved (r :> t) ^ "." ^ (ModuleName.to_string s)
+      | `Canonical (_, `Resolved r) -> render_resolved (r :> t)
+      | `Canonical (p, _) -> render_resolved (p :> t)
+      | `ModuleType (r, s) -> render_resolved (r :> t) ^ "." ^ (ModuleTypeName.to_string s)
+      | `Type (r, s) -> render_resolved (r :> t) ^ "." ^ (TypeName.to_string s)
+      | `Constructor (r, s) -> render_resolved (r :> t) ^ "." ^ (ConstructorName.to_string s)
+      | `Field (r, s) -> render_resolved (r :> t) ^ "." ^ (FieldName.to_string s)
+      | `Extension (r, s) -> render_resolved (r :> t) ^ "." ^ (ExtensionName.to_string s)
+      | `Exception (r, s) -> render_resolved (r :> t) ^ "." ^ (ExceptionName.to_string s)
+      | `Value (r, s) -> render_resolved (r :> t) ^ "." ^ (ValueName.to_string s)
+      | `Class (r, s) -> render_resolved (r :> t) ^ "." ^ (ClassName.to_string s)
+      | `ClassType (r, s) -> render_resolved (r :> t) ^ "." ^ (ClassTypeName.to_string s)
       | `Method (r, s) ->
         (* CR trefis: do we really want to print anything more than [s] here?  *)
-        render_resolved (r :> Reference.Resolved.t) ^ "." ^ (MethodName.to_string s)
+        render_resolved (r :> t) ^ "." ^ (MethodName.to_string s)
       | `InstanceVariable (r, s) ->
         (* CR trefis: the following makes no sense to me... *)
-        render_resolved (r :> Reference.Resolved.t) ^ "." ^ (InstanceVariableName.to_string s)
-      | `Label (r, s) -> render_resolved (r :> Reference.Resolved.t) ^ ":" ^ (LabelName.to_string s)
+        render_resolved (r :> t) ^ "." ^ (InstanceVariableName.to_string s)
+      | `Label (r, s) -> render_resolved (r :> t) ^ ":" ^ (LabelName.to_string s)
 
   let rec ref_to_string : Reference.t -> string =
-    let open Model.Names in
+    let open Reference in
     function
     | `Root (s, _) -> UnitName.to_string s
-    | `Dot (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ s
-    | `Module (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ModuleName.to_string s)
-    | `ModuleType (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ModuleTypeName.to_string s)
-    | `Type (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (TypeName.to_string s)
-    | `Constructor (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ConstructorName.to_string s)
-    | `Field (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (FieldName.to_string s)
-    | `Extension (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ExtensionName.to_string s)
-    | `Exception (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ExceptionName.to_string s)
-    | `Value (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ValueName.to_string s)
-    | `Class (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ClassName.to_string s)
-    | `ClassType (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (ClassTypeName.to_string s)
-    | `Method (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (MethodName.to_string s)
-    | `InstanceVariable (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (InstanceVariableName.to_string s)
-    | `Label (parent, s) -> ref_to_string (parent :> Reference.t) ^ "." ^ (LabelName.to_string s)
+    | `Dot (parent, s) -> ref_to_string (parent :> t) ^ "." ^ s
+    | `Module (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ModuleName.to_string s)
+    | `ModuleType (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ModuleTypeName.to_string s)
+    | `Type (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (TypeName.to_string s)
+    | `Constructor (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ConstructorName.to_string s)
+    | `Field (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (FieldName.to_string s)
+    | `Extension (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ExtensionName.to_string s)
+    | `Exception (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ExceptionName.to_string s)
+    | `Value (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ValueName.to_string s)
+    | `Class (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ClassName.to_string s)
+    | `ClassType (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (ClassTypeName.to_string s)
+    | `Method (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (MethodName.to_string s)
+    | `InstanceVariable (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (InstanceVariableName.to_string s)
+    | `Label (parent, s) -> ref_to_string (parent :> t) ^ "." ^ (LabelName.to_string s)
     | `Resolved r -> render_resolved r
 
 
@@ -93,7 +95,7 @@ module Reference = struct
                                 (ref_to_string ref))
                   ]
       in
-      let open Model.Names in
+      let open Reference in
       match ref with
       | `Root (s, _) ->
         begin match text with
@@ -101,33 +103,33 @@ module Reference = struct
         | Some s -> (span' [(s :> phrasing Html.elt)] :> phrasing Html.elt)
         end
       | `Dot (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) s
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) s
       | `Module (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ModuleName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ModuleName.to_string s)
       | `ModuleType (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ModuleTypeName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ModuleTypeName.to_string s)
       | `Type (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (TypeName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (TypeName.to_string s)
       | `Constructor (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ConstructorName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ConstructorName.to_string s)
       | `Field (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (FieldName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (FieldName.to_string s)
       | `Extension (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ExtensionName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ExtensionName.to_string s)
       | `Exception (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ExceptionName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ExceptionName.to_string s)
       | `Value (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ValueName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ValueName.to_string s)
       | `Class (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ClassName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ClassName.to_string s)
       | `ClassType (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (ClassTypeName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (ClassTypeName.to_string s)
       | `Method (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (MethodName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (MethodName.to_string s)
       | `InstanceVariable (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (InstanceVariableName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (InstanceVariableName.to_string s)
       | `Label (parent, s) ->
-        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> Reference.t) (LabelName.to_string s)
+        unresolved_parts_to_html ?xref_base_uri ?text span' (parent :> t) (LabelName.to_string s)
       | `Resolved r ->
         (* IDENTIFIER MUST BE RENAMED TO DEFINITION. *)
         let id = Reference.Resolved.identifier r in

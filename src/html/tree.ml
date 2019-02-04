@@ -19,6 +19,8 @@
 module Html = Tyxml.Html
 module Paths = Model.Paths
 
+open Model.Names
+
 type syntax = OCaml | Reason
 
 type kind = [ `Arg | `Mod | `Mty | `Class | `Cty | `Page ]
@@ -175,16 +177,16 @@ module Relative_link = struct
         | `Dot (prefix, suffix) -> dot (render_raw (prefix :> Fragment.t)) suffix
 
     and render_resolved : Fragment.Resolved.t -> string =
-      let open Model.Names in
+      let open Fragment.Resolved in
       fun fragment ->
         match fragment with
         | `Root -> ""
-        | `Subst (_, rr) -> render_resolved (rr :> Fragment.Resolved.t)
-        | `SubstAlias (_, rr) -> render_resolved (rr :> Fragment.Resolved.t)
-        | `Module (rr, s) -> dot (render_resolved (rr :> Fragment.Resolved.t)) (ModuleName.to_string s)
-        | `Type (rr, s) -> dot (render_resolved (rr :> Fragment.Resolved.t)) (TypeName.to_string s)
-        | `Class (rr, s) -> dot (render_resolved ( rr :> Fragment.Resolved.t)) (ClassName.to_string s)
-        | `ClassType (rr, s) -> dot (render_resolved (rr :> Fragment.Resolved.t)) (ClassTypeName.to_string s)
+        | `Subst (_, rr) -> render_resolved (rr :> t)
+        | `SubstAlias (_, rr) -> render_resolved (rr :> t)
+        | `Module (rr, s) -> dot (render_resolved (rr :> t)) (ModuleName.to_string s)
+        | `Type (rr, s) -> dot (render_resolved (rr :> t)) (TypeName.to_string s)
+        | `Class (rr, s) -> dot (render_resolved ( rr :> t)) (ClassName.to_string s)
+        | `ClassType (rr, s) -> dot (render_resolved (rr :> t)) (ClassTypeName.to_string s)
 
     let rec to_html : stop_before:bool ->
       Identifier.Signature.t -> Fragment.t -> _ =

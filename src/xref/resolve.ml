@@ -101,7 +101,7 @@ and resolve_canonical_path_module :
   fun ident tbl p ->
     match p with
     | `Canonical (orig, cano) ->
-      let orig' = resolve_resolved_path_module ident tbl orig in
+      let orig' = resolve_resolved_module_path ident tbl orig in
       let cano' = resolve_module_path ident tbl cano in
       if orig == orig' && cano == cano' then (p :> Path.Resolved.Module.t)
       else (
@@ -277,7 +277,7 @@ and resolve_module_path ident tbl : Path.Module.t -> Path.Module.t =
               resolved unresolved ident tbl p parent
     end
 
-and resolve_resolved_path_module_type_no_id : _ -> _ ->
+and resolve_resolved_module_type_path_no_id : _ -> _ ->
   Paths_types.Resolved_path.module_type_no_id ->
   Paths_types.Resolved_path.module_type =
   fun ident tbl p ->
@@ -288,42 +288,42 @@ and resolve_resolved_path_module_type_no_id : _ -> _ ->
       `ModuleType(parent', name)
     else (p :> Path.Resolved.ModuleType.t)
 
-and resolve_resolved_path_module_type : _ -> _ -> Path.Resolved.ModuleType.t -> Path.Resolved.ModuleType.t =
+and resolve_resolved_module_type_path : _ -> _ -> Path.Resolved.ModuleType.t -> Path.Resolved.ModuleType.t =
   fun ident tbl p ->
   match p with
   | `Identifier _ -> p
-  | `ModuleType(_parent, _name) as p' -> resolve_resolved_path_module_type_no_id ident tbl p'
+  | `ModuleType(_parent, _name) as p' -> resolve_resolved_module_type_path_no_id ident tbl p'
 
-and resolve_resolved_path_module_no_id : _ -> _ -> Paths_types.Resolved_path.module_no_id -> Paths_types.Resolved_path.module_ =
+and resolve_resolved_module_path_no_id : _ -> _ -> Paths_types.Resolved_path.module_no_id -> Paths_types.Resolved_path.module_ =
   fun ident tbl p ->
   match p with
   | `Subst(sub, orig) ->
-    let sub' = resolve_resolved_path_module_type ident tbl sub in
-    let orig' = resolve_resolved_path_module ident tbl orig in
+    let sub' = resolve_resolved_module_type_path ident tbl sub in
+    let orig' = resolve_resolved_module_path ident tbl orig in
     if sub != sub' || orig != orig' then `Subst(sub', orig')
     else (p :> Path.Resolved.Module.t)
   | `SubstAlias(sub, orig) ->
-    let sub'  = resolve_resolved_path_module ident tbl sub in 
-    let orig' = resolve_resolved_path_module ident tbl orig in 
+    let sub'  = resolve_resolved_module_path ident tbl sub in 
+    let orig' = resolve_resolved_module_path ident tbl orig in 
     if sub != sub' || orig != orig' then `SubstAlias(sub', orig')
     else (p :> Path.Resolved.Module.t)
   | `Hidden hp ->
-    let hp'  = resolve_resolved_path_module ident tbl hp in
+    let hp'  = resolve_resolved_module_path ident tbl hp in
     if hp != hp' then `Hidden hp'
     else (p :> Path.Resolved.Module.t)
   | `Module(parent, name) ->
-    let parent' = resolve_resolved_path_module ident tbl parent in
+    let parent' = resolve_resolved_module_path ident tbl parent in
     if parent != parent' then
       `Module(parent', name)
     else (p :> Path.Resolved.Module.t)
   | `Canonical(_, _) as p ->
     resolve_canonical_path_module ident tbl p
   | `Apply(fn, arg) ->
-    let fn' = resolve_resolved_path_module ident tbl fn in
+    let fn' = resolve_resolved_module_path ident tbl fn in
     if fn != fn' then `Apply(fn', arg)
     else (p :> Path.Resolved.Module.t)
 
-and resolve_resolved_path_module : _ -> _ ->
+and resolve_resolved_module_path : _ -> _ ->
   Path.Resolved.Module.t -> Path.Resolved.Module.t =
   fun ident tbl p ->
   match p with
@@ -333,45 +333,45 @@ and resolve_resolved_path_module : _ -> _ ->
   | `Hidden(_)
   | `Module(_,_)
   | `Canonical(_,_)
-  | `Apply(_,_) as p' -> resolve_resolved_path_module_no_id ident tbl p'
+  | `Apply(_,_) as p' -> resolve_resolved_module_path_no_id ident tbl p'
 
-and resolve_resolved_path_class_type_no_id : _ -> _ ->
+and resolve_resolved_type_class_path_no_id : _ -> _ ->
   Paths_types.Resolved_path.class_type_no_id -> Path.Resolved.ClassType.t =
   fun ident tbl p ->
   match p with
   | `Class(parent, name) ->
-    let parent' = resolve_resolved_path_module ident tbl parent in
+    let parent' = resolve_resolved_module_path ident tbl parent in
     if parent != parent' then `Class(parent', name)
     else (p :> Path.Resolved.ClassType.t)
   | `ClassType(parent, name) ->
-    let parent' = resolve_resolved_path_module ident tbl parent in
+    let parent' = resolve_resolved_module_path ident tbl parent in
     if parent != parent' then `ClassType(parent', name)
     else (p :> Path.Resolved.ClassType.t)
 
-and resolve_resolved_path_class_type : _ -> _ ->
+and resolve_resolved_type_class_path : _ -> _ ->
   Path.Resolved.ClassType.t -> Path.Resolved.ClassType.t =
   fun ident tbl p ->
   match p with
   | `Identifier _ -> p
-  | `Class _ | `ClassType _ as p' -> resolve_resolved_path_class_type_no_id ident tbl p'
+  | `Class _ | `ClassType _ as p' -> resolve_resolved_type_class_path_no_id ident tbl p'
 
-and resolve_resolved_path_type_no_id : _ -> _ ->
+and resolve_resolved_type_path_no_id : _ -> _ ->
   Paths_types.Resolved_path.type_no_id -> Path.Resolved.Type.t =
   fun ident tbl p ->
   match p with
   | `Type(parent, name) ->
-    let parent' = resolve_resolved_path_module ident tbl parent in
+    let parent' = resolve_resolved_module_path ident tbl parent in
     if parent != parent' then `Type(parent', name)
     else (p :> Path.Resolved.Type.t)
   | `Class _ | `ClassType _ as p' ->
-    (resolve_resolved_path_class_type_no_id ident tbl p' :> Path.Resolved.Type.t)
+    (resolve_resolved_type_class_path_no_id ident tbl p' :> Path.Resolved.Type.t)
 
-and resolve_resolved_path_type : _ -> _ ->
+and resolve_resolved_type_path : _ -> _ ->
   Path.Resolved.Type.t -> Path.Resolved.Type.t =
   fun ident tbl p ->
   match p with
   | `Identifier _ -> p
-  | `Type _ | `Class _ | `ClassType _ as p' -> resolve_resolved_path_type_no_id ident tbl p'
+  | `Type _ | `Class _ | `ClassType _ as p' -> resolve_resolved_type_path_no_id ident tbl p'
 
 and resolve_resolved_path :
   _ -> _ -> Path.Resolved.t -> Path.Resolved.t =
@@ -380,16 +380,16 @@ and resolve_resolved_path :
   | `Identifier _ -> p
   | `Subst _ | `SubstAlias _ | `Hidden _
   | `Module _ | `Canonical _ | `Apply _ as p' ->
-    (resolve_resolved_path_module_no_id ident tbl p' :> Path.Resolved.t)
+    (resolve_resolved_module_path_no_id ident tbl p' :> Path.Resolved.t)
   | `ModuleType _ as p' ->
-    (resolve_resolved_path_module_type_no_id ident tbl p' :> Path.Resolved.t)
+    (resolve_resolved_module_type_path_no_id ident tbl p' :> Path.Resolved.t)
   | `Type _ | `Class _ | `ClassType _ as p' ->
-    (resolve_resolved_path_type_no_id ident tbl p' :> Path.Resolved.t)
+    (resolve_resolved_type_path_no_id ident tbl p' :> Path.Resolved.t)
 
 and resolve_path_module_type ident tbl (p : Path.ModuleType.t) =
   match p with
   | `Resolved r ->
-    let r' = resolve_resolved_path_module_type ident tbl r in
+    let r' = resolve_resolved_module_type_path ident tbl r in
     if r != r' then `Resolved r' else p
   | `Dot(p, name) -> begin
       match resolve_parent_module_path ident tbl p with
@@ -409,7 +409,7 @@ and resolve_path_module_type ident tbl (p : Path.ModuleType.t) =
 and resolve_type_path ident tbl (p : Path.Type.t) =
   match p with
   | `Resolved r ->
-    let r' = resolve_resolved_path_type ident tbl r in
+    let r' = resolve_resolved_type_path ident tbl r in
     if r != r' then `Resolved r' else p
   | `Dot(p, name) -> begin
       match resolve_parent_module_path ident tbl p with
@@ -431,7 +431,7 @@ and resolve_type_path ident tbl (p : Path.Type.t) =
 and resolve_class_type_path ident tbl (p : Path.ClassType.t) =
   match p with
   | `Resolved r ->
-    let r' = resolve_resolved_path_class_type ident tbl r in
+    let r' = resolve_resolved_type_class_path ident tbl r in
     if r != r' then `Resolved r' else p
   | `Dot(p, name) -> begin
       match resolve_parent_module_path ident tbl p with
@@ -717,7 +717,7 @@ let rec resolve_parent_reference :
               let resolved _ pr = pr in
               let unresolved pr =
                 Unresolved(
-                  `Dot(`Resolved (rlpop (pr :> Reference.Resolved.Parent.t)), name)
+                  `Dot(`Resolved (pr :> Reference.Resolved.LabelParent.t), name)
                 )
               in
               find_with_reference_substs (find_parent_reference kind rr name)
@@ -875,7 +875,7 @@ and resolve_resolved_reference_module_no_id : _ -> _ ->
   fun ident tbl r ->
     match r with
     | `SubstAlias(sub, orig) ->
-      let sub' = resolve_resolved_path_module ident tbl sub in
+      let sub' = resolve_resolved_module_path ident tbl sub in
       let orig' = resolve_resolved_reference_module ident tbl orig in
       if sub != sub' || orig != orig' then
         `SubstAlias(sub', orig')
@@ -1857,7 +1857,7 @@ and resolve_label_reference ident tbl (r : Reference.Label.t)
             | `Label (Some type_name) ->
                 `Resolved (`Label(`Type(r, TypeName.of_string type_name), LabelName.of_string name))
             | `Label None ->
-                `Resolved (`Label(rlpop (r :> Reference.Resolved.Parent.t), LabelName.of_string name))
+                `Resolved (`Label((r :> Reference.Resolved.LabelParent.t), LabelName.of_string name))
           in
           let unresolved r =
             let r = (r :> Reference.Resolved.Parent.t) in
@@ -1903,7 +1903,7 @@ and resolve_label_reference ident tbl (r : Reference.Label.t)
             | `Label (Some type_name) ->
                 `Resolved (`Label(`Type(r, TypeName.of_string type_name), name))
             | `Label None ->
-                `Resolved (`Label(rlpop (r :> Reference.Resolved.Parent.t), name))
+                `Resolved (`Label((r :> Reference.Resolved.LabelParent.t), name))
           in
           let unresolved r =
             let r = (r :> Reference.Resolved.Parent.t) in
@@ -1994,7 +1994,7 @@ and resolve_element_reference ident tbl (r : Reference.t)
             | `Label (Some type_name) ->
                 `Resolved (`Label(`Type(r, TypeName.of_string type_name), LabelName.of_string name))
             | `Label None ->
-                `Resolved (`Label(rlpop (r :> Reference.Resolved.Parent.t), LabelName.of_string name))
+                `Resolved (`Label((r :> Reference.Resolved.LabelParent.t), LabelName.of_string name))
           in
           let unresolved r =
             let r = (r :> Reference.Resolved.Parent.t) in
@@ -2009,7 +2009,7 @@ and resolve_element_reference ident tbl (r : Reference.t)
               | `Field _ ->
                   `Resolved (`Field((r :> Reference.Resolved.Parent.t) , FieldName.of_string name))
               | `Label _ ->
-                  `Resolved (`Label(rlpop (r :> Reference.Resolved.Parent.t), LabelName.of_string name))
+                  `Resolved (`Label((r :> Reference.Resolved.LabelParent.t), LabelName.of_string name))
             with Not_found ->
               let r = (r :> Reference.Resolved.Parent.t) in
                 `Dot(`Resolved (rlpop r), name)
@@ -2020,7 +2020,7 @@ and resolve_element_reference ident tbl (r : Reference.t)
               | `Method -> `Resolved (`Method(r, MethodName.of_string name))
               | `InstanceVariable -> `Resolved (`InstanceVariable(r, InstanceVariableName.of_string name))
               | `Label _ ->
-                  `Resolved (`Label(rlpop ((r :> Reference.Resolved.Parent.t)), LabelName.of_string name))
+                  `Resolved (`Label((r :> Reference.Resolved.LabelParent.t), LabelName.of_string name))
             with Not_found ->
               let r = (r :> Reference.Resolved.Parent.t) in
                 `Dot(`Resolved (rlpop r), name)
