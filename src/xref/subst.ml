@@ -178,7 +178,6 @@ class prefix ~equal:_ ~canonical id : t = object (self)
 
   method root x = x
 
-  (* OCaml can't type-check this method yet, so we use magic*)
   method! path_resolved : Path.Resolved.t -> Path.Resolved.t =
     fun p ->
       let matches id' =
