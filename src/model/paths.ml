@@ -1033,7 +1033,7 @@ module Path = struct
   end
 
   let module_of_t : t -> Module.t = function
-    | `Resolved (`Identifier (#Identifier.Module.t))
+    | `Resolved (`Identifier (#Paths_types.Identifier.path_module))
     | `Resolved (#Paths_types.Resolved_path.module_no_id)
     | `Root _
     | `Forward _
@@ -1042,19 +1042,19 @@ module Path = struct
     | _ -> assert false
 
   let module_type_of_t : t -> ModuleType.t = function
-    | `Resolved (`Identifier (#Identifier.ModuleType.t))
+    | `Resolved (`Identifier (#Paths_types.Identifier.path_module_type))
     | `Resolved (#Paths_types.Resolved_path.module_type_no_id)
     | `Dot (_,_) as x -> x
     | _ -> assert false
 
   let type_of_t : t -> Type.t = function
-    | `Resolved (`Identifier (#Identifier.Type.t))
+    | `Resolved (`Identifier (#Paths_types.Identifier.path_type))
     | `Resolved (#Paths_types.Resolved_path.type_no_id)
     | `Dot (_,_) as x -> x
     | _ -> assert false
 
   let class_type_of_t : t -> ClassType.t = function
-    | `Resolved (`Identifier (#Identifier.ClassType.t))
+    | `Resolved (`Identifier (#Paths_types.Identifier.path_class_type))
     | `Resolved (#Paths_types.Resolved_path.class_type_no_id)
     | `Dot (_,_) as x -> x
     | _ -> assert false
