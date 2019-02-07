@@ -16,6 +16,11 @@ open Result
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+let dump_sexp unit filename =
+  let sexp = Odoc__print.Print.Lang.sexp_of_compilation_unit_t unit in
+  let oc = open_out (Fs.File.to_string filename) in
+  output_string oc (Sexplib.Sexp.to_string_hum sexp);
+  close_out oc
 
 
 let resolve_and_substitute ~env ~output input_file read_file =
@@ -24,6 +29,8 @@ let resolve_and_substitute ~env ~output input_file read_file =
   | Error e -> failwith (Model.Error.to_string e)
   | Ok unit ->
     let unit = Xref.Lookup.lookup unit in
+    let f2 = Fs.File.set_ext "sexp1" input_file in
+    dump_sexp unit f2;
     if not unit.Model.Lang.Compilation_unit.interface then (
       Printf.eprintf "WARNING: not processing the \"interface\" file.%s\n%!"
         (if not (Filename.check_suffix filename "cmt") then "" (* ? *)
@@ -33,6 +40,9 @@ let resolve_and_substitute ~env ~output input_file read_file =
     );
     let resolve_env = Env.build env (`Unit unit) in
     let resolved = Xref.resolve (Env.resolver resolve_env) unit in
+    let f2 = Fs.File.set_ext "sexp_resolved" input_file in
+    dump_sexp unit f2;
+
     (* [expand unit] fetches [unit] from [env] to get the expansion of local, previously
        defined, elements. We'd rather it got back the resolved bit so we rebuild an
        environment with the resolved unit.
@@ -40,6 +50,8 @@ let resolve_and_substitute ~env ~output input_file read_file =
        working on. *)
     let expand_env = Env.build env (`Unit resolved) in
     let expanded = Xref.expand (Env.expander expand_env) resolved in
+    let f2 = Fs.File.set_ext "sexp_expanded" input_file in
+    dump_sexp unit f2;
     Compilation_unit.save output expanded
 
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =

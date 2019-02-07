@@ -10,6 +10,7 @@
   odoc__loader
   odoc__model
   odoc__xref
+  odoc__print
   tyxml
   unix)
  (flags (:standard -open Odoc__alias)))
