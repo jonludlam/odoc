@@ -1174,19 +1174,6 @@ module Fragment = struct
         | Branch(base, m) -> Branch(base, `Module(m, name))
 
 
-    (* XXX is this needed? *)
-    (*    let rec parent_identifier : Identifier.Signature.t -> Paths_types.Resolved_fragment.signature -> Identifier.Signature.t =
-          fun root -> function
-            | `Root -> root
-            | `Subst(sub, _) ->
-              let p = Path.Resolved.ModuleType.identifier sub in
-              (p : Identifier.Path.ModuleType.t :> Identifier.Signature.t)
-            | `SubstAlias(sub, _) -> 
-              let p = Path.Resolved.Module.identifier sub in
-              (p : Identifier.Path.Module.t :> Identifier.Signature.t)
-            | `Module(m, n) -> `Module (parent_identifier root m, n) *)
-
-
     module Signature =
     struct
       type t = Paths_types.Resolved_fragment.signature
@@ -1716,36 +1703,6 @@ module Reference = struct
       | `Class(sg, s) -> `Class(parent_signature_identifier sg, s)
       | `ClassType(sg, s) -> `ClassType(parent_signature_identifier sg, s)
 
-
-(*
-
-    let rec identifier: type k. k t -> k Identifier.t = function
-      | Identifier id -> id
-      | SubstAlias(_, p) -> identifier (open_module p)
-      | Module(s, n) -> Module(parent_signature_identifier s, n)
-      | Canonical(_, Types.Reference.Resolved p) -> begin
-          match identifier p with
-          | Root _ | Module _ | Argument _ as x -> x
-        end
-      | Canonical(p, _) -> begin
-          match identifier p with
-          | Root _ | Module _ | Argument _ as x -> x
-        end
-      | ModuleType(s, n) -> ModuleType(parent_signature_identifier s, n)
-      | Type(s, n) -> Type(parent_signature_identifier s, n)
-      | Constructor(s, n) -> Constructor(parent_type_identifier s, n)
-      | Field(s, n) -> Field(parent_identifier s, n)
-      | Extension(s, n) -> Extension(parent_signature_identifier s, n)
-      | Exception(s, n) -> Exception(parent_signature_identifier s, n)
-      | Value(s, n) -> Value(parent_signature_identifier s, n)
-      | Class(s, n) -> Class(parent_signature_identifier s, n)
-      | ClassType(s, n) -> ClassType(parent_signature_identifier s, n)
-      | Method(s, n) -> Method(parent_class_signature_identifier s, n)
-      | InstanceVariable(s, n) ->
-        InstanceVariable(parent_class_signature_identifier s, n)
-      | Label(s, n) -> Label (label_parent_identifier s, n)
-
-*)
 
     type mod_rebase_result =
       | MStop of Paths_types.Resolved_reference.module_
@@ -2565,74 +2522,6 @@ module Reference = struct
       | _ -> assert false
 
   end
-
-(*
-  let module_ p name =
-    match p with
-    | `Resolved p -> `Resolved (`Module(p, name))
-    | p -> `Module(p, name)
-
-  let module_type p name =
-    match p with
-    | `Resolved p -> `Resolved (`ModuleType(p, name))
-    | p -> `ModuleType(p, name)
-
-  let type_ p name =
-    match p with
-    | `Resolved p -> `Resolved (`Type(p, name))
-    | p -> `Type(p, name)
-
-  let constructor p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Constructor(p, arg))
-    | p -> `Constructor(p, arg)
-
-  let field p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Field(p, arg))
-    | p -> `Field(p, arg)
-
-  let extension p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Extension(p, arg))
-    | p -> `Extension(p, arg)
-
-  let exception_ p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Exception(p, arg))
-    | p -> `Exception(p, arg)
-
-  let value p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Value(p, arg))
-    | p -> `Value(p, arg)
-
-  let class_ p name =
-    match p with
-    | `Resolved p -> `Resolved (`Class(p, name))
-    | p -> `Class(p, name)
-
-  let class_type p name =
-    match p with
-    | `Resolved p -> `Resolved (`ClassType(p, name))
-    | p -> `ClassType(p, name)
-
-  let method_ p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Method(p, arg))
-    | p -> `Method(p, arg)
-
-  let instance_variable p arg =
-    match p with
-    | `Resolved p -> `Resolved (`InstanceVariable(p, arg))
-    | p -> `InstanceVariable(p, arg)
-
-  let label p arg =
-    match p with
-    | `Resolved p -> `Resolved (`Label(p, arg))
-    | p -> `Label(p, arg)
-
-*)
   type t = Paths_types.Reference.any
 
   let equal : t -> t -> bool = equal
