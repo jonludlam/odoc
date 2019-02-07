@@ -9,7 +9,7 @@ struct
     | `Module of signature * ModuleName.t
     | `Argument of signature * int * ArgumentName.t
     | `ModuleType of signature * ModuleTypeName.t
-  ] 
+  ]
 
   type class_signature = [
     | `Class of signature * ClassName.t
@@ -103,7 +103,7 @@ struct
   type page = [
     | `Page of Root.t * PageName.t
   ]
-  
+
   type any = [
     | signature
     | class_signature
@@ -398,7 +398,7 @@ sig
     | tag_field
     | tag_extension
     | tag_exception
-    | tag_value 
+    | tag_value
     | tag_class
     | tag_class_type
     | tag_method
@@ -615,51 +615,74 @@ end = Reference
 and Resolved_reference :
 sig
 
-  type signature = [
-    | `Identifier of Identifier.signature
+  (* Note - many of these are effectively unions of previous types,
+    but they are declared here explicitly because OCaml isn't yet
+    smart enough to accept the more natural expression of this. Hence
+    we define here all those types that ever appear on the right hand
+    side of the constructors and then below we redefine many with
+    the actual hierarchy made more explicit. *)
+  type datatype = [
+    | `Identifier of Identifier.datatype
+
+    | `Type of signature * TypeName.t
+  ]
+
+  and module_ = [
+    | `Identifier of Identifier.module_
+
     | `SubstAlias of Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t 
+    | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_
+  ]
+
+  (* Signature is [ module | datatype] *)
+  and signature = [
+    | `Identifier of Identifier.signature
+
+    | `SubstAlias of Resolved_path.module_ * module_
+    | `Module of signature * ModuleName.t
+    | `Canonical of module_ * Reference.module_
+
     | `ModuleType of signature * ModuleTypeName.t
   ]
 
   and class_signature = [
     | `Identifier of Identifier.class_signature
+
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t
   ]
 
-  and datatype = [
-    | `Identifier of Identifier.datatype
-    | `Type of signature * TypeName.t 
-  ]
-
+  (* parent is [ signature | class_signature ] *)
   and parent = [
     | `Identifier of Identifier.parent
+
     | `SubstAlias of Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t 
+    | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_
+
     | `ModuleType of signature * ModuleTypeName.t
+
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t
-    | `Type of signature * TypeName.t 
+
+    | `Type of signature * TypeName.t
   ]
 
-  and module_ = [
-    | `Identifier of Identifier.module_
-    | `SubstAlias of Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t 
-    | `Canonical of module_ * Reference.module_
-  ]
-
+  (* The only difference between parent and label_parent
+     is that the Identifier allows more types *)
   and label_parent = [
     | `Identifier of Identifier.label_parent
+
     | `SubstAlias of Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t 
+    | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_
+
     | `ModuleType of signature * ModuleTypeName.t
+
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t
+
     | `Type of signature * TypeName.t
   ]
 
@@ -684,6 +707,7 @@ sig
     | s_module
     | s_canonical
   ]
+
   type signature_no_id = [
     | module_no_id
     | s_module_type
@@ -701,7 +725,7 @@ sig
   type parent_no_id = [
     | signature_no_id
     | class_signature_no_id
-    | datatype_no_id  
+    | datatype_no_id
   ]
 
   type module_type = [

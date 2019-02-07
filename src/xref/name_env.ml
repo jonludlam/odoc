@@ -30,7 +30,7 @@ type constructor_ident = Model.Paths_types.Identifier.reference_constructor
 type extension_ident = Model.Paths_types.Identifier.reference_extension
 
 type class_type_ident = Model.Paths_types.Identifier.reference_class_type
- 
+
 type parent_ident = [Model.Paths_types.Identifier.path_any | Model.Paths_types.Identifier.page]
 
 type signature_ident = [Model.Paths_types.Identifier.reference_module | Model.Paths_types.Identifier.reference_module_type]
