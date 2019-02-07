@@ -41,7 +41,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
     let resolve_env = Env.build env (`Unit unit) in
     let resolved = Xref.resolve (Env.resolver resolve_env) unit in
     let f2 = Fs.File.set_ext "sexp_resolved" input_file in
-    dump_sexp unit f2;
+    dump_sexp resolved f2;
 
     (* [expand unit] fetches [unit] from [env] to get the expansion of local, previously
        defined, elements. We'd rather it got back the resolved bit so we rebuild an
@@ -51,7 +51,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
     let expand_env = Env.build env (`Unit resolved) in
     let expanded = Xref.expand (Env.expander expand_env) resolved in
     let f2 = Fs.File.set_ext "sexp_expanded" input_file in
-    dump_sexp unit f2;
+    dump_sexp expanded f2;
     Compilation_unit.save output expanded
 
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
