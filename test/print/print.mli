@@ -1,6 +1,9 @@
 module Lang : sig
 
   val sexp_of_compilation_unit_t : Model.Lang.Compilation_unit.t -> Sexplib.Sexp.t 
+
+  val sexp_of_page_t : Model.Lang.Page.t -> Sexplib.Sexp.t 
+
 end
 
 val parser_output :

@@ -22,6 +22,11 @@ let dump_sexp unit filename =
   output_string oc (Sexplib.Sexp.to_string_hum sexp);
   close_out oc
 
+let dump_sexp_page page filename =
+  let sexp = Odoc__print.Print.Lang.sexp_of_page_t page in
+  let oc = open_out (Fs.File.to_string filename) in
+  output_string oc (Sexplib.Sexp.to_string_hum sexp);
+  close_out oc
 
 let resolve_and_substitute ~env ~output input_file read_file =
   let filename = Fs.File.to_string input_file in
@@ -112,8 +117,15 @@ let mld ~env ~package ~output input =
       | Ok `Stop -> [] (* TODO: Error? *)
     in
     (* This is a mess. *)
+
     let page = Model.Lang.Page.{ name; content; digest } in
+    dump_sexp_page page (Fs.File.set_ext "0.initial.sexp" input);
+
     let page = Xref.Lookup.lookup_page page in
+    dump_sexp_page page (Fs.File.set_ext "1.post_lookup.sexp" input);
+
     let env = Env.build env (`Page page) in
     let resolved = Xref.resolve_page (Env.resolver env) page in
+    dump_sexp_page page (Fs.File.set_ext "2.post_resolve.sexp" input);
+
     Page.save output resolved

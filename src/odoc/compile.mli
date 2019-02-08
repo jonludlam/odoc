@@ -15,6 +15,7 @@
  *)
 
 val dump_sexp : Compilation_unit.t -> Fs.File.t -> unit
+val dump_sexp_page : Page.t -> Fs.File.t -> unit
 
 (** Produces .odoc files out of .cm{i,t,ti} or .mld files. *)
 

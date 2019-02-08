@@ -796,10 +796,14 @@ struct
     | Poly (strs, t) -> List [Atom "Poly"; list Sexplib.Std.sexp_of_string strs; sexp_of_type_expr_t t]
     | Package p -> List [Atom "Package"; sexp_of_type_expr_package_t p]
 
+  let sexp_of_digest d =
+    let hex = String.to_seq d |> Seq.map (fun c -> Printf.sprintf "%x" (Char.code c)) |> Seq.fold_left (fun xs s -> s::xs) [] |> String.concat "" in
+    Sexplib.Std.sexp_of_string ("0x" ^ hex)
+
   let sexp_of_compilation_unit_import_t =
     let open Compilation_unit.Import in
     function
-    | Unresolved (str, digest_opt) -> List [Atom "Unresolved"; Sexplib.Std.sexp_of_string str; opt Sexplib.Std.sexp_of_string digest_opt]
+    | Unresolved (str, digest_opt) -> List [Atom "Unresolved"; Sexplib.Std.sexp_of_string str; opt sexp_of_digest digest_opt]
     | Resolved root -> List [Atom "Resolved"; Root_to_sexp.root root]
   
   let sexp_of_compilation_unit_source_t t =
@@ -807,7 +811,7 @@ struct
     List [
       List [Atom "file"; Sexplib.Std.sexp_of_string t.file];
       List [Atom "build_dir"; Sexplib.Std.sexp_of_string t.build_dir];
-      List [Atom "digest"; Sexplib.Std.sexp_of_string t.digest];
+      List [Atom "digest"; sexp_of_digest t.digest];
     ]
   
   let sexp_of_compilation_unit_packed_item i =
@@ -833,13 +837,23 @@ struct
     List [
       List [Atom "id"; Identifier_to_sexp.identifier (c.id :> Identifier.t)];
       List [Atom "doc"; Comment_to_sexp.comment c.doc];
-      List [Atom "digest"; Sexplib.Std.sexp_of_string c.digest];
+      List [Atom "digest"; sexp_of_digest c.digest];
       List [Atom "imports"; list sexp_of_compilation_unit_import_t c.imports];
       List [Atom "source"; opt sexp_of_compilation_unit_source_t c.source];
       List [Atom "interface"; Sexplib.Std.sexp_of_bool c.interface];
       List [Atom "hidden"; Sexplib.Std.sexp_of_bool c.hidden];
       List [Atom "content"; sexp_of_compilation_unit_content c.content];
       List [Atom "expansion"; opt sexp_of_signature_t c.expansion];
+    ]
+
+  let sexp_of_page_t p =
+    let open Page in
+    let open Model.Paths in
+    List [
+      List [Atom "name"; Identifier_to_sexp.identifier (p.name :> Identifier.t)];
+      List [Atom "content"; Comment_to_sexp.comment p.content];
+      List [Atom "digest"; sexp_of_digest p.digest]
+
     ]
 end
 

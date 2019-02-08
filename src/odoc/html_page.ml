@@ -32,9 +32,10 @@ let from_odoc ~env ?(syntax=Html.Tree.OCaml) ?theme_uri ~output:root_dir input =
   | Page page_name ->
     let page = Page.load input in
     let odoctree =
-      let resolve_env = Env.build env (`Page page) in
+      let resolve_env = Env.build env (`Page page) in 
       Xref.resolve_page (Env.resolver resolve_env) page
     in
+    Compile.dump_sexp_page page (Fs.File.set_ext "3.post_resolve.sexp" input);
     let pkg_name = root.package in
     let pages = to_html_tree_page ?theme_uri ~syntax odoctree in
     let pkg_dir = Fs.Directory.reach_from ~dir:root_dir pkg_name in
