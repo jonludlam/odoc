@@ -14,6 +14,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+val dump_sexp : Compilation_unit.t -> Fs.File.t -> unit
+
 (** Produces .odoc files out of .cm{i,t,ti} or .mld files. *)
 
 val cmti :

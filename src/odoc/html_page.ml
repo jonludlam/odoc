@@ -54,14 +54,20 @@ let from_odoc ~env ?(syntax=Html.Tree.OCaml) ?theme_uri ~output:root_dir input =
          https://github.com/ocaml/odoc/issues/99. *)
     let unit = Compilation_unit.load input in
     let unit = Xref.Lookup.lookup unit in
+    Compile.dump_sexp unit (Fs.File.set_ext "4.post_lookup.sexp" input); 
     let odoctree =
       (* See comment in compile for explanation regarding the env duplication. *)
       let resolve_env = Env.build env (`Unit unit) in
       let resolved = Xref.resolve (Env.resolver resolve_env) unit in
+      Compile.dump_sexp resolved (Fs.File.set_ext "5.post_resolve.sexp" input); 
       let expand_env = Env.build env (`Unit resolved) in
-      Xref.expand (Env.expander expand_env) resolved
-      |> Xref.Lookup.lookup
-      |> Xref.resolve (Env.resolver expand_env) (* Yes, again. *)
+      let expanded = Xref.expand (Env.expander expand_env) resolved in
+      Compile.dump_sexp expanded (Fs.File.set_ext "6.post_expand.sexp" input); 
+      let looked_up = Xref.Lookup.lookup expanded in
+      Compile.dump_sexp looked_up (Fs.File.set_ext "7.post_lookup.sexp" input); 
+      let resolved = Xref.resolve (Env.resolver expand_env) looked_up in  (* Yes, again. *)
+      Compile.dump_sexp looked_up (Fs.File.set_ext "8.post_resolved.sexp" input);
+      resolved
     in
     let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package

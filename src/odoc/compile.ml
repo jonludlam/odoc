@@ -29,7 +29,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
   | Error e -> failwith (Model.Error.to_string e)
   | Ok unit ->
     let unit = Xref.Lookup.lookup unit in
-    let f2 = Fs.File.set_ext "sexp1" input_file in
+    let f2 = Fs.File.set_ext "1.post_lookup.sexp" input_file in
     dump_sexp unit f2;
     if not unit.Model.Lang.Compilation_unit.interface then (
       Printf.eprintf "WARNING: not processing the \"interface\" file.%s\n%!"
@@ -40,7 +40,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
     );
     let resolve_env = Env.build env (`Unit unit) in
     let resolved = Xref.resolve (Env.resolver resolve_env) unit in
-    let f2 = Fs.File.set_ext "sexp_resolved" input_file in
+    let f2 = Fs.File.set_ext "2.post_resolve.sexp" input_file in
     dump_sexp resolved f2;
 
     (* [expand unit] fetches [unit] from [env] to get the expansion of local, previously
@@ -50,7 +50,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
        working on. *)
     let expand_env = Env.build env (`Unit resolved) in
     let expanded = Xref.expand (Env.expander expand_env) resolved in
-    let f2 = Fs.File.set_ext "sexp_expanded" input_file in
+    let f2 = Fs.File.set_ext "3.post_expand.sexp" input_file in
     dump_sexp expanded f2;
     Compilation_unit.save output expanded
 
