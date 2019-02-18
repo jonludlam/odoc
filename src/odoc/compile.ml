@@ -33,7 +33,8 @@ let resolve_and_substitute ~env ~output input_file read_file =
   match read_file ~filename:filename with
   | Error e -> failwith (Model.Error.to_string e)
   | Ok unit ->
-    dump_sexp unit (Fs.File.set_ext "0.before.sexp" input_file);
+    let f1 = Fs.File.set_ext "0.before.sexp" input_file in
+    dump_sexp unit f1;
     let unit = Xref.Lookup.lookup unit in
     let f2 = Fs.File.set_ext "1.post_lookup.sexp" input_file in
     dump_sexp unit f2;
