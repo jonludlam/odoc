@@ -1151,7 +1151,7 @@ let () =
           ~text:parser_input
         |> fun parser_output ->
           let buffer = Buffer.create 1024 in
-          Print.parser_output
+          Odoc__print.Print.parser_output
             (Format.formatter_of_buffer buffer) parser_output;
           Buffer.contents buffer
       in
