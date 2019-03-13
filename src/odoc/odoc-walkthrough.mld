@@ -1,0 +1,151 @@
+{0:top Resolving walkthough}
+
+{1:resolving1 Resolving 1}
+
+Let's start with a simple example. We'll resolve the path in the following
+example:
+
+{[
+module M : sig module type S = sig type t end module T : S end
+
+type v = M.T.t
+]}
+
+We're interested here in how [type v] gets resolved. 
+
+When this is compiled, we get a cmti containing a typedtree, which can be seen by dumping the typedtree during
+compilation via the [-dtypedtree] flag:
+
+{v
+[
+  signature_item 
+    Tsig_module "M/1002"
+    module_type 
+      Tmty_signature
+      [
+        signature_item 
+          Tsig_modtype "S/1004"
+            module_type 
+              Tmty_signature
+              [
+                signature_item 
+                  Tsig_type Rec
+                  [
+                    type_declaration t/1003 
+                  ]
+              ]
+        signature_item 
+          Tsig_module "T/1005"
+          module_type 
+            Tmty_ident "S/1004"
+      ]
+  signature_item 
+    Tsig_type Rec
+    [
+      type_declaration v/1006 
+        ptype_manifest =
+          Some
+            core_type 
+              Ttyp_constr "M/1002.T.t"
+              []
+    ]
+] 
+v}
+
+where I have omitted some irrelevant bits. So we can see from this that module M is [M/1002] and within that, [S] is [S/1003] and [T]
+ is [T/1005]. Our type [v]
+that we're interested in has a manifest of core_type [Ttyp_constr "M/1002.T.t"] - so we can see that only the outer
+[M] has been exactly specified.
+
+Odoc reads that in the {!module:Odoc__loader__Cmti} module {{:https://github.com/ocaml/odoc/blob/e714a19c715a31a97bcf4fca5339bc1f69d1d392/src/loader/cmti.ml#L74-L77}here},
+creating a value:
+
+{[
+    let open Odoc__model in
+    let open Lang in
+    let open Signature in
+    let open Names in
+    let root_id : Paths.Identifier.Signature.t = `Root (root, UnitName.of_string "X") in
+    Type (Ordinary, TypeDecl.{
+        id = `Type (root_id, TypeName.of_string "t");
+        doc = [];
+        equation = Equation.{
+            params = [];
+            private_ = false;
+            manifest = Some TypeExpr.(
+                Constr (`Dot (`Dot (`Resolved (`Identifier (`Module (root_id, ModuleName.of_string "M"))), "T"),"t"),[]));
+            constraints = [];
+        };
+        representation = None;
+    })
+]}
+
+The important bit here is the [Path] in the [Constr] constructor:
+
+{[
+    Constr (`Dot (`Dot (`Resolved (`Identifier (`Module (root_id, ModuleName.of_string "M"))), "T"),"t"),[]));
+]}
+
+We can see here that the path to [t] is only partially resolved - the loader has identified that the
+fully specified [M/1002] is the [M/1002] earlier in the file, so it marks that part of the
+path as resolved. Let's see how the full
+resolution is accomplished.
+
+Because we have already done the resolution of the toplevel [M] module we don't have to add the [module M] definition into any 
+environment before we get to resolving the type expression path. So the first interesting
+point we get to in the code is actual in resolve.ml in the function to {{:https://github.com/ocaml/odoc/blob/e714a19c715a31a97bcf4fca5339bc1f69d1d392/src/xref/resolve.ml#L409}resolve the type path}. 
+
+The code is as follows:
+
+{[
+and resolve_type_path ident tbl (p : Path.Type.t) =
+  match p with
+  | `Resolved r ->
+    let r' = resolve_resolved_type_path ident tbl r in
+    if r != r' then `Resolved r' else p
+  | `Dot(p, name) -> begin
+      match resolve_parent_module_path ident tbl p with
+      | Unresolved p -> `Dot(p, name)
+      | Resolved(p, parent) ->
+    ...
+]}
+
+We've got a [`Dot] so we call into {!value:resolve_parent_module_path} to resolve the [T]:
+
+{[
+and resolve_parent_module_path ident tbl (p : Path.Module.t) : parent_module_path =
+    match p with
+...
+    | `Resolved r -> Resolved(r, CTbl.resolved_module_path tbl r)
+    | `Dot(pr, name) -> begin
+        match resolve_parent_module_path ident tbl pr with
+        | Unresolved pr -> Unresolved(`Dot(pr, name))
+        | Resolved(pr, parent) ->
+            let resolved pr (`Module md : Parent.module_) =
+              let pr = `Module (pr, ModuleName.of_string name) in
+              let pr = if Sig.get_hidden md then `Hidden pr else pr in
+              let pr =
+                match Sig.get_canonical md with
+                | None -> pr
+                | Some (p, _) ->
+                  resolve_canonical_path_module ident tbl (`Canonical(pr, p))
+              in
+              (Resolved(pr, md) : parent_module_path)
+            in
+            let unresolved pr =
+              (Unresolved(`Dot(`Resolved pr, name)) : parent_module_path)
+            in
+              find_with_path_substs
+                (Sig.find_parent_module name)
+                resolved unresolved ident tbl pr parent
+        end
+]}
+
+Again, we've got a [`Dot] so that invokes the recursive call, and now we've reached the
+[`Resolved] part of the path; and we now call into {!value:Odoc__xref__Component_table.resolved_module_path} to find the
+[Sig.t] that represents the parent module. 
+
+
+
+
+

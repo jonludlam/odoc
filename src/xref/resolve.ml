@@ -66,6 +66,7 @@ let rec find_with_path_substs
     try
       resolved pr (find parent)
     with Not_found ->
+      Printf.fprintf stderr "find_with_path_substs: Not_found\n%!";
       try
         match Components.Sig.find_parent_subst parent with
         | Components.Parent.Subst subp -> begin
@@ -150,6 +151,7 @@ and resolve_parent_module_path ident tbl (p : Path.Module.t) : parent_module_pat
         match resolve_parent_module_path ident tbl pr with
         | Unresolved pr -> Unresolved(`Dot(pr, name))
         | Resolved(pr, parent) ->
+            Printf.fprintf stderr "back here...\n%!";
             let resolved pr (`Module md : Components.Parent.module_) =
               let pr = `Module (pr, ModuleName.of_string name) in
               let pr = if Components.Sig.get_hidden md then `Hidden pr else pr in
@@ -407,6 +409,7 @@ and resolve_path_module_type ident tbl (p : Path.ModuleType.t) =
     end
 
 and resolve_type_path ident tbl (p : Path.Type.t) =
+  Printf.fprintf stderr "resolve_type_path\n%!";
   match p with
   | `Resolved r ->
     let r' = resolve_resolved_type_path ident tbl r in

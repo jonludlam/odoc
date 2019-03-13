@@ -1,0 +1,6 @@
+(library
+ (name walkthrough)
+ (libraries alcotest bos fpath odoc__odoc markup odoc__loader odoc__model odoc__parser odoc__xref
+ odoc__print)
+ (modules_without_implementation test1)
+ (flags (:standard -open Odoc__alias)))

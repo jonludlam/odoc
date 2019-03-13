@@ -247,6 +247,7 @@ let add_structure_tree_items parent str env =
       str.str_items env
 
 let find_module env id =
+  Printf.fprintf stderr "find_module: "; Ident.print Format.err_formatter id; Printf.fprintf stderr "\n%!";
   Ident.find_same id env.modules
 
 let find_module_type env id =
