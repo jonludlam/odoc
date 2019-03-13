@@ -18,11 +18,14 @@ git submodule init
 git submodule update
 dune build @doc
 
+cd /home/opam
+git clone https://github.com/jonludlam/odoc-test-output.git
+
 # tidy
 apt install tidy
 cd /tmp/build/odoc-test/_build/default/_doc/_html
-rsync -avz --delete . ~/odoc-test-output/
-cd ~/odoc-test-output
+rsync -avz --delete . /home/opam/odoc-test-output/
+cd /home/opam/odoc-test-output
 for i in `find . -name "*.html"`; do tidy -m $i; done
 git add .
 git commit -m "Automatic update"
