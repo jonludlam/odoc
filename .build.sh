@@ -4,7 +4,7 @@ set -ex
 # Install odoc
 opam depext -y odoc
 cd /home/opam
-opam pin add odoc odoc -k git -y
+opam pin add odoc /drone/src -k git -y
 
 env
 
