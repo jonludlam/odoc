@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 # Install odoc
 opam depext -y odoc
@@ -22,14 +23,19 @@ cd /home/opam
 git clone https://github.com/jonludlam/odoc-test-output.git
 
 # tidy
-apt install tidy
+sudo apt install -y tidy
 cd /tmp/build/odoc-test/_build/default/_doc/_html
-rsync -avz --delete . /home/opam/odoc-test-output/
+rsync -a --delete --exclude .git --exclude README.md . /home/opam/odoc-test-output/
 cd /home/opam/odoc-test-output
-for i in `find . -name "*.html"`; do tidy -m $i; done
+for i in `find . -name "*.html"`
+do
+	tidy -m $i &> /dev/null || true
+done
+
+echo OK got here
+
 git add .
 git commit -m "Automatic update"
-git show
 
 if [ "${SSH_KEY}" = "" ]; then
   echo no ssh key secret defined, so not trying to push
@@ -41,5 +47,5 @@ else
   ssh-keyscan -H github.com >> ~/.ssh/known_hosts
   git remote set-url origin git@github.com:jonludlam/odoc-test-output
   git push origin master
-
+fi
 
