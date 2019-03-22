@@ -31,6 +31,9 @@ let build_resolver = Resolve.build_resolver
 
 let resolve = Resolve.resolve
 
+let tbl = Resolve.tbl
+
+
 let resolve_page = Resolve.resolve_page
 
 type expander = Expand.t

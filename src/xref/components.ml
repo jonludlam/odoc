@@ -157,7 +157,45 @@ let comment_labels acc comment =
 
 module rec Sig : sig
 
-  type t
+  type term =
+    | Path of Path.ModuleType.t * bool
+    | Alias of Path.Module.t * bool
+    | WithModule of expr * Fragment.Module.t * t
+    | WithModuleSubst of expr * Fragment.Module.t
+    | WithTypeSubst of expr * Fragment.Type.t
+
+  and expr =
+    { term : term;
+      expansion : t Lazy.t; }
+
+  and functor_ =
+    { id : Identifier.Module.t;
+      arg : t;
+      res : t;
+      cache : (Path.Module.t, t) tbl; }
+
+  and signature =
+    { modules: t SMap.t;
+      module_types: t SMap.t;
+      class_signatures: ClassSig.t SMap.t;
+      types: Element.signature_type SMap.t;
+      parents: Parent.any LMap.t;
+      elements: Element.signature LMap.t;
+      section_titles: Model.Comment.link_content SMap.t; }
+
+  and body =
+    | Expr of expr
+    | Sig of signature Lazy.t
+    | Functor of functor_
+    | Generative of t
+    | Abstract
+    | Unresolved
+
+  and t =
+    { canonical : (Path.Module.t * Reference.Module.t) option;
+      hidden : bool;
+      body : body }
+
 
   val set_canonical : t -> (Path.Module.t * Reference.Module.t) option -> t
 
@@ -226,8 +264,6 @@ module rec Sig : sig
   val lookup_class_type : string -> t -> ClassSig.t
 
   val lookup_datatype : string -> t -> Datatype.t
-
-  type signature
 
   val empty : signature
 

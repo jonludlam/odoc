@@ -2320,11 +2320,15 @@ class resolver ?equal ?hash lookup_unit fetch_unit lookup_page fetch_page =
     method resolve_page page =
       let this = {< where_am_i = None >} in
         this#page page
+    
+    method tbl = tbl
 end
 
 let build_resolver ?equal ?hash lookup_unit fetch_unit lookup_page fetch_page =
   new resolver ?equal ?hash lookup_unit fetch_unit lookup_page fetch_page
 
 let resolve r u = r#resolve_unit u
+
+let tbl r = r#tbl
 
 let resolve_page r p = r#resolve_page p

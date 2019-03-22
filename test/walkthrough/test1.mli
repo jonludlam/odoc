@@ -2,7 +2,7 @@
 (*type t = int*)
 
 (*module F ( X : sig module type S module T : S end ) : sig module N : X.S end*)
-
+(*
 module type S = sig
     type sx
 end
@@ -18,7 +18,7 @@ module F (IS : S) (IT : T) : sig
 
     type myit = IT.st
 end
-
+*)
 module M : sig
     module type S = sig
         type t

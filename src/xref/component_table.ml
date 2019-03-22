@@ -128,12 +128,16 @@ let create_local t base =
 let add_local_module_identifier (local : local) id sg =
     match local.local with
     | None -> ()
-    | Some tbl -> tbl.add (id : Identifier.Module.t :> Identifier.Signature.t) sg
+    | Some tbl ->
+      Printf.fprintf stderr "Adding identifier: %s\n%!" (ident_to_string (id :> Identifier.t));
+      tbl.add (id : Identifier.Module.t :> Identifier.Signature.t) sg
 
 let add_local_module_type_identifier (local : local) id sg =
     match local.local with
     | None -> ()
-    | Some tbl -> tbl.add (id : Identifier.ModuleType.t :> Identifier.Signature.t) sg
+    | Some tbl ->
+      Printf.fprintf stderr "Adding identifier: %s\n%!" (ident_to_string (id :> Identifier.t));
+      tbl.add (id : Identifier.ModuleType.t :> Identifier.Signature.t) sg
 
 let add_local_modules (local : local) id mds =
     match local.local with
@@ -491,6 +495,7 @@ and signature_items local =
     | Module (_, md) :: rest ->
         let open Module in
         let name = Identifier.name md.id in
+        Printf.fprintf stderr "Found a module: %s\n" name;
         let decl = module_decl local md.type_ in
         let decl = set_canonical decl md.canonical in
         let decl = set_hidden decl md.hidden in
@@ -547,7 +552,6 @@ and signature_items local =
         let name = Identifier.name ev.id in
           add_element name `Value sg
     | Class (_, cl)::rest ->
-        let open Class in
         let sg = signature_items local rest in
         let sg = add_documentation cl.doc sg in
         let name = Identifier.name cl.id in
@@ -605,7 +609,6 @@ and module_type_expr local expr =
     | TypeOf decl -> module_decl local decl
 
 and module_decl local decl =
-  Printf.fprintf stderr "Ctbl.module_decl\n%!"; 
   let open Sig in
   let open Module in
     match decl with
