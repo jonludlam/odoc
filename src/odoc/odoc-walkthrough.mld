@@ -1,9 +1,22 @@
 {0:top Resolving walkthough}
 
-{1:resolving1 Resolving 1}
+Resolution is the process of making sure every path, reference and fragment is associated with a specific destination.
+For example, if we have a type declaration
 
-Let's start with a simple example. We'll resolve the path in the following
-example:
+{[
+type v = M.T.v
+]}
+
+we would like to decide exactly what the path [M.T.v] is pointing to. The OCaml compiler does some of this work for us
+but not quite enough.
+
+The process of resolution is defined as a transformation on the internal representation of the typed syntax tree that
+Odoc declares in the {{!module:Odoc__model.Lang}Lang} module. This document examines this process by focussing on a
+small concrete example. There are 3 main phases:
+
+{1:loading The Example}
+
+Let's start with the definition of our simple example. We'll resolve the path in the following piece of OCaml code.
 
 {[
 module M : sig module type S = sig type t end module T : S end
@@ -11,7 +24,7 @@ module M : sig module type S = sig type t end module T : S end
 type v = M.T.t
 ]}
 
-We're interested here in how [type v] gets resolved. 
+We're interested here in how [M.T.v] gets resolved. 
 
 When this is compiled, we get a cmti containing a typedtree, which can be seen by dumping the typedtree during
 compilation via the [-dtypedtree] flag:
@@ -55,7 +68,7 @@ v}
 where I have omitted some irrelevant bits. So we can see from this that module M is [M/1002] and within that, [S] is [S/1003] and [T]
  is [T/1005]. Our type [v]
 that we're interested in has a manifest of core_type [Ttyp_constr "M/1002.T.t"] - so we can see that only the outer
-[M] has been exactly specified.
+[M] has been exactly specified by the compiler and we need to do some 
 
 Odoc reads that in the {!module:Odoc__loader__Cmti} module {{:https://github.com/ocaml/odoc/blob/e714a19c715a31a97bcf4fca5339bc1f69d1d392/src/loader/cmti.ml#L74-L77}here},
 creating a value:
@@ -147,6 +160,7 @@ We can see here that the path to [t] is only partially resolved - the loader has
 fully specified [M/1002] is the [M/1002] earlier in the file, so it marks that part of the
 path as resolved. Let's see how the full resolution is accomplished.
 
+{1:mapping Starting the resolution}
 The resolution step is done as a tree transformation on the {!type:Odoc__model.Lang.Compilation_unit.t}.  There is nothing to resolve in the declaration of M, so that ends up being essentially an identity transformation. 
 So the first interesting point we get to is when we're trying to resolve the type defintion which in the code is in resolve.ml in the function to {{:https://github.com/ocaml/odoc/blob/e714a19c715a31a97bcf4fca5339bc1f69d1d392/src/xref/resolve.ml#L409}resolve the type path}.
 
