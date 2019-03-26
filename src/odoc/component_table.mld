@@ -1,0 +1,79 @@
+{1:ctable The Components and Component Table}
+
+A central part of the resolution of paths, fragments and references is the
+{{!module:Odoc__xref__Components}Components} data structure. The purpose of this
+is to build a data structure representing the signatures of modules, from which
+the elements such as modules, module types, datatypes and values can be looked
+up.
+
+The main type is {{!type:Odoc__xref__Components.Sig.t}Sig.t}, which represents
+the signature of a module. The definition is:
+
+{[
+  type term =
+    | Path of Path.ModuleType.t * bool
+    | Alias of Path.Module.t * bool
+    | WithModule of expr * Fragment.Module.t * t
+    | WithModuleSubst of expr * Fragment.Module.t
+    | WithTypeSubst of expr * Fragment.Type.t
+
+  and expr =
+    { term : term;
+      expansion : t Lazy.t; }
+
+  and functor_ =
+    { id : Identifier.Module.t;
+      arg : t;
+      res : t;
+      cache : (Path.Module.t, t) tbl; }
+
+  and signature =
+    { modules: t SMap.t;
+      module_types: t SMap.t;
+      class_signatures: ClassSig.t SMap.t;
+      types: Element.signature_type SMap.t;
+      parents: Parent.any LMap.t;
+      elements: Element.signature LMap.t;
+      section_titles: Model.Comment.link_content SMap.t; }
+
+  and body =
+    | Expr of expr
+    | Sig of signature Lazy.t
+    | Functor of functor_
+    | Generative of t
+    | Abstract
+    | Unresolved
+
+  and t =
+    { canonical : (Path.Module.t * Reference.Module.t) option;
+      hidden : bool;
+      body : body }
+
+]}
+
+For a simple module, a module signature or an entire compilation unit, the 'body' will be a [Sig of signature Lazy.t],
+so we'll concentrate on that for now. First we'll look at the types involved.
+
+- ['a SMap.t] is a [(string, 'a) Hashtbl.t] - a simple lookup table.
+- ['a LMap.t] is a [(string, 'a list) Hashtbl.t] - a lookup table to a list of items. 
+- [ClassSig.t] is itself a Hashtbl of string to [[`Method | `InstanceVariable | `Label of string option]] (if it has been resolved)
+- [Element.signature_type] is [[`Type | `Class | `ClassType]]
+- [Parent.any] is {[
+    [
+    | `Module of Sig.t
+    | `ModuleType of Sig.t
+    | `Datatype of Datatype.t
+    | `Class of ClassSig.t
+    | `ClassType of ClassSig.t
+  ]
+]} 
+- [Element.signature] is {[
+    [
+    | `Module of mod_t| `ModuleType | `Type | `Constructor of string | `Field of string | `Extension
+    | `Exception | `Value | `Class | `ClassType | `Label of string option
+    ]
+]} where mod_t is {[
+    type mod_t =
+        { canonical : (Path.Module.t * Reference.Module.t) option
+        ; hidden : bool }
+]}

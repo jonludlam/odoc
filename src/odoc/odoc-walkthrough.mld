@@ -13,13 +13,22 @@ but not quite enough.
 The process of resolution is defined as a transformation on the internal representation of the typed syntax tree that
 Odoc declares in the {{!module:Odoc__model.Lang}Lang} module. This document examines this process by focussing on a
 small concrete example. There are 3 main phases:
+- {{!section:loading}Loading the cmti file}
+- {{!section:resolving}Mapping the tree}
+- {{!section:components}Loading the components}
 
-{1:loading The Example}
+{1:loading The Example }
 
 Let's start with the definition of our simple example. We'll resolve the path in the following piece of OCaml code.
 
 {[
-module M : sig module type S = sig type t end module T : S end
+module M : sig
+  module type S = sig
+    type t
+  end
+  
+  module T : S
+end
 
 type v = M.T.t
 ]}
@@ -28,7 +37,7 @@ We're interested here in how [M.T.v] gets resolved.
 
 When this is compiled, we get a cmti containing a typedtree, which can be seen by dumping the typedtree during
 compilation via the [-dtypedtree] flag:
-
+qopam
 {v
 [
   signature_item 
@@ -160,7 +169,7 @@ We can see here that the path to [t] is only partially resolved - the loader has
 fully specified [M/1002] is the [M/1002] earlier in the file, so it marks that part of the
 path as resolved. Let's see how the full resolution is accomplished.
 
-{1:mapping Starting the resolution}
+{1:resolving Starting the resolution}
 The resolution step is done as a tree transformation on the {!type:Odoc__model.Lang.Compilation_unit.t}.  There is nothing to resolve in the declaration of M, so that ends up being essentially an identity transformation. 
 So the first interesting point we get to is when we're trying to resolve the type defintion which in the code is in resolve.ml in the function to {{:https://github.com/ocaml/odoc/blob/e714a19c715a31a97bcf4fca5339bc1f69d1d392/src/xref/resolve.ml#L409}resolve the type path}.
 
@@ -211,7 +220,7 @@ and resolve_parent_module_path ident tbl (p : Path.Module.t) : parent_module_pat
 ]}
 
 Again, we've got a [`Dot] so that invokes the recursive call, and now [p] is equal to [`Resolved (`Identifier (`Module (root_id, ModuleName.of_string "M")))], so we've reached
-[`Resolved] part of the path; and we now call into {!value:Odoc__xref__Component_table.resolved_module_path} to find the
+[`Resolved] part of the path; and we now call into {{!value:Odoc__xref__Component_table.resolved_module_path}resolved_module_path} in the {{!module:Odoc__xref__Component_table}Component_table} module to find the
 [Sig.t] that represents the parent module. This {!type:Odoc__xref__Components.Sig.t} is a representation of the module with which 
 we can look up the contents of the module which will help us resolve the [T] we're looking for right now.  The arguments
 to [resolved_module_path] are [tbl] and [r]. [r] is [`Identifier...], and [tbl] is an instance of
@@ -219,8 +228,12 @@ to [resolved_module_path] are [tbl] and [r]. [r] is [`Identifier...], and [tbl] 
 {[
   val tbl = CTbl.create ?equal ?hash lookup_unit fetch_unit lookup_page fetch_page]
 ]}
-This has a hashtbl of {!type:Odoc__model.Root.t} to {!Odoc__xref__Components.Sig.t} which at this point is empty.
+This has a hashtbl of {!type:Odoc__model.Root.t} to {!Odoc__xref__Components.Sig.t} which at this point is empty. Let's examine in
+detail how we obtain this {{!type:Odoc__xref__Components.Sig.t}Sig.t}.
 
+{2:findingM Finding M's Sig.t}
+
+We're now in component_table.ml, looking at the function {!val:Odoc__xref__Component_table.resolved_module_path}.
 The function we call directly is a small wrapper that creates a {!type:Odoc__xref__Component_table.local} that exists for the duration of this
 call:
 {[
