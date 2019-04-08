@@ -1,6 +1,8 @@
 let walkthrough_dir = "_build/default/test/walkthrough/"
 let walkthrough1 = walkthrough_dir ^ ".walkthrough.objs/byte/walkthrough__Test1.cmti"
 
+let walkthrough2 = walkthrough_dir ^ ".walkthrough.objs/byte/walkthrough__Test2.cmti"
+
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   let file_representation : Model.Root.Odoc_file.t =
     Model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
@@ -20,6 +22,12 @@ let resolve unit =
   let result = Xref.resolve resolver unit in
   let tbl = Xref.tbl resolver in
   (result,tbl)
+let expand unit =
+  let env = mkenv () in
+    let expand_env = Odoc.Env.build env (`Unit unit) in
+    let expander = Odoc.Env.expander expand_env in
+    let expanded = Xref.expand expander unit in
+    expanded
 
 let unit_printer fmt unit = 
   Format.fprintf fmt "%s" (Odoc__print__Print.Lang.sexp_of_compilation_unit_t unit |> Sexplib.Sexp.to_string_hum)
