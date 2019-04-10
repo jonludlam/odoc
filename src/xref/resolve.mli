@@ -29,5 +29,7 @@ val build_resolver: ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)
 (** Try to resolve all paths and references within a unit. *)
 val resolve : resolver -> Lang.Compilation_unit.t -> Lang.Compilation_unit.t
 
+val tbl : resolver -> Component_table.t
+
 (** Try to resolve all paths and references within a page. *)
 val resolve_page : resolver -> Lang.Page.t -> Lang.Page.t

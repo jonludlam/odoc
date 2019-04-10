@@ -38,6 +38,8 @@ val build_resolver :
 val resolve :
   resolver -> Model.Lang.Compilation_unit.t -> Model.Lang.Compilation_unit.t
 
+val tbl : resolver -> Component_table.t
+
 val resolve_page : resolver -> Model.Lang.Page.t -> Model.Lang.Page.t
 
 (** {2:expansion Expansion}

@@ -116,6 +116,44 @@ struct
 end
 
 
+module Fragment_to_sexp =
+struct
+  module Fragment = Model.Paths.Fragment
+  module Resolved = Model.Paths.Fragment.Resolved
+
+  let rec fragment : Fragment.t -> sexp = function
+    | `Resolved f -> List [ Atom "resolved"; resolved f ]
+    | `Dot (s, str) -> List [ Atom "dot"; fragment (s :> Fragment.t); Atom str]
+
+  and resolved : Resolved.t -> sexp = function
+    | `Root -> Atom "root";
+    | `Subst (mty, m) -> List
+      [ Atom "subst";
+        Path_to_sexp.resolved (mty :> Model.Paths.Path.Resolved.t);
+        resolved (m :> Resolved.t) ]
+    | `SubstAlias (rm, m) -> List
+      [ Atom "subst_alias";
+        Path_to_sexp.resolved (rm :> Model.Paths.Path.Resolved.t);
+        resolved (m :> Resolved.t)
+      ]
+    | `Module (s,name) -> List
+      [ Atom "module";
+        resolved (s :> Resolved.t);
+        Atom (ModuleName.to_string name) ]
+    | `Type (s,name) -> List
+      [ Atom "type";
+        resolved (s :> Resolved.t);
+        Atom (TypeName.to_string name) ]
+    | `Class (s,name) -> List
+      [ Atom "class";
+        resolved (s :> Resolved.t);
+        Atom (ClassName.to_string name) ]
+    | `ClassType (s, name) -> List
+      [ Atom "class_type";
+        resolved (s :> Resolved.t);
+        Atom (ClassTypeName.to_string name) ]
+end
+
 
 module Reference_to_sexp =
 struct
@@ -348,6 +386,10 @@ struct
 
   let comment : Comment.docs -> sexp = fun comment ->
     List (List.map (at block_element) comment)
+
+  let docs_or_stop : Comment.docs_or_stop -> sexp = function
+    | `Docs docs -> List [Atom "Docs"; comment docs]
+    | `Stop -> Atom "Stop"
 end
 
 
@@ -358,7 +400,462 @@ struct
     Atom (Model.Error.to_string error)
 end
 
+module Lang =
+struct
 
+  let list conv x = List (List.map conv x)
+  let opt conv x = match x with | Some x -> List [conv x] | None -> List []
+  let pair conv1 conv2 (x1,x2) = List [conv1 x1; conv2 x2]
+
+  open Model.Lang
+
+  let rec sexp_of_module_expansion =
+    let open Module in function
+    | AlreadyASig -> Atom "AlreadyASig"
+    | Signature s -> List [Atom "Signature"; sexp_of_signature_t s]
+    | Functor (args,s) -> List [Atom "Functor"; list (opt sexp_of_functorargument_t) args; sexp_of_signature_t s]
+
+  and sexp_of_module_decl =
+    let open Module in function
+    | Alias m -> List [Atom "Alias"; Path_to_sexp.path (m :> Model.Paths.Path.t)]
+    | ModuleType m -> List [Atom "ModuleType"; sexp_of_module_type_expr m]
+
+  and sexp_of_module_t m =
+    let open Module in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (m.id :> Model.Paths.Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment m.doc];
+      List [Atom "type_"; sexp_of_module_decl m.type_];
+      List [Atom "canonical"; opt (fun (x,y) ->
+        List [
+          Path_to_sexp.path (x : Model.Paths_types.Path.module_ :> Model.Paths.Path.t);
+          Reference_to_sexp.reference (y : Model.Paths.Reference.Module.t :> Model.Paths.Reference.t)])
+        m.canonical ];
+      List [Atom "hidden"; Sexplib.Std.sexp_of_bool m.hidden];
+      List [Atom "display_type"; opt sexp_of_module_decl m.display_type];
+      List [Atom "expansion"; opt sexp_of_module_expansion m.expansion]
+    ]
+
+  and sexp_of_module_equation_t e = sexp_of_module_decl e
+
+  and sexp_of_functorargument_t s =
+    let open FunctorArgument in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (s.id : Identifier.Module.t :> Identifier.t)];
+      List [Atom "expr"; sexp_of_module_type_expr s.expr];
+      List [Atom "expansion"; opt sexp_of_module_expansion s.expansion ]
+      ]
+  
+  and sexp_of_module_type_substitution =
+    let open ModuleType in
+    let open Model.Paths in
+    function
+    | ModuleEq (frag, eqn) -> List [Atom "ModuleEq"; Fragment_to_sexp.fragment (frag :> Fragment.t); sexp_of_module_equation_t eqn]
+    | TypeEq (frag, eqn) -> List [Atom "TypeEq"; Fragment_to_sexp.fragment (frag :> Fragment.t); sexp_of_type_decl_equation_t eqn]
+    | ModuleSubst (frag, path) -> List [Atom "ModuleSubst"; Fragment_to_sexp.fragment (frag :> Fragment.t); Path_to_sexp.path (path :> Path.t)]
+    | TypeSubst (frag, eqn) -> List [Atom "TypeSubst"; Fragment_to_sexp.fragment (frag :> Fragment.t); sexp_of_type_decl_equation_t eqn]
+  
+  and sexp_of_module_type_expr =
+    let open ModuleType in
+    let open Model.Paths in
+    function
+    | Path p -> List [Atom "Path"; Path_to_sexp.path (p :> Path.t)]
+    | Signature s -> List [Atom "Signature"; sexp_of_signature_t s]
+    | Functor (f, expr) -> List [Atom "Functor"; opt sexp_of_functorargument_t f; sexp_of_module_type_expr expr]
+    | With (e, sub_list) -> List [Atom "With"; sexp_of_module_type_expr e; list sexp_of_module_type_substitution sub_list]
+    | TypeOf d -> List [Atom "TypeOf"; sexp_of_module_decl d]
+
+  and sexp_of_module_type_t t =
+    let open ModuleType in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (t.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment t.doc];
+      List [Atom "expr"; opt sexp_of_module_type_expr t.expr];
+      List [Atom "expansion"; opt sexp_of_module_expansion t.expansion];
+    ]
+
+  and sexp_of_signature_recursive =
+    let open Signature in
+    function
+    | Ordinary -> Atom "Ordinary"
+    | And -> Atom "And"
+    | Nonrec -> Atom "Nonrec"
+    | Rec -> Atom "Rec"
+  
+  and sexp_of_signature_item =
+    let open Signature in
+    function
+    | Module (r, m) -> List [Atom "Module"; sexp_of_signature_recursive r; sexp_of_module_t m]
+    | ModuleType t -> List [Atom "ModuleType"; sexp_of_module_type_t t]
+    | Type (r, t) -> List [Atom "Type"; sexp_of_signature_recursive r; sexp_of_type_decl_t t]
+    | TypExt e -> List [Atom "TypExt"; sexp_of_extension_t e]
+    | Exception e -> List [Atom "Exception"; sexp_of_exception_t e]
+    | Value v -> List [Atom "Value"; sexp_of_value_t v]
+    | External e -> List [Atom "External"; sexp_of_external_t e]
+    | Class (r, c) -> List [Atom "Class"; sexp_of_signature_recursive r; sexp_of_class_t c]
+    | ClassType (r, c) -> List [Atom "ClassType"; sexp_of_signature_recursive r; sexp_of_class_type_t c]
+    | Include i -> List [Atom "Include"; sexp_of_include_t i]
+    | Comment c -> List [Atom "Comment"; Comment_to_sexp.docs_or_stop c]
+  
+  and sexp_of_signature_t t =
+    list sexp_of_signature_item t
+
+  and sexp_of_include_expansion e =
+    let open Include in
+    List [
+      List [Atom "resolved"; Sexplib.Std.sexp_of_bool e.resolved];
+      List [Atom "content"; sexp_of_signature_t e.content]
+    ]
+  
+  and sexp_of_include_t i =
+    let open Include in
+    let open Model.Paths in
+    List [
+      List [Atom "parent"; Identifier_to_sexp.identifier (i.parent :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment i.doc];
+      List [Atom "decl"; sexp_of_module_decl i.decl];
+      List [Atom "expansion"; sexp_of_include_expansion i.expansion];
+    ]
+
+  and sexp_of_type_decl_field_t f =
+    let open TypeDecl.Field in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (f.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment f.doc];
+      List [Atom "mutable_"; Sexplib.Std.sexp_of_bool f.mutable_];
+      List [Atom "type_"; sexp_of_type_expr_t f.type_]
+    ]
+
+  and sexp_of_type_decl_constructor_argument =
+    let open TypeDecl.Constructor in
+    function
+    | Tuple ts -> list sexp_of_type_expr_t ts
+    | Record fs -> list sexp_of_type_decl_field_t fs
+  
+  and sexp_of_type_decl_constructor_t c =
+    let open TypeDecl.Constructor in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (c.id :> Identifier.t) ];
+      List [Atom "doc"; Comment_to_sexp.comment c.doc];
+      List [Atom "args"; sexp_of_type_decl_constructor_argument c.args ];
+      List [Atom "res"; opt sexp_of_type_expr_t c.res];
+    ]
+
+  and sexp_of_type_decl_representation_t =
+    let open TypeDecl.Representation in
+    function
+    | Variant cs -> list sexp_of_type_decl_constructor_t cs
+    | Record fs -> list sexp_of_type_decl_field_t fs
+    | Extensible -> Atom "Extensible"
+  
+  and sexp_of_type_decl_variance =
+    let open TypeDecl in
+    function
+    | Pos -> Atom "Pos"
+    | Neg -> Atom "Neg"
+  
+  and sexp_of_type_decl_param_desc =
+    let open TypeDecl in
+    function
+    | Any -> Atom "Any"
+    | Var x -> List [Atom "Var"; Atom x]
+  
+  and sexp_of_type_decl_param (desc,var) =
+    List [sexp_of_type_decl_param_desc desc; opt sexp_of_type_decl_variance var]
+  
+  and sexp_of_type_decl_equation_t e =
+    let open TypeDecl.Equation in
+    List [
+      List [Atom "params"; list sexp_of_type_decl_param e.params];
+      List [Atom "private_"; Sexplib.Std.sexp_of_bool e.private_];
+      List [Atom "manifest"; opt sexp_of_type_expr_t e.manifest];
+      List [Atom "constraints"; list (pair sexp_of_type_expr_t sexp_of_type_expr_t) e.constraints]
+    ]
+  
+  and sexp_of_type_decl_t d =
+    let open TypeDecl in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (d.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment d.doc];
+      List [Atom "equation"; sexp_of_type_decl_equation_t d.equation];
+      List [Atom "representation"; opt sexp_of_type_decl_representation_t d.representation]
+    ]
+
+  and sexp_of_extension_constructor_t c =
+    let open Extension.Constructor in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (c.id :> Identifier.t) ];
+      List [Atom "doc"; Comment_to_sexp.comment c.doc];
+      List [Atom "args"; sexp_of_type_decl_constructor_argument c.args ];
+      List [Atom "res"; opt sexp_of_type_expr_t c.res];
+    ]
+
+  and sexp_of_extension_t e =
+    let open Extension in
+    let open Model.Paths in
+    List [
+      List [Atom "type_path"; Path_to_sexp.path (e.type_path :> Path.t)];
+      List [Atom "doc"; Comment_to_sexp.comment e.doc];
+      List [Atom "type_params"; list sexp_of_type_decl_param e.type_params];
+      List [Atom "private_"; Sexplib.Std.sexp_of_bool e.private_];
+      List [Atom "constructors"; list sexp_of_extension_constructor_t e.constructors]
+    ]
+
+  and sexp_of_exception_t e =
+    let open Exception in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (e.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment e.doc];
+      List [Atom "args"; sexp_of_type_decl_constructor_argument e.args];
+      List [Atom "res"; opt sexp_of_type_expr_t e.res]
+    ]
+
+  and sexp_of_value_t v =
+    let open Value in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (v.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment v.doc];
+      List [Atom "type_"; sexp_of_type_expr_t v.type_];
+    ]
+  
+  and sexp_of_external_t ext =
+    let open External in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (ext.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment ext.doc];
+      List [Atom "type_"; sexp_of_type_expr_t ext.type_];
+      List [Atom "primitives"; list Sexplib.Std.sexp_of_string ext.primitives]
+    ]
+
+  and sexp_of_class_decl =
+    let open Class in
+    function
+    | ClassType e -> List [Atom "ClassType"; sexp_of_class_type_expr e];
+    | Arrow (l_opt, e, d) -> List [Atom "Arrow"; opt sexp_of_type_expr_label l_opt; sexp_of_type_expr_t e; sexp_of_class_decl d]
+
+  and sexp_of_class_t c =
+    let open Class in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (c.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment c.doc];
+      List [Atom "virtual_"; Sexplib.Std.sexp_of_bool c.virtual_];
+      List [Atom "params"; list sexp_of_type_decl_param c.params];
+      List [Atom "type_"; sexp_of_class_decl c.type_];
+      List [Atom "expansion"; opt sexp_of_class_signature_t c.expansion]
+    ]
+
+  and sexp_of_class_type_expr =
+    let open ClassType in
+    let open Model.Paths in
+    function
+    | Constr (p, es) -> List [Atom "Constr"; Path_to_sexp.path (p :> Path.t); list sexp_of_type_expr_t es]
+    | Signature s -> List [Atom "Signature"; sexp_of_class_signature_t s]
+
+  and sexp_of_class_type_t c =
+    let open ClassType in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (c.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment c.doc];
+      List [Atom "virtual_"; Sexplib.Std.sexp_of_bool c.virtual_];
+      List [Atom "params"; list sexp_of_type_decl_param c.params];
+      List [Atom "expr"; sexp_of_class_type_expr c.expr];
+      List [Atom "expansion"; opt sexp_of_class_signature_t c.expansion]
+    ]
+
+  and sexp_of_class_signature_item =
+    let open ClassSignature in
+    function
+    | Method m -> List [Atom "Method"; sexp_of_method_t m]
+    | InstanceVariable i -> List [Atom "InstanceVariable"; sexp_of_instance_variable_t i]
+    | Constraint (t1,t2) -> List [Atom "Constraint"; sexp_of_type_expr_t t1; sexp_of_type_expr_t t2]
+    | Inherit e -> List [Atom "Inherit"; sexp_of_class_type_expr e]
+    | Comment c -> List [Atom "Comment"; Comment_to_sexp.docs_or_stop c]
+
+  and sexp_of_class_signature_t c =
+    let open ClassSignature in
+    List [
+      List [Atom "self"; opt sexp_of_type_expr_t c.self];
+      List [Atom "items"; list sexp_of_class_signature_item c.items];
+    ]
+
+  and sexp_of_method_t m =
+    let open Method in
+    let open Model.Paths in
+     List [
+      List [Atom "id"; Identifier_to_sexp.identifier (m.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment m.doc];
+      List [Atom "private_"; Sexplib.Std.sexp_of_bool m.private_];
+      List [Atom "virtual_"; Sexplib.Std.sexp_of_bool m.virtual_];
+      List [Atom "type_"; sexp_of_type_expr_t m.type_]
+     ]
+
+  and sexp_of_instance_variable_t i =
+    let open InstanceVariable in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (i.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment i.doc];
+      List [Atom "mutable_"; Sexplib.Std.sexp_of_bool i.mutable_];
+      List [Atom "virtual_"; Sexplib.Std.sexp_of_bool i.virtual_];
+      List [Atom "type_"; sexp_of_type_expr_t i.type_]
+    ]
+
+  and sexp_of_type_expr_polyvar_kind =
+    let open TypeExpr.Polymorphic_variant in
+    function
+    | Fixed -> Atom "Fixed"
+    | Closed l -> List [Atom "Closed"; list Sexplib.Std.sexp_of_string l]
+    | Open -> Atom "Open"
+
+  and sexp_of_type_expr_polyvar_constructor_t c =
+    let open TypeExpr.Polymorphic_variant.Constructor in
+    List [
+      List [Atom "name"; Sexplib.Std.sexp_of_string c.name];
+      List [Atom "constant"; Sexplib.Std.sexp_of_bool c.constant];
+      List [Atom "arguments"; list sexp_of_type_expr_t c.arguments];
+      List [Atom "doc"; Comment_to_sexp.comment c.doc];
+    ]
+
+  and sexp_of_type_expr_polyvar_element =
+    let open TypeExpr.Polymorphic_variant in
+    function
+    | Type t -> List [Atom "Type"; sexp_of_type_expr_t t];
+    | Constructor c -> List [Atom "Constructor"; sexp_of_type_expr_polyvar_constructor_t c]
+  
+  and sexp_of_type_expr_polyvar_t t =
+    let open TypeExpr.Polymorphic_variant in
+    List [
+      List [Atom "kind"; sexp_of_type_expr_polyvar_kind t.kind];
+      List [Atom "elements"; list sexp_of_type_expr_polyvar_element t.elements]
+    ]
+
+  and sexp_of_type_expr_object_method m =
+    let open TypeExpr.Object in
+    List [
+      List [Atom "name"; Sexplib.Std.sexp_of_string m.name];
+      List [Atom "type_"; sexp_of_type_expr_t m.type_];
+    ]
+  
+  and sexp_of_type_expr_object_field =
+    let open TypeExpr.Object in
+    function
+    | Method m -> List [Atom "Method"; sexp_of_type_expr_object_method m]
+    | Inherit i -> List [Atom "Inherit"; sexp_of_type_expr_t i]
+  
+  and sexp_of_type_expr_object_t o =
+    let open TypeExpr.Object in
+    List [
+      List [Atom "fields"; list sexp_of_type_expr_object_field o.fields];
+      List [Atom "open_"; Sexplib.Std.sexp_of_bool o.open_]
+    ]
+
+  and sexp_of_type_expr_package_substitution (frag,tyexpr) =
+    List [
+      Fragment_to_sexp.fragment (frag :> Model.Paths.Fragment.t);
+      sexp_of_type_expr_t tyexpr
+    ]
+  
+  and sexp_of_type_expr_package_t t =
+    let open TypeExpr.Package in
+    let open Model.Paths in
+    List [
+      List [Atom "path"; Path_to_sexp.path (t.path :> Path.t)];
+      List [Atom "substitutions"; list sexp_of_type_expr_package_substitution t.substitutions];
+    ] 
+
+  and sexp_of_type_expr_label =
+    let open TypeExpr in
+    function
+    | Label s -> List [Atom "Label"; Sexplib.Std.sexp_of_string s]
+    | Optional s -> List [Atom "Optional"; Sexplib.Std.sexp_of_string s]
+    
+  and sexp_of_type_expr_t =
+    let open TypeExpr in
+    let open Model.Paths in
+    function
+    | Var s -> List [Atom "Var"; Sexplib.Std.sexp_of_string s]
+    | Any -> Atom "Any"
+    | Alias (t, s) -> List [Atom "Alias"; sexp_of_type_expr_t t; Sexplib.Std.sexp_of_string s]
+    | Arrow (lbl_opt, t1, t2) -> List [Atom "Arrow"; opt sexp_of_type_expr_label lbl_opt; sexp_of_type_expr_t t1; sexp_of_type_expr_t t2]
+    | Tuple ts -> List [Atom "Tuple"; list sexp_of_type_expr_t ts]
+    | Constr (p, ts) -> List [Atom "Constr"; Path_to_sexp.path (p :> Path.t); list sexp_of_type_expr_t ts]
+    | Polymorphic_variant v -> List [Atom "Polymorphic_variant"; sexp_of_type_expr_polyvar_t v]
+    | Object o -> List [Atom "Object"; sexp_of_type_expr_object_t o]
+    | Class (p, ts) -> List [Atom "Class"; Path_to_sexp.path (p :> Path.t); list sexp_of_type_expr_t ts]
+    | Poly (strs, t) -> List [Atom "Poly"; list Sexplib.Std.sexp_of_string strs; sexp_of_type_expr_t t]
+    | Package p -> List [Atom "Package"; sexp_of_type_expr_package_t p]
+
+  let sexp_of_digest d =
+    let hex = String.to_seq d |> Seq.map (fun c -> Printf.sprintf "%x" (Char.code c)) |> Seq.fold_left (fun xs s -> s::xs) [] |> String.concat "" in
+    Sexplib.Std.sexp_of_string ("0x" ^ hex)
+
+  let sexp_of_compilation_unit_import_t =
+    let open Compilation_unit.Import in
+    function
+    | Unresolved (str, digest_opt) -> List [Atom "Unresolved"; Sexplib.Std.sexp_of_string str; opt sexp_of_digest digest_opt]
+    | Resolved root -> List [Atom "Resolved"; Root_to_sexp.root root]
+  
+  let sexp_of_compilation_unit_source_t t =
+    let open Compilation_unit.Source in
+    List [
+      List [Atom "file"; Sexplib.Std.sexp_of_string t.file];
+      List [Atom "build_dir"; Sexplib.Std.sexp_of_string t.build_dir];
+      List [Atom "digest"; sexp_of_digest t.digest];
+    ]
+  
+  let sexp_of_compilation_unit_packed_item i =
+    let open Compilation_unit.Packed in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (i.id :> Identifier.t)];
+      List [Atom "path"; Path_to_sexp.path (i.path :> Path.t)];
+    ]
+
+  let sexp_of_compilation_unit_packed_t ts =
+    list sexp_of_compilation_unit_packed_item ts
+
+  let sexp_of_compilation_unit_content =
+    let open Compilation_unit in
+    function
+    | Module m -> List [Atom "Module"; sexp_of_signature_t m]
+    | Pack p -> List [Atom "Packed"; sexp_of_compilation_unit_packed_t p]
+  
+  let sexp_of_compilation_unit_t c =
+    let open Compilation_unit in
+    let open Model.Paths in
+    List [
+      List [Atom "id"; Identifier_to_sexp.identifier (c.id :> Identifier.t)];
+      List [Atom "doc"; Comment_to_sexp.comment c.doc];
+      List [Atom "digest"; sexp_of_digest c.digest];
+      List [Atom "imports"; list sexp_of_compilation_unit_import_t c.imports];
+      List [Atom "source"; opt sexp_of_compilation_unit_source_t c.source];
+      List [Atom "interface"; Sexplib.Std.sexp_of_bool c.interface];
+      List [Atom "hidden"; Sexplib.Std.sexp_of_bool c.hidden];
+      List [Atom "content"; sexp_of_compilation_unit_content c.content];
+      List [Atom "expansion"; opt sexp_of_signature_t c.expansion];
+    ]
+
+  let sexp_of_page_t p =
+    let open Page in
+    let open Model.Paths in
+    List [
+      List [Atom "name"; Identifier_to_sexp.identifier (p.name :> Identifier.t)];
+      List [Atom "content"; Comment_to_sexp.comment p.content];
+      List [Atom "digest"; sexp_of_digest p.digest]
+
+    ]
+end
 
 let parser_output formatter {Model.Error.value; warnings} =
   let value = Comment_to_sexp.comment value in

@@ -23,7 +23,7 @@ module rec Module : sig
   type expansion =
     | AlreadyASig
     | Signature of Signature.t
-    | Functor of FunctorArgument.t option list * Signature.t
+    | Functor of FunctorArgument.t option list * Signature.t 
 
   type decl =
     | Alias of Path.Module.t
@@ -52,7 +52,7 @@ and FunctorArgument : sig
     id : Identifier.Module.t;
     expr : ModuleType.expr;
     expansion: Module.expansion option;
-  }
+  } 
 end = FunctorArgument
 
 (** {3 Modules Types} *)

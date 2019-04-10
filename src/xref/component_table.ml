@@ -20,6 +20,27 @@ open Model.Lang
 open Components
 open Model.Names
 
+let rec ident_to_string : Paths.Identifier.t -> string = fun id ->
+  match id with
+  | `Root (_,unit) -> Printf.sprintf "`Root (_, %s)" (Names.UnitName.to_string unit)
+  | `Module (s, mname) -> Printf.sprintf "`Module (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ModuleName.to_string mname)
+  | `Argument (s, n, aname) -> Printf.sprintf "`Argument (%s, %d, %s)" (ident_to_string (s :> Paths.Identifier.t)) n (Names.ArgumentName.to_string aname)
+  | `ModuleType (s, name) -> Printf.sprintf "`ModuleType (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ModuleTypeName.to_string name)
+  | `Class (s, name) -> Printf.sprintf "`Class (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ClassName.to_string name)
+  | `ClassType (s, name) -> Printf.sprintf "`ClassType (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ClassTypeName.to_string name)
+  | `Type (s, name) -> Printf.sprintf "`Type (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.TypeName.to_string name)
+  | `CoreType name -> Printf.sprintf "`CoreType (%s)" (Names.TypeName.to_string name)
+  | `Field (s, name) -> Printf.sprintf "`Field (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.FieldName.to_string name)
+  | `Constructor (s, name) -> Printf.sprintf "`Constructor (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ConstructorName.to_string name)
+  | `Extension (s, name) -> Printf.sprintf "`Extension (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ExtensionName.to_string name)
+  | `Exception (s, name) -> Printf.sprintf "`Exception (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ExceptionName.to_string name)
+  | `CoreException name -> Printf.sprintf "`Exception (%s)" (Names.ExceptionName.to_string name)
+  | `Value (s, name) -> Printf.sprintf "`Value (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ValueName.to_string name)
+  | `Method (s, name) -> Printf.sprintf "`Method (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.MethodName.to_string name)
+  | `InstanceVariable (s, name) -> Printf.sprintf "`InstanceVariable (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.InstanceVariableName.to_string name)
+  | `Label (s, name) -> Printf.sprintf "`Label (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.LabelName.to_string name)
+  | `Page (_, name) -> Printf.sprintf "`Page (root, %s)" (Names.PageName.to_string name)
+
 type ('a, 'b) tbl =
   { fresh: int -> ('a, 'b) tbl;
     find: 'a -> 'b;
@@ -31,7 +52,7 @@ let make_tbl (type a) (equal : (a -> a -> bool) option)
     let rec fresh size =
       let t = create size in
       let find x = find t x in
-      let add x y = add t x y in
+      let add x y = Printf.fprintf stderr "Adding...\n%!"; add t x y in
         {fresh; find; add}
     in
       fresh size
@@ -86,6 +107,7 @@ type local =
     base : Identifier.Signature.t option; }
 
 let create_local t base =
+  Printf.fprintf stderr "create_local: base=%s\n%!" (match base with | None -> "None" | Some id -> "Some (" ^ ident_to_string (id :> Identifier.t) ^ ")");
   let equal =
     match t.equal with
     | None -> None
@@ -106,12 +128,16 @@ let create_local t base =
 let add_local_module_identifier (local : local) id sg =
     match local.local with
     | None -> ()
-    | Some tbl -> tbl.add (id : Identifier.Module.t :> Identifier.Signature.t) sg
+    | Some tbl ->
+      Printf.fprintf stderr "Adding identifier: %s\n%!" (ident_to_string (id :> Identifier.t));
+      tbl.add (id : Identifier.Module.t :> Identifier.Signature.t) sg
 
 let add_local_module_type_identifier (local : local) id sg =
     match local.local with
     | None -> ()
-    | Some tbl -> tbl.add (id : Identifier.ModuleType.t :> Identifier.Signature.t) sg
+    | Some tbl ->
+      Printf.fprintf stderr "Adding identifier: %s\n%!" (ident_to_string (id :> Identifier.t));
+      tbl.add (id : Identifier.ModuleType.t :> Identifier.Signature.t) sg
 
 let add_local_modules (local : local) id mds =
     match local.local with
@@ -156,7 +182,8 @@ let equals_signature _eq (base : Identifier.Signature.t) (id : Identifier.t) =
 
 let rec is_parent_local : _ -> _ -> Identifier.t -> bool =
   fun eq base id ->
-      match id with
+    Printf.fprintf stderr "is_parent_local: %s %s...\n%!" (ident_to_string (base :> Identifier.t)) (ident_to_string id);
+    let result = match id with
       | `Root _  -> false
       | `Page _ -> false
       | `Module(parent, _) -> is_local eq base (parent :> Identifier.t)
@@ -175,15 +202,22 @@ let rec is_parent_local : _ -> _ -> Identifier.t -> bool =
       | `Method(parent, _) -> is_local eq base (parent :> Identifier.t)
       | `InstanceVariable(parent, _) -> is_local eq base (parent :> Identifier.t)
       | `Label(parent, _) -> is_local eq base (parent :> Identifier.t)
+    in
+    Printf.fprintf stderr "...result=%b\n%!" result;
+    result
 
 and is_local : _ -> _ -> Identifier.t -> bool =
   fun eq base id ->
+    let ipl = is_parent_local eq base id in
+    let eqs = equals_signature eq base id in
+    Printf.fprintf stderr "ipl=%b, eqs=%b result=%b\n%!" ipl eqs (ipl || eqs);
     is_parent_local eq base id
     || equals_signature eq base id
 
 let is_local local id =
+  Printf.fprintf stderr "is_local...";
   match local.base with
-  | None -> false
+  | None -> Printf.fprintf stderr "local.base=None\n%!"; false
   | Some base ->
     let eq =
       match local.t.equal with
@@ -333,11 +367,15 @@ and class_signature_identifier tbl (p : Identifier.ClassSignature.t) =
         let parent = signature_identifier tbl id in
           Sig.lookup_class_type (ClassTypeName.to_string name) parent
 
+
 and resolved_module_path local (p : Path.Resolved.Module.t) =
   match p with
   | `Identifier (id : Identifier.Module.t) ->
-      if is_local local (id :> Identifier.t) then local_module_identifier local id
-      else module_identifier local.t id
+      Printf.fprintf stderr "resolved_module_path: is_local = %b (id=%s)\n%!" (is_local local (id :> Identifier.t)) (ident_to_string (id :> Identifier.t));
+      let result =
+        if is_local local (id :> Identifier.t) then local_module_identifier local id
+        else module_identifier local.t id
+      in Printf.fprintf stderr "finished\n%!"; result
   | `Subst(sub, _) -> resolved_module_type_path local sub
   | `SubstAlias(sub, _) -> resolved_module_path local sub
   | `Hidden p -> resolved_module_path local p
@@ -451,11 +489,13 @@ and class_decl local =
     | Arrow(_, _, decl) -> class_decl local decl
 
 and signature_items local =
+  Printf.fprintf stderr "Ctbl.signature_items\n%!";
   let open Sig in
   let open Signature in function
     | Module (_, md) :: rest ->
         let open Module in
         let name = Identifier.name md.id in
+        Printf.fprintf stderr "Found a module: %s\n" name;
         let decl = module_decl local md.type_ in
         let decl = set_canonical decl md.canonical in
         let decl = set_hidden decl md.hidden in
@@ -512,7 +552,6 @@ and signature_items local =
         let name = Identifier.name ev.id in
           add_element name `Value sg
     | Class (_, cl)::rest ->
-        let open Class in
         let sg = signature_items local rest in
         let sg = add_documentation cl.doc sg in
         let name = Identifier.name cl.id in
@@ -539,6 +578,7 @@ and signature_items local =
     | [] -> empty
 
 and module_type_expr local expr =
+  Printf.fprintf stderr "Ctbl.module_type_expr\n%!"; 
   let open Sig in
   let open ModuleType in
   let open FunctorArgument in
@@ -589,6 +629,7 @@ and packed_items local =
 (* Remove local parameter from exposed versions *)
 
 let resolved_module_path tbl p =
+  Printf.fprintf stderr "Ctbl.resolved_module_path\n%!"; 
   let local = create_local tbl None in
     resolved_module_path local p
 
@@ -662,6 +703,7 @@ and resolved_datatype_reference tbl (r : Reference.Resolved.DataType.t) =
 and resolved_page_reference tbl : Reference.Resolved.Page.t -> _ = function
     | `Identifier id -> page_identifier tbl id
 
-let base tbl s = tbl.lookup_unit s  
+let base tbl s = 
+  Printf.fprintf stderr "Ctbl.base\n%!"; tbl.lookup_unit s  
 
 let page_base tbl s = tbl.lookup_page s

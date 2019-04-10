@@ -1,0 +1,5 @@
+(executable
+ (name test)
+ (libraries alcotest bos fpath odoc__odoc markup odoc__loader odoc__model odoc__parser odoc__xref
+ print)
+ (flags (:standard -open Odoc__alias)))

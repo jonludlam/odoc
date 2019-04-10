@@ -14,8 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-
-
 type t = Model.Lang.Page.t
 
 let root (t : Model.Lang.Page.t) =

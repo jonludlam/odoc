@@ -34,6 +34,7 @@ let save oc t =
 
 let read file =
   let file = Fs.File.to_string file in
+  Printf.fprintf stderr "Loading file: %s\n" file;
   let ic = open_in_bin file in
   let root = load file ic in
   close_in ic;

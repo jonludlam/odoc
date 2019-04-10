@@ -2,7 +2,7 @@
 
 let preprocess =
   match Sys.getenv "BISECT_ENABLE" with
-  | "yes" -> "(preprocess (pps bisect_ppx))"
+  | "yes" -> "(preprocess (pps bisect_ppx -exclude-file=../../.exclude))"
   | _ -> ""
   | exception Not_found -> ""
 
