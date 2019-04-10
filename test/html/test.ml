@@ -252,7 +252,7 @@ let make_test_case ?theme_uri ?syntax case =
 
 
 let source_files = [
-  ("val.mli", ["Val/index.html"]);
+(*  ("val.mli", ["Val/index.html"]);
   ("markup.mli", ["Markup/index.html"]);
   ("section.mli", ["Section/index.html"]);
   ("module.mli", ["Module/index.html"]);
@@ -279,7 +279,7 @@ let source_files = [
   ("alias.ml", [
       "Alias/index.html";
       "Alias/X/index.html";
-    ]);
+    ]);*)
   ("subst.mli", ["Subst/index.html"]);
 ]
 
@@ -295,13 +295,13 @@ let () =
   Env.init ();
 
   Alcotest.run "html" [
-    "support_files", [output_support_files];
+(*    "support_files", [output_support_files];*)
     "html_ml", List.map (make_test_case ~syntax:`ml) source_files;
-    "html_re", List.map (make_test_case ~syntax:`re) source_files;
+(*    "html_re", List.map (make_test_case ~syntax:`re) source_files; 
     "custom_theme", [
       make_test_case ~theme_uri:"/a/b/c" ("module.mli", ["Module/index.html"]);
       make_test_case ~theme_uri:"https://foo.com/a/b/c/" ("val.mli", ["Val/index.html"]);
       make_test_case ~theme_uri:"../b/c" ("include.mli", ["Include/index.html"]);
       make_test_case ~theme_uri:"b/c" ("section.mli", ["Section/index.html"]);
-    ];
+    ];*)
   ]
