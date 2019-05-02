@@ -218,7 +218,7 @@ let rec inline_element ?xref_base_uri : Comment.inline_element -> (phrasing Html
     (leaf_inline_element e :> (phrasing Html.elt) option)
   | `Styled (style, content) ->
     Some ((style_to_combinator style) (inline_element_list ?xref_base_uri content))
-  | `Reference (path, content) ->
+  | `Reference (path, _, content) ->
     (* TODO Rework that ugly function. *)
     (* TODO References should be set in code style, if they are to code
             elements. *)

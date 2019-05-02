@@ -46,6 +46,7 @@ type t = {
   digest : Digest.t;
 }
 
+val dummy : t
 val equal : t -> t -> bool
 val hash  : t -> int
 

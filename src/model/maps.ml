@@ -968,11 +968,11 @@ class virtual documentation = object (self)
           (Location_.map self#documentation_inline_element) nested_elements
       in
       `Styled (style, nested_elements)
-    | `Reference (path, nested_elements) ->
+    | `Reference (path, txt, nested_elements) ->
       let path', nested_elements' =
         self#documentation_reference (path, nested_elements) in
       if path' != path || nested_elements' != nested_elements then
-        `Reference (path', nested_elements')
+        `Reference (path', txt, nested_elements')
       else
         element
     | _ ->

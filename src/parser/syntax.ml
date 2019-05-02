@@ -148,8 +148,8 @@ let rec inline_element
     let r_location = Location.nudge_start (String.length "{!") location in
 
     begin match Reference.parse input.warnings r_location r with
-    | Result.Ok r ->
-      Location.at location (`Reference (`Simple, r, []))
+    | Result.Ok r' ->
+      Location.at location (`Reference (`Simple, r', r, []))
     | Result.Error error ->
       Error.warning input.warnings error;
       Location.at location (`Code_span r)
@@ -164,8 +164,8 @@ let rec inline_element
        triggered before warnings from the content. *)
     let make_element =
       match Reference.parse input.warnings r_location r with
-      | Result.Ok r ->
-        fun content -> `Reference (`With_text, r, content)
+      | Result.Ok r' ->
+        fun content -> `Reference (`With_text, r', r, content)
       | Result.Error error ->
         Error.warning input.warnings error;
         fun content -> `Styled (`Emphasis, content)

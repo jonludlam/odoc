@@ -61,6 +61,12 @@ type t = {
   digest : Digest.t;
 }
 
+let dummy : t =
+  { package = ""
+  ; file = Odoc_file.Page ""
+  ; digest = "";
+  }
+
 let equal : t -> t -> bool = (=)
 let hash : t -> int = Hashtbl.hash
 

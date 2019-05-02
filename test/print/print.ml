@@ -258,7 +258,7 @@ struct
       leaf_inline_element e
     | `Styled (s, es) ->
       List [style s; List (List.map (at inline_element) es)]
-    | `Reference (r, es) ->
+    | `Reference (r, _, es) ->
       List [
         Atom "reference";
         Reference_to_sexp.reference r;

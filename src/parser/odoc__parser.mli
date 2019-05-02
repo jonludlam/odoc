@@ -4,3 +4,8 @@ val parse_comment :
   location:Lexing.position ->
   text:string ->
     Model.Comment.docs Model.Error.with_warnings
+
+val parse :
+  ?location:Lexing.position ->
+  string ->
+    Model.Comment.docs Model.Error.with_warnings

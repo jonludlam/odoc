@@ -16,7 +16,7 @@ type inline_element = [
   | `Raw_markup of Comment.raw_markup_target * string
   | `Styled of Comment.style * (inline_element with_location) list
   | `Reference of
-      reference_kind * Reference.t * (inline_element with_location) list
+      reference_kind * Reference.t * string * (inline_element with_location) list
   | `Link of string * (inline_element with_location) list
 ]
 

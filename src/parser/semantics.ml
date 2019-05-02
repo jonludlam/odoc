@@ -18,9 +18,9 @@ type status = {
 
 (* TODO This and Token.describe probably belong in Parse_error. *)
 let describe_element = function
-  | `Reference (`Simple, _, _) ->
+  | `Reference (`Simple, _, _, _) ->
     Token.describe (`Simple_reference "")
-  | `Reference (`With_text, _, _) ->
+  | `Reference (`With_text, _, _, _) ->
     Token.describe (`Begin_reference_with_replacement_text "")
   | `Link _ ->
     Token.describe (`Begin_link_with_replacement_text "")
@@ -42,7 +42,7 @@ let rec non_link_inline_element
     `Styled (style, non_link_inline_elements status ~surrounding content)
     |> Location.same element
 
-  | {value = `Reference (_, _, content); _}
+  | {value = `Reference (_, _, _, content); _}
   | {value = `Link (_, content); _} as element ->
     Parse_error.not_allowed
       ~what:(describe_element element.value)
@@ -71,9 +71,9 @@ let rec inline_element
     `Styled (style, inline_elements status content)
     |> Location.at location
 
-  | {value = `Reference (_, target, content) as value; location} ->
+  | {value = `Reference (_, target, txt, content) as value; location} ->
     `Reference
-      (target, non_link_inline_elements status ~surrounding:value content)
+      (target, txt, non_link_inline_elements status ~surrounding:value content)
     |> Location.at location
 
   | {value = `Link (target, content) as value; location} ->

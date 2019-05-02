@@ -38,7 +38,7 @@ type link_content = (non_link_inline_element with_location) list
 type inline_element = [
   | leaf_inline_element
   | `Styled of style * (inline_element with_location) list
-  | `Reference of Reference.t * link_content
+  | `Reference of Reference.t * string * link_content
   | `Link of string * link_content
 ]
 

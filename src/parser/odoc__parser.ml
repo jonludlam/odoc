@@ -89,3 +89,8 @@ let parse_comment ~sections_allowed ~containing_definition ~location ~text =
     |> Semantics.ast_to_comment
       warnings ~sections_allowed ~parent_of_sections:containing_definition
   end
+
+let parse ?(location=Lexing.dummy_pos) text =
+  let sections_allowed = `All in
+  let containing_definition = `Root (Model.Root.dummy, Model.Names.UnitName.of_string "") in
+  parse_comment ~sections_allowed ~containing_definition ~location ~text
