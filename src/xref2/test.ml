@@ -52,8 +52,11 @@ module Component = struct
 
     module Ident = struct
 
+        (* For simplicity keep a global counter *)
         let counter = ref 0
 
+        (* Again, for simplicity right now all idents are just strings.
+           Later we'll likely convert these to be typed Names *)
         type t = string * int
 
         let of_identifier : Identifier.t -> t =
@@ -69,6 +72,7 @@ module Component = struct
     end
 
     module Path = struct 
+        (* Again, keep one Path.t rather than typed ones for now *)
         type t = [
             | `Local of Ident.t
             | `Ldot of t * string
@@ -76,6 +80,10 @@ module Component = struct
         ]
     end
 
+
+    (* The following types are identical in structure to those in
+       {!Lang}, which may well be too complex for our use, we'll
+       see as we expand on this *)
     module rec Module : sig
       type decl =
         | Alias of Path.t
@@ -113,13 +121,14 @@ module Component = struct
 
 
     module Env = struct
+        (* A bunch of association lists. Let's hashtbl them up later *)
         type t =
             { ident_max: int
             ; modules : (Identifier.Module.t * Module.t) list
             ; moduletypes : (Identifier.ModuleType.t * ModuleType.t) list
             ; types : (Identifier.Type.t * Type.t) list }
 
-
+        (* Handy for extrating transient state *)
         exception MyFailure of Model.Paths.Identifier.t * t
 
         let empty =
@@ -186,6 +195,8 @@ module Component = struct
 
         and of_signature : t -> Model.Lang.Signature.t -> Signature.t * t =
             fun env items ->
+                (* First we construct a list of brand new [Ident.t]s 
+                   for each item in the signature *)
                 let ident_map : (Identifier.t * Ident.t) list = List.map (function
                     | Model.Lang.Signature.Type (_, t) ->
                         let identifier = t.Model.Lang.TypeDecl.id in
@@ -197,6 +208,10 @@ module Component = struct
                         ((identifier :> Identifier.t), id)
                     | _ -> failwith "Unhandled type in of_signature (1)") items
                 in
+
+                (* Now we construct the Components for each item,
+                   converting all paths containing Identifiers pointing at
+                   our elements to local paths *)
                 List.fold_right2 (fun item (_, id) (items, env) ->
                     match item with
                     |  Model.Lang.Signature.Type (_, t) ->
@@ -211,77 +226,31 @@ module Component = struct
     end
 end
 
+
+let signature_of_module_type _env m =
+    match m with
+    | Component.ModuleType.Path _ -> failwith "Unhandled"
+    | Component.ModuleType.Signature s -> s
+
+let signature_of_module env m =
+    match m.Component.Module.type_ with
+    | Component.Module.Alias _ -> failwith "Unhandled"
+    | Component.Module.ModuleType expr -> signature_of_module_type env expr
+
+
+(* When resolving paths, we go down the path until we find an Identifier. Once we've
+   got that far we look up the component via the Identifier in the environment and return the
+   resolved path for that Identifier and the Module component for it. As we then go up the Path.t
+   we look up the Ident.t in the module component, finding a new module and passing
+   that up the chain, building the resolved path as we go, until we pop out at the
+   top to find the final thing - so far the only thing that can be handled is a
+   type. *)
 type parent_module_path =
   | Resolved of Model.Paths.Path.Resolved.Module.t * Component.Module.t
   | Unresolved of Model.Paths.Path.Module.t
 
 
-let rec resolve_unit env t =
-    let open Model.Lang.Compilation_unit in
-    {t with content = resolve_content env t.content}
-
-and resolve_content env =
-    let open Model.Lang.Compilation_unit in
-    function
-    | Module m -> Module (resolve_signature env m)
-    | Pack _ -> failwith "Unhandled content"
-
-and resolve_signature : Component.Env.t -> Model.Lang.Signature.t -> _ = fun env s ->
-    let open Model.Lang.Signature in
-    let (_,env) = Component.Env.of_signature env s in
-    let (_, items') = 
-        List.fold_right (fun item (env, items) ->
-            match item with
-            | Module (r, m) ->
-                let m' = resolve_module env m in
-                let env' = update_env env (`Module m') in
-                (env', (Module (r, m'))::items)
-            | Type (r, t) ->
-                let t' = resolve_type env t in
-                let env' = update_env env (`Type t') in
-                (env', (Type (r, t'))::items)
-            | _ -> failwith "Unhandled signature element") s (env, [])
-    in items'
-
-and resolve_module : Component.Env.t -> Model.Lang.Module.t -> Model.Lang.Module.t = fun env m ->
-    let open Model.Lang.Module in
-    match m.type_ with
-    | ModuleType expr ->
-        {m with type_ = ModuleType (resolve_module_type_expr env expr)}
-    | _ -> failwith "Unhandled module"
-
-and resolve_module_type_expr : Component.Env.t -> Model.Lang.ModuleType.expr -> Model.Lang.ModuleType.expr = fun env expr ->
-    let open Model.Lang.ModuleType in
-    match expr with
-    | Signature s -> Signature (resolve_signature env s)
-    | _ -> failwith "Unhandled module type expression"
-
-and resolve_type env t =
-    let open Model.Lang.TypeDecl in
-    match t.equation.manifest with
-    | Some texpr ->
-        let texpr' = resolve_type_expression env texpr in
-        {t with equation = {t.equation with manifest = Some texpr'}}
-    | None -> t
-
-and resolve_type_expression env texpr =
-    let open Model.Lang.TypeExpr in 
-    match texpr with
-    | Constr (path, ts) ->
-        Constr (resolve_type_path env path, ts)
-    | _ -> failwith "Unhandled type expression"
-
-and signature_of_module_type _env m =
-    match m with
-    | Component.ModuleType.Path _ -> failwith "Unhandled"
-    | Component.ModuleType.Signature s -> s
-
-and signature_of_module env m =
-    match m.Component.Module.type_ with
-    | Component.Module.Alias _ -> failwith "Unhandled"
-    | Component.Module.ModuleType expr -> signature_of_module_type env expr
-
-and resolve_parent_module_path : Component.Env.t -> Model.Paths.Path.Module.t -> parent_module_path =
+let rec resolve_parent_module_path : Component.Env.t -> Model.Paths.Path.Module.t -> parent_module_path =
     fun env path ->
         match path with
         | `Resolved p ->
@@ -327,8 +296,62 @@ and resolve_type_path : Component.Env.t -> Model.Paths.Path.Type.t -> Model.Path
         end
     | `Resolved _ -> p
 
-and update_env env _m = env
     
+let rec resolve_unit env t =
+    let open Model.Lang.Compilation_unit in
+    {t with content = resolve_content env t.content}
+
+and resolve_content env =
+    let open Model.Lang.Compilation_unit in
+    function
+    | Module m -> Module (resolve_signature env m)
+    | Pack _ -> failwith "Unhandled content"
+
+and resolve_signature : Component.Env.t -> Model.Lang.Signature.t -> _ = fun env s ->
+    let open Model.Lang.Signature in
+    let (_,env) = Component.Env.of_signature env s in
+    let (_, items') = 
+        List.fold_right (fun item (env, items) ->
+            match item with
+            | Module (r, m) ->
+                let m' = resolve_module env m in
+(*                let env' = update_env env (`Module m') in *)
+                (env, (Module (r, m'))::items)
+            | Type (r, t) ->
+                let t' = resolve_type env t in
+(*                let env' = update_env env (`Type t') in*)
+                (env, (Type (r, t'))::items)
+            | _ -> failwith "Unhandled signature element") s (env, [])
+    in items'
+
+and resolve_module : Component.Env.t -> Model.Lang.Module.t -> Model.Lang.Module.t = fun env m ->
+    let open Model.Lang.Module in
+    match m.type_ with
+    | ModuleType expr ->
+        {m with type_ = ModuleType (resolve_module_type_expr env expr)}
+    | _ -> failwith "Unhandled module"
+
+and resolve_module_type_expr : Component.Env.t -> Model.Lang.ModuleType.expr -> Model.Lang.ModuleType.expr = fun env expr ->
+    let open Model.Lang.ModuleType in
+    match expr with
+    | Signature s -> Signature (resolve_signature env s)
+    | _ -> failwith "Unhandled module type expression"
+
+and resolve_type env t =
+    let open Model.Lang.TypeDecl in
+    match t.equation.manifest with
+    | Some texpr ->
+        let texpr' = resolve_type_expression env texpr in
+        {t with equation = {t.equation with manifest = Some texpr'}}
+    | None -> t
+
+and resolve_type_expression env texpr =
+    let open Model.Lang.TypeExpr in 
+    match texpr with
+    | Constr (path, ts) ->
+        Constr (resolve_type_path env path, ts)
+    | _ -> failwith "Unhandled type expression"
+
 
 
 let result () =
