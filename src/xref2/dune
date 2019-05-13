@@ -2,7 +2,7 @@
  (name odoc__xref2)
  (public_name odoc.xref2)
  (modules (:standard \ jontest))
- (libraries compiler-libs.common odoc__alias odoc__model odoc__loader)
+ (libraries compiler-libs.common odoc__alias odoc__model odoc__loader odoc__xref odoc__odoc)
  (flags (:standard -open Odoc__alias)))
 
 (executable
