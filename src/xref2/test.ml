@@ -44,6 +44,19 @@ end
 type x = X.Y.z
 |}
 
+let my_compilation_unit () =
+    let id, docs, s = myexample () in
+    { Model.Lang.Compilation_unit.
+      id = id
+    ; doc = docs
+    ; digest = "nodigest"
+    ; imports = []
+    ; source = None
+    ; interface = true
+    ; hidden = false
+    ; content = Module s
+    ; expansion = None
+    }
 
 
 module Component = struct
@@ -59,10 +72,14 @@ module Component = struct
            Later we'll likely convert these to be typed Names *)
         type t = string * int
 
+        let fresh_int () =
+            let n = !counter in
+            incr counter;
+            n
+
         let of_identifier : Identifier.t -> t =
             fun i ->
-                let n = !counter in
-                incr counter;
+                let n = fresh_int () in 
                 match i with
                 | `Module (_,s) -> (ModuleName.to_string s, n)
                 | `Type (_,s) -> (TypeName.to_string s, n)
@@ -119,38 +136,7 @@ module Component = struct
         type t = item list
     end = Signature
 
-
-    module Env = struct
-        (* A bunch of association lists. Let's hashtbl them up later *)
-        type t =
-            { ident_max: int
-            ; modules : (Identifier.Module.t * Module.t) list
-            ; moduletypes : (Identifier.ModuleType.t * ModuleType.t) list
-            ; types : (Identifier.Type.t * Type.t) list }
-
-        (* Handy for extrating transient state *)
-        exception MyFailure of Model.Paths.Identifier.t * t
-
-        let empty =
-            { ident_max = 0
-            ; modules = []
-            ; moduletypes = []
-            ; types = [] }
-
-        let add_module identifier m env =
-            { env with modules = (identifier, m)::env.modules}
-
-        let add_type identifier t env =
-            { env with types = (identifier, t)::env.types}
-
-        let lookup_module identifier env =
-            try
-                List.assoc identifier env.modules
-            with _ -> raise (MyFailure ((identifier :> Model.Paths.Identifier.t), env))
-        
-        let lookup_type identifier env =
-            List.assoc identifier env.types
-
+    module Of_Lang = struct
         let ident_of_identifier ident_map identifier =
             List.assoc_opt identifier ident_map
 
@@ -189,12 +175,12 @@ module Component = struct
         and of_moduletype _ident_map m =
             match m with
             | Model.Lang.ModuleType.Signature s ->
-                let (s,_) = of_signature empty s in
+                let s = of_signature s in
                 ModuleType.Signature s
             | _ -> failwith "Unhandled here"
 
-        and of_signature : t -> Model.Lang.Signature.t -> Signature.t * t =
-            fun env items ->
+        and of_signature : Model.Lang.Signature.t -> Signature.t =
+            fun items ->
                 (* First we construct a list of brand new [Ident.t]s 
                    for each item in the signature *)
                 let ident_map : (Identifier.t * Ident.t) list = List.map (function
@@ -212,17 +198,59 @@ module Component = struct
                 (* Now we construct the Components for each item,
                    converting all paths containing Identifiers pointing at
                    our elements to local paths *)
-                List.fold_right2 (fun item (_, id) (items, env) ->
+                List.map2 (fun item (_, id) ->
                     match item with
                     |  Model.Lang.Signature.Type (_, t) ->
                         let t' = of_type ident_map t in
-                        (Signature.Type (id,t'))::items, add_type t.Model.Lang.TypeDecl.id t' {env with ident_max = env.ident_max + 1}
+                        Signature.Type (id,t')
                     | Model.Lang.Signature.Module (_, m) ->
                         let m' = of_module ident_map m in
-                        (Signature.Module (id, m'))::items, add_module m.Model.Lang.Module.id m' {env with ident_max = env.ident_max + 1}
-                    | _ -> failwith "Unhandled type in of_signature") items ident_map ([], env)
+                        Signature.Module (id, m')
+                    | _ -> failwith "Unhandled type in of_signature") items ident_map
 
+    end
 
+    module Env = struct
+        (* A bunch of association lists. Let's hashtbl them up later *)
+        type t =
+            { ident_max: int
+            ; modules : (Identifier.Module.t * Module.t) list
+            ; moduletypes : (Identifier.ModuleType.t * ModuleType.t) list
+            ; types : (Identifier.Type.t * Type.t) list }
+
+        (* Handy for extrating transient state *)
+        exception MyFailure of Model.Paths.Identifier.t * t
+
+        let empty =
+            { ident_max = 0
+            ; modules = []
+            ; moduletypes = []
+            ; types = [] }
+
+        let add_module identifier m env =
+            { env with modules = (identifier, m)::env.modules}
+
+        let add_type identifier t env =
+            { env with types = (identifier, t)::env.types}
+
+        let lookup_module identifier env =
+            try
+                List.assoc identifier env.modules
+            with _ -> raise (MyFailure ((identifier :> Model.Paths.Identifier.t), env))
+        
+        let lookup_type identifier env =
+            List.assoc identifier env.types
+
+        let open_signature : Model.Lang.Signature.t -> t -> t =
+            fun s env ->
+                let component = Of_Lang.of_signature s in
+                List.fold_left2 (fun env orig item ->
+                    match orig, item with
+                    | Model.Lang.Signature.Type (_, t), Signature.Type (_, ty) ->
+                        add_type t.Model.Lang.TypeDecl.id ty env
+                    | Model.Lang.Signature.Module (_, t), Signature.Module (_, ty) ->
+                        add_module t.Model.Lang.Module.id ty env
+                    | _ -> failwith "foo") env s component
     end
 end
 
@@ -309,7 +337,7 @@ and resolve_content env =
 
 and resolve_signature : Component.Env.t -> Model.Lang.Signature.t -> _ = fun env s ->
     let open Model.Lang.Signature in
-    let (_,env) = Component.Env.of_signature env s in
+    let env = Component.Env.open_signature s env in
     let (_, items') = 
         List.fold_right (fun item (env, items) ->
             match item with
@@ -352,8 +380,31 @@ and resolve_type_expression env texpr =
         Constr (resolve_type_path env path, ts)
     | _ -> failwith "Unhandled type expression"
 
+and resolve_compilation_unit env c =
+    let open Model.Lang.Compilation_unit in
+    let content' = 
+        match c.content with
+        | Module s -> Module (resolve_signature env s)
+        | Pack _ -> failwith "Unhandled"
+    in
+    { c with
+      content = content' }
+
+let mkenv () =
+  Odoc.Env.create ~important_digests:false ~directories:[]
+
+let resolve unit =
+  let env = mkenv () in
+  let resolve_env = Odoc.Env.build env (`Unit unit) in
+  let resolver = Odoc.Env.resolver resolve_env in
+  let result = Xref.resolve resolver unit in
+  let tbl = Xref.tbl resolver in
+  (result,tbl)
 
 
 let result () =
-    let (_,_,s) = myexample () in
-    resolve_signature Component.Env.empty s
+    let u = my_compilation_unit () in
+    let x = resolve_compilation_unit Component.Env.empty u in
+    let y = resolve u in
+    (x = fst y)
+ 
