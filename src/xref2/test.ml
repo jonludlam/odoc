@@ -31,17 +31,15 @@ let myexample0 () = model_of_string {|
 let myexample () = model_of_string {|
 module X : sig
   type t
-  module Y : sig
+  module type Y = sig
     type z 
   end
   type u = t
 end
 
-module Z : sig
-  type t = X.u
-end
+module Z : X.Y
 
-type x = X.Y.z
+type x = Z.z
 |}
 
 let my_compilation_unit () =
@@ -86,6 +84,7 @@ module Component = struct
                 | `ModuleType (_,s) -> (ModuleTypeName.to_string s, n)
                 | _ -> failwith "Unhandled"
 
+        let rename (s, _) = (s, fresh_int ())
     end
 
     module Path = struct 
@@ -168,16 +167,24 @@ module Component = struct
                 | Model.Lang.Module.Alias p ->
                     Module.Alias (local_path_of_path ident_map (p :> Model.Paths.Path.t))
                 | Model.Lang.Module.ModuleType s ->
-                    Module.ModuleType (of_moduletype ident_map s)
+                    Module.ModuleType (of_module_type_expr ident_map s)
             in
             {Module.type_}
 
-        and of_moduletype _ident_map m =
+        and of_module_type_expr ident_map m =
             match m with
             | Model.Lang.ModuleType.Signature s ->
                 let s = of_signature s in
                 ModuleType.Signature s
+            | Model.Lang.ModuleType.Path p ->
+                let p' = local_path_of_path ident_map (p :> Model.Paths.Path.t) in
+                ModuleType.Path p'
             | _ -> failwith "Unhandled here"
+        
+        and of_module_type ident_map m =
+            match m.Model.Lang.ModuleType.expr with
+            | None -> None
+            | Some m -> Some (of_module_type_expr ident_map m)
 
         and of_signature : Model.Lang.Signature.t -> Signature.t =
             fun items ->
@@ -190,6 +197,10 @@ module Component = struct
                         ((identifier :> Identifier.t), id)
                     | Model.Lang.Signature.Module (_, m) ->
                         let identifier = m.Model.Lang.Module.id in 
+                        let id = Ident.of_identifier (identifier :> Identifier.t) in
+                        ((identifier :> Identifier.t), id)
+                    | Model.Lang.Signature.ModuleType m ->
+                        let identifier = m.Model.Lang.ModuleType.id in
                         let id = Ident.of_identifier (identifier :> Identifier.t) in
                         ((identifier :> Identifier.t), id)
                     | _ -> failwith "Unhandled type in of_signature (1)") items
@@ -206,8 +217,92 @@ module Component = struct
                     | Model.Lang.Signature.Module (_, m) ->
                         let m' = of_module ident_map m in
                         Signature.Module (id, m')
+                    | Model.Lang.Signature.ModuleType m ->
+                        let m' = of_module_type ident_map m in
+                        Signature.ModuleType (id, m')
                     | _ -> failwith "Unhandled type in of_signature") items ident_map
 
+    end
+
+    module Subst = struct
+        type t = {
+            map : (Ident.t * [ `Local of Ident.t | `Global of Identifier.t ]) list
+        }
+
+        let add id subst t =
+            { map = (id, subst) :: t.map }
+
+        let rec path : t -> Path.t -> Path.t = fun s p ->
+            match p with
+            | `Local id -> begin
+                match List.assoc_opt id s.map with
+                | Some (`Local id') -> `Local id'
+                | Some (`Global id') -> `Global (`Resolved (`Identifier id'))
+                | None -> `Local id
+                end
+            | `Global _ -> p
+            | `Ldot (parent,x) -> `Ldot (path s parent, x)
+
+        let rec type_ s t = 
+            match t with
+            | Some t' -> Some (type_expr s t')
+            | None -> None
+        
+        and type_expr s t =
+            let open TypeExpr in
+            match t with
+            | Var s -> Var s
+            | Constr (p, ts) -> Constr (path s p, List.map (type_expr s) ts)
+
+        and module_type s t =
+            match t with
+            | Some m -> Some (module_type_expr s m)
+            | None -> None
+
+        and module_type_expr s t =
+            let open ModuleType in
+            match t with
+            | Path p -> Path (path s p)
+            | Signature sg -> Signature (signature s sg)
+
+        and module_ s t =
+            let open Module in
+            let type_ = match t.type_ with
+                | Alias p -> Alias (path s p)
+                | ModuleType t -> ModuleType (module_type_expr s t)
+            in
+            { type_ }
+
+        and rename_bound_idents s sg =
+            let open Signature in
+            function
+            | [] -> s, sg
+            | Module (id, m) :: rest ->
+                let id' = Ident.rename id in
+                rename_bound_idents
+                    (add id (`Local id') s)
+                    (Module (id', m) :: sg)
+                    rest
+            | ModuleType (id, t) :: rest ->
+                let id' = Ident.rename id in
+                rename_bound_idents
+                    (add id (`Local id') s)
+                    (ModuleType (id', t) :: sg)
+                    rest
+            | Type (id, t) :: rest ->
+                let id' = Ident.rename id in
+                rename_bound_idents
+                    (add id (`Local id') s)
+                    (Type (id', t) :: sg)
+                    rest
+
+        and signature s sg =
+            let open Signature in
+            let s, sg = rename_bound_idents s [] sg in
+            List.rev_map (function
+                | Module (id, m) -> Module (id, module_ s m)
+                | ModuleType (id, m) -> ModuleType (id, module_type s m)
+                | Type (id, t) -> Type (id, type_ s t)) sg
     end
 
     module Env = struct
@@ -215,7 +310,7 @@ module Component = struct
         type t =
             { ident_max: int
             ; modules : (Identifier.Module.t * Module.t) list
-            ; moduletypes : (Identifier.ModuleType.t * ModuleType.t) list
+            ; module_types : (Identifier.ModuleType.t * ModuleType.t) list
             ; types : (Identifier.Type.t * Type.t) list }
 
         (* Handy for extrating transient state *)
@@ -224,7 +319,7 @@ module Component = struct
         let empty =
             { ident_max = 0
             ; modules = []
-            ; moduletypes = []
+            ; module_types = []
             ; types = [] }
 
         let add_module identifier m env =
@@ -232,6 +327,9 @@ module Component = struct
 
         let add_type identifier t env =
             { env with types = (identifier, t)::env.types}
+
+        let add_module_type identifier t env =
+            { env with module_types = (identifier, t)::env.module_types}
 
         let lookup_module identifier env =
             try
@@ -241,6 +339,8 @@ module Component = struct
         let lookup_type identifier env =
             List.assoc identifier env.types
 
+        let lookup_module_type identifier env =
+            List.assoc identifier env.module_types
         let open_signature : Model.Lang.Signature.t -> t -> t =
             fun s env ->
                 let component = Of_Lang.of_signature s in
@@ -250,17 +350,30 @@ module Component = struct
                         add_type t.Model.Lang.TypeDecl.id ty env
                     | Model.Lang.Signature.Module (_, t), Signature.Module (_, ty) ->
                         add_module t.Model.Lang.Module.id ty env
+                    | Model.Lang.Signature.ModuleType t, Signature.ModuleType (_, ty) ->
+                        add_module_type t.Model.Lang.ModuleType.id ty env
                     | _ -> failwith "foo") env s component
     end
 end
 
 
-let signature_of_module_type _env m =
+let rec signature_of_path env =
+    match p with
+    | `Local id -> 
+        
+    | `Ldot (parent, id) ->
+        let sg = signature_of_path parent in
+        if List.mem_assoc 
+    | `Global p -> failwith "Unhandled"
+
+
+and signature_of_module_type env m =
     match m with
-    | Component.ModuleType.Path _ -> failwith "Unhandled"
+    | Component.ModuleType.Path p ->
+        let mt = Component.Env.lookup_module_type p
     | Component.ModuleType.Signature s -> s
 
-let signature_of_module env m =
+and signature_of_module env m =
     match m.Component.Module.type_ with
     | Component.Module.Alias _ -> failwith "Unhandled"
     | Component.Module.ModuleType expr -> signature_of_module_type env expr
