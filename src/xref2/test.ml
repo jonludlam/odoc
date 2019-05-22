@@ -29,12 +29,16 @@ let myexample0 () = model_of_string {|
 |}
 
 let myexample () = model_of_string {|
+module AA : sig
+  type 'a a
+end
+
 module X : sig
-  type t
+  type 'a t
   module type Y = sig
     type z 
   end
-  type u = t
+  type 'a u = 'a AA.a
 end
 
 module Z : X.Y
@@ -54,8 +58,21 @@ end
 type x = X.Z.z
 |}
 
+let myexample3 () = model_of_string {|
+module type A = sig
+  module M : sig module type S end
+  module N : M.S
+end
+
+module B : sig module type S = sig type t end end
+
+module C : A with module M = B
+
+type t = C.N.t
+|}
+
 let my_compilation_unit () =
-    let id, docs, s = myexample () in
+    let id, docs, s = myexample3 () in
     { Model.Lang.Compilation_unit.
       id = id
     ; doc = docs
@@ -129,9 +146,14 @@ module Component = struct
     end = TypeExpr
 
     and ModuleType : sig
+        type substitution =
+            | ModuleEq of Model.Paths.Fragment.Module.t * Module.decl
+
         type expr =
             | Path of Path.t
             | Signature of Signature.t
+            | With of expr * substitution list
+    
         type t = expr option
     end = ModuleType
 
@@ -147,6 +169,41 @@ module Component = struct
         
         type t = item list
     end = Signature
+
+    module Format = struct
+
+        let rec signature ppf sg =
+            let open Signature in
+            Format.fprintf ppf "@[<v>";
+            List.iter (function
+                | Module (id,m) ->
+                    Format.fprintf ppf
+                        "module %s%a@," (Ident.name id)
+                        module_ m
+                | ModuleType _ -> ()
+                | Type (id,t) ->
+                    Format.fprintf ppf
+                        "type %s%a@," (Ident.name id) type_ t) sg;
+            Format.fprintf ppf "@]";
+
+        and module_ ppf m =
+            let open Module in
+            match m.type_ with
+            | Alias p ->
+                Format.fprintf ppf " = %a" path p
+            | ModuleType (Signature sg) ->
+                Format.fprintf ppf " : sig@,@[<2>@,%a@]end" signature sg
+            | _ -> ()
+        
+        and type_ _ppf _t =
+            ()
+
+        and path ppf p =
+            match p with
+            | `Local ident -> Format.fprintf ppf "%s" (Ident.name ident)
+            | `Ldot (p,str) -> Format.fprintf ppf "%a.%s" path p str
+            | `Global _ -> Format.fprintf ppf "(global)"
+    end
 
     module Of_Lang = struct
         let ident_of_identifier ident_map identifier =
@@ -174,16 +231,23 @@ module Component = struct
                     Some (TypeExpr.Constr (local_path_of_path ident_map (path :> Model.Paths.Path.t), []))
                 | _ -> failwith "Unhandled in of_type"
 
+        and of_module_decl ident_map m =
+            match m with
+            | Model.Lang.Module.Alias p ->
+                Module.Alias (local_path_of_path ident_map (p :> Model.Paths.Path.t))
+            | Model.Lang.Module.ModuleType s ->
+                Module.ModuleType (of_module_type_expr ident_map s)
+
         and of_module ident_map m =
-            let type_ =
-                match m.Model.Lang.Module.type_ with
-                | Model.Lang.Module.Alias p ->
-                    Module.Alias (local_path_of_path ident_map (p :> Model.Paths.Path.t))
-                | Model.Lang.Module.ModuleType s ->
-                    Module.ModuleType (of_module_type_expr ident_map s)
-            in
+            let type_ = of_module_decl ident_map m.Model.Lang.Module.type_ in
             {Module.type_}
 
+        and of_module_type_substitution ident_map m =
+            match m with
+            | Model.Lang.ModuleType.ModuleEq (frag,decl) ->
+                ModuleType.ModuleEq (frag, of_module_decl ident_map decl)
+            | _ -> failwith "unhandled"
+        
         and of_module_type_expr ident_map m =
             match m with
             | Model.Lang.ModuleType.Signature s ->
@@ -192,6 +256,9 @@ module Component = struct
             | Model.Lang.ModuleType.Path p ->
                 let p' = local_path_of_path ident_map (p :> Model.Paths.Path.t) in
                 ModuleType.Path p'
+            | Model.Lang.ModuleType.With (e, subs) ->
+                ModuleType.With (of_module_type_expr ident_map e,
+                    List.map (of_module_type_substitution ident_map) subs)
             | _ -> failwith "Unhandled here"
         
         and of_module_type ident_map m =
@@ -281,6 +348,7 @@ module Component = struct
             match t with
             | Path p -> Path (path s p)
             | Signature sg -> Signature (signature s sg)
+            | With (_,_) -> failwith "Unahdlalell"
 
         and module_ s t =
             let open Module in
@@ -390,36 +458,82 @@ module Component = struct
                 Subst.identity s in
         let open Signature in
         List.map (function
-                | Module (id, m) -> Module (id, Subst.module_ sub m)
-                | ModuleType (id, m) -> ModuleType (id, Subst.module_type sub m)
-                | Type (id, t) -> Type (id, Subst.type_ sub t)) s
+                | Module (id, m) -> Module (Ident.rename id, Subst.module_ sub m)
+                | ModuleType (id, m) -> ModuleType (Ident.rename id, Subst.module_type sub m)
+                | Type (id, t) -> Type (Ident.rename id, Subst.type_ sub t)) s
+
+    
+    module Strengthen = struct
+        let rec signature (prefix : Model.Paths.Path.Resolved.Module.t) sg =
+            let open Signature in
+            let new_ids = List.map (function
+                | Module (id, _) -> (id, Ident.rename id)
+                | ModuleType (id, _) -> (id, Ident.rename id)
+                | Type (id, _) -> (id, Ident.rename id)) sg in
+            let sg' = List.map2 (fun item (_, new_id) ->
+                match item with
+                | Module (id, m) -> Module (new_id, module_ (`Module (prefix, ModuleName.of_string (Ident.name id))) m)
+                | ModuleType (id, m) -> ModuleType (new_id, module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name id))) m)
+                | Type (id, m) -> Type (new_id, type_ (`Type (prefix, TypeName.of_string (Ident.name id))) m))
+                sg new_ids in
+            let subst = List.fold_left (fun subst (old_id, new_id) -> Subst.add old_id (`Local new_id) subst) Subst.identity new_ids in
+            Subst.signature subst sg'
+        
+        and module_ (prefix : Model.Paths.Path.Resolved.Module.t) m =
+            match m.Module.type_ with
+            | Alias _ -> m
+            | ModuleType (Signature sg) -> { type_ = ModuleType (Signature (signature prefix sg)) }
+            | ModuleType _ -> failwith "Unhandled"
+
+        and module_type (prefix: Model.Paths.Path.Resolved.ModuleType.t) m =
+            match m with
+            | None -> Some (ModuleType.Path (`Global ((`Resolved (prefix :> Model.Paths.Path.Resolved.t)))))
+            | _ -> m
+
+        and type_ (path: Model.Paths.Path.Resolved.Type.t) t =
+            match t with
+            | None -> Some (TypeExpr.Constr (`Global (`Resolved (path :> Model.Paths.Path.Resolved.t)), []))
+            | _ -> t
+    end
         
 end
 
 type env = Component.Env.t
 
-let rec find_module_in_sig env s name =
+let find_module_in_sig s name =
     let m =
         List.find_opt
             (function
             | Component.Signature.Module ((s,_), _) when s=name -> true
-            | Component.Signature.ModuleType ((s,_), _) when s=name -> true
-            | _ -> false) s in
+            | _ -> false) s
+    in
     match m with
-    | Some (Component.Signature.Module (_,x)) ->
-        signature_of_module env x
-    | Some (Component.Signature.ModuleType (_, x)) ->
-        signature_of_module_type env x
+    | Some (Component.Signature.Module (_,x)) -> x
     | _ ->
         Printf.printf "Failed to find '%s'" name;
         failwith "Failed to find component"
+
+let rec find_module_type_in_sig s name =
+    let m =
+        List.find_opt
+            (function
+            | Component.Signature.ModuleType ((s,_), _) when s=name -> true
+            | _ -> false) s
+    in
+    match m with
+    | Some (Component.Signature.ModuleType (_,x)) -> x
+    | _ ->
+        Printf.printf "Failed to find '%s'" name;
+        failwith "Failed to find component"
+
 
 and signature_of_model_path : env -> Model.Paths.Path.t -> Component.Signature.t = fun env p ->
     match p with
     | `Resolved ((`Identifier (`Module _)) as p')
     | `Resolved ((`Module _) as p') ->
         signature_of_resolved_model_path env p'
-    | `Resolved ((`ModuleType _) as p') ->
+    | `Resolved ((`ModuleType _) as p')
+    | `Resolved ((`Identifier (`ModuleType _)) as p') ->
         signature_of_resolved_model_moduletype_path env p'
     | `Forward _ ->
         failwith "Forward path unexpected"
@@ -429,7 +543,24 @@ and signature_of_model_path : env -> Model.Paths.Path.t -> Component.Signature.t
         failwith "Apply unhandled"
     | `Dot (m, x) ->
         let s = signature_of_model_path env (m :> Model.Paths.Path.t) in
-        find_module_in_sig env s x
+        find_module_in_sig s x |> signature_of_module env
+    | _ ->
+        failwith "boo hoo"
+
+and module_of_model_path : env -> Model.Paths.Path.t -> Component.Module.t = fun env p -> 
+    match p with
+    | `Resolved ((`Identifier (`Module _)) as p')
+    | `Resolved ((`Module _) as p') ->
+        module_of_resolved_model_path env p'
+    | `Forward _ ->
+        failwith "Forward path unexpected"
+    | `Root _ ->
+        failwith "Roots unhandled"
+    | `Apply _ ->
+        failwith "Apply unhandled"
+    | `Dot (m, x) ->
+        let s = signature_of_model_path env (m :> Model.Paths.Path.t) in
+        find_module_in_sig s x
     | _ ->
         failwith "boo hoo"
 
@@ -440,7 +571,18 @@ and signature_of_resolved_model_path : env -> Model.Paths.Path.Resolved.Module.t
         signature_of_module env m |> Component.prefix_signature p
     | `Module (parent, name) ->
         let psig = signature_of_resolved_model_path env parent in
-        find_module_in_sig env psig name |> Component.prefix_signature p
+        find_module_in_sig psig name |>
+        signature_of_module env |>
+        Component.prefix_signature p
+    | _ -> failwith "Unhandled"
+
+and module_of_resolved_model_path : env -> Model.Paths.Path.Resolved.Module.t -> Component.Module.t = fun env p ->
+    match p with
+    | `Identifier (`Module(_,_) as i) ->
+        Component.Env.lookup_module i env
+    | `Module (parent, name) ->
+        let psig = signature_of_resolved_model_path env parent in
+        find_module_in_sig psig name
     | _ -> failwith "Unhandled"
 
 and signature_of_resolved_model_moduletype_path : env -> Model.Paths.Path.Resolved.ModuleType.t -> Component.Signature.t = fun env p ->
@@ -450,22 +592,103 @@ and signature_of_resolved_model_moduletype_path : env -> Model.Paths.Path.Resolv
         signature_of_module_type env m
     | `ModuleType (parent, name) ->
         let psig = signature_of_resolved_model_path env parent in
-        find_module_in_sig env psig name
+        find_module_type_in_sig psig name |>
+        signature_of_module_type env
 
 and signature_of_path : env -> Component.Path.t -> Component.Signature.t = fun env p ->
     match p with
     | `Local id -> failwith (Printf.sprintf "oh no %s" (Component.Ident.name id))
-    | `Ldot (parent, id) ->
+    | `Ldot (parent, id) -> begin
         let sg = signature_of_path env parent in
-        find_module_in_sig env sg id
+        try
+            find_module_in_sig sg id |>
+            signature_of_module env
+        with _ ->
+            find_module_type_in_sig sg id |>
+            signature_of_module_type env
+        end
     | `Global p ->
         signature_of_model_path env p
+
+and module_of_path : env -> Component.Path.t -> Component.Module.t = fun  env p ->
+    match p with
+    | `Local id -> failwith (Printf.sprintf "oh no %s" (Component.Ident.name id))
+    | `Ldot (parent, id) ->
+        let sg = signature_of_path env parent in
+        find_module_in_sig sg id
+    | `Global p ->
+        module_of_model_path env p
+
+and fragmap_signature : env -> Model.Paths.Fragment.Resolved.Signature.t -> (Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t =
+    fun env frag fn sg ->
+        match frag with
+        | `Root -> fn sg
+        | `Module (parent, name) ->
+            fragmap_signature env parent (fun s ->
+                List.map (function
+                    | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                        let sg = signature_of_module env m in
+                        let sg' = fn sg in
+                        Component.Signature.Module (id',Component.Module.{type_=ModuleType (Component.ModuleType.Signature sg')})
+                    | x -> x) s) sg
+        | _ -> failwith "foo"
+
+and fragmap_module : env -> Model.Paths.Fragment.Resolved.Module.t -> (Component.Module.t -> Component.Module.t) -> Component.Signature.t -> Component.Signature.t =
+    fun env frag fn sg ->
+        match frag with
+        | `Module (parent, name) ->
+            fragmap_signature env parent (fun s ->
+                List.map (function 
+                | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                    let m' = fn m in
+                    Component.Signature.Module (id', m')
+                | x -> x) s) sg
+        | `Subst (_, x) -> fragmap_module env x fn sg
+        | `SubstAlias (_, x) -> fragmap_module env x fn sg
+
+
+(*        fragmap_signature env (frag : Model.Paths.Fragment.Resolved.Module.t :> Model.Paths.Fragment.Resolved.Signature.t) fn sg*)
+
+and fragmap_unresolved_signature env frag fn sg =
+    match frag with
+    | `Dot (parent, name) ->
+        fragmap_unresolved_signature env parent (fun s ->
+            List.map (function
+                | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                    let sg = signature_of_module env m in
+                    let sg' = fn sg in
+                    Component.Signature.Module (id', Component.Module.{type_=ModuleType (Component.ModuleType.Signature sg')})
+                | x -> x) s) sg
+    | `Resolved x ->
+        fragmap_signature env x fn sg
+
+and fragmap_unresolved_module env frag fn sg =
+    match frag with
+    | `Dot (parent, name) ->
+        fragmap_unresolved_signature env parent (fun s ->
+            List.map (function
+                | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                    let m' = fn m in
+                    Component.Signature.Module (id', m')
+                | x -> x) s) sg
+    | `Resolved x ->
+        fragmap_module env x fn sg
 
 and signature_of_module_type_expr env m =
     match m with
     | Component.ModuleType.Path p ->
         signature_of_path env p
     | Component.ModuleType.Signature s -> s
+    | Component.ModuleType.With (s, subs) ->
+        let sg = signature_of_module_type_expr env s in
+        List.fold_left (fun sg sub ->
+            match sub with
+            | Component.ModuleType.ModuleEq (frag, Alias path) ->
+                let m = module_of_path env path in
+                fragmap_unresolved_module env frag (fun _ -> m) sg
+            | ModuleEq (frag, ModuleType expr) ->
+                fragmap_unresolved_module env frag (fun _ -> Component.Module.{type_ = ModuleType expr}) sg
+            ) sg subs
 
 and signature_of_module_type env m =
     match m with
@@ -476,6 +699,8 @@ and signature_of_module env m =
     match m.Component.Module.type_ with
     | Component.Module.Alias _ -> failwith "Unhandled"
     | Component.Module.ModuleType expr -> signature_of_module_type_expr env expr
+
+
 
 
 (* When resolving paths, we go down the path until we find an Identifier. Once we've
@@ -597,6 +822,12 @@ and resolve_module_type_expr : env -> Model.Lang.ModuleType.expr -> Model.Lang.M
     match expr with
     | Signature s -> Signature (resolve_signature env s)
     | Path p -> Path (resolve_module_type_path env p)
+    | With (expr, subs) ->
+        With (resolve_module_type_expr env expr,
+            List.map (function
+                | ModuleEq (frag, eqn) -> ModuleEq (frag, eqn)
+                | TypeEq (frag, eqn) -> TypeEq (frag, eqn)
+                | x -> x) subs)
     | _ -> failwith "Unhandled module type expression"
 
 and resolve_type env t =
@@ -639,5 +870,6 @@ let resolve unit =
 let result () =
     let u = my_compilation_unit () in
     let x = resolve_compilation_unit Component.Env.empty u in
-    let y = resolve u in
-    (x = fst y)
+(*    let y = resolve u in 
+    (x = fst y)*)
+    x
