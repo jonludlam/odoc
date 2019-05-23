@@ -178,12 +178,15 @@ module Component = struct
             List.iter (function
                 | Module (id,m) ->
                     Format.fprintf ppf
-                        "module %s%a@," (Ident.name id)
+                        "@[<2>module %s%a@]@," (Ident.name id)
                         module_ m
-                | ModuleType _ -> ()
+                | ModuleType (id,mt) ->
+                    Format.fprintf ppf
+                        "@[<2>module type %s%a@]@," (Ident.name id)
+                        module_type mt
                 | Type (id,t) ->
                     Format.fprintf ppf
-                        "type %s%a@," (Ident.name id) type_ t) sg;
+                        "@[<2>type %s%a@]@," (Ident.name id) type_ t) sg;
             Format.fprintf ppf "@]";
 
         and module_ ppf m =
@@ -191,10 +194,21 @@ module Component = struct
             match m.type_ with
             | Alias p ->
                 Format.fprintf ppf " = %a" path p
-            | ModuleType (Signature sg) ->
-                Format.fprintf ppf " : sig@,@[<2>@,%a@]end" signature sg
-            | _ -> ()
+            | ModuleType mt ->
+                Format.fprintf ppf " : %a" module_type_expr mt
         
+        and module_type ppf mt =
+            match mt with
+            | Some x -> Format.fprintf ppf "@ =@ %a" module_type_expr x
+            | None -> ()
+
+        and module_type_expr ppf mt =
+            let open ModuleType in
+            match mt with
+            | Path p -> path ppf p
+            | Signature sg -> Format.fprintf ppf "@[sig@ %a@ end@]" signature sg
+            | With (expr,_subs) -> Format.fprintf ppf "%a with subs" module_type_expr expr
+
         and type_ _ppf _t =
             ()
 
@@ -202,7 +216,31 @@ module Component = struct
             match p with
             | `Local ident -> Format.fprintf ppf "%s" (Ident.name ident)
             | `Ldot (p,str) -> Format.fprintf ppf "%a.%s" path p str
-            | `Global _ -> Format.fprintf ppf "(global)"
+            | `Global p -> Format.fprintf ppf "%a" model_path p
+        
+        and model_path ppf (p : Model.Paths.Path.t) =
+            match p with
+            | `Resolved rp -> model_resolved_path ppf rp
+            | `Root s -> Format.fprintf ppf "%s" s
+            | `Forward s -> Format.fprintf ppf "%s" s
+            | `Dot (parent,s) -> Format.fprintf ppf "%a.%s" model_path (parent :> Model.Paths.Path.t) s
+            | `Apply (func,arg) -> Format.fprintf ppf "%a(%a)" model_path (func :> Model.Paths.Path.t) model_path (arg :> Model.Paths.Path.t)
+
+        and model_resolved_path ppf (p : Model.Paths.Path.Resolved.t) =
+            match p with
+            | `Identifier id -> Format.fprintf ppf "(%a)" model_identifier id
+            | `Module (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Model.Paths.Path.Resolved.t) (Model.Names.ModuleName.to_string name)
+            | `ModuleType (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Model.Paths.Path.Resolved.t) (Model.Names.ModuleTypeName.to_string name)
+            | `Type (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Model.Paths.Path.Resolved.t) (Model.Names.TypeName.to_string name)
+            | _ -> failwith "Unimplemented"
+        
+        and model_identifier ppf (p : Model.Paths.Identifier.t) =
+            match p with
+            | `Root (_, unit_name) -> Format.fprintf ppf "%s" (UnitName.to_string unit_name)
+            | `Module (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Model.Paths.Identifier.t) (Model.Names.ModuleName.to_string name)
+            | `ModuleType (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Model.Paths.Identifier.t) (Model.Names.ModuleTypeName.to_string name)
+            | `Type (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Model.Paths.Identifier.t) (Model.Names.TypeName.to_string name)
+            | _ -> failwith "Unimplemented"
     end
 
     module Of_Lang = struct
