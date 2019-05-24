@@ -114,6 +114,11 @@ module Component = struct
                 | _ -> failwith "Unhandled"
 
         let name : t -> string = fst
+
+        let counter : t -> int = snd
+
+        let fmt ppf (id : t) = Format.fprintf ppf "%s/%d" (fst id) (snd id)
+
         let rename (s, _) = (s, fresh_int ())
     end
 
@@ -178,15 +183,15 @@ module Component = struct
             List.iter (function
                 | Module (id,m) ->
                     Format.fprintf ppf
-                        "@[<2>module %s%a@]@," (Ident.name id)
+                        "@[<v 2>module %a%a@]@," Ident.fmt id
                         module_ m
                 | ModuleType (id,mt) ->
                     Format.fprintf ppf
-                        "@[<2>module type %s%a@]@," (Ident.name id)
+                        "@[<v 2>module type %a%a@]@," Ident.fmt id
                         module_type mt
                 | Type (id,t) ->
                     Format.fprintf ppf
-                        "@[<2>type %s%a@]@," (Ident.name id) type_ t) sg;
+                        "@[<v 2>type %a%a@]@," Ident.fmt id type_ t) sg;
             Format.fprintf ppf "@]";
 
         and module_ ppf m =
@@ -199,22 +204,30 @@ module Component = struct
         
         and module_type ppf mt =
             match mt with
-            | Some x -> Format.fprintf ppf "@ =@ %a" module_type_expr x
+            | Some x -> Format.fprintf ppf " = %a" module_type_expr x
             | None -> ()
 
         and module_type_expr ppf mt =
             let open ModuleType in
             match mt with
             | Path p -> path ppf p
-            | Signature sg -> Format.fprintf ppf "@[sig@ %a@ end@]" signature sg
+            | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
             | With (expr,_subs) -> Format.fprintf ppf "%a with subs" module_type_expr expr
 
-        and type_ _ppf _t =
-            ()
+        and type_ ppf t =
+            match t with
+            | Some expr -> Format.fprintf ppf " = %a" type_expr expr
+            | None -> ()
+
+        and type_expr ppf e =
+            let open TypeExpr in
+            match e with
+            | Var x -> Format.fprintf ppf "%s" x
+            | Constr (p,_args) -> path ppf p
 
         and path ppf p =
             match p with
-            | `Local ident -> Format.fprintf ppf "%s" (Ident.name ident)
+            | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
             | `Ldot (p,str) -> Format.fprintf ppf "%a.%s" path p str
             | `Global p -> Format.fprintf ppf "%a" model_path p
         
@@ -521,7 +534,7 @@ module Component = struct
             match m.Module.type_ with
             | Alias _ -> m
             | ModuleType (Signature sg) -> { type_ = ModuleType (Signature (signature prefix sg)) }
-            | ModuleType _ -> failwith "Unhandled"
+            | ModuleType _ -> m
 
         and module_type (prefix: Model.Paths.Path.Resolved.ModuleType.t) m =
             match m with
