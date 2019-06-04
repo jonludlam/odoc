@@ -97,7 +97,7 @@ and Signature : sig
     | Ordinary
     | And
     | Nonrec
-    | Rec
+    | Rec 
 
   type item =
     | Module of recursive * Module.t

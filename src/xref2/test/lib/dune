@@ -1,0 +1,4 @@
+(library
+ (name odoc_xref_test)
+ (libraries compiler-libs.toplevel compiler-libs.common odoc__xref2 odoc__model)
+)

@@ -1,3 +1,7 @@
+(* This test strengthens this module with a path to a dummy root.
+   The expectation is we will add an equation to the `t` type
+   declaration so that it will be equal to `t` in the root. *)
+
 type t
 
 type u = t
