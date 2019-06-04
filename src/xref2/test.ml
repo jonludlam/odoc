@@ -1,90 +1,5 @@
 (* Playground for new model *)
 
-let cmti_of_string s =
-    let env = Compmisc.initial_env () in
-    let l = Lexing.from_string s in
-    let p = Parse.interface l in
-    Typemod.type_interface "" env p;;
-
-let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
-  let file_representation : Model.Root.Odoc_file.t =
-  Model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
-  {Model.Root.package; file = file_representation; digest}
-
-let dummy_root = 
-    root_of_compilation_unit
-        ~package:"nopackage"
-        ~hidden:false
-        ~module_name:"Test"
-        ~digest:"nodigest"
-
-let model_of_string str = 
-    let cmti = cmti_of_string str in
-    Odoc__loader__Cmti.read_interface dummy_root "noname" cmti
-
-let myexample0 () = model_of_string {|
-  type t
-
-  type u = t
-|}
-
-let myexample () = model_of_string {|
-module AA : sig
-  type 'a a
-end
-
-module X : sig
-  type 'a t
-  module type Y = sig
-    type z 
-  end
-  type 'a u = 'a AA.a
-end
-
-module Z : X.Y
-
-type x = Z.z
-|}
-
-let myexample2 () = model_of_string {|
-module X : sig
-  type t
-  module type Y = sig
-    type z 
-  end
-  module Z : Y
-end
-
-type x = X.Z.z
-|}
-
-let myexample3 () = model_of_string {|
-module type A = sig
-  module M : sig module type S end
-  module N : M.S
-end
-
-module B : sig module type S = sig type t end end
-
-module C : A with module M = B
-
-type t = C.N.t
-|}
-
-let my_compilation_unit () =
-    let id, docs, s = myexample3 () in
-    { Model.Lang.Compilation_unit.
-      id = id
-    ; doc = docs
-    ; digest = "nodigest"
-    ; imports = []
-    ; source = None
-    ; interface = true
-    ; hidden = false
-    ; content = Module s
-    ; expansion = None
-    }
-
 
 module Component = struct
     open Model.Paths
@@ -115,11 +30,14 @@ module Component = struct
 
         let name : t -> string = fst
 
+        let reset () = counter := 0
+
         let counter : t -> int = snd
 
         let fmt ppf (id : t) = Format.fprintf ppf "%s/%d" (fst id) (snd id)
 
         let rename (s, _) = (s, fresh_int ())
+
     end
 
     module Path = struct 
@@ -177,6 +95,11 @@ module Component = struct
 
     module Format = struct
 
+        let string_of fmt c =
+            let b = Buffer.create 100 in
+            Format.fprintf (Format.formatter_of_buffer b) "%a%!" fmt c;
+            Buffer.contents b
+
         let rec signature ppf sg =
             let open Signature in
             Format.fprintf ppf "@[<v>";
@@ -229,8 +152,7 @@ module Component = struct
             match p with
             | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
             | `Ldot (p,str) -> Format.fprintf ppf "%a.%s" path p str
-            | `Global p -> Format.fprintf ppf "%a" model_path p
-        
+            | `Global p -> Format.fprintf ppf "[%a]" model_path p
         and model_path ppf (p : Model.Paths.Path.t) =
             match p with
             | `Resolved rp -> model_resolved_path ppf rp
@@ -949,10 +871,3 @@ let resolve unit =
   let tbl = Xref.tbl resolver in
   (result,tbl)
 
-
-let result () =
-    let u = my_compilation_unit () in
-    let x = resolve_compilation_unit Component.Env.empty u in
-(*    let y = resolve u in 
-    (x = fst y)*)
-    x

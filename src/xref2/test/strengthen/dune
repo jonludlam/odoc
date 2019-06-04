@@ -1,0 +1,14 @@
+(executable
+ (name test)
+ (libraries compiler-libs.toplevel odoc__xref2 odoc__model))
+
+(rule
+ (targets test.output)
+ (deps test.bc strengthen.mli.input)
+ (action
+    (with-stdout-to %{targets} (run ./test.bc))))
+
+(alias
+ (name runtest)
+ (action (diff test.expected test.output)))
+
