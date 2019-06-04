@@ -1,0 +1,5 @@
+ : sig
+type tt/12 = SubTargets/1.t
+type uu/13 = SubTargets/1.u
+type vv/14 = SubTargets/1.v
+end
