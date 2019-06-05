@@ -1,3 +1,16 @@
+Simple strengthening
+
+This tests that strengthening works. When we strengthen a signature we recursively add
+type equations for all abstract types.
+
+
+BEFORE
+======
+type t/0
+type u/1 = t/0
+
+AFTER 
+======
 type t/2 = [(Root).t]
 type u/3 = t/2
 

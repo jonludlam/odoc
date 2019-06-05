@@ -65,7 +65,7 @@ module Fmt = struct
             | Type (id,t) ->
                 Format.fprintf ppf
                     "@[<v 2>type %a%a@]@," Ident.fmt id type_ t) sg;
-        Format.fprintf ppf "@]";
+        Format.fprintf ppf "@]"
 
     and module_ ppf m =
         let open Module in
