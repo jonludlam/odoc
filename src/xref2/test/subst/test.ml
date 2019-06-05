@@ -16,6 +16,15 @@ let resolve_module_name sg name =
     in
     inner sg
 
+(* Module substitution test *)
+
+let name = "Module substitution"
+let description = {|
+This test substitutes one module for another. We substitute
+SubTargets in place of SubstituteMe, so the result expected is that
+the equations for t, u and v point to SubTargets rather than SubstituteMe
+|}
+
 let test_data = {|
 
 module SubstituteMe : sig
@@ -30,8 +39,6 @@ module SubTargets : sig
     type v
 end
 
-(* The test substitutes SubTargets in place of SubstituteMe, so the result expected is that
-   the equations for t, u and v point to SubTargets rather than SubstituteMe *)
 module S : sig
     open SubstituteMe
     type tt = t
@@ -42,7 +49,7 @@ end
 |}
 
 
-let test_subst () =
+let module_substitution () =
     let _, _, sg = Common.model_of_string test_data in
 
     let c = Component.Of_Lang.of_signature [] sg in
@@ -52,11 +59,16 @@ let test_subst () =
 
     let subst = Subst.add subst_idents_mod (`Local subst_targets_mod) Subst.identity in
 
-    let subst_object = Component.Find.module_in_sig c "S" in
+    let m = Component.Find.module_in_sig c "S" in
 
-    let m' = Subst.module_ subst subst_object in
+    let m' = Subst.module_ subst m in
 
-    Format.fprintf Format.std_formatter "%a%!" Component.Fmt.module_ m'
+    let open Format in
+    fprintf std_formatter "%s\n%s\n%!" name description;
+    fprintf std_formatter "BEFORE\n======\n%!";
+    fprintf std_formatter "S%a\n\n%!" Component.Fmt.module_ m;
+    fprintf std_formatter "AFTER \n======\n%!";
+    fprintf std_formatter "S%a\n\n%!" Component.Fmt.module_ m'
 
 let _ =
-    test_subst ()
+    module_substitution ()
