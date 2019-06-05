@@ -4,7 +4,7 @@
 
 (rule
  (targets test.output)
- (deps test.bc subst.mli.input)
+ (deps test.bc)
  (action
     (with-stdout-to %{targets} (run ./test.bc))))
 

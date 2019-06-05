@@ -1,0 +1,32 @@
+BEFORE
+======
+module type A/0 = sig
+                module M/4 : sig
+                  module type S/6
+                  end
+                module N/5 : M/4.S
+                end
+              module B/1 : sig
+                module type S/7 = sig
+                  type t/8
+                  end
+                end
+              module C/2 : A/0 with subs
+              type t/3 = C/2.N.t
+              
+AFTER 
+======
+module type A/33 = sig
+                module M/37 : sig
+                  module type S/39
+                  end
+                module N/38 : [(noname.A.M).S]
+                end
+              module B/34 : sig
+                module type S/40 = sig
+                  type t/41
+                  end
+                end
+              module C/35 : A/33 with subs
+              type t/36 = [(noname.C).N.t]
+              
