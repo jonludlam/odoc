@@ -16,10 +16,35 @@ let resolve_module_name sg name =
     in
     inner sg
 
+let test_data = {|
+
+module SubstituteMe : sig
+    type t
+    type u
+    type v
+end
+
+module SubTargets : sig
+    type t
+    type u
+    type v
+end
+
+(* The test substitutes SubTargets in place of SubstituteMe, so the result expected is that
+   the equations for t, u and v point to SubTargets rather than SubstituteMe *)
+module S : sig
+    open SubstituteMe
+    type tt = t
+    type uu = u
+    type vv = v
+end
+
+|}
+
+
 let test_subst () =
-    let filename = "subst.mli.input" in
-    let mli = Common.string_of_file filename in
-    let _, _, sg = Common.model_of_string mli in
+    let _, _, sg = Common.model_of_string test_data in
+
     let c = Component.Of_Lang.of_signature [] sg in
 
     let subst_idents_mod = resolve_module_name c "SubstituteMe" in
@@ -27,7 +52,7 @@ let test_subst () =
 
     let subst = Subst.add subst_idents_mod (`Local subst_targets_mod) Subst.identity in
 
-    let subst_object = Test.find_module_in_sig c "S" in
+    let subst_object = Component.Find.module_in_sig c "S" in
 
     let m' = Subst.module_ subst subst_object in
 

@@ -106,10 +106,10 @@ module Fmt = struct
     and model_path ppf (p : Model.Paths.Path.t) =
         match p with
         | `Resolved rp -> model_resolved_path ppf rp
-        | `Root s -> Format.fprintf ppf "%s" s
-        | `Forward s -> Format.fprintf ppf "%s" s
-        | `Dot (parent,s) -> Format.fprintf ppf "%a.%s" model_path (parent :> Model.Paths.Path.t) s
-        | `Apply (func,arg) -> Format.fprintf ppf "%a(%a)" model_path (func :> Model.Paths.Path.t) model_path (arg :> Model.Paths.Path.t)
+        | `Root s -> Format.fprintf ppf "*%s" s
+        | `Forward s -> Format.fprintf ppf "*%s" s
+        | `Dot (parent,s) -> Format.fprintf ppf "*%a.%s" model_path (parent :> Model.Paths.Path.t) s
+        | `Apply (func,arg) -> Format.fprintf ppf "*%a(%a)" model_path (func :> Model.Paths.Path.t) model_path (arg :> Model.Paths.Path.t)
 
     and model_resolved_path ppf (p : Model.Paths.Path.Resolved.t) =
         match p with
@@ -141,6 +141,8 @@ module Of_Lang = struct
             | None ->
                 `Global path
             end 
+        | `Resolved _ ->
+            `Global path
         | `Dot (path', x) ->
             `Ldot (local_path_of_path ident_map (path' :> Model.Paths.Path.t), x)
         | _ -> failwith "Unhandled in local_path_of_path"
@@ -227,5 +229,48 @@ module Of_Lang = struct
                     let m' = of_module_type ident_map m in
                     Signature.ModuleType (id, m')
                 | _ -> failwith "Unhandled type in of_signature") items ident_map_new
+
+end
+
+module Find = struct
+
+let module_in_sig s name =
+    let m =
+        List.find_opt
+            (function
+            | Signature.Module ((s,_), _) when s=name -> true
+            | _ -> false) s
+    in
+    match m with
+    | Some (Signature.Module (_,x)) -> x
+    | _ ->
+        Printf.printf "Failed to find '%s'" name;
+        failwith "Failed to find component"
+
+let module_type_in_sig s name =
+    let m =
+        List.find_opt
+            (function
+            | Signature.ModuleType ((s,_), _) when s=name -> true
+            | _ -> false) s
+    in
+    match m with
+    | Some (Signature.ModuleType (_,x)) -> x
+    | _ ->
+        Printf.printf "Failed to find '%s'" name;
+        failwith "Failed to find component"
+
+let type_in_sig s name =
+    let m =
+        List.find_opt
+            (function
+            | Signature.Type ((s,_), _) when s=name -> true
+            | _ -> false) s
+    in
+    match m with
+    | Some (Signature.Type (_,x)) -> x
+    | _ ->
+        Printf.printf "Failed to find '%s'" name;
+        failwith "Failed to find component"
 
 end
