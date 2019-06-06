@@ -1,3 +1,8 @@
+Basic resolution
+
+This test simply attempts to resolve everything within a signature.
+It includes a pattern that the previous implementation could not resolve.
+
 BEFORE
 ======
 module type A/0 = sig

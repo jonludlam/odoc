@@ -1,6 +1,11 @@
 open Odoc__xref2
 open Odoc_xref_test
 
+let name = "Basic resolution"
+let description = {|
+This test simply attempts to resolve everything within a signature.
+It includes a pattern that the previous implementation could not resolve.
+|}
 
 let test_data = {|
 
@@ -23,8 +28,10 @@ let test_resolve () =
     let sg' = Resolve.signature Env.empty sg in
     let c' = Component.Of_Lang.of_signature [] sg' in
 
-    Format.(fprintf std_formatter "BEFORE\n======\n%a\n%!" Component.Fmt.signature c);
-    Format.(fprintf std_formatter "AFTER \n======\n%a\n%!" Component.Fmt.signature c')
+    let open Format in
+    fprintf std_formatter "%s\n%s\n%!" name description;
+    fprintf std_formatter "BEFORE\n======\n%a\n%!" Component.Fmt.signature c;
+    fprintf std_formatter "AFTER \n======\n%a\n%!" Component.Fmt.signature c'
 
 let _ =
     test_resolve ()
