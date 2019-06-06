@@ -4,14 +4,14 @@ let prefix_signature path s =
     let open Component.Signature in
     let sub = List.fold_left (fun map item ->
         match item with
-        | Type (ident,_) -> Subst.add ident (`Global (`Resolved (`Type (path, TypeName.of_string (Ident.name ident)) :> Model.Paths.Path.Resolved.t))) map
-        | Module (ident, _) -> Subst.add ident (`Global (`Resolved (`Module (path, ModuleName.of_string (Ident.name ident)) :> Model.Paths.Path.Resolved.t))) map
-        | ModuleType (ident, _) -> Subst.add ident (`Global (`Resolved (`ModuleType (path, ModuleTypeName.of_string (Ident.name ident)) :> Model.Paths.Path.Resolved.t))) map)
+        | Type t -> Subst.add t.id (`Global (`Resolved (`Type (path, TypeName.of_string (Ident.name t.id)) :> Model.Paths.Path.Resolved.t))) map
+        | Module m -> Subst.add m.id (`Global (`Resolved (`Module (path, ModuleName.of_string (Ident.name m.id)) :> Model.Paths.Path.Resolved.t))) map
+        | ModuleType mt -> Subst.add mt.id (`Global (`Resolved (`ModuleType (path, ModuleTypeName.of_string (Ident.name mt.id)) :> Model.Paths.Path.Resolved.t))) map)
             Subst.identity s in
     List.map (function
-            | Module (id, m) -> Module (Ident.rename id, Subst.module_ sub m)
-            | ModuleType (id, m) -> ModuleType (Ident.rename id, Subst.module_type sub m)
-            | Type (id, t) -> Type (Ident.rename id, Subst.type_ sub t)) s
+            | Module m -> Module {(Subst.module_ sub m) with id=Ident.rename m.id}
+            | ModuleType mt -> ModuleType {(Subst.module_type sub mt) with id=Ident.rename mt.id}
+            | Type t -> Type {(Subst.type_ sub t) with id=Ident.rename t.id}) s
 
 
 type module_lookup_result =
@@ -22,6 +22,8 @@ type module_type_lookup_result =
 
 type type_lookup_result =
     Model.Paths.Path.Resolved.Type.t * Component.Type.t
+
+exception Lookup_failure of Env.t * Cpath.t * string
 
 let rec lookup_module_from_model_path : Env.t -> Model.Paths.Path.Module.t -> (module_lookup_result, Model.Paths.Path.Module.t) Result.result = fun env p ->
     match p with
@@ -57,7 +59,7 @@ and lookup_module_from_resolved_model_path : Env.t -> Model.Paths.Path.Resolved.
 
 and lookup_module_from_path : Env.t -> Cpath.t -> (module_lookup_result, Model.Paths.Path.Module.t) Result.result = fun env p ->
     match p with
-    | `Local id -> failwith (Printf.sprintf "oh no %s" (Ident.name id))
+    | `Local _id -> raise (Lookup_failure (env, p, "module")) 
     | `Ldot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
@@ -102,9 +104,10 @@ and lookup_module_type_from_resolved_model_path : Env.t -> Model.Paths.Path.Reso
         let mt = Component.Find.module_type_in_sig sg name in
         (`ModuleType (p', name), mt)
 
+
 and lookup_module_type_from_path : Env.t -> Cpath.t -> (module_type_lookup_result, Model.Paths.Path.ModuleType.t) Result.result = fun env p ->
     match p with
-    | `Local id -> failwith (Printf.sprintf "oh no %s" (Ident.name id))
+    | `Local _id -> raise (Lookup_failure (env, p, "module_type"))
     | `Ldot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
@@ -147,7 +150,7 @@ and lookup_type_from_resolved_model_path : Env.t -> Model.Paths.Path.Resolved.Ty
 
 and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Model.Paths.Path.Type.t) Result.result = fun env p ->
     match p with
-    | `Local id -> failwith (Printf.sprintf "oh no %s" (Ident.name id))
+    | `Local _id -> raise (Lookup_failure (env, p, "type"))
     | `Ldot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
@@ -188,12 +191,11 @@ and signature_of_module_type_expr : Env.t -> Component.ModuleType.expr -> Compon
                     failwith "Failed to lookup substitute module"
                 end
             | ModuleEq (frag, ModuleType expr) ->
-
-                fragmap_unresolved_module env frag (fun _ -> Component.Module.{type_ = ModuleType expr}) sg
+                fragmap_unresolved_module env frag (fun m -> Component.Module.{m with type_ = ModuleType expr}) sg
             ) sg subs
 
 and signature_of_module_type : Env.t -> Component.ModuleType.t -> Component.Signature.t = fun env m ->
-    match m with
+    match m.expr with
     | None -> failwith "oh no"
     | Some expr -> signature_of_module_type_expr env expr
 
@@ -211,10 +213,10 @@ and fragmap_signature : Env.t -> Model.Paths.Fragment.Resolved.Signature.t -> (C
         | `Module (parent, name) ->
             fragmap_signature env parent (fun s ->
                 List.map (function
-                    | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                    | Component.Signature.Module m when (Ident.name m.id = name) ->
                         let sg = signature_of_module env m in
                         let sg' = fn sg in
-                        Component.Signature.Module (id',Component.Module.{type_=ModuleType (Component.ModuleType.Signature sg')})
+                        Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')}
                     | x -> x) s) sg
         | _ -> failwith "foo"
 
@@ -224,9 +226,9 @@ and fragmap_module : Env.t -> Model.Paths.Fragment.Resolved.Module.t -> (Compone
         | `Module (parent, name) ->
             fragmap_signature env parent (fun s ->
                 List.map (function 
-                | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                | Component.Signature.Module m when Ident.name m.id = name ->
                     let m' = fn m in
-                    Component.Signature.Module (id', m')
+                    Component.Signature.Module {m' with id=m.id}
                 | x -> x) s) sg
         | `Subst (_, x) -> fragmap_module env x fn sg
         | `SubstAlias (_, x) -> fragmap_module env x fn sg
@@ -239,10 +241,10 @@ and fragmap_unresolved_signature env frag fn sg =
     | `Dot (parent, name) ->
         fragmap_unresolved_signature env parent (fun s ->
             List.map (function
-                | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                | Component.Signature.Module m when Ident.name m.id = name ->
                     let sg = signature_of_module env m in
                     let sg' = fn sg in
-                    Component.Signature.Module (id', Component.Module.{type_=ModuleType (Component.ModuleType.Signature sg')})
+                    Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')}
                 | x -> x) s) sg
     | `Resolved x ->
         fragmap_signature env x fn sg
@@ -252,9 +254,9 @@ and fragmap_unresolved_module env frag fn sg =
     | `Dot (parent, name) ->
         fragmap_unresolved_signature env parent (fun s ->
             List.map (function
-                | Component.Signature.Module ((id, _) as id', m) when id=name ->
+                | Component.Signature.Module m when Ident.name m.id = name ->
                     let m' = fn m in
-                    Component.Signature.Module (id', m')
+                    Component.Signature.Module {m' with id=m.id}
                 | x -> x) s) sg
     | `Resolved x ->
         fragmap_module env x fn sg

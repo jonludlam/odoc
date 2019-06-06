@@ -7,7 +7,8 @@ module rec Module : sig
     | ModuleType of ModuleType.expr
 
     type t =
-    { type_ : decl }
+      { id : Ident.t
+      ; type_ : decl }
 end = Module 
 
 and TypeExpr : sig
@@ -25,18 +26,22 @@ and ModuleType : sig
         | Signature of Signature.t
         | With of expr * substitution list
 
-    type t = expr option
+    type t =
+      { id : Ident.t
+      ; expr : expr option }
 end = ModuleType
 
 and Type : sig
-    type t = TypeExpr.t option (* manifest *)
+    type t =
+      { id : Ident.t
+      ; manifest : TypeExpr.t option }
 end = Type
 
 and Signature : sig
     type item = 
-        | Module of Ident.t * Module.t
-        | ModuleType of Ident.t * ModuleType.t
-        | Type of Ident.t * Type.t
+        | Module of Module.t
+        | ModuleType of ModuleType.t
+        | Type of Type.t
     
     type t = item list
 end = Signature
@@ -54,43 +59,58 @@ module Fmt = struct
         let open Signature in
         Format.fprintf ppf "@[<v>";
         List.iter (function
-            | Module (id,m) ->
+            | Module m ->
                 Format.fprintf ppf
-                    "@[<v 2>module %a%a@]@," Ident.fmt id
+                    "@[<v 2>module %a@]@,"
                     module_ m
-            | ModuleType (id,mt) ->
+            | ModuleType mt ->
                 Format.fprintf ppf
-                    "@[<v 2>module type %a%a@]@," Ident.fmt id
+                    "@[<v 2>module type %a@]@,"
                     module_type mt
-            | Type (id,t) ->
+            | Type t ->
                 Format.fprintf ppf
-                    "@[<v 2>type %a%a@]@," Ident.fmt id type_ t) sg;
+                    "@[<v 2>type %a@]@," type_ t) sg;
         Format.fprintf ppf "@]"
 
-    and module_ ppf m =
+    and module_decl ppf d =
         let open Module in
-        match m.type_ with
+        match d with
         | Alias p ->
-            Format.fprintf ppf " = %a" path p
+            Format.fprintf ppf "= %a" path p
         | ModuleType mt ->
-            Format.fprintf ppf " : %a" module_type_expr mt
-    
+            Format.fprintf ppf ": %a" module_type_expr mt
+
+    and module_ ppf m =
+        Format.fprintf ppf "%a %a" Ident.fmt m.id module_decl m.type_
+
     and module_type ppf mt =
-        match mt with
-        | Some x -> Format.fprintf ppf " = %a" module_type_expr x
-        | None -> ()
+        match mt.expr with
+        | Some x -> Format.fprintf ppf "%a = %a" Ident.fmt mt.id module_type_expr x
+        | None -> Format.fprintf ppf "%a" Ident.fmt mt.id
 
     and module_type_expr ppf mt =
         let open ModuleType in
         match mt with
         | Path p -> path ppf p
         | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
-        | With (expr,_subs) -> Format.fprintf ppf "%a with subs" module_type_expr expr
+        | With (expr,subs) -> Format.fprintf ppf "%a with [%a]" module_type_expr expr substitution_list subs
 
     and type_ ppf t =
+        match t.manifest with
+        | Some expr -> Format.fprintf ppf "%a = %a" Ident.fmt t.id type_expr expr
+        | None -> Format.fprintf ppf "%a" Ident.fmt t.id
+
+    and substitution ppf t =
+        let open ModuleType in
         match t with
-        | Some expr -> Format.fprintf ppf " = %a" type_expr expr
-        | None -> ()
+        | ModuleEq (frag, decl) ->
+            Format.fprintf ppf "%a -> %a" model_fragment (frag :> Model.Paths.Fragment.t) module_decl decl
+    
+    and substitution_list ppf l =
+        match l with
+        | sub :: (_ :: _) as subs -> Format.fprintf ppf "%a; %a" substitution sub substitution_list subs
+        | sub :: [] -> Format.fprintf ppf "%a" substitution sub
+        | [] -> ()
 
     and type_expr ppf e =
         let open TypeExpr in
@@ -103,6 +123,7 @@ module Fmt = struct
         | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
         | `Ldot (p,str) -> Format.fprintf ppf "%a.%s" path p str
         | `Global p -> Format.fprintf ppf "[%a]" model_path p
+
     and model_path ppf (p : Model.Paths.Path.t) =
         match p with
         | `Resolved rp -> model_resolved_path ppf rp
@@ -126,6 +147,18 @@ module Fmt = struct
         | `ModuleType (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Model.Paths.Identifier.t) (Model.Names.ModuleTypeName.to_string name)
         | `Type (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Model.Paths.Identifier.t) (Model.Names.TypeName.to_string name)
         | _ -> failwith "Unimplemented"
+
+    and model_fragment ppf (f : Model.Paths.Fragment.t) =
+        match f with
+        | `Resolved rf -> model_resolved_fragment ppf rf
+        | `Dot (sg, d) -> Format.fprintf ppf "*%a.%s" model_fragment (sg :> Model.Paths.Fragment.t) d
+    
+    and model_resolved_fragment ppf (f : Model.Paths.Fragment.Resolved.t) =
+        match f with
+        | `Root -> ()
+        | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Model.Paths.Fragment.Resolved.t) m
+        | _ -> failwith "Unimplmented"
+
 end
 
 module Of_Lang = struct
@@ -147,16 +180,18 @@ module Of_Lang = struct
             `Ldot (local_path_of_path ident_map (path' :> Model.Paths.Path.t), x)
         | _ -> failwith "Unhandled in local_path_of_path"
 
-    let rec of_type ident_map ty =
+    let rec of_type ident_map id ty =
         let open Model.Lang.TypeDecl in
-        match ty.equation.Equation.manifest with
-        | None -> None
-        | Some expr ->
-            match expr with
-            | Constr (path, _) ->
-                Some (TypeExpr.Constr (local_path_of_path ident_map (path :> Model.Paths.Path.t), []))
-            | _ -> failwith "Unhandled in of_type"
-
+        let manifest =
+            match ty.equation.Equation.manifest with
+            | None -> None
+            | Some expr ->
+                match expr with
+                | Constr (path, _) ->
+                    Some (TypeExpr.Constr (local_path_of_path ident_map (path :> Model.Paths.Path.t), []))
+                | _ -> failwith "Unhandled in of_type"
+        in
+        { Type.id; manifest }
     and of_module_decl ident_map m =
         match m with
         | Model.Lang.Module.Alias p ->
@@ -164,9 +199,9 @@ module Of_Lang = struct
         | Model.Lang.Module.ModuleType s ->
             Module.ModuleType (of_module_type_expr ident_map s)
 
-    and of_module ident_map m =
+    and of_module ident_map id m =
         let type_ = of_module_decl ident_map m.Model.Lang.Module.type_ in
-        {Module.type_}
+        {Module.id; type_}
 
     and of_module_type_substitution ident_map m =
         match m with
@@ -187,10 +222,13 @@ module Of_Lang = struct
                 List.map (of_module_type_substitution ident_map) subs)
         | _ -> failwith "Unhandled here"
     
-    and of_module_type ident_map m =
-        match m.Model.Lang.ModuleType.expr with
-        | None -> None
-        | Some m -> Some (of_module_type_expr ident_map m)
+    and of_module_type ident_map id m =
+        let expr =
+            match m.Model.Lang.ModuleType.expr with
+            | None -> None
+            | Some m -> Some (of_module_type_expr ident_map m)
+        in
+        {ModuleType.id; expr}
 
     and of_signature : _ -> Model.Lang.Signature.t -> Signature.t =
         let open Model.Paths in
@@ -220,57 +258,43 @@ module Of_Lang = struct
             List.map2 (fun item (_, id) ->
                 match item with
                 |  Model.Lang.Signature.Type (_, t) ->
-                    let t' = of_type ident_map t in
-                    Signature.Type (id,t')
+                    let t' = of_type ident_map id t in
+                    Signature.Type t'
                 | Model.Lang.Signature.Module (_, m) ->
-                    let m' = of_module ident_map m in
-                    Signature.Module (id, m')
+                    let m' = of_module ident_map id m in
+                    Signature.Module m'
                 | Model.Lang.Signature.ModuleType m ->
-                    let m' = of_module_type ident_map m in
-                    Signature.ModuleType (id, m')
+                    let m' = of_module_type ident_map id m in
+                    Signature.ModuleType m'
                 | _ -> failwith "Unhandled type in of_signature") items ident_map_new
 
 end
 
 module Find = struct
 
+exception Find_failure of Signature.t * string * string
+
+let fail sg name ty = raise (Find_failure (sg, name, ty))
+
 let module_in_sig s name =
-    let m =
-        List.find_opt
-            (function
-            | Signature.Module ((s,_), _) when s=name -> true
-            | _ -> false) s
-    in
-    match m with
-    | Some (Signature.Module (_,x)) -> x
-    | _ ->
-        Printf.printf "Failed to find '%s'" name;
-        failwith "Failed to find component"
+    let rec inner = function
+      | (Signature.Module m)::_ when (Ident.name m.id)=name -> m
+      | _::rest -> inner rest
+      | [] -> fail s name "module"
+    in inner s
 
 let module_type_in_sig s name =
-    let m =
-        List.find_opt
-            (function
-            | Signature.ModuleType ((s,_), _) when s=name -> true
-            | _ -> false) s
-    in
-    match m with
-    | Some (Signature.ModuleType (_,x)) -> x
-    | _ ->
-        Printf.printf "Failed to find '%s'" name;
-        failwith "Failed to find component"
+    let rec inner = function
+      | (Signature.ModuleType m)::_ when (Ident.name m.id)=name -> m
+      | _::rest -> inner rest
+      | [] -> fail s name "module"
+    in inner s
 
 let type_in_sig s name =
-    let m =
-        List.find_opt
-            (function
-            | Signature.Type ((s,_), _) when s=name -> true
-            | _ -> false) s
-    in
-    match m with
-    | Some (Signature.Type (_,x)) -> x
-    | _ ->
-        Printf.printf "Failed to find '%s'" name;
-        failwith "Failed to find component"
+    let rec inner = function
+      | (Signature.Type m)::_ when (Ident.name m.id)=name -> m
+      | _::rest -> inner rest
+      | [] -> fail s name "module"
+    in inner s
 
 end

@@ -26,11 +26,9 @@ and signature : Env.t -> Model.Lang.Signature.t -> _ = fun env s ->
             match item with
             | Module (r, m) ->
                 let m' = module_ env m in
-(*                let env' = update_env env (`Module m') in *)
                 (env, (Module (r, m'))::items)
             | Type (r, t) ->
                 let t' = type_ env t in
-(*                let env' = update_env env (`Type t') in*)
                 (env, (Type (r, t'))::items)
             | ModuleType mt ->
                 let mt' = module_type env mt in

@@ -24,10 +24,13 @@ let rec path : t -> Cpath.t -> Cpath.t = fun s p ->
         p
     | `Ldot (parent,x) -> `Ldot (path s parent, x)
 
-let rec type_ s t = 
-    match t with
-    | Some t' -> Some (type_expr s t')
-    | None -> None
+let rec type_ s t =
+    let open Component.Type in
+    let manifest = match t.manifest with
+        | Some t' -> Some (type_expr s t')
+        | None -> None
+    in
+    { t with manifest }
 
 and type_expr s t =
     let open Component.TypeExpr in
@@ -36,9 +39,13 @@ and type_expr s t =
     | Constr (p, ts) -> Constr (path s p, List.map (type_expr s) ts)
 
 and module_type s t =
-    match t with
-    | Some m -> Some (module_type_expr s m)
-    | None -> None
+    let open Component.ModuleType in
+    let expr =
+        match t.expr with
+        | Some m -> Some (module_type_expr s m)
+        | None -> None
+    in
+    {t with expr}
 
 and module_type_expr s t =
     let open Component.ModuleType in
@@ -57,35 +64,35 @@ and module_ s t =
         | ModuleType t ->
             ModuleType (module_type_expr s t)
     in
-    { type_ }
+    { t with type_ }
 
 and rename_bound_idents s sg =
     let open Component.Signature in
     function
     | [] -> s, sg
-    | Module (id, m) :: rest ->
-        let id' = Ident.rename id in
+    | Module m :: rest ->
+        let id' = Ident.rename m.id in
         rename_bound_idents
-            (add id (`Local id') s)
-            (Module (id', m) :: sg)
+            (add m.id (`Local id') s)
+            (Module {m with id=id'} :: sg)
             rest
-    | ModuleType (id, t) :: rest ->
-        let id' = Ident.rename id in
+    | ModuleType mt :: rest ->
+        let id' = Ident.rename mt.id in
         rename_bound_idents
-            (add id (`Local id') s)
-            (ModuleType (id', t) :: sg)
+            (add mt.id (`Local id') s)
+            (ModuleType {mt with id=id'} :: sg)
             rest
-    | Type (id, t) :: rest ->
-        let id' = Ident.rename id in
+    | Type t :: rest ->
+        let id' = Ident.rename t.id in
         rename_bound_idents
-            (add id (`Local id') s)
-            (Type (id', t) :: sg)
+            (add t.id (`Local id') s)
+            (Type {t with id=id'} :: sg)
             rest
 
 and signature s sg =
     let open Component.Signature in
     let s, sg = rename_bound_idents s [] sg in
     List.rev_map (function
-        | Module (id, m) -> Module (id, module_ s m)
-        | ModuleType (id, m) -> ModuleType (id, module_type s m)
-        | Type (id, t) -> Type (id, type_ s t)) sg
+        | Module m -> Module (module_ s m)
+        | ModuleType mt -> ModuleType (module_type s mt)
+        | Type t -> Type (type_ s t)) sg

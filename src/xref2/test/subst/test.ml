@@ -7,14 +7,7 @@ let filter_map f m =
     | [] -> []
     in inner m 
 
-let resolve_module_name sg name =
-    let rec inner = function
-        | Component.Signature.Module (id, _) :: rest ->
-            if Ident.name id = name then id else inner rest
-        | _::rest -> inner rest
-        | _ -> raise Not_found
-    in
-    inner sg
+let resolve_module_name sg name = (Component.Find.module_in_sig sg name).id
 
 (* Module substitution test *)
 

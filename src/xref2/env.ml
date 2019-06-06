@@ -41,16 +41,31 @@ let open_signature : Model.Lang.Signature.t -> t -> t =
             | Model.Lang.Signature.Type (_, t) ->
                 let identifier = (t.id :> Model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.of_type [identifier,id] t in
+                let ty = Of_Lang.of_type [identifier,id] id t in
                 add_type t.Model.Lang.TypeDecl.id ty env
             | Model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.of_module [identifier,id] t in
+                let ty = Of_Lang.of_module [identifier,id] id t in
                 add_module t.Model.Lang.Module.id ty env
             | Model.Lang.Signature.ModuleType t ->
                 let identifier = (t.id :> Model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.of_module_type [identifier,id] t in
+                let ty = Of_Lang.of_module_type [identifier,id] id t in
                 add_module_type t.Model.Lang.ModuleType.id ty env
             | _ -> failwith "foo") env s
+
+let pp_modules ppf modules =
+    List.iter (fun (i,m) ->
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Model.Paths.Identifier.t) Component.Fmt.module_ m) modules
+
+let pp_module_types ppf module_types =
+    List.iter (fun (i,m) ->
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Model.Paths.Identifier.t) Component.Fmt.module_type m) module_types
+
+let pp_types ppf types =
+    List.iter (fun (i,m) ->
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Model.Paths.Identifier.t) Component.Fmt.type_ m) types
+
+let pp ppf env =
+    Format.fprintf ppf "@[<v>@,modules: %a @,module_types: %a @,types: %a@," pp_modules env.modules pp_module_types env.module_types pp_types env.types

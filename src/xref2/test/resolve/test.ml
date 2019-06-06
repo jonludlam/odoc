@@ -25,13 +25,22 @@ type t = C.N.t
 let test_resolve () =
     let _, _, sg = Common.model_of_string test_data in
     let c = Component.Of_Lang.of_signature [] sg in
-    let sg' = Resolve.signature Env.empty sg in
-    let c' = Component.Of_Lang.of_signature [] sg' in
-
     let open Format in
     fprintf std_formatter "%s\n%s\n%!" name description;
     fprintf std_formatter "BEFORE\n======\n%a\n%!" Component.Fmt.signature c;
-    fprintf std_formatter "AFTER \n======\n%a\n%!" Component.Fmt.signature c'
+    try
+        let sg' = Resolve.signature Env.empty sg in
+        let c' = Component.Of_Lang.of_signature [] sg' in
+
+        fprintf std_formatter "AFTER \n======\n%a\n%!" Component.Fmt.signature c'
+    with
+    | Tools.Lookup_failure (e, p, ty) ->
+        let bt = Printexc.get_backtrace () in
+        fprintf std_formatter "FAILURE when lookup up a %s: \n%!" ty;
+        fprintf std_formatter "Path: %a\n%!" Component.Fmt.path p;
+        fprintf std_formatter "Env:\n%!%a" Env.pp e;
+        fprintf std_formatter "Backtrace:\n%s\n%!" bt
+
 
 let _ =
     test_resolve ()
