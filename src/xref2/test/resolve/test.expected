@@ -16,7 +16,7 @@ module type A/0 = sig
                   type t/8
                   end
                 end
-              module C/2 : A/0 with subs
+              module C/2 : A/0 with [*.M -> = B/1]
               type t/3 = C/2.N.t
               
 AFTER 
@@ -32,6 +32,6 @@ module type A/33 = sig
                   type t/41
                   end
                 end
-              module C/35 : A/33 with subs
+              module C/35 : A/33 with [*.M -> = B/34]
               type t/36 = [(noname.C).N.t]
               
