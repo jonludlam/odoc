@@ -348,6 +348,8 @@ and resolved_module_path local (p : Path.Resolved.Module.t) =
   | `Apply(p, arg) ->
       let parent = resolved_module_path local p in
         Sig.lookup_apply (module_path local) arg parent
+  | `Alias(_,_) ->
+    failwith "Alias"
 
 and resolved_module_type_path local (p : Path.Resolved.ModuleType.t) =
   match p with

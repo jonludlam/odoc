@@ -206,6 +206,7 @@ sig
     (* TODO: The canonical path should be a reference not a path *)
     | `Canonical of module_ * Path.module_
     | `Apply of module_ * Path.module_
+    | `Alias of module_ * module_
     ]
 
   and module_type = [
@@ -220,6 +221,7 @@ sig
     | `Module of module_ * ModuleName.t
     | `Canonical of module_ * Path.module_
     | `Apply of module_ * Path.module_
+    | `Alias of module_ * module_
     ]
 
   type module_type_no_id = [
