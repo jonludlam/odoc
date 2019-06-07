@@ -214,6 +214,7 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `Type (p, s) -> render_resolved (p :> t) ^ "." ^ (TypeName.to_string s)
     | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ (ClassName.to_string s)
     | `ClassType (p, s) -> render_resolved (p :> t) ^ "." ^ (ClassTypeName.to_string s)
+    | `Alias (_, p) -> render_resolved (p :> t)
   and render_path : Odoc_model.Paths.Path.t -> string =
     function
     | `Root root -> root

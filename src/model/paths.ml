@@ -529,6 +529,9 @@ module Path = struct
       | `Subst(sub1, p1), `Subst(sub2, p2) ->
         equal_resolved_path (p1 : module_ :> any) (p2 : module_ :> any)
         && equal_resolved_path (sub1 : module_type :> any) (sub2 : module_type :> any)
+      | `Alias(sub1, p1), `Alias(sub2, p2) ->
+        equal_resolved_path (p1 : module_ :> any) (p2 : module_ :> any)
+        && equal_resolved_path (sub1 : module_ :> any) (sub2 : module_ :> any)
       | `SubstAlias(sub1, p1), `SubstAlias(sub2, p2) ->
         equal_resolved_path (p1 : module_ :> any) (p2 : module_ :> any)
         && equal_resolved_path (sub1 : module_ :> any) (sub2 : module_ :> any)
@@ -593,6 +596,8 @@ module Path = struct
       Hashtbl.hash (27, hash_resolved_path (p : module_ :> any), s)
     | `ClassType(p, s) ->
       Hashtbl.hash (28, hash_resolved_path (p : module_ :> any), s)
+    | `Alias(m1, m2) ->
+      Hashtbl.hash (20, hash_resolved_path (m1 : module_ :> any), hash_resolved_path (m2 : module_ :> any))
 
   and hash_path : Paths_types.Path.any -> int =
     fun p ->
@@ -622,6 +627,7 @@ module Path = struct
     | `Type (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `Class (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `ClassType (p, _) -> is_resolved_hidden (p : module_ :> any)
+    | `Alias (p1, p2) -> is_resolved_hidden (p1 : module_ :> any) || is_resolved_hidden (p2 : module_ :> any)
 
   and is_path_hidden : Paths_types.Path.any -> bool =
     let open Paths_types.Path in
@@ -650,6 +656,7 @@ module Path = struct
       | `Canonical(_, `Resolved p) -> parent_module_identifier p
       | `Canonical(p, _) -> parent_module_identifier p
       | `Apply(m, _) -> parent_module_identifier m
+      | `Alias(sub, _) -> parent_module_identifier sub
 
     let equal p1 p2 = equal_resolved_path p1 p2
 
@@ -699,6 +706,7 @@ module Path = struct
             Stop t
         end
       | `Apply _ -> Stop t
+      | `Alias _ -> failwith "Alias"
     (* TODO: rewrite which side? *)
 
     let rec equal_identifier :
@@ -738,6 +746,7 @@ module Path = struct
         | `Canonical(_, `Resolved p) -> identifier p
         | `Canonical(p, _) -> identifier p
         | `Apply(m, _) -> identifier m
+        | `Alias(_,p) -> identifier p
 
       let rebase : Reversed.t -> t -> t =
         fun new_base t ->
@@ -777,6 +786,7 @@ module Path = struct
             | Continue (id, _) -> `Apply (`Identifier id, arg)
             | Stop mp' -> `Apply (mp', arg)
           end
+        | `Alias _ -> failwith "Alias"
 
       let rebase id t =
         let rev = Identifier.to_reversed id in
@@ -963,6 +973,7 @@ module Path = struct
       | `ModuleType(m, n) -> `ModuleType(parent_module_identifier m, n)
       | `Class(m, n) -> `Class(parent_module_identifier m, n)
       | `ClassType(m, n) -> `ClassType(parent_module_identifier m, n)
+      | `Alias(_, p) -> identifier (p :> t)
 
   end
 

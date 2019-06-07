@@ -1016,6 +1016,7 @@ end = struct
           | Some p, None -> Some(Path.apply p arg)
           | Some p, Some arg -> Some(Path.apply p arg)
       end
+    | `Alias _ -> failwith "Alias"
 
   and reduce_resolved_module_type_path id path (p : Path.Resolved.ModuleType.t) =
     match p with
@@ -1119,6 +1120,7 @@ end = struct
               Some (p, t)
         | None -> None
       end
+    | `Alias _ -> failwith "Alias"
 
   and subst_resolved_module_type_path id lookup (path : Path.Module.t) (p : Path.Resolved.ModuleType.t) =
     match p with

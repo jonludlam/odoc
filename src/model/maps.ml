@@ -325,6 +325,7 @@ class virtual path = object (self)
               if parent != parent' || name != name' then
                 `ClassType(parent', name')
               else p
+        | `Alias _ -> failwith "Alias"
 
   method path_resolved_module_name name = name
 

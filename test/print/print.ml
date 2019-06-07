@@ -113,6 +113,8 @@ struct
       List [Atom "class"; Atom (ClassName.to_string s); resolved (m :> Resolved.t)]
     |`ClassType (m, s) ->
       List [Atom "class_type"; Atom (ClassTypeName.to_string s); resolved (m :> Resolved.t)]
+    |`Alias (m, m') ->
+      List [Atom "alias"; resolved (m :> Resolved.t); resolved (m' :> Resolved.t)]
 end
 
 

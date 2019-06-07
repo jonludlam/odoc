@@ -322,6 +322,7 @@ and resolve_resolved_module_path_no_id : _ -> _ -> Paths_types.Resolved_path.mod
     let fn' = resolve_resolved_module_path ident tbl fn in
     if fn != fn' then `Apply(fn', arg)
     else (p :> Path.Resolved.Module.t)
+  | `Alias _ -> failwith "Alias"
 
 and resolve_resolved_module_path : _ -> _ ->
   Path.Resolved.Module.t -> Path.Resolved.Module.t =
@@ -333,6 +334,7 @@ and resolve_resolved_module_path : _ -> _ ->
   | `Hidden(_)
   | `Module(_,_)
   | `Canonical(_,_)
+  | `Alias(_,_) 
   | `Apply(_,_) as p' -> resolve_resolved_module_path_no_id ident tbl p'
 
 and resolve_resolved_type_class_path_no_id : _ -> _ ->
@@ -385,7 +387,8 @@ and resolve_resolved_path :
     (resolve_resolved_module_type_path_no_id ident tbl p' :> Path.Resolved.t)
   | `Type _ | `Class _ | `ClassType _ as p' ->
     (resolve_resolved_type_path_no_id ident tbl p' :> Path.Resolved.t)
-
+  | `Alias _ -> failwith "Alias"
+  
 and resolve_path_module_type ident tbl (p : Path.ModuleType.t) =
   match p with
   | `Resolved r ->

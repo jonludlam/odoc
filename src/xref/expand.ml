@@ -518,6 +518,7 @@ and expand_module_resolved_path' ({equal = eq; _ } as t) root (p : Path.Resolved
     md.id, md.doc, md.canonical, expand_module t root md, sub :: subs
   | `Canonical (p, _) -> t.expand_module_resolved_path ~root p
   | `Apply _ -> raise Not_found (* TODO support functor application *)
+  | `Alias _ -> failwith "Alias"
 
 and expand_module_path' ({equal = eq; _ } as t) root (p : Path.Module.t) =
   match p with
