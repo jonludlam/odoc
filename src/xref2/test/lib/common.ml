@@ -1,5 +1,19 @@
 open Odoc__alias
 
+(* Example usage of these:
+
+$ dune utop src/xref2/test/lib
+utop # open Odoc__xref2;;
+utop # open Odoc_xref_test;;
+utop # let test_data = "module type M = sig type t end module N : M type u = N.t";;
+utop # let id, docs, sg = Common.model_of_string test_data;;
+utop # let env = Env.open_signature sg Env.empty;;
+utop # let unit = Common.my_compilation_unit id docs sg;
+utop # Common.resolve unit
+utop # Resolve.signature Env.empty sg
+
+*)
+
 let _ = Toploop.set_paths ()
 
 let cmti_of_string s =
@@ -26,19 +40,6 @@ let model_of_string str =
     let cmti = cmti_of_string str in
     Odoc__loader__Cmti.read_interface dummy_root "noname" cmti
 
-let my_compilation_unit ex =
-    let id, docs, s = ex () in
-    { Model.Lang.Compilation_unit.
-      id = id
-    ; doc = docs
-    ; digest = "nodigest"
-    ; imports = []
-    ; source = None
-    ; interface = true
-    ; hidden = false
-    ; content = Module s
-    ; expansion = None
-    }
 
 let string_of_file f =
     let ic = open_in f in
@@ -94,3 +95,27 @@ module LangUtils = struct
 
 
 end
+
+let my_compilation_unit id docs s =
+    { Model.Lang.Compilation_unit.
+      id = id
+    ; doc = docs
+    ; digest = "nodigest"
+    ; imports = []
+    ; source = None
+    ; interface = true
+    ; hidden = false
+    ; content = Module s
+    ; expansion = None
+}
+
+let mkenv () =
+  Odoc.Env.create ~important_digests:false ~directories:[]
+
+let resolve unit =
+  let env = mkenv () in
+  let resolve_env = Odoc.Env.build env (`Unit unit) in
+  let resolver = Odoc.Env.resolver resolve_env in
+  let result = Xref.resolve resolver unit in
+  let tbl = Xref.tbl resolver in
+  (result,tbl)

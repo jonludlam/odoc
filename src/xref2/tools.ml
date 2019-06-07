@@ -1,5 +1,6 @@
 open Model.Names
 
+
 let prefix_signature path s =
     let open Component.Signature in
     let sub = List.fold_left (fun map item ->
@@ -185,8 +186,9 @@ and signature_of_module_type_expr : Env.t -> Component.ModuleType.expr -> Compon
             match sub with
             | Component.ModuleType.ModuleEq (frag, Alias path) -> begin
                 match lookup_module_from_path env path with
-                | Ok (_p, m) ->
-                    fragmap_unresolved_module env frag (fun _ -> m) sg
+                | Ok (p, m) ->
+                    let m' = Strengthen.module_ p m in
+                    fragmap_unresolved_module env frag (fun _ -> m') sg
                 | Error _ ->
                     failwith "Failed to lookup substitute module"
                 end
