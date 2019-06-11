@@ -1,7 +1,8 @@
 open Model.Names
 
+let map_opt m f = match m with | Some x -> Some (f x) | None -> None
 
-let prefix_signature path s =
+let prefix_signature (path, s) =
     let open Component.Signature in
     let sub = List.fold_left (fun map item ->
         match item with
@@ -9,10 +10,11 @@ let prefix_signature path s =
         | Module m -> Subst.add m.id (`Global (`Resolved (`Module (path, ModuleName.of_string (Ident.name m.id)) :> Model.Paths.Path.Resolved.t))) map
         | ModuleType mt -> Subst.add mt.id (`Global (`Resolved (`ModuleType (path, ModuleTypeName.of_string (Ident.name mt.id)) :> Model.Paths.Path.Resolved.t))) map)
             Subst.identity s in
-    List.map (function
+    let new_sig = List.map (function
             | Module m -> Module {(Subst.module_ sub m) with id=Ident.rename m.id}
             | ModuleType mt -> ModuleType {(Subst.module_type sub mt) with id=Ident.rename mt.id}
-            | Type t -> Type {(Subst.type_ sub t) with id=Ident.rename t.id}) s
+            | Type t -> Type {(Subst.type_ sub t) with id=Ident.rename t.id}) s in
+    (path, new_sig)
 
 
 type module_lookup_result =
@@ -33,12 +35,13 @@ let rec lookup_module_from_model_path : Env.t -> Model.Paths.Path.Module.t -> (m
         match lookup_module_from_model_path env m with
         | Error p -> Error (`Dot (p, x))
         | Ok (p', m) -> 
-            let s = signature_of_module env m |> prefix_signature p' in
+            let p', s = signature_of_module env (p', m) |> prefix_signature in
             let m' = Component.Find.module_in_sig s x in
             Ok (`Module (p', Model.Names.ModuleName.of_string x), m')
-        end
+            end
     | _ -> Error p
 
+    
 and lookup_module_from_resolved_model_path : Env.t -> Model.Paths.Path.Resolved.Module.t -> module_lookup_result = fun env p ->
     match p with
     | `Identifier i ->
@@ -48,10 +51,15 @@ and lookup_module_from_resolved_model_path : Env.t -> Model.Paths.Path.Resolved.
         let (p, m) = lookup_module_from_resolved_model_path env m in
         (`Hidden p, m)
     | `Module (p, name) ->
-        let (p', m) = lookup_module_from_resolved_model_path env p in
-        let sg = signature_of_module env m |> prefix_signature p in
+        let (p', sg) =
+            lookup_module_from_resolved_model_path env p
+            |> signature_of_module env
+            |> prefix_signature in
         let m' = Component.Find.module_in_sig sg (Model.Names.ModuleName.to_string name) in
         (`Module (p', name), m')
+    | `Alias (p1, p2) ->
+        let (p2', m) = lookup_module_from_resolved_model_path env p2 in
+        (`Alias (p1, p2'), m)
     | _ ->
         let b = Buffer.create 1024 in
         let fmt = Format.formatter_of_buffer b in
@@ -64,14 +72,14 @@ and lookup_module_from_path : Env.t -> Cpath.t -> (module_lookup_result, Model.P
     | `Ldot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
-            let sg = signature_of_module env m |> prefix_signature p in
+            let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
             let m' = Component.Find.module_in_sig sg id in
-            Ok (`Module (p, Model.Names.ModuleName.of_string id), m')
+            Ok (`Module (p', Model.Names.ModuleName.of_string id), m')
         | Error p ->
             Error (`Dot (p, id))
         end
     | `Global ((
-              `Root _
+            `Root _
             | `Forward _
             | `Dot (#Model.Paths.Path.Module.t, _)
             | `Resolved (#Model.Paths_types.Resolved_path.module_no_id)
@@ -80,8 +88,6 @@ and lookup_module_from_path : Env.t -> Cpath.t -> (module_lookup_result, Model.P
         lookup_module_from_model_path env p
     | _ -> failwith "bad lookup"
 
-
-
 and lookup_module_type_from_model_path : Env.t -> Model.Paths.Path.ModuleType.t -> (module_type_lookup_result, Model.Paths.Path.ModuleType.t) Result.result = fun env p ->
     match p with
     | `Resolved p -> Ok (lookup_module_type_from_resolved_model_path env p)
@@ -89,7 +95,7 @@ and lookup_module_type_from_model_path : Env.t -> Model.Paths.Path.ModuleType.t 
         match lookup_module_from_model_path env m with
         | Error p -> Error (`Dot (p, x))
         | Ok (p', m) ->
-            let s = signature_of_module env m in
+            let (p', s) = signature_of_module env (p', m) in
             let m' = Component.Find.module_type_in_sig s x in
             Ok (`ModuleType (p', Model.Names.ModuleTypeName.of_string x), m')
         end
@@ -100,8 +106,9 @@ and lookup_module_type_from_resolved_model_path : Env.t -> Model.Paths.Path.Reso
         let m = Env.lookup_module_type i env in
         (p, m)
     | `ModuleType (parent, name) ->
-        let (p', m) = lookup_module_from_resolved_model_path env parent in
-        let sg = signature_of_module env m in
+        let (p', sg) =
+            lookup_module_from_resolved_model_path env parent
+             |> signature_of_module env in
         let mt = Component.Find.module_type_in_sig sg name in
         (`ModuleType (p', name), mt)
 
@@ -112,9 +119,9 @@ and lookup_module_type_from_path : Env.t -> Cpath.t -> (module_type_lookup_resul
     | `Ldot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
-            let sg = signature_of_module env m in
+            let (p', sg) = signature_of_module env (p, m) in
             let m' = Component.Find.module_type_in_sig sg id in
-            Ok (`ModuleType (p, Model.Names.ModuleName.of_string id), m')
+            Ok (`ModuleType (p', Model.Names.ModuleName.of_string id), m')
         | Error p ->
             Error (`Dot (p, id))
         end
@@ -132,7 +139,7 @@ and lookup_type_from_model_path : Env.t -> Model.Paths.Path.Type.t -> (type_look
         match lookup_module_from_model_path env m with
         | Error p -> Error (`Dot (p, x))
         | Ok (p', m) ->
-            let s = signature_of_module env m in
+            let (p', s) = signature_of_module env (p', m) in
             let m' = Component.Find.type_in_sig s x in
             Ok (`Type (p', Model.Names.TypeName.of_string x), m')
         end
@@ -143,8 +150,9 @@ and lookup_type_from_resolved_model_path : Env.t -> Model.Paths.Path.Resolved.Ty
         let m = Env.lookup_type i env in
         (p, m)
     | `Type (parent, name) ->
-        let (p', m) = lookup_module_from_resolved_model_path env parent in
-        let sg = signature_of_module env m in
+        let (p', sg) =
+            lookup_module_from_resolved_model_path env parent
+            |> signature_of_module env in
         let t = Component.Find.type_in_sig sg name in
         (`Type (p', name), t)
     | _ -> failwith "Unhandled"
@@ -155,9 +163,9 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Model.Paths
     | `Ldot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
-            let sg = signature_of_module env m in
+            let (p', sg) = signature_of_module env (p, m) in
             let t' = Component.Find.type_in_sig sg id in
-            Ok (`Type (p, Model.Names.ModuleName.of_string id), t')
+            Ok (`Type (p', Model.Names.ModuleName.of_string id), t')
         | Error p ->
             Error (`Dot (p, id))
         end
@@ -174,7 +182,6 @@ and signature_of_module_type_expr : Env.t -> Component.ModuleType.expr -> Compon
         match lookup_module_type_from_path env p with
         | Ok (_p, mt) ->
             let sg = signature_of_module_type env mt in
-(*            Component.Strengthen.signature _p sg *)
             sg
         | Error _p ->
             failwith "Couldn't find signature"
@@ -201,11 +208,43 @@ and signature_of_module_type : Env.t -> Component.ModuleType.t -> Component.Sign
     | None -> failwith "oh no"
     | Some expr -> signature_of_module_type_expr env expr
 
-and signature_of_module env m =
+and signature_of_module_nopath : Env.t -> Component.Module.t -> Component.Signature.t =
+    fun env m ->
     match m.Component.Module.type_ with
-    | Component.Module.Alias _ -> failwith "Unhandled"
-    | Component.Module.ModuleType expr -> signature_of_module_type_expr env expr
+    | Component.Module.Alias path -> begin
+        match lookup_module_from_path env path with
+        | Ok (p', m) -> (* p' is the path to the aliased module *)
+            let sg = signature_of_module_nopath env m in
+            let m'' = Strengthen.signature p' sg in
+            (* p'' is the path to the real module *)
+            m''
+        | Error _ ->
+            failwith "Failed to lookup alias module"
+        end
+    | Component.Module.ModuleType expr ->
+        signature_of_module_type_expr env expr
 
+and signature_of_module : Env.t -> Model.Paths.Path.Resolved.Module.t * Component.Module.t -> Model.Paths.Path.Resolved.Module.t * Component.Signature.t =
+    fun env (p, m) ->
+    match m.Component.Module.type_ with
+    | Component.Module.Alias path -> begin
+        match lookup_module_from_path env path with
+        | Ok (p', m) -> (* p' is the path to the aliased module *)
+            let (p'', m') = signature_of_module env (p', m) in
+            let m'' = Strengthen.signature p'' m' in
+            (* p'' is the path to the real module *)
+            begin 
+                match p'' with
+                | `Alias (_, dest) -> (* `Alias (A, `Alias (B, C)) -> `Alias (A, C) *)
+                    `Alias (p, dest), m''
+                | _ ->
+                    (`Alias (p, p''), m'')
+            end
+        | Error _ ->
+            failwith "Failed to lookup alias module"
+        end
+    | Component.Module.ModuleType expr ->
+        (p, signature_of_module_type_expr env expr)
 
 
 and fragmap_signature : Env.t -> Model.Paths.Fragment.Resolved.Signature.t -> (Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t =
@@ -216,7 +255,7 @@ and fragmap_signature : Env.t -> Model.Paths.Fragment.Resolved.Signature.t -> (C
             fragmap_signature env parent (fun s ->
                 List.map (function
                     | Component.Signature.Module m when (Ident.name m.id = name) ->
-                        let sg = signature_of_module env m in
+                        let sg = signature_of_module_nopath env m in
                         let sg' = fn sg in
                         Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')}
                     | x -> x) s) sg
@@ -244,7 +283,7 @@ and fragmap_unresolved_signature env frag fn sg =
         fragmap_unresolved_signature env parent (fun s ->
             List.map (function
                 | Component.Signature.Module m when Ident.name m.id = name ->
-                    let sg = signature_of_module env m in
+                    let sg = signature_of_module_nopath env m in
                     let sg' = fn sg in
                     Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')}
                 | x -> x) s) sg

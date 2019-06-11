@@ -138,6 +138,7 @@ module Fmt = struct
         | `Module (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Model.Paths.Path.Resolved.t) (Model.Names.ModuleName.to_string name)
         | `ModuleType (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Model.Paths.Path.Resolved.t) (Model.Names.ModuleTypeName.to_string name)
         | `Type (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Model.Paths.Path.Resolved.t) (Model.Names.TypeName.to_string name)
+        | `Alias (path, realpath) -> Format.fprintf ppf "(%a -> %a)" model_resolved_path (path :> Model.Paths.Path.Resolved.t) model_resolved_path (realpath :> Model.Paths.Path.Resolved.t)
         | _ -> failwith "Unimplemented"
     
     and model_identifier ppf (p : Model.Paths.Identifier.t) =
