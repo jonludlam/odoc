@@ -831,7 +831,7 @@ let read_class_declaration env parent id cld =
     let virtual_ = cld.cty_new = None in
     { id; doc; virtual_; params; type_; expansion = None }
 
-let rec read_module_type env parent pos (mty : Odoc_model.Compat.module_type) =
+let rec read_module_type env parent (mty : Odoc_model.Compat.module_type) =
   let open ModuleType in
     match mty with
     | Mty_ident p -> Path (Env.Path.read_module_type env p)
@@ -842,8 +842,8 @@ let rec read_module_type env parent pos (mty : Odoc_model.Compat.module_type) =
           | None -> None
           | Some arg ->
               let name = parenthesise (Ident.name id) in
-              let id = `Argument(parent, pos, Odoc_model.Names.ArgumentName.of_string name) in
-              let arg = read_module_type env id 1 arg in
+              let id = `Parameter(parent, Odoc_model.Names.ParameterName.of_string name) in
+              let arg = read_module_type env id arg in
               let expansion =
                 match arg with
                 | Signature _ -> Some Module.AlreadyASig
@@ -851,8 +851,8 @@ let rec read_module_type env parent pos (mty : Odoc_model.Compat.module_type) =
               in
                 Some { FunctorArgument. id; expr = arg; expansion }
         in
-        let env = Env.add_argument parent pos id env in
-        let res = read_module_type env parent (pos + 1) res in
+        let env = Env.add_parameter parent id env in
+        let res = read_module_type env (`Result parent) res in
           Functor(arg, res)
     | Mty_alias _ -> assert false
 
@@ -862,7 +862,7 @@ and read_module_type_declaration env parent id (mtd : Odoc_model.Compat.modtype_
   let id = `ModuleType(parent, Odoc_model.Names.ModuleTypeName.of_string name) in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc = Doc_attr.attached container mtd.mtd_attributes in
-  let expr = opt_map (read_module_type env id 1) mtd.mtd_type in
+  let expr = opt_map (read_module_type env id) mtd.mtd_type in
   let expansion =
     match expr with
     | Some (Signature _) -> Some Module.AlreadyASig
@@ -886,7 +886,7 @@ and read_module_declaration env parent ident (md : Odoc_model.Compat.module_decl
   let type_ =
     match md.md_type with
     | Mty_alias p -> Alias (Env.Path.read_module env p)
-    | _ -> ModuleType (read_module_type env id 1 md.md_type)
+    | _ -> ModuleType (read_module_type env id md.md_type)
   in
   let hidden =
     match canonical with

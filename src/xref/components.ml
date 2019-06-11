@@ -216,7 +216,9 @@ module rec Sig : sig
 
   val lookup_module : string -> t -> t
 
-  val lookup_argument : int -> t -> t
+  val lookup_parameter : t -> t
+
+  val lookup_result : t -> t
 
   val lookup_apply : (Path.Module.t -> t) -> Path.Module.t ->
         t -> t
@@ -576,19 +578,24 @@ end = struct
     | Abstract -> unresolved
     | Unresolved -> unresolved
 
-  let rec lookup_argument pos t =
+  let rec lookup_parameter t =
     match t.body with
-    | Expr expr -> lookup_argument pos (Lazy.force expr.expansion)
+    | Expr expr -> lookup_parameter (Lazy.force expr.expansion)
     | Sig _ -> unresolved
-    | Functor fn ->
-        if pos = 1 then fn.arg
-        else lookup_argument (pos - 1) fn.res
-    | Generative t ->
-        if pos = 1 then unresolved
-        else lookup_argument (pos - 1) t
+    | Functor fn -> fn.arg
+    | Generative _ -> unresolved
     | Abstract -> unresolved
     | Unresolved -> unresolved
 
+  let rec lookup_result t =
+    match t.body with
+    | Expr expr -> lookup_result (Lazy.force expr.expansion)
+    | Sig _ -> unresolved
+    | Functor fn -> fn.res
+    | Generative t -> t
+    | Abstract -> unresolved
+    | Unresolved -> unresolved
+  
   let rec lookup_module_type name t =
     match t.body with
     | Expr expr -> lookup_module_type name (Lazy.force expr.expansion)
@@ -977,7 +984,8 @@ end = struct
           | Some p -> Some (Path.module_ p name)
           | None -> None
         end
-      | `Argument _ as id' -> if id = id' then Some path else None
+      | `Parameter _ as id' -> if id = id' then Some path else None
+      | `Result p -> reduce_signature_ident id path p
       | `ModuleType _ -> None
 
   and reduce_module_ident id path (m : Identifier.Module.t) =
@@ -988,7 +996,8 @@ end = struct
           | Some p -> Some (Path.module_ p name)
           | None -> None
         end
-      | `Argument _ as id' -> if id = id' then Some path else None
+      | `Parameter _ as id' -> if id = id' then Some path else None
+      | `Result p -> reduce_signature_ident id path p
 
   and reduce_resolved_module_path in_arg id path (p : Path.Resolved.Module.t) =
     match p with
@@ -1067,9 +1076,11 @@ end = struct
                 Some (p, t)
           | None -> None
         end
-      | `Argument _ as id' ->
+      | `Parameter _ as id' ->
           if id = id' then Some (path, lazy (lookup path))
           else None
+      | `Result p ->
+        subst_signature_ident id lookup path p
       | `ModuleType _ -> None
 
   and subst_module_ident id lookup path (id' : Identifier.Module.t) =
@@ -1084,7 +1095,8 @@ end = struct
                 Some (p, t)
           | None -> None
         end
-      | `Argument _ -> None
+      | `Parameter _ -> None
+      | `Result p -> subst_signature_ident id lookup path p
 
   and subst_module_type_ident id lookup (path : Path.Module.t) (id' : Identifier.ModuleType.t) =
       match id' with

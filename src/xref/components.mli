@@ -76,7 +76,9 @@ module rec Sig : sig
 
   val lookup_module : string -> t -> t
 
-  val lookup_argument : int -> t -> t
+  val lookup_parameter : t -> t
+
+  val lookup_result : t -> t
 
   val lookup_apply : (Path.Module.t -> t) -> Path.Module.t -> t -> t
 

@@ -62,9 +62,6 @@ val identifier_module : t -> Identifier.Module.t ->
 val identifier_signature : t -> Identifier.Signature.t ->
                         Identifier.Signature.t
 
-val offset_identifier_signature : t -> Identifier.Signature.t * int ->
-                                  Identifier.Signature.t * int
-
 val module_type_expr : t -> Lang.ModuleType.expr -> Lang.ModuleType.expr
 
 val module_expansion : t -> Lang.Module.expansion -> Lang.Module.expansion
@@ -72,7 +69,7 @@ val module_expansion : t -> Lang.Module.expansion -> Lang.Module.expansion
 val rename_signature : equal:(Root.t -> Root.t -> bool) ->
                        Identifier.Signature.t ->
                        Identifier.Signature.t ->
-                       int -> t
+                       t
 
 val rename_class_signature : equal:(Root.t -> Root.t -> bool) ->
                              Identifier.ClassSignature.t ->
