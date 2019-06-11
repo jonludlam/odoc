@@ -15,3 +15,11 @@ sig
 end
 
 module F4 (Arg : S) : S
+
+module F5 (Arg1 : S) (Arg2 : S) (Arg3 : S) : sig
+        type t = Arg1.t
+        type u = Arg2.t
+        type v = Arg3.t
+        type z = t
+end
+

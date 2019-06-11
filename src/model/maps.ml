@@ -52,13 +52,17 @@ class virtual identifier = object (self)
               if parent != parent' || name != name' then
                 `Module(parent', name')
               else id
-        | `Argument(parent, pos, name) ->
+        | `Parameter(parent, name) ->
             let parent' = self#identifier_signature parent in
-            let pos' = self#identifier_argument_position pos in
-            let name' = self#identifier_argument_name name in
-              if parent != parent' || pos != pos' || name != name' then
-                `Argument(parent', pos', name')
+            let name' = self#identifier_parameter_name name in
+              if parent != parent' || name != name' then
+                `Parameter(parent', name')
               else id
+        | `Result(parent) ->
+            let parent' = self#identifier_signature parent in
+            if parent != parent' then
+              `Result(parent')
+            else id
         | `ModuleType(parent, name) ->
             let parent' = self#identifier_signature parent in
             let name' = self#identifier_module_type_name name in
@@ -136,7 +140,7 @@ class virtual identifier = object (self)
         | `Label(parent, name) ->
             let parent' =
               match parent with
-              | (`Root _ | `Module _ | `Argument _ | `ModuleType _) as parent ->
+              | (`Root _ | `Module _ | `Parameter _ | `Result _ | `ModuleType _) as parent ->
                   (self#identifier_signature parent :> Identifier.LabelParent.t)
               | (`Class _ | `ClassType _) as parent ->
                   (self#identifier_class_signature parent :> Identifier.LabelParent.t)
@@ -156,9 +160,7 @@ class virtual identifier = object (self)
 
   method identifier_module_name name = name
 
-  method identifier_argument_position pos = pos
-
-  method identifier_argument_name name = name
+  method identifier_parameter_name name = name
 
   method identifier_module_type_name name = name
 

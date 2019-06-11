@@ -135,7 +135,9 @@ let equals_signature _eq (base : Identifier.Signature.t) (id : Identifier.t) =
         Identifier.Signature.equal base id
     | `Module _ as id ->
         Identifier.Signature.equal base id
-    | `Argument _ as id ->
+    | `Parameter _ as id ->
+        Identifier.Signature.equal base (id :> Identifier.Signature.t)
+    | `Result _ as id ->
         Identifier.Signature.equal base (id :> Identifier.Signature.t)
     | `ModuleType _ as id ->
         Identifier.Signature.equal base (id :> Identifier.Signature.t)
@@ -160,7 +162,8 @@ let rec is_parent_local : _ -> _ -> Identifier.t -> bool =
       | `Root _  -> false
       | `Page _ -> false
       | `Module(parent, _) -> is_local eq base (parent :> Identifier.t)
-      | `Argument(parent, _, _) -> is_local eq base (parent :> Identifier.t)
+      | `Parameter(parent, _) -> is_local eq base (parent :> Identifier.t)
+      | `Result(parent) -> is_local eq base (parent :> Identifier.t)
       | `ModuleType(parent, _) -> is_local eq base (parent :> Identifier.t)
       | `Type(parent, _) -> is_local eq base (parent :> Identifier.t)
       | `CoreType _ -> false
@@ -294,9 +297,12 @@ and signature_identifier tbl (i : Identifier.Signature.t) =
   | `Module(id, name) ->
       let parent = signature_identifier tbl id in
         Sig.lookup_module (ModuleName.to_string name) parent
-  | `Argument(id, pos, _) ->
+  | `Parameter(id, _) ->
       let parent = signature_identifier tbl id in
-        Sig.lookup_argument pos parent
+        Sig.lookup_parameter parent
+  | `Result(id) ->
+      let parent = signature_identifier tbl id in
+        Sig.lookup_result parent
   | `ModuleType(id, name) ->
       let parent = signature_identifier tbl id in
         Sig.lookup_module_type (ModuleTypeName.to_string name) parent
@@ -307,9 +313,12 @@ and module_identifier tbl (i : Identifier.Module.t) =
   | `Module(id, name) ->
       let parent = signature_identifier tbl id in
         Sig.lookup_module (ModuleName.to_string name) parent
-  | `Argument(id, pos, _) ->
+  | `Parameter(id, _) ->
       let parent = signature_identifier tbl id in
-        Sig.lookup_argument pos parent
+        Sig.lookup_parameter parent
+  | `Result id ->
+      let parent = signature_identifier tbl id in
+        Sig.lookup_result parent
 
 and module_type_identifier tbl (i : Identifier.ModuleType.t) =
   match i with

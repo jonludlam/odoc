@@ -20,7 +20,7 @@ val empty : t
 
 val add_module : Paths.Identifier.Signature.t -> Ident.t -> t -> t
 
-val add_argument : Paths.Identifier.Signature.t -> int -> Ident.t -> t -> t
+val add_parameter : Paths.Identifier.Signature.t -> Ident.t -> t -> t
 
 val add_module_type : Paths.Identifier.Signature.t -> Ident.t -> t -> t
 

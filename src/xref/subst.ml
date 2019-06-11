@@ -21,8 +21,6 @@ open Names
 class type t = object
   method root : Root.t -> Root.t
   inherit Maps.paths
-  method offset_identifier_signature :
-    Identifier.Signature.t * int -> Identifier.Signature.t * int
   inherit Maps.types
 end
 
@@ -80,9 +78,6 @@ let documentation s doc =
 let identifier_signature s id =
   s#identifier_signature id
 
-let offset_identifier_signature s idoff =
-  s#offset_identifier_signature idoff
-
 (* TODO either expose more maps or expose argument map directly *)
 let identifier_module s id =
   s#identifier_module id
@@ -94,7 +89,7 @@ let module_expansion s expr =
   s#module_expansion expr
 
 class rename_signature ~equal:_ (x : Identifier.Signature.t)
-        (y : Identifier.Signature.t) offset : t = object
+        (y : Identifier.Signature.t) : t = object
 
   inherit Maps.paths as super
 
@@ -107,26 +102,22 @@ class rename_signature ~equal:_ (x : Identifier.Signature.t)
   method! identifier (id : Identifier.t)
          : Identifier.t =
     match id with
-    | `Argument(parent, pos, name) ->
+    | `Parameter(parent, name) ->
         if Identifier.Signature.equal parent x then
-          `Argument(y, pos + offset, name)
+          `Parameter(y, name)
         else super#identifier id
     | id -> super#identifier id
-
-  method offset_identifier_signature (id, offset') =
-    if Identifier.Signature.equal id x then (y, offset + offset')
-    else (super#identifier_signature id, offset')
 
   inherit Maps.types
 
 end
 
-let rename_signature ~equal x y offset =
-  new rename_signature ~equal x y offset
+let rename_signature ~equal x y =
+  new rename_signature ~equal x y
 
 class rename_class_signature ~equal:_
            (x : Identifier.ClassSignature.t)
-           (y : Identifier.ClassSignature.t) : t = object (self)
+           (y : Identifier.ClassSignature.t) : t = object (_self)
 
   inherit Maps.paths as super
 
@@ -137,17 +128,13 @@ class rename_class_signature ~equal:_
     else super#identifier_class_signature id
 
   inherit Maps.types
-
-  method offset_identifier_signature (id, offset) =
-    (self#identifier_signature id, offset)
-
 end
 
 let rename_class_signature ~equal x y =
   new rename_class_signature ~equal x y
 
 class rename_datatype ~equal:_ (x : Identifier.DataType.t)
-        (y : Identifier.DataType.t) : t = object (self)
+        (y : Identifier.DataType.t) : t = object (_self)
 
   inherit Maps.paths as super
 
@@ -158,10 +145,6 @@ class rename_datatype ~equal:_ (x : Identifier.DataType.t)
     else super#identifier_datatype id
 
   inherit Maps.types
-
-  method offset_identifier_signature (id, offset) =
-    (self#identifier_signature id, offset)
-
 end
 
 let rename_datatype ~equal x y =
@@ -250,7 +233,7 @@ class prefix ~equal:_ ~canonical id : t = object
           else super#reference_resolved r
       | `Identifier (`Label(parent, name)) -> begin
           match parent with
-          | `Root _ | `Argument _
+          | `Root _ | `Parameter _ | `Result _
           | `Module _ | `ModuleType _ as parent ->
                 if matches parent then `Label(lreplacement, name)
                 else super#reference_resolved r
@@ -259,8 +242,6 @@ class prefix ~equal:_ ~canonical id : t = object
       | _ -> super#reference_resolved r
 
   inherit Maps.types
-
-  method offset_identifier_signature x = x
 
 end
 
@@ -309,8 +290,6 @@ class strengthen path : t = object
 
   inherit Maps.paths
 
-  method offset_identifier_signature x = x
-
   method! module_type_expr x = x
 
 end
@@ -335,7 +314,7 @@ let make_lookup ~equal:_ ~hash:_
 
 class pack ~equal ~hash
            (items : (Identifier.Module.t
-                     * Identifier.Module.t) list) : t = object (self)
+                     * Identifier.Module.t) list) : t = object (_self)
 
   val lookup = make_lookup ~equal ~hash items
 
@@ -348,25 +327,27 @@ class pack ~equal ~hash
         match id with
         | `Root _ as id -> begin
             match lookup id with
-            | Some (`Root _ | `Module _ | `Argument _ as id) -> id
+            | Some (`Root _ | `Module _ | `Parameter _ | `Result _ as id) -> id
             | None -> super#identifier id
           end
         | `Module _ as id -> begin
             match lookup id with
-            | Some (`Root _ | `Module _ | `Argument _ as id) -> id
+            | Some (`Root _ | `Module _ | `Parameter _ | `Result _ as id) -> id
             | None -> super#identifier id
           end
-        | `Argument _ as id -> begin
+        | `Parameter _ as id -> begin
             match lookup id with
-            | Some (`Root _ | `Module _ | `Argument _ as id) -> id
+            | Some (`Root _ | `Module _ | `Parameter _ | `Result _ as id) -> id
+            | None -> super#identifier id
+          end
+        | `Result _ as id -> begin
+            match lookup id with
+            | Some (`Root _ | `Module _ | `Parameter _ | `Result _ as id) -> id
             | None -> super#identifier id
           end
         | _ -> super#identifier id
 
   inherit Maps.types
-
-  method offset_identifier_signature (id, offset) =
-    (self#identifier_signature id, offset)
 
 end
 
