@@ -30,12 +30,13 @@ let test_resolve test =
     let c = Component.Of_Lang.of_signature [] sg in
     let open Format in
     fprintf std_formatter "%s\n%s\n%!" test.name test.description;
+    fprintf std_formatter "CODE\n====\n%!%s\n%!" test.test_data;
     fprintf std_formatter "BEFORE\n======\n%!%a\n%!" Component.Fmt.signature c;
     try
         let sg' = Resolve.signature Env.empty sg in
         let c' = Component.Of_Lang.of_signature [] sg' in
 
-        fprintf std_formatter "AFTER \n======\n%!%a\n%!" Component.Fmt.signature c'
+        fprintf std_formatter "AFTER \n===== \n%!%a\n%!" Component.Fmt.signature c'
     with
     | Tools.Lookup_failure (e, p, ty) ->
         let bt = Printexc.get_backtrace () in
@@ -93,8 +94,8 @@ let basic1 =
   { name = "Basic resolution 1"
   ; description = "Simplest possible resolution"
   ; test_data = {|
-        type t
-        type u = t
+type t
+type u = t
     |}
   ; test_fn = test_resolve }
 
@@ -164,10 +165,10 @@ let basic2 =
   { name = "Basic resolution 2"
   ; description = "Environment lookup"
   ; test_data = {|
-        module M : sig
-            type t
-        end
-        type u = M.t
+module M : sig
+    type t
+end
+type u = M.t
     |}
   ; test_fn = test_resolve }
 
@@ -211,11 +212,11 @@ let basic3 =
   { name = "Basic resolution 3"
   ; description = "Module type"
   ; test_data = {|
-        module type M = sig
-            type t
-        end
-        module N : M
-        type u = N.t
+module type M = sig
+    type t
+end
+module N : M
+type u = N.t
     |}
   ; test_fn = test_resolve }
 
@@ -236,13 +237,13 @@ let basic4 =
   { name = "Basic resolution 4"
   ; description = "Module type"
   ; test_data = {|
-        module type M = sig
-            module N : sig
-                type t
-            end
-        end
-        module A : M
-        type u = A.N.t
+module type M = sig
+    module N : sig
+        type t
+    end
+end
+module A : M
+type u = A.N.t
     |}
   ; test_fn = test_resolve }
 
@@ -300,14 +301,14 @@ let basic5 =
   { name = "Basic resolution 4"
   ; description = "Module type"
   ; test_data = {|
-        module type M = sig
-            module type N = sig
-                type t
-            end
-            module B : N
-        end
-        module A : M
-        type u = A.B.t
+module type M = sig
+    module type N = sig
+        type t
+    end
+    module B : N
+end
+module A : M
+type u = A.B.t
     |}
   ; test_fn = test_resolve }
 
@@ -316,16 +317,16 @@ let basic6 =
   { name = "Basic resolution 4"
   ; description = "Module type"
   ; test_data = {|
-        module type M = sig
-            module type N = sig
-                type t
-            end
-            module X : sig
-                module B : N
-            end
-        end
-        module A : M
-        type u = A.X.B.t
+module type M = sig
+    module type N = sig
+        type t
+    end
+    module X : sig
+        module B : N
+    end
+end
+module A : M
+type u = A.X.B.t
     |}
   ; test_fn = test_resolve }
 
@@ -334,17 +335,42 @@ let module_subst =
   { name = "Module substitution"
   ; description = "Ensure a substitution is taken into account during resolution"
   ; test_data = {|
-        module type A = sig
-        module M : sig module type S end
-        module N : M.S
-        end
+module type A = sig
+module M : sig module type S end
+module N : M.S
+end
 
-        module B : sig module type S = sig type t end end
+module B : sig module type S = sig type t end end
 
-        module C : A with module M = B
+module C : A with module M = B
 
-        type t = C.N.t
+type t = C.N.t
     |}
+  ; test_fn = test_resolve }
+
+let module_alias =
+  { name = "Module alias"
+  ; description = "Resolve a module alias"
+  ; test_data = {|
+module A : sig
+    type t
+end
+module B = A
+type t = B.t
+|}
+  ; test_fn = test_resolve }
+
+let module_alias2 =
+  { name = "Module alias"
+  ; description = "Resolve a module alias"
+  ; test_data = {|
+module A : sig
+    type t
+end
+module B = A
+module C = B
+type t = C.t
+|}
   ; test_fn = test_resolve }
 
 let tests =
@@ -354,7 +380,9 @@ let tests =
   ; basic4
   ; basic5
   ; basic6
-  ; module_subst ]
+  ; module_subst
+  ; module_alias
+  ; module_alias2 ]
 
 let _ =
     List.iter (fun test -> test.test_fn test) tests

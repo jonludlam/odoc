@@ -41,7 +41,11 @@ and module_ : Env.t -> Model.Lang.Module.t -> Model.Lang.Module.t = fun env m ->
     match m.type_ with
     | ModuleType expr ->
         {m with type_ = ModuleType (module_type_expr env expr)}
-    | _ -> failwith "Unhandled module"
+    | Alias p ->
+        match Tools.lookup_module_from_model_path env p with
+        | Ok (p', _) ->
+            {m with type_ = Alias (`Resolved p')}
+        | _ -> m
 
 and module_type : Env.t -> Model.Lang.ModuleType.t -> Model.Lang.ModuleType.t = fun env m ->
     let open Model.Lang.ModuleType in
