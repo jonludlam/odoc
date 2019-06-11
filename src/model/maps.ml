@@ -52,13 +52,18 @@ class virtual identifier = object (self)
               if parent != parent' || name != name' then
                 `Module(parent', name')
               else id
-        | `Argument(parent, pos, name) ->
+        | `Parameter(parent, name) ->
             let parent' = self#identifier_signature parent in
             let pos' = self#identifier_argument_position pos in
-            let name' = self#identifier_argument_name name in
+            let name' = self#identifier_parameter_name name in
               if parent != parent' || pos != pos' || name != name' then
                 `Argument(parent', pos', name')
               else id
+        | `Result(parent) ->
+            let parent' = self#identifier_signature parent in
+            if parent != parent' then
+              `Result(parent')
+            else id
         | `ModuleType(parent, name) ->
             let parent' = self#identifier_signature parent in
             let name' = self#identifier_module_type_name name in

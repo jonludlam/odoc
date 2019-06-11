@@ -216,7 +216,9 @@ module rec Sig : sig
 
   val lookup_module : string -> t -> t
 
-  val lookup_argument : int -> t -> t
+  val lookup_argument : t -> t
+
+  val lookup_result : t -> t
 
   val lookup_apply : (Path.Module.t -> t) -> Path.Module.t ->
         t -> t
@@ -576,16 +578,21 @@ end = struct
     | Abstract -> unresolved
     | Unresolved -> unresolved
 
-  let rec lookup_argument pos t =
+  let rec lookup_argument t =
     match t.body with
-    | Expr expr -> lookup_argument pos (Lazy.force expr.expansion)
+    | Expr expr -> lookup_argument (Lazy.force expr.expansion)
     | Sig _ -> unresolved
-    | Functor fn ->
-        if pos = 1 then fn.arg
-        else lookup_argument (pos - 1) fn.res
-    | Generative t ->
-        if pos = 1 then unresolved
-        else lookup_argument (pos - 1) t
+    | Functor fn -> fn.arg
+    | Generative t -> unresolved
+    | Abstract -> unresolved
+    | Unresolved -> unresolved
+
+  let rec lookup_result t =
+    match t.body with
+    | Expr expr -> lookup_result (Lazy.force expr.expansion)
+    | Sig _ -> unresolved
+    | Functor fn -> fn.res
+    | Generative t -> t
     | Abstract -> unresolved
     | Unresolved -> unresolved
 

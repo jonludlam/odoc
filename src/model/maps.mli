@@ -38,7 +38,7 @@ class virtual identifier : object
 
   method identifier_argument_position : int -> int
 
-  method identifier_argument_name : ArgumentName.t -> ArgumentName.t
+  method identifier_parameter_name : ParameterName.t -> ParameterName.t
 
   method identifier_module_type_name : ModuleTypeName.t -> ModuleTypeName.t
 

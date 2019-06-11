@@ -7,7 +7,8 @@ struct
   type signature = [
     | `Root of Root.t * UnitName.t
     | `Module of signature * ModuleName.t
-    | `Argument of signature * int * ArgumentName.t
+    | `Parameter of signature * ParameterName.t
+    | `Result of signature
     | `ModuleType of signature * ModuleTypeName.t
   ]
 
@@ -35,7 +36,8 @@ struct
   type module_ = [
     | `Root of Root.t * UnitName.t
     | `Module of signature * ModuleName.t
-    | `Argument of signature * int * ArgumentName.t
+    | `Parameter of signature * ParameterName.t
+    | `Result of signature
   ]
 
   type module_type = [

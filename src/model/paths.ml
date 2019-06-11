@@ -21,7 +21,8 @@ module Reversed = struct
     | Root of UnitName.t
     | Module of ModuleName.t
     | ModuleType of ModuleTypeName.t
-    | Argument of int * ArgumentName.t
+    | Parameter of ParameterName.t
+    | Result
 
   type t = elt list
 
@@ -36,11 +37,12 @@ module Identifier = struct
 
   type t = Paths_types.Identifier.any
 
-  let name : [< t] -> string = function
+  let rec name_aux : t -> string = function
     | `Root(_, name) -> UnitName.to_string name
     | `Page(_, name) -> PageName.to_string name
     | `Module(_, name) -> ModuleName.to_string name
-    | `Argument(_, _, name) -> ArgumentName.to_string name
+    | `Parameter(_, name) -> ParameterName.to_string name
+    | `Result x -> name_aux (x :> t)
     | `ModuleType(_, name) -> ModuleTypeName.to_string name
     | `Type(_, name) -> TypeName.to_string name
     | `CoreType name -> TypeName.to_string name
@@ -56,6 +58,8 @@ module Identifier = struct
     | `InstanceVariable(_, name) -> InstanceVariableName.to_string name
     | `Label(_, name) -> LabelName.to_string name
 
+  let name : [< t] -> string = fun n -> name_aux (n :> t)
+
   let rec equal : t -> t -> bool =
     let open Paths_types.Identifier in
     fun p1 p2 ->
@@ -64,8 +68,8 @@ module Identifier = struct
         UnitName.equal n1 n2 && Root.equal r1 r2
       | `Module (s1,n1), `Module (s2,n2) ->
         ModuleName.equal n1 n2 && equal (s1 : signature :> any) (s2 : signature :> any) 
-      | `Argument (s1,i1,n1), `Argument (s2,i2,n2) ->
-        i1=i2 && ArgumentName.equal n1 n2 && equal (s1 : signature :> any) (s2 : signature :> any)
+      | `Parameter (s1,n1), `Parameter (s2,n2) ->
+        ParameterName.equal n1 n2 && equal (s1 : signature :> any) (s2 : signature :> any)
       | `ModuleType (s1,n1), `ModuleType (s2,n2) ->
         ModuleTypeName.equal n1 n2 && equal (s1 : signature :> any) (s2 : signature :> any)
       | `Type (s1, n1), `Type (s2, n2) ->
@@ -107,8 +111,10 @@ module Identifier = struct
       Hashtbl.hash (2, Root.hash r, s)
     | `Module(id, s) ->
       Hashtbl.hash (3, hash (id : signature :> any), s)
-    | `Argument(id, n, s) ->
-      Hashtbl.hash (4, hash (id : signature :> any), n, s)
+    | `Parameter(id, s) ->
+      Hashtbl.hash (4, hash (id : signature :> any), s)
+    | `Result(s) ->
+      Hashtbl.hash (1001, hash (s : signature :> any))
     | `ModuleType(id, s) ->
       Hashtbl.hash (5, hash (id : signature :> any), s)
     | `Type(id, s) ->
@@ -151,7 +157,8 @@ module Identifier = struct
     let rec root = function
       | `Root(r, _) -> r
       | `Module(id, _)
-      | `Argument(id, _, _)
+      | `Parameter(id, _)
+      | `Result(id)
       | `ModuleType(id, _) -> root id
   end
 
@@ -205,7 +212,8 @@ module Identifier = struct
     let root : t -> Root.t = function
       | `Root(r, _) -> r
       | `Module(id, _)
-      | `Argument(id, _, _)
+      | `Parameter(id, _)
+      | `Result(id)
       | `ModuleType(id, _) -> Signature.root id
       | `Type(id,_) -> Signature.root id
       | `CoreType _ -> assert false
@@ -227,6 +235,8 @@ module Identifier = struct
     let root = function
       | `Root(r, _) -> r
       | `Module(id, _)
+      | `Parameter(id, _)
+      | `Result(id)
       | `Argument(id, _, _) -> Signature.root id
 
   end
@@ -432,7 +442,8 @@ module Identifier = struct
       | `Root (_, s) -> Reversed.Root s :: acc
       | `Module (i, s) -> loop (Reversed.Module s :: acc) i
       | `ModuleType (i, s) -> loop (Reversed.ModuleType s :: acc) i
-      | `Argument (i, d, s) -> loop (Reversed.Argument (d, s) :: acc) i
+      | `Parameter (i, s) -> loop (Reversed.Parameter s :: acc) i
+      | `Result _ -> loop (Reversed.Result :: acc) i
     in
     loop [] i
 

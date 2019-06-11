@@ -47,9 +47,9 @@ let add_module parent id env =
   let modules = Ident.add id module_ env.modules in
     { env with modules }
 
-let add_argument parent arg id env =
+let add_parameter parent id env =
   let name = Ident.name id in
-  let ident = `Identifier (`Argument(parent, arg, ArgumentName.of_string name)) in
+  let ident = `Identifier (`Parameter(parent, ParameterName.of_string name)) in
   let module_ = if should_be_hidden name then `Hidden ident else ident in
   let modules = Ident.add id module_ env.modules in
     { env with modules }
