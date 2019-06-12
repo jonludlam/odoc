@@ -350,12 +350,12 @@ let read_class_declarations env parent clds =
   |> fst
   |> List.rev
 
-let rec read_module_expr env parent label_parent pos mexpr =
+let rec read_module_expr env parent label_parent mexpr =
   let open ModuleType in
   let open Odoc_model.Names in
     match mexpr.mod_desc with
     | Tmod_ident _ ->
-        Cmi.read_module_type env parent pos (Odoc_model.Compat.module_type mexpr.mod_type)
+        Cmi.read_module_type env parent (Odoc_model.Compat.module_type mexpr.mod_type)
     | Tmod_structure str -> Signature (read_structure env parent str)
     | Tmod_functor(id, _, arg, res) ->
         let arg =
@@ -363,8 +363,8 @@ let rec read_module_expr env parent label_parent pos mexpr =
           | None -> None
           | Some arg ->
               let name = parenthesise (Ident.name id) in
-              let id = `Argument(parent, pos, ArgumentName.of_string name) in
-          let arg = Cmti.read_module_type env id label_parent 1 arg in
+              let id = `Parameter(parent, ParameterName.of_string name) in
+          let arg = Cmti.read_module_type env id label_parent arg in
               let expansion =
                 match arg with
                 | Signature _ -> Some Module.AlreadyASig
@@ -372,17 +372,17 @@ let rec read_module_expr env parent label_parent pos mexpr =
               in
                 Some { FunctorArgument. id; expr = arg; expansion }
         in
-        let env = Env.add_argument parent pos id env in
-      let res = read_module_expr env parent label_parent (pos + 1) res in
+        let env = Env.add_parameter parent id env in
+        let res = read_module_expr env (`Result parent) label_parent res in
           Functor(arg, res)
     | Tmod_apply _ ->
-        Cmi.read_module_type env parent pos (Odoc_model.Compat.module_type mexpr.mod_type)
+        Cmi.read_module_type env parent (Odoc_model.Compat.module_type mexpr.mod_type)
     | Tmod_constraint(_, _, Tmodtype_explicit mty, _) ->
-        Cmti.read_module_type env parent label_parent pos mty
+        Cmti.read_module_type env parent label_parent mty
     | Tmod_constraint(mexpr, _, Tmodtype_implicit, _) ->
-        read_module_expr env parent label_parent pos mexpr
+        read_module_expr env parent label_parent mexpr
     | Tmod_unpack(_, mty) ->
-        Cmi.read_module_type env parent pos (Odoc_model.Compat.module_type mty)
+        Cmi.read_module_type env parent (Odoc_model.Compat.module_type mty)
 
 and unwrap_module_expr_desc = function
   | Tmod_constraint(mexpr, _, Tmodtype_implicit, _) ->
@@ -406,7 +406,7 @@ and read_module_binding env parent mb =
   let type_ =
     match unwrap_module_expr_desc mb.mb_expr.mod_desc with
     | Tmod_ident(p, _) -> Alias (Env.Path.read_module env p)
-    | _ -> ModuleType (read_module_expr env id container 1 mb.mb_expr)
+    | _ -> ModuleType (read_module_expr env id container mb.mb_expr)
   in
   let hidden =
     match canonical with
@@ -501,7 +501,7 @@ and read_include env parent incl =
     let open Module in
     match unwrap_module_expr_desc incl.incl_mod.mod_desc with
     | Tmod_ident(p, _) -> Alias (Env.Path.read_module env p)
-    | _ -> ModuleType (read_module_expr env parent container 1 incl.incl_mod)
+    | _ -> ModuleType (read_module_expr env parent container incl.incl_mod)
   in
   let content = Cmi.read_signature env parent (Odoc_model.Compat.signature incl.incl_type) in
   let expansion = { content; resolved = false } in

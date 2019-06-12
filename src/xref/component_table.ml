@@ -20,28 +20,6 @@ open Odoc_model.Lang
 open Components
 open Odoc_model.Names
 
-let rec ident_to_string : Paths.Identifier.t -> string = fun id ->
-  match id with
-  | `Root (_,unit) -> Printf.sprintf "`Root (_, %s)" (Names.UnitName.to_string unit)
-  | `Module (s, mname) -> Printf.sprintf "`Module (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ModuleName.to_string mname)
-  | `Parameter (s, aname) -> Printf.sprintf "`Parameter (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ParameterName.to_string aname)
-  | `Result s -> Printf.sprintf "`Result (%s)" (ident_to_string (s :> Paths.Identifier.t))
-  | `ModuleType (s, name) -> Printf.sprintf "`ModuleType (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ModuleTypeName.to_string name)
-  | `Class (s, name) -> Printf.sprintf "`Class (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ClassName.to_string name)
-  | `ClassType (s, name) -> Printf.sprintf "`ClassType (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ClassTypeName.to_string name)
-  | `Type (s, name) -> Printf.sprintf "`Type (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.TypeName.to_string name)
-  | `CoreType name -> Printf.sprintf "`CoreType (%s)" (Names.TypeName.to_string name)
-  | `Field (s, name) -> Printf.sprintf "`Field (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.FieldName.to_string name)
-  | `Constructor (s, name) -> Printf.sprintf "`Constructor (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ConstructorName.to_string name)
-  | `Extension (s, name) -> Printf.sprintf "`Extension (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ExtensionName.to_string name)
-  | `Exception (s, name) -> Printf.sprintf "`Exception (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ExceptionName.to_string name)
-  | `CoreException name -> Printf.sprintf "`Exception (%s)" (Names.ExceptionName.to_string name)
-  | `Value (s, name) -> Printf.sprintf "`Value (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.ValueName.to_string name)
-  | `Method (s, name) -> Printf.sprintf "`Method (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.MethodName.to_string name)
-  | `InstanceVariable (s, name) -> Printf.sprintf "`InstanceVariable (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.InstanceVariableName.to_string name)
-  | `Label (s, name) -> Printf.sprintf "`Label (%s, %s)" (ident_to_string (s :> Paths.Identifier.t)) (Names.LabelName.to_string name)
-  | `Page (_, name) -> Printf.sprintf "`Page (root, %s)" (Names.PageName.to_string name)
-
 type ('a, 'b) tbl =
   { fresh: int -> ('a, 'b) tbl;
     find: 'a -> 'b;
@@ -319,9 +297,12 @@ and signature_identifier tbl (i : Identifier.Signature.t) =
   | `Module(id, name) ->
       let parent = signature_identifier tbl id in
         Sig.lookup_module (ModuleName.to_string name) parent
-  | `Argument(id, pos, _) ->
+  | `Parameter(id, _) ->
       let parent = signature_identifier tbl id in
-        Sig.lookup_argument pos parent
+        Sig.lookup_parameter parent
+  | `Result(id) ->
+      let parent = signature_identifier tbl id in
+        Sig.lookup_result parent
   | `ModuleType(id, name) ->
       let parent = signature_identifier tbl id in
         Sig.lookup_module_type (ModuleTypeName.to_string name) parent
@@ -332,9 +313,12 @@ and module_identifier tbl (i : Identifier.Module.t) =
   | `Module(id, name) ->
       let parent = signature_identifier tbl id in
         Sig.lookup_module (ModuleName.to_string name) parent
-  | `Argument(id, pos, _) ->
+  | `Parameter(id, _) ->
       let parent = signature_identifier tbl id in
-        Sig.lookup_argument pos parent
+        Sig.lookup_parameter parent
+  | `Result id ->
+      let parent = signature_identifier tbl id in
+        Sig.lookup_result parent
 
 and module_type_identifier tbl (i : Identifier.ModuleType.t) =
   match i with

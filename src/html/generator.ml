@@ -25,14 +25,6 @@ open Utils
 
 let a_href = Tree.Relative_link.to_sub_element
 
-let functor_arg_pos { Odoc_model.Lang.FunctorArgument.id ; _ } =
-  match id with
-  | `Argument (_, nb, _) -> nb
-  | _ ->
-    failwith "TODO"
-    (* let id = string_of_sexp @@ Identifier.sexp_of_t id in
-    invalid_arg (Printf.sprintf "functor_arg_pos: %s" id) *)
-
 let label = function
   | Odoc_model.Lang.TypeExpr.Label s -> [ Html.txt s ]
   | Optional s -> [ Html.txt "?"; Html.entity "#8288"; Html.txt s ]
@@ -1441,8 +1433,7 @@ struct
   = fun ?theme_uri arg ->
     let open Odoc_model.Lang.FunctorArgument in
     let name = Paths.Identifier.name arg.id in
-    let nb = functor_arg_pos arg in
-    let link_name = Printf.sprintf "%d-%s" nb name in
+    let link_name = Printf.sprintf "%s" name in
     let def_div, subtree =
       match arg.expansion with
       | None ->

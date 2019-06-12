@@ -545,7 +545,7 @@ let lookup_parent_ident env name : Reference.Parent.t =
   match StringTbl.find name env.parents with
   | `Page _ ->
     assert false
-  | `Root _ | `Module _ | `Argument _ | `ModuleType _ | `Type _ | `CoreType _
+  | `Root _ | `Module _ | `Parameter _ | `Result _ | `ModuleType _ | `Type _ | `CoreType _
   | `Class _ | `ClassType _ as id ->
     `Resolved (`Identifier id)
   | exception Not_found ->

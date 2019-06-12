@@ -635,7 +635,7 @@ let rec find_with_reference_substs
     try resolved pr (find parent)
     with Not_found ->
       match pr with
-      | `Identifier (`Root _ | `Module _ | `Argument _)
+      | `Identifier (`Root _ | `Module _ | `Parameter _ | `Result _)
       | `SubstAlias _ | `Module _ | `Canonical _ as pr -> begin
           match Sig.find_parent_subst parent with
           | Parent.SubstAlias subp -> begin
@@ -675,7 +675,7 @@ let rec resolve_parent_reference :
                   | _ -> Unresolved (lpop r)
           end
         | `Resolved
-            (`Identifier (`Root _ | `Module _ | `Argument _ | `ModuleType _)
+            (`Identifier (`Root _ | `Module _ | `Parameter _ | `Result _ | `ModuleType _)
              | `SubstAlias _ | `Module _ | `Canonical _ | `ModuleType _ as rr) -> begin
             match kind with
             | PParent ->
@@ -840,7 +840,7 @@ and resolve_label_parent_reference :
         end
       | `Root (_, (`TModule | `TModuleType | `TType | `TClass | `TClassType))
       | `Resolved (`Identifier ( `Root _ | `Module _
-                             | `Argument _ | `ModuleType _
+                             | `Parameter _ | `Result _ | `ModuleType _
                              | `Type _ | `CoreType _
                              | `Class _ | `ClassType _)
                  | `SubstAlias _ | `Module _ | `Canonical _
@@ -2052,7 +2052,7 @@ let splice_section_title tbl path elements =
   let title_of_parent =
     fun name parent_ref ->
       match parent_ref with
-      | (`Identifier (`Root _ | `Module _ | `Argument _ | `ModuleType _)
+      | (`Identifier (`Root _ | `Module _ | `Parameter _ | `Result _ | `ModuleType _)
         | `SubstAlias _ | `Module _ | `Canonical _ | `ModuleType _ as rr) ->
           Some (Sig.find_section_title name
                   (CTbl.resolved_signature_reference tbl rr))

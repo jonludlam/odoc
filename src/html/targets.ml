@@ -17,14 +17,6 @@
 open StdLabels
 open Odoc_model.Paths
 
-let functor_arg_pos { Odoc_model.Lang.FunctorArgument.id ; _ } =
-  match id with
-  | `Argument (_, nb, _) -> nb
-  | _ ->
-    failwith "TODO"
-    (* let id = string_of_sexp @@ Identifier.sexp_of_t id in
-    invalid_arg (Printf.sprintf "functor_arg_pos: %s" id) *)
-
 let rec unit ~package (t : Odoc_model.Lang.Compilation_unit.t) : string list =
   let name = Printf.sprintf "%s/%s" package (Identifier.name t.id) in
   let rest =
@@ -66,9 +58,8 @@ and functor_argument ~prefix arg =
   | None -> []
   | Some expansion ->
     let name = Identifier.name arg.id in
-    let nb = functor_arg_pos arg in
     (* FIXME: reuse [Url] somehow. *)
-    let page = Printf.sprintf "%s/argument-%d-%s" prefix nb name in
+    let page = Printf.sprintf "%s/argument-%s" prefix name in
     let subpages = module_expansion ~prefix:page expansion in
     page :: subpages
 
