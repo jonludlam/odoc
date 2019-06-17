@@ -54,7 +54,9 @@ and module_type_expr s t =
         Path (path s p)
     | Signature sg ->
         Signature (signature s sg)
+    | Functor _ 
     | With (_,_) -> failwith "Unahdlalell"
+
 
 and module_ s t =
     let open Component.Module in

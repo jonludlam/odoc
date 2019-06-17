@@ -33,6 +33,7 @@ let lookup_type identifier env =
 
 let lookup_module_type identifier env =
     List.assoc identifier env.module_types
+
 let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
     let open Component in
     fun s env ->

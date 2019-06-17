@@ -1,6 +1,12 @@
 (* The following types are identical in structure to those in
     {!Lang}, which may well be too complex for our use, we'll
     see as we expand on this *)
+module Opt = struct
+    let map f = function
+      | Some x -> Some (f x)
+      | None -> None
+end
+
 module rec Module : sig
     type decl =
     | Alias of Cpath.t
@@ -17,6 +23,12 @@ and TypeExpr : sig
         | Constr of Cpath.t * t list 
 end = TypeExpr
 
+and FunctorArgument : sig
+    type t =
+        { id : Ident.t
+        ; expr : ModuleType.expr }
+end = FunctorArgument
+
 and ModuleType : sig
     type substitution =
         | ModuleEq of Odoc_model.Paths.Fragment.Module.t * Module.decl
@@ -25,7 +37,7 @@ and ModuleType : sig
         | Path of Cpath.t
         | Signature of Signature.t
         | With of expr * substitution list
-
+        | Functor of FunctorArgument.t option * expr
     type t =
       { id : Ident.t
       ; expr : expr option }
@@ -94,6 +106,15 @@ module Fmt = struct
         | Path p -> path ppf p
         | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
         | With (expr,subs) -> Format.fprintf ppf "%a with [%a]" module_type_expr expr substitution_list subs
+        | Functor (arg, res) -> Format.fprintf ppf "(%a) -> %a" functor_argument_opt arg module_type_expr res
+
+    and functor_argument_opt ppf x =
+        match x with
+        | None -> ()
+        | Some x -> Format.fprintf ppf "%a" functor_argument x
+    
+    and functor_argument ppf x =
+        Format.fprintf ppf "%a : %a" Ident.fmt x.FunctorArgument.id module_type_expr x.FunctorArgument.expr
 
     and type_ ppf t =
         match t.manifest with
@@ -147,6 +168,8 @@ module Fmt = struct
         | `Module (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ModuleName.to_string name)
         | `ModuleType (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ModuleTypeName.to_string name)
         | `Type (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.TypeName.to_string name)
+        | `Parameter (parent, name) -> Format.fprintf ppf "(param %a %s)" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ParameterName.to_string name)
+        | `Result parent -> Format.fprintf ppf "%a.result" model_identifier (parent :> Odoc_model.Paths.Identifier.t) 
         | _ -> failwith "Unimplemented"
 
     and model_fragment ppf (f : Odoc_model.Paths.Fragment.t) =
@@ -209,7 +232,12 @@ module Of_Lang = struct
         | Odoc_model.Lang.ModuleType.ModuleEq (frag,decl) ->
             ModuleType.ModuleEq (frag, of_module_decl ident_map decl)
         | _ -> failwith "unhandled"
-    
+
+    and of_functor_argument ident_map id a =
+        let expr' = of_module_type_expr ident_map a.Odoc_model.Lang.FunctorArgument.expr in
+        { FunctorArgument.id
+        ; expr = expr' }
+
     and of_module_type_expr ident_map m =
         match m with
         | Odoc_model.Lang.ModuleType.Signature s ->
@@ -221,14 +249,21 @@ module Of_Lang = struct
         | Odoc_model.Lang.ModuleType.With (e, subs) ->
             ModuleType.With (of_module_type_expr ident_map e,
                 List.map (of_module_type_substitution ident_map) subs)
+        | Odoc_model.Lang.ModuleType.Functor (Some arg, expr) ->
+            let open Odoc_model.Paths in
+            let identifier = arg.Odoc_model.Lang.FunctorArgument.id in
+            let id = Ident.of_identifier (identifier :> Identifier.t) in
+            let ident_map' = ((identifier :> Identifier.t), id) :: ident_map in
+            let arg' = of_functor_argument ident_map' id arg in
+            let expr' = of_module_type_expr ident_map' expr in
+            ModuleType.Functor (Some arg', expr')
+        | Odoc_model.Lang.ModuleType.Functor (None, expr) ->
+            let expr' = of_module_type_expr ident_map expr in
+            ModuleType.Functor (None, expr')
         | _ -> failwith "Unhandled here"
     
     and of_module_type ident_map id m =
-        let expr =
-            match m.Odoc_model.Lang.ModuleType.expr with
-            | None -> None
-            | Some m -> Some (of_module_type_expr ident_map m)
-        in
+        let expr = Opt.map (of_module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in
         {ModuleType.id; expr}
 
     and of_signature : _ -> Odoc_model.Lang.Signature.t -> Signature.t =

@@ -52,6 +52,9 @@ and module_type : Env.t -> Odoc_model.Lang.ModuleType.t -> Odoc_model.Lang.Modul
     let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env expr) in
     {m with expr = expr'}
 
+and functor_argument : Env.t -> Odoc_model.Lang.FunctorArgument.t -> Odoc_model.Lang.FunctorArgument.t = fun env a ->
+    { a with expr = module_type_expr env a.expr }
+
 and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.Lang.ModuleType.expr = fun env expr ->
     let open Odoc_model.Lang.ModuleType in
     match expr with
@@ -63,7 +66,15 @@ and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.La
                 | ModuleEq (frag, eqn) -> ModuleEq (frag, eqn)
                 | TypeEq (frag, eqn) -> TypeEq (frag, eqn)
                 | x -> x) subs)
-    | _ -> failwith "Unhandled module type expression"
+    | Functor (arg, res) ->
+        let arg' =
+            match arg with
+            | None -> None
+            | Some x -> Some (functor_argument env x)
+        in
+        let res' = module_type_expr env res in
+        Functor (arg', res')
+    | _ -> failwith "boo"
 
 and type_ env t =
     let open Odoc_model.Lang.TypeDecl in
