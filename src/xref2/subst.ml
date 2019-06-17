@@ -1,5 +1,5 @@
 type t = {
-    map : (Ident.t * [ `Local of Ident.t | `Global of Model.Paths.Path.t ]) list
+    map : (Ident.t * [ `Local of Ident.t | `Global of Odoc_model.Paths.Path.t ]) list
 }
 
 let identity = {

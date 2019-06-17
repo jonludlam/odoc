@@ -11,8 +11,8 @@ let fresh_int () =
     incr counter;
     n
 
-let of_identifier : Model.Paths.Identifier.t -> t =
-    let open Model.Names in
+let of_identifier : Odoc_model.Paths.Identifier.t -> t =
+    let open Odoc_model.Names in
     fun i ->
         let n = fresh_int () in 
         match i with

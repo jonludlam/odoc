@@ -2,5 +2,5 @@
 type t = [
     | `Local of Ident.t
     | `Ldot of t * string
-    | `Global of Model.Paths.Path.t
+    | `Global of Odoc_model.Paths.Path.t
 ]

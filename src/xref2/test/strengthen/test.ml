@@ -1,4 +1,4 @@
-open Odoc__xref2
+open Odoc_xref2
 open Odoc_xref_test
 
 

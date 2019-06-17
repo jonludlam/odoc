@@ -1,6 +1,6 @@
 (executable
  (name test)
- (libraries odoc__xref2 odoc_xref_test))
+ (libraries odoc_xref2 odoc_xref_test))
 
 (rule
  (targets test.output)
