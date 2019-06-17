@@ -202,6 +202,8 @@ and signature_of_module_type_expr : Env.t -> Component.ModuleType.expr -> Compon
             | ModuleEq (frag, ModuleType expr) ->
                 fragmap_unresolved_module env frag (fun m -> Component.Module.{m with type_ = ModuleType expr}) sg
             ) sg subs
+    | Component.ModuleType.Functor (_,_) ->
+        failwith "Unhandled me"
 
 and signature_of_module_type : Env.t -> Component.ModuleType.t -> Component.Signature.t = fun env m ->
     match m.expr with

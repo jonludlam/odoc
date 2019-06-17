@@ -46,6 +46,8 @@ and module_type (prefix: Odoc_model.Paths.Path.Resolved.ModuleType.t) m =
             m.expr
         | Some (Component.ModuleType.Signature _) ->
             m.expr
+        | Some (Component.ModuleType.Functor _) -> 
+            m.expr
     in {m with expr}
 
 and type_ (path: Odoc_model.Paths.Path.Resolved.Type.t) t =

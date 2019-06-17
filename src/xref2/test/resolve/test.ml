@@ -44,6 +44,12 @@ let test_resolve test =
         fprintf std_formatter "Path: %a\n%!" Component.Fmt.path p;
         fprintf std_formatter "Env:\n%!%a" Env.pp e;
         fprintf std_formatter "Backtrace:\n%s\n%!" bt
+    | Env.MyFailure(id, e) ->
+        let bt = Printexc.get_backtrace () in
+        Printf.printf "FAILURE lookup up a path\n%!";
+        fprintf std_formatter "Identifier: %a\n%!" Component.Fmt.model_identifier id;
+        fprintf std_formatter "Env:\n%!%a" Env.pp e;
+        fprintf std_formatter "Backtrace:\n%s\n%!" bt
 
 
 (**
@@ -373,6 +379,20 @@ type t = C.t
 |}
   ; test_fn = test_resolve }
 
+let functor1 =
+  { name = "Functor"
+  ; description = "Resolve a functor"
+  ; test_data = {|
+module type S = sig
+  type t
+end
+
+module F ( X : S ) : sig
+  type t = X.t
+end
+|}
+  ; test_fn = test_resolve }
+  
 let tests =
   [ basic1
   ; basic2
@@ -382,7 +402,8 @@ let tests =
   ; basic6
   ; module_subst
   ; module_alias
-  ; module_alias2 ]
+  ; module_alias2
+  ; functor1 ]
 
 let _ =
     List.iter (fun test -> test.test_fn test) tests
