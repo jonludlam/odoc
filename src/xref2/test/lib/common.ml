@@ -1,4 +1,3 @@
-open Odoc__alias
 
 (* Example usage of these:
 
@@ -23,9 +22,9 @@ let cmti_of_string s =
     Typemod.type_interface "" env p;;
 
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
-  let file_representation : Model.Root.Odoc_file.t =
-  Model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
-  {Model.Root.package; file = file_representation; digest}
+  let file_representation : Odoc_model.Root.Odoc_file.t =
+  Odoc_model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
+  {Odoc_model.Root.package; file = file_representation; digest}
 
 let dummy_root = 
     root_of_compilation_unit
@@ -34,11 +33,11 @@ let dummy_root =
         ~module_name:"Test"
         ~digest:"nodigest"
 
-let root_identifier = `Identifier (`Root (dummy_root, Model.Names.UnitName.of_string "Root"))
+let root_identifier = `Identifier (`Root (dummy_root, Odoc_model.Names.UnitName.of_string "Root"))
 
 let model_of_string str = 
     let cmti = cmti_of_string str in
-    Odoc__loader__Cmti.read_interface dummy_root "noname" cmti
+    Odoc_loader__Cmti.read_interface dummy_root "noname" cmti
 
 
 let string_of_file f =
@@ -66,14 +65,14 @@ let list_files path =
 module LangUtils = struct
 
     module Lookup = struct
-        let module_from_sig : Model.Lang.Signature.t -> string -> Model.Lang.Module.t =
+        let module_from_sig : Odoc_model.Lang.Signature.t -> string -> Odoc_model.Lang.Module.t =
             fun sg mname ->
                 let rec inner = function
-                    | Model.Lang.Signature.Module (_, m) :: rest -> begin
-                        let id = m.Model.Lang.Module.id in
+                    | Odoc_model.Lang.Signature.Module (_, m) :: rest -> begin
+                        let id = m.Odoc_model.Lang.Module.id in
                         match id with
                         | `Module (_, mname') ->
-                            if Model.Names.ModuleName.to_string mname' = mname
+                            if Odoc_model.Names.ModuleName.to_string mname' = mname
                             then m
                             else inner rest
                         | _ -> inner rest
@@ -86,8 +85,8 @@ module LangUtils = struct
                 inner sg
     end
 
-    let sig_of_module : Model.Lang.Module.t -> Model.Lang.Signature.t =
-        let open Model.Lang in
+    let sig_of_module : Odoc_model.Lang.Module.t -> Odoc_model.Lang.Signature.t =
+        let open Odoc_model.Lang in
         fun x ->
             match x.type_ with
             | Module.ModuleType ModuleType.Signature s -> s
@@ -97,7 +96,7 @@ module LangUtils = struct
 end
 
 let my_compilation_unit id docs s =
-    { Model.Lang.Compilation_unit.
+    { Odoc_model.Lang.Compilation_unit.
       id = id
     ; doc = docs
     ; digest = "nodigest"
@@ -110,12 +109,11 @@ let my_compilation_unit id docs s =
 }
 
 let mkenv () =
-  Odoc.Env.create ~important_digests:false ~directories:[]
+  Odoc_odoc.Env.create ~important_digests:false ~directories:[]
 
 let resolve unit =
   let env = mkenv () in
-  let resolve_env = Odoc.Env.build env (`Unit unit) in
-  let resolver = Odoc.Env.resolver resolve_env in
-  let result = Xref.resolve resolver unit in
-  let tbl = Xref.tbl resolver in
-  (result,tbl)
+  let resolve_env = Odoc_odoc.Env.build env (`Unit unit) in
+  let resolver = Odoc_odoc.Env.resolver resolve_env in
+  let result = Odoc_xref.resolve resolver unit in
+  result

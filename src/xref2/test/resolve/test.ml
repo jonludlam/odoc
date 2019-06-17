@@ -1,4 +1,4 @@
-open Odoc__xref2
+open Odoc_xref2
 open Odoc_xref_test
 
 (** Resolution is the process by which we take a value of type {!type:Lang.t} and
