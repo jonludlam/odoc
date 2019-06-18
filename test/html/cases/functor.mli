@@ -23,3 +23,9 @@ module F5 (Arg1 : S) (Arg2 : S) (Arg3 : S) : sig
         type z = t
 end
 
+module F6 : S1
+
+module type F7 = functor (Arg : S) -> sig
+  type t = Arg.t
+  type u = t
+end

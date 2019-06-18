@@ -1,3 +1,7 @@
+module Opt = struct
+    let map f = function | Some x -> Some (f x) | None -> None
+end
+
 let type_path : Env.t -> Odoc_model.Paths.Path.Type.t -> Odoc_model.Paths.Path.Type.t = fun env p ->
     match Tools.lookup_type_from_model_path env p with
     | Ok (p', _) -> `Resolved p'
@@ -67,13 +71,11 @@ and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.La
                 | TypeEq (frag, eqn) -> TypeEq (frag, eqn)
                 | x -> x) subs)
     | Functor (arg, res) ->
-        let arg' =
-            match arg with
-            | None -> None
-            | Some x -> Some (functor_argument env x)
-        in
-        let res' = module_type_expr env res in
-        Functor (arg', res')
+(*        let arg' = Opt.map (
+            fun (fa : Component.FunctorArgument.t) ->
+                { module_ env) arg in
+        let res' = module_type_expr env res in *)
+        Functor (arg, res)
     | _ -> failwith "boo"
 
 and type_ env t =
