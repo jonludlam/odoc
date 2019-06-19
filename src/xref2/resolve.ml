@@ -42,11 +42,12 @@ and signature : Env.t -> Odoc_model.Lang.Signature.t -> _ = fun env s ->
 
 and module_ : Env.t -> Odoc_model.Lang.Module.t -> Odoc_model.Lang.Module.t = fun env m ->
     let open Odoc_model.Lang.Module in
+    let env' = Env.add_functor_args (m.id :> Odoc_model.Paths.Identifier.Signature.t) env in
     match m.type_ with
     | ModuleType expr ->
-        {m with type_ = ModuleType (module_type_expr env expr)}
+        {m with type_ = ModuleType (module_type_expr env' expr)}
     | Alias p ->
-        match Tools.lookup_module_from_model_path env p with
+        match Tools.lookup_module_from_model_path env' p with
         | Ok (p', _) ->
             {m with type_ = Alias (`Resolved p')}
         | _ -> m
@@ -71,11 +72,9 @@ and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.La
                 | TypeEq (frag, eqn) -> TypeEq (frag, eqn)
                 | x -> x) subs)
     | Functor (arg, res) ->
-(*        let arg' = Opt.map (
-            fun (fa : Component.FunctorArgument.t) ->
-                { module_ env) arg in
-        let res' = module_type_expr env res in *)
-        Functor (arg, res)
+        let arg' = Opt.map (functor_argument env) arg in
+        let res' = module_type_expr env res in
+        Functor (arg', res')
     | _ -> failwith "boo"
 
 and type_ env t =

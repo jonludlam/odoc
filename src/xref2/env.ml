@@ -34,6 +34,37 @@ let lookup_type identifier env =
 let lookup_module_type identifier env =
     List.assoc identifier env.module_types
 
+let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
+    let open Component in
+    fun id env ->
+        let rec find_args parent mty =
+            match mty with 
+            | ModuleType.Functor (Some arg, res) ->
+                (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.Component.FunctorArgument.id)), {Component.Module.id = arg.Component.FunctorArgument.id; type_ = ModuleType arg.expr}) :: find_args (`Result parent) res
+            | ModuleType.Functor (None, res) ->
+                find_args (`Result parent) res
+            | _ -> []
+        in
+        match id with
+        | `Module _
+        | `Result _
+        | `Parameter _ as mid -> begin
+            let m = lookup_module mid env in
+            match m.Component.Module.type_ with
+            | Alias _ -> env
+            | ModuleType e -> 
+                List.fold_left (fun env (id,m) -> add_module id m env) env (find_args id e)
+            end
+        | `ModuleType _ as mtyid -> begin
+            let m = lookup_module_type mtyid env in
+            match m.Component.ModuleType.expr with
+            | Some e ->
+                List.fold_left (fun env (id,m) -> add_module id m env) env (find_args id e)
+            | None ->
+                env
+            end
+        | `Root _ -> env
+
 let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
     let open Component in
     fun s env ->
@@ -55,6 +86,7 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let ty = Of_Lang.of_module_type [identifier,id] id t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | _ -> failwith "foo") env s
+
 
 let pp_modules ppf modules =
     List.iter (fun (i,m) ->
