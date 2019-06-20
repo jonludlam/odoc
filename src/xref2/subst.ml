@@ -1,5 +1,5 @@
 type t = {
-    map : (Ident.t * [ `Local of Ident.t | `Global of Odoc_model.Paths.Path.t ]) list
+    map : (Ident.t * Cpath.t) list
 }
 
 let identity = {
@@ -13,12 +13,8 @@ let rec path : t -> Cpath.t -> Cpath.t = fun s p ->
     match p with
     | `Local id -> begin
         match List.assoc_opt id s.map with
-        | Some (`Local id') ->
-            `Local id'
-        | Some (`Global path) ->
-            `Global path
-        | None ->
-            `Local id
+        | Some x -> x
+        | None -> `Local id
         end
     | `Global _ ->
         p

@@ -73,17 +73,17 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.Type (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.of_type [identifier,id] id t in
+                let ty = Of_Lang.type_ [identifier,id] id t in
                 add_type t.Odoc_model.Lang.TypeDecl.id ty env
             | Odoc_model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.of_module [identifier,id] id t in
+                let ty = Of_Lang.module_ [identifier,id] id t in
                 add_module t.Odoc_model.Lang.Module.id ty env
             | Odoc_model.Lang.Signature.ModuleType t ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.of_module_type [identifier,id] id t in
+                let ty = Of_Lang.module_type [identifier,id] id t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | _ -> failwith "foo") env s
 

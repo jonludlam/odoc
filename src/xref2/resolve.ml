@@ -11,7 +11,12 @@ and module_type_path : Env.t -> Odoc_model.Paths.Path.ModuleType.t -> Odoc_model
     match Tools.lookup_module_type_from_model_path env p with
     | Ok (p', _) -> `Resolved p'
     | Error p -> p
-    
+
+and module_path : Env.t -> Odoc_model.Paths.Path.Module.t -> Odoc_model.Paths.Path.Module.t = fun env p ->
+    match Tools.lookup_module_from_model_path env p with
+    | Ok (p', _) -> `Resolved p'
+    | Error p -> p
+
 let rec unit env t =
     let open Odoc_model.Lang.Compilation_unit in
     {t with content = content env t.content}
@@ -43,18 +48,21 @@ and signature : Env.t -> Odoc_model.Lang.Signature.t -> _ = fun env s ->
 and module_ : Env.t -> Odoc_model.Lang.Module.t -> Odoc_model.Lang.Module.t = fun env m ->
     let open Odoc_model.Lang.Module in
     let env' = Env.add_functor_args (m.id :> Odoc_model.Paths.Identifier.Signature.t) env in
-    match m.type_ with
-    | ModuleType expr ->
-        {m with type_ = ModuleType (module_type_expr env' expr)}
+    {m with type_ = module_decl env' m.type_}
+
+and module_decl : Env.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module.decl = fun env decl ->
+    let open Odoc_model.Lang.Module in
+    match decl with
+    | ModuleType expr -> ModuleType (module_type_expr env expr)
     | Alias p ->
-        match Tools.lookup_module_from_model_path env' p with
-        | Ok (p', _) ->
-            {m with type_ = Alias (`Resolved p')}
-        | _ -> m
+        match Tools.lookup_module_from_model_path env p with
+        | Ok (p', _) -> Alias (`Resolved p')
+        | _ -> decl
 
 and module_type : Env.t -> Odoc_model.Lang.ModuleType.t -> Odoc_model.Lang.ModuleType.t = fun env m ->
     let open Odoc_model.Lang.ModuleType in
-    let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env expr) in
+    let env' = Env.add_functor_args (m.id :> Odoc_model.Paths.Identifier.Signature.t) env in
+    let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' expr) in
     {m with expr = expr'}
 
 and functor_argument : Env.t -> Odoc_model.Lang.FunctorArgument.t -> Odoc_model.Lang.FunctorArgument.t = fun env a ->
@@ -68,9 +76,11 @@ and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.La
     | With (expr, subs) ->
         With (module_type_expr env expr,
             List.map (function
-                | ModuleEq (frag, eqn) -> ModuleEq (frag, eqn)
-                | TypeEq (frag, eqn) -> TypeEq (frag, eqn)
-                | x -> x) subs)
+                | ModuleEq (frag, decl) -> ModuleEq (frag, module_decl env decl)
+                | TypeEq (frag, eqn) -> TypeEq (frag, type_decl_equation env eqn)
+                | ModuleSubst (frag, mpath) -> ModuleSubst (frag, module_path env mpath)
+                | TypeSubst (frag, eqn) -> TypeSubst (frag, type_decl_equation env eqn)
+                ) subs)
     | Functor (arg, res) ->
         let arg' = Opt.map (functor_argument env) arg in
         let res' = module_type_expr env res in
@@ -84,6 +94,13 @@ and type_ env t =
         let texpr' = type_expression env texpr in
         {t with equation = {t.equation with manifest = Some texpr'}}
     | None -> t
+
+and type_decl_equation env t =
+    let open Odoc_model.Lang.TypeDecl.Equation in
+    let manifest = Opt.map (type_expression env) t.manifest in
+    let constraints = List.map (fun (tex1, tex2) ->
+        (type_expression env tex1, type_expression env tex2)) t.constraints in
+    {t with manifest; constraints}
 
 and type_expression : Env.t -> _ -> _ = fun env texpr ->
     let open Odoc_model.Lang.TypeExpr in 

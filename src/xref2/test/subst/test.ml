@@ -45,7 +45,7 @@ end
 let module_substitution () =
     let _, _, sg = Common.model_of_string test_data in
 
-    let c = Component.Of_Lang.of_signature [] sg in
+    let c = Component.Of_Lang.signature [] sg in
 
     let subst_idents_mod = resolve_module_name c "SubstituteMe" in
     let subst_targets_mod = resolve_module_name c "SubTargets" in
