@@ -453,7 +453,21 @@ let functor_app =
   { name = "Functor"
   ; description = "Resolve a functor"
   ; test_data = {|
+module type S = sig
+    type t
+end
 
+module type F = functor (X : S) -> sig
+    type t = X.t
+    type u = t
+end
+
+module A : S
+
+module B : F
+
+type t = B(A).t
+type u = B(A).u
 |}
   ; test_fn = test_resolve }
 
