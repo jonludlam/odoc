@@ -2,7 +2,7 @@
 (* Example usage of these:
 
 $ dune utop src/xref2/test/lib
-utop # open Odoc__xref2;;
+utop # open Odoc_xref2;;
 utop # open Odoc_xref_test;;
 utop # let test_data = "module type M = sig type t end module N : M type u = N.t";;
 utop # let id, docs, sg = Common.model_of_string test_data;;
@@ -12,6 +12,7 @@ utop # Common.resolve unit
 utop # Resolve.signature Env.empty sg
 
 *)
+
 
 let _ = Toploop.set_paths ()
 
@@ -117,3 +118,9 @@ let resolve unit =
   let resolver = Odoc_odoc.Env.resolver resolve_env in
   let result = Odoc_xref.resolve resolver unit in
   result
+
+
+let resolve_from_string s =
+    let id, docs, sg = model_of_string s in
+    let unit = my_compilation_unit id docs sg in
+    resolve unit
