@@ -27,14 +27,14 @@ type test = {
 
 let test_resolve test =
     let _, _, sg = Common.model_of_string test.test_data in
-    let c = Component.Of_Lang.of_signature [] sg in
+    let c = Component.Of_Lang.signature [] sg in
     let open Format in
     fprintf std_formatter "%s\n%s\n%!" test.name test.description;
     fprintf std_formatter "CODE\n====\n%!%s\n%!" test.test_data;
     fprintf std_formatter "BEFORE\n======\n%!%a\n%!" Component.Fmt.signature c;
     try
         let sg' = Resolve.signature Env.empty sg in
-        let c' = Component.Of_Lang.of_signature [] sg' in
+        let c' = Component.Of_Lang.signature [] sg' in
 
         fprintf std_formatter "AFTER \n===== \n%!%a\n%!" Component.Fmt.signature c'
     with
@@ -354,6 +354,23 @@ type t = C.N.t
     |}
   ; test_fn = test_resolve }
 
+let module_subst2 =
+  { name = "Module substitution2"
+  ; description = "Ensure a destructive substitution is taken into account during resolution"
+  ; test_data = {|
+module type A = sig
+module M : sig module type S end
+module N : M.S
+end
+
+module B : sig module type S = sig type t end end
+
+module C : A with module M := B
+
+type t = C.N.t
+    |}
+  ; test_fn = test_resolve }
+
 let module_alias =
   { name = "Module alias"
   ; description = "Resolve a module alias"
@@ -387,12 +404,60 @@ module type S = sig
   type t
 end
 
-module F ( X : S ) : sig
-  type t = X.t
+module F ( X : S ) ( Y : S ) : sig
+  type x_t = X.t
+  type y_t = Y.t
+  type f_t = x_t
 end
 |}
   ; test_fn = test_resolve }
-  
+
+let functor_all =
+  { name = "Functor"
+  ; description = "Resolve a functor"
+  ; test_data = {|
+module type S =
+sig
+  type t
+end
+
+module type S1 = functor (_ : S) -> S
+
+module F1 : functor (Arg : S) -> S
+
+module F2 : functor (Arg : S) -> (S with type t = Arg.t)
+
+module F3 : functor (Arg : S) ->
+sig
+  type t = Arg.t
+end
+
+module F4 (Arg : S) : S
+
+module F5 (Arg1 : S) (Arg2 : S) (Arg3 : S) : sig
+        type t = Arg1.t
+        type u = Arg2.t
+        type v = Arg3.t
+        type z = t
+end
+
+module F6 : S1
+
+module type F7 = functor (Arg : S) -> sig
+  type t = Arg.t
+  type u = t
+end|}
+  ; test_fn = test_resolve }
+
+let functor_app =
+  { name = "Functor"
+  ; description = "Resolve a functor"
+  ; test_data = {|
+
+|}
+  ; test_fn = test_resolve }
+
+
 let tests =
   [ basic1
   ; basic2
@@ -401,9 +466,11 @@ let tests =
   ; basic5
   ; basic6
   ; module_subst
+  ; module_subst2
   ; module_alias
   ; module_alias2
-  ; functor1 ]
+  ; functor1
+  ; functor_all ]
 
 let _ =
     List.iter (fun test -> test.test_fn test) tests

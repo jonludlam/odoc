@@ -20,7 +20,7 @@ type u = t
 let simple_strengthening () =
     let p = Common.root_identifier in
     let _, _, sg = Common.model_of_string input in
-    let c = Component.Of_Lang.of_signature [] sg in
+    let c = Component.Of_Lang.signature [] sg in
     let c' = Strengthen.signature p c in
     let open Format in
     fprintf std_formatter "%s\n%s\n\n" name description;
