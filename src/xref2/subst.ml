@@ -1,4 +1,4 @@
-type t = {
+ type t = {
     map : (Ident.t * Cpath.t) list
 }
 
@@ -18,7 +18,7 @@ let rec path : t -> Cpath.t -> Cpath.t = fun s p ->
         end
     | `Global _ ->
         p
-    | `Ldot (parent,x) -> `Ldot (path s parent, x)
+    | `Dot (parent,x) -> `Dot (path s parent, x)
 
 let rec type_ s t =
     let open Component.Type in

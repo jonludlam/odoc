@@ -91,7 +91,7 @@ and lookup_module_from_resolved_model_path : Env.t -> Odoc_model.Paths.Path.Reso
 and lookup_module_from_path : Env.t -> Cpath.t -> (module_lookup_result, Odoc_model.Paths.Path.Module.t) Result.result = fun env p ->
     match p with
     | `Local _id -> raise (Lookup_failure (env, p, "module")) 
-    | `Ldot (parent, id) -> begin
+    | `Dot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
             let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
@@ -138,7 +138,7 @@ and lookup_module_type_from_resolved_model_path : Env.t -> Odoc_model.Paths.Path
 and lookup_module_type_from_path : Env.t -> Cpath.t -> (module_type_lookup_result, Odoc_model.Paths.Path.ModuleType.t) Result.result = fun env p ->
     match p with
     | `Local _id -> raise (Lookup_failure (env, p, "module_type"))
-    | `Ldot (parent, id) -> begin
+    | `Dot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
             let (p', sg) = signature_of_module env (p, m) in
@@ -182,7 +182,7 @@ and lookup_type_from_resolved_model_path : Env.t -> Odoc_model.Paths.Path.Resolv
 and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Odoc_model.Paths.Path.Type.t) Result.result = fun env p ->
     match p with
     | `Local _id -> raise (Lookup_failure (env, p, "type"))
-    | `Ldot (parent, id) -> begin
+    | `Dot (parent, id) -> begin
         match lookup_module_from_path env parent with
         | Ok (p, m) ->
             let (p', sg) = signature_of_module env (p, m) in
