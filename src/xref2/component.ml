@@ -217,7 +217,7 @@ module Of_Lang = struct
             `Global path
         | `Dot (path', x) ->
             `Ldot (local_path_of_path ident_map (path' :> Odoc_model.Paths.Path.t), x)
-        | _ -> failwith "Unhandled in local_path_of_path"
+        | _ -> failwith (Printf.sprintf "local_path_of_path: %s" (Fmt.string_of Fmt.model_path path))
 
     let rec type_ ident_map id ty =
         let open Odoc_model.Lang.TypeDecl in

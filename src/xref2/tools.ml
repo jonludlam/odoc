@@ -68,6 +68,20 @@ and lookup_module_from_resolved_model_path : Env.t -> Odoc_model.Paths.Path.Reso
     | `Alias (p1, p2) ->
         let (p2', m) = lookup_module_from_resolved_model_path env p2 in
         (`Alias (p1, p2'), m)
+    | `Apply (func_path, arg_path) ->
+        let (func_path', m) = lookup_module_from_resolved_model_path env func_path in
+        let arg_path' =
+            match lookup_module_from_model_path env arg_path with
+            | Ok (arg_path', _) -> `Resolved arg_path'
+            | Error p -> p
+        in
+        let (_, mty) = module_type_of_module env (Some func_path', m) in
+        let arg_id = match mty with
+          | Component.ModuleType.Functor (Some arg, _expr) ->
+            arg.Component.FunctorArgument.id
+          | _ -> failwith "Invalid"
+        in
+        (func_path', Subst.module_ (Subst.add arg_id (`Global (arg_path' :> Odoc_model.Paths.Path.t)) Subst.identity) m)
     | _ ->
         let b = Buffer.create 1024 in
         let fmt = Format.formatter_of_buffer b in
@@ -229,6 +243,16 @@ and lookup_signature_from_fragment : Env.t -> Odoc_model.Paths.Fragment.Signatur
         signature_of_module_nopath env m
     | `Resolved r ->
         lookup_signature_from_resolved_fragment env r s
+
+and module_type_of_module : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.Module.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.ModuleType.expr =
+    fun env (p,m) ->
+        match m.Component.Module.type_ with
+        | Component.Module.Alias path -> begin
+            match lookup_module_from_path env path with
+            | Ok (x,y) -> module_type_of_module env (Some x, y)
+            | Error _ -> failwith "Failed to lookup alias module"
+            end
+        | Component.Module.ModuleType expr -> (p,expr)
 
 and signature_of_module_type_expr : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.ModuleType.expr -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.Signature.t =
     fun env (incoming_path, m) ->
