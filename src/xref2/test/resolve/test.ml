@@ -453,21 +453,11 @@ let functor_app =
   { name = "Functor"
   ; description = "Resolve a functor"
   ; test_data = {|
-module type S = sig
-    type t
-end
+module F (X : sig module type S end) : sig module N : X.S end
 
-module type F = functor (X : S) -> sig
-    type t = X.t
-    type u = t
-end
+module M : sig module type S = sig type t end end
 
-module A : S
-
-module B : F
-
-type t = B(A).t
-type u = B(A).u
+type t = F(M).N.t
 |}
   ; test_fn = test_resolve }
 
@@ -484,7 +474,8 @@ let tests =
   ; module_alias
   ; module_alias2
   ; functor1
-  ; functor_all ]
+  ; functor_all
+  ; functor_app ]
 
 let _ =
     List.iter (fun test -> test.test_fn test) tests
