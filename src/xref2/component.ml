@@ -157,7 +157,7 @@ module Fmt = struct
     and path ppf p =
         match p with
         | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
-        | `Ldot (p,str) -> Format.fprintf ppf "%a.%s" path p str
+        | `Dot (p,str) -> Format.fprintf ppf "%a.%s" path p str
         | `Global p -> Format.fprintf ppf "[%a]" model_path p
 
     and model_path ppf (p : Odoc_model.Paths.Path.t) =
@@ -216,7 +216,7 @@ module Of_Lang = struct
         | `Resolved _ ->
             `Global path
         | `Dot (path', x) ->
-            `Ldot (local_path_of_path ident_map (path' :> Odoc_model.Paths.Path.t), x)
+            `Dot (local_path_of_path ident_map (path' :> Odoc_model.Paths.Path.t), x)
         | _ -> failwith (Printf.sprintf "local_path_of_path: %s" (Fmt.string_of Fmt.model_path path))
 
     let rec type_ ident_map id ty =
