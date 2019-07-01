@@ -3,3 +3,11 @@
  (public_name odoc.xref2)
  (libraries compiler-libs.common odoc_model odoc_loader odoc_xref odoc_odoc)
  )
+(alias
+ (name   runtest)
+ (deps   (:x test.md)
+         (package odoc))
+ (action (ignore-stderr (progn
+           (run ocaml-mdx test --direction=infer-timestamp %{x})
+           (diff? %{x} %{x}.corrected))
+)))

@@ -50,6 +50,11 @@ let test_resolve test =
         fprintf std_formatter "Identifier: %a\n%!" Component.Fmt.model_identifier id;
         fprintf std_formatter "Env:\n%!%a" Env.pp e;
         fprintf std_formatter "Backtrace:\n%s\n%!" bt
+    | _e ->
+        let bt = Printexc.get_backtrace () in
+        Printf.printf "FAILURE generic\n%!";
+        fprintf std_formatter "Backtrace:\n%s\n%!" bt
+       
 
 
 (**
@@ -453,13 +458,50 @@ let functor_app =
   { name = "Functor"
   ; description = "Resolve a functor"
   ; test_data = {|
-module F (X : sig module type S end) : sig module N : X.S end
+module type ARG = sig
+  module type S
+end
 
-module M : sig module type S = sig type t end end
+module F : functor (X : ARG) -> sig
+  module N : X.S 
+end
+
+module M : sig
+  module type S = sig
+    type t
+  end
+end
 
 type t = F(M).N.t
 |}
   ; test_fn = test_resolve }
+(*
+  Identifier of F:
+  
+    ident_f = `Identifier (`Module (`Root (Common.root, "Root"), "F")))
+  
+  Identifier of M:
+  
+    ident_m = `Identifier (`Module (`Root (Common.root, "Root"), "M")))
+
+
+  type t = `Type (`Subst (`ModuleType (ident_m, "S"), `Module (`Apply (ident_f, ident_m), "N"))), "t")
+*)
+
+let functor_app_ugh =
+{ name = "Functor app nightmare"
+; description = "Horrible"
+; test_data = {|
+module type Type = sig module type T end
+module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+module Bar : sig module type T = sig type bar end end
+module Foo :
+  functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+module FooBarInt : sig module Foo : sig type bar = int end end
+type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+|}
+; test_fn = test_resolve }
+
 
 
 let tests =
@@ -475,7 +517,8 @@ let tests =
   ; module_alias2
   ; functor1
   ; functor_all
-  ; functor_app ]
+  ; functor_app
+  ; functor_app_ugh ]
 
 let _ =
     List.iter (fun test -> test.test_fn test) tests

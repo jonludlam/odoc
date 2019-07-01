@@ -19,6 +19,8 @@ let rec path : t -> Cpath.t -> Cpath.t = fun s p ->
     | `Global _ ->
         p
     | `Dot (parent,x) -> `Dot (path s parent, x)
+    | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
+    | `Substituted p -> `Substituted (path s p)
 
 let rec type_ s t =
     let open Component.Type in
@@ -43,6 +45,14 @@ and module_type s t =
     in
     {t with expr}
 
+and functor_argument_opt s t =
+    let open Component.FunctorArgument in
+    match t with
+    | Some arg ->
+        Some {arg with expr = module_type_expr s arg.expr}
+    | None ->
+        None
+
 and module_type_expr s t =
     let open Component.ModuleType in
     match t with
@@ -50,7 +60,8 @@ and module_type_expr s t =
         Path (path s p)
     | Signature sg ->
         Signature (signature s sg)
-    | Functor _ 
+    | Functor (arg, expr) ->
+        Functor (functor_argument_opt s arg, module_type_expr s expr)
     | With (_,_) -> failwith "Unahdlalell"
 
 

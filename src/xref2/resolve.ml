@@ -9,12 +9,12 @@ let type_path : Env.t -> Odoc_model.Paths.Path.Type.t -> Odoc_model.Paths.Path.T
 
 and module_type_path : Env.t -> Odoc_model.Paths.Path.ModuleType.t -> Odoc_model.Paths.Path.ModuleType.t = fun env p ->
     match Tools.lookup_module_type_from_model_path env p with
-    | Ok (p', _) -> `Resolved p'
+    | Ok (_, p', _) -> `Resolved p'
     | Error p -> p
 
 and module_path : Env.t -> Odoc_model.Paths.Path.Module.t -> Odoc_model.Paths.Path.Module.t = fun env p ->
     match Tools.lookup_module_from_model_path env p with
-    | Ok (p', _) -> `Resolved p'
+    | Ok (_, p', _) -> `Resolved p'
     | Error p -> p
 
 let rec unit env t =
@@ -56,7 +56,7 @@ and module_decl : Env.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module
     | ModuleType expr -> ModuleType (module_type_expr env expr)
     | Alias p ->
         match Tools.lookup_module_from_model_path env p with
-        | Ok (p', _) -> Alias (`Resolved p')
+        | Ok (_, p', _) -> Alias (`Resolved p')
         | _ -> decl
 
 and module_type : Env.t -> Odoc_model.Lang.ModuleType.t -> Odoc_model.Lang.ModuleType.t = fun env m ->
