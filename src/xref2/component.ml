@@ -158,7 +158,9 @@ module Fmt = struct
         match p with
         | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
         | `Dot (p,str) -> Format.fprintf ppf "%a.%s" path p str
-        | `Global p -> Format.fprintf ppf "[%a]" model_path p
+        | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" path p1 path p2
+        | `Global p -> Format.fprintf ppf "global(%a)" model_path p
+        | `Substituted p -> Format.fprintf ppf "substituted(%a)" path p
 
     and model_path ppf (p : Odoc_model.Paths.Path.t) =
         match p with
@@ -169,14 +171,16 @@ module Fmt = struct
         | `Apply (func,arg) -> Format.fprintf ppf "*%a(%a)" model_path (func :> Odoc_model.Paths.Path.t) model_path (arg :> Odoc_model.Paths.Path.t)
 
     and model_resolved_path ppf (p : Odoc_model.Paths.Path.Resolved.t) =
+        let open Odoc_model.Paths.Path.Resolved in
         match p with
         | `Identifier id -> Format.fprintf ppf "(%a)" model_identifier id
-        | `Module (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Odoc_model.Paths.Path.Resolved.t) (Odoc_model.Names.ModuleName.to_string name)
-        | `ModuleType (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Odoc_model.Paths.Path.Resolved.t) (Odoc_model.Names.ModuleTypeName.to_string name)
-        | `Type (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> Odoc_model.Paths.Path.Resolved.t) (Odoc_model.Names.TypeName.to_string name)
-        | `Alias (path, realpath) -> Format.fprintf ppf "(%a -> %a)" model_resolved_path (path :> Odoc_model.Paths.Path.Resolved.t) model_resolved_path (realpath :> Odoc_model.Paths.Path.Resolved.t)
-        | _ -> failwith "Unimplemented"
-    
+        | `Module (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.ModuleName.to_string name)
+        | `ModuleType (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.ModuleTypeName.to_string name)
+        | `Type (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.TypeName.to_string name)
+        | `Alias (path, realpath) -> Format.fprintf ppf "(%a -> %a)" model_resolved_path (path :> t) model_resolved_path (realpath :> t)
+        | `Subst (modty, m) -> Format.fprintf ppf "(%a subst-> %a)" model_resolved_path (modty :> t) model_resolved_path (m :> t)
+        | `Apply (funct, arg) -> Format.fprintf ppf "%a(%a)" model_resolved_path (funct :> t) model_path (arg :> Odoc_model.Paths.Path.t)
+        | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_path"
     and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
         match p with
         | `Root (_, unit_name) -> Format.fprintf ppf "%s" (Odoc_model.Names.UnitName.to_string unit_name)
@@ -185,7 +189,8 @@ module Fmt = struct
         | `Type (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.TypeName.to_string name)
         | `Parameter (parent, name) -> Format.fprintf ppf "(param %a %s)" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ParameterName.to_string name)
         | `Result parent -> Format.fprintf ppf "%a.result" model_identifier (parent :> Odoc_model.Paths.Identifier.t) 
-        | _ -> failwith "Unimplemented"
+        | `CoreType name -> Format.fprintf ppf "%s" (Odoc_model.Names.TypeName.to_string name)
+        | _ -> Format.fprintf ppf "UNIMPLEMENTED model_identifier"
 
     and model_fragment ppf (f : Odoc_model.Paths.Fragment.t) =
         match f with
@@ -196,7 +201,7 @@ module Fmt = struct
         match f with
         | `Root -> ()
         | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.ModuleName.to_string m)
-        | _ -> failwith "Unimplmented"
+        | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_fragment"
 
 end
 
@@ -217,6 +222,9 @@ module Of_Lang = struct
             `Global path
         | `Dot (path', x) ->
             `Dot (local_path_of_path ident_map (path' :> Odoc_model.Paths.Path.t), x)
+        | `Apply (p1, p2) ->
+            `Apply (local_path_of_path ident_map (p1 :> Odoc_model.Paths.Path.t),
+                    (local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t)))
         | _ -> failwith (Printf.sprintf "local_path_of_path: %s" (Fmt.string_of Fmt.model_path path))
 
     let rec type_ ident_map id ty =

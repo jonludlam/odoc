@@ -1,4 +1,5 @@
 (library
  (name odoc_xref_test)
- (libraries compiler-libs.toplevel compiler-libs.common odoc_xref2 odoc_model)
+ (public_name odoc.xref_test)
+ (libraries tyxml compiler-libs.toplevel compiler-libs.common odoc_xref2 odoc_model)
 )

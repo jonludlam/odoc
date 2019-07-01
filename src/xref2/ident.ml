@@ -20,6 +20,7 @@ let of_identifier : Odoc_model.Paths.Identifier.t -> t =
         | `Type (_,s) -> (TypeName.to_string s, n)
         | `ModuleType (_,s) -> (ModuleTypeName.to_string s, n)
         | `Parameter (_, s) -> (ParameterName.to_string s, n)
+        | `CoreType s -> (TypeName.to_string s, n)
         | _ -> failwith "Unhandled"
 
 let name : t -> string = fst

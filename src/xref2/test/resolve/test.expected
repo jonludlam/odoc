@@ -1,37 +1,570 @@
-Basic resolution
+Basic resolution 1
+Simplest possible resolution
+CODE
+====
 
-This test simply attempts to resolve everything within a signature.
-It includes a pattern that the previous implementation could not resolve.
+type t
+type u = t
+    
+BEFORE
+======
+type t/16
+type u/17 = t/16
+
+AFTER 
+===== 
+type t/20
+type u/21 = t/20
+
+Basic resolution 2
+Environment lookup
+CODE
+====
+
+module M : sig
+    type t
+end
+type u = M.t
+    
+BEFORE
+======
+module M/22 : sig
+  type t/24
+  end
+type u/23 = M/22.t
+
+AFTER 
+===== 
+module M/29 : sig
+  type t/31
+  end
+type u/30 = global((Root.M).t)
+
+Basic resolution 3
+Module type
+CODE
+====
+
+module type M = sig
+    type t
+end
+module N : M
+type u = N.t
+    
+BEFORE
+======
+module type M/32 = sig
+  type t/35
+  end
+module N/33 : M/32
+type u/34 = N/33.t
+
+AFTER 
+===== 
+module type M/41 = sig
+  type t/44
+  end
+module N/42 : M/41
+type u/43 = global((Root.N).t)
+
+Basic resolution 4
+Module type
+CODE
+====
+
+module type M = sig
+    module N : sig
+        type t
+    end
+end
+module A : M
+type u = A.N.t
+    
+BEFORE
+======
+module type M/45 = sig
+  module N/48 : sig
+    type t/49
+    end
+  end
+module A/46 : M/45
+type u/47 = A/46.N.t
+
+AFTER 
+===== 
+module type M/60 = sig
+  module N/63 : sig
+    type t/64
+    end
+  end
+module A/61 : M/60
+type u/62 = global((Root.A).N.t)
+
+Basic resolution 4
+Module type
+CODE
+====
+
+module type M = sig
+    module type N = sig
+        type t
+    end
+    module B : N
+end
+module A : M
+type u = A.B.t
+    
+BEFORE
+======
+module type M/65 = sig
+  module type N/68 = sig
+    type t/70
+    end
+  module B/69 : N/68
+  end
+module A/66 : M/65
+type u/67 = A/66.B.t
+
+AFTER 
+===== 
+module type M/84 = sig
+  module type N/87 = sig
+    type t/89
+    end
+  module B/88 : N/87
+  end
+module A/85 : M/84
+type u/86 = global((Root.A).B.t)
+
+Basic resolution 4
+Module type
+CODE
+====
+
+module type M = sig
+    module type N = sig
+        type t
+    end
+    module X : sig
+        module B : N
+    end
+end
+module A : M
+type u = A.X.B.t
+    
+BEFORE
+======
+module type M/90 = sig
+  module type N/93 = sig
+    type t/95
+    end
+  module X/94 : sig
+    module B/96 : N/93
+    end
+  end
+module A/91 : M/90
+type u/92 = A/91.X.B.t
+
+AFTER 
+===== 
+module type M/115 = sig
+  module type N/118 = sig
+    type t/120
+    end
+  module X/119 : sig
+    module B/121 : N/118
+    end
+  end
+module A/116 : M/115
+type u/117 = global((Root.A).X.B.t)
+
+Module substitution
+Ensure a substitution is taken into account during resolution
+CODE
+====
+
+module type A = sig
+module M : sig module type S end
+module N : M.S
+end
+
+module B : sig module type S = sig type t end end
+
+module C : A with module M = B
+
+type t = C.N.t
+    
+BEFORE
+======
+module type A/122 = sig
+  module M/126 : sig
+    module type S/128
+    end
+  module N/127 : M/126.S
+  end
+module B/123 : sig
+  module type S/129 = sig
+    type t/130
+    end
+  end
+module C/124 : A/122 with [*.M = = B/123]
+type t/125 = C/124.N.t
+
+AFTER 
+===== 
+module type A/159 = sig
+  module M/163 : sig
+    module type S/165
+    end
+  module N/164 : global((Root.A.M).S)
+  end
+module B/160 : sig
+  module type S/166 = sig
+    type t/167
+    end
+  end
+module C/161 : A/159 with [*.M = = B/160]
+type t/162 = global((Root.C).N.t)
+
+Module substitution2
+Ensure a destructive substitution is taken into account during resolution
+CODE
+====
+
+module type A = sig
+module M : sig module type S end
+module N : M.S
+end
+
+module B : sig module type S = sig type t end end
+
+module C : A with module M := B
+
+type t = C.N.t
+    
+BEFORE
+======
+module type A/168 = sig
+  module M/172 : sig
+    module type S/174
+    end
+  module N/173 : M/172.S
+  end
+module B/169 : sig
+  module type S/175 = sig
+    type t/176
+    end
+  end
+module C/170 : A/168 with [*.M := B/169]
+type t/171 = C/170.N.t
+
+FAILURE when lookup up a module: 
+Path: M/186
+Env:
+
+modules: Root.C: C/184 : global((Root.A)) with [*.M := global((Root.B))] 
+Root.B: B/181 : sig
+module type S/182 = sig
+  type t/183
+  end
+end 
+ 
+module_types: Root.A: A/177 = sig
+module M/178 : sig
+  module type S/180
+  end
+module N/179 : M/178.S
+end 
+ 
+types: Root.t: t/185 = global((Root.C)).N.t 
+
+Backtrace:
+
+Module alias
+Resolve a module alias
+CODE
+====
+
+module A : sig
+    type t
+end
+module B = A
+type t = B.t
 
 BEFORE
 ======
-module type A/0 = sig
-                module M/4 : sig
-                  module type S/6
-                  end
-                module N/5 : M/4.S
-                end
-              module B/1 : sig
-                module type S/7 = sig
-                  type t/8
-                  end
-                end
-              module C/2 : A/0 with [*.M -> = B/1]
-              type t/3 = C/2.N.t
-              
+module A/190 : sig
+  type t/193
+  end
+module B/191 = A/190
+type t/192 = B/191.t
+
 AFTER 
+===== 
+module A/200 : sig
+  type t/203
+  end
+module B/201 = A/200
+type t/202 = global(((Root.B) -> (Root.A)).t)
+
+Module alias
+Resolve a module alias
+CODE
+====
+
+module A : sig
+    type t
+end
+module B = A
+module C = B
+type t = C.t
+
+BEFORE
 ======
-module type A/33 = sig
-                module M/37 : sig
-                  module type S/39
-                  end
-                module N/38 : [(noname.A.M).S]
-                end
-              module B/34 : sig
-                module type S/40 = sig
-                  type t/41
-                  end
-                end
-              module C/35 : A/33 with [*.M -> = B/34]
-              type t/36 = [(noname.C).N.t]
-              
+module A/204 : sig
+  type t/208
+  end
+module B/205 = A/204
+module C/206 = B/205
+type t/207 = C/206.t
+
+AFTER 
+===== 
+module A/217 : sig
+  type t/221
+  end
+module B/218 = A/217
+module C/219 = B/218
+type t/220 = global(((Root.C) -> (Root.A)).t)
+
+Functor
+Resolve a functor
+CODE
+====
+
+module type S = sig
+  type t
+end
+
+module F ( X : S ) ( Y : S ) : sig
+  type x_t = X.t
+  type y_t = Y.t
+  type f_t = x_t
+end
+
+BEFORE
+======
+module type S/222 = sig
+  type t/224
+  end
+module F/223 : (X/225 : S/222) -> (Y/226 : S/222) -> sig
+  type x_t/227 = X/225.t
+  type y_t/228 = Y/226.t
+  type f_t/229 = x_t/227
+  end
+
+AFTER 
+===== 
+module type S/242 = sig
+  type t/244
+  end
+module F/243 : (X/245 : S/242) -> (Y/246 : S/242) -> sig
+  type x_t/247 = global(((param Root.F X)).t)
+  type y_t/248 = global(((param Root.F.result Y)).t)
+  type f_t/249 = x_t/247
+  end
+
+Functor
+Resolve a functor
+CODE
+====
+
+module type S =
+sig
+  type t
+end
+
+module type S1 = functor (_ : S) -> S
+
+module F1 : functor (Arg : S) -> S
+
+module F2 : functor (Arg : S) -> (S with type t = Arg.t)
+
+module F3 : functor (Arg : S) ->
+sig
+  type t = Arg.t
+end
+
+module F4 (Arg : S) : S
+
+module F5 (Arg1 : S) (Arg2 : S) (Arg3 : S) : sig
+        type t = Arg1.t
+        type u = Arg2.t
+        type v = Arg3.t
+        type z = t
+end
+
+module F6 : S1
+
+module type F7 = functor (Arg : S) -> sig
+  type t = Arg.t
+  type u = t
+end
+BEFORE
+======
+module type S/250 = sig
+  type t/259
+  end
+module type S1/251 = (_/260 : S/250) -> S/250
+module F1/252 : (Arg/261 : S/250) -> S/250
+module F2/253 : (Arg/262 : S/250) -> S/250 with [*.t = Arg/262.t]
+module F3/254 : (Arg/263 : S/250) -> sig
+  type t/264 = Arg/263.t
+  end
+module F4/255 : (Arg/265 : S/250) -> S/250
+module F5/256 : (Arg1/266 : S/250) -> (Arg2/267 : S/250) -> (Arg3/268 : S/250) -> sig
+  type t/269 = Arg1/266.t
+  type u/270 = Arg2/267.t
+  type v/271 = Arg3/268.t
+  type z/272 = t/269
+  end
+module F6/257 : S1/251
+module type F7/258 = (Arg/273 : S/250) -> sig
+  type t/274 = Arg/273.t
+  type u/275 = t/274
+  end
+
+AFTER 
+===== 
+module type S/310 = sig
+  type t/319
+  end
+module type S1/311 = (_/320 : S/310) -> S/310
+module F1/312 : (Arg/321 : S/310) -> S/310
+module F2/313 : (Arg/322 : S/310) -> S/310 with [*.t = global(((param Root.F2 Arg)).t)]
+module F3/314 : (Arg/323 : S/310) -> sig
+  type t/324 = global(((param Root.F3 Arg)).t)
+  end
+module F4/315 : (Arg/325 : S/310) -> S/310
+module F5/316 : (Arg1/326 : S/310) -> (Arg2/327 : S/310) -> (Arg3/328 : S/310) -> sig
+  type t/329 = global(((param Root.F5 Arg1)).t)
+  type u/330 = global(((param Root.F5.result Arg2)).t)
+  type v/331 = global(((param Root.F5.result.result Arg3)).t)
+  type z/332 = t/329
+  end
+module F6/317 : S1/311
+module type F7/318 = (Arg/333 : S/310) -> sig
+  type t/334 = global(((param Root.F7 Arg)).t)
+  type u/335 = t/334
+  end
+
+Functor
+Resolve a functor
+CODE
+====
+
+module type ARG = sig
+  module type S
+end
+
+module F : functor (X : ARG) -> sig
+  module N : X.S 
+end
+
+module M : sig
+  module type S = sig
+    type t
+  end
+end
+
+type t = F(M).N.t
+
+BEFORE
+======
+module type ARG/336 = sig
+  module type S/340
+  end
+module F/337 : (X/341 : ARG/336) -> sig
+  module N/342 : X/341.S
+  end
+module M/338 : sig
+  module type S/343 = sig
+    type t/344
+    end
+  end
+type t/339 = F/337(M/338).N.t
+
+AFTER 
+===== 
+module type ARG/361 = sig
+  module type S/365
+  end
+module F/362 : (X/366 : ARG/361) -> sig
+  module N/367 : global(((param Root.F X)).S)
+  end
+module M/363 : sig
+  module type S/368 = sig
+    type t/369
+    end
+  end
+type t/364 = global(((Root.M).S subst-> (Root.F)((Root.M)).N).t)
+
+Functor app nightmare
+Horrible
+CODE
+====
+
+module type Type = sig module type T end
+module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+module Bar : sig module type T = sig type bar end end
+module Foo :
+  functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+module FooBarInt : sig module Foo : sig type bar = int end end
+type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+
+BEFORE
+======
+module type Type/370 = sig
+  module type T/376
+  end
+module App/371 : (T/377 : Type/370) -> (F/378 : (_/379 : Type/370) -> Type/370) -> (M/380 : F/378(T/377).T) -> F/378(T/377).T
+module Bar/372 : sig
+  module type T/381 = sig
+    type bar/382
+    end
+  end
+module Foo/373 : (T/383 : Type/370) -> sig
+  module type T/384 = sig
+    module Foo/385 : T/383.T
+    end
+  end
+module FooBarInt/374 : sig
+  module Foo/386 : sig
+    type bar/387 = global((int))
+    end
+  end
+type t/375 = App/371(Bar/372)(Foo/373)(FooBarInt/374).Foo.bar
+
+AFTER 
+===== 
+module type Type/419 = sig
+  module type T/425
+  end
+module App/420 : (T/426 : Type/419) -> (F/427 : (_/428 : Type/419) -> Type/419) -> (M/429 : global(((param Root.App.result F))(((param Root.App T))).T)) -> global(((param Root.App.result F))(((param Root.App T))).T)
+module Bar/421 : sig
+  module type T/430 = sig
+    type bar/431
+    end
+  end
+module Foo/422 : (T/432 : Type/419) -> sig
+  module type T/433 = sig
+    module Foo/434 : global(((param Root.Foo T)).T)
+    end
+  end
+module FooBarInt/423 : sig
+  module Foo/435 : sig
+    type bar/436 = global((int))
+    end
+  end
+type t/424 = global(((Root.Bar).T subst-> ((Root.Foo)((Root.Bar)).T subst-> (Root.App)((Root.Bar))((Root.Foo))((Root.FooBarInt))).Foo).bar)
+
