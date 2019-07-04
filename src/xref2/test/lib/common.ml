@@ -264,6 +264,139 @@ module LangUtils = struct
             | Module.ModuleType ModuleType.Signature s -> s
             | _ -> raise Not_found
 
+    module Fmt = struct
+        open Odoc_model.Lang
+
+        let identifier ppf i =
+            Format.fprintf ppf "%a"
+                Odoc_xref2.Component.Fmt.model_identifier
+                (i :> Odoc_model.Paths.Identifier.t)
+
+        let rec signature ppf sg =
+            let open Signature in
+            Format.fprintf ppf "@[<v>";
+            List.iter (function
+                | Module (_,m) ->
+                    Format.fprintf ppf
+                        "@[<v 2>module %a@]@,"
+                        module_ m
+                | ModuleType mt ->
+                    Format.fprintf ppf
+                        "@[<v 2>module type %a@]@,"
+                        module_type mt
+                | Type (_,t) ->
+                    Format.fprintf ppf
+                        "@[<v 2>type %a@]@," type_decl t
+                | _ ->
+                    Format.fprintf ppf
+                        "@[<v 2>unhandled signature@]@,") sg;
+            Format.fprintf ppf "@]"
+
+        and module_decl ppf d =
+            let open Module in
+            match d with
+            | Alias p ->
+                Format.fprintf ppf "= %a" path (p :> Odoc_model.Paths.Path.t)
+            | ModuleType mt ->
+                Format.fprintf ppf ": %a" module_type_expr mt
+
+        and module_ ppf m =
+            Format.fprintf ppf "%a %a" identifier m.id module_decl m.type_
+
+        and module_type ppf mt =
+            match mt.expr with
+            | Some x -> Format.fprintf ppf "%a = %a" identifier mt.id module_type_expr x
+            | None -> Format.fprintf ppf "%a" identifier mt.id
+
+        and module_type_expr ppf mt =
+            let open ModuleType in
+            match mt with
+            | Path p -> path ppf (p :> Odoc_model.Paths.Path.t)
+            | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
+            | With (expr,subs) -> Format.fprintf ppf "%a with [%a]" module_type_expr expr substitution_list subs
+            | Functor (arg, res) -> Format.fprintf ppf "(%a) -> %a" functor_argument_opt arg module_type_expr res
+            | _ -> Format.fprintf ppf "unhandled module_type_expr"
+
+        and functor_argument_opt ppf x =
+            match x with
+            | None -> ()
+            | Some x -> Format.fprintf ppf "%a" functor_argument x
+
+        and functor_argument ppf x =
+            Format.fprintf ppf "%a : %a" identifier x.FunctorArgument.id module_type_expr x.FunctorArgument.expr
+
+        and type_equation ppf t =
+            match t.TypeDecl.Equation.manifest with
+            | Some m -> Format.fprintf ppf " = %a" type_expr m
+            | None -> ()
+
+        and type_decl ppf t =
+            let open TypeDecl in
+            Format.fprintf ppf "%a%a" identifier t.id type_equation t.equation
+
+        and substitution ppf t =
+            let open ModuleType in
+            match t with
+            | ModuleEq (frag, decl) ->
+                Format.fprintf ppf "%a = %a" model_fragment (frag :> Odoc_model.Paths.Fragment.t) module_decl decl
+            | ModuleSubst (frag, mpath) ->
+                Format.fprintf ppf "%a := %a" model_fragment (frag :> Odoc_model.Paths.Fragment.t) path (mpath :> Odoc_model.Paths.Path.t)
+            | TypeEq (frag, decl) ->
+                Format.fprintf ppf "%a%a" model_fragment (frag :> Odoc_model.Paths.Fragment.t) type_equation decl
+            | TypeSubst (frag, decl) ->
+                Format.fprintf ppf "%a:%a" model_fragment (frag :> Odoc_model.Paths.Fragment.t) type_equation decl
+
+
+        and substitution_list ppf l =
+            match l with
+            | sub :: (_ :: _) as subs -> Format.fprintf ppf "%a; %a" substitution sub substitution_list subs
+            | sub :: [] -> Format.fprintf ppf "%a" substitution sub
+            | [] -> ()
+
+        and type_expr ppf e =
+            let open TypeExpr in
+            match e with
+            | Var x -> Format.fprintf ppf "%s" x
+            | Constr (p,_args) -> path ppf (p :> Odoc_model.Paths.Path.t)
+            | _ -> Format.fprintf ppf "unhandled type_expr"
+
+        and resolved_path : Format.formatter -> Odoc_model.Paths.Path.Resolved.t -> unit = fun ppf p ->
+            let cast p = (p :> Odoc_model.Paths.Path.Resolved.t) in 
+            match p with
+            | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" resolved_path (cast p1) path (p2 :> Odoc_model.Paths.Path.t)
+            | `Identifier p -> Format.fprintf ppf "global(%a)" identifier p
+            | `Alias (path, realpath) -> Format.fprintf ppf "(%a -> %a)" resolved_path (cast path) resolved_path (cast realpath)
+            | `Subst (modty, m) -> Format.fprintf ppf "(%a subst-> %a)" resolved_path (cast modty) resolved_path (cast m)
+            | `Module (p, m) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (Odoc_model.Names.ModuleName.to_string m)
+            | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (Odoc_model.Names.ModuleTypeName.to_string mt)
+            | `Type (p, t) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (Odoc_model.Names.TypeName.to_string t)
+            | `Class (_, _)
+            | `ClassType (_, _)
+            | `SubstAlias (_, _)
+            | `Hidden _
+            | `Canonical _ -> Format.fprintf ppf "unimplemented resolved_path"
+
+        and path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
+            fun ppf (p : Odoc_model.Paths.Path.t) ->
+            match p with
+            | `Resolved rp -> Format.fprintf ppf "resolved[%a]" resolved_path (rp :> Odoc_model.Paths.Path.Resolved.t)
+            | `Root s -> Format.fprintf ppf "%s" s
+            | `Forward s -> Format.fprintf ppf "%s" s
+            | `Dot (parent,s) -> Format.fprintf ppf "%a.%s" path (parent :> Odoc_model.Paths.Path.t) s
+            | `Apply (func,arg) -> Format.fprintf ppf "%a(%a)" path (func :> Odoc_model.Paths.Path.t) path (arg :> Odoc_model.Paths.Path.t)
+
+        and model_fragment ppf (f : Odoc_model.Paths.Fragment.t) =
+            match f with
+            | `Resolved rf -> model_resolved_fragment ppf rf
+            | `Dot (sg, d) -> Format.fprintf ppf "*%a.%s" model_fragment (sg :> Odoc_model.Paths.Fragment.t) d
+
+        and model_resolved_fragment ppf (f : Odoc_model.Paths.Fragment.Resolved.t) =
+            match f with
+            | `Root -> ()
+            | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.ModuleName.to_string m)
+            | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_fragment"
+
+    end
 
 end
 

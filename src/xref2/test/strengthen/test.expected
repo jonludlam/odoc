@@ -11,6 +11,6 @@ type u/1 = t/0
 
 AFTER 
 ======
-type t/2 = global((Root).t)
+type t/2 = global(Root).t
 type u/3 = t/2
 

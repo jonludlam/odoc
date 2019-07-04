@@ -3,17 +3,20 @@ module Opt = struct
 end
 
 let type_path : Env.t -> Odoc_model.Paths.Path.Type.t -> Odoc_model.Paths.Path.Type.t = fun env p ->
-    match Tools.lookup_type_from_model_path env p with
-    | Ok (p', _) -> `Resolved p'
+    let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
+    match Tools.lookup_type_from_path env cp with
+    | Ok (_, p', _) -> `Resolved p'
     | Error p -> p
 
 and module_type_path : Env.t -> Odoc_model.Paths.Path.ModuleType.t -> Odoc_model.Paths.Path.ModuleType.t = fun env p ->
-    match Tools.lookup_module_type_from_model_path env p with
+    let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
+    match Tools.lookup_module_type_from_path env cp with
     | Ok (_, p', _) -> `Resolved p'
     | Error p -> p
 
 and module_path : Env.t -> Odoc_model.Paths.Path.Module.t -> Odoc_model.Paths.Path.Module.t = fun env p ->
-    match Tools.lookup_module_from_model_path env p with
+    let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
+    match Tools.lookup_module_from_path env cp with
     | Ok (_, p', _) -> `Resolved p'
     | Error p -> p
 
@@ -55,7 +58,8 @@ and module_decl : Env.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module
     match decl with
     | ModuleType expr -> ModuleType (module_type_expr env expr)
     | Alias p ->
-        match Tools.lookup_module_from_model_path env p with
+        let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
+        match Tools.lookup_module_from_path env cp with
         | Ok (_, p', _) -> Alias (`Resolved p')
         | _ -> decl
 
@@ -106,8 +110,10 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     let open Odoc_model.Lang.TypeExpr in 
     match texpr with
     | Constr (path, ts) -> begin
-        match Tools.lookup_type_from_model_path env path with
-        | Ok (p, _) ->  Constr (`Resolved p, ts)
+        let cp = Component.Of_Lang.local_path_of_path [] (path :> Odoc_model.Paths.Path.t) in
+        match Tools.lookup_type_from_path env cp with
+        | Ok (_, p, _) ->
+            Constr (`Resolved p, ts)
         | Error p -> Constr (p, ts)
         end
     | _ -> failwith "Unhandled type expression"

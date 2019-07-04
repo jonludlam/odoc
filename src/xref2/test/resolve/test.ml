@@ -27,21 +27,19 @@ type test = {
 
 let test_resolve test =
     let _, _, sg = Common.model_of_string test.test_data in
-    let c = Component.Of_Lang.signature [] sg in
     let open Format in
     fprintf std_formatter "%s\n%s\n%!" test.name test.description;
     fprintf std_formatter "CODE\n====\n%!%s\n%!" test.test_data;
-    fprintf std_formatter "BEFORE\n======\n%!%a\n%!" Component.Fmt.signature c;
+    fprintf std_formatter "BEFORE\n======\n%!%a\n%!" Common.LangUtils.Fmt.signature sg;
     try
         let sg' = Resolve.signature Env.empty sg in
-        let c' = Component.Of_Lang.signature [] sg' in
 
-        fprintf std_formatter "AFTER \n===== \n%!%a\n%!" Component.Fmt.signature c'
+        fprintf std_formatter "AFTER \n===== \n%!%a\n%!" Common.LangUtils.Fmt.signature sg'
     with
     | Tools.Lookup_failure (e, p, ty) ->
         let bt = Printexc.get_backtrace () in
         Printf.printf "FAILURE when lookup up a %s: \n%!" ty;
-        fprintf std_formatter "Path: %a\n%!" Component.Fmt.path p;
+        fprintf std_formatter "Path: %a\n%!" Component.Fmt.resolved_path p;
         fprintf std_formatter "Env:\n%!%a" Env.pp e;
         fprintf std_formatter "Backtrace:\n%s\n%!" bt
     | Env.MyFailure(id, e) ->
@@ -50,9 +48,9 @@ let test_resolve test =
         fprintf std_formatter "Identifier: %a\n%!" Component.Fmt.model_identifier id;
         fprintf std_formatter "Env:\n%!%a" Env.pp e;
         fprintf std_formatter "Backtrace:\n%s\n%!" bt
-    | _e ->
+    | e ->
         let bt = Printexc.get_backtrace () in
-        Printf.printf "FAILURE generic\n%!";
+        Printf.printf "FAILURE %s\n%!" (Printexc.to_string e);
         fprintf std_formatter "Backtrace:\n%s\n%!" bt
        
 
