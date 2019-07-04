@@ -1,5 +1,5 @@
  type t = {
-    map : (Ident.t * Cpath.t) list
+    map : (Ident.t * Cpath.resolved) list
 }
 
 let identity = {
@@ -9,18 +9,27 @@ let identity = {
 let add id subst t =
     { map = (id, subst) :: t.map }
 
-let rec path : t -> Cpath.t -> Cpath.t = fun s p ->
+let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
     match p with
     | `Local id -> begin
         match List.assoc_opt id s.map with
         | Some x -> x
         | None -> `Local id
         end
-    | `Global _ ->
+    | `Identifier _ ->
         p
-    | `Dot (parent,x) -> `Dot (path s parent, x)
+    | `Apply (p1, p2) -> `Apply (resolved_path s p1, path s p2)
+    | `Substituted p -> `Substituted (resolved_path s p)
+    | `Module (p, n) -> `Module (resolved_path s p, n)
+    | `ModuleType (p, n) -> `ModuleType (resolved_path s p, n)
+    | `Type (p, n) -> `Type (resolved_path s p, n)
+    | `Alias (p1, p2) -> `Alias (resolved_path s p1, resolved_path s p2)
+
+and path : t -> Cpath.t -> Cpath.t = fun s p ->
+    match p with
+    | `Resolved p' -> `Resolved (resolved_path s p')
+    | `Dot (p', str) -> `Dot (path s p', str)
     | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
-    | `Substituted p -> `Substituted (path s p)
 
 let rec type_ s t =
     let open Component.Type in

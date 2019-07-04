@@ -15,12 +15,12 @@ module rec Module : sig
     type t =
       { id : Ident.t
       ; type_ : decl }
-end = Module 
+end = Module
 
 and TypeExpr : sig
     type t =
         | Var of string
-        | Constr of Cpath.t * t list 
+        | Constr of Cpath.t * t list
 end = TypeExpr
 
 and FunctorArgument : sig
@@ -53,11 +53,11 @@ and Type : sig
 end = Type
 
 and Signature : sig
-    type item = 
+    type item =
         | Module of Module.t
         | ModuleType of ModuleType.t
         | Type of Type.t
-    
+
     type t = item list
 end = Signature
 
@@ -115,7 +115,7 @@ module Fmt = struct
         match x with
         | None -> ()
         | Some x -> Format.fprintf ppf "%a" functor_argument x
-    
+
     and functor_argument ppf x =
         Format.fprintf ppf "%a : %a" Ident.fmt x.FunctorArgument.id module_type_expr x.FunctorArgument.expr
 
@@ -123,12 +123,12 @@ module Fmt = struct
         match t with
         | Some expr -> Format.fprintf ppf "%a" type_expr expr
         | None -> ()
-    
+
     and type_ ppf t =
         match t.Type.manifest with
         | Some _ -> Format.fprintf ppf "%a = %a" Ident.fmt t.id type_decl t.Type.manifest
         | None -> Format.fprintf ppf "%a" Ident.fmt t.id
- 
+
     and substitution ppf t =
         let open ModuleType in
         match t with
@@ -141,7 +141,7 @@ module Fmt = struct
         | TypeSubst (frag, decl) ->
             Format.fprintf ppf "%a := %a" model_fragment (frag :> Odoc_model.Paths.Fragment.t) type_decl decl
 
-    
+
     and substitution_list ppf l =
         match l with
         | sub :: (_ :: _) as subs -> Format.fprintf ppf "%a; %a" substitution sub substitution_list subs
@@ -154,15 +154,25 @@ module Fmt = struct
         | Var x -> Format.fprintf ppf "%s" x
         | Constr (p,_args) -> path ppf p
 
-    and path ppf p =
+    and resolved_path : Format.formatter -> Cpath.resolved -> unit = fun ppf p ->
         match p with
         | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
+        | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" resolved_path p1 path p2
+        | `Identifier p -> Format.fprintf ppf "global(%a)" model_identifier p
+        | `Substituted p -> Format.fprintf ppf "substituted(%a)" resolved_path p
+        | `Module (p, m) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ModuleName.to_string m)
+        | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ModuleTypeName.to_string mt)
+        | `Type (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.TypeName.to_string t)
+        | `Alias (p1, p2) -> Format.fprintf ppf "(alias %a -> %a)" resolved_path p1 resolved_path p2
+
+    and path ppf p =
+        match p with
+        | `Resolved p -> Format.fprintf ppf "%a" resolved_path p
         | `Dot (p,str) -> Format.fprintf ppf "%a.%s" path p str
         | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" path p1 path p2
-        | `Global p -> Format.fprintf ppf "global(%a)" model_path p
-        | `Substituted p -> Format.fprintf ppf "substituted(%a)" path p
 
-    and model_path ppf (p : Odoc_model.Paths.Path.t) =
+    and model_path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
+        fun ppf (p : Odoc_model.Paths.Path.t) ->
         match p with
         | `Resolved rp -> model_resolved_path ppf rp
         | `Root s -> Format.fprintf ppf "*%s" s
@@ -184,11 +194,14 @@ module Fmt = struct
     and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
         match p with
         | `Root (_, unit_name) -> Format.fprintf ppf "%s" (Odoc_model.Names.UnitName.to_string unit_name)
+        | `Module (`Root _, name) -> Format.fprintf ppf "%s" (Odoc_model.Names.ModuleName.to_string name)
+        | `ModuleType (`Root _, name) -> Format.fprintf ppf "%s" (Odoc_model.Names.ModuleTypeName.to_string name)
+        | `Type (`Root _, name) -> Format.fprintf ppf "%s" (Odoc_model.Names.TypeName.to_string name)
         | `Module (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ModuleName.to_string name)
         | `ModuleType (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ModuleTypeName.to_string name)
         | `Type (parent, name) -> Format.fprintf ppf "%a.%s" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.TypeName.to_string name)
         | `Parameter (parent, name) -> Format.fprintf ppf "(param %a %s)" model_identifier (parent :> Odoc_model.Paths.Identifier.t) (Odoc_model.Names.ParameterName.to_string name)
-        | `Result parent -> Format.fprintf ppf "%a.result" model_identifier (parent :> Odoc_model.Paths.Identifier.t) 
+        | `Result parent -> Format.fprintf ppf "%a.result" model_identifier (parent :> Odoc_model.Paths.Identifier.t)
         | `CoreType name -> Format.fprintf ppf "%s" (Odoc_model.Names.TypeName.to_string name)
         | _ -> Format.fprintf ppf "UNIMPLEMENTED model_identifier"
 
@@ -196,7 +209,7 @@ module Fmt = struct
         match f with
         | `Resolved rf -> model_resolved_fragment ppf rf
         | `Dot (sg, d) -> Format.fprintf ppf "*%a.%s" model_fragment (sg :> Odoc_model.Paths.Fragment.t) d
-    
+
     and model_resolved_fragment ppf (f : Odoc_model.Paths.Fragment.Resolved.t) =
         match f with
         | `Root -> ()
@@ -209,17 +222,32 @@ module Of_Lang = struct
     let ident_of_identifier ident_map identifier =
         List.assoc_opt identifier ident_map
 
-    let rec local_path_of_path : _ -> Odoc_model.Paths.Path.t -> Cpath.t = fun ident_map path ->
+    let rec local_resolved_path_of_resolved_path : _ -> Odoc_model.Paths.Path.Resolved.t -> Cpath.resolved = fun ident_map path ->
+        let recurse p = local_resolved_path_of_resolved_path ident_map (p :> Odoc_model.Paths.Path.Resolved.t) in
         match path with
-        | `Resolved (`Identifier i) -> begin
+        | `Identifier i -> begin
             match ident_of_identifier ident_map i with
-            | Some ident -> 
+            | Some ident ->
                 `Local ident
             | None ->
-                `Global path
-            end 
-        | `Resolved _ ->
-            `Global path
+                `Identifier i
+            end
+        | `Module (p, name) ->
+            `Module (recurse p, name)
+        | `ModuleType (p, name) ->
+            `ModuleType (recurse p, name)
+        | `Type (p, name) ->
+            `Type (recurse p, name)
+        | `Apply (p1, p2) ->
+            `Apply (recurse p1, local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t))
+        | `Alias (p1, p2) ->
+            `Alias (recurse p1, recurse p2)
+        | _ -> failwith "fo"
+
+    and local_path_of_path : _ -> Odoc_model.Paths.Path.t -> Cpath.t = fun ident_map path ->
+        match path with
+        | `Resolved r ->
+            `Resolved (local_resolved_path_of_resolved_path ident_map r)
         | `Dot (path', x) ->
             `Dot (local_path_of_path ident_map (path' :> Odoc_model.Paths.Path.t), x)
         | `Apply (p1, p2) ->
@@ -290,7 +318,7 @@ module Of_Lang = struct
             let expr' = module_type_expr ident_map expr in
             ModuleType.Functor (None, expr')
         | _ -> failwith "Unhandled here"
-    
+
     and module_type ident_map id m =
         let expr = Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in
         {ModuleType.id; expr}
@@ -298,7 +326,7 @@ module Of_Lang = struct
     and signature : _ -> Odoc_model.Lang.Signature.t -> Signature.t =
         let open Odoc_model.Paths in
         fun ident_map items ->
-            (* First we construct a list of brand new [Ident.t]s 
+            (* First we construct a list of brand new [Ident.t]s
                 for each item in the signature *)
             let ident_map_new : (Identifier.t * Ident.t) list = List.map (function
                 | Odoc_model.Lang.Signature.Type (_, t) ->
@@ -306,7 +334,7 @@ module Of_Lang = struct
                     let id = Ident.of_identifier (identifier :> Identifier.t) in
                     ((identifier :> Identifier.t), id)
                 | Odoc_model.Lang.Signature.Module (_, m) ->
-                    let identifier = m.Odoc_model.Lang.Module.id in 
+                    let identifier = m.Odoc_model.Lang.Module.id in
                     let id = Ident.of_identifier (identifier :> Identifier.t) in
                     ((identifier :> Identifier.t), id)
                 | Odoc_model.Lang.Signature.ModuleType m ->

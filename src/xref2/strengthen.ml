@@ -15,7 +15,7 @@ this is probably the best thing to produce in this case.
 *)
 
 
-let rec signature (prefix : Odoc_model.Paths.Path.Resolved.Module.t) sg =
+let rec signature (prefix : Cpath.resolved) sg =
     let open Component.Signature in
     let open Odoc_model.Names in
     let sg' = List.map (fun item ->
@@ -27,17 +27,17 @@ let rec signature (prefix : Odoc_model.Paths.Path.Resolved.Module.t) sg =
     (* The identity substitution used here is to rename all of the bound idents in the signature *)
     Subst.signature Subst.identity sg' 
 
-and module_ (prefix : Odoc_model.Paths.Path.Resolved.Module.t) m =
+and module_ : Cpath.resolved -> Component.Module.t -> Component.Module.t = fun prefix m ->
     match m.Component.Module.type_ with
     | Alias _ -> m
     | ModuleType (Signature sg) -> {m with  type_ = ModuleType (Signature (signature prefix sg)) }
     | ModuleType _ -> m
 
-and module_type (prefix: Odoc_model.Paths.Path.Resolved.ModuleType.t) m =
+and module_type : Cpath.resolved -> Component.ModuleType.t -> Component.ModuleType.t = fun prefix m ->
     let open Component.ModuleType in
     let expr =
         match m.expr with
-        | None -> Some (Component.ModuleType.Path (`Global ((`Resolved (prefix :> Odoc_model.Paths.Path.Resolved.t)))))
+        | None -> Some (Component.ModuleType.Path (`Resolved prefix))
         | Some (Component.ModuleType.Path _p) ->
             (* TODO *)
             m.expr
@@ -50,10 +50,10 @@ and module_type (prefix: Odoc_model.Paths.Path.Resolved.ModuleType.t) m =
             m.expr
     in {m with expr}
 
-and type_ (path: Odoc_model.Paths.Path.Resolved.Type.t) t =
+and type_ : Cpath.resolved -> Component.Type.t -> Component.Type.t = fun path t ->
     let manifest = 
         match t.manifest with
-        | None -> Some (Component.TypeExpr.Constr (`Global (`Resolved (path :> Odoc_model.Paths.Path.Resolved.t)), []))
+        | None -> Some (Component.TypeExpr.Constr (`Resolved path, []))
         | _ -> t.manifest
     in
     {t with manifest}

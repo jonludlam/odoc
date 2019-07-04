@@ -74,9 +74,7 @@ signature is as follows:
      manifest =
       Some
        (Odoc_xref2.Component.TypeExpr.Constr
-         (`Global
-            (`Resolved
-               (`Identifier (`Type (`Root (Common.root, "Root"), "x")))),
+         (`Resolved (`Identifier (`Type (`Root (Common.root, "Root"), "x"))),
          []))});
    (`Type (`Root (Common.root, "Root"), "x"),
     {Odoc_xref2.Component.Type.id = ("x", 16); manifest = None})]}
@@ -85,7 +83,7 @@ signature is as follows:
 here we can see there are two types in the environment and nothing else. `u` has identifier 
 `` `Type (`Root (Common.root, "Root"), "u") ``, and has an internal identifier of `("u",17)`. `t` is
 abstract and therefore has
-no `manifest`, but `u` has a manifest that points to the `` `Global `` path that
+no `manifest`, but `u` has a manifest that points to the `` `Identifier `` path that
 has already been `` `Resolved `` to `` `Identifier `` `` `Type (`Root (Common.root, "Root"), "u") ``. So there won't be much
 for us to do.
 
@@ -172,6 +170,30 @@ and so we simply look up the type in the environment and return the same path we
 started with alongside the `Component.Type.t` that represents the type (which we
 ignore in this case).
 
+```ocaml env=e1
+# Resolve.signature Env.empty sg;;
+- : Odoc_model.Lang.Signature.t =
+[Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "x");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest = None; constraints = []};
+   representation = None});
+ Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "u");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest =
+      Some
+       (Odoc_model.Lang.TypeExpr.Constr
+         (`Resolved (`Identifier (`Type (`Root (Common.root, "Root"), "x"))),
+         []));
+     constraints = []};
+   representation = None})]
+```
+
 ### One module
 
 Now let's look at a marginally more complicated example. In this case, our type [t] is now
@@ -222,17 +244,17 @@ which are:
 ```ocaml env=e1
 # let get_ok = function | Ok x -> x | Error y -> failwith "failed";;
 val get_ok : ('a, 'b) result -> 'a = <fun>
-# let (subst, path, module_) = get_ok @@ Tools.lookup_module_from_model_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "M"))));;
+# let (subst, path, module_) = get_ok @@ Tools.lookup_module_from_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "M"))));;
 val subst : bool = false
 val path : Odoc_model.Paths_types.Resolved_path.module_ =
   `Identifier (`Module (`Root (Common.root, "Root"), "M"))
 val module_ : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("M", 18);
+  {Odoc_xref2.Component.Module.id = ("M", 20);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Signature
        [Odoc_xref2.Component.Signature.Type
-         {Odoc_xref2.Component.Type.id = ("t", 19); manifest = None}])}
+         {Odoc_xref2.Component.Type.id = ("t", 21); manifest = None}])}
 ```
 
 The three values returned are a boolean representing whether this path is dependent on a module substituted in a functor (see later), the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `signature_of_module`, which in this case is quite simple since the module contains an explicit signature:
@@ -242,7 +264,7 @@ The three values returned are a boolean representing whether this path is depend
 - : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
  [Odoc_xref2.Component.Signature.Type
-   {Odoc_xref2.Component.Type.id = ("t", 19); manifest = None}])
+   {Odoc_xref2.Component.Type.id = ("t", 21); manifest = None}])
 ```
 
 We're now in a position to verify the existence of the type `t` we're
@@ -272,18 +294,17 @@ It proceeds much as the previous example until we get the result
 of looking up the module `N`:
 
 ```ocaml env=e1
-# let (subst, path, module_) = get_ok @@ Tools.lookup_module_from_model_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
+# let (subst, path, module_) = get_ok @@ Tools.lookup_module_from_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
 val subst : bool = false
 val path : Odoc_model.Paths_types.Resolved_path.module_ =
   `Identifier (`Module (`Root (Common.root, "Root"), "N"))
 val module_ : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 23);
+  {Odoc_xref2.Component.Module.id = ("N", 25);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
-       (`Global
-          (`Resolved
-             (`Identifier (`ModuleType (`Root (Common.root, "Root"), "M"))))))}
+       (`Resolved
+          (`Identifier (`ModuleType (`Root (Common.root, "Root"), "M")))))}
 ```
 
 This time turning the module into a signature demonstrates why the function `signature_of_module` requires the environment. We need to lookup the module type `M` from the environment to determine the
@@ -316,22 +337,23 @@ here, so it has a local identifier. We can see this by looking up module `M` fro
 ```ocaml env=e1
 # let m = Env.lookup_module_type (`ModuleType (`Root (Common.root, "Root"), "M")) env;;
 val m : Component.ModuleType.t =
-  {Odoc_xref2.Component.ModuleType.id = ("M", 25);
+  {Odoc_xref2.Component.ModuleType.id = ("M", 27);
    expr =
     Some
      (Odoc_xref2.Component.ModuleType.Signature
        [Odoc_xref2.Component.Signature.ModuleType
-         {Odoc_xref2.Component.ModuleType.id = ("N", 26);
+         {Odoc_xref2.Component.ModuleType.id = ("N", 28);
           expr =
            Some
             (Odoc_xref2.Component.ModuleType.Signature
               [Odoc_xref2.Component.Signature.Type
-                {Odoc_xref2.Component.Type.id = ("t", 28); manifest = None}])};
+                {Odoc_xref2.Component.Type.id = ("t", 30); manifest = None}])};
         Odoc_xref2.Component.Signature.Module
-         {Odoc_xref2.Component.Module.id = ("B", 27);
+         {Odoc_xref2.Component.Module.id = ("B", 29);
           type_ =
            Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path (`Local ("N", 26)))}])}
+            (Odoc_xref2.Component.ModuleType.Path
+              (`Resolved (`Local ("N", 28))))}])}
 ```
 
 We can see here that module `B` has type `` Path (`Local ("N", 26)) `` which refers to the module type defined just above it.
@@ -363,34 +385,32 @@ Some
 we look up `A` from the environment:
 
 ```ocaml env=e1
-# let (_, p, m) = Tools.lookup_module_from_resolved_model_path env (`Identifier (`Module (`Root (Common.root, "Root"), "A"))) in
+# let (_, p, m) = Tools.lookup_module_from_resolved_path env (`Identifier (`Module (`Root (Common.root, "Root"), "A"))) in
   Tools.signature_of_module env (p, m) |> Tools.prefix_signature ;;
 - : Odoc_model.Paths_types.Resolved_path.module_ *
     Component.Signature.item list
 =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  [Odoc_xref2.Component.Signature.ModuleType
-   {Odoc_xref2.Component.ModuleType.id = ("N", 32);
+   {Odoc_xref2.Component.ModuleType.id = ("N", 34);
     expr =
      Some
       (Odoc_xref2.Component.ModuleType.Signature
         [Odoc_xref2.Component.Signature.Type
-          {Odoc_xref2.Component.Type.id = ("t", 31); manifest = None}])};
+          {Odoc_xref2.Component.Type.id = ("t", 33); manifest = None}])};
   Odoc_xref2.Component.Signature.Module
-   {Odoc_xref2.Component.Module.id = ("B", 33);
+   {Odoc_xref2.Component.Module.id = ("B", 35);
     type_ =
      Odoc_xref2.Component.Module.ModuleType
       (Odoc_xref2.Component.ModuleType.Path
-        (`Global
-           (`Resolved
-              (`ModuleType
-                 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
-                  "N")))))}])
+        (`Resolved
+           (`ModuleType
+              (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "N"))))}])
 ```
 
 So before the prefixing operation we had that the type of the module was
 
-```
+```ocaml skip
 type_ =
   Odoc_xref2.Component.Module.ModuleType
     (Odoc_xref2.Component.ModuleType.Path (`Local ("N", 26)))
@@ -398,11 +418,11 @@ type_ =
 
 and afterwards it is
 
-```
+```ocaml skip
 type_ = 
   Odoc_xref2.Component.Module.ModuleType
     (Odoc_xref2.Component.ModuleType.Path
-      (`Global
+      (`Identifier
           (`Resolved
             (`ModuleType
                 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
@@ -419,7 +439,7 @@ now no local identifiers.) Finally we can now look up `t`, which
 we then return along with the fully resolved identifier.
 
 ```ocaml env=e1
-# Tools.lookup_type_from_model_path env
+# Tools.lookup_type_from_path env
     (`Dot
       (`Dot
          (`Resolved
@@ -428,10 +448,11 @@ we then return along with the fully resolved identifier.
        "t"));;
 - : (Tools.type_lookup_result, Odoc_model.Paths_types.Path.type_) result =
 Result.Ok
- (`Type
+ (false,
+  `Type
     (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "B"),
      "t"),
-  {Odoc_xref2.Component.Type.id = ("t", 28); manifest = None})
+  {Odoc_xref2.Component.Type.id = ("t", 39); manifest = None})
 ```
 
 ### Module substitution
