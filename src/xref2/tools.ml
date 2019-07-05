@@ -56,7 +56,8 @@ let rec lookup_module_from_resolved_path : Env.t -> Cpath.resolved -> module_loo
     | `Identifier _ ->
         failwith "Invalid"
     | `Substituted x ->
-        lookup_module_from_resolved_path env x
+        let (_, p, m) = lookup_module_from_resolved_path env x in
+        (true, p, m)
     | `Apply (func_path, arg_path) -> begin
         let (s, func_path', m) = lookup_module_from_resolved_path env func_path in
         let arg_path' = match lookup_module_from_path env arg_path with Ok (_,x,_) -> x | Error _ -> failwith "erk2" in
@@ -139,6 +140,10 @@ and lookup_module_type_from_path : Env.t -> Cpath.t -> (module_type_lookup_resul
 and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_result = fun env p ->
     match p with
     | `Local _id -> raise (Lookup_failure (env, p, "module_type"))
+    | `Identifier (`CoreType name) ->
+        (* CoreTypes aren't put into the environment, so they can't be handled by the 
+           next clause. We just look them up here in the list of core types *)
+        (false, (`Identifier (`CoreType name)), List.assoc (TypeName.to_string name) core_types)
     | `Identifier (#Odoc_model.Paths.Identifier.Type.t as i) ->
         let t = Env.lookup_type i env in
         (false, `Identifier i, t)
@@ -148,6 +153,7 @@ and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_resu
         let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
         let t = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
         (s, `Type (p', name), t)
+    (* None of the following should still exist when we fix up the types *)
     | `Alias _
     | `Apply (_, _)
     | `Module _
@@ -265,8 +271,11 @@ and signature_of_module_type_expr : Env.t -> Odoc_model.Paths.Path.Resolved.Modu
                     match lookup_module_from_path env cpath with
                     | Ok (_, path', _) ->
                         let cpath' = Component.Of_Lang.local_resolved_path_of_resolved_path [] (path' :> Odoc_model.Paths.Path.Resolved.t) in
-                        let subst = Subst.add id cpath' Subst.identity in
-                        fragmap_unresolved_module env frag (fun _ -> None) (Subst.signature subst sg)
+                        let subst = Subst.add id (`Substituted cpath') Subst.identity in
+                        (* It's important to remove the module from the signature before doing the substitution,
+                           since Subst doesn't work on bound idents *)
+                        let res = Subst.signature subst (fragmap_unresolved_module env frag (fun _ -> None) sg) in
+                        res
                     | _ ->
                         failwith "erk"
                     end
