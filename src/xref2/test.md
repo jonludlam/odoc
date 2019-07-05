@@ -710,3 +710,48 @@ Some
           "t")),
    []))
 ```
+
+```ocaml env=e1
+let test_data = {|
+module M : sig
+  module F(X : sig module type S end) : sig
+    module type S = sig
+      module N : X.S
+    end
+  end
+  module T : sig
+    module type S = sig type t end
+  end
+  module O : F(T).S
+end
+type t = M.O.N.t
+|}
+let sg = Common.signature_of_mli_string test_data;;
+let env = Env.open_signature sg Env.empty;;
+```
+
+```ocaml env=e1
+let resolved = Resolve.signature Env.empty sg;;
+```
+
+```ocaml env=e1
+# Common.LangUtils.Lens.get t_manifest resolved;;
+- : Odoc_model.Lang.TypeExpr.t option =
+Some
+ (Odoc_model.Lang.TypeExpr.Constr
+   (`Resolved
+      (`Type
+         (`Subst
+            (`ModuleType
+               (`Module
+                  (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
+                   "T"),
+                "S"),
+             `Module
+               (`Module
+                  (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
+                   "O"),
+                "N")),
+          "t")),
+   []))
+```
