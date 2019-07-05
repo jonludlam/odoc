@@ -279,8 +279,8 @@ and signature_of_module_type_expr : Env.t -> Odoc_model.Paths.Path.Resolved.Modu
                     | _ ->
                         failwith "erk"
                     end
-                | TypeEq (_, _) ->
-                    sg
+                | TypeEq (frag, expr) ->
+                    fragmap_unresolved_type env frag (fun t -> Some Component.Type.{t with manifest = expr}) sg
                 | TypeSubst (_, _) ->
                     sg
                 ) sg subs in
@@ -330,19 +330,19 @@ and signature_of_module : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t * Com
         | Some p, sg -> (p, sg)
         | None, sg -> (incoming_path, sg)
 
-and fragmap_signature : Env.t -> Odoc_model.Paths.Fragment.Resolved.Signature.t -> (Component.Signature.t -> Component.Signature.t option) -> Component.Signature.t -> Component.Signature.t =
+and fragmap_signature : Env.t -> Odoc_model.Paths.Fragment.Resolved.Signature.t -> (Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t =
     fun env frag fn sg ->
         match frag with
-        | `Root -> (match fn sg with Some sg -> sg | None -> failwith "Ugh?")
+        | `Root -> fn sg
         | `Module (parent, name) ->
             fragmap_signature env parent (fun s ->
                 let r = filter_map (function
                     | Component.Signature.Module m when (Ident.name m.id = ModuleName.to_string name) ->
                         let sg = signature_of_module_nopath env m in
-                        map_opt (fn sg) (fun sg' ->
-                            Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')})
+                        let sg' = fn sg in
+                        Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')})
                     | x -> Some x) s in
-                Some r) sg
+                r) sg
         | _ -> failwith "foo"
 
 and fragmap_module : Env.t -> Odoc_model.Paths.Fragment.Resolved.Module.t -> (Component.Module.t -> Component.Module.t option) -> Component.Signature.t -> Component.Signature.t =
@@ -350,29 +350,41 @@ and fragmap_module : Env.t -> Odoc_model.Paths.Fragment.Resolved.Module.t -> (Co
         match frag with
         | `Module (parent, name) ->
             fragmap_signature env parent (fun s ->
-                let r = filter_map (function
+                filter_map (function
                 | Component.Signature.Module m when Ident.name m.id = (ModuleName.to_string name) ->
                     map_opt (fn m) (fun m' ->
                         Component.Signature.Module {m' with id=m.id})
-                | x -> Some x) s
-                in Some r) sg
+                | x -> Some x) s) sg
         | `Subst (_, x) -> fragmap_module env x fn sg
         | `SubstAlias (_, x) -> fragmap_module env x fn sg
 
 
+and fragmap_type : Env.t -> Odoc_model.Paths.Fragment.Resolved.Type.t -> (Component.Type.t -> Component.Type.t option) -> Component.Signature.t -> Component.Signature.t =
+    fun env frag fn sg ->
+        match frag with
+        | `Type (parent, name) ->
+            fragmap_signature env parent (fun s ->
+                filter_map (function
+                | Component.Signature.Type t when Ident.name t.id = (TypeName.to_string name) ->
+                    map_opt (fn t) (fun t' ->
+                        Component.Signature.Type {t' with id=t.id})
+                | x -> Some x) s) sg
+        | `Class _
+        | `ClassType _ -> failwith "Unhandled"
+
+
 (*        fragmap_signature env (frag : Odoc_model.Paths.Fragment.Resolved.Module.t :> Odoc_model.Paths.Fragment.Resolved.Signature.t) fn sg*)
 
-and fragmap_unresolved_signature env frag fn sg =
+and fragmap_unresolved_signature : Env.t -> Odoc_model.Paths.Fragment.Signature.t -> (Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t = fun env frag fn sg ->
     match frag with
     | `Dot (parent, name) ->
         fragmap_unresolved_signature env parent (fun s ->
-            let r = filter_map (function
+            filter_map (function
                 | Component.Signature.Module m when Ident.name m.id = name ->
                     let sg = signature_of_module_nopath env m in
-                    map_opt (fn sg) (fun sg' ->
-                    Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')})
-                | x -> Some x) s
-            in Some r) sg 
+                    let sg' = fn sg in
+                    Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')})
+                | x -> Some x) s) sg 
     | `Resolved x ->
         fragmap_signature env x fn sg
 
@@ -380,12 +392,22 @@ and fragmap_unresolved_module : Env.t -> Odoc_model.Paths.Fragment.Module.t -> (
     match frag with
     | `Dot (parent, name) ->
         fragmap_unresolved_signature env parent (fun s ->
-            let r = filter_map (function
+            filter_map (function
                 | Component.Signature.Module m when Ident.name m.id = name ->
                     map_opt (fn m)
                      (fun m' -> Component.Signature.Module {m' with id=m.id})
-                | x -> Some x) s in
-            Some r) sg
+                | x -> Some x) s) sg
     | `Resolved x ->
         fragmap_module env x fn sg
 
+and fragmap_unresolved_type : Env.t -> Odoc_model.Paths.Fragment.Type.t -> (Component.Type.t -> Component.Type.t option) -> Component.Signature.t -> Component.Signature.t = fun env frag fn sg ->
+    match frag with
+    | `Dot (parent, name) ->
+        fragmap_unresolved_signature env parent (fun s ->
+            filter_map (function
+                | Component.Signature.Type t when Ident.name t.id = name ->
+                    map_opt (fn t)
+                      (fun t' -> Component.Signature.Type {t' with id=t.id})
+                | x -> Some x) s) sg
+    | `Resolved x ->
+        fragmap_type env x fn sg
