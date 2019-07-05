@@ -70,7 +70,7 @@ let rec lookup_module_from_resolved_path : Env.t -> Cpath.resolved -> module_loo
         in
         let new_module = {m with type_ = ModuleType result} in
         let path = `Apply (func_path', `Resolved arg_path') in
-        (s, path, Subst.module_ (Subst.add arg_id arg_cpath' Subst.identity) new_module)
+        (s, path, Subst.module_ (Subst.add arg_id (`Substituted arg_cpath') Subst.identity) new_module)
         end
     | `Module (p, name) ->
         let (s, p, m) = lookup_module_from_resolved_path env p in
