@@ -481,9 +481,11 @@ let sg = Common.signature_of_mli_string test_data;;
 let env = Env.open_signature sg Env.empty;;
 ```
 
-So in module type `A` there is no element `t` in module `N`,
-but when we make the substitution, although we're substituting `M`,
-because the signature of `N` is `M.S`, we _also_ change `N`.
+So in module type `A`, module `N` has type `M.S`, which 
+does not contain a declaration for type `t`.
+When we make the substitution, although we're substituting `M`,
+because the signature of `N` is `M.S`, we _also_ change `N`. So
+in module `C`, `N` should now contain a type `t`.
 
 Once again, we look at the resolution of `type t = C.N.t`. When
 we look up the module C we find that the `type_` field look as
@@ -562,7 +564,7 @@ val sg : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
           (`Dot (`Resolved (`Local ("M", 43)), "S")))}])
 ```
 
-and we can see we've picked up the `type t` declaration. If we now ask for the signature of `C.N` we get:
+and we can see we've picked up the `type t` declaration in `M.S`. If we now ask for the signature of `C.N` we get:
 
 ```ocaml env=e1
 # let (_, p, m) = Tools.lookup_module_from_resolved_path env
@@ -586,4 +588,8 @@ val m : Component.Module.t =
  [Odoc_xref2.Component.Signature.Type
    {Odoc_xref2.Component.Type.id = ("t", 62); manifest = None}])
 ```
+
+where we've correctly identified that a type `t` exists in the signature.
+
+
 
