@@ -5,6 +5,20 @@ type t =
     ; module_types : (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list
     ; types : (Odoc_model.Paths.Identifier.Type.t * Component.Type.t) list }
 
+let pp_modules ppf modules =
+    List.iter (fun (i,m) ->
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_ m) modules
+
+let pp_module_types ppf module_types =
+    List.iter (fun (i,m) ->
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_type m) module_types
+
+let pp_types ppf types =
+    List.iter (fun (i,m) ->
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.type_ m) types
+
+let pp ppf env =
+    Format.fprintf ppf "@[<v>@,modules: %a @,module_types: %a @,types: %a@," pp_modules env.modules pp_module_types env.module_types pp_types env.types
 (* Handy for extrating transient state *)
 exception MyFailure of Odoc_model.Paths.Identifier.t * t
 
@@ -29,7 +43,11 @@ let lookup_module identifier env =
     with _ -> raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
-    List.assoc identifier env.types
+    try
+        List.assoc identifier env.types
+    with Not_found ->
+        Format.fprintf Format.std_formatter "Failed to find type:\nIdentifier: %a\n\nEnv:\n%a\n\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t) pp env;
+        raise Not_found
 
 let lookup_module_type identifier env =
     List.assoc identifier env.module_types
@@ -88,17 +106,3 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | _ -> failwith "foo") env s
 
 
-let pp_modules ppf modules =
-    List.iter (fun (i,m) ->
-        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_ m) modules
-
-let pp_module_types ppf module_types =
-    List.iter (fun (i,m) ->
-        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_type m) module_types
-
-let pp_types ppf types =
-    List.iter (fun (i,m) ->
-        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.type_ m) types
-
-let pp ppf env =
-    Format.fprintf ppf "@[<v>@,modules: %a @,module_types: %a @,types: %a@," pp_modules env.modules pp_module_types env.module_types pp_types env.types

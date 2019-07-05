@@ -258,41 +258,21 @@ module B : sig
 module C : resolved[global(A)] with [*.M := resolved[global(B)]]
 type t = resolved[global(C)].N.t
 
-FAILURE when lookup up a module: 
-Path: M/112
-Env:
-
-modules: C: C/110 : global(A) with [*.M := global(B)] 
-B: B/107 : sig
-module type S/108 = sig
-  type t/109
+AFTER 
+===== 
+module type A = sig
+  module A.M : sig
+    module type A.M.S
+    end
+  module A.N : resolved[global(A.M).S]
   end
-end 
- 
-module_types: A: A/103 = sig
-module M/104 : sig
-  module type S/106
+module B : sig
+  module type B.S = sig
+    type B.S.t
+    end
   end
-module N/105 : M/104.S
-end 
- 
-types: t: t/111 = global(C).N.t 
-
-Backtrace:
-Raised at file "src/xref2/tools.ml", line 52, characters 26-61
-Called from file "src/xref2/tools.ml", line 103, characters 16-54
-Called from file "src/xref2/tools.ml", line 127, characters 14-48
-Called from file "src/xref2/tools.ml", line 234, characters 18-52
-Called from file "src/xref2/tools.ml", line 320, characters 14-74
-Called from file "src/xref2/tools.ml", line 163, characters 27-57
-Called from file "src/xref2/resolve.ml", line 114, characters 14-48
-Called from file "src/xref2/resolve.ml", line 98, characters 21-46
-Called from file "src/xref2/resolve.ml", line 43, characters 25-36
-Called from file "list.ml", line 122, characters 16-37
-Called from file "list.ml", line 122, characters 16-37
-Called from file "list.ml", line 122, characters 16-37
-Called from file "src/xref2/resolve.ml", line 37, characters 8-508
-Called from file "src/xref2/test/resolve/test.ml", line 35, characters 18-48
+module C : resolved[global(A)] with [*.M := resolved[global(B)]]
+type t = resolved[(global(B).S subst-> global(C).N).t]
 
 Module alias
 Resolve a module alias
@@ -559,28 +539,26 @@ module FooBarInt : sig
   end
 type t = resolved[global(App)](resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)]).Foo.bar
 
-FAILURE Not_found
-Backtrace:
-Raised at file "list.ml", line 187, characters 16-25
-Called from file "src/xref2/tools.ml", line 143, characters 16-37
-Called from file "src/xref2/tools.ml", line 171, characters 11-49
-Called from file "src/xref2/resolve.ml", line 114, characters 14-48
-Called from file "src/xref2/resolve.ml", line 98, characters 21-46
-Called from file "src/xref2/resolve.ml", line 43, characters 25-36
-Called from file "src/xref2/resolve.ml", line 37, characters 8-508
-Called from file "src/xref2/resolve.ml", line 78, characters 31-48
-Called from file "src/xref2/resolve.ml", line 59, characters 36-63
-Called from file "src/xref2/resolve.ml", line 54, characters 20-44
-Called from file "src/xref2/resolve.ml", line 40, characters 25-38
-Called from file "src/xref2/resolve.ml", line 37, characters 8-508
-Called from file "src/xref2/resolve.ml", line 78, characters 31-48
-Called from file "src/xref2/resolve.ml", line 59, characters 36-63
-Called from file "src/xref2/resolve.ml", line 54, characters 20-44
-Called from file "src/xref2/resolve.ml", line 40, characters 25-38
-Called from file "list.ml", line 122, characters 16-37
-Called from file "list.ml", line 122, characters 16-37
-Called from file "list.ml", line 122, characters 16-37
-Called from file "list.ml", line 122, characters 16-37
-Called from file "src/xref2/resolve.ml", line 37, characters 8-508
-Called from file "src/xref2/test/resolve/test.ml", line 35, characters 18-48
+AFTER 
+===== 
+module type Type = sig
+  module type Type.T
+  end
+module App : ((param App T) : resolved[global(Type)]) -> ((param App.result F) : ((param (param App.result F) _) : resolved[global(Type)]) -> resolved[global(Type)]) -> ((param App.result.result M) : resolved[global((param App.result F))(resolved[global((param App T))]).T]) -> resolved[global((param App.result F))(resolved[global((param App T))]).T]
+module Bar : sig
+  module type Bar.T = sig
+    type Bar.T.bar
+    end
+  end
+module Foo : ((param Foo T) : resolved[global(Type)]) -> sig
+  module type Foo.result.T = sig
+    module Foo.result.T.Foo : resolved[global((param Foo T)).T]
+    end
+  end
+module FooBarInt : sig
+  module FooBarInt.Foo : sig
+    type FooBarInt.Foo.bar = resolved[global(int)]
+    end
+  end
+type t = resolved[global(App)(resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)]).Foo.bar]
 

@@ -13,7 +13,8 @@ let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
     match p with
     | `Local id -> begin
         match List.assoc_opt id s.map with
-        | Some x -> x
+        | Some x ->
+            x
         | None -> `Local id
         end
     | `Identifier _ ->

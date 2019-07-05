@@ -148,22 +148,22 @@ Some
 ```
 
 This path clearly already begins with `` `Resolved ``, so we don't expect to change it,
-but we _are_ going to check it exists. We call `Tools.lookup_type_from_model_path`.
-This function starts approximately:
+but we _are_ going to check it exists. We convert the path into a `Cpath.t` and call
+`Tools.lookup_type_from_path`. This function starts approximately:
 
 ```
    match p with
-    | `Resolved p -> Ok (lookup_type_from_resolved_model_path env p)
+    | `Resolved p -> Ok (lookup_type_from_resolved_path env p)
 ```
 
-and `lookup_type_from_resolved_model_path` starts:
+and `lookup_type_from_resolved_path` starts:
 
 ```
-and lookup_type_from_resolved_model_path : Env.t -> Odoc_model.Paths.Path.Resolved.Type.t -> type_lookup_result = fun env p ->
+and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_result = fun env p ->
     match p with
-    | `Identifier (`Type _ as i) ->
-        let m = Env.lookup_type i env in
-        (p, m)
+    | `Identifier (#Odoc_model.Paths.Identifier.Type.t as i) ->
+        let t = Env.lookup_type i env in
+        (false, `Identifier i, t)
 ```
 
 and so we simply look up the type in the environment and return the same path we
@@ -490,14 +490,14 @@ we look up the module C we find that the `type_` field look as
 follows:
 
 ```ocaml env=e1
-# let module_C =
+# let module_C_lens =
   let open Common.LangUtils.Lens in
   Signature.module_ "C";;
-val module_C :
+val module_C_lens :
   (Odoc_model.Lang.Signature.t, Odoc_model.Lang.Module.t)
   Common.LangUtils.Lens.lens =
   {Odoc_xref_test.Common.LangUtils.Lens.get = <fun>; set = <fun>}
-# Common.LangUtils.Lens.get module_C sg;;
+# Common.LangUtils.Lens.get module_C_lens sg;;
 - : Odoc_model.Lang.Module.t =
 {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "C");
  doc = [];
@@ -513,5 +513,77 @@ val module_C :
  canonical = None; hidden = false; display_type = None; expansion = None}
 ```
 
+Clearly there is no `type t` declared in here. Let's get the representation
+of module `C` we see the following:
 
+```ocaml env=e1
+# let (_, p, m) = Tools.lookup_module_from_resolved_path env (`Identifier (`Module (`Root (Common.root, "Root"), "C")));;
+val p : Odoc_model.Paths_types.Resolved_path.module_ =
+  `Identifier (`Module (`Root (Common.root, "Root"), "C"))
+val m : Component.Module.t =
+  {Odoc_xref2.Component.Module.id = ("C", 49);
+   type_ =
+    Odoc_xref2.Component.Module.ModuleType
+     (Odoc_xref2.Component.ModuleType.With
+       (Odoc_xref2.Component.ModuleType.Path
+         (`Resolved
+            (`Identifier (`ModuleType (`Root (Common.root, "Root"), "A")))),
+       [Odoc_xref2.Component.ModuleType.ModuleEq
+         (`Dot (`Resolved `Root, "M"),
+         Odoc_xref2.Component.Module.Alias
+          (`Resolved
+             (`Identifier (`Module (`Root (Common.root, "Root"), "B")))))]))}
+```
+
+now we can ask for the signature of this module:
+
+```ocaml env=e1
+# let sg = Tools.signature_of_module env (p, m);;
+val sg : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
+  (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
+   [Odoc_xref2.Component.Signature.Module
+     {Odoc_xref2.Component.Module.id = ("M", 43);
+      type_ =
+       Odoc_xref2.Component.Module.ModuleType
+        (Odoc_xref2.Component.ModuleType.Signature
+          [Odoc_xref2.Component.Signature.ModuleType
+            {Odoc_xref2.Component.ModuleType.id = ("S", 51);
+             expr =
+              Some
+               (Odoc_xref2.Component.ModuleType.Signature
+                 [Odoc_xref2.Component.Signature.Type
+                   {Odoc_xref2.Component.Type.id = ("t", 52);
+                    manifest = None}])}])};
+    Odoc_xref2.Component.Signature.Module
+     {Odoc_xref2.Component.Module.id = ("N", 44);
+      type_ =
+       Odoc_xref2.Component.Module.ModuleType
+        (Odoc_xref2.Component.ModuleType.Path
+          (`Dot (`Resolved (`Local ("M", 43)), "S")))}])
+```
+
+and we can see we've picked up the `type t` declaration. If we now ask for the signature of `C.N` we get:
+
+```ocaml env=e1
+# let (_, p, m) = Tools.lookup_module_from_resolved_path env
+      (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"));;
+val p : Odoc_model.Paths_types.Resolved_path.module_ =
+  `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
+val m : Component.Module.t =
+  {Odoc_xref2.Component.Module.id = ("N", 58);
+   type_ =
+    Odoc_xref2.Component.Module.ModuleType
+     (Odoc_xref2.Component.ModuleType.Path
+       (`Dot
+          (`Resolved
+             (`Module
+                (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
+                 "M")),
+           "S")))}
+# Tools.signature_of_module env (p, m);;
+- : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
+(`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
+ [Odoc_xref2.Component.Signature.Type
+   {Odoc_xref2.Component.Type.id = ("t", 62); manifest = None}])
+```
 
