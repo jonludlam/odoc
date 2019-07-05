@@ -501,7 +501,7 @@ module M : sig
     type M.S.t
     end
   end
-type t = resolved[global(F)(resolved[global(M)]).N.t]
+type t = resolved[(global(M).S subst-> global(F)(resolved[global(M)]).N).t]
 
 Functor app nightmare
 Horrible
@@ -560,5 +560,5 @@ module FooBarInt : sig
     type FooBarInt.Foo.bar = resolved[global(int)]
     end
   end
-type t = resolved[global(App)(resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)]).Foo.bar]
+type t = resolved[(global(Bar).T subst-> global(App)(resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)]).Foo).bar]
 
