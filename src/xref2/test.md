@@ -228,18 +228,18 @@ Some
 
 Here we can see that the path is not completely resolved. The `M` bit is resolved, but the `t`
 bit is not. So we have to do a bit more work when we look up the type in
-`Tools.lookup_type_from_model_path`.
+`Tools.lookup_type_from_path`.
 
 Let's look in more detail at that process. The first thing that happens is that the path is matched
 the [`Dot] is found:
 
 ```
     | `Dot (m, x) -> begin
-        match lookup_module_from_model_path env m with
+        match lookup_module_from_path env m with
 ```
 
 This implies that the thing before the dot is a module, so we call 
-`Tools.lookup_module_from_model_path`.  This is a resolved identifier so we can simply look this up from
+`Tools.lookup_module_from_path`.  This is a resolved identifier so we can simply look this up from
 the environment. This gets us back the path and a `Component.Module.t` representing the module M,
 which are:
 
