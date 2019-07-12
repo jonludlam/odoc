@@ -68,6 +68,7 @@ let list_files path =
     Sys.readdir path |> Array.to_list
 
 
+
 module LangUtils = struct
 
     module Lens = struct
@@ -98,6 +99,16 @@ module LangUtils = struct
                 let set a z = x.set (y.review a) z in
                 {get; set}
 
+        let fst : ('a * 'b, 'a) lens =
+            let get (x,_) = x in
+            let set a (_, y) = (a, y) in
+            {get; set}
+
+        let snd : ('a * 'b, 'b) lens =
+            let get (_, y) = y in
+            let set a (x, _) = (x, a) in
+            {get; set}
+ 
         let (|--) = compose
 
         let (|-~) = compose_prism
@@ -178,11 +189,21 @@ module LangUtils = struct
                     let set type_ m = {m with type_} in
                     {get; set}
                 
+                let decl_moduletype : (decl, Lang.ModuleType.expr) prism =
+                    let review x = ModuleType x in
+                    let preview = function | ModuleType x -> Some x | _ -> None in
+                    {review; preview}
+
 
             end
 
             module ModuleType = struct
                 open Lang.ModuleType
+
+                let id : (t, Paths.Identifier.ModuleType.t) lens =
+                    let get mt = mt.id in
+                    let set id mt = {mt with id} in
+                    {get; set}
 
                 let expr : (t, expr option) lens =
                     let get mt = mt.expr in
@@ -193,7 +214,26 @@ module LangUtils = struct
                     let review x = Signature x in
                     let preview = function | Signature x -> Some x | _ -> None in
                     {review; preview}
+
+                let expr_functor : (expr, (Lang.FunctorArgument.t option * expr)) prism =
+                    let review (x,y) = Functor (x,y) in
+                    let preview = function | Functor (x,y) -> Some (x,y) | _ -> None in
+                    {review; preview}
             end
+
+            module FunctorArgument = struct
+                    open Lang.FunctorArgument
+
+                let id : (t, Paths.Identifier.Module.t) lens =
+                    let get mt = mt.id in
+                    let set id mt = {mt with id} in
+                    {get; set}
+
+                let expr : (t, Lang.ModuleType.expr) lens =
+                    let get mt = mt.expr in
+                    let set expr mt = {mt with expr} in
+                    {get; set}
+            end 
 
             module TypeDecl = struct
                 open Lang.TypeDecl
@@ -228,6 +268,15 @@ module LangUtils = struct
                     { get; set }                    
             end
         
+            module TypeExpr = struct
+                open Lang.TypeExpr
+
+                let constr : (t, (Odoc_model.Paths.Path.Type.t * t list)) prism =
+                    let review (x,y) = Constr (x,y) in
+                    let preview = function | Constr (x,y) -> Some (x,y) | _ -> None in
+                    {review; preview}
+
+            end
 
     end
 
