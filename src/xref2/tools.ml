@@ -75,7 +75,7 @@ let rec lookup_and_resolve_module_from_resolved_path : bool -> Env.t -> Cpath.re
         end
     | `Module (p, name) ->
         let (s, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
-        let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+        let (p', sg) = signature_of_module is_resolve env (p, m) |> prefix_signature in
         let m' = Component.Find.module_in_sig sg (Odoc_model.Names.ModuleName.to_string name) in
         (s, `Module (p', name), m')
     | `Alias (_, p2) -> lookup_and_resolve_module_from_resolved_path is_resolve env p2
@@ -92,7 +92,7 @@ and lookup_and_resolve_module_from_path : bool -> Env.t -> Cpath.t -> (module_lo
     | `Dot (parent, id) -> begin
         match lookup_and_resolve_module_from_path is_resolve env parent with
         | Ok (s , p, m) ->
-            let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+            let (p', sg) = signature_of_module is_resolve env (p, m) |> prefix_signature in
             let m' = Component.Find.module_in_sig sg id in
             Ok (s, `Module (p', Odoc_model.Names.ModuleName.of_string id), m')
         | Error p ->
@@ -117,7 +117,7 @@ and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.r
     | `Substituted s -> lookup_and_resolve_module_type_from_resolved_path is_resolve env s
     | `ModuleType (p, name) ->
         let (s, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
-        let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+        let (p', sg) = signature_of_module is_resolve env (p, m) |> prefix_signature in
         let mt = Component.Find.module_type_in_sig sg (Odoc_model.Names.ModuleTypeName.to_string name) in
         (s, `ModuleType (p', name), mt)
     | `Alias (_, _)
@@ -132,7 +132,7 @@ and lookup_and_resolve_module_type_from_path : bool -> Env.t -> Cpath.t -> (modu
     | `Dot (parent, id) -> begin
         match lookup_and_resolve_module_from_path is_resolve env parent with
         | Ok (sub, p, m) ->
-            let (p', sg) = signature_of_module env (p, m) in
+            let (p', sg) = signature_of_module is_resolve env (p, m) in
             let m' = Component.Find.module_type_in_sig sg id in
             Ok (sub, `ModuleType (p', Odoc_model.Names.ModuleTypeName.of_string id), m')
         | Error p ->
@@ -155,7 +155,7 @@ and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_resu
     | `Substituted s -> lookup_type_from_resolved_path env s
     | `Type (p, name) ->
         let (s, p, m) = lookup_and_resolve_module_from_resolved_path true env p in
-        let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+        let (p', sg) = signature_of_module true env (p, m) |> prefix_signature in
         let t = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
         (s, `Type (p', name), t)
     (* None of the following should still exist when we fix up the types *)
@@ -171,7 +171,7 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Odoc_model.
     | `Dot (parent, id) -> begin
         match lookup_and_resolve_module_from_path true env parent with
         | Ok (sub, p, m) ->
-            let (p', sg) = signature_of_module env (p, m) in
+            let (p', sg) = signature_of_module true env (p, m) in
             let t' = Component.Find.type_in_sig sg id in
             Ok (sub, `Type (p', Odoc_model.Names.TypeName.of_string id), t')
         | Error p ->
@@ -238,13 +238,13 @@ and module_type_of_module : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t opt
             end
         | Component.Module.ModuleType expr -> (p,expr)
 
-and signature_of_module_type_expr : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.ModuleType.expr -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.Signature.t =
-    fun env (incoming_path, m) ->
+and signature_of_module_type_expr : bool -> Env.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.ModuleType.expr -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.Signature.t =
+    fun is_resolve env (incoming_path, m) ->
         match m with
         | Component.ModuleType.Path p -> begin
-            match lookup_and_resolve_module_type_from_path false env p with
+            match lookup_and_resolve_module_type_from_path is_resolve env p with
             | Ok (subst, p, mt) -> begin
-                let (_, sg) = signature_of_module_type env (incoming_path, mt) in
+                let (_, sg) = signature_of_module_type is_resolve env (incoming_path, mt) in
                 match subst, incoming_path with
                 | true, Some p' ->
                     (Some (`Subst (p, p')), sg)
@@ -256,7 +256,7 @@ and signature_of_module_type_expr : Env.t -> Odoc_model.Paths.Path.Resolved.Modu
             end
         | Component.ModuleType.Signature s -> (incoming_path, s)
         | Component.ModuleType.With (s, subs) ->
-            let (p', sg) = signature_of_module_type_expr env (incoming_path, s) in
+            let (p', sg) = signature_of_module_type_expr is_resolve env (incoming_path, s) in
             let sg' = List.fold_left (fun sg sub ->
                 match sub with
                 | Component.ModuleType.ModuleEq (frag, Alias path) -> begin
@@ -291,12 +291,12 @@ and signature_of_module_type_expr : Env.t -> Odoc_model.Paths.Path.Resolved.Modu
                 ) sg subs in
             (p', sg')
         | Component.ModuleType.Functor (_,expr) ->
-            signature_of_module_type_expr env (incoming_path, expr)
+            signature_of_module_type_expr is_resolve env (incoming_path, expr)
 
-and signature_of_module_type : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.ModuleType.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.Signature.t = fun env (p,m) ->
+and signature_of_module_type : bool -> Env.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.ModuleType.t -> Odoc_model.Paths.Path.Resolved.Module.t option * Component.Signature.t = fun is_resolve env (p,m) ->
     match m.expr with
     | None -> failwith "oh no"
-    | Some expr -> signature_of_module_type_expr env (p,expr)
+    | Some expr -> signature_of_module_type_expr is_resolve env (p,expr)
 
 and signature_of_module_nopath : Env.t -> Component.Module.t -> Component.Signature.t =
     fun env m ->
@@ -304,7 +304,7 @@ and signature_of_module_nopath : Env.t -> Component.Module.t -> Component.Signat
     | Component.Module.Alias path -> begin
         match lookup_and_resolve_module_from_path false env path with
         | Ok (_, p', m) -> (* p' is the path to the aliased module *)
-            let (p'', m') = signature_of_module env (p', m) in
+            let (p'', m') = signature_of_module false env (p', m) in
             let cp'' = Component.Of_Lang.local_resolved_path_of_resolved_path [] (p'' :> Odoc_model.Paths.Path.Resolved.t) in
             let m'' = Strengthen.signature cp'' m' in
             (* p'' is the path to the real module *)
@@ -313,15 +313,15 @@ and signature_of_module_nopath : Env.t -> Component.Module.t -> Component.Signat
             failwith "Failed to lookup alias module"
         end
     | Component.Module.ModuleType expr ->
-        snd @@ signature_of_module_type_expr env (None, expr)
+        snd @@ signature_of_module_type_expr false env (None, expr)
 
-and signature_of_module : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t * Component.Module.t -> Odoc_model.Paths.Path.Resolved.Module.t * Component.Signature.t =
-    fun env (incoming_path, m) ->
+and signature_of_module : bool -> Env.t -> Odoc_model.Paths.Path.Resolved.Module.t * Component.Module.t -> Odoc_model.Paths.Path.Resolved.Module.t * Component.Signature.t =
+    fun is_resolve env (incoming_path, m) ->
     match m.Component.Module.type_ with
     | Component.Module.Alias path -> begin
         match lookup_and_resolve_module_from_path false env path with
         | Ok (_ , p', m) -> (* p' is the path to the aliased module *)
-            let (p'', m') = signature_of_module env (p', m) in
+            let (p'', m') = signature_of_module is_resolve env (p', m) in
             let cp'' = Component.Of_Lang.local_resolved_path_of_resolved_path [] (p'' :> Odoc_model.Paths.Path.Resolved.t) in
             let m'' = Strengthen.signature cp'' m' in
             (* p'' is the path to the real module *)
@@ -331,7 +331,7 @@ and signature_of_module : Env.t -> Odoc_model.Paths.Path.Resolved.Module.t * Com
             failwith "Failed to lookup alias module"
         end
     | Component.Module.ModuleType expr ->
-        match signature_of_module_type_expr env (Some incoming_path, expr) with
+        match signature_of_module_type_expr is_resolve env (Some incoming_path, expr) with
         | Some p, sg -> (p, sg)
         | None, sg -> (incoming_path, sg)
 
