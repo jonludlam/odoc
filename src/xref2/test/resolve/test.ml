@@ -497,6 +497,9 @@ module Foo :
   functor (T : Type) -> sig module type T = sig module Foo : T.T end end
 module FooBarInt : sig module Foo : sig type bar = int end end
 type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+(* Note: I think correct result is:
+type t = resolved[(global(Bar).T subst-> global(App)(resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)]).Foo).bar]
+*)
 |}
 ; test_fn = test_resolve }
 

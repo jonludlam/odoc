@@ -741,17 +741,204 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`Subst
-            (`ModuleType
-               (`Module
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                   "T"),
-                "S"),
-             `Module
-               (`Module
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                   "O"),
-                "N")),
+         (`Module
+            (`Module
+               (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
+                "O"),
+             "N"),
           "t")),
    []))
+```
+
+This one shouldn't have a `Subst`
+
+# Another nasty one
+
+```ocaml env=e1
+let test_data = {|
+module type Type = sig module type T end
+module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+module Bar : sig module type T = sig type bar end end
+module Foo :
+  functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+module FooBarInt : sig module Foo : sig type bar = int end end
+type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+|}
+let sg = Common.signature_of_mli_string test_data;;
+let env = Env.open_signature sg Env.empty;;
+```
+
+The type path we're trying to look up is:
+
+```ocaml env=e1
+# Common.LangUtils.Lens.get (type_manifest "t") sg;;
+- : Odoc_model.Lang.TypeExpr.t option =
+Some
+ (Odoc_model.Lang.TypeExpr.Constr
+   (`Dot
+      (`Dot
+         (`Apply
+            (`Apply
+               (`Apply
+                  (`Resolved
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "App"))),
+                   `Resolved
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "Bar")))),
+                `Resolved
+                  (`Identifier (`Module (`Root (Common.root, "Root"), "Foo")))),
+             `Resolved
+               (`Identifier
+                  (`Module (`Root (Common.root, "Root"), "FooBarInt")))),
+          "Foo"),
+       "bar"),
+   []))
+```
+
+```ocaml env=e1
+let resolved = Resolve.signature Env.empty sg;;
+let path : Odoc_model.Paths.Path.Module.t = (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "App"))));;
+let (_, p, m) = get_ok @@ Tools.lookup_module_from_path env (Component.Of_Lang.local_path_of_path [] (path :> Odoc_model.Paths.Path.t));;
+```
+let (p', sg) = Tools.signature_of_module env (p, m) |> Tools.prefix_signature;;
+
+```ocaml env=e1
+# sg;;
+- : Odoc_model.Lang.Signature.t =
+[Odoc_model.Lang.Signature.ModuleType
+  {Odoc_model.Lang.ModuleType.id =
+    `ModuleType (`Root (Common.root, "Root"), "Type");
+   doc = [];
+   expr =
+    Some
+     (Odoc_model.Lang.ModuleType.Signature
+       [Odoc_model.Lang.Signature.ModuleType
+         {Odoc_model.Lang.ModuleType.id =
+           `ModuleType
+             (`ModuleType (`Root (Common.root, "Root"), "Type"), "T");
+          doc = []; expr = None; expansion = None}]);
+   expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+ Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "App");
+   doc = [];
+   type_ =
+    Odoc_model.Lang.Module.ModuleType
+     (Odoc_model.Lang.ModuleType.Functor
+       (Some
+         {Odoc_model.Lang.FunctorArgument.id =
+           `Parameter (`Module (`Root (Common.root, "Root"), "App"), "T");
+          expr =
+           Odoc_model.Lang.ModuleType.Path
+            (`Resolved
+               (`Identifier
+                  (`ModuleType (`Root (Common.root, "Root"), "Type"))));
+          expansion = None},
+       Odoc_model.Lang.ModuleType.Functor
+        (Some
+          {Odoc_model.Lang.FunctorArgument.id =
+            `Parameter
+              (`Result (`Module (`Root (Common.root, "Root"), "App")), "F");
+           expr =
+            Odoc_model.Lang.ModuleType.Functor
+             (Some
+               {Odoc_model.Lang.FunctorArgument.id =
+                 `Parameter
+                   (`Parameter
+                      (`Result (`Module (`Root (Common.root, "Root"), "App")),
+                       "F"),
+                    "_");
+                expr =
+                 Odoc_model.Lang.ModuleType.Path
+                  (`Resolved
+                     (`Identifier
+                        (`ModuleType (`Root (Common.root, "Root"), "Type"))));
+                expansion = None},
+             Odoc_model.Lang.ModuleType.Path
+              (`Resolved
+                 (`Identifier
+                    (`ModuleType (`Root (Common.root, "Root"), "Type")))));
+           expansion = None},
+        Odoc_model.Lang.ModuleType.Functor
+         (Some
+           {Odoc_model.Lang.FunctorArgument.id =
+             `Parameter
+               (`Result
+                  (`Result (`Module (`Root (Common.root, "Root"), "App"))),
+                "M");
+            expr =
+             Odoc_model.Lang.ModuleType.Path
+              (`Dot
+                 (`Apply
+                    (`Resolved
+                       (`Identifier
+                          (`Parameter
+                             (`Result
+                                (`Module (`Root (Common.root, "Root"), "App")),
+                              "F"))),
+                     `Resolved
+                       (`Identifier
+                          (`Parameter
+                             (`Module (`Root (Common.root, "Root"), "App"),
+                              "T")))),
+                  "T"));
+            expansion = None},
+         Odoc_model.Lang.ModuleType.Path
+          (`Dot
+             (`Apply
+                (`Resolved
+                   (`Identifier
+                      (`Parameter
+                         (`Result
+                            (`Module
+                               (`Root (Common.root, "Root"),
+                                "Ap"... (* string length 3; truncated *))),
+                          ""... (* string length 1; truncated *)))),
+                 ...),
+              ...))))));
+   canonical = ...; hidden = ...; display_type = ...; expansion = ...});
+ ...]
+```
+
+
+```ocaml env=e1
+# Common.LangUtils.Lens.get t_manifest resolved;;
+- : Odoc_model.Lang.TypeExpr.t option =
+Some
+ (Odoc_model.Lang.TypeExpr.Constr
+   (`Resolved
+      (`Type
+         (`Module
+            (`Apply
+               (`Apply
+                  (`Apply
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "App")),
+                      `Resolved
+                        (`Identifier
+                           (`Module (`Root (Common.root, "Root"), "Bar")))),
+                   `Resolved
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "Foo")))),
+                `Resolved
+                  (`Identifier
+                     (`Module (`Root (Common.root, "Root"), "FooBarInt")))),
+             "Foo"),
+          "bar")),
+   []))
+```
+
+
+```ocaml env=e1
+let test_data = {|
+module type Type = sig module type T end
+module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+module Bar : sig module type T = sig type bar end end
+module Foo :
+  functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+module FooBarInt : sig module Foo : sig type bar = int end end
+type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+|}
+let sg = Common.signature_of_mli_string test_data;;
+let env = Env.open_signature sg Env.empty;;
 ```
