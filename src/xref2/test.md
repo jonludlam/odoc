@@ -800,8 +800,8 @@ Some
 let resolved = Resolve.signature Env.empty sg;;
 let path : Odoc_model.Paths.Path.Module.t = (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "App"))));;
 let (_, p, m) = get_ok @@ Tools.lookup_module_from_path env (Component.Of_Lang.local_path_of_path [] (path :> Odoc_model.Paths.Path.t));;
-```
 let (p', sg) = Tools.signature_of_module env (p, m) |> Tools.prefix_signature;;
+```
 
 ```ocaml env=e1
 # sg;;
