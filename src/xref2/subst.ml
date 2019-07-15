@@ -25,6 +25,10 @@ let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
     | `ModuleType (p, n) -> `ModuleType (resolved_path s p, n)
     | `Type (p, n) -> `Type (resolved_path s p, n)
     | `Alias (p1, p2) -> `Alias (resolved_path s p1, resolved_path s p2)
+    | `Subst (p1, p2) -> `Subst (resolved_path s p1, resolved_path s p2)
+    | `SubstAlias (p1, p2) -> `SubstAlias (resolved_path s p1, resolved_path s p2)
+    | `Hidden (p1) -> `Hidden (resolved_path s p1)
+    | `Canonical (p1, p2) -> `Canonical (resolved_path s p1, path s p2)
 
 and path : t -> Cpath.t -> Cpath.t = fun s p ->
     match p with
