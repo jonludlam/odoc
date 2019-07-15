@@ -164,6 +164,10 @@ module Fmt = struct
         | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ModuleTypeName.to_string mt)
         | `Type (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.TypeName.to_string t)
         | `Alias (p1, p2) -> Format.fprintf ppf "(alias %a -> %a)" resolved_path p1 resolved_path p2
+        | `Subst (p1, p2) -> Format.fprintf ppf "(subst %a -> %a)" resolved_path p1 resolved_path p2
+        | `SubstAlias (p1, p2) -> Format.fprintf ppf "(substalias %a -> %a)" resolved_path p1 resolved_path p2
+        | `Hidden p1 -> Format.fprintf ppf "(hidden %a)" resolved_path p1
+        | `Canonical (p1, p2) -> Format.fprintf ppf "(canonical %a -> %a)" resolved_path p1 path p2
 
     and path ppf p =
         match p with
@@ -242,7 +246,15 @@ module Of_Lang = struct
             `Apply (recurse p1, local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t))
         | `Alias (p1, p2) ->
             `Alias (recurse p1, recurse p2)
-        | _ -> failwith "fo"
+        | `Subst (p1, p2) ->
+            `Subst (recurse p1, recurse p2)
+        | `SubstAlias (p1, p2) ->
+            `SubstAlias (recurse p1, recurse p2)
+        | `Canonical (p1, p2) ->
+            `Canonical (recurse p1, local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t))
+        | `Hidden p1 ->
+            `Hidden (recurse p1)
+        | _ -> failwith "local_resolved_path_of_resolved_path"
 
     and local_path_of_path : _ -> Odoc_model.Paths.Path.t -> Cpath.t = fun ident_map path ->
         match path with
