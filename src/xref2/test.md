@@ -870,7 +870,7 @@ val p : Odoc_model.Paths_types.Resolved_path.module_ =
      `Resolved
        (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt"))))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("App", 474);
+  {Odoc_xref2.Component.Module.id = ("App", 388);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -887,19 +887,26 @@ val m : Component.Module.t =
            "T")))}
 # let (p, sg') = Tools.signature_of_module env (p, m);;
 val p : Odoc_model.Paths_types.Resolved_path.module_ =
-  `Apply
-    (`Apply
+  `Subst
+    (`ModuleType
        (`Apply
-          (`Identifier (`Module (`Root (Common.root, "Root"), "App")),
+          (`Identifier (`Module (`Root (Common.root, "Root"), "Foo")),
            `Resolved
              (`Identifier (`Module (`Root (Common.root, "Root"), "Bar")))),
+        "T"),
+     `Apply
+       (`Apply
+          (`Apply
+             (`Identifier (`Module (`Root (Common.root, "Root"), "App")),
+              `Resolved
+                (`Identifier (`Module (`Root (Common.root, "Root"), "Bar")))),
+           `Resolved
+             (`Identifier (`Module (`Root (Common.root, "Root"), "Foo")))),
         `Resolved
-          (`Identifier (`Module (`Root (Common.root, "Root"), "Foo")))),
-     `Resolved
-       (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt"))))
+          (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt")))))
 val sg' : Component.Signature.t =
   [Odoc_xref2.Component.Signature.Module
-    {Odoc_xref2.Component.Module.id = ("Foo", 491);
+    {Odoc_xref2.Component.Module.id = ("Foo", 405);
      type_ =
       Odoc_xref2.Component.Module.ModuleType
        (Odoc_xref2.Component.ModuleType.Path
@@ -923,20 +930,29 @@ Some
    (`Resolved
       (`Type
          (`Module
-            (`Apply
-               (`Apply
+            (`Subst
+               (`ModuleType
                   (`Apply
                      (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "App")),
+                        (`Module (`Root (Common.root, "Root"), "Foo")),
                       `Resolved
                         (`Identifier
                            (`Module (`Root (Common.root, "Root"), "Bar")))),
+                   "T"),
+                `Apply
+                  (`Apply
+                     (`Apply
+                        (`Identifier
+                           (`Module (`Root (Common.root, "Root"), "App")),
+                         `Resolved
+                           (`Identifier
+                              (`Module (`Root (Common.root, "Root"), "Bar")))),
+                      `Resolved
+                        (`Identifier
+                           (`Module (`Root (Common.root, "Root"), "Foo")))),
                    `Resolved
                      (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "Foo")))),
-                `Resolved
-                  (`Identifier
-                     (`Module (`Root (Common.root, "Root"), "FooBarInt")))),
+                        (`Module (`Root (Common.root, "Root"), "FooBarInt"))))),
              "Foo"),
           "bar")),
    []))
