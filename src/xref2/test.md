@@ -137,6 +137,7 @@ let type_manifest name =
   let open Common.LangUtils.Lens in
   Signature.type_ name |-- TypeDecl.equation |-- TypeDecl.Equation.manifest
 let u_manifest = type_manifest "u"
+let t_manifest = type_manifest "t"
 ```
 
 and using this lens on our original signature we obtain:
@@ -455,7 +456,7 @@ Result.Ok
   `Type
     (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "B"),
      "t"),
-  {Odoc_xref2.Component.Type.id = ("t", 39); manifest = None})
+  {Odoc_xref2.Component.Type.id = ("t", 42); manifest = None})
 ```
 
 ### Module substitution
@@ -482,6 +483,7 @@ type t = C.N.t
 |};;
 let sg = Common.signature_of_mli_string test_data;;
 let env = Env.open_signature sg Env.empty;;
+let resolved = Resolve.signature env sg;;
 ```
 
 So in module type `A`, module `N` has type `M.S`, which 
@@ -526,7 +528,7 @@ of module `C` we see the following:
 val p : Odoc_model.Paths_types.Resolved_path.module_ =
   `Identifier (`Module (`Root (Common.root, "Root"), "C"))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("C", 49);
+  {Odoc_xref2.Component.Module.id = ("C", 50);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.With
@@ -547,24 +549,18 @@ now we can ask for the signature of this module:
 val sg : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    [Odoc_xref2.Component.Signature.Module
-     {Odoc_xref2.Component.Module.id = ("M", 43);
+     {Odoc_xref2.Component.Module.id = ("M", 44);
       type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Signature
-          [Odoc_xref2.Component.Signature.ModuleType
-            {Odoc_xref2.Component.ModuleType.id = ("S", 51);
-             expr =
-              Some
-               (Odoc_xref2.Component.ModuleType.Signature
-                 [Odoc_xref2.Component.Signature.Type
-                   {Odoc_xref2.Component.Type.id = ("t", 52);
-                    manifest = None}])}])};
+       Odoc_xref2.Component.Module.Alias
+        (`Substituted
+           (`Resolved
+              (`Identifier (`Module (`Root (Common.root, "Root"), "B")))))};
     Odoc_xref2.Component.Signature.Module
-     {Odoc_xref2.Component.Module.id = ("N", 44);
+     {Odoc_xref2.Component.Module.id = ("N", 45);
       type_ =
        Odoc_xref2.Component.Module.ModuleType
         (Odoc_xref2.Component.ModuleType.Path
-          (`Dot (`Resolved (`Local ("M", 43)), "S")))}])
+          (`Dot (`Resolved (`Local ("M", 44)), "S")))}])
 ```
 
 and we can see we've picked up the `type t` declaration in `M.S`. If we now ask for the signature of `C.N` we get:
@@ -575,7 +571,7 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 val p : Odoc_model.Paths_types.Resolved_path.module_ =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 58);
+  {Odoc_xref2.Component.Module.id = ("N", 53);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -589,10 +585,15 @@ val m : Component.Module.t =
 - : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  [Odoc_xref2.Component.Signature.Type
-   {Odoc_xref2.Component.Type.id = ("t", 62); manifest = None}])
+   {Odoc_xref2.Component.Type.id = ("t", 58); manifest = None}])
 ```
 
-where we've correctly identified that a type `t` exists in the signature.
+where we've correctly identified that a type `t` exists in the signature. The path in
+type t is resolved as:
+
+```ocaml env=e1
+# Common.LangUtils.Lens.get t_manifest resolved;;
+```
 
 ### Interesting functor
 
@@ -870,7 +871,7 @@ val p : Odoc_model.Paths_types.Resolved_path.module_ =
      `Resolved
        (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt"))))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("App", 388);
+  {Odoc_xref2.Component.Module.id = ("App", 415);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -906,7 +907,7 @@ val p : Odoc_model.Paths_types.Resolved_path.module_ =
           (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt")))))
 val sg' : Component.Signature.t =
   [Odoc_xref2.Component.Signature.Module
-    {Odoc_xref2.Component.Module.id = ("Foo", 405);
+    {Odoc_xref2.Component.Module.id = ("Foo", 433);
      type_ =
       Odoc_xref2.Component.Module.ModuleType
        (Odoc_xref2.Component.ModuleType.Path
