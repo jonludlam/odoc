@@ -571,7 +571,7 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 val p : Odoc_model.Paths_types.Resolved_path.module_ =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 53);
+  {Odoc_xref2.Component.Module.id = ("N", 79);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -585,7 +585,7 @@ val m : Component.Module.t =
 - : Odoc_model.Paths_types.Resolved_path.module_ * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  [Odoc_xref2.Component.Signature.Type
-   {Odoc_xref2.Component.Type.id = ("t", 58); manifest = None}])
+   {Odoc_xref2.Component.Type.id = ("t", 84); manifest = None}])
 ```
 
 where we've correctly identified that a type `t` exists in the signature. The path in
@@ -593,6 +593,15 @@ type t is resolved as:
 
 ```ocaml env=e1
 # Common.LangUtils.Lens.get t_manifest resolved;;
+- : Odoc_model.Lang.TypeExpr.t option =
+Some
+ (Odoc_model.Lang.TypeExpr.Constr
+   (`Resolved
+      (`Type
+         (`Module
+            (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
+          "t")),
+   []))
 ```
 
 ### Interesting functor
@@ -871,7 +880,7 @@ val p : Odoc_model.Paths_types.Resolved_path.module_ =
      `Resolved
        (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt"))))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("App", 415);
+  {Odoc_xref2.Component.Module.id = ("App", 441);
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -907,7 +916,7 @@ val p : Odoc_model.Paths_types.Resolved_path.module_ =
           (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt")))))
 val sg' : Component.Signature.t =
   [Odoc_xref2.Component.Signature.Module
-    {Odoc_xref2.Component.Module.id = ("Foo", 433);
+    {Odoc_xref2.Component.Module.id = ("Foo", 459);
      type_ =
       Odoc_xref2.Component.Module.ModuleType
        (Odoc_xref2.Component.ModuleType.Path
