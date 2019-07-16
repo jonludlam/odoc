@@ -174,6 +174,7 @@ module Fmt = struct
         | `Resolved p -> Format.fprintf ppf "%a" resolved_path p
         | `Dot (p,str) -> Format.fprintf ppf "%a.%s" path p str
         | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" path p1 path p2
+        | `Substituted p -> Format.fprintf ppf "substituted(%a)" path p
 
     and model_path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
         fun ppf (p : Odoc_model.Paths.Path.t) ->

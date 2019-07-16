@@ -14,6 +14,7 @@ type resolved = [
     | `Type of resolved * Odoc_model.Names.TypeName.t
 ]
 and t = [
+    | `Substituted of t
     | `Resolved of resolved
     | `Dot of t * string
     | `Apply of t * t

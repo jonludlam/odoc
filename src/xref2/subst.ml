@@ -35,6 +35,7 @@ and path : t -> Cpath.t -> Cpath.t = fun s p ->
     | `Resolved p' -> `Resolved (resolved_path s p')
     | `Dot (p', str) -> `Dot (path s p', str)
     | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
+    | `Substituted p -> `Substituted (path s p)
 
 let rec type_ s t =
     let open Component.Type in
