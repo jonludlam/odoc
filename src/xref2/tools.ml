@@ -65,7 +65,7 @@ let rec lookup_and_resolve_module_from_resolved_path : bool -> Env.t -> Cpath.re
         end
     | `Module (p, name) ->
         let (s, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
-        let (p', m') = handle_lookup env (Odoc_model.Names.ModuleName.to_string name) p m in
+        let (p', m') = handle_module_lookup env (Odoc_model.Names.ModuleName.to_string name) p m in
         (s, p', m')
     | `Alias (_, p2) -> lookup_and_resolve_module_from_resolved_path is_resolve env p2
     | `Subst _
@@ -85,17 +85,27 @@ and handle_apply is_resolve env s func_path m arg_path =
         match mty with
         | Component.ModuleType.Functor (Some arg, expr) ->
             arg.Component.FunctorArgument.id, expr
-        | _ -> failwith "Invalid"
+        | _ -> failwith "Application must take a functor"
     in
     let new_module = {m with type_ = ModuleType result} in
     let path = `Apply (func_path, `Resolved arg_path) in
     let substitution = if is_resolve then `Substituted arg_cpath' else arg_cpath' in
     (s, path, Subst.module_ (Subst.add arg_id substitution Subst.identity) new_module)
 
-and handle_lookup env id p m =
+and handle_module_lookup env id p m =
     let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
     let m' = Component.Find.module_in_sig sg id in
     (`Module (p', Odoc_model.Names.ModuleName.of_string id), m')
+
+and handle_module_type_lookup env id p m =
+    let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+    let mt = Component.Find.module_type_in_sig sg id in
+    (`ModuleType (p', Odoc_model.Names.ModuleTypeName.of_string id), mt)
+
+and handle_type_lookup env id p m =
+    let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+    let mt = Component.Find.type_in_sig sg id in
+    (`Type (p', Odoc_model.Names.TypeName.of_string id), mt)
 
 and lookup_module_from_path env cpath = lookup_and_resolve_module_from_path true env cpath
 
@@ -106,7 +116,7 @@ and lookup_and_resolve_module_from_path : bool -> Env.t -> Cpath.t -> (module_lo
     | `Dot (parent, id) -> begin
         match lookup_and_resolve_module_from_path is_resolve env parent with
         | Ok (s , p, m) ->
-            let (p', m') = handle_lookup env id p m in
+            let (p', m') = handle_module_lookup env id p m in
             Ok (s, p', m')
         | Error p ->
             Error (`Dot (p, id))
@@ -127,11 +137,10 @@ and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.r
         let m = Env.lookup_module_type i env in
         (false, `Identifier i, m)
     | `Substituted s -> lookup_and_resolve_module_type_from_resolved_path is_resolve env s
-    | `ModuleType (p, name) ->
+    | `ModuleType (p, id) ->
         let (s, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
-        let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
-        let mt = Component.Find.module_type_in_sig sg (Odoc_model.Names.ModuleTypeName.to_string name) in
-        (s, `ModuleType (p', name), mt)
+        let (p', mt) = handle_module_type_lookup env id p m in
+        (s, p', mt)
     | `Subst _
     | `SubstAlias _
     | `Hidden _
@@ -147,10 +156,9 @@ and lookup_and_resolve_module_type_from_path : bool -> Env.t -> Cpath.t -> (modu
     match p with
     | `Dot (parent, id) -> begin
         match lookup_and_resolve_module_from_path is_resolve env parent with
-        | Ok (sub, p, m) ->
-            let (p', sg) = signature_of_module env (p, m) in
-            let m' = Component.Find.module_type_in_sig sg id in
-            Ok (sub, `ModuleType (p', Odoc_model.Names.ModuleTypeName.of_string id), m')
+        | Ok (s, p, m) ->
+            let (p', mt) = handle_module_type_lookup env id p m in
+            Ok (s, p', mt)
         | Error p ->
             Error (`Dot (p, id))
         end
@@ -169,11 +177,10 @@ and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_resu
         let t = Env.lookup_type i env in
         (false, `Identifier i, t)
     | `Substituted s -> lookup_type_from_resolved_path env s
-    | `Type (p, name) ->
+    | `Type (p, id) ->
         let (s, p, m) = lookup_and_resolve_module_from_resolved_path true env p in
-        let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
-        let t = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
-        (s, `Type (p', name), t)
+        let (p', t) = handle_type_lookup env id p m in
+        (s, p', t)
     (* None of the following should still exist when we fix up the types *)
     | `Subst _
     | `SubstAlias _
@@ -190,10 +197,9 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Odoc_model.
     match p with
     | `Dot (parent, id) -> begin
         match lookup_and_resolve_module_from_path true env parent with
-        | Ok (sub, p, m) ->
-            let (p', sg) = signature_of_module env (p, m) in
-            let t' = Component.Find.type_in_sig sg id in
-            Ok (sub, `Type (p', Odoc_model.Names.TypeName.of_string id), t')
+        | Ok (s, p, m) ->
+            let (p', t) = handle_type_lookup env id p m in
+            Ok (s, p', t)
         | Error p ->
             Error (`Dot (p, id))
         end
