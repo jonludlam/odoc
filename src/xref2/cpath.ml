@@ -76,3 +76,25 @@ and type_path_of_cpath : t -> Path.Type.t =
     | `Substituted p -> type_path_of_cpath p
     | _ -> raise TypesNeedRefining
 
+let rec is_resolved_substituted : resolved -> bool =
+    function
+    | `Local _ -> false
+    | `Substituted _ -> true
+    | `Identifier _ -> false
+    | `Subst (a, _)
+    | `SubstAlias (a, _)
+    | `Hidden a 
+    | `Canonical (a, _) 
+    | `Apply (a, _)
+    | `Alias (a, _) 
+    | `Module (a, _)
+    | `ModuleType (a, _)
+    | `Type (a, _) -> is_resolved_substituted a
+
+let rec is_substituted : t -> bool =
+    function
+    | `Resolved a -> is_resolved_substituted a
+    | `Substituted _ -> true
+    | `Dot(a,_)
+    | `Apply(a, _) -> is_substituted a
+    
