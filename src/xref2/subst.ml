@@ -77,8 +77,8 @@ and module_type_expr s t =
         Signature (signature s sg)
     | Functor (arg, expr) ->
         Functor (functor_argument_opt s arg, module_type_expr s expr)
-    | With (_,_) -> failwith "Unahdlalell"
-
+    | With (e,args) ->
+        With (module_type_expr s e,args)
 
 and module_ s t =
     let open Component.Module in

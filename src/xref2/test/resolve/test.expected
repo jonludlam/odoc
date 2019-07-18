@@ -563,5 +563,5 @@ module FooBarInt : sig
     type FooBarInt.Foo.bar = resolved[global(int)]
     end
   end
-type t = resolved[(global(Foo)(resolved[global(Bar)]).T subst-> global(App)(resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)])).Foo.bar]
+type t = resolved[(global(Bar).T subst-> (global(Foo)(resolved[global(Bar)]).T subst-> global(App)(resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)])).Foo).bar]
 
