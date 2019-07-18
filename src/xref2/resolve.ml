@@ -5,19 +5,19 @@ end
 let type_path : Env.t -> Odoc_model.Paths.Path.Type.t -> Odoc_model.Paths.Path.Type.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
     match Tools.lookup_type_from_path env cp with
-    | Ok (_, p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
+    | Ok (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
     | Error _ -> p
 
 and module_type_path : Env.t -> Odoc_model.Paths.Path.ModuleType.t -> Odoc_model.Paths.Path.ModuleType.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
-    | Ok (_, p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
+    | Ok (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
     | Error _ -> p
 
 and module_path : Env.t -> Odoc_model.Paths.Path.Module.t -> Odoc_model.Paths.Path.Module.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
     match Tools.lookup_and_resolve_module_from_path true env cp with
-    | Ok (_, p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
+    | Ok (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Error _ -> p
 
 let rec unit env t =
@@ -60,7 +60,7 @@ and module_decl : Env.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module
     | Alias p ->
         let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
         match Tools.lookup_and_resolve_module_from_path true env cp with
-        | Ok (_, p', _) -> Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
+        | Ok (p', _) -> Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
         | _ -> decl
 
 and module_type : Env.t -> Odoc_model.Lang.ModuleType.t -> Odoc_model.Lang.ModuleType.t = fun env m ->
@@ -112,7 +112,7 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Constr (path, ts) -> begin
         let cp = Component.Of_Lang.local_path_of_path [] (path :> Odoc_model.Paths.Path.t) in
         match Tools.lookup_type_from_path env cp with
-        | Ok (_, p, _) ->
+        | Ok (p, _) ->
             Constr (`Resolved (Cpath.resolved_type_path_of_cpath p), ts)
         | Error _ -> Constr (path, ts)
         end

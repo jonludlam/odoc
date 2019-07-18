@@ -47,21 +47,21 @@ let flatten_module_alias : Cpath.resolved -> Cpath.resolved = function
   | x -> x
 
 type module_lookup_result =
-    bool * Cpath.resolved * Component.Module.t
+    Cpath.resolved * Component.Module.t
 
 type module_type_lookup_result =
-    bool * Cpath.resolved * Component.ModuleType.t
+    Cpath.resolved * Component.ModuleType.t
 
 type type_lookup_result =
-    bool * Cpath.resolved * Component.Type.t
+    Cpath.resolved * Component.Type.t
 
 exception Lookup_failure of Env.t * Cpath.resolved * string
 exception MyFailure of Component.Module.t * Component.Module.t
 exception Couldnt_find_functor_argument
 
 
-let rec handle_apply is_resolve env func_s func_path m arg_s arg_path =
-    let (_, func_path', mty) = module_type_expr_of_module env (func_path, m) in
+let rec handle_apply is_resolve env func_path arg_path m =
+    let (func_path', mty) = module_type_expr_of_module env (func_path, m) in
     let arg_id, result =
         match mty with
         | Component.ModuleType.Functor (Some arg, expr) ->
@@ -72,8 +72,8 @@ let rec handle_apply is_resolve env func_s func_path m arg_s arg_path =
     let path = `Apply (func_path', `Substituted (`Resolved arg_path)) in
 (*    Format.fprintf Format.std_formatter "applying %a to %a\n" Component.Fmt.resolved_path func_path Component.Fmt.resolved_path arg_path;
     Format.fprintf Format.std_formatter "is_resolve=%b arg_cpath'=%a\n" is_resolve Component.Fmt.resolved_path arg_path; *)
-    let substitution = if is_resolve || arg_s then `Substituted arg_path else arg_path in
-    (func_s, path, Subst.module_ (Subst.add arg_id substitution Subst.identity) new_module)
+    let substitution = if is_resolve then `Substituted arg_path else arg_path in
+    (path, Subst.module_ (Subst.add arg_id substitution Subst.identity) new_module)
 
 and handle_module_lookup env id p m =
     let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
@@ -96,21 +96,21 @@ and lookup_and_resolve_module_from_resolved_path : bool -> Env.t -> Cpath.resolv
         | `Local _id -> raise (Lookup_failure (env, p, "module")) 
         | `Identifier (#Identifier.Module.t as i) ->
             let m = Env.lookup_module i env in
-            (false, `Identifier i, m)
+            (`Identifier i, m)
         | `Identifier _ ->
             failwith "Invalid"
         | `Substituted x ->
-            let (_, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env x in
-            (true, p, m)
+            let (p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env x in
+            (`Substituted p, m)
         | `Apply (func_path, arg_path) -> begin
-            let (func_s, func_path', m) = lookup_and_resolve_module_from_resolved_path is_resolve env func_path in
-            let arg_s, arg_path' = match lookup_and_resolve_module_from_path is_resolve env arg_path with Ok (s,x,_) -> s,x | Error _ -> failwith "erk2" in
-            handle_apply is_resolve env func_s func_path' m arg_s arg_path'
+            let (func_path', m) = lookup_and_resolve_module_from_resolved_path is_resolve env func_path in
+            let arg_path' = match lookup_and_resolve_module_from_path is_resolve env arg_path with Ok (x,_) -> x | Error _ -> failwith "erk2" in
+            handle_apply is_resolve env func_path' arg_path' m
             end
         | `Module (p, name) ->
-            let (s, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
+            let (p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
             let (p', m') = handle_module_lookup env (Odoc_model.Names.ModuleName.to_string name) p m in
-            (s, p', m')
+            (p', m')
         | `Alias (_, p2) -> lookup_and_resolve_module_from_resolved_path is_resolve env p2
         | `Subst _
         | `SubstAlias _
@@ -131,32 +131,32 @@ and lookup_and_resolve_module_from_path : bool -> Env.t -> Cpath.t -> (module_lo
 (*    Format.fprintf Format.std_formatter "lookup_and_resolve_module_from_path: %b %a\n%!" is_resolve Component.Fmt.path p; *)
     match p with
     | `Dot (parent, id) ->
-        lookup_and_resolve_module_from_path is_resolve env parent >>= fun (s , p, m) ->
+        lookup_and_resolve_module_from_path is_resolve env parent >>= fun (p, m) ->
         let (p', m') = handle_module_lookup env id p m in
-        return (s, p', m')
+        return (p', m')
     | `Apply (m1, m2) -> 
-        lookup_and_resolve_module_from_path is_resolve env m1 >>= fun (func_s, func_path', m) ->
-        lookup_and_resolve_module_from_path is_resolve env m2 >>= fun (arg_s, arg_path', _) ->
-        return (handle_apply is_resolve env func_s func_path' m arg_s arg_path')
+        lookup_and_resolve_module_from_path is_resolve env m1 >>= fun (func_path', m) ->
+        lookup_and_resolve_module_from_path is_resolve env m2 >>= fun (arg_path', _) ->
+        return (handle_apply is_resolve env func_path' arg_path' m)
     | `Resolved r ->
         return (lookup_and_resolve_module_from_resolved_path is_resolve env r)
     | `Substituted s ->
-        lookup_and_resolve_module_from_path is_resolve env s >>= fun (_, p, m) ->
-        return (true, p, m)
+        lookup_and_resolve_module_from_path is_resolve env s >>= fun (p, m) ->
+        return (`Substituted p, m)
 
 and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.resolved -> module_type_lookup_result = fun is_resolve env p ->
     match p with
     | `Local _id -> raise (Lookup_failure (env, p, "module_type"))
     | `Identifier (#Identifier.ModuleType.t as i) ->
         let m = Env.lookup_module_type i env in
-        (false, `Identifier i, m)
+        (`Identifier i, m)
     | `Substituted s ->
-        let (_, p, m) = lookup_and_resolve_module_type_from_resolved_path is_resolve env s in
-        (true, p, m)
+        let (p, m) = lookup_and_resolve_module_type_from_resolved_path is_resolve env s in
+        (`Substituted p, m)
     | `ModuleType (p, id) ->
-        let (s, p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
+        let (p, m) = lookup_and_resolve_module_from_resolved_path is_resolve env p in
         let (p', mt) = handle_module_type_lookup env id p m in
-        (s, p', mt)
+        (p', mt)
     | `Subst _
     | `SubstAlias _
     | `Hidden _
@@ -173,14 +173,14 @@ and lookup_and_resolve_module_type_from_path : bool -> Env.t -> Cpath.t -> (modu
     fun is_resolve env p ->
         match p with
         | `Dot (parent, id) ->
-            lookup_and_resolve_module_from_path is_resolve env parent >>= fun (s, p, m) ->
+            lookup_and_resolve_module_from_path is_resolve env parent >>= fun (p, m) ->
             let (p', mt) = handle_module_type_lookup env id p m in
-            return (s, p', mt)
+            return (p', mt)
         | `Resolved r ->
             return (lookup_and_resolve_module_type_from_resolved_path is_resolve env r)
         | `Substituted s ->
-            lookup_and_resolve_module_type_from_path is_resolve env s >>= fun (_, p, m) ->
-            return (true, p, m)
+            lookup_and_resolve_module_type_from_path is_resolve env s >>= fun (p, m) ->
+            return (`Substituted p, m)
         | `Apply (_,_) -> failwith "erk"
 
 and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_result =
@@ -190,17 +190,17 @@ and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_resu
         | `Identifier (`CoreType name) ->
             (* CoreTypes aren't put into the environment, so they can't be handled by the 
             next clause. We just look them up here in the list of core types *)
-            (false, (`Identifier (`CoreType name)), List.assoc (TypeName.to_string name) core_types)
+            (`Identifier (`CoreType name), List.assoc (TypeName.to_string name) core_types)
         | `Identifier (#Identifier.Type.t as i) ->
             let t = Env.lookup_type i env in
-            (false, `Identifier i, t)
+            (`Identifier i, t)
         | `Substituted s ->
-            let (_, p, t) = lookup_type_from_resolved_path env s in
-            (true, p, t)
+            let (p, t) = lookup_type_from_resolved_path env s in
+            (`Substituted p, t)
         | `Type (p, id) ->
-            let (s, p, m) = lookup_and_resolve_module_from_resolved_path true env p in
+            let (p, m) = lookup_and_resolve_module_from_resolved_path true env p in
             let (p', t) = handle_type_lookup env id p m in
-            (s, p', t)
+            (p', t)
         (* None of the following should still exist when we fix up the types *)
         | `Subst _
         | `SubstAlias _
@@ -217,14 +217,14 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, string) Res
     fun env p ->
         match p with
         | `Dot (parent, id) ->
-            lookup_and_resolve_module_from_path true env parent >>= fun (s, p, m) ->
+            lookup_and_resolve_module_from_path true env parent >>= fun (p, m) ->
             let (p', t) = handle_type_lookup env id p m in
-            return (s, p', t)
+            return (p', t)
         | `Resolved r ->
             return (lookup_type_from_resolved_path env r)
         | `Substituted s ->
-            lookup_type_from_path env s >>= fun (_, p, m) ->
-            return (true, p, m)
+            lookup_type_from_path env s >>= fun (p, m) ->
+            return (`Substituted p, m)
         | `Apply (_,_) -> failwith "erk"
 
 
@@ -278,18 +278,19 @@ and lookup_signature_from_fragment : Env.t -> Fragment.Signature.t -> Component.
         | `Resolved r ->
             lookup_signature_from_resolved_fragment env r s
 
-and module_type_expr_of_module : Env.t -> Cpath.resolved * Component.Module.t -> bool * Cpath.resolved * Component.ModuleType.expr =
+and module_type_expr_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.ModuleType.expr =
     fun env (p,m) ->
     match m.Component.Module.type_ with
     | Component.Module.Alias path -> begin
         match lookup_and_resolve_module_from_path false env path with
-        | Ok (true, x, y) ->
-            let (_, x', y') = module_type_expr_of_module env (x, y) in
-            (true, `SubstAlias (p, x'), y')
-        | Ok (false, x, y) -> module_type_expr_of_module env (x, y)
+        | Ok (x, y) ->
+            let (x', y') = module_type_expr_of_module env (x, y) in
+            if Cpath.is_resolved_substituted x'
+            then `SubstAlias (p, x'), y'
+            else p, y'
         | Error _ -> failwith "Failed to lookup alias module"
         end
-    | Component.Module.ModuleType expr -> (false, p, expr)
+    | Component.Module.ModuleType expr -> (p, expr)
 
 and signature_of_module_type_expr : Env.t -> Cpath.resolved option * Component.ModuleType.expr -> Cpath.resolved option * Component.Signature.t =
     fun env (incoming_path, m) ->
@@ -297,13 +298,12 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved option * Component.M
         | Component.ModuleType.Path p -> begin
 (*            Format.fprintf Format.std_formatter "Looking up path: %a\n%!" Component.Fmt.path p;*)
             match lookup_and_resolve_module_type_from_path false env p with
-            | Ok (subst, p, mt) -> begin
+            | Ok (p, mt) -> begin
                 let (_, sg) = signature_of_module_type env (incoming_path, mt) in
-                match subst, incoming_path with
+                match Cpath.is_resolved_substituted p, incoming_path with
                 | true, Some p' ->
-                    (Some (`Subst (p, p')), sg)
-                | _ ->
-                    (incoming_path, sg)
+                    Some (`Subst (p, p')), sg
+                | _ -> (incoming_path, sg)
                 end
             | Error _p ->
                 failwith "Couldn't find signature"
@@ -321,7 +321,7 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved option * Component.M
                     let m = lookup_module_from_fragment env frag sg in
                     let id = m.Component.Module.id in
                     match lookup_and_resolve_module_from_path false env cpath with
-                    | Ok (_, path', _) ->
+                    | Ok (path', _) ->
                         let s = Subst.add id (`Substituted path') Subst.identity in
                         (* It's important to remove the module from the signature before doing the substitution,
                            since Subst doesn't work on bound idents *)
@@ -349,7 +349,7 @@ and signature_of_module_nopath : Env.t -> Component.Module.t -> Component.Signat
         match m.Component.Module.type_ with
         | Component.Module.Alias path -> begin
             match lookup_and_resolve_module_from_path false env path with
-            | Ok (_, p', m) -> (* p' is the path to the aliased module *)
+            | Ok (p', m) -> (* p' is the path to the aliased module *)
                 let (p'', m') = signature_of_module env (p', m) in
                 let m'' = Strengthen.signature p'' m' in
                 (* p'' is the path to the real module *)
@@ -366,7 +366,7 @@ and signature_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.
         match m.Component.Module.type_ with
         | Component.Module.Alias path -> begin
             match lookup_and_resolve_module_from_path false env path with
-            | Ok (_ , p', m) -> (* p' is the path to the aliased module *)
+            | Ok (p', m) -> (* p' is the path to the aliased module *)
                 let (p'', m') = signature_of_module env (p', m) in
                 let m'' = Strengthen.signature p'' m' in
                 (* p'' is the path to the real module *)
