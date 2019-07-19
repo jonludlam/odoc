@@ -112,11 +112,10 @@ and lookup_and_resolve_module_from_resolved_path : bool -> Env.t -> Cpath.resolv
             let (p', m') = handle_module_lookup env (Odoc_model.Names.ModuleName.to_string name) p m in
             (p', m')
         | `Alias (_, p2) -> lookup_and_resolve_module_from_resolved_path is_resolve env p2
-        | `Subst _
-        | `SubstAlias _
-        | `Hidden _
-        | `Canonical _ ->
-            failwith "hmmm"
+        | `Subst (_, p)
+        | `SubstAlias (p, _)
+        | `Hidden p
+        | `Canonical (p, _) -> lookup_and_resolve_module_from_resolved_path is_resolve env p
         | `ModuleType _
         | `Type _ ->
             let str = Component.Fmt.string_of Component.Fmt.resolved_path p in
