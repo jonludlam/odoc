@@ -43,6 +43,7 @@ let model_of_string str =
     Odoc_loader__Cmti.read_interface root "Root" cmti
 
 let signature_of_mli_string str =
+    Odoc_xref2.Ident.reset ();
     let _, _, sg = model_of_string str in
     sg
 
