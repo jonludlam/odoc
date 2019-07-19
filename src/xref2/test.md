@@ -619,16 +619,15 @@ let sg = Common.signature_of_mli_string test_data;;
 let env = Env.open_signature sg Env.empty;;
 let t_manifest = type_manifest "t";;
 let s_manifest = type_manifest "s";;
+let resolved = Resolve.signature Env.empty sg;;
 ```
 
 The interesting thing here is the difference between `type t` and `type s`. The module `M.O` has
 a concrete representation in the file and the expansion of this will contain a declaration of type
 `t` - hence the path representing `M.O.t` does not need a `Subst` constructor in it. However, the
 path to `M.F(M.T).N.t` can't point directly at a type within a module as there isn't one - in
-some sense `F(M.T)` is making a brand new module on the fly without binding it anywhere 
-```ocaml env=e1
-let resolved = Resolve.signature Env.empty sg;;
-```
+some sense `F(M.T)` is making a brand new module on the fly without binding it anywhere, and the
+type within this is not within the body of the functor itself.
 
 ```ocaml env=e1
 # Common.LangUtils.Lens.get t_manifest resolved;;
@@ -669,316 +668,14 @@ Some
    []))
 ```
 
+In the following example, `type t` does not require a `Subst` constructor since although the
+pattern is the same as above -- that a new type `t` appears in module `O` despite not being
+present in the definition of the functor --  because the module `O` is bound it will be expanded
+in the expansion phase of odoc's work, and hence we can simply point right inside the module.
 
-```ocaml env=e1
-let test_data = {|
-module M : sig
- module F(X : sig module type S end) : sig
-   module type S = X.S
-   module N : S
- end
- module T : sig
-   module type S = sig type t end
- end
-end
-type s = M.F(M.T).N.t
-|};;
-let sg = Common.signature_of_mli_string test_data;;
-let resolved = Resolve.signature Env.empty sg;;
-let env = Env.open_signature sg Env.empty;;
-```
-
-```ocaml env=e1
-# Common.LangUtils.Lens.get s_manifest sg;;
-- : Odoc_model.Lang.TypeExpr.t option =
-Some
- (Odoc_model.Lang.TypeExpr.Constr
-   (`Dot
-      (`Dot
-         (`Apply
-            (`Dot
-               (`Resolved
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M"))),
-                "F"),
-             `Dot
-               (`Resolved
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M"))),
-                "T")),
-          "N"),
-       "t"),
-   []))
-```
-
-```ocaml env=e1
-# Tools.lookup_and_resolve_module_from_path true env (`Apply (`Dot (`Resolved
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M"))),
-                "F"),
-             `Dot
-               (`Resolved
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M"))),
-                "T")))
-- : (Tools.module_lookup_result, string) result =
-Result.Ok
- (`Apply
-    (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-     `Substituted
-       (`Resolved
-          (`Module
-             (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "T")))),
-  {Odoc_xref2.Component.Module.id = ("F", 84);
-   type_ =
-    Odoc_xref2.Component.Module.ModuleType
-     (Odoc_xref2.Component.ModuleType.Signature
-       [Odoc_xref2.Component.Signature.ModuleType
-         {Odoc_xref2.Component.ModuleType.id = ("S", 95);
-          expr =
-           Some
-            (Odoc_xref2.Component.ModuleType.Path
-              (`Dot
-                 (`Resolved
-                    (`Substituted
-                       (`Module
-                          (`Identifier
-                             (`Module (`Root (Common.root, "Root"), "M")),
-                           "T"))),
-                  "S")))};
-        Odoc_xref2.Component.Signature.Module
-         {Odoc_xref2.Component.Module.id = ("N", 96);
-          type_ =
-           Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path
-              (`Resolved (`Local ("S", 95))))}])})
-```
-
-```ocaml env=e1
-let mypath = `Dot (`Apply
-            (`Dot
-               (`Resolved
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M"))),
-                "F"),
-             `Dot
-               (`Resolved
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M"))),
-                "T")), "N");;
-```
-
-```ocaml env=e1
-# let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true env mypath;;
-val p : Cpath.resolved =
-  `Module
-    (`Apply
-       (`Module
-          (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-        `Substituted
-          (`Resolved
-             (`Module
-                (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                 "T")))),
-     "N")
-val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 114);
-   type_ =
-    Odoc_xref2.Component.Module.ModuleType
-     (Odoc_xref2.Component.ModuleType.Path
-       (`Resolved
-          (`ModuleType
-             (`Apply
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "F"),
-                 `Substituted
-                   (`Resolved
-                      (`Module
-                         (`Identifier
-                            (`Module (`Root (Common.root, "Root"), "M")),
-                          "T")))),
-              "S"))))}
-```
-
-```ocaml env=e1
-# let (p', sg) = Tools.signature_of_module env (p, m) |> Tools.prefix_signature;;
-val p' : Cpath.resolved =
-  `Subst
-    (`ModuleType
-       (`Apply
-          (`Module
-             (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-           `Substituted
-             (`Resolved
-                (`Substituted
-                   (`Module
-                      (`Identifier
-                         (`Module (`Root (Common.root, "Root"), "M")),
-                       "T"))))),
-        "S"),
-     `Module
-       (`Apply
-          (`Module
-             (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-           `Substituted
-             (`Resolved
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "T")))),
-        "N"))
-val sg : Component.Signature.item list =
-  [Odoc_xref2.Component.Signature.Type
-    {Odoc_xref2.Component.Type.id = ("t", 142); manifest = None}]
-```
-
-```ocaml env=e1
-# Tools.lookup_and_resolve_module_type_from_path false env (`Resolved
-          (`ModuleType
-             (`Apply
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "F"),
-                 `Substituted
-                   (`Resolved
-                      (`Module
-                         (`Identifier
-                            (`Module (`Root (Common.root, "Root"), "M")),
-                          "T")))),
-              "S")))
-- : (Tools.module_type_lookup_result, string) result =
-Result.Ok
- (`ModuleType
-    (`Apply
-       (`Module
-          (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-        `Substituted
-          (`Resolved
-             (`Substituted
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "T"))))),
-     "S"),
-  {Odoc_xref2.Component.ModuleType.id = ("S", 159);
-   expr =
-    Some
-     (Odoc_xref2.Component.ModuleType.Path
-       (`Dot
-          (`Resolved
-             (`Substituted
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "T"))),
-           "S")))})
-```
-
-```ocaml env=e1
-# Tools.lookup_and_resolve_module_type_from_path false env (`Dot
-          (`Resolved
-             (`Substituted
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "T"))),
-           "S"))
-- : (Tools.module_type_lookup_result, string) result =
-Result.Ok
- (`ModuleType
-    (`Substituted
-       (`Module
-          (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "T")),
-     "S"),
-  {Odoc_xref2.Component.ModuleType.id = ("S", 169);
-   expr =
-    Some
-     (Odoc_xref2.Component.ModuleType.Signature
-       [Odoc_xref2.Component.Signature.Type
-         {Odoc_xref2.Component.Type.id = ("t", 168); manifest = None}])})
-```
-
-```ocaml env=e1
-# Tools.signature_of_module env (p, m);;
-- : Cpath.resolved * Component.Signature.t =
-(`Subst
-   (`ModuleType
-      (`Apply
-         (`Module
-            (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-          `Substituted
-            (`Resolved
-               (`Substituted
-                  (`Module
-                     (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "M")),
-                      "T"))))),
-       "S"),
-    `Module
-      (`Apply
-         (`Module
-            (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "F"),
-          `Substituted
-            (`Resolved
-               (`Module
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                   "T")))),
-       "N")),
- [Odoc_xref2.Component.Signature.Type
-   {Odoc_xref2.Component.Type.id = ("t", 195); manifest = None}])
-```
-
-```ocaml env=e1
-# Tools.lookup_and_resolve_module_type_from_path false env (`Dot
-          (`Resolved
-             (`Substituted
-                (`Module
-                   (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
-                    "T"))),
-           "S"));;
-- : (Tools.module_type_lookup_result, string) result =
-Result.Ok
- (`ModuleType
-    (`Substituted
-       (`Module
-          (`Identifier (`Module (`Root (Common.root, "Root"), "M")), "T")),
-     "S"),
-  {Odoc_xref2.Component.ModuleType.id = ("S", 205);
-   expr =
-    Some
-     (Odoc_xref2.Component.ModuleType.Signature
-       [Odoc_xref2.Component.Signature.Type
-         {Odoc_xref2.Component.Type.id = ("t", 204); manifest = None}])})
-# let resolved_ = ();;
-val resolved_ : unit = ()
-```
-
-```ocaml env=e1
-# Common.LangUtils.Lens.get s_manifest resolved;;
-- : Odoc_model.Lang.TypeExpr.t option =
-Some
- (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Subst
-            (`ModuleType
-               (`Apply
-                  (`Module
-                     (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "M")),
-                      "F"),
-                   `Resolved
-                     (`Module
-                        (`Identifier
-                           (`Module (`Root (Common.root, "Root"), "M")),
-                         "T"))),
-                "S"),
-             `Module
-               (`Apply
-                  (`Module
-                     (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "M")),
-                      "F"),
-                   `Resolved
-                     (`Module
-                        (`Identifier
-                           (`Module (`Root (Common.root, "Root"), "M")),
-                         "T"))),
-                "N")),
-          "t")),
-   []))
-```
+We distinguish between the two cases via the `is_resolve` parameter, which is `true` when we
+are directly resolving a path, but `false` when we simply wish to look up the signature of
+a module.
 
 ```ocaml env=e1
 let test_data = {|
@@ -1019,7 +716,12 @@ Some
    []))
 ```
 
-This one shouldn't have a `Subst`
+This following example also shouldn't have a `Subst`, since although as before we're effectively
+constructing a new module `M.O(M)` on the fly here, the subsequent path `.N.t` is actually
+present in the body of the functor and is independent of the argument (in fact, the argument
+in this case is totally ignored). Consequently the resolution proceeds without encountering
+a `Substituted` node and we therefore don't end up putting a `Subst` node in the returned 
+path.
 
 ```ocaml env=e1
 let test_data = {|
@@ -1059,7 +761,10 @@ Some
    []))
 ```
 
-# Another nasty one
+# Higher order functors
+
+Functors may take other functors as arguments. In the following example we have
+a complex functor where type of the 3rd argument is dependent on the first two:
 
 ```ocaml env=e1
 let test_data = {|
@@ -1202,7 +907,7 @@ val sg' : Component.Signature.t =
 let resolved = Resolve.signature Env.empty sg;;
 ```
 
-
+The resolved path of t is:
 
 ```ocaml env=e1
 # Common.LangUtils.Lens.get t_manifest resolved;;
