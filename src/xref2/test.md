@@ -253,7 +253,8 @@ val get_ok : ('a, 'b) result -> 'a = <fun>
 val path : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "M"))
 val module_ : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("M", 0);
+  {Odoc_xref2.Component.Module.id = ("M", 0); canonical = None;
+   hidden = false;
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Signature
@@ -302,7 +303,8 @@ of looking up the module `N`:
 val path : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "N"))
 val module_ : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 2);
+  {Odoc_xref2.Component.Module.id = ("N", 2); canonical = None;
+   hidden = false;
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -352,7 +354,8 @@ val m : Component.ModuleType.t =
               [Odoc_xref2.Component.Signature.Type
                 {Odoc_xref2.Component.Type.id = ("t", 3); manifest = None}])};
         Odoc_xref2.Component.Signature.Module
-         {Odoc_xref2.Component.Module.id = ("B", 2);
+         {Odoc_xref2.Component.Module.id = ("B", 2); canonical = None;
+          hidden = false;
           type_ =
            Odoc_xref2.Component.Module.ModuleType
             (Odoc_xref2.Component.ModuleType.Path
@@ -400,7 +403,8 @@ we look up `A` from the environment:
         [Odoc_xref2.Component.Signature.Type
           {Odoc_xref2.Component.Type.id = ("t", 6); manifest = None}])};
   Odoc_xref2.Component.Signature.Module
-   {Odoc_xref2.Component.Module.id = ("B", 8);
+   {Odoc_xref2.Component.Module.id = ("B", 8); canonical = None;
+    hidden = false;
     type_ =
      Odoc_xref2.Component.Module.ModuleType
       (Odoc_xref2.Component.ModuleType.Path
@@ -524,7 +528,8 @@ of module `C` we see the following:
 val p : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "C"))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("C", 7);
+  {Odoc_xref2.Component.Module.id = ("C", 7); canonical = None;
+   hidden = false;
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.With
@@ -545,12 +550,14 @@ now we can ask for the signature of this module:
 val sg : Cpath.resolved * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    [Odoc_xref2.Component.Signature.Module
-     {Odoc_xref2.Component.Module.id = ("M", 1);
+     {Odoc_xref2.Component.Module.id = ("M", 1); canonical = None;
+      hidden = false;
       type_ =
        Odoc_xref2.Component.Module.Alias
         (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "B"))))};
     Odoc_xref2.Component.Signature.Module
-     {Odoc_xref2.Component.Module.id = ("N", 2);
+     {Odoc_xref2.Component.Module.id = ("N", 2); canonical = None;
+      hidden = false;
       type_ =
        Odoc_xref2.Component.Module.ModuleType
         (Odoc_xref2.Component.ModuleType.Path
@@ -565,7 +572,8 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 val p : Cpath.resolved =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 36);
+  {Odoc_xref2.Component.Module.id = ("N", 36); canonical = None;
+   hidden = false;
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -847,7 +855,8 @@ val p : Cpath.resolved =
        (`Resolved
           (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt")))))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("App", 2);
+  {Odoc_xref2.Component.Module.id = ("App", 2); canonical = None;
+   hidden = false;
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -892,7 +901,8 @@ val p : Cpath.resolved =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   [Odoc_xref2.Component.Signature.Module
-    {Odoc_xref2.Component.Module.id = ("Foo", 20);
+    {Odoc_xref2.Component.Module.id = ("Foo", 20); canonical = None;
+     hidden = false;
      type_ =
       Odoc_xref2.Component.Module.ModuleType
        (Odoc_xref2.Component.ModuleType.Path

@@ -70,15 +70,30 @@ let rec handle_apply is_resolve env func_path arg_path m =
     in
     let new_module = {m with type_ = ModuleType result} in
     let path = `Apply (func_path', `Substituted (`Resolved arg_path)) in
-(*    Format.fprintf Format.std_formatter "applying %a to %a\n" Component.Fmt.resolved_path func_path Component.Fmt.resolved_path arg_path;
-    Format.fprintf Format.std_formatter "is_resolve=%b arg_cpath'=%a\n" is_resolve Component.Fmt.resolved_path arg_path; *)
     let substitution = if is_resolve then `Substituted arg_path else arg_path in
     (path, Subst.module_ (Subst.add arg_id substitution Subst.identity) new_module)
+
+and add_canonical env m p =
+    match m.Component.Module.canonical with
+    | Some (cp,_cr) -> begin
+        match lookup_module_from_path env cp with
+        | Ok (cp', _) -> `Canonical (p, `Resolved cp')
+        | Error _ -> `Canonical (p, cp)
+        end
+    | None -> p
+
+and add_hidden m p =
+    if m.Component.Module.hidden then `Hidden p else p
 
 and handle_module_lookup env id p m =
     let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
     let m' = Component.Find.module_in_sig sg id in
-    (`Module (p', Odoc_model.Names.ModuleName.of_string id), m')
+    let p' =
+        `Module (p', Odoc_model.Names.ModuleName.of_string id)
+        |> add_hidden m'
+        |> add_canonical env m'
+    in
+    (p', m')
 
 and handle_module_type_lookup env id p m =
     let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
@@ -360,7 +375,7 @@ and fragmap_signature : Env.t -> Cpath.resolved -> Fragment.Resolved.Signature.t
                     | Component.Signature.Module m when (Ident.name m.id = ModuleName.to_string name) ->
                         let (p, sg) = signature_of_module env (`Module (p, name), m) in
                         let sg' = fn (`Module (p, name)) sg in
-                        Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')})
+                        Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})
                     | x -> Some x) s) sg
         | _ -> failwith "foo"
 
@@ -399,7 +414,7 @@ and fragmap_unresolved_signature : Env.t -> Cpath.resolved -> Fragment.Signature
                     | Component.Signature.Module m when Ident.name m.id = name ->
                         let p, sg = signature_of_module env (p, m) in
                         let sg' = fn (`Type (p, name)) sg in
-                        Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg')})
+                        Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})
                     | x -> Some x) s) sg 
         | `Resolved x ->
             fragmap_signature env p x fn sg
