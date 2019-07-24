@@ -32,7 +32,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
             " Using %S while you should use the .cmti file" filename)
     );
     let resolve_env = Env.build env (`Unit unit) in
-    let resolved = Odoc_xref.resolve (Env.resolver resolve_env) unit in
+    let resolved = Odoc_xref2.Resolve.resolve (Env.resolver resolve_env) unit in
     (* [expand unit] fetches [unit] from [env] to get the expansion of local, previously
        defined, elements. We'd rather it got back the resolved bit so we rebuild an
        environment with the resolved unit.
@@ -103,5 +103,5 @@ let mld ~env ~package ~output input =
     let page = Odoc_model.Lang.Page.{ name; content; digest } in
     let page = Odoc_xref.Lookup.lookup_page page in
     let env = Env.build env (`Page page) in
-    let resolved = Odoc_xref.resolve_page (Env.resolver env) page in
+    let resolved = Odoc_xref2.Resolve.resolve_page (Env.resolver env) page in
     Page.save output resolved

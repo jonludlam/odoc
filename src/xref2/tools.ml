@@ -157,6 +157,8 @@ and lookup_and_resolve_module_from_path : bool -> Env.t -> Cpath.t -> (module_lo
     | `Substituted s ->
         lookup_and_resolve_module_from_path is_resolve env s >>= fun (p, m) ->
         return (`Substituted p, m)
+    | `Forward _ ->
+        Error "Forward reference"
 
 and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.resolved -> module_type_lookup_result = fun is_resolve env p ->
     match p with
@@ -195,6 +197,7 @@ and lookup_and_resolve_module_type_from_path : bool -> Env.t -> Cpath.t -> (modu
         | `Substituted s ->
             lookup_and_resolve_module_type_from_path is_resolve env s >>= fun (p, m) ->
             return (`Substituted p, m)
+        | `Forward _ 
         | `Apply (_,_) -> failwith "erk"
 
 and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_result =
@@ -239,6 +242,7 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, string) Res
         | `Substituted s ->
             lookup_type_from_path env s >>= fun (p, m) ->
             return (`Substituted p, m)
+        | `Forward _
         | `Apply (_,_) -> failwith "erk"
 
 
@@ -283,9 +287,9 @@ and lookup_signature_from_fragment : Env.t -> Cpath.resolved -> Fragment.Signatu
         | (`Dot (_, _)) as f' -> lookup_module_from_fragment env p f' s |> signature_of_module env
         | `Resolved r -> lookup_signature_from_resolved_fragment env p r s
 
-and module_type_expr_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.ModuleType.expr =
-    fun env (p,m) ->
-    match m.Component.Module.type_ with
+and module_type_expr_of_module_decl : Env.t -> Cpath.resolved * Component.Module.decl -> Cpath.resolved * Component.ModuleType.expr =
+    fun env (p,decl) ->
+    match decl with
     | Component.Module.Alias path -> begin
         match lookup_and_resolve_module_from_path false env path with
         | Ok (x, y) ->
@@ -296,6 +300,9 @@ and module_type_expr_of_module : Env.t -> Cpath.resolved * Component.Module.t ->
         | Error _ -> failwith "Failed to lookup alias module"
         end
     | Component.Module.ModuleType expr -> (p, expr)
+
+and module_type_expr_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.ModuleType.expr =
+    fun env (p, m) -> module_type_expr_of_module_decl env (p, m.type_)
 
 and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleType.expr -> Cpath.resolved * Component.Signature.t =
     fun env (incoming_path, m) ->
@@ -342,6 +349,8 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleTy
             (p', sg')
         | Component.ModuleType.Functor (_,expr) ->
             signature_of_module_type_expr env (incoming_path, expr)
+        | Component.ModuleType.TypeOf decl ->
+            signature_of_module_decl env (incoming_path, decl)
 
 and signature_of_module_type : Env.t -> Cpath.resolved * Component.ModuleType.t -> Cpath.resolved * Component.Signature.t =
     fun env (p,m) ->
@@ -349,9 +358,9 @@ and signature_of_module_type : Env.t -> Cpath.resolved * Component.ModuleType.t 
         | None -> failwith "oh no"
         | Some expr -> signature_of_module_type_expr env (p,expr)
 
-and signature_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.Signature.t =
-    fun env (incoming_path, m) ->
-        match m.Component.Module.type_ with
+and signature_of_module_decl : Env.t -> Cpath.resolved * Component.Module.decl -> Cpath.resolved * Component.Signature.t =
+    fun env (incoming_path, decl) ->
+        match decl with
         | Component.Module.Alias path -> begin
             match lookup_and_resolve_module_from_path false env path with
             | Ok (p', m) -> (* p' is the path to the aliased module *)
@@ -365,6 +374,9 @@ and signature_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.
             end
         | Component.Module.ModuleType expr -> signature_of_module_type_expr env (incoming_path, expr)
 
+and signature_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.Signature.t =
+    fun env (incoming_path, m) -> signature_of_module_decl env (incoming_path, m.type_)
+        
 and fragmap_signature : Env.t -> Cpath.resolved -> Fragment.Resolved.Signature.t -> (Cpath.resolved -> Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t =
     fun env p frag fn sg ->
         match frag with

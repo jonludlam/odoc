@@ -48,6 +48,8 @@ and module_type : Cpath.resolved -> Component.ModuleType.t -> Component.ModuleTy
             m.expr
         | Some (Component.ModuleType.Functor _) -> 
             m.expr
+        | Some (Component.ModuleType.TypeOf _) ->
+            m.expr
     in {m with expr}
 
 and type_ : Cpath.resolved -> Component.Type.t -> Component.Type.t = fun path t ->

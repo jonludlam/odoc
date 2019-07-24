@@ -19,6 +19,7 @@ and t = [
     | `Substituted of t
     | `Resolved of resolved
     | `Dot of t * string
+    | `Forward of string
     | `Apply of t * t
 ]
 
@@ -97,4 +98,5 @@ let rec is_substituted : t -> bool =
     | `Substituted _ -> true
     | `Dot(a,_)
     | `Apply(a, _) -> is_substituted a
+    | `Forward _ -> false
     

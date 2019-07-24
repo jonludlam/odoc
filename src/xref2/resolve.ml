@@ -1,3 +1,9 @@
+type resolver =
+    { lookup_unit: string -> Odoc_xref.lookup_result
+    ; resolve_unit: Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t
+    ; lookup_page: string -> Odoc_model.Root.t option
+    ; resolve_page: Odoc_model.Root.t -> Odoc_model.Lang.Page.t }
+
 module Opt = struct
     let map f = function | Some x -> Some (f x) | None -> None
 end
@@ -20,15 +26,38 @@ and module_path : Env.t -> Odoc_model.Paths.Path.Module.t -> Odoc_model.Paths.Pa
     | Ok (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Error _ -> p
 
-let rec unit env t =
+let rec unit resolver t =
     let open Odoc_model.Lang.Compilation_unit in
-    {t with content = content env t.content}
+    let (imports, env) = List.fold_left (fun (imports,env) import ->
+        match import with
+        | Import.Resolved root ->
+            let unit = resolver.resolve_unit root in
+            let env = Env.open_unit unit env in
+            (import::imports, env)
+        | Import.Unresolved (str, _) ->
+            match resolver.lookup_unit str with
+            | Odoc_xref.Forward_reference -> (import::imports, env)
+            | Found f ->
+                let unit = resolver.resolve_unit f.root in
+                let env = Env.open_unit unit env in
+                ((Resolved f.root)::imports, env)
+            | Not_found ->
+                Printf.fprintf stderr "Failed to lookup import %s in Resolve.unit\n%!" str;
+                (import::imports,env)
+    ) ([],Env.empty) t.imports in
+    {t with content = content env t.content; imports}
 
 and content env =
     let open Odoc_model.Lang.Compilation_unit in
     function
     | Module m -> Module (signature env m)
     | Pack _ -> failwith "Unhandled content"
+
+and value_ env t =
+    let open Odoc_model.Lang.Value in
+    { t with type_ = type_expression env t.type_}
+
+and comment _env x = x
 
 and signature : Env.t -> Odoc_model.Lang.Signature.t -> _ = fun env s ->
     let open Odoc_model.Lang.Signature in
@@ -45,6 +74,12 @@ and signature : Env.t -> Odoc_model.Lang.Signature.t -> _ = fun env s ->
             | ModuleType mt ->
                 let mt' = module_type env mt in
                 (env, (ModuleType mt')::items)
+            | Value v ->
+                let v' = value_ env v in
+                (env, (Value v')::items)
+            | Comment c ->
+                let c' = comment env c in
+                (env, (Comment c')::items)
             | _ -> failwith "Unhandled signature element") s (env, [])
     in items'
 
@@ -89,7 +124,8 @@ and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.La
         let arg' = Opt.map (functor_argument env) arg in
         let res' = module_type_expr env res in
         Functor (arg', res')
-    | _ -> failwith "boo"
+    | TypeOf decl ->
+        TypeOf (module_decl env decl)
 
 and type_ env t =
     let open Odoc_model.Lang.TypeDecl in
@@ -118,12 +154,15 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
         end
     | _ -> failwith "Unhandled type expression"
 
-and compilation_unit : Env.t -> Odoc_odoc.Compilation_unit.t -> Odoc_odoc.Compilation_unit.t = fun env c ->
-    let open Odoc_model.Lang.Compilation_unit in
-    let content' = 
-        match c.content with
-        | Module s -> Module (signature env s)
-        | Pack _ -> failwith "Unhandled"
-    in
-    { c with
-      content = content' }
+let build_resolver :
+    ?equal:(Odoc_model.Root.t -> Odoc_model.Root.t -> bool) -> ?hash:(Odoc_model.Root.t -> int)
+    -> (string -> Odoc_xref.lookup_result)
+    -> (Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t)
+    -> (string -> Odoc_model.Root.t option) -> (Odoc_model.Root.t -> Odoc_model.Lang.Page.t)
+    -> resolver =
+    fun ?equal:_ ?hash:_ lookup_unit resolve_unit lookup_page resolve_page ->
+    {lookup_unit; resolve_unit; lookup_page; resolve_page; }
+
+let resolve x y = unit x y
+
+let resolve_page _ x = x

@@ -3,7 +3,7 @@
  (libraries alcotest markup odoc_compat))
 
 (alias
- (name runtest_disabled)
+ (name runtest)
  (action (run %{exe:test.exe}))
  (deps
   test.exe

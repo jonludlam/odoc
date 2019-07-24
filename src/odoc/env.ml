@@ -36,7 +36,7 @@ open Odoc_compat
 
 type t = {
   expander : Odoc_xref.expander ;
-  resolver : Odoc_xref.resolver ;
+  resolver : Odoc_xref2.Resolve.resolver;
 }
 
 module Accessible_paths = struct
@@ -232,7 +232,7 @@ let create ?(important_digests=true) ~directories : builder =
           fetch_page ap root
     in
     let resolver =
-      Odoc_xref.build_resolver lookup_unit fetch_unit lookup_page fetch_page
+      Odoc_xref2.Resolve.build_resolver lookup_unit fetch_unit lookup_page fetch_page
     in
     let expander =
       (* CR trefis: what is the ~root param good for? *)
