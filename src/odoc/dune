@@ -9,6 +9,7 @@
   odoc_loader
   odoc_model
   odoc_xref
+  odoc_xref2
   tyxml
   unix))
 

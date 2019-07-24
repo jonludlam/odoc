@@ -14,6 +14,8 @@ module rec Module : sig
 
     type t =
       { id : Ident.t
+      ; canonical : (Cpath.t * Odoc_model.Paths.Reference.Module.t) option
+      ; hidden : bool
       ; type_ : decl }
 end = Module
 
@@ -41,6 +43,7 @@ and ModuleType : sig
         | Signature of Signature.t
         | With of expr * substitution list
         | Functor of FunctorArgument.t option * expr
+        | TypeOf of Module.decl
     type t =
       { id : Ident.t
       ; expr : expr option }
@@ -110,6 +113,7 @@ module Fmt = struct
         | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
         | With (expr,subs) -> Format.fprintf ppf "%a with [%a]" module_type_expr expr substitution_list subs
         | Functor (arg, res) -> Format.fprintf ppf "(%a) -> %a" functor_argument_opt arg module_type_expr res
+        | TypeOf decl -> Format.fprintf ppf "module type of %a" module_decl decl
 
     and functor_argument_opt ppf x =
         match x with
@@ -175,6 +179,7 @@ module Fmt = struct
         | `Dot (p,str) -> Format.fprintf ppf "%a.%s" path p str
         | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" path p1 path p2
         | `Substituted p -> Format.fprintf ppf "substituted(%a)" path p
+        | `Forward s -> Format.fprintf ppf "forward(%s)" s
 
     and model_path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
         fun ppf (p : Odoc_model.Paths.Path.t) ->
@@ -266,7 +271,11 @@ module Of_Lang = struct
         | `Apply (p1, p2) ->
             `Apply (local_path_of_path ident_map (p1 :> Odoc_model.Paths.Path.t),
                     (local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t)))
-        | _ -> failwith (Printf.sprintf "local_path_of_path: %s" (Fmt.string_of Fmt.model_path path))
+        | `Forward str ->
+            `Forward str
+        | `Root str ->
+            `Forward str
+        (* | _ -> failwith (Printf.sprintf "local_path_of_path: %s" (Fmt.string_of Fmt.model_path path)) *)
 
     let rec type_ ident_map id ty =
         let open Odoc_model.Lang.TypeDecl in
@@ -287,9 +296,15 @@ module Of_Lang = struct
         | Odoc_model.Lang.Module.ModuleType s ->
             Module.ModuleType (module_type_expr ident_map s)
 
+    and canonical ident_map ( canonical : (Odoc_model.Paths.Path.Module.t * Odoc_model.Paths.Reference.Module.t) option) =
+        match canonical with
+        | Some (path, r) -> Some (local_path_of_path ident_map (path :> Odoc_model.Paths.Path.t), r)
+        | None -> None
+
     and module_ ident_map id m =
         let type_ = module_decl ident_map m.Odoc_model.Lang.Module.type_ in
-        {Module.id; type_}
+        let canonical = canonical ident_map m.Odoc_model.Lang.Module.canonical in
+        {Module.id; type_; canonical; hidden=m.hidden}
 
     and module_type_substitution ident_map m =
         let open Odoc_model.Lang.ModuleType in
@@ -330,7 +345,10 @@ module Of_Lang = struct
         | Odoc_model.Lang.ModuleType.Functor (None, expr) ->
             let expr' = module_type_expr ident_map expr in
             ModuleType.Functor (None, expr')
-        | _ -> failwith "Unhandled here"
+        | Odoc_model.Lang.ModuleType.TypeOf decl ->
+            let decl' = module_decl ident_map decl in
+            ModuleType.TypeOf decl'
+
 
     and module_type ident_map id m =
         let expr = Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in

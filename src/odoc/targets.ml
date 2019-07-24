@@ -27,7 +27,7 @@ let of_odoc_file ~env ~output:root_dir input =
   | Compilation_unit _ ->
       let unit = Compilation_unit.load input in
       let env = Env.build env (`Unit unit) in
-      let odoctree = Odoc_xref.resolve (Env.resolver env) unit in
+      let odoctree = Odoc_xref2.Resolve.resolve (Env.resolver env) unit in
       let odoctree = Odoc_xref.expand (Env.expander env) odoctree in
       let root = Compilation_unit.root odoctree in
       let package = root.package in

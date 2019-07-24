@@ -36,6 +36,7 @@ and path : t -> Cpath.t -> Cpath.t = fun s p ->
     | `Dot (p', str) -> `Dot (path s p', str)
     | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
     | `Substituted p -> `Substituted (path s p)
+    | `Forward s -> `Forward s
 
 let rec type_ s t =
     let open Component.Type in
@@ -79,15 +80,19 @@ and module_type_expr s t =
         Functor (functor_argument_opt s arg, module_type_expr s expr)
     | With (e,args) ->
         With (module_type_expr s e,args)
+    | TypeOf decl ->
+        TypeOf (module_decl s decl)
+
+and module_decl s t =
+    match t with
+    | Alias p ->
+        Alias (path s p)
+    | ModuleType t ->
+        ModuleType (module_type_expr s t)
 
 and module_ s t =
     let open Component.Module in
-    let type_ = match t.type_ with
-        | Alias p ->
-            Alias (path s p)
-        | ModuleType t ->
-            ModuleType (module_type_expr s t)
-    in
+    let type_ = module_decl s t.type_ in
     { t with type_ }
 
 and rename_bound_idents s sg =

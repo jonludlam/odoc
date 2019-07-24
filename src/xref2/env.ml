@@ -58,7 +58,8 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
         let rec find_args parent mty =
             match mty with 
             | ModuleType.Functor (Some arg, res) ->
-                (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.Component.FunctorArgument.id)), {Component.Module.id = arg.Component.FunctorArgument.id; type_ = ModuleType arg.expr}) :: find_args (`Result parent) res
+                (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.Component.FunctorArgument.id)),
+                    {Component.Module.id = arg.Component.FunctorArgument.id; type_ = ModuleType arg.expr; canonical=None; hidden=false}) :: find_args (`Result parent) res
             | ModuleType.Functor (None, res) ->
                 find_args (`Result parent) res
             | _ -> []
@@ -103,6 +104,34 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let id = Ident.of_identifier identifier in
                 let ty = Of_Lang.module_type [identifier,id] id t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
-            | _ -> failwith "foo") env s
+            | Odoc_model.Lang.Signature.Comment _ ->
+                Printf.fprintf stderr "open_signature: Comment\n%!";
+                env
+            | Odoc_model.Lang.Signature.TypExt _ ->
+                Printf.fprintf stderr "open_signature: TypExt\n%!";
+                env
+            | Odoc_model.Lang.Signature.Exception _ ->
+                Printf.fprintf stderr "open_signature: Exception\n%!";
+                env
+            | Odoc_model.Lang.Signature.Value _ ->
+                Printf.fprintf stderr "open_signature: Value\n%!";
+                env
+            | Odoc_model.Lang.Signature.External _ ->
+                Printf.fprintf stderr "open_signature: External\n%!";
+                env
+            | Odoc_model.Lang.Signature.Class _ ->
+                Printf.fprintf stderr "open_signature: Class\n%!";
+                env
+            | Odoc_model.Lang.Signature.ClassType _ ->
+                Printf.fprintf stderr "open_signature: ClassType\n%!";
+                env
+            | Odoc_model.Lang.Signature.Include _ ->
+                Printf.fprintf stderr "open_signature: Include\n%!";
+                env) env s
 
+let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
+    fun unit env ->
+        match unit.content with
+        | Module s -> open_signature s env
+        | Pack _ -> env
 

@@ -33,7 +33,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     let page = Page.load input in
     let odoctree =
       let resolve_env = Env.build env (`Page page) in
-      Odoc_xref.resolve_page (Env.resolver resolve_env) page
+      Odoc_xref2.Resolve.resolve_page (Env.resolver resolve_env) page
     in
     let pkg_name = root.package in
     let pages = to_html_tree_page ?theme_uri ~syntax odoctree in
@@ -57,11 +57,11 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     let odoctree =
       (* See comment in compile for explanation regarding the env duplication. *)
       let resolve_env = Env.build env (`Unit unit) in
-      let resolved = Odoc_xref.resolve (Env.resolver resolve_env) unit in
+      let resolved = Odoc_xref2.Resolve.resolve (Env.resolver resolve_env) unit in
       let expand_env = Env.build env (`Unit resolved) in
       Odoc_xref.expand (Env.expander expand_env) resolved
       |> Odoc_xref.Lookup.lookup
-      |> Odoc_xref.resolve (Env.resolver expand_env) (* Yes, again. *)
+      |> Odoc_xref2.Resolve.resolve (Env.resolver expand_env) (* Yes, again. *)
     in
     let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package
@@ -121,7 +121,7 @@ let from_mld ~env ?(syntax=Odoc_html.Tree.OCaml) ~package ~output:root_dir input
     let page = Odoc_model.Lang.Page.{ name; content; digest } in
     let page = Odoc_xref.Lookup.lookup_page page in
     let env = Env.build env (`Page page) in
-    let resolved = Odoc_xref.resolve_page (Env.resolver env) page in
+    let resolved = Odoc_xref2.Resolve.resolve_page (Env.resolver env) page in
     let pages = to_html_tree_page ~syntax resolved in
     let pkg_dir = Fs.Directory.reach_from ~dir:root_dir root.package in
     Fs.Directory.mkdir_p pkg_dir;
