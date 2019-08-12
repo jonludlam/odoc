@@ -444,6 +444,7 @@ module LangUtils = struct
             match f with
             | `Root -> ()
             | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.ModuleName.to_string m)
+            | `Type (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.TypeName.to_string m)
             | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_fragment"
 
     end

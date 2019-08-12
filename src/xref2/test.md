@@ -258,8 +258,10 @@ val module_ : Component.Module.t =
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Signature
-       [Odoc_xref2.Component.Signature.Type
-         {Odoc_xref2.Component.Type.id = ("t", 1); manifest = None}])}
+       {Odoc_xref2.Component.Signature.items =
+         [Odoc_xref2.Component.Signature.Type
+           {Odoc_xref2.Component.Type.id = ("t", 1); manifest = None}];
+        removed = []})}
 ```
 
 The three values returned are a boolean representing whether this path is dependent on a module substituted in a functor (see later), the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `signature_of_module`, which in this case is quite simple since the module contains an explicit signature:
@@ -268,8 +270,10 @@ The three values returned are a boolean representing whether this path is depend
 # Tools.signature_of_module env (path, module_);;
 - : Cpath.resolved * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
- [Odoc_xref2.Component.Signature.Type
-   {Odoc_xref2.Component.Type.id = ("t", 1); manifest = None}])
+ {Odoc_xref2.Component.Signature.items =
+   [Odoc_xref2.Component.Signature.Type
+     {Odoc_xref2.Component.Type.id = ("t", 1); manifest = None}];
+  removed = []})
 ```
 
 We're now in a position to verify the existence of the type `t` we're
@@ -346,20 +350,25 @@ val m : Component.ModuleType.t =
    expr =
     Some
      (Odoc_xref2.Component.ModuleType.Signature
-       [Odoc_xref2.Component.Signature.ModuleType
-         {Odoc_xref2.Component.ModuleType.id = ("N", 1);
-          expr =
-           Some
-            (Odoc_xref2.Component.ModuleType.Signature
-              [Odoc_xref2.Component.Signature.Type
-                {Odoc_xref2.Component.Type.id = ("t", 3); manifest = None}])};
-        Odoc_xref2.Component.Signature.Module
-         {Odoc_xref2.Component.Module.id = ("B", 2); canonical = None;
-          hidden = false;
-          type_ =
-           Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path
-              (`Resolved (`Local ("N", 1))))}])}
+       {Odoc_xref2.Component.Signature.items =
+         [Odoc_xref2.Component.Signature.ModuleType
+           {Odoc_xref2.Component.ModuleType.id = ("N", 1);
+            expr =
+             Some
+              (Odoc_xref2.Component.ModuleType.Signature
+                {Odoc_xref2.Component.Signature.items =
+                  [Odoc_xref2.Component.Signature.Type
+                    {Odoc_xref2.Component.Type.id = ("t", 3);
+                     manifest = None}];
+                 removed = []})};
+          Odoc_xref2.Component.Signature.Module
+           {Odoc_xref2.Component.Module.id = ("B", 2); canonical = None;
+            hidden = false;
+            type_ =
+             Odoc_xref2.Component.Module.ModuleType
+              (Odoc_xref2.Component.ModuleType.Path
+                (`Resolved (`Local ("N", 1))))}];
+        removed = []})}
 ```
 
 We can see here that module `B` has type `` Path (`Local ("N", 26)) `` which refers to the module type defined just above it.
@@ -393,24 +402,29 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env (`Identifier (`Module (`Root (Common.root, "Root"), "A"))) in
   Tools.signature_of_module env (p, m) |> Tools.prefix_signature;;
-- : Cpath.resolved * Component.Signature.item list =
+- : Cpath.resolved * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
- [Odoc_xref2.Component.Signature.ModuleType
-   {Odoc_xref2.Component.ModuleType.id = ("N", 7);
-    expr =
-     Some
-      (Odoc_xref2.Component.ModuleType.Signature
-        [Odoc_xref2.Component.Signature.Type
-          {Odoc_xref2.Component.Type.id = ("t", 6); manifest = None}])};
-  Odoc_xref2.Component.Signature.Module
-   {Odoc_xref2.Component.Module.id = ("B", 8); canonical = None;
-    hidden = false;
-    type_ =
-     Odoc_xref2.Component.Module.ModuleType
-      (Odoc_xref2.Component.ModuleType.Path
-        (`Resolved
-           (`ModuleType
-              (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "N"))))}])
+ {Odoc_xref2.Component.Signature.items =
+   [Odoc_xref2.Component.Signature.ModuleType
+     {Odoc_xref2.Component.ModuleType.id = ("N", 7);
+      expr =
+       Some
+        (Odoc_xref2.Component.ModuleType.Signature
+          {Odoc_xref2.Component.Signature.items =
+            [Odoc_xref2.Component.Signature.Type
+              {Odoc_xref2.Component.Type.id = ("t", 6); manifest = None}];
+           removed = []})};
+    Odoc_xref2.Component.Signature.Module
+     {Odoc_xref2.Component.Module.id = ("B", 8); canonical = None;
+      hidden = false;
+      type_ =
+       Odoc_xref2.Component.Module.ModuleType
+        (Odoc_xref2.Component.ModuleType.Path
+          (`Resolved
+             (`ModuleType
+                (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
+                 "N"))))}];
+  removed = []})
 ```
 
 So before the prefixing operation we had that the type of the module was
@@ -549,19 +563,22 @@ now we can ask for the signature of this module:
 # let sg = Tools.signature_of_module env (p, m);;
 val sg : Cpath.resolved * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
-   [Odoc_xref2.Component.Signature.Module
-     {Odoc_xref2.Component.Module.id = ("M", 1); canonical = None;
-      hidden = false;
-      type_ =
-       Odoc_xref2.Component.Module.Alias
-        (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "B"))))};
-    Odoc_xref2.Component.Signature.Module
-     {Odoc_xref2.Component.Module.id = ("N", 2); canonical = None;
-      hidden = false;
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          (`Dot (`Resolved (`Local ("M", 1)), "S")))}])
+   {Odoc_xref2.Component.Signature.items =
+     [Odoc_xref2.Component.Signature.Module
+       {Odoc_xref2.Component.Module.id = ("M", 1); canonical = None;
+        hidden = false;
+        type_ =
+         Odoc_xref2.Component.Module.Alias
+          (`Resolved
+             (`Identifier (`Module (`Root (Common.root, "Root"), "B"))))};
+      Odoc_xref2.Component.Signature.Module
+       {Odoc_xref2.Component.Module.id = ("N", 2); canonical = None;
+        hidden = false;
+        type_ =
+         Odoc_xref2.Component.Module.ModuleType
+          (Odoc_xref2.Component.ModuleType.Path
+            (`Dot (`Resolved (`Local ("M", 1)), "S")))}];
+    removed = []})
 ```
 
 and we can see we've picked up the `type t` declaration in `M.S`. If we now ask for the signature of `C.N` we get:
@@ -572,7 +589,7 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 val p : Cpath.resolved =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 36); canonical = None;
+  {Odoc_xref2.Component.Module.id = ("N", 38); canonical = None;
    hidden = false;
    type_ =
     Odoc_xref2.Component.Module.ModuleType
@@ -586,8 +603,10 @@ val m : Component.Module.t =
 # Tools.signature_of_module env (p, m);;
 - : Cpath.resolved * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
- [Odoc_xref2.Component.Signature.Type
-   {Odoc_xref2.Component.Type.id = ("t", 41); manifest = None}])
+ {Odoc_xref2.Component.Signature.items =
+   [Odoc_xref2.Component.Signature.Type
+     {Odoc_xref2.Component.Type.id = ("t", 43); manifest = None}];
+  removed = []})
 ```
 
 where we've correctly identified that a type `t` exists in the signature. The path in
@@ -900,17 +919,20 @@ val p : Cpath.resolved =
              (`Identifier
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
-  [Odoc_xref2.Component.Signature.Module
-    {Odoc_xref2.Component.Module.id = ("Foo", 20); canonical = None;
-     hidden = false;
-     type_ =
-      Odoc_xref2.Component.Module.ModuleType
-       (Odoc_xref2.Component.ModuleType.Path
-         (`Dot
-            (`Resolved
-               (`Substituted
-                  (`Identifier (`Module (`Root (Common.root, "Root"), "Bar")))),
-             "T")))}]
+  {Odoc_xref2.Component.Signature.items =
+    [Odoc_xref2.Component.Signature.Module
+      {Odoc_xref2.Component.Module.id = ("Foo", 20); canonical = None;
+       hidden = false;
+       type_ =
+        Odoc_xref2.Component.Module.ModuleType
+         (Odoc_xref2.Component.ModuleType.Path
+           (`Dot
+              (`Resolved
+                 (`Substituted
+                    (`Identifier
+                       (`Module (`Root (Common.root, "Root"), "Bar")))),
+               "T")))}];
+   removed = []}
 ```
 
 ```ocaml env=e1
