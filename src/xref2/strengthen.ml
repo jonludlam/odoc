@@ -18,14 +18,14 @@ this is probably the best thing to produce in this case.
 let rec signature (prefix : Cpath.resolved) sg =
     let open Component.Signature in
     let open Odoc_model.Names in
-    let sg' = List.map (fun item ->
+    let items = List.map (fun item ->
         match item with
         | Module m -> Module (module_ (`Module (prefix, ModuleName.of_string (Ident.name m.id))) m)
         | ModuleType mt -> ModuleType (module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name mt.id))) mt)
         | Type t -> Type (type_ (`Type (prefix, TypeName.of_string (Ident.name t.id))) t))
-        sg in
+        sg.items in
     (* The identity substitution used here is to rename all of the bound idents in the signature *)
-    Subst.signature Subst.identity sg' 
+    Subst.signature Subst.identity {items; removed=sg.removed}
 
 and module_ : Cpath.resolved -> Component.Module.t -> Component.Module.t = fun prefix m ->
     match m.Component.Module.type_ with

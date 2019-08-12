@@ -118,10 +118,20 @@ and rename_bound_idents s sg =
             (Type {t with id=id'} :: sg)
             rest
 
+and removed_items s items =
+    let open Component.Signature in
+    List.map (function
+        | RModule (id, _) when List.mem_assoc id s.map ->
+            RModule (id, Some (List.assoc id s.map))
+        | RType (id, _) when List.mem_assoc id s.map ->
+            RType (id, Some (List.assoc id s.map))
+        | x -> x) items
+
 and signature s sg =
     let open Component.Signature in
-    let s, sg = rename_bound_idents s [] sg in
-    List.rev_map (function
+    let s, items = rename_bound_idents s [] sg.items in
+    let items = List.rev_map (function
         | Module m -> Module (module_ s m)
         | ModuleType mt -> ModuleType (module_type s mt)
-        | Type t -> Type (type_ s t)) sg
+        | Type t -> Type (type_ s t)) items in
+    {items; removed = removed_items s sg.removed}
