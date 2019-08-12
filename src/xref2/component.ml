@@ -95,7 +95,7 @@ module Fmt = struct
                     module_type mt
             | Type t ->
                 Format.fprintf ppf
-                    "@[<v 2>type %a@]@," type_ t) sg;
+                    "@[<v 2>type %a@]@," type_ t) sg.items;
         Format.fprintf ppf "@]"
 
     and module_decl ppf d =
@@ -118,7 +118,7 @@ module Fmt = struct
         let open ModuleType in
         match mt with
         | Path p -> path ppf p
-        | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg.items
+        | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
         | With (expr,subs) -> Format.fprintf ppf "%a with [%a]" module_type_expr expr substitution_list subs
         | Functor (arg, res) -> Format.fprintf ppf "(%a) -> %a" functor_argument_opt arg module_type_expr res
         | TypeOf decl -> Format.fprintf ppf "module type of %a" module_decl decl
@@ -209,6 +209,7 @@ module Fmt = struct
         | `Subst (modty, m) -> Format.fprintf ppf "(%a subst-> %a)" model_resolved_path (modty :> t) model_resolved_path (m :> t)
         | `Apply (funct, arg) -> Format.fprintf ppf "%a(%a)" model_resolved_path (funct :> t) model_path (arg :> Odoc_model.Paths.Path.t)
         | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_path"
+
     and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
         match p with
         | `Root (_, unit_name) -> Format.fprintf ppf "%s" (Odoc_model.Names.UnitName.to_string unit_name)
@@ -229,11 +230,15 @@ module Fmt = struct
         | `Dot (sg, d) -> Format.fprintf ppf "*%a.%s" model_fragment (sg :> Odoc_model.Paths.Fragment.t) d
 
     and model_resolved_fragment ppf (f : Odoc_model.Paths.Fragment.Resolved.t) =
+        let open Odoc_model.Paths.Fragment.Resolved in
         match f with
         | `Root -> ()
-        | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.ModuleName.to_string m)
-        | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_fragment"
-
+        | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> t) (Odoc_model.Names.ModuleName.to_string m)
+        | `Type (sg, t) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> t) (Odoc_model.Names.TypeName.to_string t)
+        | `Subst (path, m) -> Format.fprintf ppf "(%a subst -> %a)" model_resolved_path (path :> Odoc_model.Paths.Path.Resolved.t) model_resolved_fragment (m :> t)
+        | `SubstAlias (_,_) -> Format.fprintf ppf "UNIMPLEMENTED subst alias!?"
+        | `Class (sg, c) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> t) (Odoc_model.Names.ClassName.to_string c)
+        | `ClassType (sg, c) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> t) (Odoc_model.Names.ClassTypeName.to_string c)
 end
 
 module Of_Lang = struct

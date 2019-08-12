@@ -223,7 +223,7 @@ module B : sig
     type B.S.t
     end
   end
-module C : resolved[global(A)] with [*.M = = resolved[global(B)]]
+module C : resolved[global(A)] with [.M = = resolved[global(B)]]
 type t = resolved[global(C).N.t]
 
 Module substitution2
@@ -271,7 +271,7 @@ module B : sig
     type B.S.t
     end
   end
-module C : resolved[global(A)] with [*.M := resolved[global(B)]]
+module C : resolved[global(A)] with [.M := resolved[global(B)]]
 type t = resolved[(global(B).S subst-> global(C).N).t]
 
 Module alias
@@ -435,7 +435,7 @@ module type S = sig
   end
 module type S1 = ((param S1 _) : resolved[global(S)]) -> resolved[global(S)]
 module F1 : ((param F1 Arg) : resolved[global(S)]) -> resolved[global(S)]
-module F2 : ((param F2 Arg) : resolved[global(S)]) -> resolved[global(S)] with [*.t = resolved[global((param F2 Arg)).t]]
+module F2 : ((param F2 Arg) : resolved[global(S)]) -> resolved[global(S)] with [.t = resolved[global((param F2 Arg)).t]]
 module F3 : ((param F3 Arg) : resolved[global(S)]) -> sig
   type F3.result.t = resolved[global((param F3 Arg)).t]
   end

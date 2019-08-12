@@ -80,7 +80,15 @@ and signature : Env.t -> Odoc_model.Lang.Signature.t -> _ = fun env s ->
             | Comment c ->
                 let c' = comment env c in
                 (env, (Comment c')::items)
-            | _ -> failwith "Unhandled signature element") s (env, [])
+            | TypExt _ -> failwith "Unhandled signature element typext"
+            | Exception _ -> failwith "Unhandled signature element exception"
+            | External _ -> failwith "Unhandled signature element external"
+            | Class _ -> failwith "Unhandled signature element class"
+            | ClassType _ -> failwith "Unhandled signature element classtype"
+            | Include i ->
+                let i' = include_ env i in
+                (env, (Include i')::items)
+            ) s (env, [])
     in items'
 
 and module_ : Env.t -> Odoc_model.Lang.Module.t -> Odoc_model.Lang.Module.t = fun env m ->
@@ -103,6 +111,10 @@ and module_type : Env.t -> Odoc_model.Lang.ModuleType.t -> Odoc_model.Lang.Modul
     let env' = Env.add_functor_args (m.id :> Odoc_model.Paths.Identifier.Signature.t) env in
     let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' (m.id :> Odoc_model.Paths.Identifier.Signature.t) expr) in
     {m with expr = expr'}
+
+and include_ : Env.t -> Odoc_model.Lang.Include.t -> Odoc_model.Lang.Include.t = fun env i ->
+    let open Odoc_model.Lang.Include in
+    {i with decl = module_decl env i.parent i.decl}
 
 and functor_argument : Env.t -> Odoc_model.Lang.FunctorArgument.t -> Odoc_model.Lang.FunctorArgument.t = fun env a ->
     { a with expr = module_type_expr env (a.id :> Odoc_model.Paths.Identifier.Signature.t) a.expr }
