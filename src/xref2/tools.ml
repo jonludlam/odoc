@@ -15,11 +15,11 @@ module ResultMonad = struct
     let (>>=) = bind
 end
 
-let filter_map f l =
-    let rec inner = function
-      | x::xs -> begin match f x with | Some y -> y::inner xs | None -> inner xs end
-      | [] -> []
-    in inner l
+let filter_map_record_removed f l =
+    let rec inner (kept,removed) = function
+      | x::xs -> begin match f x with | Some y -> inner (y::kept, removed) xs | None -> inner (kept, x::removed) xs end
+      | [] -> (List.rev kept, removed)
+    in inner ([],[]) l
 
 let core_types = 
    let open Odoc_model.Lang.TypeDecl in
@@ -35,12 +35,12 @@ let prefix_signature (path, s) =
         | Type t -> Subst.add t.id (`Type (path, TypeName.of_string (Ident.name t.id))) map
         | Module m -> Subst.add m.id (`Module (path, ModuleName.of_string (Ident.name m.id))) map
         | ModuleType mt -> Subst.add mt.id (`ModuleType (path, ModuleTypeName.of_string (Ident.name mt.id))) map)
-            Subst.identity s in
-    let new_sig = List.map (function
+            Subst.identity s.items in
+    let items = List.map (function
             | Module m -> Module {(Subst.module_ sub m) with id=Ident.rename m.id}
             | ModuleType mt -> ModuleType {(Subst.module_type sub mt) with id=Ident.rename mt.id}
-            | Type t -> Type {(Subst.type_ sub t) with id=Ident.rename t.id}) s in
-    (path, new_sig)
+            | Type t -> Type {(Subst.type_ sub t) with id=Ident.rename t.id}) s.items in
+    (path, {items; removed=s.removed})
 
 let flatten_module_alias : Cpath.resolved -> Cpath.resolved = function
   | `Alias (x, `Alias (_, z)) -> `Alias (x, z)
@@ -266,7 +266,7 @@ and lookup_module_from_resolved_fragment : Env.t -> Cpath.resolved -> Fragment.R
             | _::xs -> find xs
             | [] -> failwith "Can't find it"
             in
-            find sg
+            find sg.items
     
 and lookup_module_from_fragment : Env.t -> Cpath.resolved -> Fragment.Module.t -> Component.Signature.t -> Cpath.resolved * Component.Module.t =
     fun env p f s ->
@@ -278,7 +278,7 @@ and lookup_module_from_fragment : Env.t -> Cpath.resolved -> Fragment.Module.t -
             | _::xs -> find xs
             | [] -> failwith "Can't find it"
             in
-            find sg
+            find sg.items
         | `Resolved r -> lookup_module_from_resolved_fragment env p r s
 
 and lookup_signature_from_fragment : Env.t -> Cpath.resolved -> Fragment.Signature.t -> Component.Signature.t -> Cpath.resolved * Component.Signature.t =
@@ -376,19 +376,28 @@ and signature_of_module_decl : Env.t -> Cpath.resolved * Component.Module.decl -
 
 and signature_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.Signature.t =
     fun env (incoming_path, m) -> signature_of_module_decl env (incoming_path, m.type_)
-        
+
+and handle_removed : Component.Signature.item list -> Component.Signature.removed_item list -> Component.Signature.removed_item list = fun l acc ->
+    let open Component.Signature in
+    List.map (function
+        | Module m -> RModule (m.id, None)
+        | Type t -> RType (t.id, None)
+        | _ -> failwith "Can't remove anything but modules or types") l
+    @ acc
+
 and fragmap_signature : Env.t -> Cpath.resolved -> Fragment.Resolved.Signature.t -> (Cpath.resolved -> Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t =
     fun env p frag fn sg ->
         match frag with
         | `Root -> fn p sg
         | `Module (parent, name) ->
             fragmap_signature env p parent (fun p s ->
-                filter_map (function
+                let items = List.map (function
                     | Component.Signature.Module m when (Ident.name m.id = ModuleName.to_string name) ->
                         let (p, sg) = signature_of_module env (`Module (p, name), m) in
                         let sg' = fn (`Module (p, name)) sg in
-                        Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})
-                    | x -> Some x) s) sg
+                        Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false}
+                    | x -> x) s.items in
+                {items; removed=s.removed}) sg
         | _ -> failwith "foo"
 
 and fragmap_module : Env.t -> Cpath.resolved -> Fragment.Resolved.Module.t -> (Cpath.resolved -> Component.Module.t -> Component.Module.t option) -> Component.Signature.t -> Component.Signature.t =
@@ -397,10 +406,11 @@ and fragmap_module : Env.t -> Cpath.resolved -> Fragment.Resolved.Module.t -> (C
         match frag with
         | `Module (parent, name) ->
             fragmap_signature env p parent (fun p s ->
-                filter_map (function
+                let items, removed = filter_map_record_removed (function
                 | Component.Signature.Module m when Ident.name m.id = (ModuleName.to_string name) ->
                     fn (`Module (p, name)) m >>= fun m' -> return (Component.Signature.Module {m' with id=m.id})
-                | x -> return x) s) sg
+                | x -> return x) s.items in
+                {items; removed=handle_removed removed s.removed}) sg
         | `Subst (_, x) -> fragmap_module env p x fn sg
         | `SubstAlias (_, x) -> fragmap_module env p x fn sg
 
@@ -410,10 +420,11 @@ and fragmap_type : Env.t -> Cpath.resolved -> Fragment.Resolved.Type.t -> (Cpath
         match frag with
             | `Type (parent, name) ->
                 fragmap_signature env p parent (fun p s ->
-                    filter_map (function
+                    let items, removed = filter_map_record_removed (function
                     | Component.Signature.Type t when Ident.name t.id = (TypeName.to_string name) ->
                         fn (`Type (p, name)) t >>= fun t' -> return (Component.Signature.Type {t' with id=t.id})
-                    | x -> Some x) s) sg
+                    | x -> Some x) s.items in
+                {items; removed=handle_removed removed s.removed}) sg
             | `Class _
             | `ClassType _ -> failwith "Unhandled"
 
@@ -422,12 +433,13 @@ and fragmap_unresolved_signature : Env.t -> Cpath.resolved -> Fragment.Signature
         match frag with
         | `Dot (parent, name) ->
             fragmap_unresolved_signature env p parent (fun p s ->
-                filter_map (function
+                let items, removed = filter_map_record_removed (function
                     | Component.Signature.Module m when Ident.name m.id = name ->
                         let p, sg = signature_of_module env (p, m) in
                         let sg' = fn (`Type (p, name)) sg in
                         Some (Component.Signature.Module {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})
-                    | x -> Some x) s) sg 
+                    | x -> Some x) s.items in
+                {items; removed=handle_removed removed s.removed}) sg 
         | `Resolved x ->
             fragmap_signature env p x fn sg
 
@@ -437,10 +449,11 @@ and fragmap_unresolved_module : Env.t -> Cpath.resolved -> Fragment.Module.t -> 
         match frag with
         | `Dot (parent, name) ->
             fragmap_unresolved_signature env p parent (fun p s ->
-                filter_map (function
+                let items,removed = filter_map_record_removed (function
                     | Component.Signature.Module m when Ident.name m.id = name ->
                         fn (`Module (p, name)) m >>= fun m' -> return (Component.Signature.Module {m' with id=m.id})
-                    | x -> Some x) s) sg
+                    | x -> Some x) s.items in
+                {items; removed=handle_removed removed s.removed}) sg
         | `Resolved x ->
             fragmap_module env p x fn sg
 
@@ -450,9 +463,109 @@ and fragmap_unresolved_type : Env.t -> Cpath.resolved -> Fragment.Type.t -> (Cpa
         match frag with
         | `Dot (parent, name) ->
             fragmap_unresolved_signature env p parent (fun p s ->
-                filter_map (function
+                let items, removed = filter_map_record_removed (function
                     | Component.Signature.Type t when Ident.name t.id = name ->
                         fn (`Type (p, name)) t >>= fun t' -> return (Component.Signature.Type {t' with id=t.id})
-                    | x -> Some x) s) sg
+                    | x -> Some x) s.items in
+                {items; removed=handle_removed removed s.removed}) sg
         | `Resolved x ->
             fragmap_type env p x fn sg
+
+and find_module_with_replacement : Env.t -> Component.Signature.t -> string -> Component.Module.t = fun env sg name ->
+    match Component.Find.careful_module_in_sig sg name with
+    | Found m ->
+        m
+    | Replaced path ->
+        let _, m = lookup_module_from_resolved_path env path in
+        m
+
+and find_type_with_replacement : Env.t -> Component.Signature.t -> string -> Component.Type.t = fun env sg name ->
+    match Component.Find.careful_type_in_sig sg name with
+    | Found m ->
+        m
+    | Replaced path ->
+        let _, m = lookup_type_from_resolved_path env path in
+        m
+
+and resolve_resolved_signature_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Paths.Fragment.Resolved.Signature.t -> (Odoc_model.Paths.Fragment.Resolved.Signature.t * Cpath.resolved * Component.Signature.t) =
+fun env id frag ->
+    match frag with
+    | `Root -> begin
+        let (cp, sg) =
+            match id with
+            | `ModuleType _ as id ->
+                let mt = Env.lookup_module_type id env in
+                signature_of_module_type env (`Identifier id, mt) |> prefix_signature
+            | #Odoc_model.Paths.Identifier.Module.t as id ->
+                let m = Env.lookup_module id env in
+                signature_of_module env (`Identifier id, m) |> prefix_signature
+        in
+        (`Root, cp, sg)
+        end
+    | `Module (parent, name) -> begin
+            let (parent,cp,sg) = resolve_resolved_signature_fragment env id parent in
+            let m' = find_module_with_replacement env sg name in
+            let (cp,sg) = signature_of_module env (`Module (cp, name), m') |> prefix_signature in
+            (`Module (parent, Odoc_model.Names.ModuleName.of_string name), cp, sg)
+        end
+    | _ -> failwith "foo"
+
+
+and resolve_signature_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Paths.Fragment.Signature.t -> (Odoc_model.Paths.Fragment.Resolved.Signature.t * Cpath.resolved * Component.Signature.t) =
+    fun env id frag ->
+        match frag with
+        | `Resolved r -> resolve_resolved_signature_fragment env id r
+        | `Dot (parent, name) ->
+            let (parent,cp,sg) = resolve_signature_fragment env id parent in
+            let m' = find_module_with_replacement env sg name in
+            let (cp,sg) = signature_of_module env (`Module (cp, name), m') |> prefix_signature in
+            (`Module (parent, Odoc_model.Names.ModuleName.of_string name), cp, sg)
+
+and resolve_resolved_module_fragment :
+    Env.t ->
+    Odoc_model.Paths.Identifier.Signature.t ->
+    Odoc_model.Paths.Fragment.Resolved.Module.t ->
+    (Odoc_model.Paths.Fragment.Resolved.Module.t * Cpath.resolved * Component.Module.t) =
+    fun env id frag ->
+        match frag with
+        | `Module (parent, name) ->
+            let (parent,cp,sg) = resolve_resolved_signature_fragment env id parent in
+            let m' = find_module_with_replacement env sg (Odoc_model.Names.ModuleName.to_string name) in
+            (`Module (parent, Odoc_model.Names.ModuleName.of_string name), `Module(cp, Odoc_model.Names.ModuleName.to_string name), m')
+        | _ -> failwith ""
+
+and resolve_module_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Paths.Fragment.Module.t -> Odoc_model.Paths.Fragment.Resolved.Module.t =
+    fun env id frag ->
+        match frag with
+        | `Resolved r ->
+            let (result,_,_) = resolve_resolved_module_fragment env id r in
+            result
+        | `Dot(parent, name) ->
+            let (parent,_cp,sg) = resolve_signature_fragment env id parent in
+            let _ = find_module_with_replacement env sg (Odoc_model.Names.ModuleName.to_string name) in
+            `Module (parent, Odoc_model.Names.ModuleName.of_string name)
+
+and resolve_resolved_type_fragment :
+Env.t ->
+Odoc_model.Paths.Identifier.Signature.t ->
+Odoc_model.Paths.Fragment.Resolved.Type.t ->
+(Odoc_model.Paths.Fragment.Resolved.Type.t * Cpath.resolved * Component.Type.t) =
+    fun env id frag ->
+        match frag with
+        | `Type (parent, name) ->
+        let (parent,cp,sg) = resolve_resolved_signature_fragment env id parent in
+        let t' = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
+        (`Type (parent, Odoc_model.Names.TypeName.of_string name), `Type(cp, Odoc_model.Names.TypeName.to_string name), t')
+    | _ -> failwith ""
+
+    and resolve_type_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Paths.Fragment.Type.t -> Odoc_model.Paths.Fragment.Resolved.Type.t =
+    fun env id frag ->
+        match frag with
+        | `Resolved r ->
+            let (result,_,_) = resolve_resolved_type_fragment env id r in
+            result
+        | `Dot(parent, name) ->
+            let (parent,_cp,sg) = resolve_signature_fragment env id parent in
+            let _ = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
+            `Type (parent, Odoc_model.Names.TypeName.of_string name)
+

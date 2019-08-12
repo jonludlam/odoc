@@ -61,7 +61,15 @@ and Signature : sig
         | ModuleType of ModuleType.t
         | Type of Type.t
 
-    type t = item list
+    (* When doing destructive substitution we keep track of the items that have been removed,
+       and the path they've been substituted with *)
+    type removed_item =
+        | RModule of Ident.t * Cpath.resolved option
+        | RType of Ident.t * Cpath.resolved option
+
+    type t =
+        { items: item list
+        ; removed: removed_item list }
 end = Signature
 
 
@@ -110,7 +118,7 @@ module Fmt = struct
         let open ModuleType in
         match mt with
         | Path p -> path ppf p
-        | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
+        | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg.items
         | With (expr,subs) -> Format.fprintf ppf "%a with [%a]" module_type_expr expr substitution_list subs
         | Functor (arg, res) -> Format.fprintf ppf "(%a) -> %a" functor_argument_opt arg module_type_expr res
         | TypeOf decl -> Format.fprintf ppf "module type of %a" module_decl decl
@@ -275,7 +283,6 @@ module Of_Lang = struct
             `Forward str
         | `Root str ->
             `Forward str
-        (* | _ -> failwith (Printf.sprintf "local_path_of_path: %s" (Fmt.string_of Fmt.model_path path)) *)
 
     let rec type_ ident_map id ty =
         let open Odoc_model.Lang.TypeDecl in
@@ -379,7 +386,7 @@ module Of_Lang = struct
             (* Now we construct the Components for each item,
                 converting all paths containing Identifiers pointing at
                 our elements to local paths *)
-            List.map2 (fun item (_, id) ->
+            let items = List.map2 (fun item (_, id) ->
                 match item with
                 |  Odoc_model.Lang.Signature.Type (_, t) ->
                     let t' = type_ ident_map id t in
@@ -391,6 +398,8 @@ module Of_Lang = struct
                     let m' = module_type ident_map id m in
                     Signature.ModuleType m'
                 | _ -> failwith "Unhandled type in of_signature") items ident_map_new
+            in
+            { items; removed=[] }
 
 end
 
@@ -400,25 +409,46 @@ exception Find_failure of Signature.t * string * string
 
 let fail sg name ty = raise (Find_failure (sg, name, ty))
 
-let module_in_sig s name =
+type 'a found =
+    | Found of 'a
+    | Replaced of Cpath.resolved
+
+let careful_module_in_sig s name =
+    let rec inner_removed = function
+      | (Signature.RModule (id, Some p))::_ when (Ident.name id) = name -> Replaced p
+      | _::rest -> inner_removed rest
+      | [] -> fail s name "module" in
     let rec inner = function
-      | (Signature.Module m)::_ when (Ident.name m.id)=name -> m
+      | (Signature.Module m)::_ when (Ident.name m.id)=name -> Found m
       | _::rest -> inner rest
-      | [] -> fail s name "module"
-    in inner s
+      | [] -> inner_removed s.removed
+    in inner s.items
+
+let careful_type_in_sig s name =
+    let rec inner_removed = function
+      | (Signature.RType (id, Some p))::_ when (Ident.name id) = name -> Replaced p
+      | _::rest -> inner_removed rest
+      | [] -> fail s name "type" in
+    let rec inner = function
+      | (Signature.Type m)::_ when (Ident.name m.id)=name -> Found m
+      | _::rest -> inner rest
+      | [] -> inner_removed s.removed
+    in inner s.items
+
+let module_in_sig s name =
+    match careful_module_in_sig s name with
+    | Found m -> m
+    | Replaced _ -> fail s name "module"
 
 let module_type_in_sig s name =
     let rec inner = function
-      | (Signature.ModuleType m)::_ when (Ident.name m.id)=name -> m
-      | _::rest -> inner rest
-      | [] -> fail s name "module"
-    in inner s
+        | (Signature.ModuleType m)::_ when (Ident.name m.id)=name -> m
+        | _::rest -> inner rest
+        | [] -> fail s name "module type"
+    in inner s.items
 
 let type_in_sig s name =
-    let rec inner = function
-      | (Signature.Type m)::_ when (Ident.name m.id)=name -> m
-      | _::rest -> inner rest
-      | [] -> fail s name "module"
-    in inner s
-
+    match careful_type_in_sig s name with
+    | Found t -> t
+    | Replaced _ -> fail s name "type"
 end

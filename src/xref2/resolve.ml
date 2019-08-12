@@ -86,12 +86,12 @@ and signature : Env.t -> Odoc_model.Lang.Signature.t -> _ = fun env s ->
 and module_ : Env.t -> Odoc_model.Lang.Module.t -> Odoc_model.Lang.Module.t = fun env m ->
     let open Odoc_model.Lang.Module in
     let env' = Env.add_functor_args (m.id :> Odoc_model.Paths.Identifier.Signature.t) env in
-    {m with type_ = module_decl env' m.type_}
+    {m with type_ = module_decl env' (m.id :> Odoc_model.Paths.Identifier.Signature.t) m.type_}
 
-and module_decl : Env.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module.decl = fun env decl ->
+and module_decl : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module.decl = fun env id decl ->
     let open Odoc_model.Lang.Module in
     match decl with
-    | ModuleType expr -> ModuleType (module_type_expr env expr)
+    | ModuleType expr -> ModuleType (module_type_expr env id expr)
     | Alias p ->
         let cp = Component.Of_Lang.local_path_of_path [] (p :> Odoc_model.Paths.Path.t) in
         match Tools.lookup_and_resolve_module_from_path true env cp with
@@ -101,31 +101,39 @@ and module_decl : Env.t -> Odoc_model.Lang.Module.decl -> Odoc_model.Lang.Module
 and module_type : Env.t -> Odoc_model.Lang.ModuleType.t -> Odoc_model.Lang.ModuleType.t = fun env m ->
     let open Odoc_model.Lang.ModuleType in
     let env' = Env.add_functor_args (m.id :> Odoc_model.Paths.Identifier.Signature.t) env in
-    let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' expr) in
+    let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' (m.id :> Odoc_model.Paths.Identifier.Signature.t) expr) in
     {m with expr = expr'}
 
 and functor_argument : Env.t -> Odoc_model.Lang.FunctorArgument.t -> Odoc_model.Lang.FunctorArgument.t = fun env a ->
-    { a with expr = module_type_expr env a.expr }
+    { a with expr = module_type_expr env (a.id :> Odoc_model.Paths.Identifier.Signature.t) a.expr }
 
-and module_type_expr : Env.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.Lang.ModuleType.expr = fun env expr ->
+and module_type_expr : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Lang.ModuleType.expr -> Odoc_model.Lang.ModuleType.expr = fun env id expr ->
     let open Odoc_model.Lang.ModuleType in
     match expr with
     | Signature s -> Signature (signature env s)
     | Path p -> Path (module_type_path env p)
     | With (expr, subs) ->
-        With (module_type_expr env expr,
+        With (module_type_expr env id expr,
             List.map (function
-                | ModuleEq (frag, decl) -> ModuleEq (frag, module_decl env decl)
-                | TypeEq (frag, eqn) -> TypeEq (frag, type_decl_equation env eqn)
-                | ModuleSubst (frag, mpath) -> ModuleSubst (frag, module_path env mpath)
-                | TypeSubst (frag, eqn) -> TypeSubst (frag, type_decl_equation env eqn)
+                | ModuleEq (frag, decl) ->
+                    let frag' = Tools.resolve_module_fragment env id frag in
+                    ModuleEq (`Resolved frag', module_decl env id decl)
+                | TypeEq (frag, eqn) ->
+                    let frag' = Tools.resolve_type_fragment env id frag in
+                    TypeEq (`Resolved frag', type_decl_equation env eqn)
+                | ModuleSubst (frag, mpath) ->
+                    let frag' = Tools.resolve_module_fragment env id frag in
+                    ModuleSubst (`Resolved frag', module_path env mpath)
+                | TypeSubst (frag, eqn) ->
+                    let frag' = Tools.resolve_type_fragment env id frag in
+                    TypeSubst (`Resolved frag', type_decl_equation env eqn)
                 ) subs)
     | Functor (arg, res) ->
         let arg' = Opt.map (functor_argument env) arg in
-        let res' = module_type_expr env res in
+        let res' = module_type_expr env id res in
         Functor (arg', res')
     | TypeOf decl ->
-        TypeOf (module_decl env decl)
+        TypeOf (module_decl env id decl)
 
 and type_ env t =
     let open Odoc_model.Lang.TypeDecl in
@@ -163,6 +171,9 @@ let build_resolver :
     fun ?equal:_ ?hash:_ lookup_unit resolve_unit lookup_page resolve_page ->
     {lookup_unit; resolve_unit; lookup_page; resolve_page; }
 
-let resolve x y = unit x y
+let resolve x y =
+    let before = y in
+    let after = unit x before in
+    after
 
 let resolve_page _ x = x
