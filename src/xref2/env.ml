@@ -3,7 +3,7 @@ type t =
     { ident_max: int
     ; modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list
     ; module_types : (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list
-    ; types : (Odoc_model.Paths.Identifier.Type.t * Component.Type.t) list }
+    ; types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list }
 
 let pp_modules ppf modules =
     List.iter (fun (i,m) ->
@@ -15,7 +15,7 @@ let pp_module_types ppf module_types =
 
 let pp_types ppf types =
     List.iter (fun (i,m) ->
-        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.type_ m) types
+        Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.type_decl m) types
 
 let pp ppf env =
     Format.fprintf ppf "@[<v>@,modules: %a @,module_types: %a @,types: %a@," pp_modules env.modules pp_module_types env.module_types pp_types env.types
@@ -92,7 +92,7 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.Type (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.type_ [identifier,id] id t in
+                let ty = Of_Lang.type_decl [identifier,id] id t in
                 add_type t.Odoc_model.Lang.TypeDecl.id ty env
             | Odoc_model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in

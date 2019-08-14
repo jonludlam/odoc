@@ -20,10 +20,12 @@ let rec signature (prefix : Cpath.resolved) sg =
     let open Odoc_model.Names in
     let items = List.map (fun item ->
         match item with
-        | Module m -> Module (module_ (`Module (prefix, ModuleName.of_string (Ident.name m.id))) m)
+        | Module (r,m) -> Module (r, module_ (`Module (prefix, ModuleName.of_string (Ident.name m.id))) m)
         | ModuleType mt -> ModuleType (module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name mt.id))) mt)
-        | Type t -> Type (type_ (`Type (prefix, TypeName.of_string (Ident.name t.id))) t))
-        sg.items in
+        | Type (r,t) -> Type (r, type_decl (`Type (prefix, TypeName.of_string (Ident.name t.id))) t)
+        | Exception _ -> item
+        | TypExt _ -> item
+    ) sg.items in
     (* The identity substitution used here is to rename all of the bound idents in the signature *)
     Subst.signature Subst.identity {items; removed=sg.removed}
 
@@ -52,10 +54,17 @@ and module_type : Cpath.resolved -> Component.ModuleType.t -> Component.ModuleTy
             m.expr
     in {m with expr}
 
-and type_ : Cpath.resolved -> Component.Type.t -> Component.Type.t = fun path t ->
-    let manifest = 
-        match t.manifest with
+and type_decl : Cpath.resolved -> Component.TypeDecl.t -> Component.TypeDecl.t = fun path t ->
+    let equation =
+        let e = t.Component.TypeDecl.equation in
+        let open Component.TypeDecl.Equation in
+        let manifest = match e.manifest with
         | None -> Some (Component.TypeExpr.Constr (`Resolved path, []))
-        | _ -> t.manifest
+        | _ -> e.manifest
+        in
+        { params = e.params
+        ; private_ = e.private_
+        ; manifest
+        ; constraints = e.constraints }
     in
-    {t with manifest}
+    {t with equation}
