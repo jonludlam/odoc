@@ -79,6 +79,10 @@ and extension env t =
     let constructors = List.map constructor t.constructors in
     { t with type_path; constructors }
 
+and external_ env e =
+    let open External in
+    {e with type_ = type_expression env e.type_}
+
 and signature : Env.t -> Signature.t -> _ = fun env s ->
     let open Signature in
     let env = Env.open_signature s env in
@@ -106,7 +110,9 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
             | Exception e ->
                 let e' = exception_ env e in
                 (env, (Exception e')::items)
-            | External _ -> failwith "Unhandled signature element external"
+            | External e ->
+                let e' = external_ env e in
+                (env, (External e')::items)
             | Class _ -> failwith "Unhandled signature element class"
             | ClassType _ -> failwith "Unhandled signature element classtype"
             | Include i ->
