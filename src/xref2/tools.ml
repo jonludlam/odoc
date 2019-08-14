@@ -116,7 +116,7 @@ and lookup_and_resolve_module_from_resolved_path : bool -> Env.t -> Cpath.resolv
         | `Local _id -> raise (Lookup_failure (env, p, "module")) 
         | `Identifier (#Identifier.Module.t as i) ->
             let m = Env.lookup_module i env in
-            (`Identifier i, m)
+            (`Identifier i |> add_hidden m, m)
         | `Identifier _ ->
             failwith "Invalid"
         | `Substituted x ->
