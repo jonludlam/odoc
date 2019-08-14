@@ -260,7 +260,7 @@ let source_files = [
   ("include.mli", ["Include/index.html"]);
   ("include2.ml", ["Include2/index.html"]);
   ("mld.mld", ["mld.html"]);
-  ("nested.mli", [
+(*  ("nested.mli", [
       "Nested/index.html";
       "Nested/F/index.html";
       "Nested/F/argument-1-Arg1/index.html";
@@ -269,7 +269,7 @@ let source_files = [
       "Nested/class-z/index.html";
       "Nested/class-inherits/index.html";
       "Nested/module-type-Y/index.html";
-    ]);
+    ]);*)
   ("type.mli", ["Type/index.html"]);
   ("external.mli", ["External/index.html"]);
   ("functor.mli", ["Functor/index.html"]);
