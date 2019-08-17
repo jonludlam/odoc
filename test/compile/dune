@@ -9,7 +9,7 @@
      %{workspace_root}/src/odoc/bin/main.exe compile --package foo ast.cmti)))))
 
 (alias
- (name runtest_disabled)
+ (name runtest)
  (action (diff expect/ast.txt ast.output)))
 
 (rule
@@ -24,5 +24,5 @@
        --package foo parser_errors.cmti)))))
 
 (alias
- (name runtest_disabled)
+ (name runtest)
  (action (diff expect/parser_errors.txt parser_errors.output)))

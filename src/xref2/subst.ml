@@ -36,7 +36,8 @@ and path : t -> Cpath.t -> Cpath.t = fun s p ->
     | `Dot (p', str) -> `Dot (path s p', str)
     | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
     | `Substituted p -> `Substituted (path s p)
-    | `Forward s -> `Forward s
+    | `Forward _ -> p
+    | `Root _ -> p
 
 let option_ conv s x =
     match x with
@@ -171,6 +172,11 @@ and extension s e =
     constructors = List.map (extension_constructor s) e.constructors
     }
 
+and value s v =
+    let open Component.Value in
+    { v with
+    type_ = type_expr s v.type_ }
+
 and rename_bound_idents s sg =
     let open Component.Signature in
     function
@@ -202,7 +208,15 @@ and rename_bound_idents s sg =
     | (TypExt _) as item :: rest ->
         rename_bound_idents
             s (item :: sg) rest
-            
+    | Value v :: rest ->
+        let id' = Ident.rename v.id in
+        rename_bound_idents
+            (add v.id (`Local id') s)
+            (Value {v with id=id'} :: sg)
+            rest
+    | (Comment _) as item :: rest ->
+        rename_bound_idents
+            s (item :: sg) rest
 
 and removed_items s items =
     let open Component.Signature in
@@ -222,5 +236,7 @@ and signature s sg =
         | Type (r, t) -> Type (r, type_ s t)
         | Exception e -> Exception (exception_ s e)
         | TypExt e -> TypExt (extension s e)
+        | Value v -> Value (value s v)
+        | Comment c -> Comment c
         ) items in
     {items; removed = removed_items s sg.removed}

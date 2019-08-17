@@ -36,7 +36,7 @@ val build : builder -> [ `Unit of Compilation_unit.t | `Page of Page.t ] -> t
 val resolver : t -> Odoc_xref2.Resolve.resolver
 (** Get a resolver from an env *)
 
-val expander : t -> Odoc_xref.expander
+val expander : t -> Odoc_xref2.Expand.expander
 (** Get an expander from an env *)
 
 (* val forward_resolver : t -> Root.t DocOck.forward_resolver *)

@@ -465,7 +465,7 @@ let my_compilation_unit id docs s =
 }
 
 let mkenv () =
-  Odoc_odoc.Env.create ~important_digests:false ~directories:[]
+  Odoc_odoc.Env.create ~important_digests:false ~directories:(List.map Odoc_odoc.Fs.Directory.of_string !Config.load_path)
 
 let resolve unit =
   let env = mkenv () in

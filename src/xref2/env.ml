@@ -105,28 +105,20 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let ty = Of_Lang.module_type [identifier,id] id t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | Odoc_model.Lang.Signature.Comment _ ->
-                Printf.fprintf stderr "open_signature: Comment\n%!";
                 env
             | Odoc_model.Lang.Signature.TypExt _ ->
-                Printf.fprintf stderr "open_signature: TypExt\n%!";
                 env
             | Odoc_model.Lang.Signature.Exception _ ->
-                Printf.fprintf stderr "open_signature: Exception\n%!";
                 env
             | Odoc_model.Lang.Signature.Value _ ->
-                Printf.fprintf stderr "open_signature: Value\n%!";
                 env
             | Odoc_model.Lang.Signature.External _ ->
-                Printf.fprintf stderr "open_signature: External\n%!";
                 env
             | Odoc_model.Lang.Signature.Class _ ->
-                Printf.fprintf stderr "open_signature: Class\n%!";
                 env
             | Odoc_model.Lang.Signature.ClassType _ ->
-                Printf.fprintf stderr "open_signature: ClassType\n%!";
                 env
             | Odoc_model.Lang.Signature.Include _ ->
-                Printf.fprintf stderr "open_signature: Include\n%!";
                 env) env s
 
 let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
@@ -134,4 +126,26 @@ let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
         match unit.content with
         | Module s -> open_signature s env
         | Pack _ -> env
+
+let add_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
+    fun unit env ->
+        match unit.content with
+        | Module s ->
+            let m = Odoc_model.Lang.Module.{
+                id = unit.id;
+                doc = unit.doc;
+                type_ = ModuleType (Signature s);
+                canonical = None;
+                hidden = unit.hidden;
+                display_type = None;
+                expansion = Some AlreadyASig
+            }
+            in
+            let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
+            let id = Ident.of_identifier identifier in
+            let ty = Component.Of_Lang.module_ [identifier,id] id m in
+            add_module m.id ty env
+        | Pack _ ->
+            Printf.fprintf stderr "WARNING: pack unsupported";
+            env
 
