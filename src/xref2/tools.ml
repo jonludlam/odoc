@@ -1,6 +1,13 @@
 open Odoc_model.Names
 open Odoc_model.Paths
 
+type lookup_result_found = { root : Odoc_model.Root.t; hidden : bool }
+
+type lookup_unit_result =
+  | Forward_reference
+  | Found of lookup_result_found
+  | Not_found
+
 module OptionMonad = struct
     type 'a t = 'a option
     let return x = Some x
@@ -37,6 +44,8 @@ let prefix_signature (path, s) =
         | ModuleType mt -> Subst.add mt.id (`ModuleType (path, ModuleTypeName.of_string (Ident.name mt.id))) map
         | Exception _e -> map
         | TypExt _ -> map
+        | Value _ -> map
+        | Comment _ -> map
         ) Subst.identity s.items in
     let items = List.map (function
             | Module (r, m) -> Module (r, {(Subst.module_ sub m) with id=Ident.rename m.id})
@@ -44,6 +53,8 @@ let prefix_signature (path, s) =
             | Type (r, t) -> Type (r, {(Subst.type_ sub t) with id=Ident.rename t.id})
             | Exception e -> Exception (Subst.exception_ sub e)
             | TypExt t -> TypExt (Subst.extension sub t)
+            | Value v -> Value (Subst.value sub v)
+            | Comment c -> Comment c
             ) s.items in
     (path, {items; removed=s.removed})
 
@@ -162,6 +173,8 @@ and lookup_and_resolve_module_from_path : bool -> Env.t -> Cpath.t -> (module_lo
     | `Substituted s ->
         lookup_and_resolve_module_from_path is_resolve env s >>= fun (p, m) ->
         return (`Substituted p, m)
+    | `Root r ->
+        Error (Printf.sprintf "Root (%s)" r)
     | `Forward _ ->
         Error "Forward reference"
 
@@ -203,6 +216,7 @@ and lookup_and_resolve_module_type_from_path : bool -> Env.t -> Cpath.t -> (modu
             lookup_and_resolve_module_type_from_path is_resolve env s >>= fun (p, m) ->
             return (`Substituted p, m)
         | `Forward _ 
+        | `Root _
         | `Apply (_,_) -> failwith "erk"
 
 and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_result =
@@ -248,6 +262,7 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, string) Res
             lookup_type_from_path env s >>= fun (p, m) ->
             return (`Substituted p, m)
         | `Forward _
+        | `Root _
         | `Apply (_,_) -> failwith "erk"
 
 
@@ -323,7 +338,8 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleTy
                 | _ -> (incoming_path, sg)
                 end
             | Error _p ->
-                failwith "Couldn't find signature"
+                let p = Component.Fmt.(string_of path p) in 
+                failwith (Printf.sprintf "Couldn't find signature: %s" p)
             end
         | Component.ModuleType.Signature s -> (incoming_path, s)
         | Component.ModuleType.With (s, subs) ->
@@ -431,7 +447,7 @@ and fragmap_type : Env.t -> Cpath.resolved -> Fragment.Resolved.Type.t -> (Cpath
                     | x -> Some x) s.items in
                 {items; removed=handle_removed removed s.removed}) sg
             | `Class _
-            | `ClassType _ -> failwith "Unhandled"
+            | `ClassType _ -> failwith "Unhandled in fragmap_type"
 
 and fragmap_unresolved_signature : Env.t -> Cpath.resolved -> Fragment.Signature.t -> (Cpath.resolved -> Component.Signature.t -> Component.Signature.t) -> Component.Signature.t -> Component.Signature.t =
     fun env p frag fn sg ->

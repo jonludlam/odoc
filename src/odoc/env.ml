@@ -35,7 +35,7 @@ open Odoc_compat
    which will generally fix this issue. *)
 
 type t = {
-  expander : Odoc_xref.expander ;
+  expander : Odoc_xref2.Expand.expander ;
   resolver : Odoc_xref2.Resolve.resolver;
 }
 
@@ -120,12 +120,13 @@ end
 
 let rec lookup_unit ~important_digests ap target_name =
   let handle_root (root : Odoc_model.Root.t) = match root.file with
-    | Compilation_unit {hidden; _} -> Odoc_xref.Found {root; hidden}
+    | Compilation_unit {hidden; _} -> Odoc_xref2.Tools.Found {root; hidden}
     | Page _ -> assert false
   in
   let find_root ~digest =
     match Accessible_paths.find_root ap ~filename:target_name, digest with
-    | [], _ -> Odoc_xref.Not_found
+    | [], _ ->
+       Odoc_xref2.Tools.Not_found
     | [r], _ -> handle_root r (* Already checked the digest, if one's been specified *)
     | r :: rs, None ->
       Printf.fprintf stderr "Warning, ambiguous lookup. Please wrap your libraries. Possible files:\n%!";
@@ -141,10 +142,10 @@ let rec lookup_unit ~important_digests ap target_name =
     | roots, Some d ->
       (* If we can't find a module that matches the digest, return Not_found *)
       try handle_root @@ List.find (fun root -> root.Odoc_model.Root.digest = d) roots
-      with Not_found -> Odoc_xref.Not_found
+      with Not_found -> Odoc_xref2.Tools.Not_found
   in
   function
-  | [] when important_digests -> Odoc_xref.Not_found
+  | [] when important_digests -> Odoc_xref2.Tools.Not_found
   | [] -> find_root ~digest:None
   | import :: imports ->
     match import with
@@ -188,7 +189,7 @@ type builder = [ `Unit of Compilation_unit.t | `Page of Page.t ] -> t
 let create ?(important_digests=true) ~directories : builder =
   let ap = Accessible_paths.create ~directories in
   fun unit_or_page ->
-    let lookup_unit target_name : Odoc_xref.lookup_result =
+    let lookup_unit target_name : Odoc_xref2.Tools.lookup_unit_result =
       match unit_or_page with
       | `Page _ -> lookup_unit ~important_digests:false ap target_name []
       | `Unit unit ->
@@ -238,7 +239,7 @@ let create ?(important_digests=true) ~directories : builder =
       (* CR trefis: what is the ~root param good for? *)
       let fetch ~root:_ root = fetch_unit root in
       let lookup _ s = lookup_unit s in
-      Odoc_xref.build_expander (lookup ()) fetch
+      Odoc_xref2.Expand.build_expander (lookup ()) fetch
     in
     { expander; resolver }
 

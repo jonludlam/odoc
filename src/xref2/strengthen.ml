@@ -25,6 +25,8 @@ let rec signature (prefix : Cpath.resolved) sg =
         | Type (r,t) -> Type (r, type_decl (`Type (prefix, TypeName.of_string (Ident.name t.id))) t)
         | Exception _ -> item
         | TypExt _ -> item
+        | Value _ -> item
+        | Comment _ -> item
     ) sg.items in
     (* The identity substitution used here is to rename all of the bound idents in the signature *)
     Subst.signature Subst.identity {items; removed=sg.removed}

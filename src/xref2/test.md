@@ -1349,3 +1349,75 @@ Some
 ```
 
 
+How about references now
+
+```ocaml env=e1
+let test_data = {|
+type t
+(** [t] {!t} *)
+|};;
+let sg = Common.signature_of_mli_string test_data;;
+let resolved = Resolve.signature Env.empty sg;;
+```
+
+```ocaml env=e1
+# Common.LangUtils.Lens.get (Common.LangUtils.Lens.Signature.type_ "t") resolved;;
+- : Odoc_model.Lang.TypeDecl.t =
+{Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+ doc =
+  [{Odoc_model.Location_.location =
+     {Odoc_model.Location_.file = "";
+      start = {Odoc_model.Location_.line = 3; column = 6};
+      end_ = {Odoc_model.Location_.line = 3; column = 14}};
+    value =
+     `Paragraph
+       [{Odoc_model.Location_.location =
+          {Odoc_model.Location_.file = "";
+           start = {Odoc_model.Location_.line = 3; column = 6};
+           end_ = {Odoc_model.Location_.line = 3; column = 9}};
+         value = `Code_span "t"};
+        {Odoc_model.Location_.location =
+          {Odoc_model.Location_.file = "";
+           start = {Odoc_model.Location_.line = 3; column = 9};
+           end_ = {Odoc_model.Location_.line = 3; column = 10}};
+         value = `Space};
+        {Odoc_model.Location_.location =
+          {Odoc_model.Location_.file = "";
+           start = {Odoc_model.Location_.line = 3; column = 10};
+           end_ = {Odoc_model.Location_.line = 3; column = 14}};
+         value = `Reference (`Root ("t", `TUnknown), [])}]}];
+ equation =
+  {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+   manifest = None; constraints = []};
+ representation = None}
+```
+
+Check that we can refer to stdlib:
+
+```ocaml env=e1
+let test_data = {|
+type t = Buffer.t
+|};;
+let sg = Common.signature_of_mli_string test_data;;
+let resolved = Resolve.signature Env.empty sg;;
+```
+
+```ocaml env=e1
+# Common.LangUtils.Lens.get (Common.LangUtils.Lens.Signature.type_ "t") resolved;;
+- : Odoc_model.Lang.TypeDecl.t =
+{Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+ doc = [];
+ equation =
+  {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+   manifest =
+    Some
+     (Odoc_model.Lang.TypeExpr.Constr
+       (`Dot (`Dot (`Root "Stdlib", "Buffer"), "t"), []));
+   constraints = []};
+ representation = None}
+```
+
+```ocaml env=e1
+# Config.load_path;;
+```
+

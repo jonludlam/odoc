@@ -53,15 +53,16 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     (* If hidden, we should not generate HTML. See
          https://github.com/ocaml/odoc/issues/99. *)
     let unit = Compilation_unit.load input in
-    let unit = Odoc_xref.Lookup.lookup unit in
+(*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       (* See comment in compile for explanation regarding the env duplication. *)
       let resolve_env = Env.build env (`Unit unit) in
       let resolved = Odoc_xref2.Resolve.resolve (Env.resolver resolve_env) unit in
-      let expand_env = Env.build env (`Unit resolved) in
-      Odoc_xref.expand (Env.expander expand_env) resolved
-      |> Odoc_xref.Lookup.lookup
-      |> Odoc_xref2.Resolve.resolve (Env.resolver expand_env) (* Yes, again. *)
+      let _expand_env = Env.build env (`Unit resolved) in
+      (*Odoc_xref.expand (Env.expander expand_env) resolved *)
+(*      |> Odoc_xref.Lookup.lookup *)
+(*      Odoc_xref2.Resolve.resolve (Env.resolver expand_env) resolved*) (* Yes, again. *)
+      resolved
     in
     let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package
@@ -119,7 +120,7 @@ let from_mld ~env ?(syntax=Odoc_html.Tree.OCaml) ~package ~output:root_dir input
     in
     (* This is a mess. *)
     let page = Odoc_model.Lang.Page.{ name; content; digest } in
-    let page = Odoc_xref.Lookup.lookup_page page in
+(*    let page = Odoc_xref.Lookup.lookup_page page in*)
     let env = Env.build env (`Page page) in
     let resolved = Odoc_xref2.Resolve.resolve_page (Env.resolver env) page in
     let pages = to_html_tree_page ~syntax resolved in

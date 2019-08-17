@@ -178,6 +178,15 @@ and TypeDecl : sig
       ; equation : Equation.t}
 end = TypeDecl
 
+and Value : sig
+
+    type t =
+      { id: Ident.t;
+        doc: Comment.docs;
+        type_: TypeExpr.t; }
+  
+end = Value
+  
 and Signature : sig
     type recursive = Odoc_model.Lang.Signature.recursive
 
@@ -187,6 +196,8 @@ and Signature : sig
         | Type of recursive * TypeDecl.t
         | Exception of Exception.t
         | TypExt of Extension.t
+        | Value of Value.t
+        | Comment of Comment.docs_or_stop
 
     (* When doing destructive substitution we keep track of the items that have been removed,
        and the path they've been substituted with *)
@@ -233,8 +244,17 @@ module Fmt = struct
             | TypExt e ->
                 Format.fprintf ppf
                     "@[<v 2>type_extension %a@]@," extension e
+            | Value v ->
+                Format.fprintf ppf
+                    "@[<v 2>val %a@]@," value v
+            | Comment _c ->
+                ()
             ) sg.items;
         Format.fprintf ppf "@]"
+
+    and value ppf v =
+        let open Value in
+        Format.fprintf ppf "%a : %a" Ident.fmt v.id type_expr v.type_
 
     and module_decl ppf d =
         let open Module in
@@ -361,6 +381,7 @@ module Fmt = struct
         | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" path p1 path p2
         | `Substituted p -> Format.fprintf ppf "substituted(%a)" path p
         | `Forward s -> Format.fprintf ppf "forward(%s)" s
+        | `Root r -> Format.fprintf ppf "%s" r
 
     and model_path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
         fun ppf (p : Odoc_model.Paths.Path.t) ->
@@ -465,7 +486,7 @@ module Of_Lang = struct
         | `Forward str ->
             `Forward str
         | `Root str ->
-            `Forward str
+            `Root str
 
     let rec type_decl ident_map id ty =
         let open Odoc_model.Lang.TypeDecl in
@@ -588,6 +609,12 @@ module Of_Lang = struct
         let expr = Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in
         {ModuleType.id; expr}
 
+    and value ident_map id v =
+        let type_ = type_expression ident_map v.Odoc_model.Lang.Value.type_ in
+        { Value.id
+        ; type_ 
+        ; doc = v.doc }
+
     and signature : _ -> Odoc_model.Lang.Signature.t -> Signature.t =
         let open Odoc_model.Paths in
         fun ident_map items ->
@@ -595,38 +622,86 @@ module Of_Lang = struct
                 for each item in the signature *)
             let ident_map_new : (Identifier.t * Ident.t) list =
                 let open Odoc_model.Lang.Signature in
-                List.map (function
+                List.fold_left (fun acc item ->
+                    match item with
                     | Type (_, t) ->
                         let identifier = t.Odoc_model.Lang.TypeDecl.id in
                         let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)
+                        ((identifier :> Identifier.t), id)::acc
                     | Module (_, m) ->
                         let identifier = m.Odoc_model.Lang.Module.id in
                         let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)
+                        ((identifier :> Identifier.t), id)::acc
                     | ModuleType m ->
                         let identifier = m.Odoc_model.Lang.ModuleType.id in
                         let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)
-                    | _ -> failwith "Unhandled type in of_signature (1)") items
+                        ((identifier :> Identifier.t), id)::acc
+                    | TypExt _ ->
+                        acc
+                    | Exception e ->
+                        let identifier = e.Odoc_model.Lang.Exception.id in
+                        let id = Ident.of_identifier (identifier :> Identifier.t) in
+                        ((identifier :> Identifier.t), id)::acc
+                    | Value v ->
+                        let identifier = v.Odoc_model.Lang.Value.id in
+                        let id = Ident.of_identifier (identifier :> Identifier.t) in
+                        ((identifier :> Identifier.t), id)::acc
+                    | External e ->
+                        let identifier = e.Odoc_model.Lang.External.id in
+                        let id = Ident.of_identifier (identifier :> Identifier.t) in
+                        ((identifier :> Identifier.t), id)::acc
+                    | Class (_,c) ->
+                        let identifier = c.id in
+                        let id = Ident.of_identifier (identifier :> Identifier.t) in
+                        ((identifier :> Identifier.t), id)::acc
+                    | ClassType (_,c) ->
+                        let identifier = c.Odoc_model.Lang.ClassType.id in
+                        let id = Ident.of_identifier (identifier :> Identifier.t) in
+                        ((identifier :> Identifier.t), id)::acc
+                    | Include _ ->
+                        acc
+                    | Comment _ ->
+                        acc) [] items
             in
 
             let ident_map = ident_map_new @ ident_map in
             (* Now we construct the Components for each item,
                 converting all paths containing Identifiers pointing at
                 our elements to local paths *)
-            let items = List.map2 (fun item (_, id) ->
-                match item with
-                |  Odoc_model.Lang.Signature.Type (r, t) ->
+            let items = List.map (
+                let open Odoc_model.Lang.Signature in
+                function
+                |  Type (r, t) ->
+                    let id = List.assoc (t.id :> Identifier.t) ident_map in 
                     let t' = type_decl ident_map id t in
                     Signature.Type (r,t')
-                | Odoc_model.Lang.Signature.Module (r, m) ->
+                | Module (r, m) ->
+                    let id = List.assoc (m.id :> Identifier.t) ident_map in 
                     let m' = module_ ident_map id m in
                     Signature.Module (r,m')
-                | Odoc_model.Lang.Signature.ModuleType m ->
+                | ModuleType m ->
+                    let id = List.assoc (m.id :> Identifier.t) ident_map in 
                     let m' = module_type ident_map id m in
                     Signature.ModuleType m'
-                | _ -> failwith "Unhandled type in of_signature") items ident_map_new
+                | Value v ->
+                    let id = List.assoc (v.id :> Identifier.t) ident_map in
+                    let v' = value ident_map id v in
+                    Signature.Value v'
+                | Comment c ->
+                    Signature.Comment c
+                | TypExt _ ->
+                    failwith "Unhandled typext in of_signature"
+                | Exception _ ->
+                    failwith "Unhandled exception in of_signature"
+                | External _ ->
+                    failwith "Unhandled external in of_signature"
+                | Class (_,_) ->
+                    failwith "Unhandled class in of_signature"
+                | ClassType (_,_) ->
+                    failwith "Unhandled classtype in of_signature"
+                | Include _ ->
+                    failwith "Unhandled include in of_signature"
+                ) items
             in
             { items; removed=[] }
 

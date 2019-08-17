@@ -23,7 +23,6 @@ let resolve_and_substitute ~env ~output input_file read_file =
   match read_file ~filename:filename with
   | Error e -> failwith (Odoc_model.Error.to_string e)
   | Ok unit ->
-    let unit = Odoc_xref.Lookup.lookup unit in
     if not unit.Odoc_model.Lang.Compilation_unit.interface then (
       Printf.eprintf "WARNING: not processing the \"interface\" file.%s\n%!"
         (if not (Filename.check_suffix filename "cmt") then "" (* ? *)
@@ -38,9 +37,9 @@ let resolve_and_substitute ~env ~output input_file read_file =
        environment with the resolved unit.
        Note that this is bad and once rewritten expand should not fetch the unit it is
        working on. *)
-    let expand_env = Env.build env (`Unit resolved) in
-    let expanded = Odoc_xref.expand (Env.expander expand_env) resolved in
-    Compilation_unit.save output expanded
+    (* let expand_env = Env.build env (`Unit resolved) in
+    let expanded = Odoc_xref.expand (Env.expander expand_env) resolved in *)
+    Compilation_unit.save output resolved
 
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   let file_representation : Odoc_model.Root.Odoc_file.t =
@@ -101,7 +100,6 @@ let mld ~env ~package ~output input =
     in
     (* This is a mess. *)
     let page = Odoc_model.Lang.Page.{ name; content; digest } in
-    let page = Odoc_xref.Lookup.lookup_page page in
     let env = Env.build env (`Page page) in
     let resolved = Odoc_xref2.Resolve.resolve_page (Env.resolver env) page in
     Page.save output resolved

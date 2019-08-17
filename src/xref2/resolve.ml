@@ -2,7 +2,7 @@ open Odoc_model
 open Lang
 
 type resolver =
-    { lookup_unit: string -> Odoc_xref.lookup_result
+    { lookup_unit: string -> Tools.lookup_unit_result
     ; resolve_unit: Root.t -> Compilation_unit.t
     ; lookup_page: string -> Root.t option
     ; resolve_page: Root.t -> Page.t }
@@ -16,36 +16,44 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t = fun env p ->
     match Tools.lookup_type_from_path env cp with
     | Ok (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
     | Error _ -> p
+    | exception _ -> p
 
 and module_type_path : Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Ok (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
     | Error _ -> p
+    | exception _ -> p
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
     match Tools.lookup_and_resolve_module_from_path true env cp with
     | Ok (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Error _ -> p
+    | exception _ -> p
 
 let rec unit resolver t =
+    let open Tools in
     let open Compilation_unit in
     let (imports, env) = List.fold_left (fun (imports,env) import ->
         match import with
         | Import.Resolved root ->
             let unit = resolver.resolve_unit root in
-            let env = Env.open_unit unit env in
+            Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string root);
+            let env = Env.add_unit unit env in
             (import::imports, env)
         | Import.Unresolved (str, _) ->
             match resolver.lookup_unit str with
-            | Odoc_xref.Forward_reference -> (import::imports, env)
+            | Forward_reference ->
+                Printf.fprintf stderr "Import: forward reference %s\n%!" str;
+                (import::imports, env)
             | Found f ->
                 let unit = resolver.resolve_unit f.root in
-                let env = Env.open_unit unit env in
+                Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string f.root);
+                let env = Env.add_unit unit env in
                 ((Resolved f.root)::imports, env)
             | Not_found ->
-                Printf.fprintf stderr "Failed to lookup import %s in Resolve.unit\n%!" str;
+                Printf.fprintf stderr "Not found: %s\n%!" str;
                 (import::imports,env)
     ) ([],Env.empty) t.imports in
     {t with content = content env t.content; imports}
@@ -83,6 +91,44 @@ and external_ env e =
     let open External in
     {e with type_ = type_expression env e.type_}
 
+and class_type_expr env =
+    let open ClassType in
+    function
+    | Constr (path, texps) -> Constr (path, List.map (type_expression env) texps)
+    | Signature s -> Signature (class_signature env s)
+
+and class_type env c =
+    let open ClassType in
+    { c with expr = class_type_expr env c.expr }
+
+and class_signature env c =
+    let open ClassSignature in
+    let map_item = function
+    | Method m -> Method (method_ env m)
+    | InstanceVariable i -> InstanceVariable (instance_variable env i)
+    | Constraint (t1, t2) -> Constraint (type_expression env t1, type_expression env t2)
+    | Inherit c -> Inherit (class_type_expr env c)
+    | Comment c -> Comment c
+    in
+    { self = Opt.map (type_expression env) c.self
+    ; items = List.map map_item c.items}
+
+and method_ env m =
+    let open Method in
+    { m with type_ = type_expression env m.type_}
+
+and instance_variable env i =
+    let open InstanceVariable in
+    { i with type_ = type_expression env i.type_}
+
+and class_ env c =
+    let open Class in
+    let rec map_decl = function
+    | ClassType expr -> ClassType (class_type_expr env expr)
+    | Arrow (lbl, expr, decl) -> Arrow (lbl, type_expression env expr, map_decl decl)
+    in
+    {c with type_ = map_decl c.type_}
+
 and signature : Env.t -> Signature.t -> _ = fun env s ->
     let open Signature in
     let env = Env.open_signature s env in
@@ -113,8 +159,12 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
             | External e ->
                 let e' = external_ env e in
                 (env, (External e')::items)
-            | Class _ -> failwith "Unhandled signature element class"
-            | ClassType _ -> failwith "Unhandled signature element classtype"
+            | Class (r,c) ->
+                let c' = class_ env c in
+                (env, (Class (r,c'))::items)
+            | ClassType (r,c) ->
+                let c' = class_type env c in
+                (env, (ClassType (r,c'))::items)
             | Include i ->
                 let i' = include_ env i in
                 (env, (Include i')::items)
@@ -156,19 +206,22 @@ and module_type_expr : Env.t -> Paths.Identifier.Signature.t -> ModuleType.expr 
     | Path p -> Path (module_type_path env p)
     | With (expr, subs) ->
         With (module_type_expr env id expr,
-            List.map (function
-                | ModuleEq (frag, decl) ->
-                    let frag' = Tools.resolve_module_fragment env id frag in
-                    ModuleEq (`Resolved frag', module_decl env id decl)
-                | TypeEq (frag, eqn) ->
-                    let frag' = Tools.resolve_type_fragment env id frag in
-                    TypeEq (`Resolved frag', type_decl_equation env eqn)
-                | ModuleSubst (frag, mpath) ->
-                    let frag' = Tools.resolve_module_fragment env id frag in
-                    ModuleSubst (`Resolved frag', module_path env mpath)
-                | TypeSubst (frag, eqn) ->
-                    let frag' = Tools.resolve_type_fragment env id frag in
-                    TypeSubst (`Resolved frag', type_decl_equation env eqn)
+            List.map (fun x ->
+                try
+                    match x with 
+                    | ModuleEq (frag, decl) ->
+                        let frag' = Tools.resolve_module_fragment env id frag in
+                        ModuleEq (`Resolved frag', module_decl env id decl)
+                    | TypeEq (frag, eqn) ->
+                        let frag' = Tools.resolve_type_fragment env id frag in
+                        TypeEq (`Resolved frag', type_decl_equation env eqn)
+                    | ModuleSubst (frag, mpath) ->
+                        let frag' = Tools.resolve_module_fragment env id frag in
+                        ModuleSubst (`Resolved frag', module_path env mpath)
+                    | TypeSubst (frag, eqn) ->
+                        let frag' = Tools.resolve_type_fragment env id frag in
+                        TypeSubst (`Resolved frag', type_decl_equation env eqn)
+                with _ -> x
                 ) subs)
     | Functor (arg, res) ->
         let arg' = Opt.map (functor_argument env) arg in
@@ -240,7 +293,8 @@ and type_expression_package env p =
     | Error _ -> p
 
 and type_expression : Env.t -> _ -> _ = fun env texpr ->
-    let open TypeExpr in 
+    let open TypeExpr in
+    try 
     match texpr with
     | Var _
     | Any -> texpr
@@ -263,10 +317,11 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Poly (strs, t) -> Poly (strs, type_expression env t)
     | Package p ->
         Package (type_expression_package env p)
+    with _e -> texpr
 
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)
-    -> (string -> Odoc_xref.lookup_result)
+    -> (string -> Tools.lookup_unit_result)
     -> (Root.t -> Compilation_unit.t)
     -> (string -> Root.t option) -> (Root.t -> Page.t)
     -> resolver =
