@@ -1,10 +1,14 @@
 (* A bunch of association lists. Let's hashtbl them up later *)
+
 type t =
     { ident_max: int
     ; modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list
     ; module_types : (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list
-    ; types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list }
-
+    ; types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list
+    ; values : (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list
+    ; titles : (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list
+    ; elts : (string * Component.Element.any) list
+    }
 let pp_modules ppf modules =
     List.iter (fun (i,m) ->
         Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_ m) modules
@@ -26,16 +30,48 @@ let empty =
     { ident_max = 0
     ; modules = []
     ; module_types = []
-    ; types = [] }
+    ; types = []
+    ; values = []
+    ; titles = []
+    ; elts = []
+    }
 
 let add_module identifier m env =
-    { env with modules = (identifier, m)::env.modules}
+    { env with modules = (identifier, m)::env.modules
+    ; elts = (Odoc_model.Paths.Identifier.name identifier, `Module (identifier, m))::env.elts }
 
 let add_type identifier t env =
-    { env with types = (identifier, t)::env.types}
+    { env with types = (identifier, t)::env.types
+    ; elts = (Odoc_model.Paths.Identifier.name identifier, `Type (identifier, t))::env.elts }
 
 let add_module_type identifier t env =
-    { env with module_types = (identifier, t)::env.module_types}
+    { env with module_types = (identifier, t)::env.module_types
+    ; elts = (Odoc_model.Paths.Identifier.name identifier, `ModuleType (identifier, t))::env.elts }
+
+let add_value identifier t env =
+    { env with values = (identifier, t)::env.values
+    ; elts = (Odoc_model.Paths.Identifier.name identifier, `Value (identifier, t))::env.elts }
+
+let add_label identifier env =
+    { env with elts = (Odoc_model.Paths.Identifier.name identifier, `Label identifier)::env.elts }
+
+let add_label_title label elts env =
+    { env with titles = (label, elts) :: env.titles }
+
+let add_docs (docs : Component.Comment.docs) env =
+    List.fold_right (fun element env ->
+    match element.Odoc_model.Location_.value with
+    | `Heading (_, label, nested_elements) ->
+      let env = add_label label env in
+      let env = add_label_title label nested_elements env in
+      env
+    | _ -> env)
+    docs env
+
+let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
+    match com with
+    | `Docs doc -> add_docs doc env
+    | `Stop -> env
 
 let lookup_module identifier env =
     try
@@ -52,6 +88,46 @@ let lookup_type identifier env =
 let lookup_module_type identifier env =
     List.assoc identifier env.module_types
 
+let lookup_value identifier env =
+    List.assoc identifier env.values
+
+let lookup_section_title identifier env =
+    List.assoc_opt identifier env.titles
+
+let find_map : ('a -> 'b option) -> 'a list -> 'b option = fun f -> 
+    let rec inner acc = function
+        | x::xs -> (match f x with | Some y -> Some y | None -> inner acc xs)
+        | [] -> None
+    in inner []
+
+let lookup_any_by_name name env =
+    let filter_fn : (string * Component.Element.any) -> Component.Element.any option = function
+        | (n,(_ as item)) when n=name -> Some item
+        | _ -> None
+    in
+    find_map filter_fn env.elts
+
+let lookup_signature_by_name name env =
+    let filter_fn : (string * Component.Element.any) -> Component.Element.signature option = function
+        | (n,(#Component.Element.signature as item)) when n=name -> Some item
+        | _ -> None
+    in
+    find_map filter_fn env.elts
+
+let lookup_module_by_name name env =
+    let filter_fn : (string * Component.Element.any) -> Component.Element.module_ option = function
+        | (n,(#Component.Element.module_ as item)) when n=name -> Some item
+        | _ -> None
+    in
+    find_map filter_fn env.elts
+
+let lookup_value_by_name name env =
+    let filter_fn : (string * Component.Element.any) -> Component.Element.value option = function
+        | (n,(#Component.Element.value as item)) when n=name -> Some item
+        | _ -> None
+    in
+    find_map filter_fn env.elts
+    
 let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
     let open Component in
     fun id env ->
@@ -59,7 +135,7 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
             match mty with 
             | ModuleType.Functor (Some arg, res) ->
                 (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.Component.FunctorArgument.id)),
-                    {Component.Module.id = arg.Component.FunctorArgument.id; type_ = ModuleType arg.expr; canonical=None; hidden=false}) :: find_args (`Result parent) res
+                    {Component.Module.id = arg.Component.FunctorArgument.id; doc = []; display_type = None; type_ = ModuleType arg.expr; canonical=None; hidden=false}) :: find_args (`Result parent) res
             | ModuleType.Functor (None, res) ->
                 find_args (`Result parent) res
             | _ -> []
@@ -104,14 +180,17 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let id = Ident.of_identifier identifier in
                 let ty = Of_Lang.module_type [identifier,id] id t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
-            | Odoc_model.Lang.Signature.Comment _ ->
-                env
+            | Odoc_model.Lang.Signature.Comment c ->
+                add_comment c env
             | Odoc_model.Lang.Signature.TypExt _ ->
                 env
             | Odoc_model.Lang.Signature.Exception _ ->
                 env
-            | Odoc_model.Lang.Signature.Value _ ->
-                env
+            | Odoc_model.Lang.Signature.Value v ->
+                let identifier = (v.id :> Odoc_model.Paths.Identifier.t) in
+                let id = Ident.of_identifier identifier in
+                let ty = Of_Lang.value [identifier,id] id v in
+                add_value v.Odoc_model.Lang.Value.id ty env
             | Odoc_model.Lang.Signature.External _ ->
                 env
             | Odoc_model.Lang.Signature.Class _ ->

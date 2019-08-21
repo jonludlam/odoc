@@ -17,9 +17,12 @@ module rec Module : sig
 
     type t =
       { id : Ident.t
+      ; doc : Comment.docs
+      ; type_ : decl 
       ; canonical : (Cpath.t * Odoc_model.Paths.Reference.Module.t) option
       ; hidden : bool
-      ; type_ : decl }
+      ; display_type : decl option
+      }
 end = Module
 
 and TypeExpr : sig
@@ -137,6 +140,7 @@ and ModuleType : sig
         | TypeOf of Module.decl
     type t =
       { id : Ident.t
+      ; doc : Comment.docs
       ; expr : expr option }
 end = ModuleType
 
@@ -175,6 +179,7 @@ and TypeDecl : sig
 
     type t =
       { id : Ident.t
+      ; doc : Comment.docs
       ; equation : Equation.t}
 end = TypeDecl
 
@@ -209,6 +214,17 @@ and Signature : sig
         { items: item list
         ; removed: removed_item list }
 end = Signature
+
+module Element = struct
+    open Odoc_model.Paths
+    type module_ = [ `Module of Identifier.Module.t * Module.t ]
+    type module_type = [ `ModuleType of Identifier.ModuleType.t * ModuleType.t ]
+    type type_ = [ `Type of Identifier.Type.t * TypeDecl.t ]
+    type value = [ `Value of Identifier.Value.t * Value.t ]
+    type label = [ `Label of Identifier.Label.t ]
+    type signature = [ module_ | module_type ]
+    type any = [ signature | value | type_ | label ]
+end
 
 
 
@@ -435,6 +451,11 @@ module Fmt = struct
         | `ClassType (sg, c) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> t) (Odoc_model.Names.ClassTypeName.to_string c)
 end
 
+module LocalIdents = struct
+
+end
+
+
 module Of_Lang = struct
     let ident_of_identifier ident_map identifier =
         List.assoc_opt identifier ident_map
@@ -491,6 +512,7 @@ module Of_Lang = struct
     let rec type_decl ident_map id ty =
         let open Odoc_model.Lang.TypeDecl in
         { TypeDecl.id
+        ; doc = ty.doc
         ; equation = type_equation ident_map ty.equation }
 
     and type_equation ident_map teq =
@@ -559,7 +581,8 @@ module Of_Lang = struct
     and module_ ident_map id m =
         let type_ = module_decl ident_map m.Odoc_model.Lang.Module.type_ in
         let canonical = canonical ident_map m.Odoc_model.Lang.Module.canonical in
-        {Module.id; type_; canonical; hidden=m.hidden}
+        let display_type = Opt.map (module_decl ident_map) m.Odoc_model.Lang.Module.display_type in
+        {Module.id; doc = m.doc; type_; canonical; hidden=m.hidden; display_type}
 
     and module_type_substitution ident_map m =
         let open Odoc_model.Lang.ModuleType in
@@ -607,7 +630,7 @@ module Of_Lang = struct
 
     and module_type ident_map id m =
         let expr = Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in
-        {ModuleType.id; expr}
+        {ModuleType.id; doc = m.doc; expr}
 
     and value ident_map id v =
         let type_ = type_expression ident_map v.Odoc_model.Lang.Value.type_ in

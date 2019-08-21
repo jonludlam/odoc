@@ -237,7 +237,7 @@ let create ?(important_digests=true) ~directories : builder =
     in
     let expander =
       (* CR trefis: what is the ~root param good for? *)
-      let fetch ~root:_ root = fetch_unit root in
+      let fetch root = fetch_unit root in
       let lookup _ s = lookup_unit s in
       Odoc_xref2.Expand.build_expander (lookup ()) fetch
     in
