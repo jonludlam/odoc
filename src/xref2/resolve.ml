@@ -45,15 +45,15 @@ let rec unit resolver t =
         | Import.Unresolved (str, _) ->
             match resolver.lookup_unit str with
             | Forward_reference ->
-                Printf.fprintf stderr "Import: forward reference %s\n%!" str;
+(*                Printf.fprintf stderr "Import: forward reference %s\n%!" str;*)
                 (import::imports, env)
             | Found f ->
                 let unit = resolver.resolve_unit f.root in
-                Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string f.root);
+(*                Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string f.root);*)
                 let env = Env.add_unit unit env in
                 ((Resolved f.root)::imports, env)
             | Not_found ->
-                Printf.fprintf stderr "Not found: %s\n%!" str;
+(*                Printf.fprintf stderr "Not found: %s\n%!" str;*)
                 (import::imports,env)
     ) ([],Env.empty) t.imports in
     {t with content = content env t.content; imports}
@@ -68,7 +68,41 @@ and value_ env t =
     let open Value in
     { t with type_ = type_expression env t.type_}
 
-and comment _env x = x
+and comment_inline_element : Env.t -> Comment.inline_element -> Comment.inline_element = fun env x ->
+    match x with
+    | `Styled (s, ls) -> `Styled (s, List.map (with_location comment_inline_element env) ls)
+    | `Reference (r, []) -> begin
+        match Ref_tools.resolve_reference env r with
+        | `Resolved (`Identifier (#Odoc_model.Paths.Identifier.Label.t as i)) as r ->
+            let content = match Env.lookup_section_title i env with
+                | Some x -> x | None -> []
+            in `Reference (r, content)
+        | x -> `Reference (x, [])
+        end 
+    | `Reference (r,content) -> `Reference (Ref_tools.resolve_reference env r, content)
+    | y -> y
+
+and comment_nestable_block_element env (x : Comment.nestable_block_element) =
+    match x with
+    | `Paragraph elts -> `Paragraph (List.map (with_location comment_inline_element env) elts)
+    | `Code_block _
+    | `Verbatim _ as x -> x
+    | `List (x, ys) -> `List (x, List.map (List.map (with_location comment_nestable_block_element env)) ys)
+    | x -> x
+
+and comment_block_element env (x: Comment.block_element) = 
+    match x with
+    | #Comment.nestable_block_element as x ->
+        (comment_nestable_block_element env x :> Comment.block_element)
+    | `Heading _ as x -> x
+    | `Tag _ as x -> x
+
+and with_location : type a. (Env.t -> a -> a) -> Env.t -> a Location_.with_location -> a Location_.with_location = fun fn env x ->
+    { x with Location_.value = fn env x.Location_.value }
+
+and comment env = function
+    | `Stop -> `Stop
+    | `Docs d -> `Docs (List.map (with_location comment_block_element env) d)
 
 and exception_ env e =
     let open Exception in

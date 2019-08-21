@@ -416,7 +416,7 @@ and fragmap_signature : Env.t -> Cpath.resolved -> Fragment.Resolved.Signature.t
                     | Component.Signature.Module (r,m) when (Ident.name m.id = ModuleName.to_string name) ->
                         let (p, sg) = signature_of_module env (`Module (p, name), m) in
                         let sg' = fn (`Module (p, name)) sg in
-                        Component.Signature.Module (r, {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})
+                        Component.Signature.Module (r, {m with id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})
                     | x -> x) s.items in
                 {items; removed=s.removed}) sg
         | _ -> failwith "foo"
@@ -458,7 +458,7 @@ and fragmap_unresolved_signature : Env.t -> Cpath.resolved -> Fragment.Signature
                     | Component.Signature.Module (r, m) when Ident.name m.id = name ->
                         let p, sg = signature_of_module env (p, m) in
                         let sg' = fn (`Type (p, name)) sg in
-                        Some (Component.Signature.Module (r, {id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false}))
+                        Some (Component.Signature.Module (r, {m with id=m.id; type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false}))
                     | x -> Some x) s.items in
                 {items; removed=handle_removed removed s.removed}) sg 
         | `Resolved x ->
