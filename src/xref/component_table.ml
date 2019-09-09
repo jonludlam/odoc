@@ -536,6 +536,8 @@ and signature_items local =
     | Comment com :: rest ->
         let sg = signature_items local rest in
           add_comment com sg
+    | ModuleSubstitution _ :: rest ->
+        signature_items local rest
     | [] -> empty
 
 and module_type_expr local expr =

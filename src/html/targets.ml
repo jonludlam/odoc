@@ -49,6 +49,7 @@ and signature ~prefix (t : Odoc_model.Lang.Signature.t) =
           add_items ~don't (module_type ~prefix mty :: acc) is
       | Include incl ->
           add_items ~don't (include_ ~prefix incl :: acc) is
+      | ModuleSubstitution _
       | Type _
       | TypExt _
       | Exception _

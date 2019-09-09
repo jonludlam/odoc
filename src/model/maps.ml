@@ -1367,6 +1367,8 @@ class virtual signature = object (self)
           let mty' = self#module_type mty in
             if mty != mty' then ModuleType mty'
             else item
+      | ModuleSubstitution msub ->
+          ModuleSubstitution msub
       | Include incl ->
           let incl' = self#include_ incl in
             if incl != incl' then Include incl'

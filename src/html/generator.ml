@@ -1373,6 +1373,7 @@ struct
     | External {id; _} -> path_to_id (id :> Paths.Identifier.t)
     | Module (_, {id; _}) -> path_to_id (id :> Paths.Identifier.t)
     | ModuleType {id; _} -> path_to_id (id :> Paths.Identifier.t)
+    | ModuleSubstitution {id; _} -> path_to_id (id :> Paths.Identifier.t)
     | Class (_, {id; _}) -> path_to_id (id :> Paths.Identifier.t)
     | ClassType (_, {id; _}) -> path_to_id (id :> Paths.Identifier.t)
     | TypExt _
@@ -1386,6 +1387,7 @@ struct
     | External _ -> Some "external"
     | Module _ -> Some "module"
     | ModuleType _ -> Some "module-type"
+    | ModuleSubstitution _ -> Some "module-substitution"
     | Class _ -> Some "class"
     | ClassType _ -> Some "class-type"
     | TypExt _ -> Some "extension"
@@ -1399,6 +1401,7 @@ struct
     | Exception _ -> `Leaf_item (`Exception, item)
     | Value _ -> `Leaf_item (`Value, item)
     | External _ -> `Leaf_item (`External, item)
+    | ModuleSubstitution _ -> `Leaf_item (`ModuleSubstitution, item)
 
     | Module _
     | ModuleType _
