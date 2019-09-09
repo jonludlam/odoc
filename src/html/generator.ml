@@ -678,6 +678,26 @@ struct
 end
 open Value
 
+module ModuleSubstitution :
+sig
+  val module_substitution : Lang.ModuleSubstitution.t -> rendered_item * Odoc_model.Comment.docs
+end =
+struct
+  let module_substitution (t : Odoc_model.Lang.ModuleSubstitution.t) =
+    let name = Paths.Identifier.name t.id in
+    let path = Tree.Relative_link.of_path ~stop_before:true (t.manifest :> Paths.Path.t) in
+    let value =
+      keyword "module" ::
+      Html.txt " " ::
+      Html.txt name ::
+      Html.txt " := " ::
+      path
+    in
+    [Html.code value], t.doc
+end
+open ModuleSubstitution
+
+
 
 
 (* This chunk of code is responsible for laying out signatures and class
@@ -1417,6 +1437,7 @@ struct
     | Exception e -> exn e
     | Value v -> value v
     | External e -> external_ e
+    | ModuleSubstitution m -> module_substitution m
     | _ -> assert false
 
   and render_nested_signature_or_class
