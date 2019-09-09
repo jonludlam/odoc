@@ -613,9 +613,23 @@ and read_signature_item env parent item =
           | Some doc -> [Comment doc]
       end
 #if OCAML_MAJOR = 4 && OCAML_MINOR >= 08
-    | Tsig_typesubst _
-    | Tsig_modsubst _ -> []
+    | Tsig_typesubst _tst -> []
+(*        read_type_subst env parent tst *)
+    | Tsig_modsubst mst ->
+        [ModuleSubstitution (read_module_substitution env parent mst)]
 #endif
+
+(*and read_type_subst _env _parent _tst = []*)
+
+and read_module_substitution env parent ms =
+  let open ModuleSubstitution in
+  let name = parenthesise (Ident.name ms.ms_id) in
+  let id = `Module(parent, (Odoc_model.Names.ModuleName.of_string name)) in
+  let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
+  let doc = Doc_attr.attached container ms.ms_attributes in
+  let manifest = Env.Path.read_module env ms.ms_manifest in
+  { id; doc; manifest }
+
 
 and read_include env parent incl =
   let open Include in
