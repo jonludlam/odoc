@@ -261,7 +261,7 @@ open Type_expression
 module Type_declaration :
 sig
   val type_decl :
-    Lang.Signature.recursive * Lang.TypeDecl.t ->
+    bool -> Lang.Signature.recursive * Lang.TypeDecl.t ->
       rendered_item * Odoc_model.Comment.docs
   val extension : Lang.Extension.t -> rendered_item * Odoc_model.Comment.docs
   val exn : Lang.Exception.t -> rendered_item * Odoc_model.Comment.docs
@@ -587,7 +587,7 @@ struct
 
 
 
-  let type_decl ((recursive, t) : Lang.Signature.recursive * Lang.TypeDecl.t) =
+  let type_decl is_substitution ((recursive, t) : Lang.Signature.recursive * Lang.TypeDecl.t) =
     let tyname = Paths.Identifier.name t.id in
     let params = format_params t.equation.params in
     let constraints = format_constraints t.equation.constraints in
@@ -595,7 +595,7 @@ struct
       match t.equation.manifest with
       | Some (Odoc_model.Lang.TypeExpr.Polymorphic_variant variant) ->
         let manifest =
-          (Html.txt " = " ::
+          (Html.txt (if is_substitution then " := " else " = ") ::
           if t.equation.private_ then
             [keyword Syntax.Type.private_keyword; Html.txt " "]
           else
@@ -696,8 +696,6 @@ struct
     [Html.code value], t.doc
 end
 open ModuleSubstitution
-
-
 
 
 (* This chunk of code is responsible for laying out signatures and class
@@ -1388,6 +1386,7 @@ end =
 struct
   let signature_item_to_id : Lang.Signature.item -> _ = function
     | Type (_, {id; _}) -> path_to_id (id :> Paths.Identifier.t)
+    | TypeSubstitution {id; _} -> path_to_id (id :> Paths.Identifier.t)
     | Exception {id; _} -> path_to_id (id :> Paths.Identifier.t)
     | Value {id; _} -> path_to_id (id :> Paths.Identifier.t)
     | External {id; _} -> path_to_id (id :> Paths.Identifier.t)
@@ -1402,6 +1401,7 @@ struct
 
   let signature_item_to_spec : Lang.Signature.item -> _ = function
     | Type _ -> Some "type"
+    | TypeSubstitution _ -> Some "type-subst"
     | Exception _ -> Some "exception"
     | Value _ -> Some "value"
     | External _ -> Some "external"
@@ -1417,6 +1417,7 @@ struct
   let tag_signature_item : Lang.Signature.item -> _ = fun item ->
     match item with
     | Type _ -> `Leaf_item (`Type, item)
+    | TypeSubstitution _ -> `Leaf_item (`TypeSubstitution, item)
     | TypExt _ -> `Leaf_item (`Extension, item)
     | Exception _ -> `Leaf_item (`Exception, item)
     | Value _ -> `Leaf_item (`Value, item)
@@ -1432,7 +1433,8 @@ struct
     | Comment comment -> `Comment comment
 
   let rec render_leaf_signature_item : Lang.Signature.item -> _ = function
-    | Type (r, t) -> type_decl (r, t)
+    | Type (r, t) -> type_decl false (r, t)
+    | TypeSubstitution t -> type_decl true (Ordinary, t)
     | TypExt e -> extension e
     | Exception e -> exn e
     | Value v -> value v

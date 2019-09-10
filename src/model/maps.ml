@@ -1369,6 +1369,8 @@ class virtual signature = object (self)
             else item
       | ModuleSubstitution msub ->
           ModuleSubstitution msub
+      | TypeSubstitution tsub ->
+          TypeSubstitution tsub
       | Include incl ->
           let incl' = self#include_ incl in
             if incl != incl' then Include incl'

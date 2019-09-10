@@ -104,6 +104,7 @@ and Signature : sig
     | ModuleType of ModuleType.t
     | ModuleSubstitution of ModuleSubstitution.t
     | Type of recursive * TypeDecl.t
+    | TypeSubstitution of TypeDecl.t
     | TypExt of Extension.t
     | Exception of Exception.t
     | Value of Value.t

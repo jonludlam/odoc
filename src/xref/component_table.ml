@@ -538,6 +538,8 @@ and signature_items local =
           add_comment com sg
     | ModuleSubstitution _ :: rest ->
         signature_items local rest
+    | TypeSubstitution _ :: rest ->
+        signature_items local rest
     | [] -> empty
 
 and module_type_expr local expr =
