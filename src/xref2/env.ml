@@ -161,24 +161,23 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
         | `Root _ -> env
 
 let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
-    let open Component in
     fun s env ->
         List.fold_left (fun env orig ->
             match orig with
             | Odoc_model.Lang.Signature.Type (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.type_decl [identifier,id] id t in
+                let id = Ident.local_of_identifier identifier in
+                let ty = Comp_of_lang.type_decl { Comp_of_lang.empty with type_ = [t.id,id]} id t in
                 add_type t.Odoc_model.Lang.TypeDecl.id ty env
             | Odoc_model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.module_ [identifier,id] id t in
+                let id = Ident.local_of_identifier identifier in
+                let ty = Comp_of_lang.module_ { Comp_of_lang.empty with module_ = [t.id,id]} id t in
                 add_module t.Odoc_model.Lang.Module.id ty env
             | Odoc_model.Lang.Signature.ModuleType t ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.module_type [identifier,id] id t in
+                let id = Ident.local_of_identifier identifier in
+                let ty = Comp_of_lang.module_type { Comp_of_lang.empty with module_type = [t.id,id]} id t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | Odoc_model.Lang.Signature.Comment c ->
                 add_comment c env
@@ -188,8 +187,8 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 env
             | Odoc_model.Lang.Signature.Value v ->
                 let identifier = (v.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.value [identifier,id] id v in
+                let id = Ident.local_of_identifier identifier in
+                let ty = Comp_of_lang.value { Comp_of_lang.empty with value_ = [v.id,id]} id v in
                 add_value v.Odoc_model.Lang.Value.id ty env
             | Odoc_model.Lang.Signature.External _ ->
                 env
@@ -221,8 +220,8 @@ let add_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
             }
             in
             let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
-            let id = Ident.of_identifier identifier in
-            let ty = Component.Of_Lang.module_ [identifier,id] id m in
+            let id = Ident.local_of_identifier identifier in
+            let ty = Comp_of_lang.module_ { Comp_of_lang.empty with module_ = [ m.id,id]} id m in
             add_module m.id ty env
         | Pack _ ->
             Printf.fprintf stderr "WARNING: pack unsupported";

@@ -23,9 +23,13 @@ let rec signature (prefix : Cpath.resolved) sg =
         | Module (r,m) -> Module (r, module_ (`Module (prefix, ModuleName.of_string (Ident.name m.id))) m)
         | ModuleType mt -> ModuleType (module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name mt.id))) mt)
         | Type (r,t) -> Type (r, type_decl (`Type (prefix, TypeName.of_string (Ident.name t.id))) t)
-        | Exception _ -> item
-        | TypExt _ -> item
-        | Value _ -> item
+        | Exception _
+        | TypExt _
+        | Value _ 
+        | Class _
+        | ClassType _
+        | External _
+        | Include _
         | Comment _ -> item
     ) sg.items in
     (* The identity substitution used here is to rename all of the bound idents in the signature *)

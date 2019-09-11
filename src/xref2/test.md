@@ -1470,13 +1470,19 @@ Expansion test
 
 ```ocaml env=e1
 let test_data = {|
-module type M = sig
+module type Y = sig
   type t
+  val y : t
 end
 
-type u
+module F
+    (Arg1 : Y) (Arg2 : sig
 
-module type M1 = M with type t = u
+    type t
+  end) : sig
+
+  type t = Arg1.t * Arg2.t
+end
 |};;
 let sg = Common.signature_of_mli_string test_data;;
 ```
@@ -1486,72 +1492,209 @@ let sg = Common.signature_of_mli_string test_data;;
 - : Odoc_model.Lang.Signature.t =
 [Odoc_model.Lang.Signature.ModuleType
   {Odoc_model.Lang.ModuleType.id =
-    `ModuleType (`Root (Common.root, "Root"), "M");
+    `ModuleType (`Root (Common.root, "Root"), "Y");
    doc = [];
    expr =
     Some
      (Odoc_model.Lang.ModuleType.Signature
        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
          {Odoc_model.Lang.TypeDecl.id =
-           `Type (`ModuleType (`Root (Common.root, "Root"), "M"), "t");
+           `Type (`ModuleType (`Root (Common.root, "Root"), "Y"), "t");
           doc = [];
           equation =
            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
             manifest = None; constraints = []};
-          representation = None})]);
-   expansion =
-    Some
-     (Odoc_model.Lang.Module.Signature
-       [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-         {Odoc_model.Lang.TypeDecl.id =
-           `Type (`ModuleType (`Root (Common.root, "Root"), "M"), "t");
+          representation = None});
+        Odoc_model.Lang.Signature.Value
+         {Odoc_model.Lang.Value.id =
+           `Value (`ModuleType (`Root (Common.root, "Root"), "Y"), "y");
           doc = [];
-          equation =
-           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
-            manifest = None; constraints = []};
-          representation = None})])};
- Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "u");
+          type_ =
+           Odoc_model.Lang.TypeExpr.Constr
+            (`Resolved
+               (`Identifier
+                  (`Type
+                     (`ModuleType (`Root (Common.root, "Root"), "Y"), "t"))),
+            [])}]);
+   expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+ Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "F");
    doc = [];
-   equation =
-    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
-     manifest = None; constraints = []};
-   representation = None});
- Odoc_model.Lang.Signature.ModuleType
-  {Odoc_model.Lang.ModuleType.id =
-    `ModuleType (`Root (Common.root, "Root"), "M1");
-   doc = [];
-   expr =
-    Some
-     (Odoc_model.Lang.ModuleType.With
-       (Odoc_model.Lang.ModuleType.Path
-         (`Resolved
-            (`Identifier (`ModuleType (`Root (Common.root, "Root"), "M")))),
-       [Odoc_model.Lang.ModuleType.TypeEq (`Dot (`Resolved `Root, "t"),
-         {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
-          manifest =
-           Some
-            (Odoc_model.Lang.TypeExpr.Constr
-              (`Resolved
-                 (`Identifier (`Type (`Root (Common.root, "Root"), "u"))),
-              []));
-          constraints = []})]));
+   type_ =
+    Odoc_model.Lang.Module.ModuleType
+     (Odoc_model.Lang.ModuleType.Functor
+       (Some
+         {Odoc_model.Lang.FunctorArgument.id =
+           `Parameter (`Module (`Root (Common.root, "Root"), "F"), "Arg1");
+          expr =
+           Odoc_model.Lang.ModuleType.Path
+            (`Resolved
+               (`Identifier (`ModuleType (`Root (Common.root, "Root"), "Y"))));
+          expansion = None},
+       Odoc_model.Lang.ModuleType.Functor
+        (Some
+          {Odoc_model.Lang.FunctorArgument.id =
+            `Parameter
+              (`Result (`Module (`Root (Common.root, "Root"), "F")), "Arg2");
+           expr =
+            Odoc_model.Lang.ModuleType.Signature
+             [Odoc_model.Lang.Signature.Type
+               (Odoc_model.Lang.Signature.Ordinary,
+               {Odoc_model.Lang.TypeDecl.id =
+                 `Type
+                   (`Parameter
+                      (`Result (`Module (`Root (Common.root, "Root"), "F")),
+                       "Arg2"),
+                    "t");
+                doc = [];
+                equation =
+                 {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                  private_ = false; manifest = None; constraints = []};
+                representation = None})];
+           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+        Odoc_model.Lang.ModuleType.Signature
+         [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_model.Lang.TypeDecl.id =
+             `Type
+               (`Result
+                  (`Result (`Module (`Root (Common.root, "Root"), "F"))),
+                "t");
+            doc = [];
+            equation =
+             {Odoc_model.Lang.TypeDecl.Equation.params = [];
+              private_ = false;
+              manifest =
+               Some
+                (Odoc_model.Lang.TypeExpr.Tuple
+                  [Odoc_model.Lang.TypeExpr.Constr
+                    (`Dot
+                       (`Resolved
+                          (`Identifier
+                             (`Parameter
+                                (`Module (`Root (Common.root, "Root"), "F"),
+                                 "Arg1"))),
+                        "t"),
+                    []);
+                   Odoc_model.Lang.TypeExpr.Constr
+                    (`Dot
+                       (`Resolved
+                          (`Identifier
+                             (`Parameter
+                                (`Result
+                                   (`Module
+                                      (`Root (Common.root, "Root"), "F")),
+                                 "Arg2"))),
+                        "t"),
+                    [])]);
+              constraints = []};
+            representation = None})])));
+   canonical = None; hidden = false; display_type = None;
    expansion =
     Some
-     (Odoc_model.Lang.Module.Signature
+     (Odoc_model.Lang.Module.Functor
+       ([Some
+          {Odoc_model.Lang.FunctorArgument.id =
+            `Parameter (`Module (`Root (Common.root, "Root"), "F"), "Arg1");
+           expr =
+            Odoc_model.Lang.ModuleType.Path
+             (`Resolved
+                (`Identifier (`ModuleType (`Root (Common.root, "Root"), "Y"))));
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Parameter
+                        (`Module (`Root (Common.root, "Root"), "F"), "Arg1"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Value
+                 {Odoc_model.Lang.Value.id =
+                   `Value
+                     (`Parameter
+                        (`Module (`Root (Common.root, "Root"), "F"), "Arg1"),
+                      "y");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.TypeExpr.Constr
+                    (`Resolved
+                       (`Identifier
+                          (`Type
+                             (`Parameter
+                                (`Module (`Root (Common.root, "Root"), "F"),
+                                 "Arg1"),
+                              "t"))),
+                    [])}])};
+         Some
+          {Odoc_model.Lang.FunctorArgument.id =
+            `Parameter
+              (`Result (`Module (`Root (Common.root, "Root"), "F")), "Arg2");
+           expr =
+            Odoc_model.Lang.ModuleType.Signature
+             [Odoc_model.Lang.Signature.Type
+               (Odoc_model.Lang.Signature.Ordinary,
+               {Odoc_model.Lang.TypeDecl.id =
+                 `Type
+                   (`Parameter
+                      (`Result (`Module (`Root (Common.root, "Root"), "F")),
+                       "Arg2"),
+                    "t");
+                doc = [];
+                equation =
+                 {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                  private_ = false; manifest = None; constraints = []};
+                representation = None})];
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Parameter
+                        (`Result (`Module (`Root (Common.root, "Root"), "F")),
+                         "Arg2"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}],
        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
          {Odoc_model.Lang.TypeDecl.id =
-           `Type (`ModuleType (`Root (Common.root, "Root"), "M1"), "t");
+           `Type (`Module (`Root (Common.root, "Root"), "F"), "t");
           doc = [];
           equation =
            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
             manifest =
              Some
-              (Odoc_model.Lang.TypeExpr.Constr
-                (`Resolved
-                   (`Identifier (`Type (`Root (Common.root, "Root"), "u"))),
-                []));
+              (Odoc_model.Lang.TypeExpr.Tuple
+                [Odoc_model.Lang.TypeExpr.Constr
+                  (`Dot
+                     (`Resolved
+                        (`Identifier
+                           (`Parameter
+                              (`Module (`Root (Common.root, "Root"), "F"),
+                               "Arg1"))),
+                      "t"),
+                  []);
+                 Odoc_model.Lang.TypeExpr.Constr
+                  (`Dot
+                     (`Resolved
+                        (`Identifier
+                           (`Parameter
+                              (`Result
+                                 (`Module (`Root (Common.root, "Root"), "F")),
+                               "Arg2"))),
+                      "t"),
+                  [])]);
             constraints = []};
-          representation = None})])}]
+          representation = None})]))})]
 ```
 

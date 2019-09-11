@@ -10,28 +10,93 @@ type expander =
 module Lang_of = struct
   open Odoc_model.Paths
 
-  type maps =
-    { module_ : (Ident.t * Identifier.Module.t) list
-    ; module_type : (Ident.t * Identifier.ModuleType.t) list
-    ; type_ : (Ident.t * Identifier.Type.t) list
-    ; path_type : (Ident.t * Odoc_model.Paths_types.Identifier.path_type) list
-    ; exception_ : (Ident.t * Identifier.Exception.t) list
-    ; extension : (Ident.t * Identifier.Extension.t) list
-    ; value_ : (Ident.t * Identifier.Value.t) list
-    ; field_ : (Ident.t * Identifier.Field.t) list
-  }
+  
 
-  let empty =
-    { module_ = []
-    ; module_type = []
-    ; type_ = []
-    ; path_type = []
-    ; exception_ = []
-    ; extension = []
-    ; value_ = []
-    ; field_ = []
-    }
-
+    module ExtractIDs = struct
+      open Component
+      open Odoc_model.Names
+  
+      type maps =
+        { module_ : (Ident.t * Identifier.Module.t) list
+        ; module_type : (Ident.t * Identifier.ModuleType.t) list
+        ; type_ : (Ident.t * Identifier.Type.t) list
+        ; path_type : (Ident.t * Odoc_model.Paths_types.Identifier.path_type) list
+        ; exception_ : (Ident.t * Identifier.Exception.t) list
+        ; extension : (Ident.t * Identifier.Extension.t) list
+        ; value_ : (Ident.t * Identifier.Value.t) list
+        ; field_ : (Ident.t * Identifier.Field.t) list
+      }
+    
+      let empty =
+        { module_ = []
+        ; module_type = []
+        ; type_ = []
+        ; path_type = []
+        ; exception_ = []
+        ; extension = []
+        ; value_ = []
+        ; field_ = []
+        }
+        
+      let rec exception_ parent map e =
+        let open Exception in
+        let identifier = `Exception (parent, ExceptionName.of_string (Ident.name e.id)) in
+        let map = type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map e.args in
+        {map with exception_ = (e.id, identifier)::map.exception_ }
+  
+      and extension parent map e =
+        let open Extension in
+        let constructor map c =
+          let id = `Extension (parent, Ident.name c.Constructor.id) in
+          let map = {map with extension = (c.Constructor.id, id)::map.extension } in
+          type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map c.Constructor.args
+        in
+        List.fold_left constructor map e.constructors
+  
+      and type_decl_constructor_argument parent map a =
+        let open TypeDecl.Constructor in
+        match a with
+        | Tuple _ -> map
+        | Record fs -> List.fold_left (type_decl_field parent) map fs
+      
+      and type_decl_field (parent : Odoc_model.Paths.Identifier.Parent.t) map f =
+        let open TypeDecl.Field in
+        let identifier = `Field (parent, FieldName.of_string (Ident.name f.id)) in
+        { map with field_ = (f.id, identifier)::map.field_ }
+  
+      and type_decl parent map t =
+        let open TypeDecl in
+        let identifier = `Type (parent, TypeName.of_string (Ident.name t.id)) in
+        { map with type_ = (t.id, identifier)::map.type_
+        ; path_type = (t.id, identifier)::map.path_type }
+  
+      and module_ parent map m =
+        let identifier = `Module (parent, ModuleName.of_string (Ident.name m.Module.id)) in 
+        { map with module_ = (m.Module.id, identifier)::map.module_}
+  
+      and module_type parent map m =
+        let identifier = `ModuleType (parent, ModuleTypeName.of_string (Ident.name m.ModuleType.id)) in 
+        { map with module_type = (m.ModuleType.id, identifier)::map.module_type}
+  
+      and value_ parent map v =
+        let identifier = `Value (parent, ValueName.of_string (Ident.name v.Value.id)) in
+        {map with value_ = (v.Value.id, identifier)::map.value_ }
+  
+      and signature parent map sg =
+        let open Signature in
+        List.fold_left (fun map item ->
+          match item with
+          | Module (_, m) -> module_ parent map m
+          | ModuleType m -> module_type parent map m
+          | Type (_, t) -> type_decl parent map t
+          | Exception e -> exception_ parent map e          
+          | TypExt e -> extension parent map e
+          | Value v -> value_ parent map v
+          | Comment _ -> map
+          ) map sg.items
+  
+    end
+  
   module Opt = Component.Opt
 
   module Path = struct
@@ -65,7 +130,7 @@ module Lang_of = struct
     and resolved_module map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.Module.t =
       match p with
       | `Local id ->
-        `Identifier (List.assoc id map.module_)
+        `Identifier (try List.assoc id map.module_ with Not_found -> failwith (Printf.sprintf "Couldn't find '%s'" (Component.Fmt.string_of Ident.fmt id)))
       | `Substituted x -> resolved_module map x
       | `Identifier (#Odoc_model.Paths.Identifier.Module.t as y) -> `Identifier y
       | `Subst (mty, m) -> `Subst (resolved_module_type map mty, resolved_module map m)
@@ -95,68 +160,6 @@ module Lang_of = struct
 
   end
 
-  module ExtractIDs = struct
-    open Component
-    open Odoc_model.Names
-
-    let rec exception_ parent map e =
-      let open Exception in
-      let identifier = `Exception (parent, ExceptionName.of_string (Ident.name e.id)) in
-      let map = type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map e.args in
-      {map with exception_ = (e.id, identifier)::map.exception_ }
-
-    and extension parent map e =
-      let open Extension in
-      let constructor map c =
-        let id = `Extension (parent, Ident.name c.Constructor.id) in
-        let map = {map with extension = (c.Constructor.id, id)::map.extension } in
-        type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map c.Constructor.args
-      in
-      List.fold_left constructor map e.constructors
-
-    and type_decl_constructor_argument parent map a =
-      let open TypeDecl.Constructor in
-      match a with
-      | Tuple _ -> map
-      | Record fs -> List.fold_left (type_decl_field parent) map fs
-    
-    and type_decl_field (parent : Odoc_model.Paths.Identifier.Parent.t) map f =
-      let open TypeDecl.Field in
-      let identifier = `Field (parent, FieldName.of_string (Ident.name f.id)) in
-      { map with field_ = (f.id, identifier)::map.field_ }
-
-    and type_decl parent map t =
-      let open TypeDecl in
-      let identifier = `Type (parent, TypeName.of_string (Ident.name t.id)) in
-      { map with type_ = (t.id, identifier)::map.type_
-      ; path_type = (t.id, identifier)::map.path_type }
-
-    and module_ parent map m =
-      let identifier = `Module (parent, ModuleName.of_string (Ident.name m.Module.id)) in 
-      { map with module_ = (m.Module.id, identifier)::map.module_}
-
-    and module_type parent map m =
-      let identifier = `ModuleType (parent, ModuleTypeName.of_string (Ident.name m.ModuleType.id)) in 
-      { map with module_type = (m.ModuleType.id, identifier)::map.module_type}
-
-    and value_ parent map v =
-      let identifier = `Value (parent, ValueName.of_string (Ident.name v.Value.id)) in
-      {map with value_ = (v.Value.id, identifier)::map.value_ }
-
-    and signature parent map sg =
-      let open Signature in
-      List.fold_left (fun map item ->
-        match item with
-        | Module (_, m) -> module_ parent map m
-        | ModuleType m -> module_type parent map m
-        | Type (_, t) -> type_decl parent map t
-        | Exception e -> exception_ parent map e          
-        | TypExt e -> extension parent map e
-        | Value v -> value_ parent map v
-        | Comment _ -> map
-        ) map sg.items
-
-  end
 
 
   let rec signature id map sg =
@@ -371,7 +374,8 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
       List.fold_right (fun item (env, items) ->
           match item with
           | Module (r, m) ->
-              let m' = module_ env m in
+              let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
+              let m' = module_ env' m in
               (env, (Module (r, m'))::items)
           | ModuleType mt ->
               let mt' = module_type env mt in
@@ -380,40 +384,90 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
         ) s (env, [])
   in items'
 
-(*and expansion_of_signature env sg =
-    let sg' = List.map
-      (fun )
-*)
+and expansion_of_module_type_expr id env expr =
+  let rec get_env lenv parent : Cpath.resolved * Component.ModuleType.expr -> Lang_of.maps * (FunctorArgument.t option list) = function
+    | p, Functor (Some arg, expr) ->
+      let identifier = `Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.id)) in
+      let lenv' = { lenv with Lang_of.module_ = (arg.id, identifier)::lenv.Lang_of.module_ } in
+      let lenv, args = get_env lenv' (`Result parent) (p, expr) in
+      let (_, arg_sg) = Tools.signature_of_module_type_expr env (p, arg.expr) in
+      let arg_sg = Lang_of.signature identifier lenv arg_sg in
+      let lang_arg = Lang_of.functor_argument lenv arg in
+      let lang_arg' = {lang_arg with expansion = Some (Signature arg_sg)} in
+      lenv, (Some lang_arg' :: args)
+    | p, Functor (None, expr) ->
+      let lenv, args = get_env lenv (`Result parent) (p, expr) in
+      lenv, (None :: args)
+    | _ ->
+      lenv, []
+  in
+  let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
+  match expr with
+    | Component.ModuleType.Signature _ ->
+      Odoc_model.Lang.Module.AlreadyASig
+    | Component.ModuleType.Functor _ ->
+      let expansion_env, args = get_env Lang_of.empty id (p, expr) in
+      let (_, sg) = Tools.signature_of_module_type_expr env (p, expr) |> Tools.prefix_signature in
+      let sg = Lang_of.signature id expansion_env sg in
+      Odoc_model.Lang.Module.Functor (args, signature env sg)
+    | _ ->
+      let (_, sg) = Tools.signature_of_module_type_expr env (p, expr) |> Tools.prefix_signature in
+      let sg = Lang_of.signature id Lang_of.empty sg in
+      Odoc_model.Lang.Module.Signature (signature env sg)
+
+and module_decl env id decl =
+    let open Module in
+    match decl with
+    | Alias path -> Alias path
+    | ModuleType mty -> ModuleType (module_type_expr env id mty)
+
+and module_type_expr env id expr =
+    let open ModuleType in
+    match expr with
+    | Path _
+    | Signature _ -> expr
+    | With (expr, subs) -> With (module_type_expr env id expr, subs)
+    | TypeOf decl -> TypeOf decl
+    | Functor (arg, expr) -> Functor (Component.Opt.map (functor_argument env id) arg, module_type_expr env id expr)
+
+and functor_argument env id arg =
+    let functor_arg = Env.lookup_module arg.id env in
+    let expansion =
+        match functor_arg.type_ with
+        | ModuleType expr -> expansion_of_module_type_expr id env expr
+        | _ -> failwith "error"
+    in
+    {arg with expansion = Some expansion; expr = module_type_expr env id arg.expr}
 
 and module_ env m =
-    let open Module in
-    match m.type_ with
-    | Alias _ -> m
-    | ModuleType _ -> begin
-      let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
-      match Tools.lookup_and_resolve_module_from_path false env (`Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))) with
-      | Ok (p, m') ->
-        let (_, sg) = Tools.signature_of_module env (p, m') |> Tools.prefix_signature in
-        let sg = Lang_of.signature id Lang_of.empty sg in
-        {m with expansion=Some (Signature (signature env sg))}
-      | _ ->
-        m
-    end
-
-
-
+  let open Module in
+  let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
+  let type_ = module_decl env id m.type_ in
+  let m' = Env.lookup_module m.id env in
+  match m'.type_ with
+  | Alias _ when m.hidden ->
+    let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
+    let (_, sg) = Tools.signature_of_module env (p,m') |> Tools.prefix_signature in
+    let sg = Lang_of.signature id Lang_of.empty sg in
+    { m with type_; expansion = Some (Odoc_model.Lang.Module.Signature (signature env sg))}
+  | ModuleType expr ->
+    let expansion = expansion_of_module_type_expr id env expr in
+    {m with type_; expansion = Some expansion}
+  | _ -> m
 
 and module_type env m =
   let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
-  match Tools.lookup_and_resolve_module_type_from_path false env (`Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))) with
-  | Ok (p, m') ->
-    let (_, sg) = Tools.signature_of_module_type env (p, m') |> Tools.prefix_signature in
-    let sg = Lang_of.signature id Lang_of.empty sg in
-    {m with expansion=Some (Signature (signature env sg))}
+  let expr = Component.Opt.map (module_type_expr env id) m.expr in
+  match expr with
+  | None -> {m with expr; expansion = Some (Signature [])}
   | _ ->
-    m
-
-  
+    let m' = Env.lookup_module_type m.id env in
+    try
+      let path = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
+      let (_, sg) = Tools.signature_of_module_type env (path, m') |> Tools.prefix_signature in
+      let sg = Lang_of.signature id Lang_of.empty sg in
+      {m with expr; expansion=Some (Signature (signature env sg))}
+    with _ -> {m with expr}
 
 let build_expander :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)

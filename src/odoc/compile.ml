@@ -37,9 +37,9 @@ let resolve_and_substitute ~env ~output input_file read_file =
        environment with the resolved unit.
        Note that this is bad and once rewritten expand should not fetch the unit it is
        working on. *)
-    (* let expand_env = Env.build env (`Unit resolved) in
-    let expanded = Odoc_xref.expand (Env.expander expand_env) resolved in *)
-    Compilation_unit.save output resolved
+    let expand_env = Env.build env (`Unit resolved) in
+    let expanded = Odoc_xref2.Expand.expand (Env.expander expand_env) resolved in
+    Compilation_unit.save output expanded
 
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   let file_representation : Odoc_model.Root.Odoc_file.t =

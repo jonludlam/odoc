@@ -1,5 +1,5 @@
- type t = {
-    map : (Ident.t * Cpath.resolved) list
+type t = {
+    map : (Ident.t * Ident.t) list
 }
 
 let identity = {
@@ -9,234 +9,88 @@ let identity = {
 let add id subst t =
     { map = (id, subst) :: t.map }
 
-let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
-    match p with
-    | `Local id -> begin
-        match List.assoc_opt id s.map with
-        | Some x ->
-            x
-        | None -> `Local id
-        end
-    | `Identifier _ ->
-        p
-    | `Apply (p1, p2) -> `Apply (resolved_path s p1, path s p2)
-    | `Substituted p -> `Substituted (resolved_path s p)
-    | `Module (p, n) -> `Module (resolved_path s p, n)
-    | `ModuleType (p, n) -> `ModuleType (resolved_path s p, n)
-    | `Type (p, n) -> `Type (resolved_path s p, n)
-    | `Alias (p1, p2) -> `Alias (resolved_path s p1, resolved_path s p2)
-    | `Subst (p1, p2) -> `Subst (resolved_path s p1, resolved_path s p2)
-    | `SubstAlias (p1, p2) -> `SubstAlias (resolved_path s p1, resolved_path s p2)
-    | `Hidden (p1) -> `Hidden (resolved_path s p1)
-    | `Canonical (p1, p2) -> `Canonical (resolved_path s p1, path s p2)
-
-and path : t -> Cpath.t -> Cpath.t = fun s p ->
-    match p with
-    | `Resolved p' -> `Resolved (resolved_path s p')
-    | `Dot (p', str) -> `Dot (path s p', str)
-    | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
-    | `Substituted p -> `Substituted (path s p)
-    | `Forward _ -> p
-    | `Root _ -> p
-
-let option_ conv s x =
-    match x with
-    | Some x -> Some (conv s x)
-    | None -> None
-
-let list conv s xs =
-    List.map (conv s) xs
-
-let rec type_ s t =
-    let open Component.TypeDecl in
-    let manifest = match t.equation.Equation.manifest with
-        | Some t' -> Some (type_expr s t')
-        | None -> None
+let renamed_ids map sg =
+    let module_ id map =
+        let id' = Ident.rename id in
+        add id id' map
     in
-    { t with equation = {t.equation with manifest} }
-
-and type_poly_var s v =
-    let open Component.TypeExpr.Polymorphic_variant in
-    let map_constr c =
-        let open Constructor in
-        { name = c.name
-        ; constant = c.constant
-        ; arguments = List.map (type_expr s) c.arguments
-        ; doc = c.doc }
+    let module_type id map =
+        let id' = Ident.rename id in 
+        add id id' map
     in
-    let map_element = function
-    | Type t -> Type (type_expr s t)
-    | Constructor c -> Constructor (map_constr c)
-    in 
-    { kind = v.kind
-    ; elements = List.map map_element v.elements}
-
-and type_object s o =
-    let open Component.TypeExpr.Object in
-    let map_field = function
-    | Method m -> Method {m with type_ = type_expr s m.type_}
-    | Inherit t -> Inherit (type_expr s t)
+    let type_ id map =
+        let id' = Ident.rename id in 
+        add id id' map
     in
-    { fields = List.map map_field o.fields
-    ; open_ = o.open_ }
-
-and type_package s p =
-    let open Component.TypeExpr.Package in
-    let sub (x,y) = (x, type_expr s y) in
-    { path = path s p.path
-    ; substitutions = List.map sub p.substitutions}
-
-and type_expr s t =
-    let open Component.TypeExpr in
-    match t with
-    | Var s -> Var s
-    | Any -> Any
-    | Alias (t,str) -> Alias (type_expr s t, str)
-    | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expr s t1, type_expr s t2)
-    | Tuple ts -> Tuple (List.map (type_expr s) ts)
-    | Constr (p, ts) -> Constr (path s p, List.map (type_expr s) ts)
-    | Polymorphic_variant v -> Polymorphic_variant (type_poly_var s v)
-    | Object o -> Object (type_object s o)
-    | Class (p,ts) -> Class (p, List.map (type_expr s) ts)
-    | Poly (strs, ts) -> Poly (strs, type_expr s ts)
-    | Package p -> Package (type_package s p)
-
-and module_type s t =
-    let open Component.ModuleType in
-    let expr =
-        match t.expr with
-        | Some m -> Some (module_type_expr s m)
-        | None -> None
+    let exception_ id map =
+        let id' = Ident.rename id in 
+        add id id' map
     in
-    {t with expr}
-
-and functor_argument_opt s t =
-    let open Component.FunctorArgument in
-    match t with
-    | Some arg ->
-        Some {arg with expr = module_type_expr s arg.expr}
-    | None ->
-        None
-
-and module_type_expr s t =
-    let open Component.ModuleType in
-    match t with
-    | Path p ->
-        Path (path s p)
-    | Signature sg ->
-        Signature (signature s sg)
-    | Functor (arg, expr) ->
-        Functor (functor_argument_opt s arg, module_type_expr s expr)
-    | With (e,args) ->
-        With (module_type_expr s e,args)
-    | TypeOf decl ->
-        TypeOf (module_decl s decl)
-
-and module_decl s t =
-    match t with
-    | Alias p ->
-        Alias (path s p)
-    | ModuleType t ->
-        ModuleType (module_type_expr s t)
-
-and module_ s t =
-    let open Component.Module in
-    let type_ = module_decl s t.type_ in
-    { t with type_ }
-
-and type_decl_field s f =
-    let open Component.TypeDecl.Field in
-    { f with type_ = type_expr s f.type_}
-
-and type_decl_constructor_arg s a =
-    let open Component.TypeDecl.Constructor in
-    match a with
-    | Tuple ts -> Tuple (list type_expr s ts)
-    | Record fs -> Record (list type_decl_field s fs)
-
-and exception_ s e =
-    let open Component.Exception in
-    let res = option_ type_expr s e.res in
-    let args = type_decl_constructor_arg s e.args in
-    { e with args; res }
-
-and extension_constructor s c =
-    let open Component.Extension.Constructor in
-    { c with args = type_decl_constructor_arg s c.args
-    ; res = option_ type_expr s c.res }
-
-and extension s e =
-    let open Component.Extension in
-    { e with
-    type_path = path s e.type_path;
-    constructors = List.map (extension_constructor s) e.constructors
+    
+    let extension id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+    
+    let value_ id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let field_ id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let constructor id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let class_ id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let class_type id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let method_ id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let instance_variable id map =
+        let id' = Ident.rename id in 
+        add id id' map
+        in
+  
+    let fns = {
+        Func.Comp.Fold.module_; module_type; type_; exception_; extension; value_; field_; constructor; class_; class_type; method_; instance_variable }
+        in
+  
+    Func.Comp.Fold.fold fns sg.Component.Signature.items map
+  
+let map_fn_of t =
+    let map_fn x = match List.assoc_opt x t.map with Some x -> x | None -> x in
+    let open Func.Comp.Map in 
+    { module_ = map_fn
+    ; module_type = map_fn
+    ; type_ = map_fn
+    ; exception_ = map_fn
+    ; extension = map_fn
+    ; value_ = map_fn
+    ; field_ = map_fn
+    ; constructor = map_fn
+    ; class_ = map_fn
+    ; class_type = map_fn
+    ; method_ = map_fn
+    ; instance_variable = map_fn
     }
 
-and value s v =
-    let open Component.Value in
-    { v with
-    type_ = type_expr s v.type_ }
-
-and rename_bound_idents s sg =
-    let open Component.Signature in
-    function
-    | [] -> s, sg
-    | Module (r,m) :: rest ->
-        let id' = Ident.rename m.id in
-        rename_bound_idents
-            (add m.id (`Local id') s)
-            (Module (r,{m with id=id'}) :: sg)
-            rest
-    | ModuleType mt :: rest ->
-        let id' = Ident.rename mt.id in
-        rename_bound_idents
-            (add mt.id (`Local id') s)
-            (ModuleType {mt with id=id'} :: sg)
-            rest
-    | Type (r,t) :: rest ->
-        let id' = Ident.rename t.id in
-        rename_bound_idents
-            (add t.id (`Local id') s)
-            (Type (r, {t with id=id'}) :: sg)
-            rest
-    | Exception e :: rest ->
-        let id' = Ident.rename e.id in
-        rename_bound_idents
-            (add e.id (`Local id') s)
-            (Exception {e with id=id'} :: sg)
-            rest
-    | (TypExt _) as item :: rest ->
-        rename_bound_idents
-            s (item :: sg) rest
-    | Value v :: rest ->
-        let id' = Ident.rename v.id in
-        rename_bound_idents
-            (add v.id (`Local id') s)
-            (Value {v with id=id'} :: sg)
-            rest
-    | (Comment _) as item :: rest ->
-        rename_bound_idents
-            s (item :: sg) rest
-
-and removed_items s items =
-    let open Component.Signature in
-    List.map (function
-        | RModule (id, _) when List.mem_assoc id s.map ->
-            RModule (id, Some (List.assoc id s.map))
-        | RType (id, _) when List.mem_assoc id s.map ->
-            RType (id, Some (List.assoc id s.map))
-        | x -> x) items
-
-and signature s sg =
-    let open Component.Signature in
-    let s, items = rename_bound_idents s [] sg.items in
-    let items = List.rev_map (function
-        | Module (r, m) -> Module (r, module_ s m)
-        | ModuleType mt -> ModuleType (module_type s mt)
-        | Type (r, t) -> Type (r, type_ s t)
-        | Exception e -> Exception (exception_ s e)
-        | TypExt e -> TypExt (extension s e)
-        | Value v -> Value (value s v)
-        | Comment c -> Comment c
-        ) items in
-    {items; removed = removed_items s sg.removed}
+let signature s sg =
+    let new_ids = renamed_ids identity sg in
+    let sg' = Func.Comp.Map.map (map_fn_of new_ids) sg in
+    Func.Comp.Map.map (map_fn_of s) sg'

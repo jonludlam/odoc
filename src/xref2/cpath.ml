@@ -2,9 +2,8 @@ open Odoc_model.Paths
 
 (* Again, keep one Path.t rather than typed ones for now *)
 type resolved = [
-    | `Local of Ident.t
+    | `Ident of Ident.t
     | `Substituted of resolved
-    | `Identifier of Odoc_model.Paths.Identifier.t
     | `Subst of resolved * resolved
     | `SubstAlias of resolved * resolved
     | `Hidden of resolved
@@ -14,6 +13,8 @@ type resolved = [
     | `Alias of resolved * resolved
     | `ModuleType of resolved * Odoc_model.Names.ModuleTypeName.t
     | `Type of resolved * Odoc_model.Names.TypeName.t
+    | `Class of resolved * Odoc_model.Names.ClassName.t
+    | `ClassType of resolved * Odoc_model.Names.ClassTypeName.t
 ]
 and t = [
     | `Substituted of t
@@ -29,9 +30,9 @@ exception TypesNeedRefining
 
 let rec resolved_module_path_of_cpath : resolved -> Path.Resolved.Module.t =
     function
-    | `Local _ as y -> raise (LocalPath (`Resolved y))
+    | `Ident (`Local _) as y -> raise (LocalPath (`Resolved y))
     | `Substituted y -> resolved_module_path_of_cpath y
-    | `Identifier (#Identifier.Module.t as x) -> `Identifier x
+    | `Ident (`Identifier (#Identifier.Module.t as x)) -> `Identifier x
     | `Subst (a, b) -> `Subst (resolved_module_type_path_of_cpath a, resolved_module_path_of_cpath b)
     | `SubstAlias (a, b) -> `SubstAlias (resolved_module_path_of_cpath a, resolved_module_path_of_cpath b)
     | `Hidden x -> `Hidden (resolved_module_path_of_cpath x)
@@ -43,16 +44,16 @@ let rec resolved_module_path_of_cpath : resolved -> Path.Resolved.Module.t =
 
 and resolved_module_type_path_of_cpath : resolved -> Path.Resolved.ModuleType.t =
     function
-    | `Local _ as y -> raise (LocalPath (`Resolved y))
+    | `Ident (`Local _) as y -> raise (LocalPath (`Resolved y))
     | `Substituted y -> resolved_module_type_path_of_cpath y
-    | `Identifier (#Identifier.ModuleType.t as x) -> `Identifier x
+    | `Ident (`Identifier (#Identifier.ModuleType.t as x)) -> `Identifier x
     | `ModuleType (p, m) -> `ModuleType (resolved_module_path_of_cpath p, m)
     | _ -> raise TypesNeedRefining
 
 and resolved_type_path_of_cpath : resolved -> Path.Resolved.Type.t =
     function
-    | `Identifier (#Identifier.Type.t as x) -> `Identifier x
-    | `Local _ as y -> raise (LocalPath (`Resolved y))
+    | `Ident (`Identifier (#Identifier.Type.t as x)) -> `Identifier x
+    | `Ident (`Local _) as y -> raise (LocalPath (`Resolved y))
     | `Substituted y -> resolved_type_path_of_cpath y
     | `Type (p, m) -> `Type (resolved_module_path_of_cpath p, m)
     | _ -> raise TypesNeedRefining
@@ -80,9 +81,8 @@ and type_path_of_cpath : t -> Path.Type.t =
 
 let rec is_resolved_substituted : resolved -> bool =
     function
-    | `Local _ -> false
+    | `Ident _ -> false
     | `Substituted _ -> true
-    | `Identifier _ -> false
     | `Subst (a, _)
     | `SubstAlias (a, _)
     | `Hidden a 
@@ -91,6 +91,8 @@ let rec is_resolved_substituted : resolved -> bool =
     | `Alias (a, _) 
     | `Module (a, _)
     | `ModuleType (a, _)
+    | `Class (a, _)
+    | `ClassType (a, _)
     | `Type (a, _) -> is_resolved_substituted a
 
 let rec is_substituted : t -> bool =

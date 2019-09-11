@@ -25,6 +25,217 @@ module rec Module : sig
       }
 end = Module
 
+
+and FunctorArgument : sig
+    type t =
+        { id : Ident.t
+        ; expr : ModuleType.expr }
+end = FunctorArgument
+
+and ModuleType : sig
+    type substitution =
+        | ModuleEq of Odoc_model.Paths.Fragment.Module.t * Module.decl
+        | ModuleSubst of Odoc_model.Paths.Fragment.Module.t * Cpath.t
+        | TypeEq of Odoc_model.Paths.Fragment.Type.t * TypeDecl.Equation.t
+        | TypeSubst of Odoc_model.Paths.Fragment.Type.t * TypeDecl.Equation.t
+
+    type expr =
+        | Path of Cpath.t
+        | Signature of Signature.t
+        | With of expr * substitution list
+        | Functor of FunctorArgument.t option * expr
+        | TypeOf of Module.decl
+    type t =
+      { id : Ident.t
+      ; doc : Comment.docs
+      ; expr : expr option }
+end = ModuleType
+
+and Signature : sig
+    type recursive = Odoc_model.Lang.Signature.recursive
+
+    type item =
+        | Module of recursive * Module.t
+        | ModuleType of ModuleType.t
+        | Type of recursive * TypeDecl.t
+        | TypExt of Extension.t
+        | Exception of Exception.t
+        | Value of Value.t
+        | External of External.t
+        | Class of recursive * Class.t
+        | ClassType of recursive * ClassType.t
+        | Include of Include.t
+        | Comment of Comment.docs_or_stop
+
+    (* When doing destructive substitution we keep track of the items that have been removed,
+       and the path they've been substituted with *)
+    type removed_item =
+        | RModule of Ident.t * Cpath.resolved option
+        | RType of Ident.t * Cpath.resolved option
+
+    type t =
+        { items: item list
+        ; removed: removed_item list }
+end = Signature
+
+and Include : sig
+    type t =
+        { parent: Ident.t
+        ; doc: Comment.docs
+        ; decl: Module.decl }
+end = Include
+
+
+and TypeDecl : sig
+
+    module Field : sig
+        type t =
+            { id : Ident.t
+            ; doc : Comment.docs
+            ; mutable_ : bool
+            ; type_ : TypeExpr.t }
+    end
+
+    module Constructor : sig
+        type argument =
+            | Tuple of TypeExpr.t list
+            | Record of Field.t list
+        
+        type t = 
+            { id : Ident.t
+            ; doc : Comment.docs
+            ; args : argument
+            ; res: TypeExpr.t option }
+    end
+
+    module Representation : sig
+        type t =
+            | Variant of Constructor.t list
+            | Record of Field.t list
+            | Extensible
+    end
+
+    type param = Odoc_model.Lang.TypeDecl.param
+
+    module Equation : sig
+        type t =
+            { params: param list
+            ; private_ : bool
+            ; manifest : TypeExpr.t option
+            ; constraints : (TypeExpr.t * TypeExpr.t) list}
+    end
+
+    type t =
+      { id : Ident.t
+      ; doc : Comment.docs
+      ; equation : Equation.t
+      ; representation : Representation.t option }
+end = TypeDecl
+
+and Extension : sig
+    module Constructor : sig
+
+        type t =
+          { id: Ident.t;
+            doc: Comment.docs;
+            args: TypeDecl.Constructor.argument;
+            res: TypeExpr.t option; }
+    
+      end
+    
+      type t =
+        { type_path: Cpath.t;
+          doc: Comment.docs;
+          type_params: TypeDecl.param list;
+          private_: bool;
+          constructors: Constructor.t list; }
+    
+end = Extension
+and Exception : sig
+
+    type t = 
+        { id: Ident.t
+        ; doc : Comment.docs
+        ; args : TypeDecl.Constructor.argument
+        ; res : TypeExpr.t option }
+
+end = Exception
+
+
+and Value : sig
+
+    type t =
+      { id: Ident.t;
+        doc: Comment.docs;
+        type_: TypeExpr.t; }
+  
+end = Value
+
+and External : sig
+    type t =
+        { id : Ident.t
+        ; doc : Comment.docs
+        ; type_ : TypeExpr.t
+        ; primitives : string list }
+
+end = External
+
+and Class : sig
+    type decl =
+        | ClassType of ClassType.expr
+        | Arrow of TypeExpr.label option * TypeExpr.t * decl
+    
+    type t =
+        { id : Ident.t
+        ; doc : Comment.docs
+        ; virtual_ : bool
+        ; params: TypeDecl.param list
+        ; type_ : decl }
+end = Class
+
+and ClassType : sig
+    type expr =
+        | Constr of Cpath.t * TypeExpr.t list
+        | Signature of ClassSignature.t
+    
+    type t = 
+        { id : Ident.t 
+        ; doc : Comment.docs
+        ; virtual_ : bool
+        ; params: TypeDecl.param list
+        ; expr: expr }
+end = ClassType
+
+and ClassSignature : sig
+    type item =
+        | Method of Method.t
+        | InstanceVariable of InstanceVariable.t
+        | Constraint of TypeExpr.t * TypeExpr.t
+        | Inherit of ClassType.expr
+        | Comment of Comment.docs_or_stop
+    
+    type t =
+        { self: TypeExpr.t option
+        ; items: item list }
+end = ClassSignature
+
+and Method : sig
+    type t =
+        { id : Ident.t
+        ; doc : Comment.docs
+        ; private_: bool
+        ; virtual_: bool
+        ; type_ : TypeExpr.t }
+end = Method
+
+and InstanceVariable : sig
+    type t =
+        { id: Ident.t
+        ; doc: Comment.docs
+        ; mutable_ : bool
+        ; virtual_ : bool
+        ; type_ : TypeExpr.t }
+end = InstanceVariable
 and TypeExpr : sig
 
     module Polymorphic_variant : sig
@@ -75,145 +286,24 @@ and TypeExpr : sig
     
       end
     
+    type label = Odoc_model.Lang.TypeExpr.label
     type t =
         | Var of string
         | Any
         | Alias of t * string
-        | Arrow of Odoc_model.Lang.TypeExpr.label option * t * t
+        | Arrow of label option * t * t
         | Tuple of t list
         | Constr of Cpath.t * t list
         | Polymorphic_variant of TypeExpr.Polymorphic_variant.t
         | Object of TypeExpr.Object.t
-        | Class of Odoc_model.Paths.Path.ClassType.t * t list
+        | Class of Cpath.t * t list
         | Poly of string list * t
         | Package of TypeExpr.Package.t
 
 end = TypeExpr
 
-and Extension : sig
-    module Constructor : sig
 
-        type t =
-          { id: Ident.t;
-            doc: Comment.docs;
-            args: TypeDecl.Constructor.argument;
-            res: TypeExpr.t option; }
-    
-      end
-    
-      type t =
-        { type_path: Cpath.t;
-          doc: Comment.docs;
-          type_params: TypeDecl.param list;
-          private_: bool;
-          constructors: Constructor.t list; }
-    
-end = Extension
-and Exception : sig
-
-    type t = 
-        { id: Ident.t
-        ; doc : Comment.docs
-        ; args : TypeDecl.Constructor.argument
-        ; res : TypeExpr.t option }
-
-end = Exception
-
-and FunctorArgument : sig
-    type t =
-        { id : Ident.t
-        ; expr : ModuleType.expr }
-end = FunctorArgument
-
-and ModuleType : sig
-    type substitution =
-        | ModuleEq of Odoc_model.Paths.Fragment.Module.t * Module.decl
-        | ModuleSubst of Odoc_model.Paths.Fragment.Module.t * Cpath.t
-        | TypeEq of Odoc_model.Paths.Fragment.Type.t * TypeDecl.Equation.t
-        | TypeSubst of Odoc_model.Paths.Fragment.Type.t * TypeDecl.Equation.t
-
-    type expr =
-        | Path of Cpath.t
-        | Signature of Signature.t
-        | With of expr * substitution list
-        | Functor of FunctorArgument.t option * expr
-        | TypeOf of Module.decl
-    type t =
-      { id : Ident.t
-      ; doc : Comment.docs
-      ; expr : expr option }
-end = ModuleType
-
-
-and TypeDecl : sig
-
-    module Field : sig
-        type t =
-            { id : Ident.t
-            ; doc : Comment.docs
-            ; mutable_ : bool
-            ; type_ : TypeExpr.t }
-    end
-
-    module Constructor : sig
-        type argument =
-            | Tuple of TypeExpr.t list
-            | Record of Field.t list
-        
-        type t = 
-            { id : Ident.t
-            ; doc : Comment.docs
-            ; args : argument
-            ; res: TypeExpr.t option }
-    end
-
-    type param = Odoc_model.Lang.TypeDecl.param
-
-    module Equation : sig
-        type t =
-            { params: param list
-            ; private_ : bool
-            ; manifest : TypeExpr.t option
-            ; constraints : (TypeExpr.t * TypeExpr.t) list}
-    end
-
-    type t =
-      { id : Ident.t
-      ; doc : Comment.docs
-      ; equation : Equation.t}
-end = TypeDecl
-
-and Value : sig
-
-    type t =
-      { id: Ident.t;
-        doc: Comment.docs;
-        type_: TypeExpr.t; }
   
-end = Value
-  
-and Signature : sig
-    type recursive = Odoc_model.Lang.Signature.recursive
-
-    type item =
-        | Module of recursive * Module.t
-        | ModuleType of ModuleType.t
-        | Type of recursive * TypeDecl.t
-        | Exception of Exception.t
-        | TypExt of Extension.t
-        | Value of Value.t
-        | Comment of Comment.docs_or_stop
-
-    (* When doing destructive substitution we keep track of the items that have been removed,
-       and the path they've been substituted with *)
-    type removed_item =
-        | RModule of Ident.t * Cpath.resolved option
-        | RType of Ident.t * Cpath.resolved option
-
-    type t =
-        { items: item list
-        ; removed: removed_item list }
-end = Signature
 
 module Element = struct
     open Odoc_model.Paths
@@ -254,21 +344,45 @@ module Fmt = struct
             | Type (_,t) ->
                 Format.fprintf ppf
                     "@[<v 2>type %a@]@," type_decl t
-            | Exception e ->
-                Format.fprintf ppf
-                    "@[<v 2>exception %a@]@," exception_ e
             | TypExt e ->
                 Format.fprintf ppf
                     "@[<v 2>type_extension %a@]@," extension e
+            | Exception e ->
+                Format.fprintf ppf
+                    "@[<v 2>exception %a@]@," exception_ e
             | Value v ->
                 Format.fprintf ppf
                     "@[<v 2>val %a@]@," value v
+            | External e ->
+                Format.fprintf ppf
+                    "@[<v 2>external %a@]@," external_ e
+            | Class (_,c) ->
+                Format.fprintf ppf
+                    "@[<v 2>class %a@]@," class_ c
+            | ClassType (_,c) ->
+                Format.fprintf ppf
+                    "@[<v 2>class type %a@]@," class_type c
+            | Include i ->
+                Format.fprintf ppf
+                    "@[<v 2>include %a@]@," include_ i
             | Comment _c ->
                 ()
             ) sg.items;
         Format.fprintf ppf "@]"
 
-    and value ppf v =
+    and external_ ppf _ =
+        Format.fprintf ppf "<todo>"
+    
+    and class_ ppf _c =
+        Format.fprintf ppf "<todo>"
+    
+    and class_type ppf _c =
+        Format.fprintf ppf "<todo>"
+    
+    and include_ ppf _i =
+        Format.fprintf ppf "<todo>"
+
+        and value ppf v =
         let open Value in
         Format.fprintf ppf "%a : %a" Ident.fmt v.id type_expr v.type_
 
@@ -377,9 +491,8 @@ module Fmt = struct
     
     and resolved_path : Format.formatter -> Cpath.resolved -> unit = fun ppf p ->
         match p with
-        | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
+        | `Ident ident -> Format.fprintf ppf "%a" Ident.fmt ident
         | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" resolved_path p1 path p2
-        | `Identifier p -> Format.fprintf ppf "global(%a)" model_identifier p
         | `Substituted p -> Format.fprintf ppf "substituted(%a)" resolved_path p
         | `Module (p, m) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ModuleName.to_string m)
         | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ModuleTypeName.to_string mt)
@@ -389,6 +502,9 @@ module Fmt = struct
         | `SubstAlias (p1, p2) -> Format.fprintf ppf "(substalias %a -> %a)" resolved_path p1 resolved_path p2
         | `Hidden p1 -> Format.fprintf ppf "(hidden %a)" resolved_path p1
         | `Canonical (p1, p2) -> Format.fprintf ppf "(canonical %a -> %a)" resolved_path p1 path p2
+        | `Class (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ClassName.to_string t)
+        | `ClassType (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ClassTypeName.to_string t)
+        
 
     and path ppf p =
         match p with
@@ -451,284 +567,7 @@ module Fmt = struct
         | `ClassType (sg, c) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> t) (Odoc_model.Names.ClassTypeName.to_string c)
 end
 
-module LocalIdents = struct
 
-end
-
-
-module Of_Lang = struct
-    let ident_of_identifier ident_map identifier =
-        List.assoc_opt identifier ident_map
-
-    let option conv ident_map x =
-        match x with
-        | None -> None
-        | Some x' -> Some (conv ident_map x')
-
-    let rec local_resolved_path_of_resolved_path : _ -> Odoc_model.Paths.Path.Resolved.t -> Cpath.resolved = fun ident_map path ->
-        let recurse p = local_resolved_path_of_resolved_path ident_map (p :> Odoc_model.Paths.Path.Resolved.t) in
-        match path with
-        | `Identifier i -> begin
-            match ident_of_identifier ident_map i with
-            | Some ident ->
-                `Local ident
-            | None ->
-                `Identifier i
-            end
-        | `Module (p, name) ->
-            `Module (recurse p, name)
-        | `ModuleType (p, name) ->
-            `ModuleType (recurse p, name)
-        | `Type (p, name) ->
-            `Type (recurse p, name)
-        | `Apply (p1, p2) ->
-            `Apply (recurse p1, local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t))
-        | `Alias (p1, p2) ->
-            `Alias (recurse p1, recurse p2)
-        | `Subst (p1, p2) ->
-            `Subst (recurse p1, recurse p2)
-        | `SubstAlias (p1, p2) ->
-            `SubstAlias (recurse p1, recurse p2)
-        | `Canonical (p1, p2) ->
-            `Canonical (recurse p1, local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t))
-        | `Hidden p1 ->
-            `Hidden (recurse p1)
-        | _ -> failwith "local_resolved_path_of_resolved_path"
-
-    and local_path_of_path : _ -> Odoc_model.Paths.Path.t -> Cpath.t = fun ident_map path ->
-        match path with
-        | `Resolved r ->
-            `Resolved (local_resolved_path_of_resolved_path ident_map r)
-        | `Dot (path', x) ->
-            `Dot (local_path_of_path ident_map (path' :> Odoc_model.Paths.Path.t), x)
-        | `Apply (p1, p2) ->
-            `Apply (local_path_of_path ident_map (p1 :> Odoc_model.Paths.Path.t),
-                    (local_path_of_path ident_map (p2 :> Odoc_model.Paths.Path.t)))
-        | `Forward str ->
-            `Forward str
-        | `Root str ->
-            `Root str
-
-    let rec type_decl ident_map id ty =
-        let open Odoc_model.Lang.TypeDecl in
-        { TypeDecl.id
-        ; doc = ty.doc
-        ; equation = type_equation ident_map ty.equation }
-
-    and type_equation ident_map teq =
-        let open Odoc_model.Lang.TypeDecl.Equation in
-        { TypeDecl.Equation.params = teq.params
-        ; private_ = teq.private_
-        ; manifest = option type_expression ident_map teq.manifest
-        ; constraints = List.map (fun (x, y) -> (type_expression ident_map x, type_expression ident_map y)) teq.constraints }
-
-    and type_expr_polyvar ident_map v =
-        let open Odoc_model.Lang.TypeExpr.Polymorphic_variant in
-        let map_element = function
-        | Type expr -> TypeExpr.Polymorphic_variant.Type (type_expression ident_map expr)
-        | Constructor c ->
-            Constructor TypeExpr.Polymorphic_variant.Constructor.{
-                name = c.name;
-                constant = c.constant;
-                arguments = List.map (type_expression ident_map) c.arguments;
-                doc = c.doc
-            }
-        in
-        { TypeExpr.Polymorphic_variant.kind = v.kind
-        ; elements = List.map map_element v.elements}
-
-    and type_object ident_map o =
-        let open Odoc_model.Lang.TypeExpr.Object in
-        let map_field = function
-        | Method m -> TypeExpr.(Object.Method {Object.name=m.name; type_ = type_expression ident_map m.type_})
-        | Inherit i -> Inherit (type_expression ident_map i)
-        in
-        { TypeExpr.Object.open_ = o.open_
-        ; fields = List.map map_field o.fields}
-
-    and type_package ident_map pkg =
-        let open Odoc_model.Lang.TypeExpr.Package in
-        { TypeExpr.Package.path = local_path_of_path ident_map (pkg.path :> Odoc_model.Paths.Path.t)
-        ; substitutions = List.map (fun (x,y) -> (x, type_expression ident_map y)) pkg.substitutions}
-
-    and type_expression ident_map expr =
-        let open Odoc_model.Lang.TypeExpr in
-        match expr with
-        | Var s -> TypeExpr.Var s
-        | Any -> Any
-        | Constr (path, _) -> Constr (local_path_of_path ident_map (path :> Odoc_model.Paths.Path.t), [])
-        | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expression ident_map t1, type_expression ident_map t2)
-        | Tuple ts -> Tuple (List.map (type_expression ident_map) ts)
-        | Polymorphic_variant v -> Polymorphic_variant (type_expr_polyvar ident_map v)
-        | Poly (s,ts) -> Poly (s, type_expression ident_map ts)
-        | Alias (t, s) -> Alias (type_expression ident_map t, s) 
-        | Class _ -> failwith "Unhandled in of_type_equation: Class"
-        | Object o -> Object (type_object ident_map o)
-        | Package p -> Package (type_package ident_map p)
-
-    and module_decl ident_map m =
-        match m with
-        | Odoc_model.Lang.Module.Alias p ->
-            Module.Alias (local_path_of_path ident_map (p :> Odoc_model.Paths.Path.t))
-        | Odoc_model.Lang.Module.ModuleType s ->
-            Module.ModuleType (module_type_expr ident_map s)
-
-    and canonical ident_map ( canonical : (Odoc_model.Paths.Path.Module.t * Odoc_model.Paths.Reference.Module.t) option) =
-        match canonical with
-        | Some (path, r) -> Some (local_path_of_path ident_map (path :> Odoc_model.Paths.Path.t), r)
-        | None -> None
-
-    and module_ ident_map id m =
-        let type_ = module_decl ident_map m.Odoc_model.Lang.Module.type_ in
-        let canonical = canonical ident_map m.Odoc_model.Lang.Module.canonical in
-        let display_type = Opt.map (module_decl ident_map) m.Odoc_model.Lang.Module.display_type in
-        {Module.id; doc = m.doc; type_; canonical; hidden=m.hidden; display_type}
-
-    and module_type_substitution ident_map m =
-        let open Odoc_model.Lang.ModuleType in
-        match m with
-        | ModuleEq (frag, decl) ->
-            ModuleType.ModuleEq (frag, module_decl ident_map decl)
-        | ModuleSubst (frag, path) ->
-            ModuleType.ModuleSubst (frag, local_path_of_path ident_map (path :> Odoc_model.Paths.Path.t))
-        | TypeEq (frag, eqn) ->
-            ModuleType.TypeEq (frag, type_equation ident_map eqn)
-        | TypeSubst (frag, eqn) ->
-            ModuleType.TypeSubst (frag, type_equation ident_map eqn)
-
-    and functor_argument ident_map id a =
-        let expr' = module_type_expr ident_map a.Odoc_model.Lang.FunctorArgument.expr in
-        { FunctorArgument.id
-        ; expr = expr' }
-
-    and module_type_expr ident_map m =
-        match m with
-        | Odoc_model.Lang.ModuleType.Signature s ->
-            let s = signature ident_map s in
-            ModuleType.Signature s
-        | Odoc_model.Lang.ModuleType.Path p ->
-            let p' = local_path_of_path ident_map (p :> Odoc_model.Paths.Path.t) in
-            ModuleType.Path p'
-        | Odoc_model.Lang.ModuleType.With (e, subs) ->
-            ModuleType.With (module_type_expr ident_map e,
-                List.map (module_type_substitution ident_map) subs)
-        | Odoc_model.Lang.ModuleType.Functor (Some arg, expr) ->
-            let open Odoc_model.Paths in
-            let identifier = arg.Odoc_model.Lang.FunctorArgument.id in
-            let id = Ident.of_identifier (identifier :> Identifier.t) in
-            let ident_map' = ((identifier :> Identifier.t), id) :: ident_map in
-            let arg' = functor_argument ident_map' id arg in
-            let expr' = module_type_expr ident_map' expr in
-            ModuleType.Functor (Some arg', expr')
-        | Odoc_model.Lang.ModuleType.Functor (None, expr) ->
-            let expr' = module_type_expr ident_map expr in
-            ModuleType.Functor (None, expr')
-        | Odoc_model.Lang.ModuleType.TypeOf decl ->
-            let decl' = module_decl ident_map decl in
-            ModuleType.TypeOf decl'
-
-
-    and module_type ident_map id m =
-        let expr = Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in
-        {ModuleType.id; doc = m.doc; expr}
-
-    and value ident_map id v =
-        let type_ = type_expression ident_map v.Odoc_model.Lang.Value.type_ in
-        { Value.id
-        ; type_ 
-        ; doc = v.doc }
-
-    and signature : _ -> Odoc_model.Lang.Signature.t -> Signature.t =
-        let open Odoc_model.Paths in
-        fun ident_map items ->
-            (* First we construct a list of brand new [Ident.t]s
-                for each item in the signature *)
-            let ident_map_new : (Identifier.t * Ident.t) list =
-                let open Odoc_model.Lang.Signature in
-                List.fold_left (fun acc item ->
-                    match item with
-                    | Type (_, t) ->
-                        let identifier = t.Odoc_model.Lang.TypeDecl.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | Module (_, m) ->
-                        let identifier = m.Odoc_model.Lang.Module.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | ModuleType m ->
-                        let identifier = m.Odoc_model.Lang.ModuleType.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | TypExt _ ->
-                        acc
-                    | Exception e ->
-                        let identifier = e.Odoc_model.Lang.Exception.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | Value v ->
-                        let identifier = v.Odoc_model.Lang.Value.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | External e ->
-                        let identifier = e.Odoc_model.Lang.External.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | Class (_,c) ->
-                        let identifier = c.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | ClassType (_,c) ->
-                        let identifier = c.Odoc_model.Lang.ClassType.id in
-                        let id = Ident.of_identifier (identifier :> Identifier.t) in
-                        ((identifier :> Identifier.t), id)::acc
-                    | Include _ ->
-                        acc
-                    | Comment _ ->
-                        acc) [] items
-            in
-
-            let ident_map = ident_map_new @ ident_map in
-            (* Now we construct the Components for each item,
-                converting all paths containing Identifiers pointing at
-                our elements to local paths *)
-            let items = List.map (
-                let open Odoc_model.Lang.Signature in
-                function
-                |  Type (r, t) ->
-                    let id = List.assoc (t.id :> Identifier.t) ident_map in 
-                    let t' = type_decl ident_map id t in
-                    Signature.Type (r,t')
-                | Module (r, m) ->
-                    let id = List.assoc (m.id :> Identifier.t) ident_map in 
-                    let m' = module_ ident_map id m in
-                    Signature.Module (r,m')
-                | ModuleType m ->
-                    let id = List.assoc (m.id :> Identifier.t) ident_map in 
-                    let m' = module_type ident_map id m in
-                    Signature.ModuleType m'
-                | Value v ->
-                    let id = List.assoc (v.id :> Identifier.t) ident_map in
-                    let v' = value ident_map id v in
-                    Signature.Value v'
-                | Comment c ->
-                    Signature.Comment c
-                | TypExt _ ->
-                    failwith "Unhandled typext in of_signature"
-                | Exception _ ->
-                    failwith "Unhandled exception in of_signature"
-                | External _ ->
-                    failwith "Unhandled external in of_signature"
-                | Class (_,_) ->
-                    failwith "Unhandled class in of_signature"
-                | ClassType (_,_) ->
-                    failwith "Unhandled classtype in of_signature"
-                | Include _ ->
-                    failwith "Unhandled include in of_signature"
-                ) items
-            in
-            { items; removed=[] }
-
-end
 
 module Find = struct
 

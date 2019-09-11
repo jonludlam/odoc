@@ -32,7 +32,7 @@ let core_types =
    let open Odoc_model.Lang.TypeDecl in
    let open Odoc_model.Paths in
     List.map
-      (fun decl -> (Identifier.name decl.id, Component.Of_Lang.type_decl [] (Ident.of_identifier (decl.id :> Identifier.t)) decl))
+      (fun decl -> (Identifier.name decl.id, Comp_of_lang.type_decl Comp_of_lang.empty (Ident.local_of_identifier (decl.id :> Identifier.t)) decl))
       Odoc_model.Predefined.core_types
 
 let prefix_signature (path, s) =
