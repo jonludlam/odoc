@@ -261,7 +261,7 @@ open Type_expression
 module Type_declaration :
 sig
   val type_decl :
-    bool -> Lang.Signature.recursive * Lang.TypeDecl.t ->
+    ?is_substitution:bool -> Lang.Signature.recursive * Lang.TypeDecl.t ->
       rendered_item * Odoc_model.Comment.docs
   val extension : Lang.Extension.t -> rendered_item * Odoc_model.Comment.docs
   val exn : Lang.Exception.t -> rendered_item * Odoc_model.Comment.docs
@@ -271,7 +271,7 @@ sig
     Lang.TypeDecl.param list ->
       [> `PCDATA ] Html.elt
 
-  val format_manifest : ?compact_variants:bool -> Lang.TypeDecl.Equation.t -> text * bool
+  val format_manifest : ?is_substitution:bool -> ?compact_variants:bool -> Lang.TypeDecl.Equation.t -> text * bool
 
   val format_constraints : (Lang.TypeExpr.t * Lang.TypeExpr.t) list -> text
 end =
@@ -567,17 +567,17 @@ struct
     end
 
   let format_manifest
-    : 'inner_row 'outer_row. ?compact_variants:bool
+    : 'inner_row 'outer_row. ?is_substitution:bool -> ?compact_variants:bool
     -> Odoc_model.Lang.TypeDecl.Equation.t
     -> text * bool
-  = fun ?(compact_variants=true) equation ->
+  = fun ?(is_substitution=false) ?(compact_variants=true) equation ->
     let _ = compact_variants in (* TODO *)
     let private_ = equation.private_ in
     match equation.manifest with
     | None -> [], private_
     | Some t ->
       let manifest =
-        Html.txt " = " ::
+        Html.txt (if is_substitution then " := " else "=") ::
         (if private_ then
           [keyword Syntax.Type.private_keyword; Html.txt " "]
         else []) @
@@ -587,7 +587,7 @@ struct
 
 
 
-  let type_decl is_substitution ((recursive, t) : Lang.Signature.recursive * Lang.TypeDecl.t) =
+  let type_decl ?(is_substitution=false) ((recursive, t) : Lang.Signature.recursive * Lang.TypeDecl.t) =
     let tyname = Paths.Identifier.name t.id in
     let params = format_params t.equation.params in
     let constraints = format_constraints t.equation.constraints in
@@ -604,7 +604,7 @@ struct
         in
         manifest, false
       | _ ->
-        let manifest, need_private = format_manifest t.equation in
+        let manifest, need_private = format_manifest ~is_substitution t.equation in
         Utils.optional_code manifest, need_private
     in
     let representation =
@@ -1433,8 +1433,8 @@ struct
     | Comment comment -> `Comment comment
 
   let rec render_leaf_signature_item : Lang.Signature.item -> _ = function
-    | Type (r, t) -> type_decl false (r, t)
-    | TypeSubstitution t -> type_decl true (Ordinary, t)
+    | Type (r, t) -> type_decl (r, t)
+    | TypeSubstitution t -> type_decl ~is_substitution:true (Ordinary, t)
     | TypExt e -> extension e
     | Exception e -> exn e
     | Value v -> value v
