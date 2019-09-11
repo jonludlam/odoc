@@ -177,7 +177,10 @@ let add_signature_tree_item parent item env =
 #if OCAML_MAJOR = 4 && OCAML_MINOR >= 08
     | Tsig_modsubst ms ->
       add_module parent ms.ms_id env
-    | Tsig_typesubst _
+    | Tsig_typesubst ts ->
+      List.fold_right
+        (fun decl env -> add_type parent decl.typ_id env)
+        ts env
 #endif
     | Tsig_value _ | Tsig_typext _
     | Tsig_exception _ | Tsig_open _
