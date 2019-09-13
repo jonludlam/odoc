@@ -110,7 +110,8 @@ signature is as follows:
        {Odoc_xref2.Component.TypeDecl.id = ("x", 0); doc = [];
         equation =
          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false; manifest = None; constraints = []}}))]}
+          private_ = false; manifest = None; constraints = []}}))];
+ roots = []}
 ```
 
 here we can see there are two types in the environment and nothing else. `u` has identifier 
@@ -207,6 +208,9 @@ ignore in this case).
 
 ```ocaml env=e1
 # Resolve.signature Env.empty sg;;
+In here!!
+Ok!
+global(x)
 - : Odoc_model.Lang.Signature.t =
 [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
   {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "x");
@@ -1555,3 +1559,466 @@ let sg = Common.signature_of_mli_string test_data;;
           representation = None})])}]
 ```
 
+# Hidden / Canonical
+
+```ocaml env=e1
+let test_data = {|
+module M__Hidden : sig
+  type x
+end
+
+type b = M__Hidden.x
+
+(** @canonical Root.N *)
+module N = M__Hidden
+
+type t = N.x
+|};;
+let sg = Common.signature_of_mli_string test_data;;
+let env = Env.open_signature sg Env.empty;;
+```
+
+```ocaml env=e1
+# env;;
+- : Env.t =
+{Odoc_xref2.Env.ident_max = 0;
+ modules =
+  [(`Module (`Root (Common.root, "Root"), "N"),
+    {Odoc_xref2.Component.Module.id = ("N", 3);
+     doc =
+      [{Odoc_model.Location_.location =
+         {Odoc_model.Location_.file = "";
+          start = {Odoc_model.Location_.line = 8; column = 6};
+          end_ = {Odoc_model.Location_.line = 8; column = 24}};
+        value =
+         `Tag
+           (`Canonical
+              (`Dot (`Root "Root", "N"),
+               `Dot (`Root ("Root", `TUnknown), "N")))}];
+     type_ =
+      Odoc_xref2.Component.Module.Alias
+       (`Resolved
+          (`Hidden
+             (`Identifier
+                (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+     canonical =
+      Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+     hidden = false; display_type = None});
+   (`Module (`Root (Common.root, "Root"), "M__Hidden"),
+    {Odoc_xref2.Component.Module.id = ("M__Hidden", 0); doc = [];
+     type_ =
+      Odoc_xref2.Component.Module.ModuleType
+       (Odoc_xref2.Component.ModuleType.Signature
+         {Odoc_xref2.Component.Signature.items =
+           [Odoc_xref2.Component.Signature.Type
+             (Odoc_model.Lang.Signature.Ordinary,
+             {Odoc_xref2.Component.TypeDecl.id = ("x", 1); doc = [];
+              equation =
+               {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+                private_ = false; manifest = None; constraints = []}})];
+          removed = []});
+     canonical = None; hidden = true; display_type = None})];
+ module_types = [];
+ types =
+  [(`Type (`Root (Common.root, "Root"), "t"),
+    {Odoc_xref2.Component.TypeDecl.id = ("t", 4); doc = [];
+     equation =
+      {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
+       manifest =
+        Some
+         (Odoc_xref2.Component.TypeExpr.Constr
+           (`Dot
+              (`Resolved
+                 (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
+               "x"),
+           []));
+       constraints = []}});
+   (`Type (`Root (Common.root, "Root"), "b"),
+    {Odoc_xref2.Component.TypeDecl.id = ("b", 2); doc = [];
+     equation =
+      {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
+       manifest =
+        Some
+         (Odoc_xref2.Component.TypeExpr.Constr
+           (`Dot
+              (`Resolved
+                 (`Hidden
+                    (`Identifier
+                       (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
+               "x"),
+           []));
+       constraints = []}})];
+ values = []; titles = [];
+ elts =
+  [("t",
+    `Type
+      (`Type (`Root (Common.root, "Root"), "t"),
+       {Odoc_xref2.Component.TypeDecl.id = ("t", 4); doc = [];
+        equation =
+         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+          private_ = false;
+          manifest =
+           Some
+            (Odoc_xref2.Component.TypeExpr.Constr
+              (`Dot
+                 (`Resolved
+                    (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
+                  "x"),
+              []));
+          constraints = []}}));
+   ("N",
+    `Module
+      (`Module (`Root (Common.root, "Root"), "N"),
+       {Odoc_xref2.Component.Module.id = ("N", 3);
+        doc =
+         [{Odoc_model.Location_.location =
+            {Odoc_model.Location_.file = "";
+             start = {Odoc_model.Location_.line = 8; column = 6};
+             end_ = {Odoc_model.Location_.line = 8; column = 24}};
+           value =
+            `Tag
+              (`Canonical
+                 (`Dot (`Root "Root", "N"),
+                  `Dot (`Root ("Root", `TUnknown), "N")))}];
+        type_ =
+         Odoc_xref2.Component.Module.Alias
+          (`Resolved
+             (`Hidden
+                (`Identifier
+                   (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+        canonical =
+         Some
+          (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+        hidden = false; display_type = None}));
+   ("b",
+    `Type
+      (`Type (`Root (Common.root, "Root"), "b"),
+       {Odoc_xref2.Component.TypeDecl.id = ("b", 2); doc = [];
+        equation =
+         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+          private_ = false;
+          manifest =
+           Some
+            (Odoc_xref2.Component.TypeExpr.Constr
+              (`Dot
+                 (`Resolved
+                    (`Hidden
+                       (`Identifier
+                          (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
+                  "x"),
+              []));
+          constraints = []}}));
+   ("M__Hidden",
+    `Module
+      (`Module (`Root (Common.root, "Root"), "M__Hidden"),
+       {Odoc_xref2.Component.Module.id = ("M__Hidden", 0); doc = [];
+        type_ =
+         Odoc_xref2.Component.Module.ModuleType
+          (Odoc_xref2.Component.ModuleType.Signature
+            {Odoc_xref2.Component.Signature.items =
+              [Odoc_xref2.Component.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_xref2.Component.TypeDecl.id = ("x", 1); doc = [];
+                 equation =
+                  {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+                   private_ = false; manifest = None; constraints = []}})];
+             removed = []});
+        canonical = None; hidden = true; display_type = None}))];
+ roots = []}
+# let resolved = Resolve.signature Env.empty sg;;
+In here!!
+Ok!
+(hidden global(M__Hidden)).x
+In here!!
+Ok!
+(alias (canonical global(N) -> Root.N) -> (hidden global(M__Hidden))).x
+Gah! exception Odoc_xref2.Cpath.TypesNeedRefining backtrace 
+val resolved : Odoc_model.Lang.Signature.t =
+  [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.Module.id =
+      `Module (`Root (Common.root, "Root"), "M__Hidden");
+     doc = [];
+     type_ =
+      Odoc_model.Lang.Module.ModuleType
+       (Odoc_model.Lang.ModuleType.Signature
+         [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_model.Lang.TypeDecl.id =
+             `Type (`Module (`Root (Common.root, "Root"), "M__Hidden"), "x");
+            doc = [];
+            equation =
+             {Odoc_model.Lang.TypeDecl.Equation.params = [];
+              private_ = false; manifest = None; constraints = []};
+            representation = None})]);
+     canonical = None; hidden = true; display_type = None;
+     expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+   Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "b");
+     doc = [];
+     equation =
+      {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+       manifest =
+        Some
+         (Odoc_model.Lang.TypeExpr.Constr
+           (`Resolved
+              (`Type
+                 (`Hidden
+                    (`Identifier
+                       (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
+                  "x")),
+           []));
+       constraints = []};
+     representation = None});
+   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "N");
+     doc =
+      [{Odoc_model.Location_.location =
+         {Odoc_model.Location_.file = "";
+          start = {Odoc_model.Location_.line = 8; column = 6};
+          end_ = {Odoc_model.Location_.line = 8; column = 24}};
+        value =
+         `Tag
+           (`Canonical
+              (`Dot (`Root "Root", "N"),
+               `Dot (`Root ("Root", `TUnknown), "N")))}];
+     type_ =
+      Odoc_model.Lang.Module.Alias
+       (`Resolved
+          (`Hidden
+             (`Identifier
+                (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+     canonical =
+      Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+     hidden = false; display_type = None; expansion = None});
+   Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+     doc = [];
+     equation =
+      {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+       manifest =
+        Some
+         (Odoc_model.Lang.TypeExpr.Constr
+           (`Dot
+              (`Resolved
+                 (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
+               "x"),
+           []));
+       constraints = []};
+     representation = None})]
+
+# let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true env (`Resolved
+               (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
+val p : Cpath.resolved =
+  `Canonical
+    (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
+     `Dot (`Root "Root", "N"))
+val m : Component.Module.t =
+  {Odoc_xref2.Component.Module.id = ("N", 3);
+   doc =
+    [{Odoc_model.Location_.location =
+       {Odoc_model.Location_.file = "";
+        start = {Odoc_model.Location_.line = 8; column = 6};
+        end_ = {Odoc_model.Location_.line = 8; column = 24}};
+      value =
+       `Tag
+         (`Canonical
+            (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N")))}];
+   type_ =
+    Odoc_xref2.Component.Module.Alias
+     (`Resolved
+        (`Hidden
+           (`Identifier (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+   canonical =
+    Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+   hidden = false; display_type = None}
+# Tools.signature_of_module env (p, m);;
+- : Cpath.resolved * Component.Signature.t =
+(`Alias
+   (`Canonical
+      (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
+       `Dot (`Root "Root", "N")),
+    `Hidden
+      (`Identifier (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
+ {Odoc_xref2.Component.Signature.items =
+   [Odoc_xref2.Component.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+     {Odoc_xref2.Component.TypeDecl.id = ("x", 14); doc = [];
+      equation =
+       {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
+        manifest =
+         Some
+          (Odoc_xref2.Component.TypeExpr.Constr
+            (`Resolved
+               (`Type
+                  (`Hidden
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
+                   "x")),
+            []));
+        constraints = []}})];
+  removed = []})
+# sg;;
+- : Odoc_model.Lang.Signature.t =
+[Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id =
+    `Module (`Root (Common.root, "Root"), "M__Hidden");
+   doc = [];
+   type_ =
+    Odoc_model.Lang.Module.ModuleType
+     (Odoc_model.Lang.ModuleType.Signature
+       [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+         {Odoc_model.Lang.TypeDecl.id =
+           `Type (`Module (`Root (Common.root, "Root"), "M__Hidden"), "x");
+          doc = [];
+          equation =
+           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+            manifest = None; constraints = []};
+          representation = None})]);
+   canonical = None; hidden = true; display_type = None;
+   expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+ Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "b");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest =
+      Some
+       (Odoc_model.Lang.TypeExpr.Constr
+         (`Dot
+            (`Resolved
+               (`Hidden
+                  (`Identifier
+                     (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
+             "x"),
+         []));
+     constraints = []};
+   representation = None});
+ Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "N");
+   doc =
+    [{Odoc_model.Location_.location =
+       {Odoc_model.Location_.file = "";
+        start = {Odoc_model.Location_.line = 8; column = 6};
+        end_ = {Odoc_model.Location_.line = 8; column = 24}};
+      value =
+       `Tag
+         (`Canonical
+            (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N")))}];
+   type_ =
+    Odoc_model.Lang.Module.Alias
+     (`Resolved
+        (`Hidden
+           (`Identifier (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+   canonical =
+    Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+   hidden = false; display_type = None; expansion = None});
+ Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest =
+      Some
+       (Odoc_model.Lang.TypeExpr.Constr
+         (`Dot
+            (`Resolved
+               (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
+             "x"),
+         []));
+     constraints = []};
+   representation = None})]
+# resolved;;
+- : Odoc_model.Lang.Signature.t =
+[Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id =
+    `Module (`Root (Common.root, "Root"), "M__Hidden");
+   doc = [];
+   type_ =
+    Odoc_model.Lang.Module.ModuleType
+     (Odoc_model.Lang.ModuleType.Signature
+       [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+         {Odoc_model.Lang.TypeDecl.id =
+           `Type (`Module (`Root (Common.root, "Root"), "M__Hidden"), "x");
+          doc = [];
+          equation =
+           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+            manifest = None; constraints = []};
+          representation = None})]);
+   canonical = None; hidden = true; display_type = None;
+   expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+ Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "b");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest =
+      Some
+       (Odoc_model.Lang.TypeExpr.Constr
+         (`Resolved
+            (`Type
+               (`Hidden
+                  (`Identifier
+                     (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
+                "x")),
+         []));
+     constraints = []};
+   representation = None});
+ Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "N");
+   doc =
+    [{Odoc_model.Location_.location =
+       {Odoc_model.Location_.file = "";
+        start = {Odoc_model.Location_.line = 8; column = 6};
+        end_ = {Odoc_model.Location_.line = 8; column = 24}};
+      value =
+       `Tag
+         (`Canonical
+            (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N")))}];
+   type_ =
+    Odoc_model.Lang.Module.Alias
+     (`Resolved
+        (`Hidden
+           (`Identifier (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+   canonical =
+    Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+   hidden = false; display_type = None; expansion = None});
+ Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest =
+      Some
+       (Odoc_model.Lang.TypeExpr.Constr
+         (`Dot
+            (`Resolved
+               (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
+             "x"),
+         []));
+     constraints = []};
+   representation = None})]
+# Tools.lookup_type_from_path env (`Dot
+            (`Resolved
+               (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
+             "t"));;
+Exception:
+Odoc_xref2.Component.Find.Find_failure
+ ({Odoc_xref2__Component.Signature.items =
+    [Odoc_xref2__Component.Signature.Type
+      (Odoc_model.Lang.Signature.Ordinary,
+      {Odoc_xref2__Component.TypeDecl.id = ("x", 16); doc = [];
+       equation =
+        {Odoc_xref2__Component.TypeDecl.Equation.params = [];
+         private_ = false;
+         manifest =
+          Some
+           (Odoc_xref2__Component.TypeExpr.Constr
+             (`Resolved
+                (`Type
+                   (`Hidden
+                      (`Identifier
+                         (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
+                    "x")),
+             []));
+         constraints = []}})];
+   removed = []},
+ "t", "type").
+```

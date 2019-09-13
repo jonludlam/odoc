@@ -27,7 +27,7 @@ and module_type_path : Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
-    match Tools.lookup_and_resolve_module_from_path true env cp with
+    match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Ok (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Error _ -> p
     | exception _ -> p
@@ -41,6 +41,7 @@ let rec unit resolver t =
             let unit = resolver.resolve_unit root in
             Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string root);
             let env = Env.add_unit unit env in
+            let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) unit.id env in
             (import::imports, env)
         | Import.Unresolved (str, _) ->
             match resolver.lookup_unit str with
@@ -166,44 +167,20 @@ and class_ env c =
 and signature : Env.t -> Signature.t -> _ = fun env s ->
     let open Signature in
     let env = Env.open_signature s env in
-    let (_, items') = 
-        List.fold_right (fun item (env, items) ->
-            match item with
-            | Module (r, m) ->
-                let m' = module_ env m in
-                (env, (Module (r, m'))::items)
-            | Type (r, t) ->
-                let t' = type_decl env t in
-                (env, (Type (r, t'))::items)
-            | ModuleType mt ->
-                let mt' = module_type env mt in
-                (env, (ModuleType mt')::items)
-            | Value v ->
-                let v' = value_ env v in
-                (env, (Value v')::items)
-            | Comment c ->
-                let c' = comment env c in
-                (env, (Comment c')::items)
-            | TypExt t ->
-                let t' = extension env t in
-                (env, (TypExt t')::items) 
-            | Exception e ->
-                let e' = exception_ env e in
-                (env, (Exception e')::items)
-            | External e ->
-                let e' = external_ env e in
-                (env, (External e')::items)
-            | Class (r,c) ->
-                let c' = class_ env c in
-                (env, (Class (r,c'))::items)
-            | ClassType (r,c) ->
-                let c' = class_type env c in
-                (env, (ClassType (r,c'))::items)
-            | Include i ->
-                let i' = include_ env i in
-                (env, (Include i')::items)
-            ) s (env, [])
-    in items'
+    List.map (fun item ->
+        match item with
+        | Module (r, m) -> Module (r, module_ env m)
+        | Type (r, t) -> Type (r, type_decl env t)
+        | ModuleType mt -> ModuleType (module_type env mt)
+        | Value v -> Value (value_ env v)
+        | Comment c -> Comment (comment env c)
+        | TypExt t -> TypExt (extension env t) 
+        | Exception e -> Exception (exception_ env e)
+        | External e -> External (external_ env e)
+        | Class (r,c) -> Class (r, class_ env c)
+        | ClassType (r,c) -> ClassType (r, class_type env c)
+        | Include i -> Include (include_ env i)
+        ) s
 
 and module_ : Env.t -> Module.t -> Module.t = fun env m ->
     let open Module in
@@ -216,7 +193,7 @@ and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module
     | ModuleType expr -> ModuleType (module_type_expr env id expr)
     | Alias p ->
         let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
-        match Tools.lookup_and_resolve_module_from_path true env cp with
+        match Tools.lookup_and_resolve_module_from_path true true env cp with
         | Ok (p', _) -> Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
         | _ -> decl
 
@@ -266,11 +243,8 @@ and module_type_expr : Env.t -> Paths.Identifier.Signature.t -> ModuleType.expr 
 
 and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t = fun env t ->
     let open TypeDecl in
-    match t.equation.Equation.manifest with
-    | Some texpr ->
-        let texpr' = type_expression env texpr in
-        {t with equation = {t.equation with manifest = Some texpr'}}
-    | None -> t
+    let equation = type_decl_equation env t.equation in
+    {t with equation}
 
 and type_decl_equation env t =
     let open TypeDecl.Equation in
@@ -336,11 +310,15 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expression env t1, type_expression env t2)
     | Tuple ts -> Tuple (List.map (type_expression env) ts)
     | Constr (path, ts) -> begin
+        Printf.printf "In here!!\n%!";
         let cp = Component.Of_Lang.local_path_of_path [] (path :> Paths.Path.t) in
         match Tools.lookup_type_from_path env cp with
         | Ok (p, _) ->
+            Printf.printf "Ok!\n%!";
+            Format.fprintf Format.std_formatter "%a\n%!" Component.Fmt.resolved_path p;
             Constr (`Resolved (Cpath.resolved_type_path_of_cpath p), ts)
-        | Error _ -> Constr (path, ts)
+        | Error _e ->
+            Constr (path, ts)
         end
     | Polymorphic_variant v ->
         Polymorphic_variant (type_expression_polyvar env v)
@@ -351,7 +329,9 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Poly (strs, t) -> Poly (strs, type_expression env t)
     | Package p ->
         Package (type_expression_package env p)
-    with _e -> texpr
+    with e ->
+        Format.fprintf Format.std_formatter "Gah! exception %s backtrace %s\n%!" (Printexc.to_string e) (Printexc.get_backtrace ());
+        texpr
 
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)

@@ -11,6 +11,9 @@ BEFORE
 type t
 type u = resolved[global(t)]
 
+In here!!
+Ok!
+global(t)
 AFTER 
 ===== 
 type t
@@ -33,6 +36,9 @@ module M : sig
   end
 type u = resolved[global(M)].t
 
+In here!!
+Ok!
+global(M).t
 AFTER 
 ===== 
 module M : sig
@@ -59,6 +65,9 @@ module type M = sig
 module N : resolved[global(M)]
 type u = resolved[global(N)].t
 
+In here!!
+Ok!
+global(N).t
 AFTER 
 ===== 
 module type M = sig
@@ -90,6 +99,9 @@ module type M = sig
 module A : resolved[global(M)]
 type u = resolved[global(A)].N.t
 
+In here!!
+Ok!
+global(A).N.t
 AFTER 
 ===== 
 module type M = sig
@@ -125,6 +137,9 @@ module type M = sig
 module A : resolved[global(M)]
 type u = resolved[global(A)].B.t
 
+In here!!
+Ok!
+global(A).B.t
 AFTER 
 ===== 
 module type M = sig
@@ -165,6 +180,9 @@ module type M = sig
 module A : resolved[global(M)]
 type u = resolved[global(A)].X.B.t
 
+In here!!
+Ok!
+global(A).X.B.t
 AFTER 
 ===== 
 module type M = sig
@@ -210,6 +228,9 @@ module B : sig
 module C : resolved[global(A)] with [*.M = = resolved[global(B)]]
 type t = resolved[global(C)].N.t
 
+In here!!
+Ok!
+global(C).N.t
 AFTER 
 ===== 
 module type A = sig
@@ -258,6 +279,9 @@ module B : sig
 module C : resolved[global(A)] with [*.M := resolved[global(B)]]
 type t = resolved[global(C)].N.t
 
+In here!!
+Ok!
+(subst substituted(global(B)).S -> global(C).N).t
 AFTER 
 ===== 
 module type A = sig
@@ -293,6 +317,9 @@ module A : sig
 module B = resolved[global(A)]
 type t = resolved[global(B)].t
 
+In here!!
+Ok!
+(alias global(B) -> global(A)).t
 AFTER 
 ===== 
 module A : sig
@@ -322,6 +349,9 @@ module B = resolved[global(A)]
 module C = resolved[global(B)]
 type t = resolved[global(C)].t
 
+In here!!
+Ok!
+(alias global(C) -> global(A)).t
 AFTER 
 ===== 
 module A : sig
@@ -357,6 +387,15 @@ module F : ((param F X) : resolved[global(S)]) -> ((param F.result Y) : resolved
   type F.result.result.f_t = resolved[global(F.result.result.x_t)]
   end
 
+In here!!
+Ok!
+global((param F X)).t
+In here!!
+Ok!
+global((param F.result Y)).t
+In here!!
+Ok!
+global(F.result.result.x_t)
 AFTER 
 ===== 
 module type S = sig
@@ -428,6 +467,30 @@ module type F7 = ((param F7 Arg) : resolved[global(S)]) -> sig
   type F7.result.u = resolved[global(F7.result.t)]
   end
 
+In here!!
+Ok!
+global((param F2 Arg)).t
+In here!!
+Ok!
+global((param F3 Arg)).t
+In here!!
+Ok!
+global((param F5 Arg1)).t
+In here!!
+Ok!
+global((param F5.result Arg2)).t
+In here!!
+Ok!
+global((param F5.result.result Arg3)).t
+In here!!
+Ok!
+global(F5.result.result.result.t)
+In here!!
+Ok!
+global((param F7 Arg)).t
+In here!!
+Ok!
+global(F7.result.t)
 AFTER 
 ===== 
 module type S = sig
@@ -488,6 +551,9 @@ module M : sig
   end
 type t = resolved[global(F)](resolved[global(M)]).N.t
 
+In here!!
+Ok!
+(subst substituted(global(M)).S -> global(F)(substituted(global(M))).N).t
 AFTER 
 ===== 
 module type ARG = sig
@@ -542,6 +608,12 @@ module FooBarInt : sig
   end
 type t = resolved[global(App)](resolved[global(Bar)])(resolved[global(Foo)])(resolved[global(FooBarInt)]).Foo.bar
 
+In here!!
+Ok!
+global(int)
+In here!!
+Ok!
+(subst substituted(global(Bar)).T -> (subst substituted(global(Foo))(substituted(substituted(global(Bar)))).T -> global(App)(substituted(global(Bar)))(substituted(global(Foo)))(substituted(global(FooBarInt)))).Foo).bar
 AFTER 
 ===== 
 module type Type = sig
