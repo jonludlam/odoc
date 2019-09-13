@@ -8,6 +8,7 @@ type t =
     ; values : (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list
     ; titles : (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list
     ; elts : (string * Component.Element.any) list
+    ; roots : (string * Odoc_model.Paths.Identifier.Module.t) list
     }
 let pp_modules ppf modules =
     List.iter (fun (i,m) ->
@@ -34,6 +35,7 @@ let empty =
     ; values = []
     ; titles = []
     ; elts = []
+    ; roots = []
     }
 
 let add_module identifier m env =
@@ -73,10 +75,15 @@ let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
     | `Docs doc -> add_docs doc env
     | `Stop -> env
 
+let add_root name (id : Odoc_model.Paths.Identifier.Module.t)  env =
+    { env with roots = (name, id)::env.roots }
+
 let lookup_module identifier env =
     try
         List.assoc identifier env.modules
-    with _ -> raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
+    with _ ->
+        Format.fprintf Format.std_formatter "Failed to find type:\nIdentifier: %a\n\n" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+        raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
     try
@@ -93,6 +100,9 @@ let lookup_value identifier env =
 
 let lookup_section_title identifier env =
     List.assoc_opt identifier env.titles
+
+let lookup_root name env =
+    List.assoc_opt name env.roots
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option = fun f -> 
     let rec inner acc = function

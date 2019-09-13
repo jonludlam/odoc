@@ -391,7 +391,7 @@ and module_ env m =
     | Alias _ -> m
     | ModuleType _ -> begin
       let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
-      match Tools.lookup_and_resolve_module_from_path false env (`Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))) with
+      match Tools.lookup_and_resolve_module_from_path false true env (`Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))) with
       | Ok (p, m') ->
         let (_, sg) = Tools.signature_of_module env (p, m') |> Tools.prefix_signature in
         let sg = Lang_of.signature id Lang_of.empty sg in

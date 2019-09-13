@@ -62,6 +62,7 @@ and module_path_of_cpath : t -> Path.Module.t =
     | `Resolved r -> `Resolved (resolved_module_path_of_cpath r)
     | `Dot (p, x) -> `Dot (module_path_of_cpath p, x)
     | `Substituted p -> module_path_of_cpath p
+    | `Root x -> `Root x
     | _ -> raise TypesNeedRefining
 
 and module_type_path_of_cpath : t -> Path.ModuleType.t =

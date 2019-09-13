@@ -57,6 +57,7 @@ module Accessible_paths = struct
     let rec loop acc = function
       | [] -> acc
       | directory :: dirs ->
+        Printf.fprintf stderr "here: lname=%s\n%!" lname;
         let lfile = Fs.File.create ~directory ~name:lname in
         match Unix.stat (Fs.File.to_string lfile) with
         | _ -> loop (lfile::acc) dirs
