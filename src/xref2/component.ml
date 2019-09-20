@@ -402,7 +402,7 @@ module Fmt = struct
     and model_path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
         fun ppf (p : Odoc_model.Paths.Path.t) ->
         match p with
-        | `Resolved rp -> model_resolved_path ppf rp
+        | `Resolved rp -> Format.fprintf ppf "resolved(%a)" model_resolved_path rp
         | `Root s -> Format.fprintf ppf "*%s" s
         | `Forward s -> Format.fprintf ppf "*%s" s
         | `Dot (parent,s) -> Format.fprintf ppf "*%a.%s" model_path (parent :> Odoc_model.Paths.Path.t) s
@@ -415,10 +415,14 @@ module Fmt = struct
         | `Module (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.ModuleName.to_string name)
         | `ModuleType (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.ModuleTypeName.to_string name)
         | `Type (parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.TypeName.to_string name)
-        | `Alias (path, realpath) -> Format.fprintf ppf "(%a -> %a)" model_resolved_path (path :> t) model_resolved_path (realpath :> t)
-        | `Subst (modty, m) -> Format.fprintf ppf "(%a subst-> %a)" model_resolved_path (modty :> t) model_resolved_path (m :> t)
+        | `Alias (path, realpath) -> Format.fprintf ppf "alias(%a,%a)" model_resolved_path (path :> t) model_resolved_path (realpath :> t)
+        | `Subst (modty, m) -> Format.fprintf ppf "subst(%a,%a)" model_resolved_path (modty :> t) model_resolved_path (m :> t)
         | `Apply (funct, arg) -> Format.fprintf ppf "%a(%a)" model_resolved_path (funct :> t) model_path (arg :> Odoc_model.Paths.Path.t)
-        | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_path"
+        | `Canonical (p1,p2) -> Format.fprintf ppf "canonical(%a,%a)" model_resolved_path (p1 :> t) model_path (p2 :> Odoc_model.Paths.Path.t)
+        | `Hidden(p) -> Format.fprintf ppf "hidden(%a)" model_resolved_path (p :> t)
+        | `SubstAlias(_,_) -> Format.fprintf ppf "UNIMPLEMENTED substalias in model_resolved_path"
+        | `Class(parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.ClassName.to_string name)
+        | `ClassType(parent,name) -> Format.fprintf ppf "%a.%s" model_resolved_path (parent :> t) (Odoc_model.Names.ClassTypeName.to_string name)
 
     and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
         match p with

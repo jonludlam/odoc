@@ -93,10 +93,12 @@ and add_canonical_path env m p =
     match m.Component.Module.canonical with
     | Some (cp,_cr) -> begin
         match lookup_and_resolve_module_from_path true false env cp with
-        | Ok (cp', _) -> `Canonical (p, `Resolved cp')
+        | Ok (cp', _) ->
+            `Canonical (p, `Resolved cp')
         | Error _ -> `Canonical (p, cp)
         end
-    | None -> p
+    | None ->
+        p
 
 and add_hidden m p =
     if m.Component.Module.hidden then `Hidden p else p
@@ -145,11 +147,26 @@ and lookup_and_resolve_module_from_resolved_path : bool -> bool -> Env.t -> Cpat
             let (p, m) = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p in
             let (p', m') = handle_module_lookup env add_canonical (Odoc_model.Names.ModuleName.to_string name) p m in
             (p', m')
-        | `Alias (_, p2) -> lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p2
-        | `Subst (_, p)
-        | `SubstAlias (p, _)
-        | `Hidden p
-        | `Canonical (p, _) -> lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p
+        | `Alias (p1, p2) ->
+            let p2',m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p2 in
+            `Alias (p1, p2'),m
+        | `Subst (p1, p2) ->
+            let p2',m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p2 in
+            `Subst(p1,p2'),m
+        | `SubstAlias (p1, p2) ->
+            let p2',m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p2 in
+            `SubstAlias(p1,p2'),m
+        | `Hidden p -> 
+            let p',m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p in
+            `Hidden(p'),m
+        | `Canonical (p1, p2) ->
+            let p2' =
+                match lookup_and_resolve_module_from_path is_resolve add_canonical env p2 with
+                | Ok (p,_) -> `Resolved p
+                | _ -> p2
+            in
+            let p1', m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p1 in
+            `Canonical(p1',p2'),m
         | `ModuleType _
         | `Type _ ->
             let str = Component.Fmt.string_of Component.Fmt.resolved_path p in
@@ -323,7 +340,9 @@ and module_type_expr_of_module_decl : Env.t -> Cpath.resolved * Component.Module
             if Cpath.is_resolved_substituted x'
             then `SubstAlias (p, x'), y'
             else p, y'
-        | Error _ -> failwith "Failed to lookup alias module"
+        | Error _ ->
+            let err = Format.asprintf "Failed to lookup alias module (path=%a)" Component.Fmt.path path in
+            failwith err
         end
     | Component.Module.ModuleType expr -> (p, expr)
 
@@ -377,7 +396,7 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleTy
         | Component.ModuleType.Functor (_,expr) ->
             signature_of_module_type_expr env (incoming_path, expr)
         | Component.ModuleType.TypeOf decl ->
-            signature_of_module_decl env (incoming_path, decl)
+            signature_of_module_decl env ~is_canonical:false (incoming_path, decl)
 
 and signature_of_module_type : Env.t -> Cpath.resolved * Component.ModuleType.t -> Cpath.resolved * Component.Signature.t =
     fun env (p,m) ->
@@ -385,24 +404,37 @@ and signature_of_module_type : Env.t -> Cpath.resolved * Component.ModuleType.t 
         | None -> failwith "oh no"
         | Some expr -> signature_of_module_type_expr env (p,expr)
 
-and signature_of_module_decl : Env.t -> Cpath.resolved * Component.Module.decl -> Cpath.resolved * Component.Signature.t =
-    fun env (incoming_path, decl) ->
+and signature_of_module_decl : Env.t -> is_canonical:bool -> Cpath.resolved * Component.Module.decl -> Cpath.resolved * Component.Signature.t =
+    fun env ~is_canonical (incoming_path, decl) ->
         match decl with
         | Component.Module.Alias path -> begin
             match lookup_and_resolve_module_from_path false true env path with
             | Ok (p', m) -> (* p' is the path to the aliased module *)
-                let (p'', m') = signature_of_module env (p', m) in
-                let m'' = Strengthen.signature p'' m' in
-                (* p'' is the path to the real module *)
-                let p''' = flatten_module_alias (`Alias (incoming_path, p'')) in
-                (p''', m'')
+                let (p'', m') =
+                    if is_canonical
+                    then
+                        signature_of_module env (incoming_path, m)
+                    else
+                        let (p'', m') = signature_of_module env (p', m) in
+                        let m'' = Strengthen.signature p'' m' in
+                        (* p'' is the path to the real module *)
+                        let p''' = flatten_module_alias (`Alias (incoming_path, p'')) in
+                        (p''',m'')
+                in
+                (p'', m')
             | Error _ ->
-                failwith "Failed to lookup alias module"
+                let err = Format.asprintf "Failed to lookup alias module (path=%a)" Component.Fmt.path path in
+                failwith err
             end
         | Component.Module.ModuleType expr -> signature_of_module_type_expr env (incoming_path, expr)
 
 and signature_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.Signature.t =
-    fun env (incoming_path, m) -> signature_of_module_decl env (incoming_path, m.type_)
+    fun env (incoming_path, m) ->
+        match m.canonical with
+        | Some _ ->
+            signature_of_module_decl env ~is_canonical:true (incoming_path, m.type_)
+        | None ->
+            signature_of_module_decl env ~is_canonical:false (incoming_path, m.type_)
 
 and handle_removed : Component.Signature.item list -> Component.Signature.removed_item list -> Component.Signature.removed_item list = fun l acc ->
     let open Component.Signature in
