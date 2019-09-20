@@ -208,9 +208,6 @@ ignore in this case).
 
 ```ocaml env=e1
 # Resolve.signature Env.empty sg;;
-In here!!
-Ok!
-global(x)
 - : Odoc_model.Lang.Signature.t =
 [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
   {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "x");
@@ -916,7 +913,7 @@ let cp = Component.Of_Lang.local_path_of_path [] test_path;;
 Now let's lookup that module:
 
 ```ocaml env=e1
-# let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true env cp;;
+# let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true true env cp;;
 val p : Cpath.resolved =
   `Apply
     (`Apply
@@ -1279,14 +1276,20 @@ Some
                      (`Identifier
                         (`Module (`Root (Common.root, "Root"), "Dep6")),
                       "T"),
-                   `Module
-                     (`Apply
+                   `Subst
+                     (`ModuleType
                         (`Identifier
-                           (`Module (`Root (Common.root, "Root"), "Dep7")),
-                         `Resolved
+                           (`Module (`Root (Common.root, "Root"), "Dep6")),
+                         "T"),
+                      `Module
+                        (`Apply
                            (`Identifier
-                              (`Module (`Root (Common.root, "Root"), "Dep6")))),
-                      "M")),
+                              (`Module (`Root (Common.root, "Root"), "Dep7")),
+                            `Resolved
+                              (`Identifier
+                                 (`Module
+                                    (`Root (Common.root, "Root"), "Dep6")))),
+                         "M"))),
                 "R"),
              `Module
                (`Subst
@@ -1370,7 +1373,9 @@ Some
    (`Resolved
       (`Type
          (`Hidden
-            (`Identifier (`Module (`Root (Common.root, "Root"), "Hidden__"))),
+            (`Hidden
+               (`Identifier
+                  (`Module (`Root (Common.root, "Root"), "Hidden__")))),
           "t")),
    []))
 ```
@@ -1559,6 +1564,41 @@ let sg = Common.signature_of_mli_string test_data;;
           representation = None})])}]
 ```
 
+# Expansion continued
+
+```ocaml env=e1
+let test_data = {|
+module Foo (X : sig end) : sig
+  type t
+  module type S = sig type s = C of t end
+end
+module Bar : sig end
+module M : Foo(Bar).S
+|};;
+let sg = Common.signature_of_mli_string test_data;;
+let resolved = Resolve.signature Env.empty sg;;
+let expanded = Expand.signature Env.empty resolved;;
+let module_M_expansion =
+  let open Common.LangUtils.Lens in
+  Signature.module_ "M" |-- Module.expansion |-~ option |-~ Module.expansion_signature
+```
+
+TODO: This needs fixing (result ought to be `sig type s = C of Foo(Bar).t end`)
+```ocaml env=e1
+# Common.LangUtils.Lens.get module_M_expansion expanded
+- : Odoc_model.Lang.Signature.t =
+[Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.TypeDecl.id =
+    `Type (`Module (`Root (Common.root, "Root"), "M"), "s");
+   doc = [];
+   equation =
+    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+     manifest = None; constraints = []};
+   representation = None})]
+```
+
+
+
 # Hidden / Canonical
 
 ```ocaml env=e1
@@ -1579,160 +1619,8 @@ let env = Env.open_signature sg Env.empty;;
 ```
 
 ```ocaml env=e1
-# env;;
-- : Env.t =
-{Odoc_xref2.Env.ident_max = 0;
- modules =
-  [(`Module (`Root (Common.root, "Root"), "N"),
-    {Odoc_xref2.Component.Module.id = ("N", 3);
-     doc =
-      [{Odoc_model.Location_.location =
-         {Odoc_model.Location_.file = "";
-          start = {Odoc_model.Location_.line = 8; column = 6};
-          end_ = {Odoc_model.Location_.line = 8; column = 24}};
-        value =
-         `Tag
-           (`Canonical
-              (`Dot (`Root "Root", "N"),
-               `Dot (`Root ("Root", `TUnknown), "N")))}];
-     type_ =
-      Odoc_xref2.Component.Module.Alias
-       (`Resolved
-          (`Hidden
-             (`Identifier
-                (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
-     canonical =
-      Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
-     hidden = false; display_type = None});
-   (`Module (`Root (Common.root, "Root"), "M__Hidden"),
-    {Odoc_xref2.Component.Module.id = ("M__Hidden", 0); doc = [];
-     type_ =
-      Odoc_xref2.Component.Module.ModuleType
-       (Odoc_xref2.Component.ModuleType.Signature
-         {Odoc_xref2.Component.Signature.items =
-           [Odoc_xref2.Component.Signature.Type
-             (Odoc_model.Lang.Signature.Ordinary,
-             {Odoc_xref2.Component.TypeDecl.id = ("x", 1); doc = [];
-              equation =
-               {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                private_ = false; manifest = None; constraints = []}})];
-          removed = []});
-     canonical = None; hidden = true; display_type = None})];
- module_types = [];
- types =
-  [(`Type (`Root (Common.root, "Root"), "t"),
-    {Odoc_xref2.Component.TypeDecl.id = ("t", 4); doc = [];
-     equation =
-      {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-       manifest =
-        Some
-         (Odoc_xref2.Component.TypeExpr.Constr
-           (`Dot
-              (`Resolved
-                 (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
-               "x"),
-           []));
-       constraints = []}});
-   (`Type (`Root (Common.root, "Root"), "b"),
-    {Odoc_xref2.Component.TypeDecl.id = ("b", 2); doc = [];
-     equation =
-      {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-       manifest =
-        Some
-         (Odoc_xref2.Component.TypeExpr.Constr
-           (`Dot
-              (`Resolved
-                 (`Hidden
-                    (`Identifier
-                       (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
-               "x"),
-           []));
-       constraints = []}})];
- values = []; titles = [];
- elts =
-  [("t",
-    `Type
-      (`Type (`Root (Common.root, "Root"), "t"),
-       {Odoc_xref2.Component.TypeDecl.id = ("t", 4); doc = [];
-        equation =
-         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false;
-          manifest =
-           Some
-            (Odoc_xref2.Component.TypeExpr.Constr
-              (`Dot
-                 (`Resolved
-                    (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
-                  "x"),
-              []));
-          constraints = []}}));
-   ("N",
-    `Module
-      (`Module (`Root (Common.root, "Root"), "N"),
-       {Odoc_xref2.Component.Module.id = ("N", 3);
-        doc =
-         [{Odoc_model.Location_.location =
-            {Odoc_model.Location_.file = "";
-             start = {Odoc_model.Location_.line = 8; column = 6};
-             end_ = {Odoc_model.Location_.line = 8; column = 24}};
-           value =
-            `Tag
-              (`Canonical
-                 (`Dot (`Root "Root", "N"),
-                  `Dot (`Root ("Root", `TUnknown), "N")))}];
-        type_ =
-         Odoc_xref2.Component.Module.Alias
-          (`Resolved
-             (`Hidden
-                (`Identifier
-                   (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
-        canonical =
-         Some
-          (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
-        hidden = false; display_type = None}));
-   ("b",
-    `Type
-      (`Type (`Root (Common.root, "Root"), "b"),
-       {Odoc_xref2.Component.TypeDecl.id = ("b", 2); doc = [];
-        equation =
-         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false;
-          manifest =
-           Some
-            (Odoc_xref2.Component.TypeExpr.Constr
-              (`Dot
-                 (`Resolved
-                    (`Hidden
-                       (`Identifier
-                          (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
-                  "x"),
-              []));
-          constraints = []}}));
-   ("M__Hidden",
-    `Module
-      (`Module (`Root (Common.root, "Root"), "M__Hidden"),
-       {Odoc_xref2.Component.Module.id = ("M__Hidden", 0); doc = [];
-        type_ =
-         Odoc_xref2.Component.Module.ModuleType
-          (Odoc_xref2.Component.ModuleType.Signature
-            {Odoc_xref2.Component.Signature.items =
-              [Odoc_xref2.Component.Signature.Type
-                (Odoc_model.Lang.Signature.Ordinary,
-                {Odoc_xref2.Component.TypeDecl.id = ("x", 1); doc = [];
-                 equation =
-                  {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                   private_ = false; manifest = None; constraints = []}})];
-             removed = []});
-        canonical = None; hidden = true; display_type = None}))];
- roots = []}
 # let resolved = Resolve.signature Env.empty sg;;
-In here!!
-Ok!
-(hidden global(M__Hidden)).x
-In here!!
-Ok!
-(alias (canonical global(N) -> Root.N) -> (hidden global(M__Hidden))).x
-Gah! exception Odoc_xref2.Cpath.TypesNeedRefining backtrace 
+gotta lookup a root: Root
 val resolved : Odoc_model.Lang.Signature.t =
   [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
     {Odoc_model.Lang.Module.id =
@@ -1762,8 +1650,9 @@ val resolved : Odoc_model.Lang.Signature.t =
            (`Resolved
               (`Type
                  (`Hidden
-                    (`Identifier
-                       (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
+                    (`Hidden
+                       (`Identifier
+                          (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
                   "x")),
            []));
        constraints = []};
@@ -1784,8 +1673,9 @@ val resolved : Odoc_model.Lang.Signature.t =
       Odoc_model.Lang.Module.Alias
        (`Resolved
           (`Hidden
-             (`Identifier
-                (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+             (`Hidden
+                (`Identifier
+                   (`Module (`Root (Common.root, "Root"), "M__Hidden"))))));
      canonical =
       Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
      hidden = false; display_type = None; expansion = None});
@@ -1797,16 +1687,118 @@ val resolved : Odoc_model.Lang.Signature.t =
        manifest =
         Some
          (Odoc_model.Lang.TypeExpr.Constr
-           (`Dot
-              (`Resolved
-                 (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
-               "x"),
+           (`Resolved
+              (`Type
+                 (`Canonical
+                    (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
+                     `Dot (`Root "Root", "N")),
+                  "x")),
            []));
        constraints = []};
      representation = None})]
-
-# let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true env (`Resolved
+# let expanded = Expand.signature Env.empty resolved;;
+val expanded : Odoc_model.Lang.Signature.t =
+  [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.Module.id =
+      `Module (`Root (Common.root, "Root"), "M__Hidden");
+     doc = [];
+     type_ =
+      Odoc_model.Lang.Module.ModuleType
+       (Odoc_model.Lang.ModuleType.Signature
+         [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_model.Lang.TypeDecl.id =
+             `Type (`Module (`Root (Common.root, "Root"), "M__Hidden"), "x");
+            doc = [];
+            equation =
+             {Odoc_model.Lang.TypeDecl.Equation.params = [];
+              private_ = false; manifest = None; constraints = []};
+            representation = None})]);
+     canonical = None; hidden = true; display_type = None;
+     expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+   Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "b");
+     doc = [];
+     equation =
+      {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+       manifest =
+        Some
+         (Odoc_model.Lang.TypeExpr.Constr
+           (`Resolved
+              (`Type
+                 (`Hidden
+                    (`Hidden
+                       (`Identifier
+                          (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
+                  "x")),
+           []));
+       constraints = []};
+     representation = None});
+   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "N");
+     doc =
+      [{Odoc_model.Location_.location =
+         {Odoc_model.Location_.file = "";
+          start = {Odoc_model.Location_.line = 8; column = 6};
+          end_ = {Odoc_model.Location_.line = 8; column = 24}};
+        value =
+         `Tag
+           (`Canonical
+              (`Dot (`Root "Root", "N"),
+               `Dot (`Root ("Root", `TUnknown), "N")))}];
+     type_ =
+      Odoc_model.Lang.Module.Alias
+       (`Resolved
+          (`Hidden
+             (`Hidden
+                (`Identifier
+                   (`Module (`Root (Common.root, "Root"), "M__Hidden"))))));
+     canonical =
+      Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
+     hidden = false;
+     display_type =
+      Some
+       (Odoc_model.Lang.Module.ModuleType
+         (Odoc_model.Lang.ModuleType.Signature
+           [Odoc_model.Lang.Signature.Type
+             (Odoc_model.Lang.Signature.Ordinary,
+             {Odoc_model.Lang.TypeDecl.id =
+               `Type (`Module (`Root (Common.root, "Root"), "N"), "x");
+              doc = [];
+              equation =
+               {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                private_ = false; manifest = None; constraints = []};
+              representation = None})]));
+     expansion =
+      Some
+       (Odoc_model.Lang.Module.Signature
+         [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_model.Lang.TypeDecl.id =
+             `Type (`Module (`Root (Common.root, "Root"), "N"), "x");
+            doc = [];
+            equation =
+             {Odoc_model.Lang.TypeDecl.Equation.params = [];
+              private_ = false; manifest = None; constraints = []};
+            representation = None})])});
+   Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+     doc = [];
+     equation =
+      {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+       manifest =
+        Some
+         (Odoc_model.Lang.TypeExpr.Constr
+           (`Resolved
+              (`Type
+                 (`Canonical
+                    (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
+                     `Dot (`Root "Root", "N")),
+                  "x")),
+           []));
+       constraints = []};
+     representation = None})]
+# let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true true env (`Resolved
                (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
+gotta lookup a root: Root
 val p : Cpath.resolved =
   `Canonical
     (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
@@ -1832,28 +1824,15 @@ val m : Component.Module.t =
    hidden = false; display_type = None}
 # Tools.signature_of_module env (p, m);;
 - : Cpath.resolved * Component.Signature.t =
-(`Alias
-   (`Canonical
-      (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
-       `Dot (`Root "Root", "N")),
-    `Hidden
-      (`Identifier (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
+(`Canonical
+   (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
+    `Dot (`Root "Root", "N")),
  {Odoc_xref2.Component.Signature.items =
    [Odoc_xref2.Component.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.TypeDecl.id = ("x", 14); doc = [];
+     {Odoc_xref2.Component.TypeDecl.id = ("x", 1); doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-        manifest =
-         Some
-          (Odoc_xref2.Component.TypeExpr.Constr
-            (`Resolved
-               (`Type
-                  (`Hidden
-                     (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
-                   "x")),
-            []));
-        constraints = []}})];
+        manifest = None; constraints = []}})];
   removed = []})
 # sg;;
 - : Odoc_model.Lang.Signature.t =
@@ -1955,8 +1934,9 @@ val m : Component.Module.t =
          (`Resolved
             (`Type
                (`Hidden
-                  (`Identifier
-                     (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
+                  (`Hidden
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "M__Hidden")))),
                 "x")),
          []));
      constraints = []};
@@ -1976,7 +1956,9 @@ val m : Component.Module.t =
     Odoc_model.Lang.Module.Alias
      (`Resolved
         (`Hidden
-           (`Identifier (`Module (`Root (Common.root, "Root"), "M__Hidden")))));
+           (`Hidden
+              (`Identifier
+                 (`Module (`Root (Common.root, "Root"), "M__Hidden"))))));
    canonical =
     Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
    hidden = false; display_type = None; expansion = None});
@@ -1988,10 +1970,12 @@ val m : Component.Module.t =
      manifest =
       Some
        (Odoc_model.Lang.TypeExpr.Constr
-         (`Dot
-            (`Resolved
-               (`Identifier (`Module (`Root (Common.root, "Root"), "N"))),
-             "x"),
+         (`Resolved
+            (`Type
+               (`Canonical
+                  (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
+                   `Dot (`Root "Root", "N")),
+                "x")),
          []));
      constraints = []};
    representation = None})]
@@ -2004,21 +1988,11 @@ Odoc_xref2.Component.Find.Find_failure
  ({Odoc_xref2__Component.Signature.items =
     [Odoc_xref2__Component.Signature.Type
       (Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2__Component.TypeDecl.id = ("x", 16); doc = [];
+      {Odoc_xref2__Component.TypeDecl.id = ("x", 19); doc = [];
        equation =
         {Odoc_xref2__Component.TypeDecl.Equation.params = [];
-         private_ = false;
-         manifest =
-          Some
-           (Odoc_xref2__Component.TypeExpr.Constr
-             (`Resolved
-                (`Type
-                   (`Hidden
-                      (`Identifier
-                         (`Module (`Root (Common.root, "Root"), "M__Hidden"))),
-                    "x")),
-             []));
-         constraints = []}})];
+         private_ = false; manifest = None; constraints = []}})];
    removed = []},
  "t", "type").
+gotta lookup a root: Root
 ```

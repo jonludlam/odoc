@@ -39,22 +39,19 @@ let rec unit resolver t =
         match import with
         | Import.Resolved root ->
             let unit = resolver.resolve_unit root in
-            Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string root);
             let env = Env.add_unit unit env in
             let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) unit.id env in
             (import::imports, env)
         | Import.Unresolved (str, _) ->
             match resolver.lookup_unit str with
             | Forward_reference ->
-(*                Printf.fprintf stderr "Import: forward reference %s\n%!" str;*)
                 (import::imports, env)
             | Found f ->
                 let unit = resolver.resolve_unit f.root in
-(*                Printf.fprintf stderr "Import: found module %s\n%!" (Root.to_string f.root);*)
+                let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) unit.id env in
                 let env = Env.add_unit unit env in
                 ((Resolved f.root)::imports, env)
             | Not_found ->
-(*                Printf.fprintf stderr "Not found: %s\n%!" str;*)
                 (import::imports,env)
     ) ([],Env.empty) t.imports in
     {t with content = content env t.content; imports}
@@ -194,7 +191,8 @@ and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module
     | Alias p ->
         let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
         match Tools.lookup_and_resolve_module_from_path true true env cp with
-        | Ok (p', _) -> Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
+        | Ok (p', _) ->
+            Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
         | _ -> decl
 
 and module_type : Env.t -> ModuleType.t -> ModuleType.t = fun env m ->
@@ -310,13 +308,11 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expression env t1, type_expression env t2)
     | Tuple ts -> Tuple (List.map (type_expression env) ts)
     | Constr (path, ts) -> begin
-        Printf.printf "In here!!\n%!";
         let cp = Component.Of_Lang.local_path_of_path [] (path :> Paths.Path.t) in
         match Tools.lookup_type_from_path env cp with
-        | Ok (p, _) ->
-            Printf.printf "Ok!\n%!";
-            Format.fprintf Format.std_formatter "%a\n%!" Component.Fmt.resolved_path p;
-            Constr (`Resolved (Cpath.resolved_type_path_of_cpath p), ts)
+        | Ok (cp, _) ->
+            let p = Cpath.resolved_type_path_of_cpath cp in
+            Constr (`Resolved p, ts)
         | Error _e ->
             Constr (path, ts)
         end
@@ -347,4 +343,5 @@ let resolve x y =
     let after = unit x before in
     after
 
-let resolve_page _ x = x
+let resolve_page _ y = y
+    

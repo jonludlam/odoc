@@ -56,13 +56,13 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       (* See comment in compile for explanation regarding the env duplication. *)
-      let resolve_env = Env.build env (`Unit unit) in
-      let resolved = Odoc_xref2.Resolve.resolve (Env.resolver resolve_env) unit in
-      let _expand_env = Env.build env (`Unit resolved) in
-      (*Odoc_xref.expand (Env.expander expand_env) resolved *)
+      let env = Env.build env (`Unit unit) in
+      let resolved = Odoc_xref2.Resolve.resolve (Env.resolver env) unit in
+      let expanded = Odoc_xref2.Expand.expand (Env.expander env) resolved in
+
 (*      |> Odoc_xref.Lookup.lookup *)
 (*      Odoc_xref2.Resolve.resolve (Env.resolver expand_env) resolved*) (* Yes, again. *)
-      resolved
+      expanded
     in
     let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package

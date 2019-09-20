@@ -195,7 +195,15 @@ module LangUtils = struct
                     let preview = function | ModuleType x -> Some x | _ -> None in
                     {review; preview}
 
-
+                let expansion : (t, expansion option) lens =
+                    let get m = m.expansion in
+                    let set expansion t = {t with expansion} in
+                    {get; set}
+                
+                let expansion_signature : (expansion, Lang.Signature.t) prism =
+                    let review x = Signature x in
+                    let preview = function | Signature x -> Some x | _ -> None in
+                    {review; preview}
             end
 
             module ModuleType = struct

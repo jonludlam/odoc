@@ -102,4 +102,27 @@ let rec is_substituted : t -> bool =
     | `Apply(a, _) -> is_substituted a
     | `Forward _ -> false
     | `Root _ -> false
-    
+
+let rec is_hidden : t -> bool =
+    function
+    | `Resolved r -> is_resolved_hidden r
+    | `Substituted p
+    | `Dot(p,_)
+    | `Apply(p,_) -> is_hidden p
+    | `Forward _ -> false
+    | `Root _ -> false
+
+and is_resolved_hidden : resolved -> bool =
+    function
+    | `Local _ -> false
+    | `Identifier _ -> false
+    | `Hidden _ -> true
+    | `Substituted p
+    | `Canonical (p, _)
+    | `Apply (p, _)
+    | `Module (p, _)
+    | `ModuleType (p, _)
+    | `Type (p, _) -> is_resolved_hidden p
+    | `Subst (p1, p2)
+    | `SubstAlias (p1, p2)
+    | `Alias (p1, p2) -> is_resolved_hidden p1 || is_resolved_hidden p2
