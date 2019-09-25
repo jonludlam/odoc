@@ -278,8 +278,8 @@ the environment. This gets us back the path and a `Component.Module.t` represent
 which are:
 
 ```ocaml env=e1
-# let get_ok = function | Ok x -> x | Error y -> failwith "failed";;
-val get_ok : ('a, 'b) result -> 'a = <fun>
+# let get_ok = Tools.ResultMonad.get_resolved
+val get_ok : ('a, 'b) Tools.ResultMonad.t -> 'a = <fun>
 # let (path, module_) = get_ok @@ Tools.lookup_module_from_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "M"))));;
 val path : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "M"))
@@ -512,8 +512,8 @@ we then return along with the fully resolved identifier.
             (`Identifier (`Module (`Root (Common.root, "Root"), "A"))),
           "B"),
        "t"));;
-- : (Tools.type_lookup_result, string) result =
-Result.Ok
+- : (Tools.type_lookup_result, Cpath.t) Tools.ResultMonad.t =
+Odoc_xref2.Tools.ResultMonad.Resolved
  (`Type
     (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "B"),
      "t"),
@@ -1620,7 +1620,6 @@ let env = Env.open_signature sg Env.empty;;
 
 ```ocaml env=e1
 # let resolved = Resolve.signature Env.empty sg;;
-gotta lookup a root: Root
 val resolved : Odoc_model.Lang.Signature.t =
   [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
     {Odoc_model.Lang.Module.id =
@@ -1798,7 +1797,6 @@ val expanded : Odoc_model.Lang.Signature.t =
      representation = None})]
 # let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true true env (`Resolved
                (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
-gotta lookup a root: Root
 val p : Cpath.resolved =
   `Canonical
     (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
@@ -1994,5 +1992,4 @@ Odoc_xref2.Component.Find.Find_failure
          private_ = false; manifest = None; constraints = []}})];
    removed = []},
  "t", "type").
-gotta lookup a root: Root
 ```

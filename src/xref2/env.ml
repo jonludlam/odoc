@@ -1,5 +1,9 @@
 (* A bunch of association lists. Let's hashtbl them up later *)
 
+type root =
+    | Resolved of Odoc_model.Paths.Identifier.Module.t
+    | Forward
+
 type t =
     { ident_max: int
     ; modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list
@@ -8,7 +12,7 @@ type t =
     ; values : (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list
     ; titles : (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list
     ; elts : (string * Component.Element.any) list
-    ; roots : (string * Odoc_model.Paths.Identifier.Module.t) list
+    ; roots : (string * root) list
     }
 let pp_modules ppf modules =
     List.iter (fun (i,m) ->
@@ -75,8 +79,8 @@ let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
     | `Docs doc -> add_docs doc env
     | `Stop -> env
 
-let add_root name (id : Odoc_model.Paths.Identifier.Module.t)  env =
-    { env with roots = (name, id)::env.roots }
+let add_root name ty env =
+    { env with roots = (name, ty)::env.roots }
 
 let lookup_module identifier env =
     try

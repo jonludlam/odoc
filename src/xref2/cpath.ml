@@ -63,6 +63,7 @@ and module_path_of_cpath : t -> Path.Module.t =
     | `Dot (p, x) -> `Dot (module_path_of_cpath p, x)
     | `Substituted p -> module_path_of_cpath p
     | `Root x -> `Root x
+    | `Forward x -> `Forward x
     | _ -> raise TypesNeedRefining
 
 and module_type_path_of_cpath : t -> Path.ModuleType.t =
