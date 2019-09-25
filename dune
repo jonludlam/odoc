@@ -2,6 +2,6 @@
 ; See https://caml.inria.fr/mantis/view.php?id=7135 for details
 (env
  (dev
-  (flags (:standard -w -18)))
+  (flags (:standard -g -w -18)))
  (release
-  (flags (:standard -w -18))))
+  (flags (:standard -g -w -18))))

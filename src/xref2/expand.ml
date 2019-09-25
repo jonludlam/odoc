@@ -339,15 +339,17 @@ let rec unit expander t =
       match import with
       | Import.Resolved root ->
           let unit = expander.resolve_unit root in
-          let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) unit.id env in
+          let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
           let env = Env.add_unit unit env in
           (import::imports, env)
       | Import.Unresolved (str, _) ->
           match expander.lookup_unit str with
           | Forward_reference ->
+              let env = Env.add_root str Env.Forward env in
               (import::imports, env)
           | Found f ->
               let unit = expander.resolve_unit f.root in
+              let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
               let env = Env.add_unit unit env in
               ((Resolved f.root)::imports, env)
           | Not_found ->

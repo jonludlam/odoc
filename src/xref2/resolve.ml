@@ -14,41 +14,43 @@ end
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
     match Tools.lookup_type_from_path env cp with
-    | Ok (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
-    | Error _ -> p
+    | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
+    | Unresolved p -> Cpath.type_path_of_cpath p
     | exception _ -> p
 
 and module_type_path : Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
-    | Ok (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
-    | Error _ -> p
+    | Resolved (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
+    | Unresolved p -> Cpath.module_type_path_of_cpath p
     | exception _ -> p
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env p ->
     let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
     match Tools.lookup_and_resolve_module_from_path true true env cp with
-    | Ok (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
-    | Error _ -> p
+    | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
+    | Unresolved p -> Cpath.module_path_of_cpath p
     | exception _ -> p
 
 let rec unit resolver t =
     let open Tools in
     let open Compilation_unit in
+    Printf.printf "Number of imports: %d\n%!" (List.length t.imports);
     let (imports, env) = List.fold_left (fun (imports,env) import ->
         match import with
         | Import.Resolved root ->
             let unit = resolver.resolve_unit root in
             let env = Env.add_unit unit env in
-            let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) unit.id env in
+            let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
             (import::imports, env)
         | Import.Unresolved (str, _) ->
             match resolver.lookup_unit str with
             | Forward_reference ->
+                let env = Env.add_root str Env.Forward env in
                 (import::imports, env)
             | Found f ->
                 let unit = resolver.resolve_unit f.root in
-                let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) unit.id env in
+                let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
                 let env = Env.add_unit unit env in
                 ((Resolved f.root)::imports, env)
             | Not_found ->
@@ -191,9 +193,10 @@ and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module
     | Alias p ->
         let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
         match Tools.lookup_and_resolve_module_from_path true true env cp with
-        | Ok (p', _) ->
+        | Resolved (p', _) ->
             Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
-        | _ -> decl
+        | Unresolved p' ->
+            Alias (Cpath.module_path_of_cpath p')
 
 and module_type : Env.t -> ModuleType.t -> ModuleType.t = fun env m ->
     let open ModuleType in
@@ -288,7 +291,7 @@ and type_expression_package env p =
     let open TypeExpr.Package in
     let cp = Component.Of_Lang.local_path_of_path [] (p.path :> Paths.Path.t) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
-    | Ok (path, _) ->
+    | Resolved (path, _) ->
         let path = Cpath.resolved_module_type_path_of_cpath path in
         let identifier = Paths.Path.Resolved.ModuleType.identifier path in
         let substitution (frag, t) =
@@ -296,7 +299,8 @@ and type_expression_package env p =
             (`Resolved frag', type_expression env t) in
         { path = module_type_path env p.path
         ; substitutions = List.map substitution p.substitutions }
-    | Error _ -> p
+    | Unresolved p' ->
+        { p with path = Cpath.module_type_path_of_cpath p' }
 
 and type_expression : Env.t -> _ -> _ = fun env texpr ->
     let open TypeExpr in
@@ -310,11 +314,11 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Constr (path, ts) -> begin
         let cp = Component.Of_Lang.local_path_of_path [] (path :> Paths.Path.t) in
         match Tools.lookup_type_from_path env cp with
-        | Ok (cp, _) ->
+        | Resolved (cp, _) ->
             let p = Cpath.resolved_type_path_of_cpath cp in
             Constr (`Resolved p, ts)
-        | Error _e ->
-            Constr (path, ts)
+        | Unresolved p ->
+            Constr (Cpath.type_path_of_cpath p, ts)
         end
     | Polymorphic_variant v ->
         Polymorphic_variant (type_expression_polyvar env v)
