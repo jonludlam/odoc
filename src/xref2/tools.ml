@@ -45,7 +45,7 @@ let prefix_signature (path, s) =
         match item with
         | Type (_,t) -> Subst.add t.id (`Type (path, TypeName.of_string (Ident.name t.id))) map
         | Module (id,_,_) -> Subst.add id (`Module (path, ModuleName.of_string (Ident.name id))) map
-        | ModuleType mt -> Subst.add mt.id (`ModuleType (path, ModuleTypeName.of_string (Ident.name mt.id))) map
+        | ModuleType (id, _) -> Subst.add id (`ModuleType (path, ModuleTypeName.of_string (Ident.name id))) map
         | Exception _e -> map
         | TypExt _ -> map
         | Value _ -> map
@@ -53,7 +53,7 @@ let prefix_signature (path, s) =
         ) Subst.identity s.items in
     let items = List.map (function
             | Module (id,r, m) -> Module ((Ident.rename id), r, Subst.module_ sub m)
-            | ModuleType mt -> ModuleType {(Subst.module_type sub mt) with id=Ident.rename mt.id}
+            | ModuleType (id, mt) -> ModuleType (id, Subst.module_type sub mt)
             | Type (r, t) -> Type (r, {(Subst.type_ sub t) with id=Ident.rename t.id})
             | Exception e -> Exception (Subst.exception_ sub e)
             | TypExt t -> TypExt (Subst.extension sub t)

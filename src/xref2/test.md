@@ -384,13 +384,13 @@ here, so it has a local identifier. We can see this by looking up module `M` fro
 ```ocaml env=e1
 # let m = Env.lookup_module_type (`ModuleType (`Root (Common.root, "Root"), "M")) env;;
 val m : Component.ModuleType.t =
-  {Odoc_xref2.Component.ModuleType.id = ("M", 0); doc = [];
+  {Odoc_xref2.Component.ModuleType.doc = [];
    expr =
     Some
      (Odoc_xref2.Component.ModuleType.Signature
        {Odoc_xref2.Component.Signature.items =
-         [Odoc_xref2.Component.Signature.ModuleType
-           {Odoc_xref2.Component.ModuleType.id = ("N", 1); doc = [];
+         [Odoc_xref2.Component.Signature.ModuleType (("N", 1),
+           {Odoc_xref2.Component.ModuleType.doc = [];
             expr =
              Some
               (Odoc_xref2.Component.ModuleType.Signature
@@ -401,7 +401,7 @@ val m : Component.ModuleType.t =
                      equation =
                       {Odoc_xref2.Component.TypeDecl.Equation.params = [];
                        private_ = false; manifest = None; constraints = []}})];
-                 removed = []})};
+                 removed = []})});
           Odoc_xref2.Component.Signature.Module (("B", 2),
            Odoc_model.Lang.Signature.Ordinary,
            {Odoc_xref2.Component.Module.doc = [];
@@ -447,8 +447,8 @@ we look up `A` from the environment:
 - : Cpath.resolved * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.ModuleType
-     {Odoc_xref2.Component.ModuleType.id = ("N", 7); doc = [];
+   [Odoc_xref2.Component.Signature.ModuleType (("N", 1),
+     {Odoc_xref2.Component.ModuleType.doc = [];
       expr =
        Some
         (Odoc_xref2.Component.ModuleType.Signature
@@ -459,8 +459,8 @@ we look up `A` from the environment:
                equation =
                 {Odoc_xref2.Component.TypeDecl.Equation.params = [];
                  private_ = false; manifest = None; constraints = []}})];
-           removed = []})};
-    Odoc_xref2.Component.Signature.Module (("B", 8),
+           removed = []})});
+    Odoc_xref2.Component.Signature.Module (("B", 7),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.Module.doc = [];
       type_ =
@@ -517,7 +517,7 @@ Odoc_xref2.Tools.ResultMonad.Resolved
  (`Type
     (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "B"),
      "t"),
-  {Odoc_xref2.Component.TypeDecl.id = ("t", 15); doc = [];
+  {Odoc_xref2.Component.TypeDecl.id = ("t", 12); doc = [];
    equation =
     {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
      manifest = None; constraints = []}})
@@ -657,7 +657,7 @@ val m : Component.Module.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
    [Odoc_xref2.Component.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.TypeDecl.id = ("t", 43); doc = [];
+     {Odoc_xref2.Component.TypeDecl.id = ("t", 41); doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
         manifest = None; constraints = []}})];
