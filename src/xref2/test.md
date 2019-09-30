@@ -73,7 +73,7 @@ signature is as follows:
 {Odoc_xref2.Env.ident_max = 0; modules = []; module_types = [];
  types =
   [(`Type (`Root (Common.root, "Root"), "u"),
-    {Odoc_xref2.Component.TypeDecl.id = ("u", 1); doc = [];
+    {Odoc_xref2.Component.TypeDecl.doc = [];
      equation =
       {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
        manifest =
@@ -84,7 +84,7 @@ signature is as follows:
            []));
        constraints = []}});
    (`Type (`Root (Common.root, "Root"), "x"),
-    {Odoc_xref2.Component.TypeDecl.id = ("x", 0); doc = [];
+    {Odoc_xref2.Component.TypeDecl.doc = [];
      equation =
       {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
        manifest = None; constraints = []}})];
@@ -93,7 +93,7 @@ signature is as follows:
   [("u",
     `Type
       (`Type (`Root (Common.root, "Root"), "u"),
-       {Odoc_xref2.Component.TypeDecl.id = ("u", 1); doc = [];
+       {Odoc_xref2.Component.TypeDecl.doc = [];
         equation =
          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
           private_ = false;
@@ -107,7 +107,7 @@ signature is as follows:
    ("x",
     `Type
       (`Type (`Root (Common.root, "Root"), "x"),
-       {Odoc_xref2.Component.TypeDecl.id = ("x", 0); doc = [];
+       {Odoc_xref2.Component.TypeDecl.doc = [];
         equation =
          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
           private_ = false; manifest = None; constraints = []}}))];
@@ -289,9 +289,9 @@ val module_ : Component.Module.t =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Signature
        {Odoc_xref2.Component.Signature.items =
-         [Odoc_xref2.Component.Signature.Type
-           (Odoc_model.Lang.Signature.Ordinary,
-           {Odoc_xref2.Component.TypeDecl.id = ("t", 1); doc = [];
+         [Odoc_xref2.Component.Signature.Type (("t", 1),
+           Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_xref2.Component.TypeDecl.doc = [];
             equation =
              {Odoc_xref2.Component.TypeDecl.Equation.params = [];
               private_ = false; manifest = None; constraints = []}})];
@@ -306,8 +306,9 @@ The three values returned are a boolean representing whether this path is depend
 - : Cpath.resolved * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.TypeDecl.id = ("t", 1); doc = [];
+   [Odoc_xref2.Component.Signature.Type (("t", 1),
+     Odoc_model.Lang.Signature.Ordinary,
+     {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
         manifest = None; constraints = []}})];
@@ -395,9 +396,9 @@ val m : Component.ModuleType.t =
              Some
               (Odoc_xref2.Component.ModuleType.Signature
                 {Odoc_xref2.Component.Signature.items =
-                  [Odoc_xref2.Component.Signature.Type
-                    (Odoc_model.Lang.Signature.Ordinary,
-                    {Odoc_xref2.Component.TypeDecl.id = ("t", 3); doc = [];
+                  [Odoc_xref2.Component.Signature.Type (("t", 3),
+                    Odoc_model.Lang.Signature.Ordinary,
+                    {Odoc_xref2.Component.TypeDecl.doc = [];
                      equation =
                       {Odoc_xref2.Component.TypeDecl.Equation.params = [];
                        private_ = false; manifest = None; constraints = []}})];
@@ -447,20 +448,20 @@ we look up `A` from the environment:
 - : Cpath.resolved * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.ModuleType (("N", 1),
+   [Odoc_xref2.Component.Signature.ModuleType (("N", 7),
      {Odoc_xref2.Component.ModuleType.doc = [];
       expr =
        Some
         (Odoc_xref2.Component.ModuleType.Signature
           {Odoc_xref2.Component.Signature.items =
-            [Odoc_xref2.Component.Signature.Type
-              (Odoc_model.Lang.Signature.Ordinary,
-              {Odoc_xref2.Component.TypeDecl.id = ("t", 6); doc = [];
+            [Odoc_xref2.Component.Signature.Type (("t", 6),
+              Odoc_model.Lang.Signature.Ordinary,
+              {Odoc_xref2.Component.TypeDecl.doc = [];
                equation =
                 {Odoc_xref2.Component.TypeDecl.Equation.params = [];
                  private_ = false; manifest = None; constraints = []}})];
            removed = []})});
-    Odoc_xref2.Component.Signature.Module (("B", 7),
+    Odoc_xref2.Component.Signature.Module (("B", 8),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.Module.doc = [];
       type_ =
@@ -517,7 +518,7 @@ Odoc_xref2.Tools.ResultMonad.Resolved
  (`Type
     (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "B"),
      "t"),
-  {Odoc_xref2.Component.TypeDecl.id = ("t", 12); doc = [];
+  {Odoc_xref2.Component.TypeDecl.doc = [];
    equation =
     {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
      manifest = None; constraints = []}})
@@ -656,8 +657,9 @@ val m : Component.Module.t =
 - : Cpath.resolved * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.TypeDecl.id = ("t", 41); doc = [];
+   [Odoc_xref2.Component.Signature.Type (("t", 43),
+     Odoc_model.Lang.Signature.Ordinary,
+     {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
         manifest = None; constraints = []}})];
@@ -1825,8 +1827,9 @@ val m : Component.Module.t =
    (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
     `Dot (`Root "Root", "N")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.TypeDecl.id = ("x", 1); doc = [];
+   [Odoc_xref2.Component.Signature.Type (("x", 1),
+     Odoc_model.Lang.Signature.Ordinary,
+     {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
         manifest = None; constraints = []}})];
@@ -1983,9 +1986,9 @@ val m : Component.Module.t =
 Exception:
 Odoc_xref2.Component.Find.Find_failure
  ({Odoc_xref2__Component.Signature.items =
-    [Odoc_xref2__Component.Signature.Type
-      (Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2__Component.TypeDecl.id = ("x", 19); doc = [];
+    [Odoc_xref2__Component.Signature.Type (("x", 19),
+      Odoc_model.Lang.Signature.Ordinary,
+      {Odoc_xref2__Component.TypeDecl.doc = [];
        equation =
         {Odoc_xref2__Component.TypeDecl.Equation.params = [];
          private_ = false; manifest = None; constraints = []}})];

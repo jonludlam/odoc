@@ -22,7 +22,7 @@ let rec signature (prefix : Cpath.resolved) sg =
         match item with
         | Module (id,r,m) -> Module (id,r, module_ (`Module (prefix, ModuleName.of_string (Ident.name id))) m)
         | ModuleType (id, mt) -> ModuleType (id, module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name id))) mt)
-        | Type (r,t) -> Type (r, type_decl (`Type (prefix, TypeName.of_string (Ident.name t.id))) t)
+        | Type (id,r,t) -> Type (id,r, type_decl (`Type (prefix, TypeName.of_string (Ident.name id))) t)
         | Exception _ -> item
         | TypExt _ -> item
         | Value _ -> item

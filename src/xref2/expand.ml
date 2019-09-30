@@ -125,11 +125,10 @@ module Lang_of = struct
       let identifier = `Field (parent, FieldName.of_string (Ident.name f.id)) in
       { map with field_ = (f.id, identifier)::map.field_ }
 
-    and type_decl parent map t =
-      let open TypeDecl in
-      let identifier = `Type (parent, TypeName.of_string (Ident.name t.id)) in
-      { map with type_ = (t.id, identifier)::map.type_
-      ; path_type = (t.id, identifier)::map.path_type }
+    and type_decl parent map id =
+      let identifier = `Type (parent, TypeName.of_string (Ident.name id)) in
+      { map with type_ = (id, identifier)::map.type_
+      ; path_type = (id, identifier)::map.path_type }
 
     and module_ parent map id =
       let identifier = `Module (parent, ModuleName.of_string (Ident.name id)) in 
@@ -149,7 +148,7 @@ module Lang_of = struct
         match item with
         | Module (id, _, _) -> module_ parent map id
         | ModuleType (id, _) -> module_type parent map id
-        | Type (_, t) -> type_decl parent map t
+        | Type (id, _, _) -> type_decl parent map id
         | Exception e -> exception_ parent map e          
         | TypExt e -> extension parent map e
         | Value v -> value_ parent map v
@@ -169,8 +168,8 @@ module Lang_of = struct
         Odoc_model.Lang.Signature.Module (r, module_ map id m) :: acc 
       | ModuleType (id, m) ->
         Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc
-      | Type (r, t) ->
-        Odoc_model.Lang.Signature.Type (r, type_decl map t) :: acc
+      | Type (id, r, t) ->
+        Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
       | Exception e ->
         Odoc_model.Lang.Signature.Exception (exception_ map e) :: acc
       | TypExt t ->
@@ -269,8 +268,8 @@ module Lang_of = struct
     ; constraints = List.map (fun (x, y) -> (type_expr map x, type_expr map y)) eqn.constraints
     }
 
-  and type_decl map (t : Component.TypeDecl.t) : Odoc_model.Lang.TypeDecl.t =
-    let identifier = List.assoc t.id map.type_ in
+  and type_decl map id (t : Component.TypeDecl.t) : Odoc_model.Lang.TypeDecl.t =
+    let identifier = List.assoc id map.type_ in
     { id = identifier
     ; equation = type_decl_equation map t.equation
     ; doc = []

@@ -182,7 +182,7 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.Type (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.type_decl [identifier,id] id t in
+                let ty = Of_Lang.type_decl [identifier,id] t in
                 add_type t.Odoc_model.Lang.TypeDecl.id ty env
             | Odoc_model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
