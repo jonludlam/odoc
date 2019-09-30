@@ -36,14 +36,14 @@ let core_types =
    let open Odoc_model.Lang.TypeDecl in
    let open Odoc_model.Paths in
     List.map
-      (fun decl -> (Identifier.name decl.id, Component.Of_Lang.type_decl [] (Ident.of_identifier (decl.id :> Identifier.t)) decl))
+      (fun decl -> (Identifier.name decl.id, Component.Of_Lang.type_decl [] decl))
       Odoc_model.Predefined.core_types
 
 let prefix_signature (path, s) =
     let open Component.Signature in
     let sub = List.fold_left (fun map item ->
         match item with
-        | Type (_,t) -> Subst.add t.id (`Type (path, TypeName.of_string (Ident.name t.id))) map
+        | Type (id,_,_) -> Subst.add id (`Type (path, TypeName.of_string (Ident.name id))) map
         | Module (id,_,_) -> Subst.add id (`Module (path, ModuleName.of_string (Ident.name id))) map
         | ModuleType (id, _) -> Subst.add id (`ModuleType (path, ModuleTypeName.of_string (Ident.name id))) map
         | Exception _e -> map
@@ -53,8 +53,8 @@ let prefix_signature (path, s) =
         ) Subst.identity s.items in
     let items = List.map (function
             | Module (id,r, m) -> Module ((Ident.rename id), r, Subst.module_ sub m)
-            | ModuleType (id, mt) -> ModuleType (id, Subst.module_type sub mt)
-            | Type (r, t) -> Type (r, {(Subst.type_ sub t) with id=Ident.rename t.id})
+            | ModuleType (id, mt) -> ModuleType ((Ident.rename id), Subst.module_type sub mt)
+            | Type (id, r, t) -> Type ((Ident.rename id), r, Subst.type_ sub t)
             | Exception e -> Exception (Subst.exception_ sub e)
             | TypExt t -> TypExt (Subst.extension sub t)
             | Value v -> Value (Subst.value sub v)
@@ -461,7 +461,7 @@ and handle_removed : Component.Signature.item list -> Component.Signature.remove
     let open Component.Signature in
     List.map (function
         | Module (id,_,_) -> RModule (id, None)
-        | Type (_,t) -> RType (t.id, None)
+        | Type (id,_,_) -> RType (id, None)
         | _ -> failwith "Can't remove anything but modules or types") l
     @ acc
 
@@ -501,8 +501,8 @@ and fragmap_type : Env.t -> Cpath.resolved -> Fragment.Resolved.Type.t -> (Cpath
             | `Type (parent, name) ->
                 fragmap_signature env p parent (fun p s ->
                     let items, removed = filter_map_record_removed (function
-                    | Component.Signature.Type (r, t) when Ident.name t.id = (TypeName.to_string name) ->
-                        fn (`Type (p, name)) t >>= fun t' -> return (Component.Signature.Type (r, {t' with id=t.id}))
+                    | Component.Signature.Type (id, r, t) when Ident.name id = TypeName.to_string name ->
+                        fn (`Type (p, name)) t >>= fun t' -> return (Component.Signature.Type (id, r, t'))
                     | x -> Some x) s.items in
                 {items; removed=handle_removed removed s.removed}) sg
             | `Class _
@@ -544,8 +544,8 @@ and fragmap_unresolved_type : Env.t -> Cpath.resolved -> Fragment.Type.t -> (Cpa
         | `Dot (parent, name) ->
             fragmap_unresolved_signature env p parent (fun p s ->
                 let items, removed = filter_map_record_removed (function
-                    | Component.Signature.Type (r, t) when Ident.name t.id = name ->
-                        fn (`Type (p, name)) t >>= fun t' -> return (Component.Signature.Type (r, {t' with id=t.id}))
+                    | Component.Signature.Type (id, r, t) when Ident.name id = name ->
+                        fn (`Type (p, name)) t >>= fun t' -> return (Component.Signature.Type (id, r, t'))
                     | x -> Some x) s.items in
                 {items; removed=handle_removed removed s.removed}) sg
         | `Resolved x ->

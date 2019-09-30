@@ -177,8 +177,7 @@ and TypeDecl : sig
     end
 
     type t =
-      { id : Ident.t
-      ; doc : Comment.docs
+      { doc : Comment.docs
       ; equation : Equation.t}
 end = TypeDecl
 
@@ -197,7 +196,7 @@ and Signature : sig
     type item =
         | Module of Ident.t * recursive * Module.t
         | ModuleType of Ident.t * ModuleType.t
-        | Type of recursive * TypeDecl.t
+        | Type of Ident.t * recursive * TypeDecl.t
         | Exception of Exception.t
         | TypExt of Extension.t
         | Value of Value.t
@@ -252,9 +251,9 @@ module Fmt = struct
                     "@[<v 2>module type %a %a@]@,"
                     Ident.fmt id
                     module_type mt
-            | Type (_,t) ->
+            | Type (id, _,t) ->
                 Format.fprintf ppf
-                    "@[<v 2>type %a@]@," type_decl t
+                    "@[<v 2>type %a %a@]@," Ident.fmt id type_decl t
             | Exception e ->
                 Format.fprintf ppf
                     "@[<v 2>exception %a@]@," exception_ e
@@ -308,8 +307,8 @@ module Fmt = struct
 
     and type_decl ppf t =
         match TypeDecl.(t.equation.Equation.manifest) with
-        | Some x -> Format.fprintf ppf "%a = %a" Ident.fmt t.id type_expr x
-        | None -> Format.fprintf ppf "%a" Ident.fmt t.id
+        | Some x -> Format.fprintf ppf "= %a" type_expr x
+        | None -> ()
 
     and type_equation ppf t =
         match t.TypeDecl.Equation.manifest with
@@ -514,10 +513,9 @@ module Of_Lang = struct
         | `Root str ->
             `Root str
 
-    let rec type_decl ident_map id ty =
+    let rec type_decl ident_map ty =
         let open Odoc_model.Lang.TypeDecl in
-        { TypeDecl.id
-        ; doc = ty.doc
+        { TypeDecl.doc = ty.doc
         ; equation = type_equation ident_map ty.equation }
 
     and type_equation ident_map teq =
@@ -701,8 +699,8 @@ module Of_Lang = struct
                 function
                 |  Type (r, t) ->
                     let id = List.assoc (t.id :> Identifier.t) ident_map in 
-                    let t' = type_decl ident_map id t in
-                    Signature.Type (r,t')
+                    let t' = type_decl ident_map t in
+                    Signature.Type (id, r, t')
                 | Module (r, m) ->
                     let id = List.assoc (m.id :> Identifier.t) ident_map in 
                     let m' = module_ ident_map m in
@@ -747,22 +745,22 @@ type 'a found =
 
 let careful_module_in_sig s name =
     let rec inner_removed = function
-      | (Signature.RModule (id, Some p))::_ when (Ident.name id) = name -> Replaced p
+      | Signature.RModule (id, Some p) :: _ when Ident.name id = name -> Replaced p
       | _::rest -> inner_removed rest
       | [] -> fail s name "module" in
     let rec inner = function
-      | (Signature.Module (id,_,m))::_ when (Ident.name id)=name -> Found m
+      | Signature.Module (id,_,m) :: _ when Ident.name id = name -> Found m
       | _::rest -> inner rest
       | [] -> inner_removed s.removed
     in inner s.items
 
 let careful_type_in_sig s name =
     let rec inner_removed = function
-      | (Signature.RType (id, Some p))::_ when (Ident.name id) = name -> Replaced p
+      | Signature.RType (id, Some p) :: _ when Ident.name id = name -> Replaced p
       | _::rest -> inner_removed rest
       | [] -> fail s name "type" in
     let rec inner = function
-      | (Signature.Type (_,m))::_ when (Ident.name m.id)=name -> Found m
+      | Signature.Type (id,_,m) :: _ when Ident.name id = name -> Found m
       | _::rest -> inner rest
       | [] -> inner_removed s.removed
     in inner s.items
