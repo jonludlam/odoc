@@ -284,7 +284,7 @@ val get_ok : ('a, 'b) Tools.ResultMonad.t -> 'a = <fun>
 val path : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "M"))
 val module_ : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("M", 0); doc = [];
+  {Odoc_xref2.Component.Module.doc = [];
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Signature
@@ -345,7 +345,7 @@ of looking up the module `N`:
 val path : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "N"))
 val module_ : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 2); doc = [];
+  {Odoc_xref2.Component.Module.doc = [];
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -402,9 +402,9 @@ val m : Component.ModuleType.t =
                       {Odoc_xref2.Component.TypeDecl.Equation.params = [];
                        private_ = false; manifest = None; constraints = []}})];
                  removed = []})};
-          Odoc_xref2.Component.Signature.Module
-           (Odoc_model.Lang.Signature.Ordinary,
-           {Odoc_xref2.Component.Module.id = ("B", 2); doc = [];
+          Odoc_xref2.Component.Signature.Module (("B", 2),
+           Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_xref2.Component.Module.doc = [];
             type_ =
              Odoc_xref2.Component.Module.ModuleType
               (Odoc_xref2.Component.ModuleType.Path
@@ -460,9 +460,9 @@ we look up `A` from the environment:
                 {Odoc_xref2.Component.TypeDecl.Equation.params = [];
                  private_ = false; manifest = None; constraints = []}})];
            removed = []})};
-    Odoc_xref2.Component.Signature.Module
-     (Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Module.id = ("B", 8); doc = [];
+    Odoc_xref2.Component.Signature.Module (("B", 8),
+     Odoc_model.Lang.Signature.Ordinary,
+     {Odoc_xref2.Component.Module.doc = [];
       type_ =
        Odoc_xref2.Component.Module.ModuleType
         (Odoc_xref2.Component.ModuleType.Path
@@ -592,7 +592,7 @@ of module `C` we see the following:
 val p : Cpath.resolved =
   `Identifier (`Module (`Root (Common.root, "Root"), "C"))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("C", 7); doc = [];
+  {Odoc_xref2.Component.Module.doc = [];
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.With
@@ -614,17 +614,17 @@ now we can ask for the signature of this module:
 val sg : Cpath.resolved * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module
-       (Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Module.id = ("M", 1); doc = [];
+     [Odoc_xref2.Component.Signature.Module (("M", 1),
+       Odoc_model.Lang.Signature.Ordinary,
+       {Odoc_xref2.Component.Module.doc = [];
         type_ =
          Odoc_xref2.Component.Module.Alias
           (`Resolved
              (`Identifier (`Module (`Root (Common.root, "Root"), "B"))));
         canonical = None; hidden = false; display_type = None});
-      Odoc_xref2.Component.Signature.Module
-       (Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Module.id = ("N", 2); doc = [];
+      Odoc_xref2.Component.Signature.Module (("N", 2),
+       Odoc_model.Lang.Signature.Ordinary,
+       {Odoc_xref2.Component.Module.doc = [];
         type_ =
          Odoc_xref2.Component.Module.ModuleType
           (Odoc_xref2.Component.ModuleType.Path
@@ -641,7 +641,7 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 val p : Cpath.resolved =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 38); doc = [];
+  {Odoc_xref2.Component.Module.doc = [];
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -929,7 +929,7 @@ val p : Cpath.resolved =
        (`Resolved
           (`Identifier (`Module (`Root (Common.root, "Root"), "FooBarInt")))))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("App", 2); doc = [];
+  {Odoc_xref2.Component.Module.doc = [];
    type_ =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Path
@@ -975,9 +975,9 @@ val p : Cpath.resolved =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module
-      (Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Module.id = ("Foo", 20); doc = [];
+    [Odoc_xref2.Component.Signature.Module (("Foo", 20),
+      Odoc_model.Lang.Signature.Ordinary,
+      {Odoc_xref2.Component.Module.doc = [];
        type_ =
         Odoc_xref2.Component.Module.ModuleType
          (Odoc_xref2.Component.ModuleType.Path
@@ -1802,8 +1802,7 @@ val p : Cpath.resolved =
     (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
      `Dot (`Root "Root", "N"))
 val m : Component.Module.t =
-  {Odoc_xref2.Component.Module.id = ("N", 3);
-   doc =
+  {Odoc_xref2.Component.Module.doc =
     [{Odoc_model.Location_.location =
        {Odoc_model.Location_.file = "";
         start = {Odoc_model.Location_.line = 8; column = 6};

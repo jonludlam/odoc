@@ -149,7 +149,7 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
             match mty with 
             | ModuleType.Functor (Some arg, res) ->
                 (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.Component.FunctorArgument.id)),
-                    {Component.Module.id = arg.Component.FunctorArgument.id; doc = []; display_type = None; type_ = ModuleType arg.expr; canonical=None; hidden=false}) :: find_args (`Result parent) res
+                    {Component.Module.doc = []; display_type = None; type_ = ModuleType arg.expr; canonical=None; hidden=false}) :: find_args (`Result parent) res
             | ModuleType.Functor (None, res) ->
                 find_args (`Result parent) res
             | _ -> []
@@ -187,7 +187,7 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.module_ [identifier,id] id t in
+                let ty = Of_Lang.module_ [identifier,id] t in
                 add_module t.Odoc_model.Lang.Module.id ty env
             | Odoc_model.Lang.Signature.ModuleType t ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
@@ -236,7 +236,7 @@ let add_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
             in
             let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
             let id = Ident.of_identifier identifier in
-            let ty = Component.Of_Lang.module_ [identifier,id] id m in
+            let ty = Component.Of_Lang.module_ [identifier,id] m in
             add_module m.id ty env
         | Pack _ ->
             Printf.fprintf stderr "WARNING: pack unsupported";

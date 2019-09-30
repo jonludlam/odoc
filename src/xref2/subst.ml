@@ -181,11 +181,11 @@ and rename_bound_idents s sg =
     let open Component.Signature in
     function
     | [] -> s, sg
-    | Module (r,m) :: rest ->
-        let id' = Ident.rename m.id in
+    | Module (id,r,m) :: rest ->
+        let id' = Ident.rename id in
         rename_bound_idents
-            (add m.id (`Local id') s)
-            (Module (r,{m with id=id'}) :: sg)
+            (add id (`Local id') s)
+            (Module (id',r,m) :: sg)
             rest
     | ModuleType mt :: rest ->
         let id' = Ident.rename mt.id in
@@ -231,7 +231,7 @@ and signature s sg =
     let open Component.Signature in
     let s, items = rename_bound_idents s [] sg.items in
     let items = List.rev_map (function
-        | Module (r, m) -> Module (r, module_ s m)
+        | Module (id, r, m) -> Module (id, r, module_ s m)
         | ModuleType mt -> ModuleType (module_type s mt)
         | Type (r, t) -> Type (r, type_ s t)
         | Exception e -> Exception (exception_ s e)
