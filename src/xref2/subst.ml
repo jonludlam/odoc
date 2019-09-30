@@ -187,11 +187,11 @@ and rename_bound_idents s sg =
             (add id (`Local id') s)
             (Module (id',r,m) :: sg)
             rest
-    | ModuleType mt :: rest ->
-        let id' = Ident.rename mt.id in
+    | ModuleType (id,mt) :: rest ->
+        let id' = Ident.rename id in
         rename_bound_idents
-            (add mt.id (`Local id') s)
-            (ModuleType {mt with id=id'} :: sg)
+            (add id (`Local id') s)
+            (ModuleType (id',mt) :: sg)
             rest
     | Type (r,t) :: rest ->
         let id' = Ident.rename t.id in
@@ -232,7 +232,7 @@ and signature s sg =
     let s, items = rename_bound_idents s [] sg.items in
     let items = List.rev_map (function
         | Module (id, r, m) -> Module (id, r, module_ s m)
-        | ModuleType mt -> ModuleType (module_type s mt)
+        | ModuleType (id,mt) -> ModuleType (id, module_type s mt)
         | Type (r, t) -> Type (r, type_ s t)
         | Exception e -> Exception (exception_ s e)
         | TypExt e -> TypExt (extension s e)

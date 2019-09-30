@@ -137,9 +137,9 @@ and ModuleType : sig
         | With of expr * substitution list
         | Functor of FunctorArgument.t option * expr
         | TypeOf of Module.decl
+
     type t =
-      { id : Ident.t
-      ; doc : Comment.docs
+      { doc : Comment.docs
       ; expr : expr option }
 end = ModuleType
 
@@ -196,7 +196,7 @@ and Signature : sig
 
     type item =
         | Module of Ident.t * recursive * Module.t
-        | ModuleType of ModuleType.t
+        | ModuleType of Ident.t * ModuleType.t
         | Type of recursive * TypeDecl.t
         | Exception of Exception.t
         | TypExt of Extension.t
@@ -247,9 +247,10 @@ module Fmt = struct
                     "@[<v 2>module %a %a@]@,"
                     Ident.fmt id
                     module_ m
-            | ModuleType mt ->
+            | ModuleType (id, mt) ->
                 Format.fprintf ppf
-                    "@[<v 2>module type %a@]@,"
+                    "@[<v 2>module type %a %a@]@,"
+                    Ident.fmt id
                     module_type mt
             | Type (_,t) ->
                 Format.fprintf ppf
@@ -285,8 +286,8 @@ module Fmt = struct
 
     and module_type ppf mt =
         match mt.expr with
-        | Some x -> Format.fprintf ppf "%a = %a" Ident.fmt mt.id module_type_expr x
-        | None -> Format.fprintf ppf "%a" Ident.fmt mt.id
+        | Some x -> Format.fprintf ppf "= %a" module_type_expr x
+        | None -> ()
 
     and module_type_expr ppf mt =
         let open ModuleType in
@@ -632,9 +633,9 @@ module Of_Lang = struct
             ModuleType.TypeOf decl'
 
 
-    and module_type ident_map id m =
+    and module_type ident_map m =
         let expr = Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr in
-        {ModuleType.id; doc = m.doc; expr}
+        {ModuleType.doc = m.doc; expr}
 
     and value ident_map id v =
         let type_ = type_expression ident_map v.Odoc_model.Lang.Value.type_ in
@@ -708,8 +709,8 @@ module Of_Lang = struct
                     Signature.Module (id,r,m')
                 | ModuleType m ->
                     let id = List.assoc (m.id :> Identifier.t) ident_map in 
-                    let m' = module_type ident_map id m in
-                    Signature.ModuleType m'
+                    let m' = module_type ident_map m in
+                    Signature.ModuleType (id,m')
                 | Value v ->
                     let id = List.assoc (v.id :> Identifier.t) ident_map in
                     let v' = value ident_map id v in
@@ -773,7 +774,7 @@ let module_in_sig s name =
 
 let module_type_in_sig s name =
     let rec inner = function
-        | (Signature.ModuleType m)::_ when (Ident.name m.id)=name -> m
+        | Signature.ModuleType (id,m) :: _ when Ident.name id = name -> m
         | _::rest -> inner rest
         | [] -> fail s name "module type"
     in inner s.items

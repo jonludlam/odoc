@@ -192,7 +192,7 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.ModuleType t ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.module_type [identifier,id] id t in
+                let ty = Of_Lang.module_type [identifier,id] t in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | Odoc_model.Lang.Signature.Comment c ->
                 add_comment c env

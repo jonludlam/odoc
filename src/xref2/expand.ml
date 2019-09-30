@@ -135,9 +135,9 @@ module Lang_of = struct
       let identifier = `Module (parent, ModuleName.of_string (Ident.name id)) in 
       { map with module_ = (id, identifier)::map.module_}
 
-    and module_type parent map m =
-      let identifier = `ModuleType (parent, ModuleTypeName.of_string (Ident.name m.ModuleType.id)) in 
-      { map with module_type = (m.ModuleType.id, identifier)::map.module_type}
+    and module_type parent map id =
+      let identifier = `ModuleType (parent, ModuleTypeName.of_string (Ident.name id)) in 
+      { map with module_type = (id, identifier)::map.module_type}
 
     and value_ parent map v =
       let identifier = `Value (parent, ValueName.of_string (Ident.name v.Value.id)) in
@@ -148,7 +148,7 @@ module Lang_of = struct
       List.fold_left (fun map item ->
         match item with
         | Module (id, _, _) -> module_ parent map id
-        | ModuleType m -> module_type parent map m
+        | ModuleType (id, _) -> module_type parent map id
         | Type (_, t) -> type_decl parent map t
         | Exception e -> exception_ parent map e          
         | TypExt e -> extension parent map e
@@ -167,8 +167,8 @@ module Lang_of = struct
       match item with
       | Module (id, r, m) ->
         Odoc_model.Lang.Signature.Module (r, module_ map id m) :: acc 
-      | ModuleType m ->
-        Odoc_model.Lang.Signature.ModuleType (module_type map m) :: acc
+      | ModuleType (id, m) ->
+        Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc
       | Type (r, t) ->
         Odoc_model.Lang.Signature.Type (r, type_decl map t) :: acc
       | Exception e ->
@@ -242,8 +242,8 @@ module Lang_of = struct
       Functor (None, module_type_expr map (`Result identifier) expr)
     | TypeOf decl -> TypeOf (module_decl map identifier decl)
 
-  and module_type map mty =
-    let identifier = List.assoc mty.id map.module_type in
+  and module_type map id mty =
+    let identifier = List.assoc id map.module_type in
     let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
     { Odoc_model.Lang.ModuleType.id = identifier
     ; doc = mty.doc
