@@ -131,9 +131,9 @@ module Lang_of = struct
       { map with type_ = (t.id, identifier)::map.type_
       ; path_type = (t.id, identifier)::map.path_type }
 
-    and module_ parent map m =
-      let identifier = `Module (parent, ModuleName.of_string (Ident.name m.Module.id)) in 
-      { map with module_ = (m.Module.id, identifier)::map.module_}
+    and module_ parent map id =
+      let identifier = `Module (parent, ModuleName.of_string (Ident.name id)) in 
+      { map with module_ = (id, identifier)::map.module_}
 
     and module_type parent map m =
       let identifier = `ModuleType (parent, ModuleTypeName.of_string (Ident.name m.ModuleType.id)) in 
@@ -147,7 +147,7 @@ module Lang_of = struct
       let open Signature in
       List.fold_left (fun map item ->
         match item with
-        | Module (_, m) -> module_ parent map m
+        | Module (id, _, _) -> module_ parent map id
         | ModuleType m -> module_type parent map m
         | Type (_, t) -> type_decl parent map t
         | Exception e -> exception_ parent map e          
@@ -165,8 +165,8 @@ module Lang_of = struct
     let map = ExtractIDs.signature id map sg in
     List.fold_right (fun item acc ->
       match item with
-      | Module (r, m) ->
-        Odoc_model.Lang.Signature.Module (r, module_ map m) :: acc 
+      | Module (id, r, m) ->
+        Odoc_model.Lang.Signature.Module (r, module_ map id m) :: acc 
       | ModuleType m ->
         Odoc_model.Lang.Signature.ModuleType (module_type map m) :: acc
       | Type (r, t) ->
@@ -204,14 +204,14 @@ module Lang_of = struct
     ; args = type_decl_constructor_argument map c.args
     ; res = Opt.map (type_expr map) c.res }
 
-  and module_ map m =
+  and module_ map id m =
     let open Component.Module in
-    let identifier = (List.assoc m.id map.module_ :> Odoc_model.Paths_types.Identifier.signature) in
+    let identifier = (List.assoc id map.module_ :> Odoc_model.Paths_types.Identifier.signature) in
     let canonical = function
       | Some (p, r) -> Some (Path.module_ map p, r)
       | None -> None
     in
-    { Odoc_model.Lang.Module.id = List.assoc m.id map.module_
+    { Odoc_model.Lang.Module.id = List.assoc id map.module_
     ; doc = m.doc
     ; type_ = module_decl map (identifier :> Odoc_model.Paths_types.Identifier.signature) m.type_ 
     ; canonical = canonical m.canonical

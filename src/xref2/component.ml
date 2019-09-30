@@ -16,8 +16,7 @@ module rec Module : sig
     | ModuleType of ModuleType.expr
 
     type t =
-      { id : Ident.t
-      ; doc : Comment.docs
+      { doc : Comment.docs
       ; type_ : decl 
       ; canonical : (Cpath.t * Odoc_model.Paths.Reference.Module.t) option
       ; hidden : bool
@@ -196,7 +195,7 @@ and Signature : sig
     type recursive = Odoc_model.Lang.Signature.recursive
 
     type item =
-        | Module of recursive * Module.t
+        | Module of Ident.t * recursive * Module.t
         | ModuleType of ModuleType.t
         | Type of recursive * TypeDecl.t
         | Exception of Exception.t
@@ -243,9 +242,10 @@ module Fmt = struct
         let open Signature in
         Format.fprintf ppf "@[<v>";
         List.iter (function
-            | Module (_,m) ->
+            | Module (id,_,m) ->
                 Format.fprintf ppf
-                    "@[<v 2>module %a@]@,"
+                    "@[<v 2>module %a %a@]@,"
+                    Ident.fmt id
                     module_ m
             | ModuleType mt ->
                 Format.fprintf ppf
@@ -281,7 +281,7 @@ module Fmt = struct
             Format.fprintf ppf ": %a" module_type_expr mt
 
     and module_ ppf m =
-        Format.fprintf ppf "%a %a" Ident.fmt m.id module_decl m.type_
+        Format.fprintf ppf "%a" module_decl m.type_
 
     and module_type ppf mt =
         match mt.expr with
@@ -582,11 +582,11 @@ module Of_Lang = struct
         | Some (path, r) -> Some (local_path_of_path ident_map (path :> Odoc_model.Paths.Path.t), r)
         | None -> None
 
-    and module_ ident_map id m =
+    and module_ ident_map m =
         let type_ = module_decl ident_map m.Odoc_model.Lang.Module.type_ in
         let canonical = canonical ident_map m.Odoc_model.Lang.Module.canonical in
         let display_type = Opt.map (module_decl ident_map) m.Odoc_model.Lang.Module.display_type in
-        {Module.id; doc = m.doc; type_; canonical; hidden=m.hidden; display_type}
+        {Module.doc = m.doc; type_; canonical; hidden=m.hidden; display_type}
 
     and module_type_substitution ident_map m =
         let open Odoc_model.Lang.ModuleType in
@@ -704,8 +704,8 @@ module Of_Lang = struct
                     Signature.Type (r,t')
                 | Module (r, m) ->
                     let id = List.assoc (m.id :> Identifier.t) ident_map in 
-                    let m' = module_ ident_map id m in
-                    Signature.Module (r,m')
+                    let m' = module_ ident_map m in
+                    Signature.Module (id,r,m')
                 | ModuleType m ->
                     let id = List.assoc (m.id :> Identifier.t) ident_map in 
                     let m' = module_type ident_map id m in
@@ -750,7 +750,7 @@ let careful_module_in_sig s name =
       | _::rest -> inner_removed rest
       | [] -> fail s name "module" in
     let rec inner = function
-      | (Signature.Module (_,m))::_ when (Ident.name m.id)=name -> Found m
+      | (Signature.Module (id,_,m))::_ when (Ident.name id)=name -> Found m
       | _::rest -> inner rest
       | [] -> inner_removed s.removed
     in inner s.items
