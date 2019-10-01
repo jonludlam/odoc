@@ -3,7 +3,7 @@ open Lang
 
 
 type expander =
-  { lookup_unit: string -> Tools.lookup_unit_result
+  { lookup_unit: string -> Env.lookup_unit_result
   ; resolve_unit: Root.t -> Compilation_unit.t
   }
 
@@ -333,28 +333,29 @@ module Lang_of = struct
     end
 
 let rec unit expander t =
-  let open Tools in
   let open Compilation_unit in
   let (imports, env) = List.fold_left (fun (imports,env) import ->
       match import with
       | Import.Resolved root ->
-          let unit = expander.resolve_unit root in
-          let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
-          let env = Env.add_unit unit env in
+      let unit = expander.resolve_unit root in
+      let m = Env.module_of_unit unit in
+      let env = Env.add_module unit.id m env in
+      let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) (Env.Resolved (unit.id, m)) env in
+      (import::imports, env)
+  | Import.Unresolved (str, _) ->
+      match expander.lookup_unit str with
+      | Forward_reference ->
+          let env = Env.add_root str Env.Forward env in
           (import::imports, env)
-      | Import.Unresolved (str, _) ->
-          match expander.lookup_unit str with
-          | Forward_reference ->
-              let env = Env.add_root str Env.Forward env in
-              (import::imports, env)
-          | Found f ->
-              let unit = expander.resolve_unit f.root in
-              let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
-              let env = Env.add_unit unit env in
-              ((Resolved f.root)::imports, env)
-          | Not_found ->
-              (import::imports,env)
-  ) ([],Env.empty) t.imports in
+      | Found f ->
+          let unit = expander.resolve_unit f.root in
+          let m = Env.module_of_unit unit in
+          let env = Env.add_module unit.id m env in
+          let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) (Env.Resolved (unit.id, m)) env in
+          ((Resolved f.root)::imports, env)
+      | Not_found ->
+          (import::imports,env)
+) ([],Env.empty) t.imports in
   {t with content = content env t.content; imports}
 
 and content env =
@@ -435,31 +436,31 @@ and module_decl env id decl =
         in
         {arg with expansion = Some expansion; expr = module_type_expr env id arg.expr}
 
-        and set_display_type md =
-  let open Module in
-  match md.display_type with
-  | Some _ -> md
-  | None ->
-    match md.type_ with
-    | Alias p when Odoc_model.Paths.Path.(is_hidden (p :> t)) ->
-      begin match p with
-      | `Resolved (`Hidden _) ->
-        let display_type : Module.decl option =
-          match md.expansion with
-          | Some AlreadyASig -> assert false (* [md.type_] is [Alias] *)
-          | Some (Signature sg) -> Some (ModuleType (ModuleType.Signature sg))
-          | Some (Functor (args, sg)) ->
-            let expr =
-              List.fold_right (fun arg acc -> ModuleType.Functor (arg, acc))
-                args (ModuleType.Signature sg)
-            in
-            Some (ModuleType expr)
-          | None -> None
-        in
-        { md with display_type }
-      | _ -> md
-      end
-    | _ -> md
+    and set_display_type md =
+        let open Module in
+        match md.display_type with
+        | Some _ -> md
+        | None ->
+          match md.type_ with
+          | Alias p when Odoc_model.Paths.Path.(is_hidden (p :> t)) ->
+            begin match p with
+            | `Resolved (`Hidden _) ->
+              let display_type : Module.decl option =
+                match md.expansion with
+                | Some AlreadyASig -> assert false (* [md.type_] is [Alias] *)
+                | Some (Signature sg) -> Some (ModuleType (ModuleType.Signature sg))
+                | Some (Functor (args, sg)) ->
+                  let expr =
+                    List.fold_right (fun arg acc -> ModuleType.Functor (arg, acc))
+                      args (ModuleType.Signature sg)
+                  in
+                  Some (ModuleType expr)
+                | None -> None
+              in
+              { md with display_type }
+            | _ -> md
+            end
+          | _ -> md
 
     and module_ env m =
       let open Module in
@@ -472,13 +473,10 @@ and module_decl env id decl =
         let (_, sg) = Tools.signature_of_module env (p,m') in
         let sg = Lang_of.signature id Lang_of.empty sg in
         set_display_type { m with type_; expansion = Some (Odoc_model.Lang.Module.Signature (signature env sg))}
-      | Alias _ -> m (* Not hidden, don't expand *)
+      | Alias _p -> m (* Not hidden, don't expand *)
       | ModuleType expr ->
         let expansion = expansion_of_module_type_expr id env expr in
        {m with type_; expansion = Some expansion}
-
-
-
 
 and module_type env m =
   let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
@@ -498,7 +496,7 @@ and module_type env m =
 
 let build_expander :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)
-    -> (string -> Tools.lookup_unit_result)
+    -> (string -> Env.lookup_unit_result)
     -> (Root.t -> Compilation_unit.t)
     -> expander =
     fun ?equal:_ ?hash:_ lookup_unit resolve_unit ->

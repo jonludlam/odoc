@@ -1,11 +1,7 @@
 open Odoc_model
 open Lang
 
-type resolver =
-    { lookup_unit: string -> Tools.lookup_unit_result
-    ; resolve_unit: Root.t -> Compilation_unit.t
-    ; lookup_page: string -> Root.t option
-    ; resolve_page: Root.t -> Page.t }
+
 
 module Opt = struct
     let map f = function | Some x -> Some (f x) | None -> None
@@ -32,16 +28,16 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env 
     | Unresolved p -> Cpath.module_path_of_cpath p
     | exception _ -> p
 
-let rec unit resolver t =
-    let open Tools in
+let rec unit (resolver : Env.resolver) t =
     let open Compilation_unit in
     Printf.printf "Number of imports: %d\n%!" (List.length t.imports);
     let (imports, env) = List.fold_left (fun (imports,env) import ->
         match import with
         | Import.Resolved root ->
             let unit = resolver.resolve_unit root in
-            let env = Env.add_unit unit env in
-            let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
+            let m = Env.module_of_unit unit in
+            let env = Env.add_module unit.id m env in
+            let env = Env.add_root (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file) (Env.Resolved (unit.id, m)) env in
             (import::imports, env)
         | Import.Unresolved (str, _) ->
             match resolver.lookup_unit str with
@@ -50,8 +46,9 @@ let rec unit resolver t =
                 (import::imports, env)
             | Found f ->
                 let unit = resolver.resolve_unit f.root in
-                let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) (Env.Resolved unit.id) env in
-                let env = Env.add_unit unit env in
+                let m = Env.module_of_unit unit in
+                let env = Env.add_module unit.id m env in
+                let env = Env.add_root (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file) (Env.Resolved (unit.id, m)) env in
                 ((Resolved f.root)::imports, env)
             | Not_found ->
                 (import::imports,env)
@@ -335,10 +332,10 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
 
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)
-    -> (string -> Tools.lookup_unit_result)
+    -> (string -> Env.lookup_unit_result)
     -> (Root.t -> Compilation_unit.t)
     -> (string -> Root.t option) -> (Root.t -> Page.t)
-    -> resolver =
+    -> Env.resolver =
     fun ?equal:_ ?hash:_ lookup_unit resolve_unit lookup_page resolve_page ->
     {lookup_unit; resolve_unit; lookup_page; resolve_page; }
 
@@ -347,5 +344,7 @@ let resolve x y =
     let after = unit x before in
     after
 
-let resolve_page _ y = y
+let resolve_page resolver y =
+    let env = Env.{empty with resolver = Some resolver} in
+    {y with Page.content = (List.map (with_location comment_block_element env) y.Page.content) }
     

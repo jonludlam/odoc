@@ -1,8 +1,21 @@
 (* A bunch of association lists. Let's hashtbl them up later *)
 
+type lookup_result_found = { root : Odoc_model.Root.t; hidden : bool }
+
+type lookup_unit_result =
+  | Forward_reference
+  | Found of lookup_result_found
+  | Not_found
+
 type root =
-    | Resolved of Odoc_model.Paths.Identifier.Module.t
+    | Resolved of (Odoc_model.Paths.Identifier.Module.t * Component.Module.t)
     | Forward
+
+type resolver =
+    { lookup_unit: string -> lookup_unit_result
+    ; resolve_unit: Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t
+    ; lookup_page: string -> Odoc_model.Root.t option
+    ; resolve_page: Odoc_model.Root.t -> Odoc_model.Lang.Page.t }
 
 type t =
     { ident_max: int
@@ -13,7 +26,9 @@ type t =
     ; titles : (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list
     ; elts : (string * Component.Element.any) list
     ; roots : (string * root) list
+    ; resolver : resolver option
     }
+
 let pp_modules ppf modules =
     List.iter (fun (i,m) ->
         Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier (i :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_ m) modules
@@ -40,6 +55,7 @@ let empty =
     ; titles = []
     ; elts = []
     ; roots = []
+    ; resolver = None
     }
 
 let add_module identifier m env =
@@ -105,8 +121,40 @@ let lookup_value identifier env =
 let lookup_section_title identifier env =
     List.assoc_opt identifier env.titles
 
-let lookup_root name env =
-    List.assoc_opt name env.roots
+let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
+    fun unit ->
+        match unit.content with
+        | Module s ->
+            let m = Odoc_model.Lang.Module.{
+                id = unit.id;
+                doc = unit.doc;
+                type_ = ModuleType (Signature s);
+                canonical = None;
+                hidden = unit.hidden;
+                display_type = None;
+                expansion = Some AlreadyASig
+            }
+            in
+            let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
+            let id = Ident.of_identifier identifier in
+            let ty = Component.Of_Lang.module_ [identifier,id] m in
+            ty
+       | Pack _ ->
+            failwith "Unsupported"    
+
+let lookup_root_module name env =
+    match List.assoc_opt name env.roots with
+    | Some x -> Some x 
+    | None ->
+        match env.resolver with
+        | None -> None
+        | Some r ->
+            match r.lookup_unit name with
+            | Forward_reference -> Some Forward
+            | Not_found -> None
+            | Found u ->
+                let unit = r.resolve_unit u.root in
+                Some (Resolved (unit.id, module_of_unit unit))
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option = fun f -> 
     let rec inner acc = function
@@ -219,26 +267,3 @@ let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
         match unit.content with
         | Module s -> open_signature s env
         | Pack _ -> env
-
-let add_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
-    fun unit env ->
-        match unit.content with
-        | Module s ->
-            let m = Odoc_model.Lang.Module.{
-                id = unit.id;
-                doc = unit.doc;
-                type_ = ModuleType (Signature s);
-                canonical = None;
-                hidden = unit.hidden;
-                display_type = None;
-                expansion = Some AlreadyASig
-            }
-            in
-            let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
-            let id = Ident.of_identifier identifier in
-            let ty = Component.Of_Lang.module_ [identifier,id] m in
-            add_module m.id ty env
-        | Pack _ ->
-            Printf.fprintf stderr "WARNING: pack unsupported";
-            env
-

@@ -1,12 +1,6 @@
 open Odoc_model.Names
 open Odoc_model.Paths
 
-type lookup_result_found = { root : Odoc_model.Root.t; hidden : bool }
-
-type lookup_unit_result =
-  | Forward_reference
-  | Found of lookup_result_found
-  | Not_found
 
 module OptionMonad = struct
     type 'a t = 'a option
@@ -182,7 +176,6 @@ and lookup_module_from_resolved_path env cpath = lookup_and_resolve_module_from_
 
 and lookup_and_resolve_module_from_path : bool -> bool -> Env.t -> Cpath.t -> (module_lookup_result, Cpath.t) ResultMonad.t = fun is_resolve add_canonical env p ->
     let open ResultMonad in
-(*    Format.fprintf Format.std_formatter "lookup_and_resolve_module_from_path: %b %a\n%!" is_resolve Component.Fmt.path p; *)
     match p with
     | `Dot (parent, id) ->
         lookup_and_resolve_module_from_path is_resolve add_canonical env parent
@@ -211,8 +204,8 @@ and lookup_and_resolve_module_from_path : bool -> bool -> Env.t -> Cpath.t -> (m
         >>= fun (p, m) ->
         return (`Substituted p, m)
     | `Root r -> begin
-        match Env.lookup_root r env with
-        | Some (Env.Resolved p) -> return (lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env (`Identifier (p :> Odoc_model.Paths.Identifier.t)))
+        match Env.lookup_root_module r env with
+        | Some (Env.Resolved (p,m)) -> return (add_hidden m (`Identifier (p :> Odoc_model.Paths.Identifier.t)),m)
         | Some (Env.Forward) -> Unresolved (`Forward r)
         | None -> Unresolved p
         end
