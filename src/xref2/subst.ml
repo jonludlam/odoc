@@ -231,7 +231,7 @@ and signature s sg =
     let open Component.Signature in
     let s, items = rename_bound_idents s [] sg.items in
     let items = List.rev_map (function
-        | Module (id, r, m) -> Module (id, r, module_ s m)
+        | Module (id, r, m) -> Module (id, r, Component.Delayed.put (fun () -> module_ s (Component.Delayed.get m)))
         | ModuleType (id,mt) -> ModuleType (id, module_type s mt)
         | Type (id, r, t) -> Type (id, r, type_ s t)
         | Exception e -> Exception (exception_ s e)
