@@ -15,7 +15,7 @@ type type_lookup_result =
 type value_lookup_result =
   Resolved.Value.t * Component.Element.value
 
-let resolve_module_reference : Env.t -> Module.t -> module_lookup_result option =
+let rec resolve_module_reference : Env.t -> Module.t -> module_lookup_result option =
   let open Tools.OptionMonad in
   fun env r ->
     match r with
@@ -26,8 +26,14 @@ let resolve_module_reference : Env.t -> Module.t -> module_lookup_result option 
     | `Module (_parent, _name) ->
       failwith "Erk"
     | `Root (name, _) -> begin
-      Env.lookup_module_by_name name env 
-      >>= function | `Module (id, _) as m -> return (`Identifier id, m)
+      match
+        Env.lookup_module_by_name name env 
+        >>= function | `Module (id, _) as m -> return (`Identifier id, m)
+      with
+        | Some x -> Some x
+        | None ->
+          let x = Env.lookup_root_module name env in
+          match x with | Some (Env.Resolved (id,m)) -> Some (`Identifier id, `Module (id,m)) | _ -> None
       end
 
 and resolve_signature_reference : Env.t -> Signature.t -> signature_lookup_result option =
@@ -56,7 +62,8 @@ and resolve_reference : Env.t -> Odoc_model.Paths.Reference.t -> Odoc_model.Path
         | Some (`Label id) -> `Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | None -> r
         end
-    | `Root (_name, _ ) -> failwith "Unimplemented"
+    | `Root (_, `TModule) as r ->
+        resolve_module_reference env r |> (function Some (x,_) -> `Resolved (x :> Odoc_model.Paths.Reference.Resolved.t) | None -> r)
     | `Resolved _ -> r
     | `Module (_sg, _name) ->
         r
