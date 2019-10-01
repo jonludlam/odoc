@@ -165,6 +165,7 @@ module Lang_of = struct
     List.fold_right (fun item acc ->
       match item with
       | Module (id, r, m) ->
+        let m = Component.Delayed.get m in
         Odoc_model.Lang.Signature.Module (r, module_ map id m) :: acc 
       | ModuleType (id, m) ->
         Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc

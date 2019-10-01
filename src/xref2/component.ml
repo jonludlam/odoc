@@ -4,6 +4,25 @@
 
 module Comment = Odoc_model.Comment
 
+module Delayed = struct
+    type 'a t = {
+        mutable v : 'a option;
+        get : unit -> 'a;
+    }
+
+    let get : 'a t -> 'a = fun x ->
+        match x.v with
+        | Some x -> x
+        | None ->
+            let v = x.get () in
+            x.v <- Some v;
+            v
+
+    let put : (unit -> 'a) -> 'a t = fun f ->
+        { v = None
+        ; get = f }
+end
+
 module Opt = struct
     let map f = function
       | Some x -> Some (f x)
@@ -194,7 +213,7 @@ and Signature : sig
     type recursive = Odoc_model.Lang.Signature.recursive
 
     type item =
-        | Module of Ident.t * recursive * Module.t
+        | Module of Ident.t * recursive * (Module.t Delayed.t)
         | ModuleType of Ident.t * ModuleType.t
         | Type of Ident.t * recursive * TypeDecl.t
         | Exception of Exception.t
@@ -245,7 +264,7 @@ module Fmt = struct
                 Format.fprintf ppf
                     "@[<v 2>module %a %a@]@,"
                     Ident.fmt id
-                    module_ m
+                    module_ (Delayed.get m)
             | ModuleType (id, mt) ->
                 Format.fprintf ppf
                     "@[<v 2>module type %a %a@]@,"
@@ -703,7 +722,7 @@ module Of_Lang = struct
                     Signature.Type (id, r, t')
                 | Module (r, m) ->
                     let id = List.assoc (m.id :> Identifier.t) ident_map in 
-                    let m' = module_ ident_map m in
+                    let m' = Delayed.put (fun () -> module_ ident_map m) in
                     Signature.Module (id,r,m')
                 | ModuleType m ->
                     let id = List.assoc (m.id :> Identifier.t) ident_map in 
@@ -749,7 +768,7 @@ let careful_module_in_sig s name =
       | _::rest -> inner_removed rest
       | [] -> fail s name "module" in
     let rec inner = function
-      | Signature.Module (id,_,m) :: _ when Ident.name id = name -> Found m
+      | Signature.Module (id,_,m) :: _ when Ident.name id = name -> Found (Delayed.get m)
       | _::rest -> inner rest
       | [] -> inner_removed s.removed
     in inner s.items
@@ -782,3 +801,4 @@ let type_in_sig s name =
     | Found t -> t
     | Replaced _ -> fail s name "type"
 end
+

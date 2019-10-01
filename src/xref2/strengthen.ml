@@ -20,7 +20,7 @@ let rec signature (prefix : Cpath.resolved) sg =
     let open Odoc_model.Names in
     let items = List.map (fun item ->
         match item with
-        | Module (id,r,m) -> Module (id,r, module_ (`Module (prefix, ModuleName.of_string (Ident.name id))) m)
+        | Module (id,r,m) -> Module (id,r, Component.Delayed.put (fun () -> module_ (`Module (prefix, ModuleName.of_string (Ident.name id))) (Component.Delayed.get m)))
         | ModuleType (id, mt) -> ModuleType (id, module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name id))) mt)
         | Type (id,r,t) -> Type (id,r, type_decl (`Type (prefix, TypeName.of_string (Ident.name id))) t)
         | Exception _ -> item
