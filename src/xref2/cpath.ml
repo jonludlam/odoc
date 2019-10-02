@@ -14,6 +14,8 @@ type resolved = [
     | `Alias of resolved * resolved
     | `ModuleType of resolved * Odoc_model.Names.ModuleTypeName.t
     | `Type of resolved * Odoc_model.Names.TypeName.t
+    | `Class of resolved * Odoc_model.Names.ClassName.t
+    | `ClassType of resolved * Odoc_model.Names.ClassTypeName.t
 ]
 and t = [
     | `Substituted of t
@@ -93,6 +95,8 @@ let rec is_resolved_substituted : resolved -> bool =
     | `Alias (a, _) 
     | `Module (a, _)
     | `ModuleType (a, _)
+    | `Class (a, _)
+    | `ClassType (a, _)
     | `Type (a, _) -> is_resolved_substituted a
 
 let rec is_substituted : t -> bool =
@@ -123,6 +127,8 @@ and is_resolved_hidden : resolved -> bool =
     | `Apply (p, _)
     | `Module (p, _)
     | `ModuleType (p, _)
+    | `Class (p, _)
+    | `ClassType (p, _)
     | `Type (p, _) -> is_resolved_hidden p
     | `Subst (p1, p2)
     | `SubstAlias (p1, p2)
