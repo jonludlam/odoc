@@ -93,16 +93,17 @@ and TypeExpr : sig
     
       end
     
+    type label = Odoc_model.Lang.TypeExpr.label
     type t =
         | Var of string
         | Any
         | Alias of t * string
-        | Arrow of Odoc_model.Lang.TypeExpr.label option * t * t
+        | Arrow of label option * t * t
         | Tuple of t list
         | Constr of Cpath.t * t list
         | Polymorphic_variant of TypeExpr.Polymorphic_variant.t
         | Object of TypeExpr.Object.t
-        | Class of Odoc_model.Paths.Path.ClassType.t * t list
+        | Class of Cpath.t * t list
         | Poly of string list * t
         | Package of TypeExpr.Package.t
 
@@ -130,8 +131,7 @@ end = Extension
 and Exception : sig
 
     type t = 
-        { id: Ident.t
-        ; doc : Comment.docs
+        { doc : Comment.docs
         ; args : TypeDecl.Constructor.argument
         ; res : TypeExpr.t option }
 
@@ -185,6 +185,13 @@ and TypeDecl : sig
             ; res: TypeExpr.t option }
     end
 
+    module Representation : sig
+        type t =
+            | Variant of Constructor.t list
+            | Record of Field.t list
+            | Extensible
+    end
+
     type param = Odoc_model.Lang.TypeDecl.param
 
     module Equation : sig
@@ -197,18 +204,19 @@ and TypeDecl : sig
 
     type t =
       { doc : Comment.docs
-      ; equation : Equation.t}
+      ; equation : Equation.t
+      ; representation : Representation.t option }
 end = TypeDecl
+
 
 and Value : sig
 
     type t =
-      { id: Ident.t;
-        doc: Comment.docs;
-        type_: TypeExpr.t; }
+      { doc: Comment.docs
+      ; type_: TypeExpr.t }
   
 end = Value
-  
+
 and Signature : sig
     type recursive = Odoc_model.Lang.Signature.recursive
 
@@ -216,9 +224,13 @@ and Signature : sig
         | Module of Ident.t * recursive * (Module.t Delayed.t)
         | ModuleType of Ident.t * ModuleType.t
         | Type of Ident.t * recursive * TypeDecl.t
-        | Exception of Exception.t
+        | Exception of Ident.t * Exception.t
         | TypExt of Extension.t
-        | Value of Value.t
+        | Value of Ident.t * Value.t
+        | External of Ident.t * External.t
+        | Class of Ident.t * recursive * Class.t
+        | ClassType of Ident.t * recursive * ClassType.t
+        | Include of Ident.t * Include.t
         | Comment of Comment.docs_or_stop
 
     (* When doing destructive substitution we keep track of the items that have been removed,
@@ -231,6 +243,78 @@ and Signature : sig
         { items: item list
         ; removed: removed_item list }
 end = Signature
+
+and Include : sig
+    type t =
+        { doc: Comment.docs
+        ; decl: Module.decl }
+end = Include
+
+and External : sig
+    type t =
+        { doc : Comment.docs
+        ; type_ : TypeExpr.t
+        ; primitives : string list }
+
+end = External
+
+and Class : sig
+    type decl =
+        | ClassType of ClassType.expr
+        | Arrow of TypeExpr.label option * TypeExpr.t * decl
+    
+    type t =
+        { doc : Comment.docs
+        ; virtual_ : bool
+        ; params: TypeDecl.param list
+        ; type_ : decl }
+end = Class
+
+and ClassType : sig
+    type expr =
+        | Constr of Cpath.t * TypeExpr.t list
+        | Signature of ClassSignature.t
+    
+    type t = 
+        { doc : Comment.docs
+        ; virtual_ : bool
+        ; params: TypeDecl.param list
+        ; expr: expr }
+end = ClassType
+
+and ClassSignature : sig
+    type item =
+        | Method of Method.t
+        | InstanceVariable of InstanceVariable.t
+        | Constraint of TypeExpr.t * TypeExpr.t
+        | Inherit of ClassType.expr
+        | Comment of Comment.docs_or_stop
+    
+    type t =
+        { self: TypeExpr.t option
+        ; items: item list }
+end = ClassSignature
+
+and Method : sig
+    type t =
+        { id : Ident.t
+        ; doc : Comment.docs
+        ; private_: bool
+        ; virtual_: bool
+        ; type_ : TypeExpr.t }
+end = Method
+
+and InstanceVariable : sig
+    type t =
+        { id: Ident.t
+        ; doc: Comment.docs
+        ; mutable_ : bool
+        ; virtual_ : bool
+        ; type_ : TypeExpr.t }
+end = InstanceVariable
+
+
+  
 
 module Element = struct
     open Odoc_model.Paths
@@ -273,23 +357,47 @@ module Fmt = struct
             | Type (id, _,t) ->
                 Format.fprintf ppf
                     "@[<v 2>type %a %a@]@," Ident.fmt id type_decl t
-            | Exception e ->
+            | Exception (id, e) ->
                 Format.fprintf ppf
-                    "@[<v 2>exception %a@]@," exception_ e
+                    "@[<v 2>exception %a %a@]@," Ident.fmt id exception_ e
             | TypExt e ->
                 Format.fprintf ppf
                     "@[<v 2>type_extension %a@]@," extension e
-            | Value v ->
+            | Value (id, v) ->
                 Format.fprintf ppf
-                    "@[<v 2>val %a@]@," value v
+                    "@[<v 2>val %a %a@]@," Ident.fmt id value v
+            | External (id, e) ->
+                Format.fprintf ppf
+                    "@[<v 2>external %a %a@]@," Ident.fmt id external_ e
+            | Class (id, _,c) ->
+                Format.fprintf ppf
+                    "@[<v 2>class %a %a@]@," Ident.fmt id class_ c
+            | ClassType (id,_,c) ->
+                Format.fprintf ppf
+                    "@[<v 2>class type %a %a@]@," Ident.fmt id class_type c
+            | Include (id, i) ->
+                Format.fprintf ppf
+                    "@[<v 2>include %a %a@]@," Ident.fmt id include_ i
             | Comment _c ->
                 ()
             ) sg.items;
         Format.fprintf ppf "@]"
 
+    and external_ ppf _ =
+        Format.fprintf ppf "<todo>"
+    
+    and class_ ppf _c =
+        Format.fprintf ppf "<todo>"
+    
+    and class_type ppf _c =
+        Format.fprintf ppf "<todo>"
+    
+    and include_ ppf _i =
+        Format.fprintf ppf "<todo>"
+
     and value ppf v =
         let open Value in
-        Format.fprintf ppf "%a : %a" Ident.fmt v.id type_expr v.type_
+        Format.fprintf ppf ": %a" type_expr v.type_
 
     and module_decl ppf d =
         let open Module in
@@ -339,9 +447,9 @@ module Fmt = struct
         | None -> ()
         | Some m -> Format.fprintf ppf " = %a" type_expr m
 
-    and exception_ ppf e =
-        Format.fprintf ppf "%a" Ident.fmt e.Exception.id
-    
+    and exception_ _ppf _e =
+        ()
+
     and extension ppf e =
         Format.fprintf ppf "%a" path e.Extension.type_path
 
@@ -408,6 +516,9 @@ module Fmt = struct
         | `SubstAlias (p1, p2) -> Format.fprintf ppf "(substalias %a -> %a)" resolved_path p1 resolved_path p2
         | `Hidden p1 -> Format.fprintf ppf "(hidden %a)" resolved_path p1
         | `Canonical (p1, p2) -> Format.fprintf ppf "(canonical %a -> %a)" resolved_path p1 path p2
+        | `Class (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ClassName.to_string t)
+        | `ClassType (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ClassTypeName.to_string t)
+        
 
     and path ppf p =
         match p with
