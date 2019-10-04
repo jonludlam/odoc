@@ -29,6 +29,8 @@ let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
     | `SubstAlias (p1, p2) -> `SubstAlias (resolved_path s p1, resolved_path s p2)
     | `Hidden (p1) -> `Hidden (resolved_path s p1)
     | `Canonical (p1, p2) -> `Canonical (resolved_path s p1, path s p2)
+    | `Class(p,n) -> `Class(resolved_path s p, n)
+    | `ClassType(p, n) -> `ClassType(resolved_path s p, n)
 
 and path : t -> Cpath.t -> Cpath.t = fun s p ->
     match p with
@@ -172,6 +174,16 @@ and extension s e =
     constructors = List.map (extension_constructor s) e.constructors
     }
 
+and external_ s e =
+    let open Component.External in
+    { e with
+    type_ = type_expr s e.type_}
+
+and include_ s i =
+    let open Component.Include in
+    { i with
+    decl = module_decl s i.decl }
+
 and value s v =
     let open Component.Value in
     { v with
@@ -199,22 +211,25 @@ and rename_bound_idents s sg =
             (add id (`Local id') s)
             (Type (id', r, t) :: sg)
             rest
-    | Exception e :: rest ->
-        let id' = Ident.rename e.id in
+    | Exception (id,e) :: rest ->
+        let id' = Ident.rename id in
         rename_bound_idents
-            (add e.id (`Local id') s)
-            (Exception {e with id=id'} :: sg)
+            (add id (`Local id') s)
+            (Exception (id', e) :: sg)
             rest
-    | (TypExt _) as item :: rest ->
+    | Value (id,v) :: rest ->
+        let id' = Ident.rename id in
         rename_bound_idents
-            s (item :: sg) rest
-    | Value v :: rest ->
-        let id' = Ident.rename v.id in
-        rename_bound_idents
-            (add v.id (`Local id') s)
-            (Value {v with id=id'} :: sg)
+            (add id (`Local id') s)
+            (Value (id',v) :: sg)
             rest
-    | (Comment _) as item :: rest ->
+    | External (id, e) :: rest ->
+        let id' = Ident.rename id in
+        rename_bound_idents
+            (add id (`Local id') s)
+            (External (id',e) :: sg)
+            rest
+    | item :: rest ->
         rename_bound_idents
             s (item :: sg) rest
 
@@ -234,9 +249,13 @@ and signature s sg =
         | Module (id, r, m) -> Module (id, r, Component.Delayed.put (fun () -> module_ s (Component.Delayed.get m)))
         | ModuleType (id,mt) -> ModuleType (id, module_type s mt)
         | Type (id, r, t) -> Type (id, r, type_ s t)
-        | Exception e -> Exception (exception_ s e)
+        | Exception (id,e) -> Exception (id, exception_ s e)
         | TypExt e -> TypExt (extension s e)
-        | Value v -> Value (value s v)
+        | Value (id,v) -> Value (id, value s v)
+        | External (id, e) -> External (id, external_ s e)
+        | Class (id, r, c) -> Class (id, r, c)
+        | ClassType (id, r, c) -> ClassType (id, r, c)
+        | Include i -> Include (include_ s i)
         | Comment c -> Comment c
         ) items in
     {items; removed = removed_items s sg.removed}

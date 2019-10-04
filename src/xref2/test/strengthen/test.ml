@@ -20,8 +20,8 @@ type u = t
 let simple_strengthening () =
     let p = Common.root_identifier in
     let _, _, sg = Common.model_of_string input in
-    let c = Component.Of_Lang.signature [] sg in
-    let cp = Component.Of_Lang.local_resolved_path_of_resolved_path [] (p :> Odoc_model.Paths.Path.Resolved.t) in
+    let c = Component.Of_Lang.(signature empty sg) in
+    let cp = Component.Of_Lang.(resolved_module_path empty p) in
     let c' = Strengthen.signature cp c in
     let open Format in
     fprintf std_formatter "%s\n%s\n\n" name description;

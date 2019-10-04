@@ -6,11 +6,11 @@ type equations for all abstract types.
 
 BEFORE
 ======
-type t/0 
-type u/1 = t/0
+type t/36 
+type u/37 = t/36
 
 AFTER 
 ======
-type t/2 = global(Root).t
-type u/3 = t/2
+type t/38 = global(Root).t
+type u/39 = t/38
 

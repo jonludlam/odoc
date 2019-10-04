@@ -27,3 +27,11 @@
            (run ocaml-mdx test --direction=infer-timestamp %{x})
            (diff? %{x} %{x}.corrected))
 )))
+(alias
+ (name   runtest)
+ (deps   (:x scratch.md)
+         (package odoc))
+ (action (ignore-stderr (progn
+           (run ocaml-mdx test --direction=infer-timestamp %{x})
+           (diff? %{x} %{x}.corrected))
+)))

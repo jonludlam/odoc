@@ -8,21 +8,21 @@ module Opt = struct
 end
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t = fun env p ->
-    let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
+    let cp = Component.Of_Lang.(type_path empty p) in
     match Tools.lookup_type_from_path env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
     | Unresolved p -> Cpath.type_path_of_cpath p
     | exception _ -> p
 
 and module_type_path : Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t = fun env p ->
-    let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
+    let cp = Component.Of_Lang.(module_type_path empty p) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
     | Unresolved p -> Cpath.module_type_path_of_cpath p
     | exception _ -> p
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env p ->
-    let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
+    let cp = Component.Of_Lang.(module_path empty p) in
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Unresolved p -> Cpath.module_path_of_cpath p
@@ -188,7 +188,7 @@ and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module
     match decl with
     | ModuleType expr -> ModuleType (module_type_expr env id expr)
     | Alias p ->
-        let cp = Component.Of_Lang.local_path_of_path [] (p :> Paths.Path.t) in
+        let cp = Component.Of_Lang.(module_path empty p) in
         match Tools.lookup_and_resolve_module_from_path true true env cp with
         | Resolved (p', _) ->
             Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
@@ -286,7 +286,7 @@ and type_expression_object env o =
 
 and type_expression_package env p =
     let open TypeExpr.Package in
-    let cp = Component.Of_Lang.local_path_of_path [] (p.path :> Paths.Path.t) in
+    let cp = Component.Of_Lang.(module_type_path empty p.path) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Resolved (path, _) ->
         let path = Cpath.resolved_module_type_path_of_cpath path in
@@ -309,7 +309,7 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expression env t1, type_expression env t2)
     | Tuple ts -> Tuple (List.map (type_expression env) ts)
     | Constr (path, ts) -> begin
-        let cp = Component.Of_Lang.local_path_of_path [] (path :> Paths.Path.t) in
+        let cp = Component.Of_Lang.(type_path empty path) in
         match Tools.lookup_type_from_path env cp with
         | Resolved (cp, _) ->
             let p = Cpath.resolved_type_path_of_cpath cp in
