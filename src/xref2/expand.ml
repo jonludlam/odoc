@@ -77,6 +77,8 @@ module Lang_of = struct
       | `Alias (m1, m2) -> `Alias (resolved_module map m1, resolved_module map m2)
       | `Identifier _
       | `ModuleType (_,_)
+      | `Class _
+      | `ClassType _
       | `Type (_,_) -> failwith "type error"
 
     and resolved_module_type map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.ModuleType.t =
@@ -99,11 +101,11 @@ module Lang_of = struct
     open Component
     open Odoc_model.Names
 
-    let rec exception_ parent map e =
+    let rec exception_ parent map id e =
       let open Exception in
-      let identifier = `Exception (parent, ExceptionName.of_string (Ident.name e.id)) in
+      let identifier = `Exception (parent, ExceptionName.of_string (Ident.name id)) in
       let map = type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map e.args in
-      {map with exception_ = (e.id, identifier)::map.exception_ }
+      {map with exception_ = (id, identifier)::map.exception_ }
 
     and extension parent map e =
       let open Extension in
@@ -138,10 +140,10 @@ module Lang_of = struct
       let identifier = `ModuleType (parent, ModuleTypeName.of_string (Ident.name id)) in 
       { map with module_type = (id, identifier)::map.module_type}
 
-    and value_ parent map v =
-      let identifier = `Value (parent, ValueName.of_string (Ident.name v.Value.id)) in
-      {map with value_ = (v.Value.id, identifier)::map.value_ }
-
+    and value_ parent map id =
+      let identifier = `Value (parent, ValueName.of_string (Ident.name id)) in
+      {map with value_ = (id, identifier)::map.value_ }
+    
     and signature parent map sg =
       let open Signature in
       List.fold_left (fun map item ->
@@ -149,9 +151,13 @@ module Lang_of = struct
         | Module (id, _, _) -> module_ parent map id
         | ModuleType (id, _) -> module_type parent map id
         | Type (id, _, _) -> type_decl parent map id
-        | Exception e -> exception_ parent map e          
+        | Exception (id, e) -> exception_ parent map id e
         | TypExt e -> extension parent map e
-        | Value v -> value_ parent map v
+        | Value (id, _) -> value_ parent map id
+        | External (id, _) -> value_ parent map id (* externals are values *)
+        | Include _ -> map
+        | Class _
+        | ClassType _ 
         | Comment _ -> map
         ) map sg.items
 
@@ -171,19 +177,40 @@ module Lang_of = struct
         Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc
       | Type (id, r, t) ->
         Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
-      | Exception e ->
-        Odoc_model.Lang.Signature.Exception (exception_ map e) :: acc
+      | Exception (id,e) ->
+        Odoc_model.Lang.Signature.Exception (exception_ map id e) :: acc
       | TypExt t ->
         Odoc_model.Lang.Signature.TypExt (typ_ext map t) :: acc
-      | Value v ->
-        Odoc_model.Lang.Signature.Value (value_ map v) :: acc
+      | Value (id,v) ->
+        Odoc_model.Lang.Signature.Value (value_ map id v) :: acc
+      | Include i ->
+        Odoc_model.Lang.Signature.Include (include_ map i) :: acc
+      | External (id, e) ->
+        Odoc_model.Lang.Signature.External (external_ map id e) :: acc
+      | Class _
+      | ClassType _ -> acc
       | Comment c ->
         Odoc_model.Lang.Signature.Comment c :: acc
     ) sg.items []
 
-  and value_ map v =
+  and external_ map id e =
+    let open Component.External in
+    let identifier = List.assoc id map.value_ in
+    { id = identifier
+    ; doc = e.doc
+    ; type_ = type_expr map e.type_
+    ; primitives = e.primitives }
+
+  and include_ map i =
+    let open Component.Include in
+    { Odoc_model.Lang.Include.parent = i.parent
+    ; doc = i.doc
+    ; decl = module_decl map i.parent i.decl
+    ; expansion = { resolved=false; content=[] } }
+
+  and value_ map id v =
     let open Component.Value in
-    let identifier = List.assoc v.id map.value_ in
+    let identifier = List.assoc id map.value_ in
     { id = identifier
     ; doc = v.doc
     ; type_ = type_expr map v.type_ }
@@ -219,7 +246,8 @@ module Lang_of = struct
     ; display_type = Opt.map (module_decl map identifier) m.display_type
     ; expansion = None }
   
-  and module_decl map (identifier : Odoc_model.Paths_types.Identifier.signature) = function
+  and module_decl : maps -> Odoc_model.Paths_types.Identifier.signature -> Component.Module.decl -> Odoc_model.Lang.Module.decl = fun map identifier d ->
+    match d with
     | Component.Module.Alias p -> Odoc_model.Lang.Module.Alias (Path.module_ map p)
     | ModuleType mty -> ModuleType (module_type_expr map identifier mty)
   
@@ -322,8 +350,8 @@ module Lang_of = struct
       ; expr = module_type_expr map (identifier :> Odoc_model.Paths_types.Identifier.signature) f.expr
       ; expansion = None }
 
-  and exception_ map (e : Component.Exception.t) : Odoc_model.Lang.Exception.t =
-      let identifier = List.assoc e.id map.exception_ in
+  and exception_ map id (e : Component.Exception.t) : Odoc_model.Lang.Exception.t =
+      let identifier = List.assoc id map.exception_ in
       { id=identifier
       ; doc = e.doc
       ; args = type_decl_constructor_argument map e.args

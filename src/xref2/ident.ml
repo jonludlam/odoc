@@ -32,7 +32,9 @@ let rec of_identifier : Odoc_model.Paths.Identifier.t -> t =
         | `Method (_, s) -> (MethodName.to_string s, n)
         | `InstanceVariable (_, s) -> (InstanceVariableName.to_string s, n)
         | `Root (_, s) -> (UnitName.to_string s, n)
-        | _ -> failwith "Unhandled in of_identifier"
+        | `CoreException e -> (ExceptionName.to_string e, n)
+        | `Label (_, s) -> (LabelName.to_string s, n)
+        | `Page (_, s) -> (PageName.to_string s, n)
 
 let name : t -> string = fst
 

@@ -137,7 +137,7 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
             in
             let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
             let id = Ident.of_identifier identifier in
-            let ty = Component.Of_Lang.module_ [identifier,id] m in
+            let ty = Component.Of_Lang.(module_ {empty with modules = [m.id,id]} m) in
             ty
        | Pack _ ->
             failwith "Unsupported"    
@@ -228,19 +228,19 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
         List.fold_left (fun env orig ->
             match orig with
             | Odoc_model.Lang.Signature.Type (_, t) ->
-                let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.type_decl [identifier,id] t in
+                let idents = Component.LocalIdents.(type_decl t {empty with types = [t.id]}) in
+                let map = Of_Lang.(map_of_idents idents empty) in
+                let ty = Of_Lang.(type_decl map t) in
                 add_type t.Odoc_model.Lang.TypeDecl.id ty env
             | Odoc_model.Lang.Signature.Module (_, t) ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.module_ [identifier,id] t in
+                let ty = Of_Lang.(module_ {empty with modules = [t.id,id]} t) in
                 add_module t.Odoc_model.Lang.Module.id ty env
             | Odoc_model.Lang.Signature.ModuleType t ->
                 let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.module_type [identifier,id] t in
+                let ty = Of_Lang.(module_type {empty with module_types = [t.id,id]} t) in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | Odoc_model.Lang.Signature.Comment c ->
                 add_comment c env
@@ -251,7 +251,7 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.Value v ->
                 let identifier = (v.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
-                let ty = Of_Lang.value [identifier,id] id v in
+                let ty = Of_Lang.(value {empty with values = [v.id,id]} v) in
                 add_value v.Odoc_model.Lang.Value.id ty env
             | Odoc_model.Lang.Signature.External _ ->
                 env

@@ -82,12 +82,14 @@ signature is as follows:
            (`Resolved
               (`Identifier (`Type (`Root (Common.root, "Root"), "x"))),
            []));
-       constraints = []}});
+       constraints = []};
+     representation = None});
    (`Type (`Root (Common.root, "Root"), "x"),
     {Odoc_xref2.Component.TypeDecl.doc = [];
      equation =
       {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-       manifest = None; constraints = []}})];
+       manifest = None; constraints = []};
+     representation = None})];
  values = []; titles = [];
  elts =
   [("u",
@@ -103,15 +105,17 @@ signature is as follows:
               (`Resolved
                  (`Identifier (`Type (`Root (Common.root, "Root"), "x"))),
               []));
-          constraints = []}}));
+          constraints = []};
+        representation = None}));
    ("x",
     `Type
       (`Type (`Root (Common.root, "Root"), "x"),
        {Odoc_xref2.Component.TypeDecl.doc = [];
         equation =
          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false; manifest = None; constraints = []}}))];
- roots = []}
+          private_ = false; manifest = None; constraints = []};
+        representation = None}))];
+ roots = []; resolver = None}
 ```
 
 here we can see there are two types in the environment and nothing else. `u` has identifier 
@@ -294,7 +298,8 @@ val module_ : Component.Module.t =
            {Odoc_xref2.Component.TypeDecl.doc = [];
             equation =
              {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-              private_ = false; manifest = None; constraints = []}})];
+              private_ = false; manifest = None; constraints = []};
+            representation = None})];
         removed = []});
    canonical = None; hidden = false; display_type = None}
 ```
@@ -311,7 +316,8 @@ The three values returned are a boolean representing whether this path is depend
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-        manifest = None; constraints = []}})];
+        manifest = None; constraints = []};
+      representation = None})];
   removed = []})
 ```
 
@@ -401,16 +407,12 @@ val m : Component.ModuleType.t =
                     {Odoc_xref2.Component.TypeDecl.doc = [];
                      equation =
                       {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                       private_ = false; manifest = None; constraints = []}})];
+                       private_ = false; manifest = None; constraints = []};
+                     representation = None})];
                  removed = []})});
           Odoc_xref2.Component.Signature.Module (("B", 2),
            Odoc_model.Lang.Signature.Ordinary,
-           {Odoc_xref2.Component.Module.doc = [];
-            type_ =
-             Odoc_xref2.Component.Module.ModuleType
-              (Odoc_xref2.Component.ModuleType.Path
-                (`Resolved (`Local ("N", 1))));
-            canonical = None; hidden = false; display_type = None})];
+           {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
         removed = []})}
 ```
 
@@ -459,19 +461,12 @@ we look up `A` from the environment:
               {Odoc_xref2.Component.TypeDecl.doc = [];
                equation =
                 {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                 private_ = false; manifest = None; constraints = []}})];
+                 private_ = false; manifest = None; constraints = []};
+               representation = None})];
            removed = []})});
     Odoc_xref2.Component.Signature.Module (("B", 8),
      Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          (`Resolved
-             (`ModuleType
-                (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
-                 "N"))));
-      canonical = None; hidden = false; display_type = None})];
+     {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
   removed = []})
 ```
 
@@ -521,7 +516,8 @@ Odoc_xref2.Tools.ResultMonad.Resolved
   {Odoc_xref2.Component.TypeDecl.doc = [];
    equation =
     {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-     manifest = None; constraints = []}})
+     manifest = None; constraints = []};
+   representation = None})
 ```
 
 ### Module substitution
@@ -617,20 +613,10 @@ val sg : Cpath.resolved * Component.Signature.t =
    {Odoc_xref2.Component.Signature.items =
      [Odoc_xref2.Component.Signature.Module (("M", 1),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Module.doc = [];
-        type_ =
-         Odoc_xref2.Component.Module.Alias
-          (`Resolved
-             (`Identifier (`Module (`Root (Common.root, "Root"), "B"))));
-        canonical = None; hidden = false; display_type = None});
+       {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
       Odoc_xref2.Component.Signature.Module (("N", 2),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Module.doc = [];
-        type_ =
-         Odoc_xref2.Component.Module.ModuleType
-          (Odoc_xref2.Component.ModuleType.Path
-            (`Dot (`Resolved (`Local ("M", 1)), "S")));
-        canonical = None; hidden = false; display_type = None})];
+       {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
     removed = []})
 ```
 
@@ -662,7 +648,8 @@ val m : Component.Module.t =
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-        manifest = None; constraints = []}})];
+        manifest = None; constraints = []};
+      representation = None})];
   removed = []})
 ```
 
@@ -909,7 +896,7 @@ let test_path =
       `Resolved
         (`Identifier
           (`Module (`Root (Common.root, "Root"), "FooBarInt"))));;
-let cp = Component.Of_Lang.local_path_of_path [] test_path;;
+let cp = Component.Of_Lang.(module_path empty test_path);;
 ```
 
 Now let's lookup that module:
@@ -977,19 +964,9 @@ val p : Cpath.resolved =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (("Foo", 20),
+    [Odoc_xref2.Component.Signature.Module (("Foo", 19),
       Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Module.doc = [];
-       type_ =
-        Odoc_xref2.Component.Module.ModuleType
-         (Odoc_xref2.Component.ModuleType.Path
-           (`Dot
-              (`Resolved
-                 (`Substituted
-                    (`Identifier
-                       (`Module (`Root (Common.root, "Root"), "Bar")))),
-               "T")));
-       canonical = None; hidden = false; display_type = None})];
+      {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
    removed = []}
 ```
 
@@ -1568,7 +1545,8 @@ let sg = Common.signature_of_mli_string test_data;;
 
 # Expansion continued
 
-```ocaml env=e1
+```
+ocaml env=e1
 let test_data = {|
 module Foo (X : sig end) : sig
   type t
@@ -1586,7 +1564,8 @@ let module_M_expansion =
 ```
 
 TODO: This needs fixing (result ought to be `sig type s = C of Foo(Bar).t end`)
-```ocaml env=e1
+```
+ocaml env=e1
 # Common.LangUtils.Lens.get module_M_expansion expanded
 - : Odoc_model.Lang.Signature.t =
 [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
@@ -1832,7 +1811,8 @@ val m : Component.Module.t =
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
        {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-        manifest = None; constraints = []}})];
+        manifest = None; constraints = []};
+      representation = None})];
   removed = []})
 # sg;;
 - : Odoc_model.Lang.Signature.t =
@@ -1991,7 +1971,13 @@ Odoc_xref2.Component.Find.Find_failure
       {Odoc_xref2__Component.TypeDecl.doc = [];
        equation =
         {Odoc_xref2__Component.TypeDecl.Equation.params = [];
-         private_ = false; manifest = None; constraints = []}})];
+         private_ = false; manifest = None; constraints = []};
+       representation = None})];
    removed = []},
  "t", "type").
+Raised at file "src/xref2/component.ml", line 1122, characters 28-57
+Called from file "src/xref2/component.ml", line 1163, characters 10-36
+Called from file "src/xref2/tools.ml", line 128, characters 13-45
+Called from file "src/xref2/tools.ml", line 307, characters 26-55
+Called from file "toplevel/toploop.ml", line 180, characters 17-56
 ```

@@ -7,8 +7,12 @@ let filter_map f m =
     | [] -> []
     in inner m 
 
-let resolve_module_name sg name = (Component.Find.module_in_sig sg name).id
-
+let resolve_module_name sg name =
+    let rec check = function
+        | Component.Signature.Module (id, _r, _m) :: _rest when Ident.name id = name -> id
+        | _ :: rest -> check rest
+        | [] -> failwith "Unknown"
+    in check sg.Component.Signature.items
 (* Module substitution test *)
 
 let name = "Module substitution"
@@ -45,7 +49,7 @@ end
 let module_substitution () =
     let _, _, sg = Common.model_of_string test_data in
 
-    let c = Component.Of_Lang.signature [] sg in
+    let c = Component.Of_Lang.(signature empty sg) in
 
     let subst_idents_mod = resolve_module_name c "SubstituteMe" in
     let subst_targets_mod = resolve_module_name c "SubTargets" in

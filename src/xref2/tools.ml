@@ -26,11 +26,12 @@ let filter_map_record_removed f l =
       | [] -> (List.rev kept, removed)
     in inner ([],[]) l
 
+
 let core_types = 
    let open Odoc_model.Lang.TypeDecl in
    let open Odoc_model.Paths in
     List.map
-      (fun decl -> (Identifier.name decl.id, Component.Of_Lang.type_decl [] decl))
+      (fun decl -> (Identifier.name decl.id, Component.Of_Lang.(type_decl empty decl)))
       Odoc_model.Predefined.core_types
 
 let prefix_signature (path, s) =
@@ -40,18 +41,24 @@ let prefix_signature (path, s) =
         | Type (id,_,_) -> Subst.add id (`Type (path, TypeName.of_string (Ident.name id))) map
         | Module (id,_,_) -> Subst.add id (`Module (path, ModuleName.of_string (Ident.name id))) map
         | ModuleType (id, _) -> Subst.add id (`ModuleType (path, ModuleTypeName.of_string (Ident.name id))) map
-        | Exception _e -> map
+        | Exception _ -> map
         | TypExt _ -> map
-        | Value _ -> map
+        | Value (_,_) -> map
+        | External (_, _) -> map
         | Comment _ -> map
+        | _ -> map
         ) Subst.identity s.items in
     let items = List.map (function
             | Module (id,r, m) -> Module ((Ident.rename id), r, (Component.Delayed.put (fun () -> Subst.module_ sub (Component.Delayed.get m))))
             | ModuleType (id, mt) -> ModuleType ((Ident.rename id), Subst.module_type sub mt)
             | Type (id, r, t) -> Type ((Ident.rename id), r, Subst.type_ sub t)
-            | Exception e -> Exception (Subst.exception_ sub e)
+            | Exception (id, e) -> Exception (id, Subst.exception_ sub e)
             | TypExt t -> TypExt (Subst.extension sub t)
-            | Value v -> Value (Subst.value sub v)
+            | Value (id, v) -> Value (id, Subst.value sub v)
+            | External (id, e) -> External (id, Subst.external_ sub e)
+            | Class (id,r,c) -> Class (id,r,c)
+            | ClassType (id,r,c) -> ClassType (id,r,c)
+            | Include i -> Include (Subst.include_ sub i)
             | Comment c -> Comment c
             ) s.items in
     (path, {items; removed=s.removed})
@@ -169,6 +176,8 @@ and lookup_and_resolve_module_from_resolved_path : bool -> bool -> Env.t -> Cpat
         | `Type _ ->
             let str = Component.Fmt.string_of Component.Fmt.resolved_path p in
             failwith (Printf.sprintf "Bad lookup: %s" str)
+        | `Class (_p, _n) -> failwith "class"
+        | `ClassType (_p, _n) -> failwith "classtype"
 
 and lookup_module_from_path env cpath = lookup_and_resolve_module_from_path true true env cpath
 
@@ -233,6 +242,8 @@ and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.r
     | `Apply (_, _)
     | `Module _
     | `Identifier _
+    | `Class _
+    | `ClassType _
     | `Type _ -> failwith "erk"
         
 
@@ -282,6 +293,8 @@ and lookup_type_from_resolved_path : Env.t -> Cpath.resolved -> type_lookup_resu
         | `Apply (_, _)
         | `Module _
         | `Identifier _
+        | `Class _
+        | `ClassType _
         | `ModuleType _ -> failwith "erk"
         
 and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Cpath.t) ResultMonad.t =
