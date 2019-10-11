@@ -28,8 +28,8 @@ let filter_map_record_removed f l =
 
 
 let core_types = 
-   let open Odoc_model.Lang.TypeDecl in
-   let open Odoc_model.Paths in
+    let open Odoc_model.Lang.TypeDecl in
+    let open Odoc_model.Paths in
     List.map
       (fun decl -> (Identifier.name decl.id, Component.Of_Lang.(type_decl empty decl)))
       Odoc_model.Predefined.core_types

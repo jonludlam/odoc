@@ -113,7 +113,7 @@ and Extension : sig
     module Constructor : sig
 
         type t =
-          { id: Ident.t;
+          { name: string;
             doc: Comment.docs;
             args: TypeDecl.Constructor.argument;
             res: TypeExpr.t option; }
@@ -167,7 +167,7 @@ and TypeDecl : sig
 
     module Field : sig
         type t =
-            { id : Ident.t
+            { name : string
             ; doc : Comment.docs
             ; mutable_ : bool
             ; type_ : TypeExpr.t }
@@ -179,7 +179,7 @@ and TypeDecl : sig
             | Record of Field.t list
         
         type t = 
-            { id : Ident.t
+            { name : string
             ; doc : Comment.docs
             ; args : argument
             ; res: TypeExpr.t option }
@@ -298,7 +298,7 @@ end = ClassSignature
 
 and Method : sig
     type t =
-        { id : Ident.t
+        { name : string
         ; doc : Comment.docs
         ; private_: bool
         ; virtual_: bool
@@ -307,7 +307,7 @@ end = Method
 
 and InstanceVariable : sig
     type t =
-        { id: Ident.t
+        { name : string
         ; doc: Comment.docs
         ; mutable_ : bool
         ; virtual_ : bool
@@ -877,12 +877,9 @@ module Of_Lang = struct
     
     and type_decl_constructor ident_map t =
         let open Odoc_model.Lang.TypeDecl.Constructor in
-        let id = try
-            List.assoc t.id ident_map.constructors
-            with Not_found -> failwith (Format.asprintf "nah! %a" Fmt.model_identifier (t.id :> Paths.Identifier.t)) in
         let args = type_decl_constructor_argument ident_map t.args in
         let res = Opt.map (type_expression ident_map) t.res in
-        { TypeDecl.Constructor.id = id
+        { TypeDecl.Constructor.name = Paths.Identifier.name t.id
         ; doc = t.doc
         ; args
         ; res }
@@ -895,9 +892,8 @@ module Of_Lang = struct
     
     and type_decl_field ident_map f =
         let open Odoc_model.Lang.TypeDecl.Field in
-        let id = List.assoc f.id ident_map.fields in
         let type_ = type_expression ident_map f.type_ in
-        { TypeDecl.Field.id = id
+        { TypeDecl.Field.name = Paths.Identifier.name f.id
         ; doc = f.doc
         ; mutable_ = f.mutable_
         ; type_ }
@@ -1000,10 +996,9 @@ module Of_Lang = struct
 
     and extension_constructor ident_map c =
         let open Odoc_model.Lang.Extension.Constructor in
-        let id = List.assoc c.id ident_map.extensions in
         let args = type_decl_constructor_argument ident_map c.args in
         let res = Opt.map (type_expression ident_map) c.res in
-        { Extension.Constructor.id = id
+        { Extension.Constructor.name = Paths.Identifier.name c.id
         ; doc = c.doc
         ; args
         ; res }

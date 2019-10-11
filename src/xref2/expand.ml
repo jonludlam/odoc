@@ -16,9 +16,7 @@ module Lang_of = struct
     ; type_ : (Ident.t * Identifier.Type.t) list
     ; path_type : (Ident.t * Odoc_model.Paths_types.Identifier.path_type) list
     ; exception_ : (Ident.t * Identifier.Exception.t) list
-    ; extension : (Ident.t * Identifier.Extension.t) list
     ; value_ : (Ident.t * Identifier.Value.t) list
-    ; field_ : (Ident.t * Identifier.Field.t) list
   }
 
   let empty =
@@ -27,9 +25,7 @@ module Lang_of = struct
     ; type_ = []
     ; path_type = []
     ; exception_ = []
-    ; extension = []
     ; value_ = []
-    ; field_ = []
     }
 
   module Opt = Component.Opt
@@ -101,31 +97,9 @@ module Lang_of = struct
     open Component
     open Odoc_model.Names
 
-    let rec exception_ parent map id e =
-      let open Exception in
+    let rec exception_ parent map id =
       let identifier = `Exception (parent, ExceptionName.of_string (Ident.name id)) in
-      let map = type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map e.args in
       {map with exception_ = (id, identifier)::map.exception_ }
-
-    and extension parent map e =
-      let open Extension in
-      let constructor map c =
-        let id = `Extension (parent, Ident.name c.Constructor.id) in
-        let map = {map with extension = (c.Constructor.id, id)::map.extension } in
-        type_decl_constructor_argument (parent :> Odoc_model.Paths.Identifier.Parent.t) map c.Constructor.args
-      in
-      List.fold_left constructor map e.constructors
-
-    and type_decl_constructor_argument parent map a =
-      let open TypeDecl.Constructor in
-      match a with
-      | Tuple _ -> map
-      | Record fs -> List.fold_left (type_decl_field parent) map fs
-    
-    and type_decl_field (parent : Odoc_model.Paths.Identifier.Parent.t) map f =
-      let open TypeDecl.Field in
-      let identifier = `Field (parent, FieldName.of_string (Ident.name f.id)) in
-      { map with field_ = (f.id, identifier)::map.field_ }
 
     and type_decl parent map id =
       let identifier = `Type (parent, TypeName.of_string (Ident.name id)) in
@@ -151,12 +125,12 @@ module Lang_of = struct
         | Module (id, _, _) -> module_ parent map id
         | ModuleType (id, _) -> module_type parent map id
         | Type (id, _, _) -> type_decl parent map id
-        | Exception (id, e) -> exception_ parent map id e
-        | TypExt e -> extension parent map e
+        | Exception (id, _) -> exception_ parent map id
         | Value (id, _) -> value_ parent map id
         | External (id, _) -> value_ parent map id (* externals are values *)
         | Include _ -> map
         | Class _
+        | TypExt _
         | ClassType _ 
         | Comment _ -> map
         ) map sg.items
@@ -177,10 +151,10 @@ module Lang_of = struct
         Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc
       | Type (id, r, t) ->
         Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
-      | Exception (id,e) ->
-        Odoc_model.Lang.Signature.Exception (exception_ map id e) :: acc
+      | Exception (id',e) ->
+        Odoc_model.Lang.Signature.Exception (exception_ map (id :> Odoc_model.Paths_types.Identifier.parent) id' e) :: acc
       | TypExt t ->
-        Odoc_model.Lang.Signature.TypExt (typ_ext map t) :: acc
+        Odoc_model.Lang.Signature.TypExt (typ_ext map id t) :: acc
       | Value (id,v) ->
         Odoc_model.Lang.Signature.Value (value_ map id v) :: acc
       | Include i ->
@@ -215,20 +189,20 @@ module Lang_of = struct
     ; doc = v.doc
     ; type_ = type_expr map v.type_ }
 
-  and typ_ext map t =
+  and typ_ext map parent t =
     let open Component.Extension in
     { type_path = Path.type_ map t.type_path
     ; doc = t.doc
     ; type_params = t.type_params
     ; private_ = t.private_
-    ; constructors = List.map (extension_constructor map) t.constructors }
+    ; constructors = List.map (extension_constructor map parent) t.constructors }
   
-  and extension_constructor map c =
+  and extension_constructor map parent c =
     let open Component.Extension.Constructor in
-    let identifier = List.assoc c.id map.extension in
+    let identifier = `Extension(parent, c.name) in
     { id = identifier
     ; doc = c.doc
-    ; args = type_decl_constructor_argument map c.args
+    ; args = type_decl_constructor_argument map (parent :> Odoc_model.Paths_types.Identifier.parent) c.args
     ; res = Opt.map (type_expr map) c.res }
 
   and module_ map id m =
@@ -278,13 +252,13 @@ module Lang_of = struct
     ; expr = Opt.map (module_type_expr map sig_id) mty.expr
     ; expansion = None}
   
-  and type_decl_constructor_argument map (a : Component.TypeDecl.Constructor.argument) : Odoc_model.Lang.TypeDecl.Constructor.argument =
+  and type_decl_constructor_argument : maps -> Paths_types.Identifier.parent -> Component.TypeDecl.Constructor.argument -> Odoc_model.Lang.TypeDecl.Constructor.argument = fun map parent a ->
     match a with
     | Tuple ls -> Tuple (List.map (type_expr map) ls)
-    | Record fs -> Record (List.map (type_decl_field map) fs)
+    | Record fs -> Record (List.map (type_decl_field map parent) fs)
   
-  and type_decl_field map (f : Component.TypeDecl.Field.t) : Odoc_model.Lang.TypeDecl.Field.t =
-    let identifier = List.assoc f.id map.field_ in
+  and type_decl_field : maps -> Paths_types.Identifier.parent -> Component.TypeDecl.Field.t -> Odoc_model.Lang.TypeDecl.Field.t = fun map parent f ->
+    let identifier = `Field (parent, f.name) in
     { id = identifier
     ; doc =  f.doc
     ; mutable_ = f.mutable_ 
@@ -302,7 +276,20 @@ module Lang_of = struct
     { id = identifier
     ; equation = type_decl_equation map t.equation
     ; doc = []
-    ; representation = None }
+    ; representation = Opt.map (type_decl_representation map identifier) t.representation }
+
+  and type_decl_representation map id (t : Component.TypeDecl.Representation.t) : Odoc_model.Lang.TypeDecl.Representation.t =
+    match t with
+    | Extensible -> Extensible
+    | Variant cs -> Variant (List.map (type_decl_constructor map id) cs)
+    | Record fs -> Record (List.map (type_decl_field map (id :> Odoc_model.Paths_types.Identifier.parent)) fs)
+  
+  and type_decl_constructor : maps -> Odoc_model.Paths_types.Identifier.type_ -> Component.TypeDecl.Constructor.t -> Odoc_model.Lang.TypeDecl.Constructor.t = fun map id t ->
+    let identifier = `Constructor(id, t.name) in
+    { id = identifier
+    ; doc = t.doc
+    ; args = type_decl_constructor_argument map (id :> Odoc_model.Paths_types.Identifier.parent) t.args
+    ; res = Opt.map (type_expr map) t.res}
 
   and type_expr map (t : Component.TypeExpr.t) : Odoc_model.Lang.TypeExpr.t =
     match t with
@@ -350,11 +337,11 @@ module Lang_of = struct
       ; expr = module_type_expr map (identifier :> Odoc_model.Paths_types.Identifier.signature) f.expr
       ; expansion = None }
 
-  and exception_ map id (e : Component.Exception.t) : Odoc_model.Lang.Exception.t =
+  and exception_ map parent id (e : Component.Exception.t) : Odoc_model.Lang.Exception.t =
       let identifier = List.assoc id map.exception_ in
       { id=identifier
       ; doc = e.doc
-      ; args = type_decl_constructor_argument map e.args
+      ; args = type_decl_constructor_argument map parent e.args
       ; res = Opt.map (type_expr map) e.res }
 
 

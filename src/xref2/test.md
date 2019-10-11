@@ -450,13 +450,13 @@ we look up `A` from the environment:
 - : Cpath.resolved * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.ModuleType (("N", 7),
+   [Odoc_xref2.Component.Signature.ModuleType (("N", 8),
      {Odoc_xref2.Component.ModuleType.doc = [];
       expr =
        Some
         (Odoc_xref2.Component.ModuleType.Signature
           {Odoc_xref2.Component.Signature.items =
-            [Odoc_xref2.Component.Signature.Type (("t", 6),
+            [Odoc_xref2.Component.Signature.Type (("t", 7),
               Odoc_model.Lang.Signature.Ordinary,
               {Odoc_xref2.Component.TypeDecl.doc = [];
                equation =
@@ -464,7 +464,7 @@ we look up `A` from the environment:
                  private_ = false; manifest = None; constraints = []};
                representation = None})];
            removed = []})});
-    Odoc_xref2.Component.Signature.Module (("B", 8),
+    Odoc_xref2.Component.Signature.Module (("B", 9),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
   removed = []})
@@ -643,7 +643,7 @@ val m : Component.Module.t =
 - : Cpath.resolved * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (("t", 43),
+   [Odoc_xref2.Component.Signature.Type (("t", 46),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
@@ -964,7 +964,7 @@ val p : Cpath.resolved =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (("Foo", 19),
+    [Odoc_xref2.Component.Signature.Module (("Foo", 20),
       Odoc_model.Lang.Signature.Ordinary,
       {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
    removed = []}
@@ -1545,8 +1545,7 @@ let sg = Common.signature_of_mli_string test_data;;
 
 # Expansion continued
 
-```
-ocaml env=e1
+```ocaml env=e1
 let test_data = {|
 module Foo (X : sig end) : sig
   type t
@@ -1564,8 +1563,7 @@ let module_M_expansion =
 ```
 
 TODO: This needs fixing (result ought to be `sig type s = C of Foo(Bar).t end`)
-```
-ocaml env=e1
+```ocaml env=e1
 # Common.LangUtils.Lens.get module_M_expansion expanded
 - : Odoc_model.Lang.Signature.t =
 [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
@@ -1966,7 +1964,7 @@ val m : Component.Module.t =
 Exception:
 Odoc_xref2.Component.Find.Find_failure
  ({Odoc_xref2__Component.Signature.items =
-    [Odoc_xref2__Component.Signature.Type (("x", 19),
+    [Odoc_xref2__Component.Signature.Type (("x", 27),
       Odoc_model.Lang.Signature.Ordinary,
       {Odoc_xref2__Component.TypeDecl.doc = [];
        equation =
