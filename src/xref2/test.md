@@ -1556,10 +1556,10 @@ module M : Foo(Bar).S
 |};;
 let sg = Common.signature_of_mli_string test_data;;
 let resolved = Resolve.signature Env.empty sg;;
-let expanded = Expand.signature Env.empty resolved;;
-let module_M_expansion =
+(*let expanded = Expand.signature Env.empty resolved;;*)
+(*let module_M_expansion =
   let open Common.LangUtils.Lens in
-  Signature.module_ "M" |-- Module.expansion |-~ option |-~ Module.expansion_signature
+  Signature.module_ "M" |-- Module.expansion |-~ option |-~ Module.expansion_signature*)
 ```
 
 TODO: This needs fixing (result ought to be `sig type s = C of Foo(Bar).t end`)
@@ -1576,7 +1576,21 @@ TODO: This needs fixing (result ought to be `sig type s = C of Foo(Bar).t end`)
    representation = None})]
 ```
 
+# Anonymous stuff
 
+```ocaml env=e1
+let test_data = {|
+module type S =
+sig
+  type t
+end
+
+module type S1 = functor (_ : S) -> S
+|};;
+let sg = Common.signature_of_mli_string test_data;;
+let resolved = Resolve.signature Env.empty sg;;
+let expanded = Expand.signature Env.empty resolved;;
+```
 
 # Hidden / Canonical
 

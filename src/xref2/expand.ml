@@ -17,6 +17,9 @@ module Lang_of = struct
     ; path_type : (Ident.t * Odoc_model.Paths_types.Identifier.path_type) list
     ; exception_ : (Ident.t * Identifier.Exception.t) list
     ; value_ : (Ident.t * Identifier.Value.t) list
+    ; class_ : (Ident.t * Identifier.Class.t) list
+    ; class_type : (Ident.t * Identifier.ClassType.t) list
+    ; path_class_type : (Ident.t * Odoc_model.Paths_types.Identifier.path_class_type) list
   }
 
   let empty =
@@ -26,6 +29,9 @@ module Lang_of = struct
     ; path_type = []
     ; exception_ = []
     ; value_ = []
+    ; class_ = []
+    ; class_type = []
+    ; path_class_type = []
     }
 
   module Opt = Component.Opt
@@ -58,6 +64,15 @@ module Lang_of = struct
       | `Forward _
       | `Apply _ -> failwith "type error"
     
+    and class_type map (p : Cpath.t) : Odoc_model.Paths.Path.ClassType.t =
+      match p with
+      | `Substituted x -> class_type map x
+      | `Resolved x -> `Resolved (resolved_class_type map x)
+      | `Dot (p, n) -> `Dot (module_ map p, n)
+      | `Root _
+      | `Forward _
+      | `Apply _ -> failwith "type error"
+
     and resolved_module map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.Module.t =
       match p with
       | `Local id ->
@@ -91,6 +106,13 @@ module Lang_of = struct
       | `Type (p, name) -> `Type (resolved_module map p, name)
       | _ -> failwith "type error"
 
+    and resolved_class_type map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.ClassType.t =
+      match p with
+      | `Identifier (#Odoc_model.Paths_types.Identifier.path_class_type as y) -> `Identifier y
+      | `Local id -> `Identifier (List.assoc id map.path_class_type)
+      | `Class (p, name) -> `Class (resolved_module map p, name)
+      | `ClassType (p, name) -> `ClassType (resolved_module map p, name)
+      | _ -> failwith "type error"
   end
 
   module ExtractIDs = struct
@@ -116,8 +138,18 @@ module Lang_of = struct
 
     and value_ parent map id =
       let identifier = `Value (parent, ValueName.of_string (Ident.name id)) in
-      {map with value_ = (id, identifier)::map.value_ }
+      { map with value_ = (id, identifier)::map.value_ }
     
+    and class_ parent map id =
+      let identifier = `Class (parent, ClassName.of_string (Ident.name id)) in
+      { map with class_ = (id, identifier)::map.class_
+      ; path_class_type = (id, identifier)::map.path_class_type }
+
+    and class_type parent map id =
+      let identifier = `ClassType (parent, ClassTypeName.of_string (Ident.name id)) in
+      { map with class_type = (id, identifier)::map.class_type
+      ; path_class_type = (id, identifier)::map.path_class_type }
+
     and signature parent map sg =
       let open Signature in
       List.fold_left (fun map item ->
@@ -128,10 +160,10 @@ module Lang_of = struct
         | Exception (id, _) -> exception_ parent map id
         | Value (id, _) -> value_ parent map id
         | External (id, _) -> value_ parent map id (* externals are values *)
-        | Include _ -> map
-        | Class _
+        | Class (id, _, _) -> class_ parent map id
+        | ClassType (id, _, _) -> class_type parent map id
+        | Include _
         | TypExt _
-        | ClassType _ 
         | Comment _ -> map
         ) map sg.items
 
@@ -161,11 +193,71 @@ module Lang_of = struct
         Odoc_model.Lang.Signature.Include (include_ map i) :: acc
       | External (id, e) ->
         Odoc_model.Lang.Signature.External (external_ map id e) :: acc
-      | Class _
+      | Class (id, r, c) ->
+        Odoc_model.Lang.Signature.Class (r, class_ map id c) :: acc
       | ClassType _ -> acc
       | Comment c ->
         Odoc_model.Lang.Signature.Comment c :: acc
     ) sg.items []
+
+  and class_ map id c =
+    let open Component.Class in
+    let identifier = List.assoc id map.class_ in
+    { id = identifier
+    ; doc = c.doc
+    ; virtual_ = c.virtual_
+    ; params = c.params
+    ; type_ = class_decl map (identifier :> Paths_types.Identifier.path_class_type) c.type_
+    ; expansion = None }
+
+  and class_decl map parent c =
+    match c with
+    | Component.Class.ClassType expr -> ClassType (class_type_expr map parent expr)
+    | Arrow (lbl, t, d) -> Arrow (lbl, type_expr map t, class_decl map parent d)
+
+  and class_type_expr map parent c =
+    match c with
+    | Component.ClassType.Constr (p, ts) -> Constr (Path.class_type map p, List.map (type_expr map) ts)
+    | Signature s -> Signature (class_signature map parent s)
+  
+  and class_type map id c =
+    let open Component.ClassType in
+    let identifier = List.assoc id map.class_type in
+    { Odoc_model.Lang.ClassType.id = identifier
+    ; doc = c.doc
+    ; virtual_ = c.virtual_
+    ; params = c.params
+    ; expr = class_type_expr map (identifier :> Paths_types.Identifier.path_class_type) c.expr
+    ; expansion = None }
+  
+  and class_signature map parent sg =
+    let open Component.ClassSignature in
+    let items = List.map (function
+    | Method m -> Odoc_model.Lang.ClassSignature.Method (method_ map parent m)
+    | InstanceVariable i -> InstanceVariable (instance_variable map parent i)
+    | Constraint (t1,t2) -> Constraint (type_expr map t1, type_expr map t2)
+    | Inherit e -> Inherit (class_type_expr map parent e)
+    | Comment c -> Comment c) sg.items in
+    { self = Opt.map (type_expr map) sg.self
+    ; items }
+
+  and method_ map parent m =
+    let open Component.Method in
+    let identifier = `Method(parent, Names.MethodName.of_string m.name) in
+    { id = identifier
+    ; doc = m.doc
+    ; private_ = m.private_ 
+    ; virtual_ = m.virtual_
+    ; type_ = type_expr map m.type_}
+
+  and instance_variable map parent i =
+  let open Component.InstanceVariable in
+  let identifier = `InstanceVariable(parent, Names.MethodName.of_string i.name) in
+  { id = identifier
+  ; doc = i.doc
+  ; mutable_ = i.mutable_ 
+  ; virtual_ = i.virtual_
+  ; type_ = type_expr map i.type_}
 
   and external_ map id e =
     let open Component.External in
@@ -275,7 +367,7 @@ module Lang_of = struct
     let identifier = List.assoc id map.type_ in
     { id = identifier
     ; equation = type_decl_equation map t.equation
-    ; doc = []
+    ; doc = t.doc
     ; representation = Opt.map (type_decl_representation map identifier) t.representation }
 
   and type_decl_representation map id (t : Component.TypeDecl.Representation.t) : Odoc_model.Lang.TypeDecl.Representation.t =
@@ -392,6 +484,9 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
           | ModuleType mt ->
               let mt' = module_type env mt in
               (env, (ModuleType mt')::items)
+          | Class (r,c) ->
+              let c' = class_ env c in
+              (env, (Class (r,c')) :: items)
           | x -> (env, x::items)
         ) s (env, [])
   in items'
@@ -507,8 +602,12 @@ and module_type env m =
         {m with expr; expansion=Some (Signature (signature env sg))}
       with _ -> {m with expr}
 
-  
-
+and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t = fun env c ->
+   let c' = Env.lookup_class c.id env in
+   let (_p,sg) = Tools.class_signature_of_class env (`Identifier (c.id :> Paths_types.Identifier.any), c') in
+   let expansion = Lang_of.class_signature Lang_of.empty (c.id :> Paths_types.Identifier.path_class_type) sg in
+   {c with expansion = Some expansion }
+    
 let build_expander :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)
     -> (string -> Env.lookup_unit_result)

@@ -324,8 +324,10 @@ module Element = struct
     type type_ = [ `Type of Identifier.Type.t * TypeDecl.t ]
     type value = [ `Value of Identifier.Value.t * Value.t ]
     type label = [ `Label of Identifier.Label.t ]
+    type class_ = [ `Class of Identifier.Class.t * Class.t ]
+    type class_type = [ `ClassType of Identifier.ClassType.t * ClassType.t ]
     type signature = [ module_ | module_type ]
-    type any = [ signature | value | type_ | label ]
+    type any = [ signature | value | type_ | label | class_ | class_type ]
 end
 
 
@@ -599,7 +601,7 @@ end
 
 module LocalIdents = struct
     open Odoc_model
-
+ 
     type t =
         { modules : Paths.Identifier.Module.t list
         ; module_types : Paths.Identifier.ModuleType.t list
@@ -674,9 +676,11 @@ module LocalIdents = struct
     and external_ e ids =
         { ids with values = e.External.id :: ids.values }
     
-    and class_ _c ids = ids
+    and class_ c ids =
+        { ids with classes = c.Class.id :: ids.classes }
 
-    and class_type _c ids = ids
+    and class_type c ids =
+        { ids with class_types = c.ClassType.id :: ids.class_types }
 
     and signature s ids =
         List.fold_right (fun c ids ->
@@ -1060,6 +1064,60 @@ module Of_Lang = struct
         ; doc = i.doc
         ; decl }
 
+    and class_ ident_map c =
+        let open Odoc_model.Lang.Class in
+        { Class.doc = c.doc
+        ; virtual_ = c.virtual_
+        ; params = c.params
+        ; type_ = class_decl ident_map c.type_ }
+    
+    and class_decl ident_map c =
+        let open Odoc_model.Lang.Class in
+        match c with
+        | ClassType e -> Class.ClassType (class_type_expr ident_map e)
+        | Arrow (lbl, e, d) -> Arrow (lbl, type_expression ident_map e, class_decl ident_map d)
+
+    and class_type_expr ident_map e =
+        let open Odoc_model.Lang.ClassType in
+        match e with
+        | Constr (p, ts) -> ClassType.Constr (class_type_path ident_map p, List.map (type_expression ident_map) ts)
+        | Signature s -> Signature (class_signature ident_map s)
+    
+    and class_type ident_map t =
+        let open Odoc_model.Lang.ClassType in
+        { ClassType.doc = t.doc
+        ; virtual_ = t.virtual_
+        ; params = t.params
+        ; expr = class_type_expr ident_map t.expr }
+    
+    and class_signature ident_map sg =
+        let open Odoc_model.Lang.ClassSignature in
+        let items =
+            List.map (function
+            | Method m -> ClassSignature.Method (method_ ident_map m)
+            | InstanceVariable i -> ClassSignature.InstanceVariable (instance_variable ident_map i)
+            | Constraint (t1,t2) -> Constraint (type_expression ident_map t1, type_expression ident_map t2)
+            | Inherit e -> Inherit (class_type_expr ident_map e)
+            | Comment c -> Comment c
+            ) sg.items in
+        { ClassSignature.self = Opt.map (type_expression ident_map) sg.self
+        ; items }
+    
+    and method_ ident_map m =
+        let open Odoc_model.Lang.Method in
+        { name = Odoc_model.Paths.Identifier.name m.id
+        ; Method.doc = m.doc
+        ; private_ = m.private_
+        ; virtual_ = m.virtual_
+        ; type_ = type_expression ident_map m.type_ }
+
+    and instance_variable ident_map i =
+        { InstanceVariable.name = Odoc_model.Paths.Identifier.name i.id
+        ; doc = i.doc
+        ; mutable_ = i.mutable_
+        ; virtual_ = i.virtual_
+        ; type_ = type_expression ident_map i.type_}
+
     and signature : _ -> Odoc_model.Lang.Signature.t -> Signature.t =
         fun ident_map items ->
             (* First we construct a list of brand new [Ident.t]s
@@ -1098,12 +1156,14 @@ module Of_Lang = struct
                 | External e ->
                     let id = List.assoc e.id ident_map.values in
                     External (id, external_ ident_map e)
-                | Class (_,_) ->
-                    failwith "Unhandled class in of_signature"
-                | ClassType (_,_) ->
-                    failwith "Unhandled classtype in of_signature"
-                | Include _i ->
-                    failwith "Unhandled classtype in of_signature"
+                | Class (r,c) ->
+                    let id = List.assoc c.id ident_map.classes in
+                    Class (id, r, class_ ident_map c)
+                | ClassType (r,c) ->
+                    let id = List.assoc c.id ident_map.class_types in
+                    ClassType (id, r, class_type ident_map c)
+                | Include i ->
+                    Include (include_ ident_map i)
                 ) items
             in
             { items; removed=[] }
@@ -1115,6 +1175,8 @@ module Find = struct
 exception Find_failure of Signature.t * string * string
 
 let fail sg name ty = raise (Find_failure (sg, name, ty))
+
+type class_type = C of Class.t | CT of ClassType.t
 
 type 'a found =
     | Found of 'a
@@ -1158,5 +1220,13 @@ let type_in_sig s name =
     match careful_type_in_sig s name with
     | Found t -> t
     | Replaced _ -> fail s name "type"
+
+let class_type_in_sig s name =
+    let rec inner = function
+        | Signature.Class (id,_,c) :: _ when Ident.name id = name -> C c
+        | Signature.ClassType (id,_,c) :: _ when Ident.name id = name -> CT c
+        | _::rest -> inner rest
+        | [] -> fail s name "class type"
+    in inner s.items
 end
 

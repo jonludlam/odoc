@@ -60,6 +60,8 @@ and resolve_reference : Env.t -> Odoc_model.Paths.Reference.t -> Odoc_model.Path
         | Some (`Value (id, _)) -> `Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | Some (`Type (id, _)) -> `Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | Some (`Label id) -> `Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))
+        | Some (`Class (id,_)) -> `Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))
+        | Some (`ClassType (id,_)) -> `Resolved (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | None -> r
         end
     | `Root (_, `TModule) as r ->

@@ -76,6 +76,9 @@ type module_type_lookup_result =
 type type_lookup_result =
     Cpath.resolved * Component.TypeDecl.t
 
+type class_type_lookup_result =
+    Cpath.resolved * Component.Find.class_type
+
 exception Lookup_failure of Env.t * Cpath.resolved * string
 exception MyFailure of Component.Module.t * Component.Module.t
 exception Couldnt_find_functor_argument
@@ -127,6 +130,11 @@ and handle_type_lookup env id p m =
     let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
     let mt = Component.Find.type_in_sig sg id in
     (`Type (p', Odoc_model.Names.TypeName.of_string id), mt)
+
+and handle_class_type_lookup env id p m =
+    let (p', sg) = signature_of_module env (p, m) |> prefix_signature in
+    let c = Component.Find.class_type_in_sig sg id in
+    (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
 and lookup_and_resolve_module_from_resolved_path : bool -> bool -> Env.t -> Cpath.resolved -> module_lookup_result =
     fun is_resolve add_canonical env p ->
@@ -316,7 +324,59 @@ and lookup_type_from_path : Env.t -> Cpath.t -> (type_lookup_result, Cpath.t) Re
         | `Root _
         | `Apply (_,_) -> failwith "erk"
 
+and lookup_class_type_from_resolved_path : Env.t -> Cpath.resolved -> class_type_lookup_result =
+    fun env p ->
+        match p with
+        | `Local _id -> raise (Lookup_failure (env, p, "module_type"))
+        | `Identifier (`Class _ as c) ->
+            let t = Env.lookup_class c env in
+            (`Identifier c, C t)
+        | `Identifier (`ClassType _ as c) ->
+            let t = Env.lookup_class_type c env in
+            (`Identifier c, CT t)
+        | `Substituted s ->
+            let (p, t) = lookup_class_type_from_resolved_path env s in
+            (`Substituted p, t)
+        | `Class (p, id) ->
+            let (p, m) = lookup_and_resolve_module_from_resolved_path true true env p in
+            let (p', t) = handle_class_type_lookup env id p m in
+            (p', t)
+        | `ClassType (p, id) ->
+            let (p, m) = lookup_and_resolve_module_from_resolved_path true true env p in
+            let (p', t) = handle_class_type_lookup env id p m in
+            (p', t)
+        (* None of the following should still exist when we fix up the types *)
+        | `Subst _
+        | `SubstAlias _
+        | `Hidden _
+        | `Canonical _
+        | `Alias _
+        | `Apply (_, _)
+        | `Module _
+        | `Identifier _
+        | `Type _
+        | `ModuleType _ -> failwith "erk"
 
+and lookup_class_type_from_path : Env.t -> Cpath.t -> (class_type_lookup_result, Cpath.t) ResultMonad.t =
+    let open ResultMonad in
+    fun env p ->
+        match p with
+        | `Dot (parent, id) ->
+            lookup_and_resolve_module_from_path true true env parent
+            |> map_unresolved (fun p' -> `Dot (p', id)) >>= fun (p,m) ->
+            let (p', c) = handle_class_type_lookup env id p m in
+            return (p', c)
+        | `Resolved r ->
+            return (lookup_class_type_from_resolved_path env r)
+        | `Substituted s ->
+            lookup_class_type_from_path env s
+            |> map_unresolved (fun p' -> `Substituted p') >>= fun (p, c) ->
+            return (`Substituted p, c)
+        | `Forward _
+        | `Root _
+        | `Apply (_,_) -> failwith "erk"
+
+    
 and lookup_signature_from_resolved_fragment : Env.t -> Cpath.resolved -> Fragment.Resolved.Signature.t -> Component.Signature.t -> Cpath.resolved * Component.Signature.t =
     fun env p f s ->
         match f with
@@ -658,4 +718,27 @@ Odoc_model.Paths.Fragment.Resolved.Type.t ->
             let (parent,_cp,sg) = resolve_signature_fragment env id parent in
             let _ = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
             `Type (parent, Odoc_model.Names.TypeName.of_string name)
+
+let rec class_signature_of_class : Env.t -> Cpath.resolved * Component.Class.t -> Cpath.resolved * Component.ClassSignature.t =
+    fun env (p,c) ->
+        let rec inner decl =
+            match decl with
+            | Component.Class.ClassType e -> class_signature_of_class_type_expr env (p,e)
+            | Arrow (_,_,d) -> inner d
+        in
+        inner c.type_
+
+and class_signature_of_class_type_expr : Env.t -> Cpath.resolved * Component.ClassType.expr -> Cpath.resolved * Component.ClassSignature.t =
+    fun env (p,e) ->
+        match e with
+        | Signature s -> (p,s)
+        | Constr (p,_) ->
+            let (p,c) =
+                match lookup_class_type_from_path env p with
+                | Resolved (p,c) -> (p,c)
+                | _ -> failwith "error"
+            in
+            match c with
+            | C c -> class_signature_of_class env (p,c)
+            | CT _c -> failwith "error"
 

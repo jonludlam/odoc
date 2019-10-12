@@ -24,6 +24,8 @@ type t =
     ; types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list
     ; values : (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list
     ; titles : (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list
+    ; classes : (Odoc_model.Paths.Identifier.Class.t * Component.Class.t) list
+    ; class_types : (Odoc_model.Paths.Identifier.ClassType.t * Component.ClassType.t) list
     ; elts : (string * Component.Element.any) list
     ; roots : (string * root) list
     ; resolver : resolver option
@@ -55,6 +57,8 @@ let empty =
     ; titles = []
     ; elts = []
     ; roots = []
+    ; classes = []
+    ; class_types = []
     ; resolver = None
     }
 
@@ -80,6 +84,14 @@ let add_label identifier env =
 let add_label_title label elts env =
     { env with titles = (label, elts) :: env.titles }
 
+let add_class identifier t env =
+    { env with classes = (identifier, t) :: env.classes
+    ; elts = (Odoc_model.Paths.Identifier.name identifier, `Class (identifier, t))::env.elts }
+
+let add_class_type identifier t env =
+    { env with class_types = (identifier, t) :: env.class_types
+    ; elts = (Odoc_model.Paths.Identifier.name identifier, `ClassType (identifier, t))::env.elts }
+
 let add_docs (docs : Component.Comment.docs) env =
     List.fold_right (fun element env ->
     match element.Odoc_model.Location_.value with
@@ -102,7 +114,7 @@ let lookup_module identifier env =
     try
         List.assoc identifier env.modules
     with _ ->
-        Format.fprintf Format.std_formatter "Failed to find type:\nIdentifier: %a\n\n" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+        Format.fprintf Format.std_formatter "Failed to find module:\nIdentifier: %a\n\n" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -120,6 +132,12 @@ let lookup_value identifier env =
 
 let lookup_section_title identifier env =
     List.assoc_opt identifier env.titles
+
+let lookup_class identifier env =
+    List.assoc identifier env.classes
+
+let lookup_class_type identifier env =
+    List.assoc identifier env.class_types
 
 let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
     fun unit ->
@@ -255,8 +273,11 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 add_value v.Odoc_model.Lang.Value.id ty env
             | Odoc_model.Lang.Signature.External _ ->
                 env
-            | Odoc_model.Lang.Signature.Class _ ->
-                env
+            | Odoc_model.Lang.Signature.Class (_,c) ->
+                let identifier = (c.id :> Odoc_model.Paths.Identifier.t) in
+                let id = Ident.of_identifier identifier in
+                let ty = Of_Lang.(class_ {empty with classes = [c.id,id]} c) in
+                add_class c.id ty env
             | Odoc_model.Lang.Signature.ClassType _ ->
                 env
             | Odoc_model.Lang.Signature.Include _ ->

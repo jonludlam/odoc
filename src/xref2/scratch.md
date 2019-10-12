@@ -34,7 +34,15 @@ let env = Env.open_signature sg Env.empty;;
          res = None};
         {Odoc_model.Lang.TypeDecl.Constructor.id =
           `Constructor (`Type (`Root (Common.root, "Root"), "a"), "B");
-         doc = []; args = Odoc_model.Lang.TypeDecl.Constructor.Tuple [];
+         doc = [];
+         args =
+          Odoc_model.Lang.TypeDecl.Constructor.Record
+           [{Odoc_model.Lang.TypeDecl.Field.id =
+              `Field (`Type (`Root (Common.root, "Root"), "a"), "foo");
+             doc = []; mutable_ = false;
+             type_ =
+              Odoc_model.Lang.TypeExpr.Constr
+               (`Resolved (`Identifier (`CoreType "int")), [])}];
          res = None}])});
  Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
   {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "c");
