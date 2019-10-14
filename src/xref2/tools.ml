@@ -740,5 +740,9 @@ and class_signature_of_class_type_expr : Env.t -> Cpath.resolved * Component.Cla
             in
             match c with
             | C c -> class_signature_of_class env (p,c)
-            | CT _c -> failwith "error"
+            | CT c -> class_signature_of_class_type env (p,c)
 
+and class_signature_of_class_type : Env.t -> Cpath.resolved * Component.ClassType.t -> Cpath.resolved * Component.ClassSignature.t =
+    fun env (p,c) ->
+        class_signature_of_class_type_expr env (p,c.expr)
+                

@@ -30,7 +30,6 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env 
 
 let rec unit (resolver : Env.resolver) t =
     let open Compilation_unit in
-    Printf.printf "Number of imports: %d\n%!" (List.length t.imports);
     let (imports, env) = List.fold_left (fun (imports,env) import ->
         match import with
         | Import.Resolved root ->

@@ -278,8 +278,11 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let id = Ident.of_identifier identifier in
                 let ty = Of_Lang.(class_ {empty with classes = [c.id,id]} c) in
                 add_class c.id ty env
-            | Odoc_model.Lang.Signature.ClassType _ ->
-                env
+            | Odoc_model.Lang.Signature.ClassType (_,c) ->
+                let identifier = (c.id :> Odoc_model.Paths.Identifier.t) in
+                let id = Ident.of_identifier identifier in
+                let ty = Of_Lang.(class_type {empty with class_types = [c.id,id]} c) in
+                add_class_type c.id ty env            
             | Odoc_model.Lang.Signature.Include _ ->
                 env) env s
 

@@ -25,8 +25,8 @@ module Lang_of = struct
   let empty =
     { module_ = []
     ; module_type = []
-    ; type_ = []
-    ; path_type = []
+    ; type_ = List.map (fun (x,y) -> (y,x)) Component.core_type_ids
+    ; path_type = List.map (fun (x,y) -> (y,(x :> Paths_types.Identifier.path_type)) ) Component.core_type_ids
     ; exception_ = []
     ; value_ = []
     ; class_ = []
@@ -482,11 +482,15 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
               let m' = module_ env' m in
               (env, (Module (r, m'))::items)
           | ModuleType mt ->
-              let mt' = module_type env mt in
+            let env' = Env.add_functor_args (mt.id :> Paths.Identifier.Signature.t) env in
+            let mt' = module_type env' mt in
               (env, (ModuleType mt')::items)
           | Class (r,c) ->
               let c' = class_ env c in
               (env, (Class (r,c')) :: items)
+          | ClassType (r,c) ->
+              let c' = class_type env c in
+              (env, (ClassType (r,c')) :: items)
           | x -> (env, x::items)
         ) s (env, [])
   in items'
@@ -607,7 +611,13 @@ and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t = fun e
    let (_p,sg) = Tools.class_signature_of_class env (`Identifier (c.id :> Paths_types.Identifier.any), c') in
    let expansion = Lang_of.class_signature Lang_of.empty (c.id :> Paths_types.Identifier.path_class_type) sg in
    {c with expansion = Some expansion }
-    
+
+and class_type : Env.t -> Odoc_model.Lang.ClassType.t -> Odoc_model.Lang.ClassType.t = fun env c ->
+    let c' = Env.lookup_class_type c.id env in
+    let (_p,sg) = Tools.class_signature_of_class_type env (`Identifier (c.id :> Paths_types.Identifier.any), c') in
+    let expansion = Lang_of.class_signature Lang_of.empty (c.id :> Paths_types.Identifier.path_class_type) sg in
+    {c with expansion = Some expansion }
+  
 let build_expander :
     ?equal:(Root.t -> Root.t -> bool) -> ?hash:(Root.t -> int)
     -> (string -> Env.lookup_unit_result)
