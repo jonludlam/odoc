@@ -543,12 +543,15 @@ and module_decl env id decl =
     
     and functor_argument env id arg =
         let functor_arg = Env.lookup_module arg.id env in
-        let expansion =
-            match functor_arg.type_ with
-            | ModuleType expr -> expansion_of_module_type_expr id env expr
-            | _ -> failwith "error"
-        in
-        {arg with expansion = Some expansion; expr = module_type_expr env id arg.expr}
+        try
+          let expansion =
+              match functor_arg.type_ with
+              | ModuleType expr -> expansion_of_module_type_expr id env expr
+              | _ -> failwith "error"
+          in
+          {arg with expansion = Some expansion; expr = module_type_expr env id arg.expr}
+        with _ ->
+          arg
 
     and set_display_type md =
         let open Module in
@@ -581,16 +584,19 @@ and module_decl env id decl =
       let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
       let type_ = module_decl env id m.type_ in
       let m' = Env.lookup_module m.id env in
-      match m'.type_ with
-      | Alias p when Cpath.is_hidden p ->
-        let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
-        let (_, sg) = Tools.signature_of_module env (p,m') in
-        let sg = Lang_of.signature id Lang_of.empty sg in
-        set_display_type { m with type_; expansion = Some (Odoc_model.Lang.Module.Signature (signature env sg))}
-      | Alias _p -> m (* Not hidden, don't expand *)
-      | ModuleType expr ->
-        let expansion = expansion_of_module_type_expr id env expr in
-       {m with type_; expansion = Some expansion}
+      try
+        match m'.type_ with
+        | Alias p when Cpath.is_hidden p ->
+          let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
+          let (_, sg) = Tools.signature_of_module env (p,m') in
+          let sg = Lang_of.signature id Lang_of.empty sg in
+          set_display_type { m with type_; expansion = Some (Odoc_model.Lang.Module.Signature (signature env sg))}
+        | Alias _p -> m (* Not hidden, don't expand *)
+        | ModuleType expr ->
+          let expansion = expansion_of_module_type_expr id env expr in
+        {m with type_; expansion = Some expansion}
+      with _ ->
+        m
 
 and module_type env m =
   let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in

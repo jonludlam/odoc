@@ -471,14 +471,14 @@ module Fmt = struct
 
     and substitution_list ppf l =
         match l with
-        | sub :: (_ :: _) as subs -> Format.fprintf ppf "%a; %a" substitution sub substitution_list subs
-        | sub :: [] -> Format.fprintf ppf "%a" substitution sub
+        | [sub] -> Format.fprintf ppf "%a" substitution sub
+        | sub :: subs -> Format.fprintf ppf "%a; %a" substitution sub substitution_list subs
         | [] -> ()
 
     and type_expr_list ppf l =
         match l with
-        | t :: (_ :: _) as ts -> Format.fprintf ppf "%a * %a" type_expr t type_expr_list ts
-        | t :: [] -> Format.fprintf ppf "%a" type_expr t
+        | [t] -> Format.fprintf ppf "%a" type_expr t
+        | t :: ts -> Format.fprintf ppf "%a * %a" type_expr t type_expr_list ts
         | [] -> ()
 
     and type_object ppf _o =

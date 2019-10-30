@@ -325,8 +325,7 @@ and type_expression : Env.t -> _ -> _ = fun env texpr ->
     | Poly (strs, t) -> Poly (strs, type_expression env t)
     | Package p ->
         Package (type_expression_package env p)
-    with e ->
-        Format.fprintf Format.std_formatter "Gah! exception %s backtrace %s\n%!" (Printexc.to_string e) (Printexc.get_backtrace ());
+    with _ ->
         texpr
 
 let build_resolver :
