@@ -41,6 +41,8 @@ let prefix_signature (path, s) =
         | Type (id,_,_) -> Subst.add id (`Type (path, TypeName.of_string (Ident.name id))) map
         | Module (id,_,_) -> Subst.add id (`Module (path, ModuleName.of_string (Ident.name id))) map
         | ModuleType (id, _) -> Subst.add id (`ModuleType (path, ModuleTypeName.of_string (Ident.name id))) map
+        | ModuleSubstitution (id, _) -> Subst.add id (`Module (path, ModuleName.of_string (Ident.name id))) map
+        | TypeSubstitution (id, _) -> Subst.add id (`Type (path, TypeName.of_string (Ident.name id))) map
         | Exception _ -> map
         | TypExt _ -> map
         | Value (_,_) -> map
@@ -52,6 +54,8 @@ let prefix_signature (path, s) =
             | Module (id,r, m) -> Module ((Ident.rename id), r, (Component.Delayed.put (fun () -> Subst.module_ sub (Component.Delayed.get m))))
             | ModuleType (id, mt) -> ModuleType ((Ident.rename id), Subst.module_type sub mt)
             | Type (id, r, t) -> Type ((Ident.rename id), r, Subst.type_ sub t)
+            | TypeSubstitution (id, t) -> TypeSubstitution ((Ident.rename id), Subst.type_ sub t)
+            | ModuleSubstitution (id, m) -> ModuleSubstitution ((Ident.rename id), Subst.module_substitution sub m)
             | Exception (id, e) -> Exception (id, Subst.exception_ sub e)
             | TypExt t -> TypExt (Subst.extension sub t)
             | Value (id, v) -> Value (id, Subst.value sub v)
@@ -92,7 +96,7 @@ let rec handle_apply is_resolve env func_path arg_path m =
             arg.Component.FunctorArgument.id, expr
         | _ -> failwith "Application must take a functor"
     in
-    let new_module = {m with type_ = ModuleType result} in
+    let new_module = {m with Component.Module.type_ = ModuleType result} in
     let path = `Apply (func_path', `Substituted (`Resolved arg_path)) in
     let substitution = if is_resolve then `Substituted arg_path else arg_path in
     (path, Subst.module_ (Subst.add arg_id substitution Subst.identity) new_module)
@@ -543,8 +547,8 @@ and fragmap_signature : Env.t -> Cpath.resolved -> Fragment.Resolved.Signature.t
                         let (p, sg) = signature_of_module env (`Module (p, name), m) in
                         let sg' = fn (`Module (p, name)) sg in
                         Component.Signature.Module (id,r, Component.Delayed.put (fun () -> {m with type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false}))
-                    | x -> x) s.items in
-                {items; removed=s.removed}) sg
+                    | x -> x) s.Component.Signature.items in
+                {Component.Signature.items; removed=s.removed}) sg
         | _ -> failwith "foo"
 
 and fragmap_module : Env.t -> Cpath.resolved -> Fragment.Resolved.Module.t -> (Cpath.resolved -> Component.Module.t -> Component.Module.t option) -> Component.Signature.t -> Component.Signature.t =
@@ -587,8 +591,8 @@ and fragmap_unresolved_signature : Env.t -> Cpath.resolved -> Fragment.Signature
                         let p, sg = signature_of_module env (p, m) in
                         let sg' = fn (`Type (p, name)) sg in
                         Some (Component.Signature.Module (id,   r, Component.Delayed.put (fun () -> {m with type_=ModuleType (Component.ModuleType.Signature sg'); canonical=None; hidden=false})))
-                    | x -> Some x) s.items in
-                {items; removed=handle_removed removed s.removed}) sg 
+                    | x -> Some x) s.Component.Signature.items in
+                {Component.Signature.items; removed=handle_removed removed s.removed}) sg 
         | `Resolved x ->
             fragmap_signature env p x fn sg
 

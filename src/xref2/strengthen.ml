@@ -30,6 +30,8 @@ let rec signature (prefix : Cpath.resolved) sg =
         | Class _ 
         | ClassType _ 
         | Include _ 
+        | ModuleSubstitution _
+        | TypeSubstitution _
         | Comment _ -> item
     ) sg.items in
     (* The identity substitution used here is to rename all of the bound idents in the signature *)

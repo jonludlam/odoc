@@ -159,13 +159,19 @@ and class_ env c =
     in
     {c with type_ = map_decl c.type_}
 
+and module_substitution env m =
+    let open ModuleSubstitution in
+    {m with manifest = module_path env m.manifest}
+
 and signature : Env.t -> Signature.t -> _ = fun env s ->
     let open Signature in
     let env = Env.open_signature s env in
     List.map (fun item ->
         match item with
         | Module (r, m) -> Module (r, module_ env m)
+        | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
         | Type (r, t) -> Type (r, type_decl env t)
+        | TypeSubstitution t -> TypeSubstitution (type_decl env t)
         | ModuleType mt -> ModuleType (module_type env mt)
         | Value v -> Value (value_ env v)
         | Comment c -> Comment (comment env c)
@@ -179,8 +185,11 @@ and signature : Env.t -> Signature.t -> _ = fun env s ->
 
 and module_ : Env.t -> Module.t -> Module.t = fun env m ->
     let open Module in
-    let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
-    {m with type_ = module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_}
+    try
+        let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
+        {m with type_ = module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_}
+    with _ ->
+        m
 
 and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module.decl = fun env id decl ->
     let open Module in
@@ -196,13 +205,17 @@ and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module
 
 and module_type : Env.t -> ModuleType.t -> ModuleType.t = fun env m ->
     let open ModuleType in
-    let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
-    let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' (m.id :> Paths.Identifier.Signature.t) expr) in
-    {m with expr = expr'}
+    try
+        let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
+        let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' (m.id :> Paths.Identifier.Signature.t) expr) in
+        {m with expr = expr'}
+    with _ -> m
 
 and include_ : Env.t -> Include.t -> Include.t = fun env i ->
     let open Include in
-    {i with decl = module_decl env i.parent i.decl}
+    try
+        {i with decl = module_decl env i.parent i.decl}
+    with _ -> i
 
 and functor_argument : Env.t -> FunctorArgument.t -> FunctorArgument.t = fun env a ->
     { a with expr = module_type_expr env (a.id :> Paths.Identifier.Signature.t) a.expr }

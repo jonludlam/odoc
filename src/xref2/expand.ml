@@ -155,8 +155,10 @@ module Lang_of = struct
       List.fold_left (fun map item ->
         match item with
         | Module (id, _, _) -> module_ parent map id
+        | ModuleSubstitution (id, _) -> module_ parent map id
         | ModuleType (id, _) -> module_type parent map id
         | Type (id, _, _) -> type_decl parent map id
+        | TypeSubstitution (id, _) -> type_decl parent map id
         | Exception (id, _) -> exception_ parent map id
         | Value (id, _) -> value_ parent map id
         | External (id, _) -> value_ parent map id (* externals are values *)
@@ -193,6 +195,10 @@ module Lang_of = struct
         Odoc_model.Lang.Signature.Include (include_ map i) :: acc
       | External (id, e) ->
         Odoc_model.Lang.Signature.External (external_ map id e) :: acc
+      | ModuleSubstitution (id, m) ->
+        Odoc_model.Lang.Signature.ModuleSubstitution (module_substitution map id m) :: acc
+      | TypeSubstitution (id, t) ->
+        Odoc_model.Lang.Signature.TypeSubstitution (type_decl map id t) :: acc
       | Class (id, r, c) ->
         Odoc_model.Lang.Signature.Class (r, class_ map id c) :: acc
       | ClassType _ -> acc
@@ -312,6 +318,12 @@ module Lang_of = struct
     ; display_type = Opt.map (module_decl map identifier) m.display_type
     ; expansion = None }
   
+  and module_substitution map id m =
+    let open Component.ModuleSubstitution in
+    { Odoc_model.Lang.ModuleSubstitution.id = List.assoc id map.module_
+    ; doc = m.doc
+    ; manifest = Path.module_ map m.manifest}
+
   and module_decl : maps -> Odoc_model.Paths_types.Identifier.signature -> Component.Module.decl -> Odoc_model.Lang.Module.decl = fun map identifier d ->
     match d with
     | Component.Module.Alias p -> Odoc_model.Lang.Module.Alias (Path.module_ map p)
@@ -613,10 +625,13 @@ and module_type env m =
       with _ -> {m with expr}
 
 and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t = fun env c ->
-   let c' = Env.lookup_class c.id env in
-   let (_p,sg) = Tools.class_signature_of_class env (`Identifier (c.id :> Paths_types.Identifier.any), c') in
-   let expansion = Lang_of.class_signature Lang_of.empty (c.id :> Paths_types.Identifier.path_class_type) sg in
-   {c with expansion = Some expansion }
+    try
+      let c' = Env.lookup_class c.id env in
+      let (_p,sg) = Tools.class_signature_of_class env (`Identifier (c.id :> Paths_types.Identifier.any), c') in
+      let expansion = Lang_of.class_signature Lang_of.empty (c.id :> Paths_types.Identifier.path_class_type) sg in
+      {c with expansion = Some expansion }
+    with _ ->
+      c
 
 and class_type : Env.t -> Odoc_model.Lang.ClassType.t -> Odoc_model.Lang.ClassType.t = fun env c ->
     let c' = Env.lookup_class_type c.id env in

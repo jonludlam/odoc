@@ -12,7 +12,7 @@ let add id subst t =
 let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
     match p with
     | `Local id -> begin
-        match List.assoc_opt id s.map with
+        match (try Some (List.assoc id s.map) with _ -> None) with
         | Some x ->
             x
         | None -> `Local id
@@ -146,6 +146,11 @@ and module_ s t =
     let type_ = module_decl s t.type_ in
     { t with type_ }
 
+and module_substitution s m =
+    let open Component.ModuleSubstitution in
+    let manifest = path s m.manifest in
+    { m with manifest }
+
 and type_decl_field s f =
     let open Component.TypeDecl.Field in
     { f with type_ = type_expr s f.type_}
@@ -247,8 +252,10 @@ and signature s sg =
     let s, items = rename_bound_idents s [] sg.items in
     let items = List.rev_map (function
         | Module (id, r, m) -> Module (id, r, Component.Delayed.put (fun () -> module_ s (Component.Delayed.get m)))
+        | ModuleSubstitution (id, m) -> ModuleSubstitution (id, module_substitution s m)
         | ModuleType (id,mt) -> ModuleType (id, module_type s mt)
         | Type (id, r, t) -> Type (id, r, type_ s t)
+        | TypeSubstitution (id, t) -> TypeSubstitution (id, type_ s t)
         | Exception (id,e) -> Exception (id, exception_ s e)
         | TypExt e -> TypExt (extension s e)
         | Value (id,v) -> Value (id, value s v)

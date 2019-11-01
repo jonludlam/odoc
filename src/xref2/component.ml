@@ -43,6 +43,13 @@ module rec Module : sig
       }
 end = Module
 
+and ModuleSubstitution : sig
+    type t =
+      { doc: Comment.docs
+      ; manifest: Cpath.t
+      ; }
+end = ModuleSubstitution
+
 and TypeExpr : sig
 
     module Polymorphic_variant : sig
@@ -222,8 +229,10 @@ and Signature : sig
 
     type item =
         | Module of Ident.t * recursive * (Module.t Delayed.t)
+        | ModuleSubstitution of Ident.t * ModuleSubstitution.t
         | ModuleType of Ident.t * ModuleType.t
         | Type of Ident.t * recursive * TypeDecl.t
+        | TypeSubstitution of Ident.t * TypeDecl.t
         | Exception of Ident.t * Exception.t
         | TypExt of Extension.t
         | Value of Ident.t * Value.t
@@ -248,6 +257,8 @@ and Include : sig
     type t =
         { parent: Odoc_model.Paths.Identifier.Signature.t
         ; doc: Comment.docs
+        ; orig_expansion : Odoc_model.Lang.Signature.t
+        ; expansion : Signature.t
         ; decl: Module.decl }
 end = Include
 
@@ -352,6 +363,11 @@ module Fmt = struct
                     "@[<v 2>module %a %a@]@,"
                     Ident.fmt id
                     module_ (Delayed.get m)
+            | ModuleSubstitution (id, m) ->
+                Format.fprintf ppf
+                    "@[<v 2>module %a := %a@]@,"
+                    Ident.fmt id
+                    path m.ModuleSubstitution.manifest
             | ModuleType (id, mt) ->
                 Format.fprintf ppf
                     "@[<v 2>module type %a %a@]@,"
@@ -360,6 +376,9 @@ module Fmt = struct
             | Type (id, _,t) ->
                 Format.fprintf ppf
                     "@[<v 2>type %a %a@]@," Ident.fmt id type_decl t
+            | TypeSubstitution (id, t) ->
+                Format.fprintf ppf
+                    "@[<v 2>type %a := %a@]@," Ident.fmt id type_decl t
             | Exception (id, e) ->
                 Format.fprintf ppf
                     "@[<v 2>exception %a %a@]@," Ident.fmt id exception_ e
@@ -642,6 +661,9 @@ module LocalIdents = struct
     let rec module_ m ids =
         { ids with modules = m.Module.id :: ids.modules }
 
+    and module_substitution m ids =
+        { ids with modules = m.ModuleSubstitution.id :: ids.modules }
+
     and module_type m ids =
         { ids with module_types = m.ModuleType.id :: ids.module_types }
 
@@ -687,7 +709,9 @@ module LocalIdents = struct
             match c with
             | Signature.Module (_,m) -> module_ m ids
             | ModuleType m -> module_type m ids
+            | ModuleSubstitution m -> module_substitution m ids
             | Type (_,t) -> type_decl t ids
+            | TypeSubstitution t -> type_decl t ids
             | TypExt ext -> extension ext ids
             | Exception e -> exception_ e ids
             | Value v -> value_ v ids
@@ -790,7 +814,7 @@ module Of_Lang = struct
         }
 
     let ident_of_identifier ident_map identifier =
-        List.assoc_opt identifier ident_map
+        try Some (List.assoc identifier ident_map) with _ -> None
 
     let option conv ident_map x =
         match x with
@@ -1062,6 +1086,8 @@ module Of_Lang = struct
         let decl = module_decl ident_map i.decl in
         { Include.parent = i.parent
         ; doc = i.doc
+        ; orig_expansion = i.expansion.content
+        ; expansion = signature ident_map i.expansion.content
         ; decl }
 
     and class_ ident_map c =
@@ -1118,6 +1144,15 @@ module Of_Lang = struct
         ; virtual_ = i.virtual_
         ; type_ = type_expression ident_map i.type_}
 
+    and module_substitution ident_map (t : Odoc_model.Lang.ModuleSubstitution.t) = 
+        { ModuleSubstitution.doc = t.doc
+        ; manifest = module_path ident_map t.manifest }
+
+    and module_of_module_substitution ident_map (t : Odoc_model.Lang.ModuleSubstitution.t) =
+        let manifest = module_path ident_map t.manifest in
+        let canonical = Some(manifest,`Root (Odoc_model.Names.UnitName.of_string "dummy", `TModule)) in
+        { Module.doc = t.doc; type_=Alias manifest; canonical; hidden=true; display_type=None}
+
     and signature : _ -> Odoc_model.Lang.Signature.t -> Signature.t =
         fun ident_map items ->
             (* First we construct a list of brand new [Ident.t]s
@@ -1134,10 +1169,18 @@ module Of_Lang = struct
                     let id = List.assoc t.id ident_map.types in 
                     let t' = type_decl ident_map t in
                     Signature.Type (id, r, t')
+                | TypeSubstitution t ->
+                    let id = List.assoc t.id ident_map.types in
+                    let t' = type_decl ident_map t in
+                    Signature.TypeSubstitution (id, t')
                 | Module (r, m) ->
                     let id = List.assoc m.id ident_map.modules in 
                     let m' = Delayed.put (fun () -> module_ ident_map m) in
                     Signature.Module (id,r,m')
+                | ModuleSubstitution m ->
+                    let id = List.assoc m.id ident_map.modules in
+                    let m' = module_substitution ident_map m in
+                    Signature.ModuleSubstitution (id,m')
                 | ModuleType m ->
                     let id = List.assoc m.id ident_map.module_types in 
                     let m' = module_type ident_map m in

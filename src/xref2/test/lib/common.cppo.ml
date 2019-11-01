@@ -22,6 +22,12 @@ let cmti_of_string s =
     let p = Parse.interface l in
     Typemod.type_interface "" env p;;
 
+let cmt_of_string s =
+    let env = Compmisc.initial_env () in
+    let l = Lexing.from_string s in
+    let p = Parse.implementation l in
+    Typemod.type_implementation "" "" "" env p
+
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   let file_representation : Odoc_model.Root.Odoc_file.t =
   Odoc_model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
@@ -41,6 +47,10 @@ let root_pp fmt (_ : Odoc_model.Root.t) = Format.fprintf fmt "Common.root"
 let model_of_string str = 
     let cmti = cmti_of_string str in
     Odoc_loader__Cmti.read_interface root "Root" cmti
+
+let model_of_string_impl str =
+    let (cmt,_) = cmt_of_string str in
+    Odoc_loader__Cmt.read_implementation root "Root" cmt
 
 let signature_of_mli_string str =
     Odoc_xref2.Ident.reset ();
@@ -475,7 +485,13 @@ let my_compilation_unit id docs s =
 let mkenv () =
   Odoc_odoc.Env.create
     ~important_digests:false
-    ~directories:(List.map Odoc_odoc.Fs.Directory.of_string !Config.load_path)
+    ~directories:(List.map Odoc_odoc.Fs.Directory.of_string 
+#if OCAML_MAJOR = 4 && OCAML_MINOR >= 08
+    (Load_path.get_paths ())
+#else
+    !Config.load_path
+#endif
+    )
 
 let resolve unit =
   let env = mkenv () in

@@ -131,7 +131,7 @@ let lookup_value identifier env =
     List.assoc identifier env.values
 
 let lookup_section_title identifier env =
-    List.assoc_opt identifier env.titles
+    try Some (List.assoc identifier env.titles) with _ -> None
 
 let lookup_class identifier env =
     List.assoc identifier env.classes
@@ -161,7 +161,7 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
             failwith "Unsupported"    
 
 let lookup_root_module name env =
-    match List.assoc_opt name env.roots with
+    match (try Some (List.assoc name env.roots) with _ -> None) with
     | Some x -> Some x 
     | None ->
         match env.resolver with
@@ -240,7 +240,7 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
             end
         | `Root _ -> env
 
-let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
+let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
     let open Component in
     fun s env ->
         List.fold_left (fun env orig ->
@@ -266,6 +266,13 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 env
             | Odoc_model.Lang.Signature.Exception _ ->
                 env
+            | Odoc_model.Lang.Signature.ModuleSubstitution m ->
+                let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
+                let id = Ident.of_identifier identifier in
+                let ty = Of_Lang.(module_of_module_substitution {empty with modules = [m.id,id]} m) in
+                add_module m.id ty env
+            | Odoc_model.Lang.Signature.TypeSubstitution _ ->
+                env
             | Odoc_model.Lang.Signature.Value v ->
                 let identifier = (v.id :> Odoc_model.Paths.Identifier.t) in
                 let id = Ident.of_identifier identifier in
@@ -283,8 +290,10 @@ let open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let id = Ident.of_identifier identifier in
                 let ty = Of_Lang.(class_type {empty with class_types = [c.id,id]} c) in
                 add_class_type c.id ty env            
-            | Odoc_model.Lang.Signature.Include _ ->
-                env) env s
+            | Odoc_model.Lang.Signature.Include i ->
+                let ty = Of_Lang.(include_ empty i) in
+                open_signature ty.orig_expansion env
+                ) env s
 
 let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
     fun unit env ->
