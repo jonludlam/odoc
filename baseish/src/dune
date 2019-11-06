@@ -1,0 +1,7 @@
+(library
+ (name baseish)
+ (public_name baseish)
+ (libraries
+   caml
+    shadow_stdlib))
+

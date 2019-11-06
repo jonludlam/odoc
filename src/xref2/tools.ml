@@ -441,6 +441,13 @@ and module_type_expr_of_module_decl : Env.t -> Cpath.resolved * Component.Module
 and module_type_expr_of_module : Env.t -> Cpath.resolved * Component.Module.t -> Cpath.resolved * Component.ModuleType.expr =
     fun env (p, m) -> module_type_expr_of_module_decl env (p, m.type_)
 
+and expand_includes : Component.Signature.t -> Component.Signature.t =
+    fun s ->
+        {s with items = List.fold_left (fun sg c ->
+            match c with
+            | Component.Signature.Include i -> i.Component.Include.expansion.items @ sg
+            | x -> x::sg) [] s.items}
+
 and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleType.expr -> Cpath.resolved * Component.Signature.t =
     fun env (incoming_path, m) ->
         match m with
@@ -458,7 +465,7 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleTy
                 let p = Component.Fmt.(string_of path p) in 
                 failwith (Printf.sprintf "Couldn't find signature: %s" p)
             end
-        | Component.ModuleType.Signature s -> (incoming_path, s)
+        | Component.ModuleType.Signature s -> (incoming_path, expand_includes s)
         | Component.ModuleType.With (s, subs) ->
             let (p', sg) = signature_of_module_type_expr env (incoming_path, s) in
             let sg' = List.fold_left (fun sg sub ->
@@ -687,6 +694,7 @@ and resolve_resolved_module_fragment :
             let m' = find_module_with_replacement env sg (Odoc_model.Names.ModuleName.to_string name) in
             (`Module (parent, Odoc_model.Names.ModuleName.of_string name), `Module(cp, Odoc_model.Names.ModuleName.to_string name), m')
         | _ -> failwith ""
+
 
 and resolve_module_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Paths.Fragment.Module.t -> Odoc_model.Paths.Fragment.Resolved.Module.t =
     fun env id frag ->

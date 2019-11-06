@@ -109,6 +109,7 @@ end = struct
       Fs.File.(set_ext ".odoc" output)
 
   let compile hidden directories resolve_fwd_refs dst package_name input =
+    let directories = Fs.Directory.of_string "/Users/jon/.opam/4.07.1/lib/ocaml" :: directories in
     let env =
       Env.create ~important_digests:(not resolve_fwd_refs) ~directories
     in
@@ -196,6 +197,7 @@ end = struct
 
   let html semantic_uris closed_details _hidden directories output_dir index_for
         syntax theme_uri input_file =
+    let directories = Fs.Directory.of_string "/Users/jon/.opam/4.07.1/lib/ocaml" :: directories in
     Odoc_html.Tree.Relative_link.semantic_uris := semantic_uris;
     Odoc_html.Tree.open_details := not closed_details;
     let env = Env.create ~important_digests:false ~directories in

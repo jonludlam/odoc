@@ -12,24 +12,34 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t = fun env p ->
     match Tools.lookup_type_from_path env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
     | Unresolved p -> Cpath.type_path_of_cpath p
-    | exception _ -> p
+    | exception e ->
+        Format.fprintf Format.err_formatter "Failed to lookup type path (%s): %a\n%!" (Printexc.to_string e) Component.Fmt.model_path (p :> Paths.Path.t);
+        p
 
 and module_type_path : Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t = fun env p ->
     let cp = Component.Of_Lang.(module_type_path empty p) in
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
     | Unresolved p -> Cpath.module_type_path_of_cpath p
-    | exception _ -> p
+    | exception e ->
+        Format.fprintf Format.err_formatter "Failed to lookup module_type path (%s): %a\n%!" (Printexc.to_string e) Component.Fmt.model_path (p :> Paths.Path.t);
+        p
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t = fun env p ->
     let cp = Component.Of_Lang.(module_path empty p) in
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Unresolved p -> Cpath.module_path_of_cpath p
-    | exception _ -> p
+    | exception e ->
+        Format.fprintf Format.err_formatter "Failed to lookup module path (%s): %a\n%!" (Printexc.to_string e) Component.Fmt.model_path (p :> Paths.Path.t);
+        p
 
 let rec unit (resolver : Env.resolver) t =
     let open Compilation_unit in
+    let initial_env =
+        let m = Env.module_of_unit t in
+        Env.add_module t.id m Env.empty
+    in
     let (imports, env) = List.fold_left (fun (imports,env) import ->
         match import with
         | Import.Resolved root ->
@@ -51,7 +61,7 @@ let rec unit (resolver : Env.resolver) t =
                 ((Resolved f.root)::imports, env)
             | Not_found ->
                 (import::imports,env)
-    ) ([],Env.empty) t.imports in
+    ) ([],initial_env) t.imports in
     {t with content = content env t.content; imports}
 
 and content env =
@@ -188,7 +198,8 @@ and module_ : Env.t -> Module.t -> Module.t = fun env m ->
     try
         let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
         {m with type_ = module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_}
-    with _ ->
+    with e ->
+        Printf.fprintf stderr "Failed to resolve module: %s\n%!" (Printexc.to_string e);
         m
 
 and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module.decl = fun env id decl ->
@@ -209,13 +220,17 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t = fun env m ->
         let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
         let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' (m.id :> Paths.Identifier.Signature.t) expr) in
         {m with expr = expr'}
-    with _ -> m
+    with e ->
+        Printf.fprintf stderr "Failed to resolve module_type: %s" (Printexc.to_string e);
+        m
 
 and include_ : Env.t -> Include.t -> Include.t = fun env i ->
     let open Include in
     try
         {i with decl = module_decl env i.parent i.decl}
-    with _ -> i
+    with e ->
+        Printf.fprintf stderr "Failed to resolve include: %s\n%!" (Printexc.to_string e);
+        i
 
 and functor_argument : Env.t -> FunctorArgument.t -> FunctorArgument.t = fun env a ->
     { a with expr = module_type_expr env (a.id :> Paths.Identifier.Signature.t) a.expr }

@@ -1,0 +1,20 @@
+(library
+ (name caml)
+ (public_name baseish.caml)
+ (flags :standard -safe-string)
+ (preprocess no_preprocessing))
+
+;; Generate a file containing:
+;;
+;; module Array = Array
+;; module List  = List
+;; ...
+;;
+;; include Pervasives
+
+(rule
+ (targets caml.ml)
+ (deps
+  (:first_dep ../gen/gen.exe))
+ (action
+  (run %{first_dep} -stdlib %{ocaml_where}/stdlib.cma -o %{targets})))
