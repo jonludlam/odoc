@@ -283,6 +283,8 @@ module rec Path : sig
 
       val identifier : t -> Identifier.Path.Module.t
 
+      val canonical_ident : t -> Identifier.Path.Module.t option
+
       val rebase : Identifier.Signature.t -> t -> t
 
       val equal_identifier : Identifier.Path.Module.t -> t -> bool

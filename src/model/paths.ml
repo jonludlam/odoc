@@ -759,6 +759,17 @@ module Path = struct
         | `Apply(m, _) -> identifier m
         | `Alias(_,p) -> identifier p
 
+      let rec canonical_ident = function
+        | `Identifier _id -> None
+        | `Subst(_,_) -> None
+        | `SubstAlias(_,_) -> None
+        | `Hidden p -> canonical_ident p
+        | `Module(_, _) -> None
+        | `Canonical(_, `Resolved p) -> Some (identifier p)
+        | `Canonical(_, _) -> None
+        | `Apply(_,_) -> None
+        | `Alias(_,_) -> None
+
       let rebase : Reversed.t -> t -> t =
         fun new_base t ->
         match t with

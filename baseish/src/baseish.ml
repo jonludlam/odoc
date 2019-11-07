@@ -3,5 +3,6 @@ with module Array := Caml.Array)
 
 open! Import
 
+(** @canonical Baseish.Array *)
 module Array = Array
 

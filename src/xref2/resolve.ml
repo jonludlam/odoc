@@ -38,7 +38,9 @@ let rec unit (resolver : Env.resolver) t =
     let open Compilation_unit in
     let initial_env =
         let m = Env.module_of_unit t in
-        Env.add_module t.id m Env.empty
+        Env.empty |>
+        Env.add_module t.id m |>
+        Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
     in
     let (imports, env) = List.fold_left (fun (imports,env) import ->
         match import with
@@ -204,6 +206,10 @@ and module_ : Env.t -> Module.t -> Module.t = fun env m ->
 
 and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module.decl = fun env id decl ->
     let open Module in
+    let str_id = Format.asprintf "%a" Component.Fmt.model_identifier (id :> Paths.Identifier.t) in
+    (if str_id = "Array"
+    then Printf.fprintf stderr "%s\n%!" str_id
+    else ());
     match decl with
     | ModuleType expr -> ModuleType (module_type_expr env id expr)
     | Alias p ->
@@ -227,7 +233,8 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t = fun env m ->
 and include_ : Env.t -> Include.t -> Include.t = fun env i ->
     let open Include in
     try
-        {i with decl = module_decl env i.parent i.decl}
+        { i with decl = module_decl env i.parent i.decl
+        ; expansion = { resolved=true; content = signature env i.expansion.content } }
     with e ->
         Printf.fprintf stderr "Failed to resolve include: %s\n%!" (Printexc.to_string e);
         i

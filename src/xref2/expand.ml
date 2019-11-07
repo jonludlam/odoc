@@ -453,6 +453,12 @@ module Lang_of = struct
 
 let rec unit expander t =
   let open Compilation_unit in
+  let initial_env =
+    let m = Env.module_of_unit t in
+    Env.empty |>
+    Env.add_module t.id m |>
+    Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
+  in
   let (imports, env) = List.fold_left (fun (imports,env) import ->
       match import with
       | Import.Resolved root ->
@@ -474,7 +480,7 @@ let rec unit expander t =
           ((Resolved f.root)::imports, env)
       | Not_found ->
           (import::imports,env)
-) ([],Env.empty) t.imports in
+) ([],initial_env) t.imports in
   {t with content = content env t.content; imports}
 
 and content env =
@@ -594,21 +600,35 @@ and module_decl env id decl =
     and module_ env m =
       let open Module in
       let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
-      let type_ = module_decl env id m.type_ in
-      let m' = Env.lookup_module m.id env in
-      try
-        match m'.type_ with
-        | Alias p when Cpath.is_hidden p ->
-          let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
-          let (_, sg) = Tools.signature_of_module env (p,m') in
-          let sg = Lang_of.signature id Lang_of.empty sg in
-          set_display_type { m with type_; expansion = Some (Odoc_model.Lang.Module.Signature (signature env sg))}
-        | Alias _p -> m (* Not hidden, don't expand *)
-        | ModuleType expr ->
-          let expansion = expansion_of_module_type_expr id env expr in
-        {m with type_; expansion = Some expansion}
-      with _ ->
-        m
+      let expansion_needed =
+        match m.type_ with
+        | Alias p when Paths.Path.is_hidden (p :> Paths.Path.t) -> true
+        | ModuleType _ -> true
+        | Alias (`Resolved p) -> begin
+          match Paths.Path.Resolved.Module.canonical_ident p with
+          | Some i -> i=m.id
+          | None -> false
+        end
+        | _ -> false
+      in
+      if not expansion_needed
+      then m
+      else begin
+        let type_ = module_decl env id m.type_ in
+        let m' = Env.lookup_module m.id env in
+        try
+          match m'.type_ with
+          | Alias _ ->
+            let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
+            let (_, sg) = Tools.signature_of_module env (p,m') in
+            let sg = Lang_of.signature id Lang_of.empty sg in
+            set_display_type { m with type_; expansion = Some (Odoc_model.Lang.Module.Signature (signature env sg))}
+          | ModuleType expr ->
+            let expansion = expansion_of_module_type_expr id env expr in
+          {m with type_; expansion = Some expansion}
+        with _ ->
+          m
+      end
 
 and module_type env m =
   let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
