@@ -55,7 +55,21 @@ let rec type_ s t =
         | Some t' -> Some (type_expr s t')
         | None -> None
     in
-    { t with equation = {t.equation with manifest} }
+    let representation = option_ type_decl_representation s t.representation in
+    { t with equation = {t.equation with manifest}; representation }
+
+and type_decl_representation s t =
+    let open Component.TypeDecl.Representation in
+    match t with
+    | Variant cs -> Variant (List.map (type_decl_constructor s) cs)
+    | Record fs -> Record (List.map (type_decl_field s) fs)
+    | Extensible -> t
+
+and type_decl_constructor s t =
+    let open Component.TypeDecl.Constructor in
+    let args = type_decl_constructor_arg s t.args in
+    let res = option_ type_expr s t.res in
+    {t with args; res }
 
 and type_poly_var s v =
     let open Component.TypeExpr.Polymorphic_variant in

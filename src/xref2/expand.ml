@@ -48,7 +48,7 @@ module Lang_of = struct
       | `Dot (p, n) -> `Dot (module_ map p, n)
       | `Root _
       | `Forward _
-      | `Apply _ -> failwith "type error"
+      | `Apply _ -> failwith "type error a"
 
     and type_ map (p : Cpath.t) : Odoc_model.Paths.Path.Type.t =
       match p with
@@ -57,7 +57,7 @@ module Lang_of = struct
       | `Dot (p, n) -> `Dot (module_ map p, n)
       | `Root _
       | `Forward _
-      | `Apply _ -> failwith "type error"
+      | `Apply _ -> failwith "type error b"
     
     and class_type map (p : Cpath.t) : Odoc_model.Paths.Path.ClassType.t =
       match p with
@@ -66,7 +66,7 @@ module Lang_of = struct
       | `Dot (p, n) -> `Dot (module_ map p, n)
       | `Root _
       | `Forward _
-      | `Apply _ -> failwith "type error"
+      | `Apply _ -> failwith "type error c"
 
     and resolved_module map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.Module.t =
       match p with
@@ -85,21 +85,21 @@ module Lang_of = struct
       | `ModuleType (_,_)
       | `Class _
       | `ClassType _
-      | `Type (_,_) -> failwith "type error"
+      | `Type (_,_) -> failwith "type error 1"
 
     and resolved_module_type map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.ModuleType.t =
       match p with
       | `Identifier (#Odoc_model.Paths.Identifier.ModuleType.t as y) -> `Identifier y
       | `Local id -> `Identifier (List.assoc id map.module_type)
       | `ModuleType (p, name) -> `ModuleType (resolved_module map p, name)
-      | _ -> failwith "type error"
+      | _ -> failwith "type error 2"
     
     and resolved_type map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.Type.t =
       match p with
       | `Identifier (#Odoc_model.Paths.Identifier.Type.t as y) -> `Identifier y
       | `Local id -> `Identifier (List.assoc id map.path_type)
       | `Type (p, name) -> `Type (resolved_module map p, name)
-      | _ -> failwith "type error"
+      | _ -> failwith "type error 3"
 
     and resolved_class_type map (p : Cpath.resolved) : Odoc_model.Paths.Path.Resolved.ClassType.t =
       match p with
@@ -107,7 +107,7 @@ module Lang_of = struct
       | `Local id -> `Identifier (List.assoc id map.path_class_type)
       | `Class (p, name) -> `Class (resolved_module map p, name)
       | `ClassType (p, name) -> `ClassType (resolved_module map p, name)
-      | _ -> failwith "type error"
+      | _ -> failwith "type error 4"
   end
 
   module ExtractIDs = struct
@@ -179,7 +179,7 @@ module Lang_of = struct
       | ModuleType (id, m) ->
         Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc
       | Type (id, r, t) ->
-        Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
+        (try Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc with e -> Format.fprintf Format.err_formatter "Failed during type lookup: %a\n%!" Ident.fmt id; raise e)
       | Exception (id',e) ->
         Odoc_model.Lang.Signature.Exception (exception_ map (id :> Odoc_model.Paths_types.Identifier.parent) id' e) :: acc
       | TypExt t ->
@@ -252,13 +252,13 @@ module Lang_of = struct
     ; type_ = type_expr map m.type_}
 
   and instance_variable map parent i =
-  let open Component.InstanceVariable in
-  let identifier = `InstanceVariable(parent, Names.MethodName.of_string i.name) in
-  { id = identifier
-  ; doc = i.doc
-  ; mutable_ = i.mutable_ 
-  ; virtual_ = i.virtual_
-  ; type_ = type_expr map i.type_}
+    let open Component.InstanceVariable in
+    let identifier = `InstanceVariable(parent, Names.MethodName.of_string i.name) in
+    { id = identifier
+    ; doc = i.doc
+    ; mutable_ = i.mutable_ 
+    ; virtual_ = i.virtual_
+    ; type_ = type_expr map i.type_}
 
   and external_ map id e =
     let open Component.External in
@@ -299,6 +299,7 @@ module Lang_of = struct
     ; res = Opt.map (type_expr map) c.res }
 
   and module_ map id m =
+    try
     let open Component.Module in
     let identifier = (List.assoc id map.module_ :> Odoc_model.Paths_types.Identifier.signature) in
     let canonical = function
@@ -312,6 +313,10 @@ module Lang_of = struct
     ; hidden = m.hidden
     ; display_type = Opt.map (module_decl map identifier) m.display_type
     ; expansion = None }
+    with e ->
+      let bt = Printexc.get_backtrace () in
+      Format.fprintf Format.err_formatter "Exception handling module: %a\nbacktrace:\n%s\n%!" Ident.fmt id bt;  
+      raise e
   
   and module_substitution map id m =
     let open Component.ModuleSubstitution in
@@ -391,6 +396,7 @@ module Lang_of = struct
     ; res = Opt.map (type_expr map) t.res}
 
   and type_expr map (t : Component.TypeExpr.t) : Odoc_model.Lang.TypeExpr.t =
+    try begin
     match t with
     | Var s -> Var s
     | Any -> Any
@@ -403,6 +409,12 @@ module Lang_of = struct
     | Class (_p, _ts) -> failwith "Unimplemented"
     | Poly (strs, t) -> Poly (strs, type_expr map t)
     | Package _ -> failwith "Unimplemented"
+    end with
+    | e ->
+      let bt = Printexc.get_backtrace () in
+      Format.fprintf Format.err_formatter "Exception %s handling type_expr: %a\nbacktrace:\n%s\n%!" (Printexc.to_string e) Component.Fmt.type_expr t bt;  
+      raise e
+
   
   and type_expr_polyvar map v =
     let constructor c =
@@ -591,7 +603,7 @@ and module_decl env id decl =
           match m'.type_ with
           | Alias _ ->
             let p = `Identifier (id :> Odoc_model.Paths.Identifier.t) in
-            let (_, sg) = Tools.signature_of_module env (p,m') in
+            let (_, sg) = Tools.signature_of_module env (p,m') |> Tools.prefix_signature in
             let sg = Lang_of.signature id Lang_of.empty sg in
             let sg = signature env sg in
             { m with type_
@@ -601,7 +613,9 @@ and module_decl env id decl =
             let expansion = expansion_of_module_type_expr id env expr in
           {m with type_; expansion = Some expansion}
         with e ->
-          Printf.fprintf stderr "Failed during expansion: %s\n%!" (Printexc.to_string e);
+          let bt = Printexc.get_backtrace () in
+          Format.fprintf Format.err_formatter "Failed during expansion: %s (of module %a)\n%!" (Printexc.to_string e) Component.Fmt.model_identifier (id :> Paths.Identifier.t);
+          Printf.fprintf stderr "backtrace:\n%s\n%!" bt;
           m
       end
 

@@ -108,6 +108,9 @@ and add_canonical_path env m p =
         | Resolved (cp', _) ->
             `Canonical (p, `Resolved cp')
         | _ -> `Canonical (p, cp)
+        | exception _e ->
+            Format.fprintf Format.err_formatter "Warning: Failed to look up canonical path for module %a\n%!" Component.Fmt.resolved_path p;
+            `Canonical (p, cp)
         end
     | None ->
         p
@@ -142,6 +145,7 @@ and handle_class_type_lookup env id p m =
 
 and lookup_and_resolve_module_from_resolved_path : bool -> bool -> Env.t -> Cpath.resolved -> module_lookup_result =
     fun is_resolve add_canonical env p ->
+        (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
         match p with
         | `Local _id -> raise (Lookup_failure (env, p, "module")) 
         | `Identifier (#Identifier.Module.t as i) ->
@@ -177,10 +181,13 @@ and lookup_and_resolve_module_from_resolved_path : bool -> bool -> Env.t -> Cpat
             let p',m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p in
             `Hidden(p'),m
         | `Canonical (p1, p2) ->
-            let p2' =
+            let p2' = 
                 match lookup_and_resolve_module_from_path is_resolve add_canonical env p2 with
                 | Resolved (p,_) -> `Resolved p
                 | Unresolved p2 -> p2
+                | exception e ->
+                    Format.fprintf Format.err_formatter "Warning: Failed to look up canonical path for module %a (got exception %s)\n%!" Component.Fmt.resolved_path p (Printexc.to_string e);
+                    p2
             in
             let p1', m = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env p1 in
             `Canonical(p1',p2'),m
@@ -197,6 +204,7 @@ and lookup_module_from_resolved_path env cpath = lookup_and_resolve_module_from_
 
 and lookup_and_resolve_module_from_path : bool -> bool -> Env.t -> Cpath.t -> (module_lookup_result, Cpath.t) ResultMonad.t = fun is_resolve add_canonical env p ->
     let open ResultMonad in
+    (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_path: looking up %a\n%!" Component.Fmt.path p; *)
     match p with
     | `Dot (parent, id) ->
         lookup_and_resolve_module_from_path is_resolve add_canonical env parent
@@ -234,6 +242,7 @@ and lookup_and_resolve_module_from_path : bool -> bool -> Env.t -> Cpath.t -> (m
         lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
 
 and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.resolved -> module_type_lookup_result = fun is_resolve env p ->
+    (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_type_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
     match p with
     | `Local _id -> raise (Lookup_failure (env, p, "module_type"))
     | `Identifier (#Identifier.ModuleType.t as i) ->
@@ -262,6 +271,7 @@ and lookup_and_resolve_module_type_from_resolved_path : bool -> Env.t -> Cpath.r
 and lookup_and_resolve_module_type_from_path : bool -> Env.t -> Cpath.t -> (module_type_lookup_result, Cpath.t) ResultMonad.t =
     let open ResultMonad in
     fun is_resolve env p ->
+        (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_type_from_path: looking up %a\n%!" Component.Fmt.path p; *)
         match p with
         | `Dot (parent, id) ->
             lookup_and_resolve_module_from_path is_resolve true env parent
