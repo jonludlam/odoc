@@ -16,7 +16,7 @@ type resolver =
     ; resolve_unit: Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t
     ; lookup_page: string -> Odoc_model.Root.t option
     ; resolve_page: Odoc_model.Root.t -> Odoc_model.Lang.Page.t }
-
+  
 type t =
     { ident_max: int
     ; modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list

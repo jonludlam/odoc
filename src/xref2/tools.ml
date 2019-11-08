@@ -445,8 +445,8 @@ and expand_includes : Component.Signature.t -> Component.Signature.t =
     fun s ->
         {s with items = List.fold_left (fun sg c ->
             match c with
-            | Component.Signature.Include i -> i.Component.Include.expansion.items @ sg
-            | x -> x::sg) [] s.items}
+            | Component.Signature.Include i -> List.rev_append i.Component.Include.expansion.items sg
+            | x -> x::sg) [] s.items |> List.rev}
 
 and signature_of_module_type_expr : Env.t -> Cpath.resolved * Component.ModuleType.expr -> Cpath.resolved * Component.Signature.t =
     fun env (incoming_path, m) ->

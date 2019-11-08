@@ -34,11 +34,7 @@ open Odoc_compat
    Where we notice this ambiguity we warn the user to wrap their libraries,
    which will generally fix this issue. *)
 
-type t = {
-  expander : Odoc_xref2.Expand.expander ;
-  resolver : Odoc_xref2.Env.resolver;
-}
-
+type t = Odoc_xref2.Env.resolver
 module Accessible_paths = struct
   type t = {
     root_map : Fs.File.t Odoc_model.Root.Hash_table.t;
@@ -233,19 +229,7 @@ let create ?(important_digests=true) ~directories : builder =
         else
           fetch_page ap root
     in
-    let resolver =
-      Odoc_xref2.Resolve.build_resolver lookup_unit fetch_unit lookup_page fetch_page
-    in
-    let expander =
-      (* CR trefis: what is the ~root param good for? *)
-      let fetch root = fetch_unit root in
-      let lookup _ s = lookup_unit s in
-      Odoc_xref2.Expand.build_expander (lookup ()) fetch
-    in
-    { expander; resolver }
+    Odoc_xref2.Resolve.build_resolver lookup_unit fetch_unit lookup_page fetch_page
 
 let build builder unit =
   builder unit
-
-let resolver t = t.resolver
-let expander t = t.expander

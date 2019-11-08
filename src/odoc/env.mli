@@ -19,7 +19,8 @@
     This is the module which does the link between packages, directories and
     {!DocOck}'s needs. *)
 
-type t
+type t = Odoc_xref2.Env.resolver
+
 type builder
 
 val create :
@@ -32,11 +33,5 @@ val create :
 
 val build : builder -> [ `Unit of Compilation_unit.t | `Page of Page.t ] -> t
 (** Initialize the environment for the given unit. *)
-
-val resolver : t -> Odoc_xref2.Env.resolver
-(** Get a resolver from an env *)
-
-val expander : t -> Odoc_xref2.Expand.expander
-(** Get an expander from an env *)
 
 (* val forward_resolver : t -> Root.t DocOck.forward_resolver *)

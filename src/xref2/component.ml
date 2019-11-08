@@ -555,8 +555,8 @@ module Fmt = struct
         fun ppf (p : Odoc_model.Paths.Path.t) ->
         match p with
         | `Resolved rp -> Format.fprintf ppf "resolved(%a)" model_resolved_path rp
-        | `Root s -> Format.fprintf ppf "*%s" s
-        | `Forward s -> Format.fprintf ppf "*%s" s
+        | `Root s -> Format.fprintf ppf "root(%s)" s
+        | `Forward s -> Format.fprintf ppf "forward(%s)" s
         | `Dot (parent,s) -> Format.fprintf ppf "*%a.%s" model_path (parent :> Odoc_model.Paths.Path.t) s
         | `Apply (func,arg) -> Format.fprintf ppf "*%a(%a)" model_path (func :> Odoc_model.Paths.Path.t) model_path (arg :> Odoc_model.Paths.Path.t)
 

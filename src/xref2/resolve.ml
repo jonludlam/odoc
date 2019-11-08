@@ -200,16 +200,18 @@ and module_ : Env.t -> Module.t -> Module.t = fun env m ->
     try
         let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
         {m with type_ = module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_}
-    with e ->
-        Printf.fprintf stderr "Failed to resolve module: %s\n%!" (Printexc.to_string e);
+    with 
+      | Component.Find.Find_failure (sg,name,ty) ->
+        let bt = Printexc.get_backtrace () in
+        Format.fprintf Format.err_formatter "Find failure: Failed to find %s %s in %a\n" ty name Component.Fmt.signature sg;
+        Printf.fprintf stderr "Backtrace: %s\n%!" bt;
+        m
+      | e ->   
+        Printf.fprintf stderr "Failed to resolve module: %s\n%s\n%!" (Printexc.to_string e) (Printexc.get_backtrace ());
         m
 
 and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module.decl = fun env id decl ->
     let open Module in
-    let str_id = Format.asprintf "%a" Component.Fmt.model_identifier (id :> Paths.Identifier.t) in
-    (if str_id = "Array"
-    then Printf.fprintf stderr "%s\n%!" str_id
-    else ());
     match decl with
     | ModuleType expr -> ModuleType (module_type_expr env id expr)
     | Alias p ->
@@ -370,7 +372,7 @@ let build_resolver :
     -> (string -> Root.t option) -> (Root.t -> Page.t)
     -> Env.resolver =
     fun ?equal:_ ?hash:_ lookup_unit resolve_unit lookup_page resolve_page ->
-    {lookup_unit; resolve_unit; lookup_page; resolve_page; }
+    {Env.lookup_unit; resolve_unit; lookup_page; resolve_page; }
 
 let resolve x y =
     let before = y in
