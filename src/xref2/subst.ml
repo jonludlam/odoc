@@ -1,45 +1,120 @@
- type t = {
-    map : (Ident.t * Cpath.resolved) list
-}
+type t =
+    { module_ : (Ident.module_ * Cpath.resolved_module) list
+    ; module_type : (Ident.module_type * Cpath.resolved_module_type) list
+    ; type_ : (Ident.path_type * Cpath.resolved_type) list
+    ; class_type : (Ident.path_class_type * Cpath.resolved_class_type) list
+    }
 
-let identity = {
-    map = []
-}
+let identity =
+    { module_ = []
+    ; module_type = []
+    ; type_ = []
+    ; class_type = [] }
 
-let add id subst t =
-    { map = (id, subst) :: t.map }
+let add_module id subst t =
+    { t with module_ = (id, subst) :: t.module_ }
 
-let rec resolved_path : t -> Cpath.resolved -> Cpath.resolved = fun s p ->
+let add_module_type id subst t =
+    { t with module_type = (id, subst) :: t.module_type }
+
+let add_type : Ident.type_ -> Cpath.resolved_type -> t -> t = fun id subst t ->
+    { t with type_ = ((id :> Ident.path_type), subst) :: t.type_ }
+
+let add_class : Ident.class_ -> Cpath.resolved_class_type -> t -> t = fun id subst t ->
+    { t with type_ = ((id :> Ident.path_type), (subst :> Cpath.resolved_type)) :: t.type_
+    ; class_type = ((id :> Ident.path_class_type), subst) :: t.class_type }
+
+let add_class_type : Ident.class_type -> Cpath.resolved_class_type -> t -> t = fun id subst t ->
+    { t with type_ = ((id :> Ident.path_type), (subst :> Cpath.resolved_type)) :: t.type_
+    ; class_type = ((id :> Ident.path_class_type), subst) :: t.class_type }
+
+let rec resolved_module_path : t -> Cpath.resolved_module -> Cpath.resolved_module = fun s p ->
     match p with
     | `Local id -> begin
-        match (try Some (List.assoc id s.map) with _ -> None) with
+        match (try Some (List.assoc id s.module_) with _ -> None) with
         | Some x ->
             x
         | None -> `Local id
         end
     | `Identifier _ ->
         p
-    | `Apply (p1, p2) -> `Apply (resolved_path s p1, path s p2)
-    | `Substituted p -> `Substituted (resolved_path s p)
-    | `Module (p, n) -> `Module (resolved_path s p, n)
-    | `ModuleType (p, n) -> `ModuleType (resolved_path s p, n)
-    | `Type (p, n) -> `Type (resolved_path s p, n)
-    | `Alias (p1, p2) -> `Alias (resolved_path s p1, resolved_path s p2)
-    | `Subst (p1, p2) -> `Subst (resolved_path s p1, resolved_path s p2)
-    | `SubstAlias (p1, p2) -> `SubstAlias (resolved_path s p1, resolved_path s p2)
-    | `Hidden (p1) -> `Hidden (resolved_path s p1)
-    | `Canonical (p1, p2) -> `Canonical (resolved_path s p1, path s p2)
-    | `Class(p,n) -> `Class(resolved_path s p, n)
-    | `ClassType(p, n) -> `ClassType(resolved_path s p, n)
+    | `Apply (p1, p2) -> `Apply (resolved_module_path s p1, module_path s p2)
+    | `Substituted p -> `Substituted (resolved_module_path s p)
+    | `Module (p, n) -> `Module (resolved_module_path s p, n)
+    | `Alias (p1, p2) -> `Alias (resolved_module_path s p1, resolved_module_path s p2)
+    | `Subst (p1, p2) -> `Subst (resolved_module_type_path s p1, resolved_module_path s p2)
+    | `SubstAlias (p1, p2) -> `SubstAlias (resolved_module_path s p1, resolved_module_path s p2)
+    | `Hidden (p1) -> `Hidden (resolved_module_path s p1)
+    | `Canonical (p1, p2) -> `Canonical (resolved_module_path s p1, module_path s p2)
 
-and path : t -> Cpath.t -> Cpath.t = fun s p ->
+and module_path : t -> Cpath.module_ -> Cpath.module_ = fun s p ->
     match p with
-    | `Resolved p' -> `Resolved (resolved_path s p')
-    | `Dot (p', str) -> `Dot (path s p', str)
-    | `Apply (p1, p2) -> `Apply (path s p1, path s p2)
-    | `Substituted p -> `Substituted (path s p)
+    | `Resolved p' -> `Resolved (resolved_module_path s p')
+    | `Dot (p', str) -> `Dot (module_path s p', str)
+    | `Apply (p1, p2) -> `Apply (module_path s p1, module_path s p2)
+    | `Substituted p -> `Substituted (module_path s p)
     | `Forward _ -> p
     | `Root _ -> p
+
+and resolved_module_type_path : t -> Cpath.resolved_module_type -> Cpath.resolved_module_type = fun s p ->
+    match p with
+    | `Local id -> begin
+        match (try Some (List.assoc id s.module_type) with _ -> None) with
+        | Some x ->
+            x
+        | None -> `Local id
+        end
+    | `Identifier _ ->
+        p
+    | `Substituted p -> `Substituted (resolved_module_type_path s p)
+    | `ModuleType (p, n) -> `ModuleType (resolved_module_path s p, n)
+
+and module_type_path : t -> Cpath.module_type -> Cpath.module_type = fun s p ->
+    match p with
+    | `Resolved r -> `Resolved (resolved_module_type_path s r)
+    | `Substituted p -> `Substituted (module_type_path s p)
+    | `Dot (p, n) -> `Dot (module_path s p, n)
+
+and resolved_type_path : t -> Cpath.resolved_type -> Cpath.resolved_type = fun s p ->
+    match p with
+    | `Local id -> begin
+        match (try Some (List.assoc id s.type_) with _ -> None) with
+        | Some x ->
+            x
+        | None -> `Local id
+        end
+    | `Identifier _ ->
+        p
+    | `Substituted p -> `Substituted (resolved_type_path s p)
+    | `Type (p,n) -> `Type (resolved_module_path s p, n)
+    | `ClassType (p, n) -> `ClassType (resolved_module_path s p, n)
+    | `Class (p, n) -> `Class (resolved_module_path s p, n)
+
+and type_path : t ->  Cpath.type_ -> Cpath.type_ = fun s p ->
+    match p with
+    | `Resolved r -> `Resolved (resolved_type_path s r)
+    | `Substituted p -> `Substituted (type_path s p)
+    | `Dot (p, n) -> `Dot (module_path s p, n)
+
+and resolved_class_type_path : t -> Cpath.resolved_class_type -> Cpath.resolved_class_type = fun s p ->
+    match p with
+    | `Local id -> begin
+        match (try Some (List.assoc id s.class_type) with _ -> None) with
+        | Some x ->
+            x
+        | None -> `Local id
+        end
+    | `Identifier _ ->
+        p
+    | `Substituted p -> `Substituted (resolved_class_type_path s p)
+    | `ClassType (p, n) -> `ClassType (resolved_module_path s p, n)
+    | `Class (p, n) -> `Class (resolved_module_path s p, n)
+
+and class_type_path : t -> Cpath.class_type -> Cpath.class_type = fun s p ->
+    match p with
+    | `Resolved r -> `Resolved (resolved_class_type_path s r)
+    | `Substituted p -> `Substituted (class_type_path s p)
+    | `Dot (p, n) -> `Dot (module_path s p, n)
 
 let option_ conv s x =
     match x with
@@ -99,7 +174,7 @@ and type_object s o =
 and type_package s p =
     let open Component.TypeExpr.Package in
     let sub (x,y) = (x, type_expr s y) in
-    { path = path s p.path
+    { path = module_type_path s p.path
     ; substitutions = List.map sub p.substitutions}
 
 and type_expr s t =
@@ -110,7 +185,7 @@ and type_expr s t =
     | Alias (t,str) -> Alias (type_expr s t, str)
     | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expr s t1, type_expr s t2)
     | Tuple ts -> Tuple (List.map (type_expr s) ts)
-    | Constr (p, ts) -> Constr (path s p, List.map (type_expr s) ts)
+    | Constr (p, ts) -> Constr (type_path s p, List.map (type_expr s) ts)
     | Polymorphic_variant v -> Polymorphic_variant (type_poly_var s v)
     | Object o -> Object (type_object s o)
     | Class (p,ts) -> Class (p, List.map (type_expr s) ts)
@@ -138,7 +213,7 @@ and module_type_expr s t =
     let open Component.ModuleType in
     match t with
     | Path p ->
-        Path (path s p)
+        Path (module_type_path s p)
     | Signature sg ->
         Signature (signature s sg)
     | Functor (arg, expr) ->
@@ -151,7 +226,7 @@ and module_type_expr s t =
 and module_decl s t =
     match t with
     | Alias p ->
-        Alias (path s p)
+        Alias (module_path s p)
     | ModuleType t ->
         ModuleType (module_type_expr s t)
 
@@ -162,7 +237,7 @@ and module_ s t =
 
 and module_substitution s m =
     let open Component.ModuleSubstitution in
-    let manifest = path s m.manifest in
+    let manifest = module_path s m.manifest in
     { m with manifest }
 
 and type_decl_field s f =
@@ -189,7 +264,7 @@ and extension_constructor s c =
 and extension s e =
     let open Component.Extension in
     { e with
-    type_path = path s e.type_path;
+    type_path = type_path s e.type_path;
     constructors = List.map (extension_constructor s) e.constructors
     }
 
@@ -208,57 +283,117 @@ and value s v =
     { v with
     type_ = type_expr s v.type_ }
 
+and class_ s c =
+    let open Component.Class in
+    { c with type_ = class_decl s c.type_ }
+
+and class_decl s =
+    let open Component.Class in
+    function
+    | ClassType e -> ClassType (class_type_expr s e)
+    | Arrow (lbl, t, d) -> Arrow (lbl, type_expr s t, class_decl s d)
+
+and class_type_expr s =
+    let open Component.ClassType in
+    function
+    | Constr (p, ts) -> Constr (class_type_path s p, List.map (type_expr s) ts)
+    | Signature sg -> Signature (class_signature s sg)
+
+and class_type s c =
+    let open Component.ClassType in
+    { c with expr = class_type_expr s c.expr }
+
+and class_signature_item s =
+    let open Component.ClassSignature in
+    function
+    | Method m -> Method (method_ s m)
+    | InstanceVariable i -> InstanceVariable (instance_variable s i)
+    | Constraint (t1, t2) -> Constraint (type_expr s t1, type_expr s t2)
+    | Inherit e -> Inherit (class_type_expr s e)
+    | Comment _ as y -> y
+
+and class_signature s sg =
+    let open Component.ClassSignature in
+    { self = option_ type_expr s sg.self
+    ; items = List.map (class_signature_item s) sg.items }
+
+and method_ s m =
+    let open Component.Method in
+    { m with type_ = type_expr s m.type_ }
+
+and instance_variable s i =
+    let open Component.InstanceVariable in
+    { i with type_ = type_expr s i.type_ }
+
 and rename_bound_idents s sg =
     let open Component.Signature in
     function
     | [] -> s, sg
     | Module (id,r,m) :: rest ->
-        let id' = Ident.rename id in
+        let id' = Ident.Rename.module_ id in
         rename_bound_idents
-            (add id (`Local id') s)
+            (add_module id (`Local id') s)
             (Module (id',r,m) :: sg)
             rest
-    | ModuleType (id,mt) :: rest ->
-        let id' = Ident.rename id in
+    | ModuleSubstitution (id, m) :: rest ->
+        let id' = Ident.Rename.module_ id in
         rename_bound_idents
-            (add id (`Local id') s)
+            (add_module id (`Local id') s)
+            (ModuleSubstitution (id',m) :: sg)
+            rest
+    | ModuleType (id,mt) :: rest ->
+        let id' = Ident.Rename.module_type id in
+        rename_bound_idents
+            (add_module_type id (`Local id') s)
             (ModuleType (id',mt) :: sg)
             rest
     | Type (id,r,t) :: rest ->
-        let id' = Ident.rename id in
+        let id' = Ident.Rename.type_ id in
         rename_bound_idents
-            (add id (`Local id') s)
+            (add_type id (`Local (id' :> Ident.path_type)) s)
             (Type (id', r, t) :: sg)
             rest
+    | TypeSubstitution (id,t) :: rest ->
+        let id' = Ident.Rename.type_ id in
+        rename_bound_idents
+            (add_type id (`Local (id' :> Ident.path_type)) s)
+            (TypeSubstitution (id', t) :: sg)
+            rest
     | Exception (id,e) :: rest ->
-        let id' = Ident.rename id in
-        rename_bound_idents
-            (add id (`Local id') s)
-            (Exception (id', e) :: sg)
-            rest
+        let id' = Ident.Rename.exception_ id in
+        rename_bound_idents s (Exception (id', e) :: sg) rest
+    | TypExt e :: rest ->
+        rename_bound_idents s (TypExt e :: sg) rest
     | Value (id,v) :: rest ->
-        let id' = Ident.rename id in
-        rename_bound_idents
-            (add id (`Local id') s)
-            (Value (id',v) :: sg)
-            rest
+        let id' = Ident.Rename.value id in
+        rename_bound_idents s (Value (id',v) :: sg) rest
     | External (id, e) :: rest ->
-        let id' = Ident.rename id in
+        let id' = Ident.Rename.value id in
+        rename_bound_idents s (External (id',e) :: sg) rest
+    | Class (id, r, c) :: rest ->
+        let id' = Ident.Rename.class_ id in
         rename_bound_idents
-            (add id (`Local id') s)
-            (External (id',e) :: sg)
+            (add_class id (`Local (id' :> Ident.path_class_type)) s)
+            (Class (id', r, c) :: sg)
             rest
-    | item :: rest ->
+    | ClassType (id, r, c) :: rest ->
+        let id' = Ident.Rename.class_type id in
         rename_bound_idents
-            s (item :: sg) rest
+            (add_class_type id (`Local (id' :> Ident.path_class_type)) s)
+            (ClassType (id', r, c) :: sg)
+            rest
+    | Include _ as item :: rest ->
+        rename_bound_idents s (item :: sg) rest
+    | Comment _ as item :: rest ->
+        rename_bound_idents s (item :: sg) rest
 
 and removed_items s items =
     let open Component.Signature in
     List.map (function
-        | RModule (id, _) when List.mem_assoc id s.map ->
-            RModule (id, Some (List.assoc id s.map))
-        | RType (id, _) when List.mem_assoc id s.map ->
-            RType (id, Some (List.assoc id s.map))
+        | RModule (id, _) when List.mem_assoc id s.module_ ->
+            RModule (id, Some (List.assoc id s.module_))
+        | RType (id, _) when List.mem_assoc (id :> Ident.path_type) s.type_ ->
+            RType (id, Some (List.assoc (id :> Ident.path_type) s.type_))
         | x -> x) items
 
 and signature s sg =
@@ -274,8 +409,8 @@ and signature s sg =
         | TypExt e -> TypExt (extension s e)
         | Value (id,v) -> Value (id, value s v)
         | External (id, e) -> External (id, external_ s e)
-        | Class (id, r, c) -> Class (id, r, c)
-        | ClassType (id, r, c) -> ClassType (id, r, c)
+        | Class (id, r, c) -> Class (id, r, class_ s c)
+        | ClassType (id, r, c) -> ClassType (id, r, class_type s c)
         | Include i -> Include (include_ s i)
         | Comment c -> Comment c
         ) items in

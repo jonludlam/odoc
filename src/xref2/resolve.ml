@@ -266,7 +266,9 @@ and module_type_expr : Env.t -> Paths.Identifier.Signature.t -> ModuleType.expr 
                     | TypeSubst (frag, eqn) ->
                         let frag' = Tools.resolve_type_fragment env id frag in
                         TypeSubst (`Resolved frag', type_decl_equation env eqn)
-                with _ -> x
+                with e ->
+                    Printf.fprintf stderr "Exception caught while resolving fragments: %s\n%!" (Printexc.to_string e);
+                    x
                 ) subs)
     | Functor (arg, res) ->
         let arg' = Opt.map (functor_argument env) arg in

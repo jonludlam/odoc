@@ -153,8 +153,8 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
                 expansion = Some AlreadyASig
             }
             in
-            let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
-            let id = Ident.of_identifier identifier in
+            let identifier = m.id in
+            let id = Ident.Of_Identifier.module_ identifier in
             let ty = Component.Of_Lang.(module_ {empty with modules = [m.id,id]} m) in
             ty
        | Pack _ ->
@@ -214,7 +214,7 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
         let rec find_args parent mty =
             match mty with 
             | ModuleType.Functor (Some arg, res) ->
-                (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.name arg.Component.FunctorArgument.id)),
+                (`Parameter (parent, Odoc_model.Names.ParameterName.of_string (Ident.Name.module_ arg.Component.FunctorArgument.id)),
                     {Component.Module.doc = []; display_type = None; type_ = ModuleType arg.expr; canonical=None; hidden=false}) :: find_args (`Result parent) res
             | ModuleType.Functor (None, res) ->
                 find_args (`Result parent) res
@@ -251,13 +251,11 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let ty = Of_Lang.(type_decl map t) in
                 add_type t.Odoc_model.Lang.TypeDecl.id ty env
             | Odoc_model.Lang.Signature.Module (_, t) ->
-                let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
+                let id = Ident.Of_Identifier.module_ t.id in
                 let ty = Of_Lang.(module_ {empty with modules = [t.id,id]} t) in
                 add_module t.Odoc_model.Lang.Module.id ty env
             | Odoc_model.Lang.Signature.ModuleType t ->
-                let identifier = (t.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
+                let id = Ident.Of_Identifier.module_type t.id in
                 let ty = Of_Lang.(module_type {empty with module_types = [t.id,id]} t) in
                 add_module_type t.Odoc_model.Lang.ModuleType.id ty env
             | Odoc_model.Lang.Signature.Comment c ->
@@ -267,27 +265,23 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             | Odoc_model.Lang.Signature.Exception _ ->
                 env
             | Odoc_model.Lang.Signature.ModuleSubstitution m ->
-                let identifier = (m.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
+                let id = Ident.Of_Identifier.module_ m.id in
                 let ty = Of_Lang.(module_of_module_substitution {empty with modules = [m.id,id]} m) in
                 add_module m.id ty env
             | Odoc_model.Lang.Signature.TypeSubstitution _ ->
                 env
             | Odoc_model.Lang.Signature.Value v ->
-                let identifier = (v.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
+                let id = Ident.Of_Identifier.value v.id in
                 let ty = Of_Lang.(value {empty with values = [v.id,id]} v) in
                 add_value v.Odoc_model.Lang.Value.id ty env
             | Odoc_model.Lang.Signature.External _ ->
                 env
             | Odoc_model.Lang.Signature.Class (_,c) ->
-                let identifier = (c.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
+                let id = Ident.Of_Identifier.class_ c.id in
                 let ty = Of_Lang.(class_ {empty with classes = [c.id,id]} c) in
                 add_class c.id ty env
             | Odoc_model.Lang.Signature.ClassType (_,c) ->
-                let identifier = (c.id :> Odoc_model.Paths.Identifier.t) in
-                let id = Ident.of_identifier identifier in
+                let id = Ident.Of_Identifier.class_type c.id in
                 let ty = Of_Lang.(class_type {empty with class_types = [c.id,id]} c) in
                 add_class_type c.id ty env            
             | Odoc_model.Lang.Signature.Include i ->

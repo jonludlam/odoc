@@ -15,16 +15,16 @@ this is probably the best thing to produce in this case.
 *)
 
 
-let rec signature (prefix : Cpath.resolved) sg =
+let rec signature (prefix : Cpath.resolved_module) sg =
     let open Component.Signature in
     let open Odoc_model.Names in
     let items = List.map (fun item ->
         match item with
-        | Module (id,r,m) -> Module (id,r, Component.Delayed.put (fun () -> module_ (`Module (prefix, ModuleName.of_string (Ident.name id))) (Component.Delayed.get m)))
-        | ModuleType (id, mt) -> ModuleType (id, module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.name id))) mt)
-        | Type (id,r,t) -> Type (id,r, type_decl (`Type (prefix, TypeName.of_string (Ident.name id))) t)
+        | Module (id,r,m) -> Module (id,r, Component.Delayed.put (fun () -> module_ (`Module (prefix, ModuleName.of_string (Ident.Name.module_ id))) (Component.Delayed.get m)))
+        | ModuleType (id, mt) -> ModuleType (id, module_type (`ModuleType (prefix, ModuleTypeName.of_string (Ident.Name.module_type id))) mt)
+        | Type (id,r,t) -> Type (id,r, type_decl (`Type (prefix, TypeName.of_string (Ident.Name.type_ id))) t)
         | Exception _ 
-        | TypExt _ 
+        | TypExt _
         | Value _
         | External _
         | Class _ 
@@ -37,13 +37,13 @@ let rec signature (prefix : Cpath.resolved) sg =
     (* The identity substitution used here is to rename all of the bound idents in the signature *)
     Subst.signature Subst.identity {items; removed=sg.removed}
 
-and module_ : Cpath.resolved -> Component.Module.t -> Component.Module.t = fun prefix m ->
+and module_ : Cpath.resolved_module -> Component.Module.t -> Component.Module.t = fun prefix m ->
     match m.Component.Module.type_ with
     | Alias _ -> m
     | ModuleType (Signature sg) -> {m with  type_ = ModuleType (Signature (signature prefix sg)) }
     | ModuleType _ -> m
 
-and module_type : Cpath.resolved -> Component.ModuleType.t -> Component.ModuleType.t = fun prefix m ->
+and module_type : Cpath.resolved_module_type -> Component.ModuleType.t -> Component.ModuleType.t = fun prefix m ->
     let open Component.ModuleType in
     let expr =
         match m.expr with
@@ -62,7 +62,7 @@ and module_type : Cpath.resolved -> Component.ModuleType.t -> Component.ModuleTy
             m.expr
     in {m with expr}
 
-and type_decl : Cpath.resolved -> Component.TypeDecl.t -> Component.TypeDecl.t = fun path t ->
+and type_decl : Cpath.resolved_type -> Component.TypeDecl.t -> Component.TypeDecl.t = fun path t ->
     let equation =
         let e = t.Component.TypeDecl.equation in
         let open Component.TypeDecl.Equation in
