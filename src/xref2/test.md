@@ -90,7 +90,7 @@ signature is as follows:
       {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
        manifest = None; constraints = []};
      representation = None})];
- values = []; titles = [];
+ values = []; titles = []; classes = []; class_types = [];
  elts =
   [("u",
     `Type
@@ -285,7 +285,7 @@ which are:
 # let get_ok = Tools.ResultMonad.get_resolved
 val get_ok : ('a, 'b) Tools.ResultMonad.t -> 'a = <fun>
 # let (path, module_) = get_ok @@ Tools.lookup_module_from_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "M"))));;
-val path : Cpath.resolved =
+val path : Cpath.resolved_module =
   `Identifier (`Module (`Root (Common.root, "Root"), "M"))
 val module_ : Component.Module.t =
   {Odoc_xref2.Component.Module.doc = [];
@@ -293,7 +293,7 @@ val module_ : Component.Module.t =
     Odoc_xref2.Component.Module.ModuleType
      (Odoc_xref2.Component.ModuleType.Signature
        {Odoc_xref2.Component.Signature.items =
-         [Odoc_xref2.Component.Signature.Type (("t", 1),
+         [Odoc_xref2.Component.Signature.Type (`LType ("t", 1),
            Odoc_model.Lang.Signature.Ordinary,
            {Odoc_xref2.Component.TypeDecl.doc = [];
             equation =
@@ -308,10 +308,10 @@ The three values returned are a boolean representing whether this path is depend
 
 ```ocaml env=e1
 # Tools.signature_of_module env (path, module_);;
-- : Cpath.resolved * Component.Signature.t =
+- : Cpath.resolved_module * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "M")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (("t", 1),
+   [Odoc_xref2.Component.Signature.Type (`LType ("t", 1),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
@@ -349,7 +349,7 @@ of looking up the module `N`:
 
 ```ocaml env=e1
 # let (path, module_) = get_ok @@ Tools.lookup_module_from_path env (`Resolved (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
-val path : Cpath.resolved =
+val path : Cpath.resolved_module =
   `Identifier (`Module (`Root (Common.root, "Root"), "N"))
 val module_ : Component.Module.t =
   {Odoc_xref2.Component.Module.doc = [];
@@ -396,13 +396,13 @@ val m : Component.ModuleType.t =
     Some
      (Odoc_xref2.Component.ModuleType.Signature
        {Odoc_xref2.Component.Signature.items =
-         [Odoc_xref2.Component.Signature.ModuleType (("N", 1),
+         [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("N", 1),
            {Odoc_xref2.Component.ModuleType.doc = [];
             expr =
              Some
               (Odoc_xref2.Component.ModuleType.Signature
                 {Odoc_xref2.Component.Signature.items =
-                  [Odoc_xref2.Component.Signature.Type (("t", 3),
+                  [Odoc_xref2.Component.Signature.Type (`LType ("t", 3),
                     Odoc_model.Lang.Signature.Ordinary,
                     {Odoc_xref2.Component.TypeDecl.doc = [];
                      equation =
@@ -410,7 +410,7 @@ val m : Component.ModuleType.t =
                        private_ = false; manifest = None; constraints = []};
                      representation = None})];
                  removed = []})});
-          Odoc_xref2.Component.Signature.Module (("B", 2),
+          Odoc_xref2.Component.Signature.Module (`LModule ("B", 2),
            Odoc_model.Lang.Signature.Ordinary,
            {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
         removed = []})}
@@ -447,16 +447,16 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env (`Identifier (`Module (`Root (Common.root, "Root"), "A"))) in
   Tools.signature_of_module env (p, m) |> Tools.prefix_signature;;
-- : Cpath.resolved * Component.Signature.t =
+- : Cpath.resolved_module * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.ModuleType (("N", 8),
+   [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("N", 8),
      {Odoc_xref2.Component.ModuleType.doc = [];
       expr =
        Some
         (Odoc_xref2.Component.ModuleType.Signature
           {Odoc_xref2.Component.Signature.items =
-            [Odoc_xref2.Component.Signature.Type (("t", 7),
+            [Odoc_xref2.Component.Signature.Type (`LType ("t", 7),
               Odoc_model.Lang.Signature.Ordinary,
               {Odoc_xref2.Component.TypeDecl.doc = [];
                equation =
@@ -464,7 +464,7 @@ we look up `A` from the environment:
                  private_ = false; manifest = None; constraints = []};
                representation = None})];
            removed = []})});
-    Odoc_xref2.Component.Signature.Module (("B", 9),
+    Odoc_xref2.Component.Signature.Module (`LModule ("B", 9),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
   removed = []})
@@ -508,16 +508,17 @@ we then return along with the fully resolved identifier.
             (`Identifier (`Module (`Root (Common.root, "Root"), "A"))),
           "B"),
        "t"));;
-- : (Tools.type_lookup_result, Cpath.t) Tools.ResultMonad.t =
+- : (Tools.type_lookup_result, Cpath.type_) Tools.ResultMonad.t =
 Odoc_xref2.Tools.ResultMonad.Resolved
  (`Type
     (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "A")), "B"),
      "t"),
-  {Odoc_xref2.Component.TypeDecl.doc = [];
-   equation =
-    {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
-     manifest = None; constraints = []};
-   representation = None})
+  `T
+    {Odoc_xref2.Component.TypeDecl.doc = [];
+     equation =
+      {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
+       manifest = None; constraints = []};
+     representation = None})
 ```
 
 ### Module substitution
@@ -586,7 +587,7 @@ of module `C` we see the following:
 
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env (`Identifier (`Module (`Root (Common.root, "Root"), "C")));;
-val p : Cpath.resolved =
+val p : Cpath.resolved_module =
   `Identifier (`Module (`Root (Common.root, "Root"), "C"))
 val m : Component.Module.t =
   {Odoc_xref2.Component.Module.doc = [];
@@ -608,13 +609,13 @@ now we can ask for the signature of this module:
 
 ```ocaml env=e1
 # let sg = Tools.signature_of_module env (p, m);;
-val sg : Cpath.resolved * Component.Signature.t =
+val sg : Cpath.resolved_module * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (("M", 1),
+     [Odoc_xref2.Component.Signature.Module (`LModule ("M", 1),
        Odoc_model.Lang.Signature.Ordinary,
        {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
-      Odoc_xref2.Component.Signature.Module (("N", 2),
+      Odoc_xref2.Component.Signature.Module (`LModule ("N", 2),
        Odoc_model.Lang.Signature.Ordinary,
        {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
     removed = []})
@@ -625,7 +626,7 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env
       (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"));;
-val p : Cpath.resolved =
+val p : Cpath.resolved_module =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
   {Odoc_xref2.Component.Module.doc = [];
@@ -640,10 +641,10 @@ val m : Component.Module.t =
            "S")));
    canonical = None; hidden = false; display_type = None}
 # Tools.signature_of_module env (p, m);;
-- : Cpath.resolved * Component.Signature.t =
+- : Cpath.resolved_module * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (("t", 46),
+   [Odoc_xref2.Component.Signature.Type (`LType ("t", 44),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
@@ -903,7 +904,7 @@ Now let's lookup that module:
 
 ```ocaml env=e1
 # let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true true env cp;;
-val p : Cpath.resolved =
+val p : Cpath.resolved_module =
   `Apply
     (`Apply
        (`Apply
@@ -935,7 +936,7 @@ val m : Component.Module.t =
            "T")));
    canonical = None; hidden = false; display_type = None}
 # let (p, sg') = Tools.signature_of_module env (p, m);;
-val p : Cpath.resolved =
+val p : Cpath.resolved_module =
   `Subst
     (`ModuleType
        (`Apply
@@ -964,7 +965,7 @@ val p : Cpath.resolved =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (("Foo", 20),
+    [Odoc_xref2.Component.Signature.Module (`LModule ("Foo", 20),
       Odoc_model.Lang.Signature.Ordinary,
       {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
    removed = []}
@@ -1565,15 +1566,8 @@ let resolved = Resolve.signature Env.empty sg;;
 TODO: This needs fixing (result ought to be `sig type s = C of Foo(Bar).t end`)
 ```ocaml env=e1
 # Common.LangUtils.Lens.get module_M_expansion expanded
-- : Odoc_model.Lang.Signature.t =
-[Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-  {Odoc_model.Lang.TypeDecl.id =
-    `Type (`Module (`Root (Common.root, "Root"), "M"), "s");
-   doc = [];
-   equation =
-    {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
-     manifest = None; constraints = []};
-   representation = None})]
+Characters 26-44:
+Error: Unbound value module_M_expansion
 ```
 
 # Anonymous stuff
@@ -1790,7 +1784,7 @@ val expanded : Odoc_model.Lang.Signature.t =
      representation = None})]
 # let (p, m) = get_ok @@ Tools.lookup_and_resolve_module_from_path true true env (`Resolved
                (`Identifier (`Module (`Root (Common.root, "Root"), "N"))));;
-val p : Cpath.resolved =
+val p : Cpath.resolved_module =
   `Canonical
     (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
      `Dot (`Root "Root", "N"))
@@ -1813,12 +1807,12 @@ val m : Component.Module.t =
     Some (`Dot (`Root "Root", "N"), `Dot (`Root ("Root", `TUnknown), "N"));
    hidden = false; display_type = None}
 # Tools.signature_of_module env (p, m);;
-- : Cpath.resolved * Component.Signature.t =
+- : Cpath.resolved_module * Component.Signature.t =
 (`Canonical
    (`Identifier (`Module (`Root (Common.root, "Root"), "N")),
     `Dot (`Root "Root", "N")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (("x", 1),
+   [Odoc_xref2.Component.Signature.Type (`LType ("x", 1),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
@@ -1978,7 +1972,7 @@ val m : Component.Module.t =
 Exception:
 Odoc_xref2.Component.Find.Find_failure
  ({Odoc_xref2__Component.Signature.items =
-    [Odoc_xref2__Component.Signature.Type (("x", 27),
+    [Odoc_xref2__Component.Signature.Type (`LType ("x", 28),
       Odoc_model.Lang.Signature.Ordinary,
       {Odoc_xref2__Component.TypeDecl.doc = [];
        equation =
@@ -1987,9 +1981,32 @@ Odoc_xref2.Component.Find.Find_failure
        representation = None})];
    removed = []},
  "t", "type").
-Raised at file "src/xref2/component.ml", line 1122, characters 28-57
-Called from file "src/xref2/component.ml", line 1163, characters 10-36
-Called from file "src/xref2/tools.ml", line 128, characters 13-45
-Called from file "src/xref2/tools.ml", line 307, characters 26-55
-Called from file "toplevel/toploop.ml", line 180, characters 17-56
+```
+
+
+
+# Include
+
+```ocaml env=e1
+let test_data = {|
+module Test__F : sig
+  module type A = sig type t (** [t] is of type {!t} *) end
+  module B__ : sig type t end
+end
+
+module Test : sig
+  module F = Test__F
+end
+
+module Test__G : sig
+  include module type of Test.F
+  module N : A
+  module M = B__
+  type u = M.t
+end
+
+|};;
+let sg = Common.signature_of_mli_string test_data;;
+let resolved = Resolve.signature Env.empty sg;;
+let expanded = Expand.signature Env.empty resolved;;
 ```

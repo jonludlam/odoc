@@ -477,6 +477,9 @@ and signature_of_module_type_expr_nopath : Env.t -> Component.ModuleType.expr ->
             | Unresolved _p ->
                 let p = Component.Fmt.(string_of module_type_path p) in
                 failwith (Printf.sprintf "Couldn't find signature: %s" p)
+            | exception e ->
+                Format.fprintf Format.err_formatter "Failed to lookup %a\n%!" Component.Fmt.module_type_path p;
+                raise e
             end
         | Component.ModuleType.Signature s -> expand_includes s
         | Component.ModuleType.With (s, subs) ->

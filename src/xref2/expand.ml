@@ -644,45 +644,48 @@ let rec unit resolver t =
   let open Compilation_unit in
   let initial_env =
     let m = Env.module_of_unit t in
-    Env.empty |> Env.add_module t.id m
-    |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
+    Env.empty |>
+    Env.add_module t.id m |>
+    Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
   let initial_env = {initial_env with Env.resolver= Some resolver} in
-  let imports, env =
-    List.fold_left
-      (fun (imports, env) import ->
-        match import with
-        | Import.Resolved root ->
-            let unit = resolver.resolve_unit root in
-            let m = Env.module_of_unit unit in
-            let env = Env.add_module unit.id m env in
-            let env =
-              Env.add_root
-                (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
-                (Env.Resolved (unit.id, m))
-                env
-            in
-            (import :: imports, env)
-        | Import.Unresolved (str, _) -> (
-          match resolver.lookup_unit str with
-          | Forward_reference ->
-              let env = Env.add_root str Env.Forward env in
-              (import :: imports, env)
-          | Found f ->
-              let unit = resolver.resolve_unit f.root in
-              let m = Env.module_of_unit unit in
-              let env = Env.add_module unit.id m env in
-              let env =
-                Env.add_root
-                  (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
-                  (Env.Resolved (unit.id, m))
-                  env
-              in
-              (Resolved f.root :: imports, env)
-          | Not_found ->
-              (import :: imports, env) ))
-      ([], initial_env) t.imports
+  let rec handle_import (imports, env) import =
+    if List.exists (fun i -> i=import) imports then (imports,env) else
+    match import with
+    | Import.Resolved root ->
+        let unit = resolver.resolve_unit root in
+        let m = Env.module_of_unit unit in
+        Printf.fprintf stderr "Importin resolved module: %s\n%!" (Root.Odoc_file.name root.file);
+        let env = Env.add_module unit.id m env in
+        let env =
+          Env.add_root
+            (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
+            (Env.Resolved (unit.id, m))
+            env
+        in
+        List.fold_left handle_import (import :: imports, env) unit.imports
+    | Import.Unresolved (str, _) -> (
+      match resolver.lookup_unit str with
+      | Forward_reference ->
+          Printf.fprintf stderr "Forward_reference: %s\n%!" str;
+          let env = Env.add_root str Env.Forward env in
+          (import :: imports, env)
+      | Found f ->
+          Printf.fprintf stderr "Found reference: %s\n%!" str;
+          let unit = resolver.resolve_unit f.root in
+          let m = Env.module_of_unit unit in
+          let env = Env.add_module unit.id m env in
+          let env =
+            Env.add_root
+              (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
+              (Env.Resolved (unit.id, m))
+              env
+          in
+          List.fold_left handle_import (import :: imports, env) unit.imports
+      | Not_found ->
+          (import :: imports, env) )
   in
+  let imports, env = List.fold_left handle_import ([], initial_env) t.imports in
   {t with content= content env t.content; imports}
 
 and content env =
@@ -727,7 +730,7 @@ and signature : Env.t -> Signature.t -> _ =
 
 and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
     expr =
-  let rec get_env lenv parent :
+    let rec get_env lenv parent :
          Component.ModuleType.expr
       -> Lang_of.maps * FunctorArgument.t option list = function
     | Functor (Some arg, expr) ->
@@ -772,9 +775,12 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
       in
       Odoc_model.Lang.Module.Functor (args, signature env sg)
   | _ ->
+      Format.fprintf Format.err_formatter "Here we are\n%!";
       let sg =
         Tools.signature_of_module_type_expr_nopath env expr
       in
+      Format.fprintf Format.err_formatter "Here we are again\n%!";
+
       let sg =
         Lang_of.signature
           (id :> Paths_types.Identifier.signature)

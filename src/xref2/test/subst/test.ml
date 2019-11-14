@@ -1,4 +1,4 @@
-open Odoc_xref2
+    open Odoc_xref2
 open Odoc_xref_test
 
 let filter_map f m =
@@ -9,7 +9,7 @@ let filter_map f m =
 
 let resolve_module_name sg name =
     let rec check = function
-        | Component.Signature.Module (id, _r, _m) :: _rest when Ident.name id = name -> id
+        | Component.Signature.Module (id, _r, _m) :: _rest when Ident.Name.module_ id = name -> id
         | _ :: rest -> check rest
         | [] -> failwith "Unknown"
     in check sg.Component.Signature.items
@@ -54,7 +54,7 @@ let module_substitution () =
     let subst_idents_mod = resolve_module_name c "SubstituteMe" in
     let subst_targets_mod = resolve_module_name c "SubTargets" in
 
-    let subst = Subst.add subst_idents_mod (`Local subst_targets_mod) Subst.identity in
+    let subst = Subst.add_module subst_idents_mod (`Local subst_targets_mod) Subst.identity in
 
     let m = Component.Find.module_in_sig c "S" in
 

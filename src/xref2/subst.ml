@@ -126,12 +126,8 @@ let list conv s xs =
 
 let rec type_ s t =
     let open Component.TypeDecl in
-    let manifest = match t.equation.Equation.manifest with
-        | Some t' -> Some (type_expr s t')
-        | None -> None
-    in
     let representation = option_ type_decl_representation s t.representation in
-    { t with equation = {t.equation with manifest}; representation }
+    { t with equation = type_decl_equation s t.equation; representation }
 
 and type_decl_representation s t =
     let open Component.TypeDecl.Representation in
@@ -219,9 +215,17 @@ and module_type_expr s t =
     | Functor (arg, expr) ->
         Functor (functor_argument_opt s arg, module_type_expr s expr)
     | With (e,args) ->
-        With (module_type_expr s e,args)
+        With (module_type_expr s e, List.map (module_type_substitution s) args)
     | TypeOf decl ->
         TypeOf (module_decl s decl)
+
+and module_type_substitution s sub =
+    let open Component.ModuleType in
+    match sub with
+    | ModuleEq (f,m) -> ModuleEq (f, module_decl s m)
+    | ModuleSubst (f, p) -> ModuleSubst (f, module_path s p)
+    | TypeEq (f, eq) -> TypeEq (f, type_decl_equation s eq)
+    | TypeSubst (f, eq) -> TypeSubst (f, type_decl_equation s eq)
 
 and module_decl s t =
     match t with
@@ -249,6 +253,11 @@ and type_decl_constructor_arg s a =
     match a with
     | Tuple ts -> Tuple (list type_expr s ts)
     | Record fs -> Record (list type_decl_field s fs)
+
+and type_decl_equation s t =
+    let open Component.TypeDecl.Equation in
+    { t with manifest = option_ type_expr s t.manifest
+    ; constraints = List.map (fun (x,y) -> (type_expr s x, type_expr s y)) t.constraints }
 
 and exception_ s e =
     let open Component.Exception in

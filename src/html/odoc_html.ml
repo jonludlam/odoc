@@ -4,7 +4,10 @@ module Targets = Targets
 
 module Generator =
 struct
+  (** @canonical Odoc_html.Generator.ML *)
   module ML = ML
+
+  (** @canonical Odoc_html.Generator.Reason *)
   module Reason = Reason
 end
 
