@@ -851,14 +851,15 @@ and module_ env m =
       | Alias _ ->
           let p = `Identifier id in
           let _, sg =
-            Tools.signature_of_module env (p, m') |> Tools.prefix_signature
+            let _, sg = Tools.signature_of_module env (p, m') in
+            Tools.prefix_signature (`Identifier m.id, sg)
           in
           let sg =
             Lang_of.signature
               (id :> Odoc_model.Paths.Identifier.Signature.t)
               Lang_of.empty sg
           in
-          let sg = signature env sg in
+(*          let sg = signature env sg in *)
           { m with
             type_
           ; expansion= Some (Odoc_model.Lang.Module.Signature sg)

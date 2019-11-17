@@ -153,9 +153,9 @@ and lookup_and_resolve_module_from_resolved_path : bool -> bool -> Env.t -> Cpat
         (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
         match p with
         | `Local _id -> raise (Module_lookup_failure (env, p)) 
-        | `Identifier (#Identifier.Module.t as i) ->
+        | `Identifier i ->
             let m = Env.lookup_module i env in
-            let p' = add_hidden m (`Identifier i) in
+            let p' = add_hidden m p in
             if add_canonical
             then (add_canonical_path env m p', m)
             else (p', m)
