@@ -412,12 +412,6 @@ and module_type_expr_of_module_decl : Env.t -> Cpath.resolved_module * Component
 and module_type_expr_of_module : Env.t -> Cpath.resolved_module * Component.Module.t -> Cpath.resolved_module * Component.ModuleType.expr =
     fun env (p, m) -> module_type_expr_of_module_decl env (p, m.type_)
 
-and expand_includes : Component.Signature.t -> Component.Signature.t =
-    fun s ->
-        {s with items = List.fold_left (fun sg c ->
-            match c with
-            | Component.Signature.Include i -> List.rev_append i.Component.Include.expansion.items sg
-            | x -> x::sg) [] s.items |> List.rev}
 
 and signature_of_module_type_expr : Env.t -> Cpath.resolved_module * Component.ModuleType.expr -> Cpath.resolved_module * Component.Signature.t =
     fun env (incoming_path, m) ->
@@ -436,7 +430,7 @@ and signature_of_module_type_expr : Env.t -> Cpath.resolved_module * Component.M
                 let p = Component.Fmt.(string_of module_type_path p) in
                 failwith (Printf.sprintf "Couldn't find signature: %s" p)
             end
-        | Component.ModuleType.Signature s -> (incoming_path, expand_includes s)
+        | Component.ModuleType.Signature s -> (incoming_path, s)
         | Component.ModuleType.With (s, subs) ->
             let (p', sg) = signature_of_module_type_expr env (incoming_path, s) in
             let sg' = List.fold_left (fun sg sub ->
@@ -483,7 +477,7 @@ and signature_of_module_type_expr_nopath : Env.t -> Component.ModuleType.expr ->
                 Format.fprintf Format.err_formatter "Failed to lookup %a\n%!" Component.Fmt.module_type_path p;
                 raise e
             end
-        | Component.ModuleType.Signature s -> expand_includes s
+        | Component.ModuleType.Signature s -> s
         | Component.ModuleType.With (s, subs) ->
             let sg = signature_of_module_type_expr_nopath env s in
             let sg' = List.fold_left (fun sg sub ->
