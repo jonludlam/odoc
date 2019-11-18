@@ -36,7 +36,7 @@ let core_types =
 
 let prefix_signature (path, s) =
     let open Component.Signature in
-    let sub = List.fold_left (fun map item ->
+    let rec get_sub sub is = List.fold_left (fun map item ->
         match item with
         | Type (id,_,_) -> Subst.add_type id (`Type (path, TypeName.of_string (Ident.Name.type_ id))) map
         | Module (id,_,_) -> Subst.add_module id (`Module (path, ModuleName.of_string (Ident.Name.module_ id))) map
@@ -49,8 +49,10 @@ let prefix_signature (path, s) =
         | External (_, _) -> map
         | Comment _ -> map
         | Class (id, _, _) -> Subst.add_class id (`Class (path, ClassName.of_string (Ident.Name.class_ id))) map
-        | _ -> map
-        ) Subst.identity s.items in
+        | ClassType (id, _, _) -> Subst.add_class_type id (`ClassType (path, ClassName.of_string (Ident.Name.class_type id))) map
+        | Include i -> get_sub sub i.expansion.items
+        ) sub is in
+    let sub = get_sub Subst.identity s.items in
     let items = List.map (function
             | Module (id,r, m) -> Module ((Ident.Rename.module_ id), r, (Component.Delayed.put (fun () -> Subst.module_ sub (Component.Delayed.get m))))
             | ModuleType (id, mt) -> ModuleType ((Ident.Rename.module_type id), Subst.module_type sub mt)

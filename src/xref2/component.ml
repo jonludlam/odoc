@@ -19,7 +19,7 @@ module Delayed = struct
             v
 
     let put : (unit -> 'a) -> 'a t = fun f ->
-        { v = None
+        { v = Some (f ())
         ; get = f }
 end
 
@@ -257,7 +257,6 @@ and Include : sig
     type t =
         { parent: Odoc_model.Paths.Identifier.Signature.t
         ; doc: Comment.docs
-        ; orig_expansion : Odoc_model.Lang.Signature.t
         ; expansion : Signature.t
         ; decl: Module.decl }
 end = Include
@@ -748,7 +747,7 @@ module LocalIdents = struct
             | External e -> external_ e ids
             | Class (_,c) -> class_ c ids
             | ClassType (_,c) -> class_type c ids
-            | Include _ -> ids
+            | Include i -> signature i.Include.expansion.content ids
             | Comment _ -> ids
             ) s ids
 end
@@ -1115,8 +1114,7 @@ module Of_Lang = struct
         let decl = module_decl ident_map i.decl in
         { Include.parent = i.parent
         ; doc = i.doc
-        ; orig_expansion = i.expansion.content
-        ; expansion = signature ident_map i.expansion.content
+        ; expansion = apply_sig_map ident_map i.expansion.content
         ; decl }
 
     and class_ ident_map c =
@@ -1191,7 +1189,11 @@ module Of_Lang = struct
             (* Now we construct the Components for each item,
                 converting all paths containing Identifiers pointing at
                 our elements to local paths *)
-            let items = List.map (
+            
+            apply_sig_map ident_map items
+            
+    and apply_sig_map ident_map items =
+        let items = List.map (
                 let open Odoc_model.Lang.Signature in
                 function
                 |  Type (r, t) ->

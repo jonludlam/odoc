@@ -114,7 +114,7 @@ let lookup_module identifier env =
     try
         List.assoc identifier env.modules
     with _ ->
-        Format.fprintf Format.std_formatter "Failed to find module:\nIdentifier: %a\n\n" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+        Format.fprintf Format.err_formatter "Failed to find module:\nIdentifier: %a\n\n" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -285,8 +285,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
                 let ty = Of_Lang.(class_type {empty with class_types = [c.id,id]} c) in
                 add_class_type c.id ty env            
             | Odoc_model.Lang.Signature.Include i ->
-                let ty = Of_Lang.(include_ empty i) in
-                open_signature ty.orig_expansion env
+                open_signature i.expansion.content env
                 ) env s
 
 let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =

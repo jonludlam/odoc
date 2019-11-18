@@ -201,6 +201,9 @@ module Lang_of = struct
       ; path_class_type=
           ((id :> Ident.path_class_type), identifier) :: map.path_class_type }
 
+    and include_ parent map i =
+        signature parent map i.Include.expansion
+
     and signature parent map sg =
       let open Signature in
       List.fold_left
@@ -226,7 +229,9 @@ module Lang_of = struct
               class_ parent map id
           | ClassType (id, _, _) ->
               class_type parent map id
-          | Include _ | TypExt _ | Comment _ ->
+          | Include i ->
+              include_ parent map i          
+          | TypExt _ | Comment _ ->
               map)
         map sg.items
   end
@@ -369,7 +374,7 @@ module Lang_of = struct
     { Odoc_model.Lang.Include.parent= i.parent
     ; doc= i.doc
     ; decl= module_decl map i.parent i.decl
-    ; expansion= {resolved= false; content= []} }
+    ; expansion= {resolved= false; content=signature i.parent map i.expansion} }
 
   and value_ map id v =
     let open Component.Value in
@@ -466,13 +471,13 @@ module Lang_of = struct
     | With (expr, subs) ->
         With (module_type_expr map identifier expr, List.map substitution subs)
     | Functor (Some arg, expr) ->
-        let identifier =
+        let identifier' =
           `Parameter
             ( identifier
             , Odoc_model.Names.ParameterName.of_string
                 (Ident.Name.module_ arg.id) )
         in
-        let map = {map with module_= (arg.id, identifier) :: map.module_} in
+        let map = {map with module_= (arg.id, identifier') :: map.module_} in
         Functor
           ( Some (functor_argument map arg)
           , module_type_expr map (`Result identifier) expr )
@@ -655,7 +660,6 @@ let rec unit resolver t =
     | Import.Resolved root ->
         let unit = resolver.resolve_unit root in
         let m = Env.module_of_unit unit in
-        Printf.fprintf stderr "Importin resolved module: %s\n%!" (Root.Odoc_file.name root.file);
         let env = Env.add_module unit.id m env in
         let env =
           Env.add_root
@@ -667,11 +671,9 @@ let rec unit resolver t =
     | Import.Unresolved (str, _) -> (
       match resolver.lookup_unit str with
       | Forward_reference ->
-          Printf.fprintf stderr "Forward_reference: %s\n%!" str;
           let env = Env.add_root str Env.Forward env in
           (import :: imports, env)
       | Found f ->
-          Printf.fprintf stderr "Found reference: %s\n%!" str;
           let unit = resolver.resolve_unit f.root in
           let m = Env.module_of_unit unit in
           let env = Env.add_module unit.id m env in
@@ -775,11 +777,9 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
       in
       Odoc_model.Lang.Module.Functor (args, signature env sg)
   | _ ->
-      Format.fprintf Format.err_formatter "Here we are\n%!";
       let sg =
         Tools.signature_of_module_type_expr_nopath env expr
       in
-      Format.fprintf Format.err_formatter "Here we are again\n%!";
 
       let sg =
         Lang_of.signature
@@ -849,17 +849,13 @@ and module_ env m =
     try
       match m'.type_ with
       | Alias _ ->
-          let p = `Identifier id in
-          let _, sg =
-            let _, sg = Tools.signature_of_module env (p, m') in
-            Tools.prefix_signature (`Identifier m.id, sg)
-          in
+          let sg = Tools.signature_of_module_nopath env m' in
           let sg =
             Lang_of.signature
               (id :> Odoc_model.Paths.Identifier.Signature.t)
               Lang_of.empty sg
           in
-(*          let sg = signature env sg in *)
+          let sg = signature env sg in
           { m with
             type_
           ; expansion= Some (Odoc_model.Lang.Module.Signature sg)
