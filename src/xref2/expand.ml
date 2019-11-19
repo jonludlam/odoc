@@ -264,7 +264,7 @@ module Lang_of = struct
         | Value (id, v) ->
             Odoc_model.Lang.Signature.Value (value_ map id v) :: acc
         | Include i ->
-            Odoc_model.Lang.Signature.Include (include_ map i) :: acc
+            Odoc_model.Lang.Signature.Include (include_ id map i) :: acc
         | External (id, e) ->
             Odoc_model.Lang.Signature.External (external_ map id e) :: acc
         | ModuleSubstitution (id, m) ->
@@ -369,12 +369,12 @@ module Lang_of = struct
     ; type_= type_expr map e.type_
     ; primitives= e.primitives }
 
-  and include_ map i =
+  and include_ parent map i =
     let open Component.Include in
-    { Odoc_model.Lang.Include.parent= i.parent
+    { Odoc_model.Lang.Include.parent= parent
     ; doc= i.doc
-    ; decl= module_decl map i.parent i.decl
-    ; expansion= {resolved= false; content=signature i.parent map i.expansion} }
+    ; decl= module_decl map parent i.decl
+    ; expansion= {resolved= false; content=signature parent map i.expansion} }
 
   and value_ map id v =
     let open Component.Value in
@@ -685,6 +685,7 @@ let rec unit resolver t =
           in
           List.fold_left handle_import (import :: imports, env) unit.imports
       | Not_found ->
+          Format.fprintf Format.err_formatter "Can't find: %s\n%!" str;
           (import :: imports, env) )
   in
   let imports, env = List.fold_left handle_import ([], initial_env) t.imports in
@@ -697,6 +698,15 @@ and content env =
       Module (signature env m)
   | Pack _ ->
       failwith "Unhandled content"
+
+and include_ : Env.t -> Include.t -> Include.t =
+  fun env i ->
+    let open Include in
+    let expansion =
+        { i.expansion with
+        content = signature env i.expansion.content }
+    in
+    { i with expansion }
 
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
@@ -724,6 +734,9 @@ and signature : Env.t -> Signature.t -> _ =
         | ClassType (r, c) ->
             let c' = class_type env c in
             (env, ClassType (r, c') :: items)
+        | Include i ->
+            let i' = include_ env i in
+            (env, Include i' :: items)
         | x ->
             (env, x :: items))
       s (env, [])
@@ -886,7 +899,9 @@ and module_type env m =
         in
         let sg = Lang_of.signature id Lang_of.empty sg in
         {m with expr; expansion= Some (Signature (signature env sg))}
-      with _ -> {m with expr} )
+      with e ->
+        Format.fprintf Format.err_formatter "Got exception %s expading module type %a" (Printexc.to_string e) Component.Fmt.model_identifier (id :> Paths.Identifier.t);
+        {m with expr} )
 
 
 and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t =
