@@ -121,14 +121,18 @@ module Lang_of = struct
     and resolved_type map (p : Cpath.resolved_type) :
         Odoc_model.Paths.Path.Resolved.Type.t =
       match p with
-      | `Identifier (#Odoc_model.Paths.Identifier.Type.t as y) ->
+      | `Identifier (#Odoc_model.Paths_types.Identifier.path_type as y) ->
           `Identifier y
       | `Local id ->
           `Identifier (List.assoc id map.path_type)
       | `Type (p, name) ->
           `Type (resolved_module map p, name)
-      | _ ->
-          failwith "classes..."
+      | `Class (p, name) ->
+          `Class (resolved_module map p, name)
+      | `ClassType (p, name) ->
+          `ClassType (resolved_module map p, name)
+      | `Substituted s ->
+          resolved_type map s
 
     and resolved_class_type map (p : Cpath.resolved_class_type) :
         Odoc_model.Paths.Path.Resolved.ClassType.t =
@@ -190,7 +194,10 @@ module Lang_of = struct
       { map with
         class_= (id, identifier) :: map.class_
       ; path_class_type=
-          ((id :> Ident.path_class_type), identifier) :: map.path_class_type }
+          ((id :> Ident.path_class_type), identifier) :: map.path_class_type
+      ; path_type=
+          ((id :> Ident.path_type), identifier) :: map.path_type
+      }
 
     and class_type parent map (id : Ident.class_type) =
       let identifier =
@@ -199,7 +206,10 @@ module Lang_of = struct
       { map with
         class_type= ((id :> Ident.class_type), identifier) :: map.class_type
       ; path_class_type=
-          ((id :> Ident.path_class_type), identifier) :: map.path_class_type }
+          ((id :> Ident.path_class_type), identifier) :: map.path_class_type
+      ; path_type=
+          ((id :> Ident.path_type), identifier) :: map.path_type
+}
 
     and include_ parent map i =
         signature parent map i.Include.expansion
@@ -250,8 +260,9 @@ module Lang_of = struct
         | Type (id, r, t) -> (
           try Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
           with e ->
+            let bt = Printexc.get_backtrace () in
             Format.fprintf Format.err_formatter
-              "Failed during type lookup: %a\n%!" Ident.fmt id ;
+              "Failed during type lookup: %a\nbt:\n%s\n%!" Ident.fmt id bt;
             raise e )
         | Exception (id', e) ->
             Odoc_model.Lang.Signature.Exception
@@ -566,6 +577,10 @@ module Lang_of = struct
           t.args
     ; res= Opt.map (type_expr map) t.res }
 
+  and type_expr_package map t =
+      {Lang.TypeExpr.Package.path = Path.module_type map t.Component.TypeExpr.Package.path
+      ; substitutions = List.map (fun (frag, texpr) -> (frag, type_expr map texpr)) t.substitutions }
+
   and type_expr map (t : Component.TypeExpr.t) : Odoc_model.Lang.TypeExpr.t =
     try
       match t with
@@ -585,12 +600,12 @@ module Lang_of = struct
           Polymorphic_variant (type_expr_polyvar map v)
       | Object o ->
           Object (type_expr_object map o)
-      | Class (_p, _ts) ->
-          failwith "Unimplemented"
+      | Class (p, ts) ->
+          Class (Path.class_type map p, List.map (type_expr map) ts)
       | Poly (strs, t) ->
           Poly (strs, type_expr map t)
-      | Package _ ->
-          failwith "Unimplemented"
+      | Package p ->
+          Package (type_expr_package map p)
     with e ->
       let bt = Printexc.get_backtrace () in
       Format.fprintf Format.err_formatter

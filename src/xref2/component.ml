@@ -504,8 +504,8 @@ module Fmt = struct
     and type_object ppf _o =
         Format.fprintf ppf "(object)"
     
-    and type_class ppf (_x,_y) =
-        Format.fprintf ppf "(class)"
+    and type_class ppf (x,ys) =
+        Format.fprintf ppf "(class %a %a)" class_type_path x type_expr_list ys
     
     and type_package ppf _p =
         Format.fprintf ppf "(package)"
@@ -537,12 +537,7 @@ module Fmt = struct
         | `SubstAlias (p1, p2) -> Format.fprintf ppf "(substalias %a -> %a)" resolved_module_path p1 resolved_module_path p2
         | `Hidden p1 -> Format.fprintf ppf "(hidden %a)" resolved_module_path p1
         | `Canonical (p1, p2) -> Format.fprintf ppf "(canonical %a -> %a)" resolved_module_path p1 module_path p2
-(*
-        | `Class (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ClassName.to_string t)
-        | `ClassType (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ClassTypeName.to_string t)
-        | `Type (p, t) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.TypeName.to_string t)
-        | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_path p (Odoc_model.Names.ModuleTypeName.to_string mt)
-*)
+
     and module_path : Format.formatter -> Cpath.module_ -> unit = fun ppf p ->
         match p with
         | `Resolved p -> Format.fprintf ppf "%a" resolved_module_path p
@@ -578,8 +573,22 @@ module Fmt = struct
         match p with
         | `Resolved r -> Format.fprintf ppf "%a" resolved_type_path r
         | `Substituted s -> Format.fprintf ppf "substituted(%a)" type_path s
-        | `Dot (m,s) -> Format.fprintf ppf "%a.%s" module_path m (TypeName.to_string s)
+        | `Dot (m,s) -> Format.fprintf ppf "%a.%s" module_path m s
     
+    and resolved_class_type_path : Format.formatter -> Cpath.resolved_class_type -> unit = fun ppf p ->
+        match p with
+        | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
+        | `Identifier id -> Format.fprintf ppf "%a" model_identifier (id :> Odoc_model.Paths.Identifier.t)
+        | `Substituted s -> Format.fprintf ppf "substituted(%a)" resolved_class_type_path s
+        | `Class (p, t) -> Format.fprintf ppf "%a.%s" resolved_module_path p (Odoc_model.Names.ClassName.to_string t)
+        | `ClassType (p, t) -> Format.fprintf ppf "%a.%s" resolved_module_path p (Odoc_model.Names.ClassTypeName.to_string t)
+
+    and class_type_path : Format.formatter -> Cpath.class_type -> unit = fun ppf p ->
+        match p with
+        | `Resolved r -> Format.fprintf ppf "%a" resolved_class_type_path r
+        | `Substituted s -> Format.fprintf ppf "substituted(%a)" class_type_path s
+        | `Dot (m,s) -> Format.fprintf ppf "%a.%s" module_path m s
+
     and model_path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
         fun ppf (p : Odoc_model.Paths.Path.t) ->
         match p with
@@ -1002,7 +1011,7 @@ module Of_Lang = struct
         | Polymorphic_variant v -> Polymorphic_variant (type_expr_polyvar ident_map v)
         | Poly (s,ts) -> Poly (s, type_expression ident_map ts)
         | Alias (t, s) -> Alias (type_expression ident_map t, s) 
-        | Class _ -> failwith "Unhandled in of_type_equation: Class"
+        | Class (p, ts) -> Class (class_type_path ident_map p, List.map (type_expression ident_map) ts)
         | Object o -> Object (type_object ident_map o)
         | Package p -> Package (type_package ident_map p)
 

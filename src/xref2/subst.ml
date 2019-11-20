@@ -184,7 +184,7 @@ and type_expr s t =
     | Constr (p, ts) -> Constr (type_path s p, List.map (type_expr s) ts)
     | Polymorphic_variant v -> Polymorphic_variant (type_poly_var s v)
     | Object o -> Object (type_object s o)
-    | Class (p,ts) -> Class (p, List.map (type_expr s) ts)
+    | Class (p,ts) -> Class (class_type_path s p, List.map (type_expr s) ts)
     | Poly (strs, ts) -> Poly (strs, type_expr s ts)
     | Package p -> Package (type_package s p)
 

@@ -753,8 +753,14 @@ Odoc_model.Paths.Fragment.Resolved.Type.t ->
         match frag with
         | `Type (parent, name) ->
         let (parent,sg) = resolve_resolved_signature_fragment env id parent in
-        let t' = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
-        (`Type (parent, Odoc_model.Names.TypeName.of_string name), t')
+        let t' = Component.Find.careful_type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
+        begin
+            match t' with
+            | Component.Find.Found t' -> `Type (parent, Odoc_model.Names.TypeName.of_string name), t'
+            | Component.Find.Replaced p ->
+                let (_,t) = lookup_type_from_resolved_path env p in
+                `Type (parent, Odoc_model.Names.TypeName.of_string name), t
+        end
     | _ -> failwith ""
 
 and resolve_type_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> Odoc_model.Paths.Fragment.Type.t -> Odoc_model.Paths.Fragment.Resolved.Type.t =
@@ -765,7 +771,7 @@ and resolve_type_fragment : Env.t -> Odoc_model.Paths.Identifier.Signature.t -> 
             result
         | `Dot(parent, name) ->
             let (parent,sg) = resolve_signature_fragment env id parent in
-            let _ = Component.Find.type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
+            let _ = Component.Find.careful_type_in_sig sg (Odoc_model.Names.TypeName.to_string name) in
             `Type (parent, Odoc_model.Names.TypeName.of_string name)
 
 let rec class_signature_of_class : Env.t -> Cpath.resolved_class_type * Component.Class.t -> Cpath.resolved_class_type * Component.ClassSignature.t =

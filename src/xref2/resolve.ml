@@ -201,14 +201,14 @@ and module_ : Env.t -> Module.t -> Module.t = fun env m ->
         let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
         {m with type_ = module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_}
     with 
-      | Component.Find.Find_failure (sg,name,ty) ->
+      | Component.Find.Find_failure (sg,name,ty) as e ->
         let bt = Printexc.get_backtrace () in
         Format.fprintf Format.err_formatter "Find failure: Failed to find %s %s in %a\n" ty name Component.Fmt.signature sg;
         Printf.fprintf stderr "Backtrace: %s\n%!" bt;
-        m
+        raise e
       | e ->   
         Printf.fprintf stderr "Failed to resolve module: %s\n%s\n%!" (Printexc.to_string e) (Printexc.get_backtrace ());
-        m
+        raise e
 
 and module_decl : Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module.decl = fun env id decl ->
     let open Module in
@@ -229,8 +229,8 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t = fun env m ->
         let expr' = match m.expr with | None -> None | Some expr -> Some (module_type_expr env' (m.id :> Paths.Identifier.Signature.t) expr) in
         {m with expr = expr'}
     with e ->
-        Printf.fprintf stderr "Failed to resolve module_type: %s" (Printexc.to_string e);
-        m
+        Format.fprintf Format.err_formatter "Failed to resolve module_type (%a): %s" Component.Fmt.model_identifier (m.id :> Paths.Identifier.t) (Printexc.to_string e);
+        raise e
 
 and include_ : Env.t -> Include.t -> Include.t = fun env i ->
     let open Include in
@@ -238,8 +238,8 @@ and include_ : Env.t -> Include.t -> Include.t = fun env i ->
         { i with decl = module_decl env i.parent i.decl
         ; expansion = { resolved=true; content = signature env i.expansion.content } }
     with e ->
-        Printf.fprintf stderr "Failed to resolve include: %s\n%!" (Printexc.to_string e);
-        i
+        Format.fprintf Format.err_formatter "Failed to resolve include: %s (parent=%a)\n%!" (Printexc.to_string e) Component.Fmt.model_identifier (i.parent :> Paths.Identifier.t);
+        raise e
 
 and functor_argument : Env.t -> FunctorArgument.t -> FunctorArgument.t = fun env a ->
     { a with expr = module_type_expr env (a.id :> Paths.Identifier.Signature.t) a.expr }
@@ -267,8 +267,9 @@ and module_type_expr : Env.t -> Paths.Identifier.Signature.t -> ModuleType.expr 
                         let frag' = Tools.resolve_type_fragment env id frag in
                         TypeSubst (`Resolved frag', type_decl_equation env eqn)
                 with e ->
-                    Printf.fprintf stderr "Exception caught while resolving fragments: %s\n%!" (Printexc.to_string e);
-                    x
+                    let bt = Printexc.get_backtrace () in
+                    Printf.fprintf stderr "Exception caught while resolving fragments: %s\n%s\n%!" (Printexc.to_string e) bt;
+                    raise e
                 ) subs)
     | Functor (arg, res) ->
         let arg' = Opt.map (functor_argument env) arg in
@@ -279,8 +280,12 @@ and module_type_expr : Env.t -> Paths.Identifier.Signature.t -> ModuleType.expr 
 
 and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t = fun env t ->
     let open TypeDecl in
-    let equation = type_decl_equation env t.equation in
-    {t with equation}
+    try
+        let equation = type_decl_equation env t.equation in
+        {t with equation}
+    with e ->
+        Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t) (Printexc.to_string e);
+        raise e
 
 and type_decl_equation env t =
     let open TypeDecl.Equation in
