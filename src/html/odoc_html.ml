@@ -1,5 +1,10 @@
+(** @canonical Odoc_html.Tree *)
 module Tree = Tree
+
+(** @canonical Odoc_html.Comment *)
 module Comment = Comment
+
+(** @canonical Odoc_html.Targets *)
 module Targets = Targets
 
 module Generator =
@@ -15,4 +20,5 @@ end
 
     https://github.com/ocaml/odoc/pull/252
     https://github.com/ocaml/odoc/issues/236. *)
+(** @canonical Odoc_html.Url *)
 module Url = Url
