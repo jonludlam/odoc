@@ -195,9 +195,7 @@ module Lang_of = struct
         class_= (id, identifier) :: map.class_
       ; path_class_type=
           ((id :> Ident.path_class_type), identifier) :: map.path_class_type
-      ; path_type=
-          ((id :> Ident.path_type), identifier) :: map.path_type
-      }
+      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type }
 
     and class_type parent map (id : Ident.class_type) =
       let identifier =
@@ -207,12 +205,9 @@ module Lang_of = struct
         class_type= ((id :> Ident.class_type), identifier) :: map.class_type
       ; path_class_type=
           ((id :> Ident.path_class_type), identifier) :: map.path_class_type
-      ; path_type=
-          ((id :> Ident.path_type), identifier) :: map.path_type
-}
+      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type }
 
-    and include_ parent map i =
-        signature parent map i.Include.expansion
+    and include_ parent map i = signature parent map i.Include.expansion
 
     and signature parent map sg =
       let open Signature in
@@ -240,7 +235,7 @@ module Lang_of = struct
           | ClassType (id, _, _) ->
               class_type parent map id
           | Include i ->
-              include_ parent map i          
+              include_ parent map i
           | TypExt _ | Comment _ ->
               map)
         map sg.items
@@ -262,7 +257,7 @@ module Lang_of = struct
           with e ->
             let bt = Printexc.get_backtrace () in
             Format.fprintf Format.err_formatter
-              "Failed during type lookup: %a\nbt:\n%s\n%!" Ident.fmt id bt;
+              "Failed during type lookup: %a\nbt:\n%s\n%!" Ident.fmt id bt ;
             raise e )
         | Exception (id', e) ->
             Odoc_model.Lang.Signature.Exception
@@ -382,10 +377,11 @@ module Lang_of = struct
 
   and include_ parent map i =
     let open Component.Include in
-    { Odoc_model.Lang.Include.parent= parent
+    { Odoc_model.Lang.Include.parent
     ; doc= i.doc
     ; decl= module_decl map parent i.decl
-    ; expansion= {resolved= false; content=signature parent map i.expansion} }
+    ; expansion= {resolved= false; content= signature parent map i.expansion}
+    }
 
   and value_ map id v =
     let open Component.Value in
@@ -578,8 +574,12 @@ module Lang_of = struct
     ; res= Opt.map (type_expr map) t.res }
 
   and type_expr_package map t =
-      {Lang.TypeExpr.Package.path = Path.module_type map t.Component.TypeExpr.Package.path
-      ; substitutions = List.map (fun (frag, texpr) -> (frag, type_expr map texpr)) t.substitutions }
+    { Lang.TypeExpr.Package.path=
+        Path.module_type map t.Component.TypeExpr.Package.path
+    ; substitutions=
+        List.map
+          (fun (frag, texpr) -> (frag, type_expr map texpr))
+          t.substitutions }
 
   and type_expr map (t : Component.TypeExpr.t) : Odoc_model.Lang.TypeExpr.t =
     try
@@ -664,46 +664,48 @@ let rec unit resolver t =
   let open Compilation_unit in
   let initial_env =
     let m = Env.module_of_unit t in
-    Env.empty |>
-    Env.add_module t.id m |>
-    Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
+    Env.empty |> Env.add_module t.id m
+    |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
   let initial_env = {initial_env with Env.resolver= Some resolver} in
   let rec handle_import (imports, env) import =
-    if List.exists (fun i -> i=import) imports then (imports,env) else
-    match import with
-    | Import.Resolved root ->
-        let unit = resolver.resolve_unit root in
-        let m = Env.module_of_unit unit in
-        let env = Env.add_module unit.id m env in
-        let env =
-          Env.add_root
-            (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
-            (Env.Resolved (unit.id, m))
-            env
-        in
-        List.fold_left handle_import (import :: imports, env) unit.imports
-    | Import.Unresolved (str, _) -> (
-      match resolver.lookup_unit str with
-      | Forward_reference ->
-          let env = Env.add_root str Env.Forward env in
-          (import :: imports, env)
-      | Found f ->
-          let unit = resolver.resolve_unit f.root in
+    if List.exists (fun i -> i = import) imports then (imports, env)
+    else
+      match import with
+      | Import.Resolved root ->
+          let unit = resolver.resolve_unit root in
           let m = Env.module_of_unit unit in
           let env = Env.add_module unit.id m env in
           let env =
             Env.add_root
-              (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
+              (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
               (Env.Resolved (unit.id, m))
               env
           in
           List.fold_left handle_import (import :: imports, env) unit.imports
-      | Not_found ->
-          Format.fprintf Format.err_formatter "Can't find: %s\n%!" str;
-          (import :: imports, env) )
+      | Import.Unresolved (str, _) -> (
+        match resolver.lookup_unit str with
+        | Forward_reference ->
+            let env = Env.add_root str Env.Forward env in
+            (import :: imports, env)
+        | Found f ->
+            let unit = resolver.resolve_unit f.root in
+            let m = Env.module_of_unit unit in
+            let env = Env.add_module unit.id m env in
+            let env =
+              Env.add_root
+                (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
+                (Env.Resolved (unit.id, m))
+                env
+            in
+            List.fold_left handle_import (import :: imports, env) unit.imports
+        | Not_found ->
+            Format.fprintf Format.err_formatter "Can't find: %s\n%!" str ;
+            (import :: imports, env) )
   in
-  let imports, env = List.fold_left handle_import ([], initial_env) t.imports in
+  let imports, env =
+    List.fold_left handle_import ([], initial_env) t.imports
+  in
   {t with content= content env t.content; imports}
 
 and content env =
@@ -715,13 +717,12 @@ and content env =
       failwith "Unhandled content"
 
 and include_ : Env.t -> Include.t -> Include.t =
-  fun env i ->
-    let open Include in
-    let expansion =
-        { i.expansion with
-        content = signature env i.expansion.content }
-    in
-    { i with expansion }
+ fun env i ->
+  let open Include in
+  let expansion =
+    {i.expansion with content= signature env i.expansion.content}
+  in
+  {i with expansion}
 
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
@@ -760,9 +761,9 @@ and signature : Env.t -> Signature.t -> _ =
 
 and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
     expr =
-    let rec get_env lenv parent :
-         Component.ModuleType.expr
-      -> Lang_of.maps * FunctorArgument.t option list = function
+  let rec get_env lenv parent :
+      Component.ModuleType.expr -> Lang_of.maps * FunctorArgument.t option list
+      = function
     | Functor (Some arg, expr) ->
         let identifier =
           `Parameter
@@ -775,9 +776,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
             Lang_of.module_= (arg.id, identifier) :: lenv.Lang_of.module_ }
         in
         let lenv, args = get_env lenv' (`Result parent) expr in
-        let arg_sg =
-          Tools.signature_of_module_type_expr_nopath env arg.expr
-        in
+        let arg_sg = Tools.signature_of_module_type_expr_nopath env arg.expr in
         let arg_sg = Lang_of.signature identifier lenv arg_sg in
         let lang_arg = Lang_of.functor_argument lenv arg in
         let lang_arg' = {lang_arg with expansion= Some (Signature arg_sg)} in
@@ -795,9 +794,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
       let expansion_env, args =
         get_env Lang_of.empty (id :> Paths_types.Identifier.signature) expr
       in
-      let sg =
-        Tools.signature_of_module_type_expr_nopath env expr
-      in
+      let sg = Tools.signature_of_module_type_expr_nopath env expr in
       let sg =
         Lang_of.signature
           (id :> Paths_types.Identifier.signature)
@@ -805,10 +802,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
       in
       Odoc_model.Lang.Module.Functor (args, signature env sg)
   | _ ->
-      let sg =
-        Tools.signature_of_module_type_expr_nopath env expr
-      in
-
+      let sg = Tools.signature_of_module_type_expr_nopath env expr in
       let sg =
         Lang_of.signature
           (id :> Paths_types.Identifier.signature)
@@ -845,7 +839,9 @@ and functor_argument env id arg =
     let expansion =
       match functor_arg.type_ with
       | ModuleType expr ->
-          expansion_of_module_type_expr (id :> Paths_types.Identifier.signature) env expr
+          expansion_of_module_type_expr
+            (id :> Paths_types.Identifier.signature)
+            env expr
       | _ ->
           failwith "error"
     in
@@ -889,7 +885,11 @@ and module_ env m =
           ; expansion= Some (Odoc_model.Lang.Module.Signature sg)
           ; display_type= Some (ModuleType (ModuleType.Signature sg)) }
       | ModuleType expr ->
-          let expansion = expansion_of_module_type_expr (id :> Paths_types.Identifier.signature) env expr in
+          let expansion =
+            expansion_of_module_type_expr
+              (id :> Paths_types.Identifier.signature)
+              env expr
+          in
           {m with type_; expansion= Some expansion}
     with e ->
       let bt = Printexc.get_backtrace () in
@@ -909,15 +909,15 @@ and module_type env m =
   | _ -> (
       let m' = Env.lookup_module_type m.id env in
       try
-        let sg =
-          Tools.signature_of_module_type_nopath env m'
-        in
+        let sg = Tools.signature_of_module_type_nopath env m' in
         let sg = Lang_of.signature id Lang_of.empty sg in
         {m with expr; expansion= Some (Signature (signature env sg))}
       with e ->
-        Format.fprintf Format.err_formatter "Got exception %s expading module type %a" (Printexc.to_string e) Component.Fmt.model_identifier (id :> Paths.Identifier.t);
+        Format.fprintf Format.err_formatter
+          "Got exception %s expading module type %a" (Printexc.to_string e)
+          Component.Fmt.model_identifier
+          (id :> Paths.Identifier.t) ;
         {m with expr} )
-
 
 and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t =
  fun env c ->
