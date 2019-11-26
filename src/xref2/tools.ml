@@ -246,8 +246,8 @@ let prefix_ident_signature
 
 let flatten_module_alias : Cpath.resolved_module -> Cpath.resolved_module =
   function
-  | `Alias (x, `Alias (_, z)) ->
-      `Alias (x, z)
+  | `Alias (`Alias (z, _), x) ->
+      `Alias (z, x)
   | x ->
       x
 
@@ -489,6 +489,7 @@ and lookup_and_resolve_module_type_from_resolved_path :
   | `Local _id ->
       raise (ModuleType_lookup_failure (env, p))
   | `Identifier (#Identifier.ModuleType.t as i) ->
+      Format.(fprintf err_formatter "lookin' up %a\n%!" Component.Fmt.model_identifier i);
       let m = Env.lookup_module_type i env in
       (`Identifier i, m)
   | `Substituted s ->
@@ -742,7 +743,7 @@ and signature_of_module_alias_path :
         else
           let p'', m' = signature_of_module env (p', m) in
           let m'' = Strengthen.signature p'' m' in
-          let p''' = flatten_module_alias (`Alias (incoming_path, p'')) in
+          let p''' = flatten_module_alias (`Alias (p'', incoming_path)) in
           (p''', m'')
       in
       (p'', m')
@@ -979,7 +980,12 @@ and fragmap_module :
             return x)
       sg.items
   in
-  {items; removed= handle_removed removed sg.removed}
+  let res = {Component.Signature.items; removed= handle_removed removed sg.removed} in
+  Format.(
+    fprintf err_formatter "after sig=%a\n%!" 
+      Component.Fmt.(signature)
+        res);
+  res
 
 and fragmap_type :
        Fragment.Type.t
@@ -1221,13 +1227,15 @@ let rec resolve_mt_resolved_signature_fragment :
       let parent, id, sg =
         resolve_mt_resolved_signature_fragment env (p, sg) parent
       in
+      let env = Env.open_component_signature id sg env in
       let m' = find_module_with_replacement env sg name in
+      let new_id = `Module (p, Odoc_model.Names.ModuleName.of_string name) in
       let _cp, sg =
         signature_of_module_nopath env m'
-        |> fun m -> prefix_ident_signature (id, m)
+        |> fun m -> prefix_ident_signature (new_id, m)
       in
       ( `Module (parent, Odoc_model.Names.ModuleName.of_string name)
-      , `Module (p, Odoc_model.Names.ModuleName.of_string name)
+      , new_id
       , sg )
   | _ ->
       failwith "foo"
@@ -1246,12 +1254,14 @@ and resolve_mt_signature_fragment :
   | `Dot (parent, name) ->
       let parent, id, sg = resolve_mt_signature_fragment env (p, sg) parent in
       let m' = find_module_with_replacement env sg name in
+      let env = Env.open_component_signature id sg env in
+      let new_id = `Module (p, Odoc_model.Names.ModuleName.of_string name)in
       let _cp, sg =
         signature_of_module_nopath env m'
-        |> fun m -> prefix_ident_signature (id, m)
+        |> fun m -> prefix_ident_signature (new_id, m)
       in
       ( `Module (parent, Odoc_model.Names.ModuleName.of_string name)
-      , `Module (id, Odoc_model.Names.ModuleName.of_string name)
+      , new_id
       , sg )
 
 and resolve_mt_resolved_module_fragment :

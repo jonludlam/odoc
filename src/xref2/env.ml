@@ -313,6 +313,28 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
     | `Root _ ->
         env
 
+let rec open_component_signature : Odoc_model.Paths.Identifier.Signature.t -> Component.Signature.t -> t -> t =
+    let open Component in
+    fun id s env ->
+        List.fold_left
+          (fun env orig ->
+            match orig with
+            | Signature.Type (tid, _, t) ->
+                let new_id = `Type (id, Ident.Name.type_ tid) in
+                Format.(fprintf err_formatter "adding type id: %a\n%!" Component.Fmt.model_identifier new_id);
+                add_type new_id t env
+            | Signature.Module (mid, _, m) ->
+                let new_id = `Module (id, Ident.Name.module_ mid) in
+                Format.(fprintf err_formatter "adding module id: %a\n%!" Component.Fmt.model_identifier new_id);
+                add_module new_id (Delayed.get m) env
+            | Signature.ModuleType (mid, m) ->
+                let new_id = `ModuleType (id, Ident.Name.module_type mid) in
+                Format.(fprintf err_formatter "adding module_type id: %a\n%!" Component.Fmt.model_identifier new_id);
+                add_module_type new_id m env
+            | Signature.Include i ->
+                open_component_signature id i.expansion env
+            | _ -> env) env s.items
+
 let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
   let open Component in
   fun s env ->

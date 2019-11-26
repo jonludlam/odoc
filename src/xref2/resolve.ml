@@ -343,8 +343,9 @@ and include_ : Env.t -> Include.t -> Include.t =
     ; expansion= {resolved= true; content= signature env i.expansion.content}
     }
   with e ->
+    let i' = Component.Of_Lang.(module_decl empty i.decl) in
     Format.fprintf Format.err_formatter
-      "Failed to resolve include: %s (parent=%a)\n%!" (Printexc.to_string e)
+      "Failed to resolve include: %a\nGot exception %s (parent=%a)\n%!" (Component.Fmt.module_decl) i' (Printexc.to_string e)
       Component.Fmt.model_identifier
       (i.parent :> Paths.Identifier.t) ;
     raise e
@@ -368,10 +369,12 @@ and module_type_expr :
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
       let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
       Format.fprintf Format.err_formatter
-        "Handling `With` expression for %a (expr=%a)\n%!"
+        "Handling `With` expression for %a (expr=%a) [%a]\n%!"
         Component.Fmt.model_identifier
         (id :> Paths.Identifier.t)
-        Component.Fmt.module_type_expr cexpr ;
+        Component.Fmt.module_type_expr cexpr
+        Component.Fmt.substitution_list
+        (List.map (Component.Of_Lang.(module_type_substitution empty)) subs);
       With
         ( module_type_expr env id expr
         , List.fold_left
@@ -438,7 +441,7 @@ and module_type_expr :
                   (Printexc.to_string e) bt ;
                 raise e)
             (sg, []) subs
-          |> snd )
+          |> snd |> List.rev )
   | Functor (arg, res) ->
       let arg' = Opt.map (functor_argument env) arg in
       let res' = module_type_expr env id res in

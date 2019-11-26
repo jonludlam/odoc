@@ -1609,6 +1609,12 @@ module Find = struct
     let rec inner = function
       | Signature.Module (id, _, m) :: _ when Ident.Name.module_ id = name ->
           Found (Delayed.get m)
+      | Signature.Include i :: rest -> begin
+          try
+            inner i.Include.expansion.items
+          with _ ->
+            inner rest
+        end
       | _ :: rest ->
           inner rest
       | [] ->
@@ -1633,6 +1639,12 @@ module Find = struct
       | Signature.ClassType (id, _, c) :: _
         when Ident.Name.class_type id = name ->
           Found (`CT c)
+      | Signature.Include i :: rest -> begin
+            try
+              inner i.Include.expansion.items
+            with _ ->
+              inner rest
+            end
       | _ :: rest ->
           inner rest
       | [] ->
@@ -1652,6 +1664,12 @@ module Find = struct
       | Signature.ModuleType (id, m) :: _ when Ident.Name.module_type id = name
         ->
           m
+      | Signature.Include i :: rest -> begin
+            try
+              inner i.Include.expansion.items
+            with _ ->
+              inner rest
+          end
       | _ :: rest ->
           inner rest
       | [] ->
@@ -1673,6 +1691,12 @@ module Find = struct
       | Signature.ClassType (id, _, c) :: _
         when Ident.Name.class_type id = name ->
           `CT c
+          | Signature.Include i :: rest -> begin
+            try
+              inner i.Include.expansion.items
+            with _ ->
+              inner rest
+          end
       | _ :: rest ->
           inner rest
       | [] ->

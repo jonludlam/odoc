@@ -412,7 +412,15 @@ val m : Component.ModuleType.t =
                  removed = []})});
           Odoc_xref2.Component.Signature.Module (`LModule ("B", 2),
            Odoc_model.Lang.Signature.Ordinary,
-           {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+           {Odoc_xref2.Component.Delayed.v =
+             Some
+              {Odoc_xref2.Component.Module.doc = [];
+               type_ =
+                Odoc_xref2.Component.Module.ModuleType
+                 (Odoc_xref2.Component.ModuleType.Path
+                   (`Resolved (`Local (`LModuleType ("N", 1)))));
+               canonical = None; hidden = false; display_type = None};
+            get = <fun>})];
         removed = []})}
 ```
 
@@ -447,6 +455,7 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env (`Identifier (`Module (`Root (Common.root, "Root"), "A"))) in
   Tools.signature_of_module env (p, m) |> Tools.prefix_signature;;
+lookin' up M
 - : Cpath.resolved_module * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  {Odoc_xref2.Component.Signature.items =
@@ -466,7 +475,18 @@ we look up `A` from the environment:
            removed = []})});
     Odoc_xref2.Component.Signature.Module (`LModule ("B", 9),
      Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+     {Odoc_xref2.Component.Delayed.v =
+       Some
+        {Odoc_xref2.Component.Module.doc = [];
+         type_ =
+          Odoc_xref2.Component.Module.ModuleType
+           (Odoc_xref2.Component.ModuleType.Path
+             (`Resolved
+                (`ModuleType
+                   (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
+                    "N"))));
+         canonical = None; hidden = false; display_type = None};
+      get = <fun>})];
   removed = []})
 ```
 
@@ -508,6 +528,8 @@ we then return along with the fully resolved identifier.
             (`Identifier (`Module (`Root (Common.root, "Root"), "A"))),
           "B"),
        "t"));;
+lookin' up M
+lookin' up M
 - : (Tools.type_lookup_result, Cpath.type_) Tools.ResultMonad.t =
 Odoc_xref2.Tools.ResultMonad.Resolved
  (`Type
@@ -609,15 +631,36 @@ now we can ask for the signature of this module:
 
 ```ocaml env=e1
 # let sg = Tools.signature_of_module env (p, m);;
+lookin' up A
+split: name=M frag=
+after sig=module M/1 = global(B)
+          module N/2 : M/1.S
+          
 val sg : Cpath.resolved_module * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    {Odoc_xref2.Component.Signature.items =
      [Odoc_xref2.Component.Signature.Module (`LModule ("M", 1),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
+       {Odoc_xref2.Component.Delayed.v =
+         Some
+          {Odoc_xref2.Component.Module.doc = [];
+           type_ =
+            Odoc_xref2.Component.Module.Alias
+             (`Resolved
+                (`Identifier (`Module (`Root (Common.root, "Root"), "B"))));
+           canonical = None; hidden = false; display_type = None};
+        get = <fun>});
       Odoc_xref2.Component.Signature.Module (`LModule ("N", 2),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+       {Odoc_xref2.Component.Delayed.v =
+         Some
+          {Odoc_xref2.Component.Module.doc = [];
+           type_ =
+            Odoc_xref2.Component.Module.ModuleType
+             (Odoc_xref2.Component.ModuleType.Path
+               (`Dot (`Resolved (`Local (`LModule ("M", 1))), "S")));
+           canonical = None; hidden = false; display_type = None};
+        get = <fun>})];
     removed = []})
 ```
 
@@ -626,6 +669,11 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env
       (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"));;
+lookin' up A
+split: name=M frag=
+after sig=module M/1 = global(B)
+          module N/2 : M/1.S
+          
 val p : Cpath.resolved_module =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
@@ -641,10 +689,15 @@ val m : Component.Module.t =
            "S")));
    canonical = None; hidden = false; display_type = None}
 # Tools.signature_of_module env (p, m);;
+lookin' up A
+split: name=M frag=
+after sig=module M/1 = global(B)
+          module N/2 : M/1.S
+          
 - : Cpath.resolved_module * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (`LType ("t", 44),
+   [Odoc_xref2.Component.Signature.Type (`LType ("t", 47),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
@@ -965,9 +1018,22 @@ val p : Cpath.resolved_module =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (`LModule ("Foo", 20),
+    [Odoc_xref2.Component.Signature.Module (`LModule ("Foo", 21),
       Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+      {Odoc_xref2.Component.Delayed.v =
+        Some
+         {Odoc_xref2.Component.Module.doc = [];
+          type_ =
+           Odoc_xref2.Component.Module.ModuleType
+            (Odoc_xref2.Component.ModuleType.Path
+              (`Dot
+                 (`Resolved
+                    (`Substituted
+                       (`Identifier
+                          (`Module (`Root (Common.root, "Root"), "Bar")))),
+                  "T")));
+          canonical = None; hidden = false; display_type = None};
+       get = <fun>})];
    removed = []}
 ```
 
@@ -1101,15 +1167,7 @@ Some
    (`Resolved
       (`Type
          (`Alias
-            (`Module
-               (`Apply
-                  (`Identifier
-                     (`Module (`Root (Common.root, "Root"), "Dep2")),
-                   `Resolved
-                     (`Identifier
-                        (`Module (`Root (Common.root, "Root"), "Dep1")))),
-                "B"),
-             `Subst
+            (`Subst
                (`ModuleType
                   (`Identifier
                      (`Module (`Root (Common.root, "Root"), "Dep1")),
@@ -1123,7 +1181,15 @@ Some
                            (`Identifier
                               (`Module (`Root (Common.root, "Root"), "Dep1")))),
                       "A"),
-                   "Y"))),
+                   "Y")),
+             `Module
+               (`Apply
+                  (`Identifier
+                     (`Module (`Root (Common.root, "Root"), "Dep2")),
+                   `Resolved
+                     (`Identifier
+                        (`Module (`Root (Common.root, "Root"), "Dep1")))),
+                "B")),
           "c")),
    []))
 ```
@@ -1193,7 +1259,8 @@ Some
    (`Resolved
       (`Type
          (`Alias
-            (`Module
+            (`Identifier (`Module (`Root (Common.root, "Root"), "Dep3")),
+             `Module
                (`Subst
                   (`ModuleType
                      (`Identifier
@@ -1207,8 +1274,7 @@ Some
                            (`Identifier
                               (`Module (`Root (Common.root, "Root"), "Dep4")))),
                       "Z")),
-                "Y"),
-             `Identifier (`Module (`Root (Common.root, "Root"), "Dep3"))),
+                "Y")),
           "a")),
    []))
 ```
@@ -1472,6 +1538,7 @@ let sg = Common.signature_of_mli_string test_data;;
 
 ```ocaml env=e1
 # Expand.signature Env.empty sg
+lookin' up M
 - : Odoc_model.Lang.Signature.t =
 [Odoc_model.Lang.Signature.ModuleType
   {Odoc_model.Lang.ModuleType.id =
@@ -1700,7 +1767,17 @@ val expanded : Odoc_model.Lang.Signature.t =
               private_ = false; manifest = None; constraints = []};
             representation = None})]);
      canonical = None; hidden = true; display_type = None;
-     expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+     expansion =
+      Some
+       (Odoc_model.Lang.Module.Signature
+         [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+           {Odoc_model.Lang.TypeDecl.id =
+             `Type (`Module (`Root (Common.root, "Root"), "M__Hidden"), "x");
+            doc = [];
+            equation =
+             {Odoc_model.Lang.TypeDecl.Equation.params = [];
+              private_ = false; manifest = None; constraints = []};
+            representation = None})])});
    Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
     {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "b");
      doc = [];
@@ -1752,7 +1829,22 @@ val expanded : Odoc_model.Lang.Signature.t =
               doc = [];
               equation =
                {Odoc_model.Lang.TypeDecl.Equation.params = [];
-                private_ = false; manifest = None; constraints = []};
+                private_ = false;
+                manifest =
+                 Some
+                  (Odoc_model.Lang.TypeExpr.Constr
+                    (`Resolved
+                       (`Type
+                          (`Hidden
+                             (`Hidden
+                                (`Hidden
+                                   (`Identifier
+                                      (`Module
+                                         (`Root (Common.root, "Root"),
+                                          "M__Hidden"))))),
+                           "x")),
+                    []));
+                constraints = []};
               representation = None})]));
      expansion =
       Some
@@ -1763,7 +1855,22 @@ val expanded : Odoc_model.Lang.Signature.t =
             doc = [];
             equation =
              {Odoc_model.Lang.TypeDecl.Equation.params = [];
-              private_ = false; manifest = None; constraints = []};
+              private_ = false;
+              manifest =
+               Some
+                (Odoc_model.Lang.TypeExpr.Constr
+                  (`Resolved
+                     (`Type
+                        (`Hidden
+                           (`Hidden
+                              (`Hidden
+                                 (`Identifier
+                                    (`Module
+                                       (`Root (Common.root, "Root"),
+                                        "M__Hidden"))))),
+                         "x")),
+                  []));
+              constraints = []};
             representation = None})])});
    Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
     {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
@@ -1972,7 +2079,7 @@ val m : Component.Module.t =
 Exception:
 Odoc_xref2.Component.Find.Find_failure
  ({Odoc_xref2__Component.Signature.items =
-    [Odoc_xref2__Component.Signature.Type (`LType ("x", 28),
+    [Odoc_xref2__Component.Signature.Type (`LType ("x", 30),
       Odoc_model.Lang.Signature.Ordinary,
       {Odoc_xref2__Component.TypeDecl.doc = [];
        equation =

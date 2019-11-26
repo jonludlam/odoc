@@ -778,6 +778,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
         let lenv, args = get_env lenv' (`Result parent) expr in
         let arg_sg = Tools.signature_of_module_type_expr_nopath env arg.expr in
         let arg_sg = Lang_of.signature identifier lenv arg_sg in
+        let arg_sg = signature env arg_sg in
         let lang_arg = Lang_of.functor_argument lenv arg in
         let lang_arg' = {lang_arg with expansion= Some (Signature arg_sg)} in
         (lenv, Some lang_arg' :: args)
@@ -789,7 +790,10 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
   in
   match expr with
   | Component.ModuleType.Signature _ ->
-      Odoc_model.Lang.Module.AlreadyASig
+      let sg = Tools.signature_of_module_type_expr_nopath env expr in
+      let sg = Lang_of.signature (id :> Paths_types.Identifier.signature)
+          Lang_of.empty sg in
+      Odoc_model.Lang.Module.Signature (signature env sg)
   | Component.ModuleType.Functor _ ->
       let expansion_env, args =
         get_env Lang_of.empty (id :> Paths_types.Identifier.signature) expr
@@ -846,7 +850,9 @@ and functor_argument env id arg =
           failwith "error"
     in
     {arg with expansion= Some expansion; expr= module_type_expr env id arg.expr}
-  with _ -> arg
+  with e ->
+    Format.fprintf Format.err_formatter "Error expanding functor argument: %s\n%!" (Printexc.to_string e);
+    raise e
 
 and module_ env m =
   let open Module in

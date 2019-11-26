@@ -272,7 +272,7 @@ module B : sig
     end
   end
 module C : resolved[global(A)] with [.M := resolved[global(B)]]
-type t = resolved[(global(B).S subst-> global(C).N).t]
+type t = resolved[global(C)].N.t
 
 Module alias
 Resolve a module alias
@@ -299,7 +299,7 @@ module A : sig
   type A.t
   end
 module B = resolved[global(A)]
-type t = resolved[(global(B) -> global(A)).t]
+type t = resolved[(global(A) -> global(B)).t]
 
 Module alias
 Resolve a module alias
@@ -329,7 +329,7 @@ module A : sig
   end
 module B = resolved[global(A)]
 module C = resolved[global(B)]
-type t = resolved[(global(C) -> global(A)).t]
+type t = resolved[(global(A) -> global(C)).t]
 
 Functor
 Resolve a functor
