@@ -1750,6 +1750,7 @@ struct
   and include_ ?theme_uri (t : Odoc_model.Lang.Include.t) =
     let docs = Comment.to_html t.doc in
     let docs = (docs :> (Html_types.div_content Html.elt) list) in
+    Format.fprintf Format.err_formatter "Ouptputting include: %d items\n%!" (List.length t.expansion.content);
     let included_html, _, tree = signature ?theme_uri t.expansion.content in
     let should_be_inlined =
       let is_inline_tag element =

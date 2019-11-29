@@ -284,9 +284,10 @@ and external_ s e =
 
 and include_ s i =
     let open Component.Include in
+    Format.fprintf Format.err_formatter "Subst.include_: items=%d\n%!" (List.length i.expansion_.items);
     { i with
     decl = module_decl s i.decl;
-    expansion = apply_sig_map s i.expansion.items i.expansion }
+    expansion_ = apply_sig_map s i.expansion_.items i.expansion_ }
 
 and value s v =
     let open Component.Value in
@@ -393,8 +394,9 @@ and rename_bound_idents s sg =
             (ClassType (id', r, c) :: sg)
             rest
     | Include i :: rest ->
-        let (s,items) = rename_bound_idents s sg i.Component.Include.expansion.items in
-        rename_bound_idents s (Include {i with Component.Include.expansion={items; removed=[]}} :: sg) rest
+        Format.fprintf Format.err_formatter "rename_bound_idents: %d items\n%!" (List.length i.Component.Include.expansion_.items);
+        let (s,items) = rename_bound_idents s [] i.Component.Include.expansion_.items in
+        rename_bound_idents s (Include {i with Component.Include.expansion_={items; removed=[]}} :: sg) rest
     | Comment _ as item :: rest ->
         rename_bound_idents s (item :: sg) rest
 
@@ -402,9 +404,7 @@ and removed_items s items =
     let open Component.Signature in
     List.map (function
         | RModule (id, _) when List.mem_assoc id s.module_ ->
-            RModule (id, Some (List.assoc id s.module_))
-        | RType (id, _) when List.mem_assoc (id :> Ident.path_type) s.type_ ->
-            RType (id, Some (List.assoc (id :> Ident.path_type) s.type_))
+            RModule (id, List.assoc id s.module_)
         | x -> x) items
 
 and signature s sg =

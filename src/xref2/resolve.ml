@@ -114,17 +114,28 @@ and comment_inline_element :
   | `Styled (s, ls) ->
       `Styled (s, List.map (with_location comment_inline_element env) ls)
   | `Reference (r, []) -> (
+    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n" (Component.Fmt.model_reference) r;
     match Ref_tools.resolve_reference env r with
-    | `Resolved (`Identifier (#Odoc_model.Paths.Identifier.Label.t as i)) as r
+    | Some (`Identifier (#Odoc_model.Paths.Identifier.Label.t as i) as r)
       ->
-        let content =
+      Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n" (Component.Fmt.model_resolved_reference) r;
+      let content =
           match Env.lookup_section_title i env with Some x -> x | None -> []
         in
-        `Reference (r, content)
-    | x ->
-        `Reference (x, []) )
-  | `Reference (r, content) ->
-      `Reference (Ref_tools.resolve_reference env r, content)
+        `Reference (`Resolved r, content)
+    | Some x ->
+    Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n" (Component.Fmt.model_resolved_reference) x;
+    `Reference (`Resolved x, []) 
+    | None ->
+        `Reference (r, []))
+  | `Reference (r, content) as orig -> begin
+    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve contentful reference: %a\n" (Component.Fmt.model_reference) r;
+      match Ref_tools.resolve_reference env r with
+      | Some x ->
+      `Reference (`Resolved x, content)
+      | None ->
+        orig
+  end
   | y ->
       y
 
@@ -391,7 +402,7 @@ and module_type_expr :
                       Tools.resolve_mt_module_fragment env (id, sg) frag
                     in
                     let sg' =
-                      Tools.fragmap_module frag
+                      Tools.fragmap_module env frag
                         Component.Of_Lang.(module_type_substitution empty sub)
                         sg
                     in
@@ -403,7 +414,7 @@ and module_type_expr :
                       Tools.resolve_mt_type_fragment env (id, sg) frag
                     in
                     let sg' =
-                      Tools.fragmap_type frag
+                      Tools.fragmap_type env frag
                         Component.Of_Lang.(module_type_substitution empty sub)
                         sg
                     in
@@ -415,7 +426,7 @@ and module_type_expr :
                       Tools.resolve_mt_module_fragment env (id, sg) frag
                     in
                     let sg' =
-                      Tools.fragmap_module frag
+                      Tools.fragmap_module env frag
                         Component.Of_Lang.(module_type_substitution empty sub)
                         sg
                     in
@@ -427,7 +438,7 @@ and module_type_expr :
                       Tools.resolve_mt_type_fragment env (id, sg) frag
                     in
                     let sg' =
-                      Tools.fragmap_type frag
+                      Tools.fragmap_type env frag
                         Component.Of_Lang.(module_type_substitution empty sub)
                         sg
                     in
@@ -546,9 +557,11 @@ and type_expression : Env.t -> _ -> _ =
     | Constr (path, ts) -> (
         let cp = Component.Of_Lang.(type_path empty path) in
         match Tools.lookup_type_from_path env cp with
-        | Resolved (cp, _) ->
+        | Resolved (cp, Found _t) ->
             let p = Cpath.resolved_type_path_of_cpath cp in
             Constr (`Resolved p, ts)
+        | Resolved (_cp, Replaced x) ->
+            Lang_of.(type_expr empty x)
         | Unresolved p ->
             Constr (Cpath.type_path_of_cpath p, ts) )
     | Polymorphic_variant v ->

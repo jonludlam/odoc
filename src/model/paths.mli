@@ -962,8 +962,6 @@ module rec Reference : sig
 
     type t = Paths_types.Reference.any
 
-    val module_of_t : t -> Module.t
-
     val module_type_of_t : t -> ModuleType.t
 
     val signature_of_t : t -> Signature.t

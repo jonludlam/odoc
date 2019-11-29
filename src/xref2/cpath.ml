@@ -250,3 +250,29 @@ and is_class_type_hidden : class_type -> bool =
     | `Resolved r -> is_resolved_class_type_hidden r
     | `Substituted p -> is_class_type_hidden p
     | `Dot(p,_) -> is_module_hidden p
+
+
+let rec resolved_module_of_resolved_module_reference : Reference.Resolved.Module.t -> resolved_module =
+    function
+        | `Module (parent, name) -> `Module (resolved_module_of_resolved_signature_reference parent, name)
+        | `Identifier i -> `Identifier i
+        | `SubstAlias (_m1, _m2) -> failwith "gah"
+        | `Canonical (m1, m2) -> `Canonical (resolved_module_of_resolved_module_reference m1, module_of_module_reference m2)
+
+and resolved_module_of_resolved_signature_reference : Reference.Resolved.Signature.t -> resolved_module =
+    function
+        | `Identifier (#Identifier.Module.t as i) -> `Identifier i
+        | `SubstAlias _
+        | `Canonical _
+        | `Module _  as r' -> resolved_module_of_resolved_module_reference r'
+        | `ModuleType _
+        | `Identifier _ -> failwith "Not a module reference"
+
+and module_of_module_reference : Reference.Module.t -> module_ =
+    function
+        | `Resolved r -> `Resolved (resolved_module_of_resolved_module_reference r)
+        | `Root (_, _) -> failwith "unhandled"
+        | `Dot (`Resolved (`Identifier #Identifier.Module.t) | `Dot (_,_) | `Module(_,_) as parent, name) -> `Dot (module_of_module_reference parent, name)
+        | `Module (`Resolved (`Identifier #Identifier.Module.t) | `Dot (_,_) | `Module(_,_) as parent, name) -> `Dot (module_of_module_reference parent, name)
+        | _ -> failwith "Not a module reference"
+    

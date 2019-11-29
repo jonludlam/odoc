@@ -2696,14 +2696,6 @@ module Reference = struct
     let hash : t -> int = fun t -> hash (t :> Paths_types.Reference.any)
   end
 
-  let module_of_t : t -> Module.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.module_))
-  | `Resolved (#Paths_types.Resolved_reference.module_no_id)
-  | `Root (_,#Paths_types.Reference.tag_module)
-  | `Dot (_,_)
-  | `Module (_, _) as x -> x
-  | _ -> assert false
-
 let module_type_of_t : t -> ModuleType.t = function
   | `Resolved (`Identifier (#Paths_types.Identifier.module_type))
   | `Resolved (#Paths_types.Resolved_reference.s_module_type)

@@ -201,8 +201,8 @@ and Signature : sig
   (* When doing destructive substitution we keep track of the items that have been removed,
        and the path they've been substituted with *)
   type removed_item =
-    | RModule of Ident.module_ * Cpath.resolved_module option
-    | RType of Ident.type_ * Cpath.resolved_type option
+    | RModule of Ident.module_ * Cpath.resolved_module
+    | RType of Ident.type_ * TypeExpr.t
 
   type t = {items: item list; removed: removed_item list}
 end =
@@ -212,7 +212,7 @@ and Include : sig
   type t =
     { parent: Odoc_model.Paths.Identifier.Signature.t
     ; doc: Comment.docs
-    ; expansion: Signature.t
+    ; expansion_: Signature.t
     ; decl: Module.decl }
 end =
   Include
@@ -293,6 +293,8 @@ module Element = struct
   type class_ = [`Class of Identifier.Class.t * Class.t]
 
   type class_type = [`ClassType of Identifier.ClassType.t * ClassType.t]
+
+  type datatype = [ type_ | class_ | class_type ]
 
   type signature = [module_ | module_type]
 
@@ -817,6 +819,79 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" model_resolved_fragment
           (sg :> t)
           (Odoc_model.Names.ClassTypeName.to_string c)
+    
+    and model_resolved_reference ppf (r : Odoc_model.Paths.Reference.Resolved.t) =
+        let open Odoc_model.Paths.Reference.Resolved in
+        match r with
+        | `Identifier id ->
+            Format.fprintf ppf "identifier(%a)" model_identifier id
+        | `Module (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+        | `ModuleType (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+        | `Type (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+        | `Constructor (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+        | `Field (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `Extension (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `Exception (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `Value (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `Class (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `ClassType (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `Method (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `InstanceVariable (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+            | `SubstAlias (_,_) ->
+            Format.fprintf ppf "substalias"
+            | `Canonical (_,_) ->
+            Format.fprintf ppf "canonical"
+            | `Label (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
+
+    and model_reference ppf (r : Odoc_model.Paths.Reference.t) =
+        let open Odoc_model.Paths.Reference in
+        match r with
+        | `Resolved r' ->
+            Format.fprintf ppf "resolved(%a)" model_resolved_reference r'
+        | `Root (name, _) ->
+            Format.fprintf ppf "root(%s)" name
+        | `Dot (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+        | `Module (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+        | `ModuleType (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+        | `Type (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+        | `Constructor (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+        | `Field (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `Extension (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `Exception (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `Value (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `Class (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `ClassType (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `Method (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `InstanceVariable (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+            | `Label (parent, str) ->
+            Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
+
 end
 
 module LocalIdents = struct
@@ -1431,10 +1506,11 @@ module Of_Lang = struct
 
   and include_ ident_map i =
     let open Odoc_model.Lang.Include in
+    Format.fprintf Format.err_formatter "Of_Lang.include_: %d items\n%!" (List.length i.expansion.content);
     let decl = module_decl ident_map i.decl in
     { Include.parent= i.parent
     ; doc= i.doc
-    ; expansion= apply_sig_map ident_map i.expansion.content
+    ; expansion_ = apply_sig_map ident_map i.expansion.content
     ; decl }
 
   and class_ ident_map c =
@@ -1598,7 +1674,7 @@ module Find = struct
 
   let careful_module_in_sig s name =
     let rec inner_removed = function
-      | Signature.RModule (id, Some p) :: _ when Ident.Name.module_ id = name
+      | Signature.RModule (id, p) :: _ when Ident.Name.module_ id = name
         ->
           Replaced p
       | _ :: rest ->
@@ -1611,7 +1687,7 @@ module Find = struct
           Found (Delayed.get m)
       | Signature.Include i :: rest -> begin
           try
-            inner i.Include.expansion.items
+            inner i.Include.expansion_.items
           with _ ->
             inner rest
         end
@@ -1624,7 +1700,8 @@ module Find = struct
 
   let careful_type_in_sig s name =
     let rec inner_removed = function
-      | Signature.RType (id, Some p) :: _ when Ident.Name.type_ id = name ->
+      | Signature.RType (id, p) :: _ when Ident.Name.type_ id = name ->
+          Format.fprintf Format.err_formatter "Found replaced type %a\n%!" Ident.fmt id;
           Replaced p
       | _ :: rest ->
           inner_removed rest
@@ -1641,7 +1718,7 @@ module Find = struct
           Found (`CT c)
       | Signature.Include i :: rest -> begin
             try
-              inner i.Include.expansion.items
+              inner i.Include.expansion_.items
             with _ ->
               inner rest
             end
@@ -1659,6 +1736,15 @@ module Find = struct
     | Replaced _ ->
         fail s name "module"
 
+  let opt_module_in_sig s name =
+    match careful_module_in_sig s name with
+    | Found m ->
+        Some m
+    | Replaced _ ->
+        None
+    | exception _ ->
+        None
+
   let module_type_in_sig s name =
     let rec inner = function
       | Signature.ModuleType (id, m) :: _ when Ident.Name.module_type id = name
@@ -1666,7 +1752,7 @@ module Find = struct
           m
       | Signature.Include i :: rest -> begin
             try
-              inner i.Include.expansion.items
+              inner i.Include.expansion_.items
             with _ ->
               inner rest
           end
@@ -1677,12 +1763,39 @@ module Find = struct
     in
     inner s.items
 
+  let opt_module_type_in_sig s name =
+    try Some (module_type_in_sig s name) with _ -> None
+
+    let opt_value_in_sig s name =
+        let rec inner = function
+          | Signature.Value (id, m) :: _ when Ident.Name.value id = name
+            ->
+              Some m
+          | Signature.Include i :: rest -> begin
+             match inner i.Include.expansion_.items with
+             | Some m -> Some m
+             | None -> 
+                  inner rest
+              end
+          | _ :: rest ->
+              inner rest
+          | [] -> None
+
+          in
+        inner s.Signature.items
+    
   let type_in_sig s name =
     match careful_type_in_sig s name with
     | Found t ->
         t
     | Replaced _ ->
         fail s name "type"
+
+  let opt_type_in_sig s name =
+    match careful_type_in_sig s name with
+    | Found t -> Some t
+    | Replaced _ -> None
+    | exception _ -> None
 
   let class_type_in_sig s name =
     let rec inner = function
@@ -1693,7 +1806,7 @@ module Find = struct
           `CT c
           | Signature.Include i :: rest -> begin
             try
-              inner i.Include.expansion.items
+              inner i.Include.expansion_.items
             with _ ->
               inner rest
           end

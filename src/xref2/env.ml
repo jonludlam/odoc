@@ -259,6 +259,28 @@ let lookup_module_by_name name env =
   in
   find_map filter_fn env.elts
 
+  let lookup_module_type_by_name name env =
+    let filter_fn :
+        string * Component.Element.any -> Component.Element.module_type option =
+      function
+      | n, (#Component.Element.module_type as item) when n = name ->
+          Some item
+      | _ ->
+          None
+    in
+    find_map filter_fn env.elts
+  
+let lookup_datatype_by_name name env =
+  let filter_fn :
+    string * Component.Element.any -> Component.Element.datatype option =
+  function
+  | n, (#Component.Element.datatype as item) when n = name ->
+      Some item
+  | _ ->
+      None
+in
+find_map filter_fn env.elts
+
 let lookup_value_by_name name env =
   let filter_fn :
       string * Component.Element.any -> Component.Element.value option =
@@ -332,7 +354,8 @@ let rec open_component_signature : Odoc_model.Paths.Identifier.Signature.t -> Co
                 Format.(fprintf err_formatter "adding module_type id: %a\n%!" Component.Fmt.model_identifier new_id);
                 add_module_type new_id m env
             | Signature.Include i ->
-                open_component_signature id i.expansion env
+                Format.fprintf Format.err_formatter "Env.open_component_signature: %d items\n%!" (List.length i.expansion_.items);
+                open_component_signature id i.expansion_ env
             | _ -> env) env s.items
 
 let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =

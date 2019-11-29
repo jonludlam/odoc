@@ -640,6 +640,7 @@ and read_include env parent incl =
   let expr = read_module_type env parent container incl.incl_mod in
   let decl = Module.ModuleType expr in
   let content = Cmi.read_signature env parent (Odoc_model.Compat.signature incl.incl_type) in
+  Format.fprintf Format.err_formatter "Read include: %d items\n%!" (List.length content);
   let expansion = { content; resolved = false} in
     {parent; doc; decl; expansion}
 
