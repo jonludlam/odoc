@@ -268,6 +268,64 @@ let flatten_module_alias : Cpath.resolved_module -> Cpath.resolved_module =
   | x ->
       x
 
+let rec simplify_resolved_module_path : Env.t -> Cpath.resolved_module -> Cpath.resolved_module = fun env cpath -> 
+    match cpath with
+    | `Module (parent, name) -> begin
+        match simplify_resolved_module_path env parent with
+        | `Identifier (#Identifier.Module.t as id) as parent' ->
+            (* Let's see if we can be an identifier too *)
+            let id' = `Module (id, name) in
+            (try ignore(Env.lookup_module id' env); `Identifier id' with _ -> `Module (parent', name))
+        | parent' ->
+             `Module (parent', name)
+        end
+    | `Local _
+    | `Identifier _
+    | `Substituted _
+    | `SubstAlias _
+    | `Canonical _
+    | `Apply _
+    | `Subst _
+    | `Hidden _
+    | `Alias _ -> cpath
+
+let unsimplify_resolved_module_path : Env.t -> Cpath.resolved_module -> Cpath.resolved_module = fun env cpath ->
+    let rec fix_module_ident id =
+        try ignore(Env.lookup_module id env); `Identifier id with _ ->
+        match id with
+        | `Module (#Identifier.Module.t as parent, id) -> `Module (fix_module_ident parent, id)
+        | `Root _ -> failwith "Hit root during unsimplify"
+        | `Parameter _ -> failwith "Hit paremeter during unsimplify"
+        | `Result _ -> failwith "Hit result during unsimplify"
+        | `Module _ -> failwith "Hit unusual module parent during unsimplify"
+    in
+    let rec inner = function
+      | `Identifier id -> fix_module_ident id
+      | `Module (parent, name) -> `Module (inner parent, name)
+      | `Hidden parent -> `Hidden (inner parent)
+      | `Local _ as x -> x (* This is an error though *)
+      | `Substituted x -> `Substituted (inner x)
+      | `SubstAlias _ as x -> x
+      | `Canonical _ as x -> x
+      | `Apply _ as x -> x
+      | `Subst _ as x -> x
+      | `Alias _ as x -> x
+    in inner cpath
+
+    let rec get_canonical_path : Cpath.resolved_module -> Cpath.resolved_module option = fun cp ->
+    match cp with
+    | `Canonical (_, `Resolved r) -> Some r
+    | `Module (parent, _ ) -> get_canonical_path parent
+    | `Local _ -> None
+    | `Identifier _ -> None
+    | `Substituted _ -> None
+    | `Subst _ -> None
+    | `SubstAlias _ -> None
+    | `Hidden p -> get_canonical_path p
+    | `Apply _ -> None
+    | `Alias _ -> None
+    | `Canonical _ -> None
+
 type module_lookup_result = Cpath.resolved_module * Component.Module.t
 
 type module_type_lookup_result =
@@ -312,22 +370,24 @@ and add_canonical_path env m p : Cpath.resolved_module =
   | `Canonical _ -> p
   | _ ->
     match m.Component.Module.canonical with
-    | Some (_cp, cr) -> (
+    | Some (cp, cr) -> (
         Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);
         match !resolve_module_ref env cr with
         | Some (cp', _) ->
             Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);
-            `Canonical (p, `Resolved (Cpath.resolved_module_of_resolved_module_reference cp'))
+            `Canonical (p, `Resolved (Cpath.resolved_module_of_resolved_module_reference cp' |> simplify_resolved_module_path env))
         | _ ->
             Format.fprintf Format.err_formatter "No idea :/\n%!";
-            p
+            `Canonical (p, cp)
         | exception _e ->
             Format.fprintf Format.err_formatter
-            "Warning: Failed to look up canonical path for module %a\n%!"
-            Component.Fmt.resolved_module_path p ;
+            "Warning: Failed to look up canonical path for module %a\n%s\n%!"
+            Component.Fmt.resolved_module_path p (Printexc.get_backtrace ());
             p )
     | None ->
         p
+
+
 
 and add_hidden m p = if m.Component.Module.hidden then `Hidden p else p
 
@@ -425,7 +485,14 @@ and lookup_and_resolve_module_from_resolved_path :
           env p
       in
       (`Hidden p', m)
-  | `Canonical (p1, p2) ->
+  | `Canonical (p1, `Resolved p2) ->
+      let p1', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+          env p1
+      in
+      let p, _ = lookup_and_resolve_module_from_resolved_path is_resolve add_canonical env (unsimplify_resolved_module_path env p2) in
+      `Canonical (p1', `Resolved p), m
+      | `Canonical (p1, p2) ->
         let p1', m =
             lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
             env p1
@@ -758,6 +825,15 @@ and signature_of_module_alias_path :
  fun env ~is_canonical incoming_path path ->
   match lookup_and_resolve_module_from_path false true env path with
   | Resolved (p', m) ->
+      let is_canonical =
+        match get_canonical_path p' with
+        | Some p2 ->
+            let incoming_path_id = Cpath.resolved_module_path_of_cpath incoming_path |> Path.Resolved.Module.identifier in
+            let p2_path_id = Cpath.resolved_module_path_of_cpath p2 |> Path.Resolved.Module.identifier in
+            incoming_path_id = p2_path_id || is_canonical
+        | None ->
+           is_canonical
+      in
       (* p' is the path to the aliased module *)
       let p'', m' =
         if is_canonical then signature_of_module env (incoming_path, m)

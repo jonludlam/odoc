@@ -188,9 +188,14 @@ and resolve_label_parent_reference : Env.t -> LabelParent.t -> label_parent_look
         | `Dot (parent, name) ->
           resolve_label_parent_reference env parent
           >>= signature_lookup_result_of_label_parent
-          >>= fun (parent', sg) -> Component.Find.opt_module_in_sig sg name >>= fun m ->
-             let sg = Tools.signature_of_module_nopath env m in
-             return (`Module (parent', name), `S sg)
+          >>= fun (parent', sg) ->
+          choose [
+            (fun () -> Component.Find.opt_module_in_sig sg name >>= fun m ->
+              let sg = Tools.signature_of_module_nopath env m in
+              return (`Module (parent', name), `S sg));
+            (fun () -> Component.Find.opt_module_type_in_sig sg name >>= fun m ->
+              let sg = Tools.signature_of_module_type_nopath env m in
+              return (`ModuleType (parent', name), `S sg));]
         | _ -> None
       
            
@@ -253,7 +258,32 @@ and resolve_value_reference : Env.t -> Value.t -> value_lookup_result option =
           >>= fun v -> return (`Value (parent', name), v)
     end
     | _ -> failwith "erk"
-  
+
+and resolve_label_reference : Env.t -> Label.t -> Resolved.Label.t option =
+    let open Tools.OptionMonad in
+    fun env r ->
+      match r with
+      | `Resolved r -> Some r
+      | `Root (name, _) -> begin
+        Env.lookup_any_by_name name env >>= function
+        | `Label id -> return (`Identifier id)
+        | _ -> None
+        end
+      | `Dot (parent, name) -> begin
+        resolve_label_parent_reference env parent >>= fun (p,sg) ->
+        match sg with
+        | `S sg -> Component.Find.opt_label_in_sig sg name >>= fun _ -> Some (`Label (p, name))
+        | `CS _sg -> None
+        end
+      | `Label (parent, name) -> begin
+        resolve_label_parent_reference env parent >>= fun (p,sg) ->
+        match sg with
+        | `S sg -> Component.Find.opt_label_in_sig sg name >>= fun _ -> Some (`Label (p, name))
+        | `CS _sg -> None
+        end
+        
+
+
 and resolve_reference : Env.t -> t -> Resolved.t option =
     let open Tools.OptionMonad in
     fun env r ->
@@ -268,23 +298,29 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
         | `Class (id,_) -> return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | `ClassType (id,_) -> return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         end
-    | `Root (_, `TModule) as r ->
-        resolve_module_reference env r >>= fun (x,_) -> return (x :> Resolved.t) 
-    | `Root (_, `TType) as r ->
-        resolve_type_reference env r >>= fun (x,_) -> return (x :> Resolved.t)
     | `Resolved r -> Some r
+    | `Root (_, `TModule)
     | `Module (_,_) as r ->
         resolve_module_reference env r >>= fun (x,_) -> return (x :> Resolved.t)
+    | `Root (_,`TModuleType)
     | `ModuleType (_,_) as r ->
         resolve_module_type_reference env r >>= fun (x, _) -> return (x :> Resolved.t)
+    | `Root (_, `TType) 
     | `Type (_,_) as r ->
         resolve_type_reference env r >>= fun (x,_) -> return (x :> Resolved.t)
+    | `Root (_, `TValue)
+    | `Value (_,_) as r ->
+        resolve_value_reference env r >>= fun (x,_) -> return (x :> Resolved.t)
+    | `Root (_, `TLabel)
+    | `Label (_, _) as r ->
+        resolve_label_reference env r >>= fun x -> return (x :> Resolved.t)
     | `Dot (_,_) as r ->
         choose 
           [ (fun () -> resolve_type_reference env r >>= fun (x,_) -> return (x :> Resolved.t))
           ; (fun () -> resolve_module_reference env r >>= fun (x,_) -> return (x :> Resolved.t))
           ; (fun () -> resolve_module_type_reference env r >>= fun (x,_) -> return (x :> Resolved.t))
           ; (fun () -> resolve_value_reference env r >>= fun (x,_) -> return (x :> Resolved.t))
+          ; (fun () -> resolve_label_reference env r >>= fun x -> return (x :> Resolved.t))
           ]
     | _ -> None
 

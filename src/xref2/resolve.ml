@@ -105,7 +105,7 @@ and content env =
 
 and value_ env t =
   let open Value in
-  {t with type_= type_expression env t.type_}
+  {t with doc = comment_docs env t.doc; type_= type_expression env t.type_}
 
 and comment_inline_element :
     Env.t -> Comment.inline_element -> Comment.inline_element =
@@ -171,11 +171,14 @@ and with_location :
     -> a Location_.with_location =
  fun fn env x -> {x with Location_.value= fn env x.Location_.value}
 
+and comment_docs env d =
+  List.map (with_location comment_block_element env) d
+
 and comment env = function
   | `Stop ->
       `Stop
   | `Docs d ->
-      `Docs (List.map (with_location comment_block_element env) d)
+      `Docs (comment_docs env d)
 
 and exception_ env e =
   let open Exception in
@@ -292,6 +295,7 @@ and module_ : Env.t -> Module.t -> Module.t =
       Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env
     in
     { m with
+      doc = comment_docs env m.doc;
       type_= module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_ }
   with
   | Component.Find.Find_failure (sg, name, ty) as e ->

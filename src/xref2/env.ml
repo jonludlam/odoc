@@ -153,6 +153,8 @@ let lookup_module identifier env =
       "Failed to find module:\nIdentifier: %a\n\n"
       Component.Fmt.model_identifier
       (identifier :> Odoc_model.Paths.Identifier.t) ;
+    Format.fprintf Format.err_formatter
+      "Modules in scope: [%s]\n%!" (String.concat ";" (List.map Odoc_model.Paths.Identifier.name (List.map fst env.modules)));
     raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =

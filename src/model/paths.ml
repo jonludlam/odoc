@@ -764,7 +764,9 @@ module Path = struct
         | `Subst(_,_) -> None
         | `SubstAlias(_,_) -> None
         | `Hidden p -> canonical_ident p
-        | `Module(_, _) -> None
+        | `Module(p, n) -> begin
+            match canonical_ident p with | Some x -> Some (`Module((x :>Identifier.Signature.t), n)) | None -> None
+        end 
         | `Canonical(_, `Resolved p) -> Some (identifier p)
         | `Canonical(_, _) -> None
         | `Apply(_,_) -> None

@@ -1192,8 +1192,8 @@ module Of_Lang = struct
         `Subst (resolved_module_type_path ident_map p1, recurse p2)
     | `SubstAlias (p1, p2) ->
         `SubstAlias (recurse p1, recurse p2)
-    | `Canonical (p1, p2) ->
-        `Canonical (recurse p1, module_path ident_map p2)
+    | `Canonical (p1, _p2) -> recurse p1
+(*        `Canonical (recurse p1, module_path ident_map p2) *)
     | `Hidden p1 ->
         `Hidden (recurse p1)
 
@@ -1816,4 +1816,33 @@ module Find = struct
           fail s name "class type"
     in
     inner s.items
+
+    let opt_label_in_sig s name =
+        let rec inner = function
+        | Signature.Comment (`Docs d) :: rest -> begin
+            let rec inner' xs = 
+                match xs with
+                | elt :: rest -> begin
+                    match elt.Odoc_model.Location_.value with
+                    | `Heading (_, label, _) when Odoc_model.Paths.Identifier.name label = name ->
+                        Some (label)
+                    | _ -> inner' rest
+                    end
+                | _ -> None
+                in
+            match inner' d with
+            | None -> inner rest
+            | x -> x
+            end
+        | Signature.Include i :: rest -> begin
+            match inner i.Include.expansion_.items with 
+            | Some _ as x -> x
+            | None -> inner rest
+            end
+        | _ :: rest ->
+            inner rest
+        | [] ->
+            fail s name "class type"
+      in
+      inner s.items
 end

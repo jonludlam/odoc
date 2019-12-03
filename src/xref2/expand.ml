@@ -237,6 +237,8 @@ and module_ env m =
               (id :> Odoc_model.Paths.Identifier.Signature.t)
               Lang_of.empty sg
           in
+          Format.fprintf Format.err_formatter "About to resolve expanded signature\n%!";
+          let sg = Resolve.signature env sg in
           let sg = signature env sg in
           { m with
             type_
