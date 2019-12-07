@@ -657,3 +657,17 @@ open Odoc_model.Paths
     ; doc= e.doc
     ; args= type_decl_constructor_argument map parent e.args
     ; res= Opt.map (type_expr map) e.res }
+
+  and location value =
+      { Location_.value; location={file=""; start={line=0; column=0}; end_={line=0; column=0}} }
+  
+  and block_element map d =
+      match d with
+      | `Heading (l, id, content) -> `Heading (l, List.assoc id map.)
+  and docs map ds =
+      List.map (fun d -> location (block_element map d))
+      
+  and docs_or_stop map (d : Component.CComment.docs_or_stop) =
+      match d with
+      | `Docs d -> `Docs (docs map d)
+      | `Stop -> ``Stop

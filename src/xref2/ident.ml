@@ -269,6 +269,9 @@ module Name = struct
 
     let value : value -> string = function
         | `LValue (n,_) -> ValueName.to_string n
+    
+    let label : label -> string = function
+        | `LLabel (n,_) -> LabelName.to_string n
 end
 
 module Rename = struct

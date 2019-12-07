@@ -45,7 +45,7 @@ module rec Module : sig
 
   end
 
-end = Module
+end = Module 
 
 and FunctorArgument : sig
   type t = {

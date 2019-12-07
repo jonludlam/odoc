@@ -129,7 +129,7 @@ let add_class_type identifier t env =
       (Odoc_model.Paths.Identifier.name identifier, `ClassType (identifier, t))
       :: env.elts }
 
-let add_docs (docs : Component.Comment.docs) env =
+let add_docs (docs : Odoc_model.Comment.docs) env =
   List.fold_right
     (fun element env ->
       match element.Odoc_model.Location_.value with
