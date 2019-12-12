@@ -43,7 +43,7 @@ let rec unit resolver t =
             in
             List.fold_left handle_import (import :: imports, env) unit.imports
         | Not_found ->
-            Format.fprintf Format.err_formatter "Can't find: %s\n%!" str ;
+            (* Format.fprintf Format.err_formatter "Can't find: %s\n%!" str ;*)
             (import :: imports, env) )
   in
   let imports, env =
@@ -76,14 +76,14 @@ and signature : Env.t -> Signature.t -> _ =
       (fun item (env, items) ->
         match item with
         | Module (r, m) ->
-            Format.fprintf Format.err_formatter "Expanding module %a\n%!" (Component.Fmt.model_identifier) (m.id :> Paths.Identifier.t);
+            (*Format.fprintf Format.err_formatter "Expanding module %a\n%!" (Component.Fmt.model_identifier) (m.id :> Paths.Identifier.t);*)
             let env' =
               Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env
             in
             let m' = module_ env' m in
             (env, Module (r, m') :: items)
         | ModuleType mt ->
-        Format.fprintf Format.err_formatter "Expanding module_type %a\n%!" (Component.Fmt.model_identifier) (mt.id :> Paths.Identifier.t);
+        (*Format.fprintf Format.err_formatter "Expanding module_type %a\n%!" (Component.Fmt.model_identifier) (mt.id :> Paths.Identifier.t);*)
         let env' =
               Env.add_functor_args (mt.id :> Paths.Identifier.Signature.t) env
             in
@@ -294,7 +294,10 @@ and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t =
         sg
     in
     {c with expansion= Some expansion}
-  with _ -> c
+  with e ->
+      let bt = Printexc.get_backtrace () in
+    Format.fprintf Format.err_formatter "Failed to expand class: %s\n%s\n%!" (Printexc.to_string e) bt;
+    c
 
 and class_type :
     Env.t -> Odoc_model.Lang.ClassType.t -> Odoc_model.Lang.ClassType.t =

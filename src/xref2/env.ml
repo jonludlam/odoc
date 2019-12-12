@@ -30,6 +30,10 @@ type t =
   ; classes: (Odoc_model.Paths.Identifier.Class.t * Component.Class.t) list
   ; class_types:
       (Odoc_model.Paths.Identifier.ClassType.t * Component.ClassType.t) list
+  ; methods:
+      (Odoc_model.Paths.Identifier.Method.t * Component.Method.t) list
+  ; instance_variables:
+      (Odoc_model.Paths.Identifier.InstanceVariable.t * Component.InstanceVariable.t) list
   ; elts: (string * Component.Element.any) list
   ; roots: (string * root) list
   ; resolver: resolver option }
@@ -76,6 +80,8 @@ let empty =
   ; roots= []
   ; classes= []
   ; class_types= []
+  ; methods= []
+  ; instance_variables= []
   ; resolver= None }
 
 let add_module identifier m env =
@@ -144,6 +150,10 @@ let add_docs (docs : Odoc_model.Comment.docs) env =
 let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
   match com with `Docs doc -> add_docs doc env | `Stop -> env
 
+let add_method identifier m env =
+  { env with
+    methods= (identifier, m) :: env.methods }
+
 let add_root name ty env = {env with roots= (name, ty) :: env.roots}
 
 let lookup_module identifier env =
@@ -192,10 +202,10 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
           ; display_type= None
           ; expansion= Some AlreadyASig }
       in
-      let identifier = m.id in
-      let id = Ident.Of_Identifier.module_ identifier in
+      let idents = Component.LocalIdents.(module_ m empty) in
+      let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
       let ty =
-        Component.Of_Lang.(module_ {empty with modules= [(m.id, id)]} m)
+        Component.Of_Lang.(module_ ident_map m)
       in
       ty
   | Pack _ ->
@@ -360,28 +370,43 @@ let rec open_component_signature : Odoc_model.Paths.Identifier.Signature.t -> Co
                 open_component_signature id i.expansion_ env
             | _ -> env) env s.items
 
+let open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t =
+  let open Component in
+  let open Of_Lang in
+  fun s env ->
+    List.fold_left
+      (fun env orig ->
+        match orig with
+        | Odoc_model.Lang.ClassSignature.Method m ->
+            let idents = LocalIdents.(method_ m empty) in
+            let map = map_of_idents idents empty in
+            let ty = method_ map m in
+            add_method m.Odoc_model.Lang.Method.id ty env
+        | _ ->
+            env)
+      env s.items
+
 let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
   let open Component in
+  let open Of_Lang in
   fun s env ->
     List.fold_left
       (fun env orig ->
         match orig with
         | Odoc_model.Lang.Signature.Type (_, t) ->
-            let idents =
-              Component.LocalIdents.(type_decl t {empty with types= [t.id]})
-            in
-            let map = Of_Lang.(map_of_idents idents empty) in
-            let ty = Of_Lang.(type_decl map t) in
+            let idents = LocalIdents.(type_decl t empty) in
+            let map = map_of_idents idents empty in
+            let ty = type_decl map t in
             add_type t.Odoc_model.Lang.TypeDecl.id ty env
         | Odoc_model.Lang.Signature.Module (_, t) ->
-            let id = Ident.Of_Identifier.module_ t.id in
-            let ty = Of_Lang.(module_ {empty with modules= [(t.id, id)]} t) in
+            let idents = LocalIdents.(module_ t empty) in
+            let map = map_of_idents idents empty in
+            let ty = module_ map t in
             add_module t.Odoc_model.Lang.Module.id ty env
         | Odoc_model.Lang.Signature.ModuleType t ->
-            let id = Ident.Of_Identifier.module_type t.id in
-            let ty =
-              Of_Lang.(module_type {empty with module_types= [(t.id, id)]} t)
-            in
+            let idents = LocalIdents.(module_type t empty) in
+            let map = map_of_idents idents empty in
+            let ty = module_type map t in
             add_module_type t.Odoc_model.Lang.ModuleType.id ty env
         | Odoc_model.Lang.Signature.Comment c ->
             add_comment c env
@@ -401,20 +426,21 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
         | Odoc_model.Lang.Signature.TypeSubstitution _ ->
             env
         | Odoc_model.Lang.Signature.Value v ->
-            let id = Ident.Of_Identifier.value v.id in
-            let ty = Of_Lang.(value {empty with values= [(v.id, id)]} v) in
+            let idents = Component.LocalIdents.(value_ v empty) in
+            let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
+            let ty = Of_Lang.(value ident_map v) in
             add_value v.Odoc_model.Lang.Value.id ty env
         | Odoc_model.Lang.Signature.External _ ->
             env
         | Odoc_model.Lang.Signature.Class (_, c) ->
-            let id = Ident.Of_Identifier.class_ c.id in
-            let ty = Of_Lang.(class_ {empty with classes= [(c.id, id)]} c) in
+            let idents = Component.LocalIdents.(class_ c empty) in
+            let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
+            let ty = class_ ident_map c in
             add_class c.id ty env
         | Odoc_model.Lang.Signature.ClassType (_, c) ->
-            let id = Ident.Of_Identifier.class_type c.id in
-            let ty =
-              Of_Lang.(class_type {empty with class_types= [(c.id, id)]} c)
-            in
+            let idents = Component.LocalIdents.(class_type c empty) in
+            let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
+            let ty = class_type ident_map c in
             add_class_type c.id ty env
         | Odoc_model.Lang.Signature.Include i ->
             open_signature i.expansion.content env)

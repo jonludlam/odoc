@@ -32,6 +32,8 @@ let resolve_and_substitute ~env ~output input_file read_file =
     );
     let resolve_env = Env.build env (`Unit unit) in
     let resolved = Odoc_xref2.Resolve.resolve resolve_env unit in
+    let expanded = Odoc_xref2.Expand.expand resolve_env resolved in
+
     (* [expand unit] fetches [unit] from [env] to get the expansion of local, previously
        defined, elements. We'd rather it got back the resolved bit so we rebuild an
        environment with the resolved unit.
@@ -39,7 +41,7 @@ let resolve_and_substitute ~env ~output input_file read_file =
        working on. *)
 (*    let expand_env = Env.build env (`Unit resolved) in*)
 (*    let expanded = Odoc_xref2.Expand.expand (Env.expander expand_env) resolved in *)
-    Compilation_unit.save output resolved
+    Compilation_unit.save output expanded
 
 let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   let file_representation : Odoc_model.Root.Odoc_file.t =

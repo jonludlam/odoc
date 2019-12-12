@@ -307,8 +307,8 @@ end =
 
 and ClassSignature : sig
   type item =
-    | Method of Method.t
-    | InstanceVariable of InstanceVariable.t
+    | Method of Ident.method_ * Method.t
+    | InstanceVariable of Ident.instance_variable * InstanceVariable.t
     | Constraint of TypeExpr.t * TypeExpr.t
     | Inherit of ClassType.expr
     | Comment of CComment.docs_or_stop
@@ -319,8 +319,7 @@ end =
 
 and Method : sig
   type t =
-    { name: string
-    ; doc: CComment.docs
+    { doc: CComment.docs
     ; private_: bool
     ; virtual_: bool
     ; type_: TypeExpr.t }
@@ -329,8 +328,7 @@ end =
 
 and InstanceVariable : sig
   type t =
-    { name: string
-    ; doc: CComment.docs
+    { doc: CComment.docs
     ; mutable_: bool
     ; virtual_: bool
     ; type_: TypeExpr.t }
@@ -1027,7 +1025,7 @@ module LocalIdents = struct
 
   and exception_ e ids = {ids with exceptions= e.Exception.id :: ids.exceptions}
 
-  and value_ v ids = {ids with values= v.Value.id :: ids.values}
+  and value_ v ids = docs v.Value.doc {ids with values= v.Value.id :: ids.values}
 
   and external_ e ids = {ids with values= e.External.id :: ids.values}
 
@@ -1036,17 +1034,39 @@ module LocalIdents = struct
   and class_type c ids =
     {ids with class_types= c.ClassType.id :: ids.class_types}
 
+  and method_ m ids =
+    {ids with methods= m.Method.id :: ids.methods}
+
+  and instance_variable i ids =
+    {ids with instance_variables = i.InstanceVariable.id :: ids.instance_variables}
+
   and block_element d ids =
     match d with
-    | `Heading (_,id,_) -> {ids with labels= id :: ids.labels}
+    | `Heading (_,id,_) ->
+      {ids with labels= id :: ids.labels}
+    | _ -> ids
 
   and docs d ids =
     List.fold_right (fun bel_loc -> block_element bel_loc.Location_.value) d ids
 
-  and docs_or_stop d ids =
+  and docs_or_stop (d : Comment.docs_or_stop) ids =
     match d with
     | `Docs d' -> docs d' ids
     | `Stop -> ids
+
+  and class_signature s ids =
+    List.fold_right
+      (fun c ids ->
+        match c with
+        | ClassSignature.Method m ->
+          method_ m ids
+        | InstanceVariable i ->
+          instance_variable i ids
+        | Constraint _ -> ids
+        | Inherit _ -> ids
+        | Comment d ->
+          docs_or_stop d ids)
+        s ids
 
   and signature s ids =
     List.fold_right
@@ -1076,8 +1096,8 @@ module LocalIdents = struct
             class_type c ids
         | Include i ->
             signature i.Include.expansion.content ids
-        | Comment _ ->
-            ids)
+        | Comment c ->
+            docs_or_stop c ids)
       s ids
 end
 
@@ -1264,7 +1284,8 @@ module Of_Lang = struct
     let label_parents_new = ( parents_new :> (label_parent * Ident.label_parent) list) in
     let labels_new =
       List.fold_left
-        (fun acc i -> (i, Ident.Of_Identifier.label i) :: acc)
+        (fun acc i ->
+          (i, Ident.Of_Identifier.label i) :: acc)
         [] ids.LocalIdents.labels
     in
     let any_new =
@@ -1823,7 +1844,6 @@ let rec type_decl ident_map ty =
 
   and include_ ident_map i =
     let open Odoc_model.Lang.Include in
-    Format.fprintf Format.err_formatter "Of_Lang.include_: %d items\n%!" (List.length i.expansion.content);
     let decl = module_decl ident_map i.decl in
     { Include.parent= i.parent
     ; doc= docs ident_map i.doc
@@ -1863,13 +1883,30 @@ let rec type_decl ident_map ty =
 
   and class_signature ident_map sg =
     let open Odoc_model.Lang.ClassSignature in
+   (* First we construct a list of brand new [Ident.t]s
+                for each item in the signature *)
+                let ident_map =
+                  map_of_idents (LocalIdents.class_signature sg.items LocalIdents.empty) ident_map
+                in
+                (* Now we construct the Components for each item,
+                            converting all paths containing Identifiers pointing at
+                            our elements to local paths *)
+                apply_class_sig_map ident_map sg
+
+
+  and apply_class_sig_map ident_map sg =                
+    let open Odoc_model.Lang.ClassSignature in
     let items =
       List.map
         (function
           | Method m ->
-              ClassSignature.Method (method_ ident_map m)
+              let id = List.assoc m.id ident_map.methods in
+              let m' = method_ ident_map m in
+              ClassSignature.Method (id, m')
           | InstanceVariable i ->
-              ClassSignature.InstanceVariable (instance_variable ident_map i)
+              let id = List.assoc i.id ident_map.instance_variables in
+              let i' = instance_variable ident_map i in
+              ClassSignature.InstanceVariable (id, i')
           | Constraint (t1, t2) ->
               Constraint
                 (type_expression ident_map t1, type_expression ident_map t2)
@@ -1883,15 +1920,13 @@ let rec type_decl ident_map ty =
 
   and method_ ident_map m =
     let open Odoc_model.Lang.Method in
-    { name= Odoc_model.Paths.Identifier.name m.id
-    ; Method.doc= docs ident_map m.doc
+    { Method.doc= docs ident_map m.doc
     ; private_= m.private_
     ; virtual_= m.virtual_
     ; type_= type_expression ident_map m.type_ }
 
   and instance_variable ident_map i =
-    { InstanceVariable.name= Odoc_model.Paths.Identifier.name i.id
-    ; doc= docs ident_map i.doc
+    { InstanceVariable.doc= docs ident_map i.doc
     ; mutable_= i.mutable_
     ; virtual_= i.virtual_
     ; type_= type_expression ident_map i.type_ }
@@ -1951,7 +1986,15 @@ let rec type_decl ident_map ty =
   
   and block_element : _ -> Odoc_model.Comment.block_element -> CComment.block_element = fun ident_map b ->
       match b  with
-      | `Heading (l,id,content) -> `Heading (l, List.assoc id ident_map.labels, content)
+      | `Heading (l,id,content) -> begin
+        try 
+          `Heading (l, List.assoc id ident_map.labels, content)
+        with Not_found ->
+          Format.fprintf Format.err_formatter "XX Couldn't find: %a\n" Fmt.model_identifier (id :> Paths.Identifier.t);
+          List.iter (fun (id,_) ->
+            Format.fprintf Format.err_formatter "  %a\n%!" Fmt.model_identifier (id :> Paths.Identifier.t)) ident_map.labels;
+          raise Not_found
+      end
       | `Tag t -> `Tag (tag ident_map t)
       | #Odoc_model.Comment.nestable_block_element as n -> (nestable_block_element ident_map n :> CComment.block_element)
 
@@ -2207,7 +2250,7 @@ module Find = struct
         | _ :: rest ->
             inner rest
         | [] ->
-            fail s name "class type"
+            fail s name "label"
       in
       inner s.items
 end

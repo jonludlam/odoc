@@ -33,7 +33,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     let page = Page.load input in
     let odoctree =
       let resolve_env = Env.build env (`Page page) in
-      Odoc_xref2.Resolve.resolve_page resolve_env page
+      Odoc_xref2.Resolve2.resolve_page resolve_env page
     in
     let pkg_name = root.package in
     let pages = to_html_tree_page ?theme_uri ~syntax odoctree in
@@ -57,7 +57,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     let odoctree =
       (* See comment in compile for explanation regarding the env duplication. *)
       let env = Env.build env (`Unit unit) in
-      let resolved = Odoc_xref2.Resolve.resolve env unit in
+      let resolved = Odoc_xref2.Resolve2.resolve env unit in
       let expanded = Odoc_xref2.Expand.expand env resolved in
 
 (*      |> Odoc_xref.Lookup.lookup *)

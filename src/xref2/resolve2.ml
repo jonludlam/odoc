@@ -1,6 +1,4 @@
-(* First round of resolving only attempts to resolve paths and fragments, and then only those
-   that don't contain forward paths *)
-
+(* Second round of resolution tackles references and forward paths *)
 open Odoc_model
 open Lang
 
@@ -8,15 +6,37 @@ module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
 
+let rec should_reresolve : Paths.Path.Resolved.t -> bool = fun p ->
+  let open Paths.Path.Resolved in
+  match p with
+  | `Identifier _ -> false
+  | `Subst (x,y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
+  | `SubstAlias (x,y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
+  | `Hidden p -> should_reresolve (p :> t)
+  | `Canonical (x,y) -> should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
+  | `Apply (x,y) -> should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
+  | `Alias (x,y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
+  | `Type (p,_)
+  | `Class (p,_)
+  | `ClassType (p,_)
+  | `ModuleType (p, _)
+  | `Module (p,_) -> should_reresolve (p :> t)
+
+and should_resolve : Paths.Path.t -> bool = fun p ->
+  match p with
+  | `Resolved p -> should_reresolve p
+  | _ -> true
+
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
-  let cp = Component.Of_Lang.(type_path empty p) in
-  match Tools.lookup_type_from_path env cp with
-  | Resolved (p', _) ->
+    if not (should_resolve (p :> Paths.Path.t)) then p else
+    let cp = Component.Of_Lang.(type_path empty p) in
+    match Tools.lookup_type_from_path env cp with
+    | Resolved (p', _) ->
       `Resolved (Cpath.resolved_type_path_of_cpath p')
-  | Unresolved p ->
+    | Unresolved p ->
       Cpath.type_path_of_cpath p
-  | exception e ->
+    | exception e ->
       Format.fprintf Format.err_formatter
         "Failed to lookup type path (%s): %a\n%!" (Printexc.to_string e)
         Component.Fmt.model_path
@@ -26,7 +46,9 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
  fun env p ->
-  let cp = Component.Of_Lang.(module_type_path empty p) in
+ if not (should_resolve (p :> Paths.Path.t)) then p else
+
+ let cp = Component.Of_Lang.(module_type_path empty p) in
   match Tools.lookup_and_resolve_module_type_from_path true env cp with
   | Resolved (p', _) ->
       `Resolved (Cpath.resolved_module_type_path_of_cpath p')
@@ -41,7 +63,9 @@ and module_type_path :
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
  fun env p ->
-  let cp = Component.Of_Lang.(module_path empty p) in
+ if not (should_resolve (p :> Paths.Path.t)) then p else
+
+ let cp = Component.Of_Lang.(module_path empty p) in
   match Tools.lookup_and_resolve_module_from_path true true env cp with
   | Resolved (p', _) ->
       `Resolved (Cpath.resolved_module_path_of_cpath p')
@@ -58,8 +82,7 @@ let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
   let initial_env =
     let m = Env.module_of_unit t in
-    Env.empty
-    |> Env.add_module t.id m
+    Env.empty |> Env.add_module t.id m
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
   let imports, env =
@@ -109,7 +132,84 @@ and content env =
 
 and value_ env t =
   let open Value in
-  {t with type_= type_expression env t.type_}
+  {t with doc = comment_docs env t.doc; type_= type_expression env t.type_}
+
+and comment_inline_element :
+    Env.t -> Comment.inline_element -> Comment.inline_element =
+ fun env x ->
+  match x with
+  | `Styled (s, ls) ->
+      `Styled (s, List.map (with_location comment_inline_element env) ls)
+  | `Reference (r, []) -> (
+    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n" (Component.Fmt.model_reference) r;
+    match Ref_tools.resolve_reference env r with
+    | Some (`Identifier (#Odoc_model.Paths.Identifier.Label.t as i) as r)
+      ->
+      Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n" (Component.Fmt.model_resolved_reference) r;
+      let content =
+          match Env.lookup_section_title i env with Some x -> x | None -> []
+        in
+        `Reference (`Resolved r, content)
+    | Some x ->
+    Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n" (Component.Fmt.model_resolved_reference) x;
+    `Reference (`Resolved x, []) 
+    | None ->
+        `Reference (r, [])
+    | exception e ->
+        Format.fprintf Format.err_formatter "Caught exception while resolving reference: %s\n%!" (Printexc.to_string e);
+        `Reference (r, []))
+
+  | `Reference (r, content) as orig -> begin
+    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve contentful reference: %a\n" (Component.Fmt.model_reference) r;
+      match Ref_tools.resolve_reference env r with
+      | Some x ->
+      `Reference (`Resolved x, content)
+      | None ->
+        orig
+  end
+  | y ->
+      y
+
+and comment_nestable_block_element env (x : Comment.nestable_block_element) =
+  match x with
+  | `Paragraph elts ->
+      `Paragraph (List.map (with_location comment_inline_element env) elts)
+  | (`Code_block _ | `Verbatim _) as x ->
+      x
+  | `List (x, ys) ->
+      `List
+        ( x
+        , List.map
+            (List.map (with_location comment_nestable_block_element env))
+            ys )
+  | x ->
+      x
+
+and comment_block_element env (x : Comment.block_element) =
+  match x with
+  | #Comment.nestable_block_element as x ->
+      (comment_nestable_block_element env x :> Comment.block_element)
+  | `Heading _ as x ->
+      x
+  | `Tag _ as x ->
+      x
+
+and with_location :
+    type a.
+       (Env.t -> a -> a)
+    -> Env.t
+    -> a Location_.with_location
+    -> a Location_.with_location =
+ fun fn env x -> {x with Location_.value= fn env x.Location_.value}
+
+and comment_docs env d =
+  List.map (with_location comment_block_element env) d
+
+and comment env = function
+  | `Stop ->
+      `Stop
+  | `Docs d ->
+      `Docs (comment_docs env d)
 
 and exception_ env e =
   let open Exception in
@@ -204,7 +304,7 @@ and signature : Env.t -> Signature.t -> _ =
       | Value v ->
           Value (value_ env v)
       | Comment c ->
-          Comment c
+          Comment (comment env c)
       | TypExt t ->
           TypExt (extension env t)
       | Exception e ->
@@ -227,6 +327,7 @@ and module_ : Env.t -> Module.t -> Module.t =
       Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env
     in
     { m with
+      doc = comment_docs env m.doc;
       type_= module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_ }
   with
   | Component.Find.Find_failure (sg, name, ty) as e ->
@@ -527,4 +628,8 @@ let resolve x y =
   let after = unit x before in
   after
 
-let resolve_page _resolver y = y
+let resolve_page resolver y =
+  let env = Env.{empty with resolver= Some resolver} in
+  { y with
+    Page.content=
+      List.map (with_location comment_block_element env) y.Page.content }

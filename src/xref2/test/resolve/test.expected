@@ -272,7 +272,7 @@ module B : sig
     end
   end
 module C : resolved[global(A)] with [.M := resolved[global(B)]]
-type t = resolved[global(C)].N.t
+type t = resolved[global(C).N.t]
 
 Module alias
 Resolve a module alias

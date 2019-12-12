@@ -371,13 +371,13 @@ and add_canonical_path env m p : Cpath.resolved_module =
   | _ ->
     match m.Component.Module.canonical with
     | Some (cp, cr) -> (
-        Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);
+        (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
         match !resolve_module_ref env cr with
         | Some (cp', _) ->
-            Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);
+            (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
             `Canonical (p, `Resolved (Cpath.resolved_module_of_resolved_module_reference cp' |> simplify_resolved_module_path env))
         | _ ->
-            Format.fprintf Format.err_formatter "No idea :/\n%!";
+            (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
             `Canonical (p, cp)
         | exception _e ->
             Format.fprintf Format.err_formatter

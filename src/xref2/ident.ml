@@ -272,6 +272,12 @@ module Name = struct
     
     let label : label -> string = function
         | `LLabel (n,_) -> LabelName.to_string n
+    
+    let method_ : method_ -> string = function
+        | `LMethod (n,_) -> MethodName.to_string n
+    
+    let instance_variable : instance_variable -> string = function
+        | `LInstanceVariable (n,_) -> InstanceVariableName.to_string n
 end
 
 module Rename = struct

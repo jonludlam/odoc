@@ -5,21 +5,29 @@ open Odoc_model.Paths
   type maps =
     { module_: (Ident.module_ * Identifier.Module.t) list
     ; module_type: (Ident.module_type * Identifier.ModuleType.t) list
+    ; signatures: (Ident.signature * Identifier.Signature.t) list
     ; type_: (Ident.type_ * Identifier.Type.t) list
     ; path_type:
         (Ident.path_type * Odoc_model.Paths_types.Identifier.path_type) list
     ; exception_: (Ident.exception_ * Identifier.Exception.t) list
     ; value_: (Ident.value * Identifier.Value.t) list
+    ; method_ : (Ident.method_ * Identifier.Method.t) list
+    ; instance_variable : (Ident.instance_variable * Identifier.InstanceVariable.t) list
     ; class_: (Ident.class_ * Identifier.Class.t) list
     ; class_type: (Ident.class_type * Identifier.ClassType.t) list
+    ; labels : (Ident.label * Identifier.Label.t) list
+    ; parents : (Ident.parent * Identifier.Parent.t) list
+    ; label_parents : (Ident.label_parent * Identifier.LabelParent.t) list
     ; path_class_type:
         ( Ident.path_class_type
         * Odoc_model.Paths_types.Identifier.path_class_type )
-        list }
+        list
+    ; any : (Ident.any * Identifier.t) list }
 
   let empty =
     { module_= []
     ; module_type= []
+    ; signatures= []
     ; type_= List.map (fun (x, y) -> (y, x)) Component.core_type_ids
     ; path_type=
         List.map
@@ -29,9 +37,15 @@ open Odoc_model.Paths
           Component.core_type_ids
     ; exception_= []
     ; value_= []
+    ; method_ = []
+    ; instance_variable = []
     ; class_= []
     ; class_type= []
-    ; path_class_type= [] }
+    ; labels = []
+    ; label_parents = []
+    ; parents = []
+    ; path_class_type= []
+    ; any = [] }
 
   module Opt = Component.Opt
 
@@ -146,6 +160,158 @@ open Odoc_model.Paths
           `ClassType (resolved_module map p, name)
       | `Substituted s ->
           resolved_class_type map s
+
+    and resolved_label_parent_reference map (p : Cref.Resolved.label_parent) =
+      match p with
+      | `Identifier s -> `Identifier s
+      | `Local id ->
+        `Identifier (List.assoc id map.label_parents)
+      | `SubstAlias (m1, m2) -> `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
+      | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+      | `Canonical (m1, m2) -> `Canonical (resolved_module_reference map m1, module_reference map m2)
+      | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
+      | `Class (p, n) -> `Class (resolved_signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (resolved_signature_reference map p, n)
+      | `Type (p, n) -> `Type (resolved_signature_reference map p, n)
+
+    and resolved_class_signature_reference map (p : Cref.Resolved.class_signature) =
+      match p with
+      | `Identifier s -> `Identifier s
+      | `Local id ->
+        `Identifier (List.assoc id map.path_class_type)
+      | `Class (p, n) -> `Class (resolved_signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (resolved_signature_reference map p, n)
+
+    and resolved_reference map (p : Cref.Resolved.any) =
+      match p with
+      | `Identifier s -> `Identifier s
+      | `Local id ->
+        `Identifier (List.assoc id map.any)
+      | `SubstAlias (m1, m2) -> `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
+      | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+      | `Canonical (m1, m2) -> `Canonical (resolved_module_reference map m1, module_reference map m2)
+      | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
+      | `Class (p, n) -> `Class (resolved_signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (resolved_signature_reference map p, n)
+      | `Type (p, n) -> `Type (resolved_signature_reference map p, n)
+      | `Constructor (p, n) -> `Constructor (resolved_datatype_reference map p, n)
+      | `Field (p, n) -> `Field (resolved_parent_reference map p, n)
+      | `Extension (p, n) -> `Extension (resolved_signature_reference map p, n)
+      | `Exception (p, n) -> `Exception (resolved_signature_reference map p, n)
+      | `Value (p, n) -> `Value (resolved_signature_reference map p, n)
+      | `Method (p, n) -> `Method (resolved_class_signature_reference map p, n)
+      | `InstanceVariable (p, n) -> `InstanceVariable (resolved_class_signature_reference map p, n)
+      | `Label (p, n) -> `Label (resolved_label_parent_reference map p, n)
+
+    and resolved_parent_reference map (p : Cref.Resolved.parent) =
+      match p with
+      | `Identifier s -> `Identifier s
+      | `Local id ->
+        `Identifier (List.assoc id map.parents)
+      | `SubstAlias (m1, m2) -> `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
+      | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+      | `Canonical (m1, m2) -> `Canonical (resolved_module_reference map m1, module_reference map m2)
+      | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
+      | `Class (p, n) -> `Class (resolved_signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (resolved_signature_reference map p, n)
+      | `Type (p, n) -> `Type (resolved_signature_reference map p, n)
+
+    and resolved_datatype_reference map (p : Cref.Resolved.datatype) =
+      match p with
+      | `Identifier id -> `Identifier id
+      | `Local id -> `Identifier (List.assoc id map.type_)
+      | `Type (p, n) -> `Type (resolved_signature_reference map p, n)
+
+    and resolved_signature_reference map (p : Cref.Resolved.signature) =
+      match p with
+      | `Identifier s -> `Identifier s
+      | `Local id ->
+        `Identifier (List.assoc id map.signatures)
+      | `SubstAlias (m1, m2) -> `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
+      | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+      | `Canonical (m1, m2) -> `Canonical (resolved_module_reference map m1, module_reference map m2)
+      | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
+
+    and resolved_module_reference map (p : Cref.Resolved.module_) =
+      match p with
+      | `Identifier p -> `Identifier p
+      | `Local id ->
+        `Identifier (List.assoc id map.module_)
+      | `SubstAlias (m1, m2) -> `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
+      | `Module (p, m) -> `Module (resolved_signature_reference map p, m)
+      | `Canonical (m1, m2) -> `Canonical (resolved_module_reference map m1, module_reference map m2)
+
+    and label_parent_reference map (p : Cref.label_parent) =
+      match p with
+      | `Resolved p -> `Resolved (resolved_label_parent_reference map p)
+      | `Root (name, tag) -> `Root (name, tag)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Module (p, n) -> `Module (signature_reference map p, n)
+      | `ModuleType (p, n) -> `ModuleType (signature_reference map p, n)
+      | `Class (p, n) -> `Class (signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (signature_reference map p, n)
+      | `Type (p, n) -> `Type (signature_reference map p, n)    
+
+    and parent_reference map (p : Cref.parent) =
+      match p with
+      | `Resolved p -> `Resolved (resolved_parent_reference map p)
+      | `Root (name, tag) -> `Root (name, tag)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Module (p, n) -> `Module (signature_reference map p, n)
+      | `ModuleType (p, n) -> `ModuleType (signature_reference map p, n)
+      | `Class (p, n) -> `Class (signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (signature_reference map p, n)
+      | `Type (p, n) -> `Type (signature_reference map p, n)    
+
+    and signature_reference map (p : Cref.signature) =
+      match p with
+      | `Resolved p -> `Resolved (resolved_signature_reference map p)
+      | `Root (name, tag) -> `Root (name, tag)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Module (p, n) -> `Module (signature_reference map p, n)
+      | `ModuleType (p, n) -> `ModuleType (signature_reference map p, n)
+    
+    and module_reference map (p : Cref.module_) =
+      match p with
+      | `Resolved r -> `Resolved (resolved_module_reference map r)
+      | `Root (name,tag) -> `Root (name,tag)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Module (p, n) -> `Module (signature_reference map p, n)
+    
+    and datatype_reference map (p : Cref.datatype) : Odoc_model.Paths.Reference.DataType.t =
+      match p with
+      | `Resolved p -> `Resolved (resolved_datatype_reference map p)
+      | `Root (name, tag) -> `Root (name, tag)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Type (p, n) -> `Type (signature_reference map p, n)    
+
+    and class_signature_reference map (p : Cref.class_signature) =
+      match p with
+      | `Class (p, n) -> `Class (signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (signature_reference map p, n)
+      | `Resolved r -> `Resolved (resolved_class_signature_reference map r)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Root (p, n) -> `Root (p, n)
+
+    and reference map (p : Cref.any) =
+      match p with
+      | `Resolved r -> `Resolved (resolved_reference map r)
+      | `Root (name, tag) -> `Root (name, tag)
+      | `Dot (p, n) -> `Dot (label_parent_reference map p, n)
+      | `Module (p, n) -> `Module (signature_reference map p, n)
+      | `ModuleType (p, n) -> `ModuleType (signature_reference map p, n)
+      | `Class (p, n) -> `Class (signature_reference map p, n)
+      | `ClassType (p, n) -> `ClassType (signature_reference map p, n)
+      | `Type (p, n) -> `Type (signature_reference map p, n)
+      | `Constructor (d, n) -> `Constructor (datatype_reference map d, n)
+      | `Field (p, n) -> `Field (parent_reference map p, n)
+      | `Extension (p, n) -> `Extension (signature_reference map p, n)
+      | `Exception (p, n) -> `Exception (signature_reference map p, n)
+      | `Value (p, n) -> `Value (signature_reference map p, n)
+      | `Method (p, n) -> `Method (class_signature_reference map p, n)
+      | `InstanceVariable (p, n) -> `InstanceVariable (class_signature_reference map p, n)
+      | `Label (p, n) -> `Label (label_parent_reference map p, n)
+
   end
 
   module ExtractIDs = struct
@@ -164,26 +330,42 @@ open Odoc_model.Paths
       in
       { map with
         type_= (id, identifier) :: map.type_
-      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type }
+      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type
+      ; label_parents= ((id :> Ident.label_parent), (identifier :> Identifier.LabelParent.t)) :: map.label_parents
+      ; parents= ((id :> Ident.parent), (identifier :> Identifier.Parent.t)) :: map.parents
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any
+      }
 
     and module_ parent map id =
       let identifier =
         `Module (parent, ModuleName.of_string (Ident.Name.module_ id))
       in
-      {map with module_= (id, identifier) :: map.module_}
+      { map with module_= (id, identifier) :: map.module_
+      ; signatures= ((id :> Ident.signature), (identifier :> Identifier.Signature.t)) :: map.signatures
+      ; label_parents= ((id :> Ident.label_parent), (identifier :> Identifier.LabelParent.t)) :: map.label_parents
+      ; parents= ((id :> Ident.parent), (identifier :> Identifier.Parent.t)) :: map.parents
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any
+      }
 
     and module_type parent map id =
       let identifier =
         `ModuleType
           (parent, ModuleTypeName.of_string (Ident.Name.module_type id))
       in
-      {map with module_type= (id, identifier) :: map.module_type}
+      { map with module_type= (id, identifier) :: map.module_type
+      ; signatures= ((id :> Ident.signature), (identifier :> Identifier.Signature.t)) :: map.signatures
+      ; label_parents= ((id :> Ident.label_parent), (identifier :> Identifier.LabelParent.t)) :: map.label_parents
+      ; parents= ((id :> Ident.parent), (identifier :> Identifier.Parent.t)) :: map.parents
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any
+      }
 
     and value_ parent map id =
       let identifier =
         `Value (parent, ValueName.of_string (Ident.Name.value id))
       in
-      {map with value_= (id, identifier) :: map.value_}
+      { map with value_= (id, identifier) :: map.value_
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any
+      }
 
     and class_ parent map id =
       let identifier =
@@ -193,7 +375,11 @@ open Odoc_model.Paths
         class_= (id, identifier) :: map.class_
       ; path_class_type=
           ((id :> Ident.path_class_type), identifier) :: map.path_class_type
-      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type }
+      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type
+      ; label_parents= ((id :> Ident.label_parent), (identifier :> Identifier.LabelParent.t)) :: map.label_parents
+      ; parents= ((id :> Ident.parent), (identifier :> Identifier.Parent.t)) :: map.parents
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any
+      }
 
     and class_type parent map (id : Ident.class_type) =
       let identifier =
@@ -203,9 +389,51 @@ open Odoc_model.Paths
         class_type= ((id :> Ident.class_type), identifier) :: map.class_type
       ; path_class_type=
           ((id :> Ident.path_class_type), identifier) :: map.path_class_type
-      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type }
+      ; path_type= ((id :> Ident.path_type), identifier) :: map.path_type
+      ; label_parents= ((id :> Ident.label_parent), (identifier :> Identifier.LabelParent.t)) :: map.label_parents
+      ; parents= ((id :> Ident.parent), (identifier :> Identifier.Parent.t)) :: map.parents
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any
+      }
 
     and include_ parent map i = signature parent map i.Include.expansion_
+
+    and docs parent map =
+        List.fold_left
+          (fun map item ->
+            match item with
+            | `Heading (_,id,_) ->
+              let identifier = `Label(parent, LabelName.of_string (Ident.Name.label id)) in
+              {map with labels= (id, identifier) :: map.labels}
+            | _ ->
+              map
+            ) map
+
+    and docs_or_stop parent map = function
+        | `Docs d -> docs parent map d
+        | `Stop -> map
+    
+    and method_ parent map id =
+        let identifier = `Method(parent, MethodName.of_string (Ident.Name.method_ id)) in
+        { map with
+          method_= (id,identifier) :: map.method_
+        ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any }
+
+    and instance_variable parent map id =
+      let identifier = `InstanceVariable(parent, InstanceVariableName.of_string (Ident.Name.instance_variable id)) in
+      { map with
+        instance_variable = (id,identifier) :: map.instance_variable
+      ; any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any }
+
+    and class_signature parent map sg =
+        let open ClassSignature in
+        List.fold_left
+          (fun map item ->
+            match item with
+            | Method (id,_) -> method_ parent map id
+            | InstanceVariable (id,_) -> instance_variable parent map id
+            | Inherit _ -> map
+            | Constraint _ -> map
+            | Comment c -> docs_or_stop (parent :> Identifier.LabelParent.t) map c) map sg
 
     and signature parent map sg =
       let open Signature in
@@ -234,8 +462,10 @@ open Odoc_model.Paths
               class_type parent map id
           | Include i ->
               include_ parent map i
-          | TypExt _ | Comment _ ->
-              map)
+          | TypExt _ ->
+              map
+          | Comment d ->
+              docs_or_stop (parent :> Identifier.LabelParent.t) map d)
         map sg.items
   end
 
@@ -283,14 +513,14 @@ open Odoc_model.Paths
         | ClassType _ ->
             acc
         | Comment c ->
-            Odoc_model.Lang.Signature.Comment c :: acc)
+            Odoc_model.Lang.Signature.Comment (docs_or_stop map c) :: acc)
       sg.items []
 
   and class_ map id c =
     let open Component.Class in
     let identifier = List.assoc id map.class_ in
     { id= identifier
-    ; doc= c.doc
+    ; doc= docs map c.doc
     ; virtual_= c.virtual_
     ; params= c.params
     ; type_=
@@ -317,7 +547,7 @@ open Odoc_model.Paths
     let open Component.ClassType in
     let identifier = List.assoc id map.class_type in
     { Odoc_model.Lang.ClassType.id= identifier
-    ; doc= c.doc
+    ; doc= docs map c.doc
     ; virtual_= c.virtual_
     ; params= c.params
     ; expr=
@@ -328,39 +558,38 @@ open Odoc_model.Paths
 
   and class_signature map parent sg =
     let open Component.ClassSignature in
+    let map = ExtractIDs.class_signature parent map sg.items in
     let items =
       List.map
         (function
-          | Method m ->
-              Odoc_model.Lang.ClassSignature.Method (method_ map parent m)
-          | InstanceVariable i ->
-              InstanceVariable (instance_variable map parent i)
+          | Method (id,m) ->
+              Odoc_model.Lang.ClassSignature.Method (method_ map id m)
+          | InstanceVariable (id,i) ->
+              InstanceVariable (instance_variable map id i)
           | Constraint (t1, t2) ->
               Constraint (type_expr map t1, type_expr map t2)
           | Inherit e ->
               Inherit (class_type_expr map parent e)
           | Comment c ->
-              Comment c)
+              Comment (docs_or_stop map c))
         sg.items
     in
     {self= Opt.map (type_expr map) sg.self; items}
 
-  and method_ map parent m =
+  and method_ map id m =
     let open Component.Method in
-    let identifier = `Method (parent, Names.MethodName.of_string m.name) in
+    let identifier = List.assoc id map.method_ in
     { id= identifier
-    ; doc= m.doc
+    ; doc= docs map m.doc
     ; private_= m.private_
     ; virtual_= m.virtual_
     ; type_= type_expr map m.type_ }
 
-  and instance_variable map parent i =
+  and instance_variable map id i =
     let open Component.InstanceVariable in
-    let identifier =
-      `InstanceVariable (parent, Names.MethodName.of_string i.name)
-    in
+    let identifier = List.assoc id map.instance_variable in
     { id= identifier
-    ; doc= i.doc
+    ; doc= docs map i.doc
     ; mutable_= i.mutable_
     ; virtual_= i.virtual_
     ; type_= type_expr map i.type_ }
@@ -369,7 +598,7 @@ open Odoc_model.Paths
     let open Component.External in
     let identifier = List.assoc id map.value_ in
     { id= identifier
-    ; doc= e.doc
+    ; doc= docs map e.doc
     ; type_= type_expr map e.type_
     ; primitives= e.primitives }
 
@@ -377,7 +606,7 @@ open Odoc_model.Paths
     let open Component.Include in
     Format.fprintf Format.err_formatter "Lang_of.include_: items=%d\n%!" (List.length i.expansion_.items);
     { Odoc_model.Lang.Include.parent
-    ; doc= i.doc
+    ; doc= docs map i.doc
     ; decl= module_decl map parent i.decl
     ; expansion= {resolved= false; content= signature parent map i.expansion_}
     }
@@ -385,12 +614,12 @@ open Odoc_model.Paths
   and value_ map id v =
     let open Component.Value in
     let identifier = List.assoc id map.value_ in
-    {id= identifier; doc= v.doc; type_= type_expr map v.type_}
+    {id= identifier; doc= docs map v.doc; type_= type_expr map v.type_}
 
   and typ_ext map parent t =
     let open Component.Extension in
     { type_path= Path.type_ map t.type_path
-    ; doc= t.doc
+    ; doc= docs map t.doc
     ; type_params= t.type_params
     ; private_= t.private_
     ; constructors= List.map (extension_constructor map parent) t.constructors
@@ -400,7 +629,7 @@ open Odoc_model.Paths
     let open Component.Extension.Constructor in
     let identifier = `Extension (parent, c.name) in
     { id= identifier
-    ; doc= c.doc
+    ; doc= docs map c.doc
     ; args=
         type_decl_constructor_argument map
           (parent :> Odoc_model.Paths_types.Identifier.parent)
@@ -421,7 +650,7 @@ open Odoc_model.Paths
             None
       in
       { Odoc_model.Lang.Module.id= List.assoc id map.module_
-      ; doc= m.doc
+      ; doc= docs map m.doc
       ; type_=
           module_decl map
             (identifier :> Odoc_model.Paths_types.Identifier.signature)
@@ -439,7 +668,7 @@ open Odoc_model.Paths
   and module_substitution map id m =
     let open Component.ModuleSubstitution in
     { Odoc_model.Lang.ModuleSubstitution.id= List.assoc id map.module_
-    ; doc= m.doc
+    ; doc= docs map m.doc
     ; manifest= Path.module_ map m.manifest }
 
   and module_decl :
@@ -496,7 +725,7 @@ open Odoc_model.Paths
     let identifier = List.assoc id map.module_type in
     let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
     { Odoc_model.Lang.ModuleType.id= identifier
-    ; doc= mty.doc
+    ; doc= docs map mty.doc
     ; expr= Opt.map (module_type_expr map sig_id) mty.expr
     ; expansion= None }
 
@@ -520,7 +749,7 @@ open Odoc_model.Paths
    fun map parent f ->
     let identifier = `Field (parent, f.name) in
     { id= identifier
-    ; doc= f.doc
+    ; doc= docs map f.doc
     ; mutable_= f.mutable_
     ; type_= type_expr map f.type_ }
 
@@ -539,7 +768,7 @@ open Odoc_model.Paths
     let identifier = List.assoc id map.type_ in
     { id= identifier
     ; equation= type_decl_equation map t.equation
-    ; doc= t.doc
+    ; doc= docs map t.doc
     ; representation=
         Opt.map (type_decl_representation map identifier) t.representation }
 
@@ -565,7 +794,7 @@ open Odoc_model.Paths
    fun map id t ->
     let identifier = `Constructor (id, t.name) in
     { id= identifier
-    ; doc= t.doc
+    ; doc= docs map t.doc
     ; args=
         type_decl_constructor_argument map
           (id :> Odoc_model.Paths_types.Identifier.parent)
@@ -618,7 +847,7 @@ open Odoc_model.Paths
           c.Component.TypeExpr.Polymorphic_variant.Constructor.name
       ; constant= c.constant
       ; arguments= List.map (type_expr map) c.arguments
-      ; doc= c.doc }
+      ; doc= docs map c.doc }
     in
     let element = function
       | Component.TypeExpr.Polymorphic_variant.Type t ->
@@ -654,20 +883,64 @@ open Odoc_model.Paths
       Odoc_model.Lang.Exception.t =
     let identifier = List.assoc id map.exception_ in
     { id= identifier
-    ; doc= e.doc
+    ; doc= docs map e.doc
     ; args= type_decl_constructor_argument map parent e.args
     ; res= Opt.map (type_expr map) e.res }
 
-  and location value =
+  and location : 'a. 'a -> 'a Location_.with_location = fun value ->
       { Location_.value; location={file=""; start={line=0; column=0}; end_={line=0; column=0}} }
   
-  and block_element map d =
+  and with_location : 'a 'b. (maps -> 'a -> 'b) -> maps -> 'a -> 'b Location_.with_location =
+    fun conv ident_map v ->
+      location (conv ident_map v)
+
+  and already_with_location : (maps -> 'a -> 'b) -> maps -> 'a Location_.with_location -> 'b Location_.with_location =
+    fun conv ident_map v ->
+      location (conv ident_map (v.Location_.value))
+
+  and inline_element : maps -> Component.CComment.inline_element -> Comment.inline_element = fun map t ->
+    match t with
+    | #Odoc_model.Comment.leaf_inline_element as n -> n
+    | `Reference (r,c) -> `Reference (Path.reference map r, c)
+    | `Styled (x,y) -> `Styled (x, List.map (already_with_location inline_element map) y)
+    | `Link (x,y) -> `Link (x,y)
+
+  and nestable_block_element : maps -> Component.CComment.nestable_block_element -> Comment.nestable_block_element = fun map t ->
+    match t with
+    | `Paragraph xs -> `Paragraph (List.map (fun x -> location (inline_element map x)) xs)
+    | `Code_block s -> `Code_block s
+    | `Verbatim s -> `Verbatim s
+    | `Modules rs -> `Modules (List.map (Path.module_reference map) rs)
+    | `List (x,yss) -> `List (x, List.map (List.map (with_location nestable_block_element map)) yss)
+
+  and tag map t =
+      let nbe = List.map (with_location nestable_block_element map) in
+      match t with
+      | `Author s -> `Author s
+      | `Deprecated ds -> `Deprecated (nbe ds)
+      | `Param (s, ds) -> `Param (s, nbe ds)
+      | `Raise (s, ds) -> `Raise (s, nbe ds)
+      | `Return ds -> `Return (nbe ds)
+      | `See (x,y,z) -> `See (x,y,nbe z)
+      | `Since s -> `Since s
+      | `Before (x,ys) -> `Before (x, nbe ys)
+      | `Version s -> `Version s
+      | `Canonical (p,r) -> `Canonical (Path.module_ map p, Path.module_reference map r)
+      | `Inline -> `Inline
+      | `Open -> `Open
+      | `Closed -> `Closed
+
+  and block_element map (d : Component.CComment.block_element) : Odoc_model.Comment.block_element =
       match d with
-      | `Heading (l, id, content) -> `Heading (l, List.assoc id map.)
-  and docs map ds =
-      List.map (fun d -> location (block_element map d))
+      | `Heading (l, id, content) -> `Heading (l, List.assoc id map.labels, content)
+      | `Tag t -> `Tag (tag map t)
+      | #Component.CComment.nestable_block_element as n -> (nestable_block_element map n :> Odoc_model.Comment.block_element)
+ 
+
+  and docs : maps -> Component.CComment.docs -> Odoc_model.Comment.docs = fun map ds ->
+      List.map (fun d -> location (block_element map d)) ds
       
   and docs_or_stop map (d : Component.CComment.docs_or_stop) =
       match d with
       | `Docs d -> `Docs (docs map d)
-      | `Stop -> ``Stop
+      | `Stop -> `Stop

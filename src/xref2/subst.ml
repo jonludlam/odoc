@@ -284,7 +284,6 @@ and external_ s e =
 
 and include_ s i =
     let open Component.Include in
-    Format.fprintf Format.err_formatter "Subst.include_: items=%d\n%!" (List.length i.expansion_.items);
     { i with
     decl = module_decl s i.decl;
     expansion_ = apply_sig_map s i.expansion_.items i.expansion_ }
@@ -317,8 +316,8 @@ and class_type s c =
 and class_signature_item s =
     let open Component.ClassSignature in
     function
-    | Method m -> Method (method_ s m)
-    | InstanceVariable i -> InstanceVariable (instance_variable s i)
+    | Method (id,m) -> Method (id,method_ s m)
+    | InstanceVariable (id,i) -> InstanceVariable (id,instance_variable s i)
     | Constraint (t1, t2) -> Constraint (type_expr s t1, type_expr s t2)
     | Inherit e -> Inherit (class_type_expr s e)
     | Comment _ as y -> y
