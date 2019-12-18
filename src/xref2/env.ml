@@ -163,8 +163,9 @@ let lookup_module identifier env =
       "Failed to find module:\nIdentifier: %a\n\n"
       Component.Fmt.model_identifier
       (identifier :> Odoc_model.Paths.Identifier.t) ;
-    Format.fprintf Format.err_formatter
-      "Modules in scope: [%s]\n%!" (String.concat ";" (List.map Odoc_model.Paths.Identifier.name (List.map fst env.modules)));
+    List.iter (fun (ident,_) ->
+      Format.fprintf Format.err_formatter
+        "%a;\n" Component.Fmt.model_identifier (ident :> Odoc_model.Paths.Identifier.t)) env.modules;
     raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -318,7 +319,8 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
             ; display_type= None
             ; type_= ModuleType arg.expr
             ; canonical= None
-            ; hidden= false } )
+            ; hidden= false
+            ; expansion= None } )
           :: find_args (`Result parent) res
       | ModuleType.Functor (None, res) ->
           find_args (`Result parent) res
@@ -355,18 +357,14 @@ let rec open_component_signature : Odoc_model.Paths.Identifier.Signature.t -> Co
             match orig with
             | Signature.Type (tid, _, t) ->
                 let new_id = `Type (id, Ident.Name.type_ tid) in
-                Format.(fprintf err_formatter "adding type id: %a\n%!" Component.Fmt.model_identifier new_id);
                 add_type new_id t env
             | Signature.Module (mid, _, m) ->
                 let new_id = `Module (id, Ident.Name.module_ mid) in
-                Format.(fprintf err_formatter "adding module id: %a\n%!" Component.Fmt.model_identifier new_id);
                 add_module new_id (Delayed.get m) env
             | Signature.ModuleType (mid, m) ->
                 let new_id = `ModuleType (id, Ident.Name.module_type mid) in
-                Format.(fprintf err_formatter "adding module_type id: %a\n%!" Component.Fmt.model_identifier new_id);
                 add_module_type new_id m env
             | Signature.Include i ->
-                Format.fprintf Format.err_formatter "Env.open_component_signature: %d items\n%!" (List.length i.expansion_.items);
                 open_component_signature id i.expansion_ env
             | _ -> env) env s.items
 

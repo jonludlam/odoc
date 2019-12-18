@@ -116,6 +116,99 @@ and class_type_path : t -> Cpath.class_type -> Cpath.class_type = fun s p ->
     | `Substituted p -> `Substituted (class_type_path s p)
     | `Dot (p, n) -> `Dot (module_path s p, n)
 
+
+
+let rec module_reference : t -> Cref.module_ -> Cref.module_ = fun t r ->
+    match r with
+    | `Resolved r -> `Resolved (resolved_module_reference t r)
+    | `Root (_,_) -> r
+    | `Dot (parent, s) -> `Dot (label_parent_reference t parent, s)
+    | `Module (parent, s) -> `Module (signature_reference t parent, s)
+
+and resolved_module_reference : t -> Cref.Resolved.module_ -> Cref.Resolved.module_ = fun t r ->
+        match r with
+        | `Local id -> begin
+            match (try Some (List.assoc id t.module_) with _ -> None) with
+            | Some x ->
+                let p = Lang_of.(Path.resolved_module empty x) in
+                `Identifier (Odoc_model.Paths.Path.Resolved.Module.identifier p)
+            | None -> r
+            end
+        | `Identifier _ -> r
+        | `SubstAlias (p1,p2) -> `SubstAlias (resolved_module_path t p1, resolved_module_reference t p2)
+        | `Module (p, n) -> `Module (resolved_signature_reference t p, n)
+        | `Canonical (m,m2) -> `Canonical (resolved_module_reference t m, module_reference t m2)
+
+and signature_reference : t -> Cref.signature -> Cref.signature = fun t r ->
+    match r with
+    | `Dot _ | `Module _ as r' -> (module_reference t r' :> Cref.signature)
+    | `Root (_,_) -> r
+    | `Resolved r -> `Resolved (resolved_signature_reference t r)
+    | `ModuleType (parent, s) -> `ModuleType (signature_reference t parent, s)
+
+and resolved_signature_reference : t -> Cref.Resolved.signature -> Cref.Resolved.signature = fun t r ->
+match r with
+| `Local (#Ident.module_ as id) -> begin
+    match (try Some (List.assoc id t.module_) with _ -> None) with
+    | Some x ->
+        let p = Lang_of.(Path.resolved_module empty x) in
+        `Identifier (Odoc_model.Paths.Path.Resolved.Module.identifier p :> Odoc_model.Paths.Identifier.Signature.t)
+    | None -> r
+    end
+| `Local (`LModuleType _ as id) -> begin
+    match (try Some (List.assoc id t.module_type) with _ -> None) with
+    | Some x ->
+        let p = Lang_of.(Path.resolved_module_type empty x) in
+        `Identifier (Odoc_model.Paths.Path.Resolved.ModuleType.identifier p :> Odoc_model.Paths.Identifier.Signature.t)
+    | None -> r
+    end
+| `Identifier _ -> r
+| `SubstAlias (p1,p2) -> `SubstAlias (resolved_module_path t p1, resolved_module_reference t p2)
+| `Module (p, n) -> `Module (resolved_signature_reference t p, n)
+| `Canonical (m,m2) -> `Canonical (resolved_module_reference t m, module_reference t m2)
+| `ModuleType (p, n) -> `ModuleType (resolved_signature_reference t p, n)
+
+
+and label_parent_reference : t -> Cref.label_parent -> Cref.label_parent = fun t r ->
+match r with
+| `Dot _ | `Module _ as r' -> (module_reference t r' :> Cref.label_parent)
+| `Root (_,_) -> r
+| `Resolved r -> `Resolved (resolved_label_parent_reference t r)
+| `ModuleType (parent, s) -> `ModuleType (signature_reference t parent, s)
+| `Class (p, n) -> `Class (signature_reference t p, n)
+| `ClassType (p, n) -> `ClassType (signature_reference t p, n)
+| `Type (p, n) -> `Type (signature_reference t p, n)
+
+and resolved_label_parent_reference : t -> Cref.Resolved.label_parent -> Cref.Resolved.label_parent = fun t r -> 
+match r with
+| `Local (#Ident.module_ as id) -> begin
+    match (try Some (List.assoc id t.module_) with _ -> None) with
+    | Some x ->
+        let p = Lang_of.(Path.resolved_module empty x) in
+        `Identifier (Odoc_model.Paths.Path.Resolved.Module.identifier p :> Odoc_model.Paths.Identifier.LabelParent.t)
+    | None -> r
+    end
+| `Local (`LModuleType _ as id) -> begin
+    match (try Some (List.assoc id t.module_type) with _ -> None) with
+    | Some x ->
+        let p = Lang_of.(Path.resolved_module_type empty x) in
+        `Identifier (Odoc_model.Paths.Path.Resolved.ModuleType.identifier p :> Odoc_model.Paths.Identifier.LabelParent.t)
+    | None -> r
+    end
+| `Identifier _ -> r
+| `SubstAlias (p1,p2) -> `SubstAlias (resolved_module_path t p1, resolved_module_reference t p2)
+| `Module (p, n) -> `Module (resolved_signature_reference t p, n)
+| `Canonical (m,m2) -> `Canonical (resolved_module_reference t m, module_reference t m2)
+| `ModuleType (p, n) -> `ModuleType (resolved_signature_reference t p, n)
+| `Class (p, n) -> `Class (resolved_signature_reference t p, n)
+| `ClassType (p, n) -> `ClassType (resolved_signature_reference t p, n)
+| `Type (p, n) -> `Type (resolved_signature_reference t p, n)
+| `Local _ -> r
+
+
+
+
+
 let option_ conv s x =
     match x with
     | Some x -> Some (conv s x)
@@ -188,6 +281,13 @@ and type_expr s t =
     | Poly (strs, ts) -> Poly (strs, type_expr s ts)
     | Package p -> Package (type_package s p)
 
+and module_expansion s t =
+    let open Component.Module in
+    match t with
+    | AlreadyASig -> AlreadyASig
+    | Signature sg -> Signature (signature s sg)
+    | Functor (arg, sg) -> Functor (List.map (functor_argument_opt s) arg, signature s sg)
+
 and module_type s t =
     let open Component.ModuleType in
     let expr =
@@ -195,13 +295,15 @@ and module_type s t =
         | Some m -> Some (module_type_expr s m)
         | None -> None
     in
-    {t with expr}
+    let expansion = option_ module_expansion s t.expansion in
+    {t with expr; expansion}
 
 and functor_argument_opt s t =
     let open Component.FunctorArgument in
     match t with
     | Some arg ->
-        Some {arg with expr = module_type_expr s arg.expr}
+        let expansion = option_ module_expansion s arg.expansion in
+        Some {arg with expr = module_type_expr s arg.expr; expansion}
     | None ->
         None
 
@@ -237,7 +339,9 @@ and module_decl s t =
 and module_ s t =
     let open Component.Module in
     let type_ = module_decl s t.type_ in
-    { t with type_ }
+    let expansion = option_ module_expansion s t.expansion in
+    let canonical = option_ (fun s (m1,m2) -> (module_path s m1, m2)) s t.canonical in
+    { t with type_; expansion; canonical }
 
 and module_substitution s m =
     let open Component.ModuleSubstitution in
@@ -295,7 +399,8 @@ and value s v =
 
 and class_ s c =
     let open Component.Class in
-    { c with type_ = class_decl s c.type_ }
+    let expansion = option_ class_signature s c.expansion in
+    { c with type_ = class_decl s c.type_; expansion }
 
 and class_decl s =
     let open Component.Class in
@@ -311,7 +416,8 @@ and class_type_expr s =
 
 and class_type s c =
     let open Component.ClassType in
-    { c with expr = class_type_expr s c.expr }
+    let expansion = option_ class_signature s c.expansion in
+    { c with expr = class_type_expr s c.expr; expansion }
 
 and class_signature_item s =
     let open Component.ClassSignature in

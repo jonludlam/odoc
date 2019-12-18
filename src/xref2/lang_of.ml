@@ -434,8 +434,8 @@ open Odoc_model.Paths
             | Inherit _ -> map
             | Constraint _ -> map
             | Comment c -> docs_or_stop (parent :> Identifier.LabelParent.t) map c) map sg
-
-    and signature parent map sg =
+    
+    and signature_items parent map items =
       let open Signature in
       List.fold_left
         (fun map item ->
@@ -466,12 +466,16 @@ open Odoc_model.Paths
               map
           | Comment d ->
               docs_or_stop (parent :> Identifier.LabelParent.t) map d)
-        map sg.items
+        map items
+
+    and signature parent map sg =
+        let open Signature in
+        signature_items parent map sg.items
   end
 
-  let rec signature id map sg =
+  let rec signature_items id map items =
     let open Component.Signature in
-    let map = ExtractIDs.signature id map sg in
+    let map = ExtractIDs.signature_items id map items in
     List.fold_right
       (fun item acc ->
         match item with
@@ -514,11 +518,16 @@ open Odoc_model.Paths
             acc
         | Comment c ->
             Odoc_model.Lang.Signature.Comment (docs_or_stop map c) :: acc)
-      sg.items []
+      items []
+    
+  and signature id map sg =
+    let open Component.Signature in
+    signature_items id map sg.items
 
   and class_ map id c =
     let open Component.Class in
     let identifier = List.assoc id map.class_ in
+    let expansion = Opt.map (class_signature map (identifier :> Identifier.ClassSignature.t)) c.expansion in
     { id= identifier
     ; doc= docs map c.doc
     ; virtual_= c.virtual_
@@ -527,7 +536,7 @@ open Odoc_model.Paths
         class_decl map
           (identifier :> Paths_types.Identifier.path_class_type)
           c.type_
-    ; expansion= None }
+    ; expansion }
 
   and class_decl map parent c =
     match c with
@@ -546,6 +555,7 @@ open Odoc_model.Paths
   and class_type map id c =
     let open Component.ClassType in
     let identifier = List.assoc id map.class_type in
+    let expansion = Opt.map (class_signature map (identifier :> Identifier.ClassSignature.t)) c.expansion in
     { Odoc_model.Lang.ClassType.id= identifier
     ; doc= docs map c.doc
     ; virtual_= c.virtual_
@@ -554,7 +564,7 @@ open Odoc_model.Paths
         class_type_expr map
           (identifier :> Paths_types.Identifier.path_class_type)
           c.expr
-    ; expansion= None }
+    ; expansion }
 
   and class_signature map parent sg =
     let open Component.ClassSignature in
@@ -602,6 +612,29 @@ open Odoc_model.Paths
     ; type_= type_expr map e.type_
     ; primitives= e.primitives }
 
+  and module_expansion : maps -> Identifier.Signature.t -> Component.Module.expansion -> Lang.Module.expansion = fun map id e ->
+    let open Component.Module in
+    match e with
+    | AlreadyASig -> Lang.Module.AlreadyASig
+    | Signature sg -> Signature (signature id map sg)
+    | Functor (args, sg) ->
+        let (identifier, args, map) = List.fold_right
+          (fun arg (id,args,map) ->
+            match arg with
+            | Some arg ->
+              let identifier' =
+              `Parameter
+              ( id
+              , Odoc_model.Names.ParameterName.of_string
+              (Ident.Name.module_ arg.Component.FunctorArgument.id))
+              in
+              let identifier_result = `Result (id) in
+              let map = {map with module_= (arg.id, identifier') :: map.module_} in
+              let arg = functor_argument map arg in
+              (identifier_result, (Some arg)::args, map)
+            | None -> (`Result id, None::args, map)) args (id,[],map) in
+        Functor ( args, signature identifier map sg)
+      
   and include_ parent map i =
     let open Component.Include in
     Format.fprintf Format.err_formatter "Lang_of.include_: items=%d\n%!" (List.length i.expansion_.items);
@@ -649,6 +682,7 @@ open Odoc_model.Paths
         | None ->
             None
       in
+      let expansion = Opt.map (module_expansion map (identifier :> Identifier.Signature.t)) m.expansion in
       { Odoc_model.Lang.Module.id= List.assoc id map.module_
       ; doc= docs map m.doc
       ; type_=
@@ -658,7 +692,7 @@ open Odoc_model.Paths
       ; canonical= canonical m.canonical
       ; hidden= m.hidden
       ; display_type= Opt.map (module_decl map identifier) m.display_type
-      ; expansion= None }
+      ; expansion= expansion }
     with e ->
       let bt = Printexc.get_backtrace () in
       Format.fprintf Format.err_formatter
@@ -724,10 +758,11 @@ open Odoc_model.Paths
   and module_type map id mty =
     let identifier = List.assoc id map.module_type in
     let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
+    let expansion = Opt.map (module_expansion map sig_id) mty.expansion in
     { Odoc_model.Lang.ModuleType.id= identifier
     ; doc= docs map mty.doc
     ; expr= Opt.map (module_type_expr map sig_id) mty.expr
-    ; expansion= None }
+    ; expansion }
 
   and type_decl_constructor_argument :
          maps
@@ -872,12 +907,13 @@ open Odoc_model.Paths
 
   and functor_argument map f =
     let identifier = List.assoc f.id map.module_ in
+    let expansion = Opt.map (module_expansion map (identifier :> Identifier.Signature.t)) f.expansion in
     { Odoc_model.Lang.FunctorArgument.id= identifier
     ; expr=
         module_type_expr map
           (identifier :> Odoc_model.Paths_types.Identifier.signature)
           f.expr
-    ; expansion= None }
+    ; expansion }
 
   and exception_ map parent id (e : Component.Exception.t) :
       Odoc_model.Lang.Exception.t =

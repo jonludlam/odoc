@@ -423,7 +423,8 @@ and lookup_and_resolve_module_from_resolved_path :
  fun is_resolve add_canonical env p ->
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
   match p with
-  | `Local _id ->
+  | `Local id ->
+      Format.fprintf Format.err_formatter "Trying to lookup module: %a" Ident.fmt id;
       raise (Module_lookup_failure (env, p))
   | `Identifier i ->
       let m = Env.lookup_module i env in
@@ -1009,7 +1010,7 @@ and fragmap_module :
   let mapfn m =
     match (frag', sub) with
     | None, ModuleEq (_, type_) ->
-        (* Finished the substitution *) Left {m with Component.Module.type_}
+        (* Finished the substitution *) Left {m with Component.Module.type_; expansion=None}
     | None, ModuleSubst (_, p) -> begin
         match lookup_and_resolve_module_from_path false false env p with
         | Resolved (p, _) -> Right p
@@ -1033,19 +1034,22 @@ and fragmap_module :
                   ModuleType
                     Component.(
                       ModuleType.(
-                        With (TypeOf (Module.Alias path), [new_subst]))) }
+                        With (TypeOf (Module.Alias path), [new_subst])))
+              ; expansion= None }
             (* Can this one happen? *)
         | ModuleType (With (mty', subs')) ->
             Left
               { m with
                 type_=
                   ModuleType
-                    (Component.ModuleType.With (mty', subs' @ [new_subst])) }
+                    (Component.ModuleType.With (mty', subs' @ [new_subst]))
+              ; expansion= None }
         | ModuleType mty ->
             Left
               { m with
                 type_=
-                  ModuleType (Component.ModuleType.With (mty, [new_subst])) } )
+                  ModuleType (Component.ModuleType.With (mty, [new_subst]))
+              ; expansion= None } )
     | _, TypeEq _ | _, TypeSubst _ ->
         failwith "Can't happen"
   in
@@ -1130,16 +1134,19 @@ and fragmap_type : Env.t ->
                 ModuleType
                   Component.(
                     ModuleType.(With (TypeOf (Module.Alias path), [new_subst])))
+            ; expansion= None
             }
             (* Can this one happen? *)
         | ModuleType (With (mty', subs')) ->
             { m with
               type_=
                 ModuleType
-                  (Component.ModuleType.With (mty', subs' @ [new_subst])) }
+                  (Component.ModuleType.With (mty', subs' @ [new_subst]))
+            ; expansion= None }
         | ModuleType mty ->
             { m with
               type_= ModuleType (Component.ModuleType.With (mty, [new_subst]))
+            ; expansion= None
             }
       in
       let items =

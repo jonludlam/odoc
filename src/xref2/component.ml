@@ -85,6 +85,11 @@ module Opt = struct
 end
 
 module rec Module : sig
+  type expansion =
+    | AlreadyASig
+    | Signature of Signature.t
+    | Functor of FunctorArgument.t option list * Signature.t
+
   type decl = Alias of Cpath.module_ | ModuleType of ModuleType.expr
 
   type t =
@@ -92,7 +97,8 @@ module rec Module : sig
     ; type_: decl
     ; canonical: (Cpath.module_ * Odoc_model.Paths.Reference.Module.t) option
     ; hidden: bool
-    ; display_type: decl option }
+    ; display_type: decl option
+    ; expansion: expansion option}
 end =
   Module
 
@@ -176,7 +182,7 @@ end =
   Exception
 
 and FunctorArgument : sig
-  type t = {id: Ident.module_; expr: ModuleType.expr}
+  type t = {id: Ident.module_; expr: ModuleType.expr; expansion: Module.expansion option}
 end =
   FunctorArgument
 
@@ -194,7 +200,7 @@ and ModuleType : sig
     | Functor of FunctorArgument.t option * expr
     | TypeOf of Module.decl
 
-  type t = {doc: CComment.docs; expr: expr option}
+  type t = {doc: CComment.docs; expr: expr option; expansion: Module.expansion option}
 end =
   ModuleType
 
@@ -291,7 +297,8 @@ and Class : sig
     { doc: CComment.docs
     ; virtual_: bool
     ; params: TypeDecl.param list
-    ; type_: decl }
+    ; type_: decl
+    ; expansion : ClassSignature.t option }
 end =
   Class
 
@@ -301,7 +308,7 @@ and ClassType : sig
     | Signature of ClassSignature.t
 
   type t =
-    {doc: CComment.docs; virtual_: bool; params: TypeDecl.param list; expr: expr}
+    {doc: CComment.docs; virtual_: bool; params: TypeDecl.param list; expr: expr; expansion: ClassSignature.t option }
 end =
   ClassType
 
@@ -1746,13 +1753,35 @@ let rec type_decl ident_map ty =
     | None ->
         None
 
+  and module_expansion ident_map f =
+    let open Odoc_model.Lang.Module in
+    match f with
+    | AlreadyASig -> Module.AlreadyASig
+    | Signature t -> Signature (signature ident_map t)
+    | Functor (args, sg) ->
+      let (args, ident_map) =
+        List.fold_right (fun arg (args,ident_map) ->
+          match arg with
+          | Some arg ->
+            let identifier = arg.Odoc_model.Lang.FunctorArgument.id in
+            let id = Ident.Of_Identifier.module_ identifier in
+            let ident_map' =
+              {ident_map with modules= (identifier, id) :: ident_map.modules}
+            in
+            let arg' = functor_argument ident_map' id arg in
+            (Some (arg') :: args, ident_map')
+        | None -> (None :: args, ident_map)) args ([],ident_map)
+      in
+      Functor(args, signature ident_map sg)
+  
   and module_ ident_map m =
     let type_ = module_decl ident_map m.Odoc_model.Lang.Module.type_ in
     let canonical = canonical ident_map m.Odoc_model.Lang.Module.canonical in
     let display_type =
       Opt.map (module_decl ident_map) m.Odoc_model.Lang.Module.display_type
     in
-    {Module.doc= docs ident_map m.doc; type_; canonical; hidden= m.hidden; display_type}
+    let expansion = Opt.map (module_expansion ident_map ) m.expansion in
+    {Module.doc= docs ident_map m.doc; type_; canonical; hidden= m.hidden; display_type; expansion}
 
   and module_type_substitution ident_map m =
     let open Odoc_model.Lang.ModuleType in
@@ -1770,7 +1799,8 @@ let rec type_decl ident_map ty =
     let expr' =
       module_type_expr ident_map a.Odoc_model.Lang.FunctorArgument.expr
     in
-    {FunctorArgument.id; expr= expr'}
+    let expansion = Opt.map (module_expansion ident_map) a.expansion in
+    {FunctorArgument.id; expr= expr'; expansion}
 
   and extension ident_map e =
     let open Odoc_model.Lang.Extension in
@@ -1831,7 +1861,8 @@ let rec type_decl ident_map ty =
     let expr =
       Opt.map (module_type_expr ident_map) m.Odoc_model.Lang.ModuleType.expr
     in
-    {ModuleType.doc= docs ident_map m.doc; expr}
+    let expansion = Opt.map (module_expansion ident_map) m.expansion in
+    {ModuleType.doc= docs ident_map m.doc; expr; expansion}
 
   and value ident_map v =
     let type_ = type_expression ident_map v.Odoc_model.Lang.Value.type_ in
@@ -1852,10 +1883,12 @@ let rec type_decl ident_map ty =
 
   and class_ ident_map c =
     let open Odoc_model.Lang.Class in
+    let expansion = Opt.map (class_signature ident_map) c.expansion in
     { Class.doc= docs ident_map c.doc
     ; virtual_= c.virtual_
     ; params= c.params
-    ; type_= class_decl ident_map c.type_ }
+    ; type_= class_decl ident_map c.type_
+    ; expansion }
 
   and class_decl ident_map c =
     let open Odoc_model.Lang.Class in
@@ -1876,10 +1909,12 @@ let rec type_decl ident_map ty =
 
   and class_type ident_map t =
     let open Odoc_model.Lang.ClassType in
+    let expansion = Opt.map (class_signature ident_map) t.expansion in
     { ClassType.doc= docs ident_map t.doc
     ; virtual_= t.virtual_
     ; params= t.params
-    ; expr= class_type_expr ident_map t.expr }
+    ; expr= class_type_expr ident_map t.expr
+    ; expansion }
 
   and class_signature ident_map sg =
     let open Odoc_model.Lang.ClassSignature in
@@ -1947,7 +1982,8 @@ let rec type_decl ident_map ty =
     ; type_= Alias manifest
     ; canonical
     ; hidden= true
-    ; display_type= None }
+    ; display_type= None
+    ; expansion= None }
   
   and inline_element : _ -> Odoc_model.Comment.inline_element -> CComment.inline_element = fun ident_map t ->
       match t with

@@ -55,13 +55,9 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     let unit = Compilation_unit.load input in
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
-      (* See comment in compile for explanation regarding the env duplication. *)
       let env = Env.build env (`Unit unit) in
       let resolved = Odoc_xref2.Resolve2.resolve env unit in
       let expanded = Odoc_xref2.Expand.expand env resolved in
-
-(*      |> Odoc_xref.Lookup.lookup *)
-(*      Odoc_xref2.Resolve.resolve (Env.resolver expand_env) resolved*) (* Yes, again. *)
       expanded
     in
     let pkg_dir =

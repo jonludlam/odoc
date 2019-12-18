@@ -120,7 +120,7 @@ let rec unit (resolver : Env.resolver) t =
               (import :: imports, env) ))
       ([], initial_env) t.imports
   in
-  {t with content= content env t.content; imports}
+  {t with content= content env t.content; imports; doc=comment_docs env t.doc}
 
 and content env =
   let open Compilation_unit in
@@ -141,26 +141,27 @@ and comment_inline_element :
   | `Styled (s, ls) ->
       `Styled (s, List.map (with_location comment_inline_element env) ls)
   | `Reference (r, []) -> (
-    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n" (Component.Fmt.model_reference) r;
+(*    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n%!" (Component.Fmt.model_reference) r;*)
     match Ref_tools.resolve_reference env r with
     | Some (`Identifier (#Odoc_model.Paths.Identifier.Label.t as i) as r)
       ->
-      Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n" (Component.Fmt.model_resolved_reference) r;
+      (* Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n%!" (Component.Fmt.model_resolved_reference) r; *)
       let content =
           match Env.lookup_section_title i env with Some x -> x | None -> []
         in
         `Reference (`Resolved r, content)
     | Some x ->
-    Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n" (Component.Fmt.model_resolved_reference) x;
+    (* Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n%!" (Component.Fmt.model_resolved_reference) x; *)
     `Reference (`Resolved x, []) 
     | None ->
         `Reference (r, [])
     | exception e ->
-        Format.fprintf Format.err_formatter "Caught exception while resolving reference: %s\n%!" (Printexc.to_string e);
+        let bt = Printexc.get_backtrace () in
+        Format.fprintf Format.err_formatter "Caught exception while resolving reference: %s\n%s\n%!" (Printexc.to_string e) bt;
         `Reference (r, []))
 
   | `Reference (r, content) as orig -> begin
-    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve contentful reference: %a\n" (Component.Fmt.model_reference) r;
+    (* Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve contentful reference: %a\n" (Component.Fmt.model_reference) r; *)
       match Ref_tools.resolve_reference env r with
       | Some x ->
       `Reference (`Resolved x, content)
@@ -215,7 +216,8 @@ and exception_ env e =
   let open Exception in
   let res = Opt.map (type_expression env) e.res in
   let args = type_decl_constructor_argument env e.args in
-  {e with res; args}
+  let doc = comment_docs env e.doc in
+  {e with res; args; doc}
 
 and extension env t =
   let open Extension in
@@ -223,15 +225,18 @@ and extension env t =
     let open Constructor in
     { c with
       args= type_decl_constructor_argument env c.args
-    ; res= Opt.map (type_expression env) c.res }
+    ; res= Opt.map (type_expression env) c.res
+    ; doc= comment_docs env c.doc }
   in
   let type_path = type_path env t.type_path in
   let constructors = List.map constructor t.constructors in
-  {t with type_path; constructors}
+  let doc = comment_docs env t.doc in
+  {t with type_path; constructors; doc}
 
 and external_ env e =
   let open External in
-  {e with type_= type_expression env e.type_}
+  { e with type_= type_expression env e.type_
+  ; doc= comment_docs env e.doc }
 
 and class_type_expr env =
   let open ClassType in
@@ -243,7 +248,8 @@ and class_type_expr env =
 
 and class_type env c =
   let open ClassType in
-  {c with expr= class_type_expr env c.expr}
+  let doc = comment_docs env c.doc in
+  {c with expr= class_type_expr env c.expr; doc}
 
 and class_signature env c =
   let open ClassSignature in
@@ -264,11 +270,13 @@ and class_signature env c =
 
 and method_ env m =
   let open Method in
-  {m with type_= type_expression env m.type_}
+  let doc = comment_docs env m.doc in
+  {m with type_= type_expression env m.type_; doc}
 
 and instance_variable env i =
   let open InstanceVariable in
-  {i with type_= type_expression env i.type_}
+  let doc = comment_docs env i.doc in
+  {i with type_= type_expression env i.type_; doc}
 
 and class_ env c =
   let open Class in
@@ -278,11 +286,13 @@ and class_ env c =
     | Arrow (lbl, expr, decl) ->
         Arrow (lbl, type_expression env expr, map_decl decl)
   in
-  {c with type_= map_decl c.type_}
+  let doc = comment_docs env c.doc in
+  {c with type_= map_decl c.type_; doc}
 
 and module_substitution env m =
   let open ModuleSubstitution in
-  {m with manifest= module_path env m.manifest}
+  let doc = comment_docs env m.doc in
+  {m with manifest= module_path env m.manifest; doc}
 
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
@@ -319,6 +329,15 @@ and signature : Env.t -> Signature.t -> _ =
           Include (include_ env i))
     s
 
+and module_expansion : Env.t -> Module.expansion -> Module.expansion =
+  fun env m ->
+    let open Module in
+    match m with
+    | AlreadyASig -> AlreadyASig
+    | Signature sg -> Signature (signature env sg)
+    | Functor (args, sg) ->
+      Functor(args,signature env sg)
+
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
@@ -327,8 +346,9 @@ and module_ : Env.t -> Module.t -> Module.t =
       Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env
     in
     { m with
-      doc = comment_docs env m.doc;
-      type_= module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_ }
+      doc = comment_docs env m.doc
+    ; type_= module_decl env' (m.id :> Paths.Identifier.Signature.t) m.type_
+    ; expansion = Opt.map (module_expansion env') m.expansion }
   with
   | Component.Find.Find_failure (sg, name, ty) as e ->
       let bt = Printexc.get_backtrace () in
@@ -373,7 +393,8 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
           Some
             (module_type_expr env' (m.id :> Paths.Identifier.Signature.t) expr)
     in
-    {m with expr= expr'}
+    let doc = comment_docs env m.doc in
+    {m with expr= expr'; expansion = Opt.map (module_expansion env') m.expansion; doc}
   with e ->
     Format.fprintf Format.err_formatter
       "Failed to resolve module_type (%a): %s" Component.Fmt.model_identifier
@@ -388,6 +409,7 @@ and include_ : Env.t -> Include.t -> Include.t =
     { i with
       decl= module_decl env i.parent i.decl
     ; expansion= {resolved= true; content= signature env i.expansion.content}
+    ; doc= comment_docs env i.doc
     }
   with e ->
     let i' = Component.Of_Lang.(module_decl empty i.decl) in
@@ -400,7 +422,8 @@ and include_ : Env.t -> Include.t -> Include.t =
 and functor_argument : Env.t -> FunctorArgument.t -> FunctorArgument.t =
  fun env a ->
   { a with
-    expr= module_type_expr env (a.id :> Paths.Identifier.Signature.t) a.expr }
+    expr= module_type_expr env (a.id :> Paths.Identifier.Signature.t) a.expr
+  ; expansion= Opt.map (module_expansion env) a.expansion }
 
 and module_type_expr :
     Env.t -> Paths.Identifier.Signature.t -> ModuleType.expr -> ModuleType.expr
@@ -496,12 +519,22 @@ and module_type_expr :
   | TypeOf decl ->
       TypeOf (module_decl env id decl)
 
+and type_decl_representation : Env.t -> TypeDecl.Representation.t -> TypeDecl.Representation.t =
+  fun env r ->
+    let open TypeDecl.Representation in
+    match r with
+    | Variant cs -> Variant (List.map (type_decl_constructor env) cs)
+    | Record fs -> Record (List.map (type_decl_field env) fs)
+    | Extensible -> Extensible
+
 and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
  fun env t ->
   let open TypeDecl in
   try
     let equation = type_decl_equation env t.equation in
-    {t with equation}
+    let doc = comment_docs env t.doc in
+    let representation = Opt.map (type_decl_representation env) t.representation in
+    {t with equation; doc; representation}
   with e ->
     Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"
       Component.Fmt.model_identifier
@@ -522,7 +555,8 @@ and type_decl_equation env t =
 
 and type_decl_field env f =
   let open TypeDecl.Field in
-  {f with type_= type_expression env f.type_}
+  let doc = comment_docs env f.doc in
+  {f with type_= type_expression env f.type_; doc}
 
 and type_decl_constructor_argument env c =
   let open TypeDecl.Constructor in
@@ -532,11 +566,19 @@ and type_decl_constructor_argument env c =
   | Record fs ->
       Record (List.map (type_decl_field env) fs)
 
+and type_decl_constructor env c =
+  let open TypeDecl.Constructor in
+  let doc = comment_docs env c.doc in
+  let args = type_decl_constructor_argument env c.args in
+  let res = Opt.map (type_expression env) c.res in
+  {c with doc; args; res}
+
 and type_expression_polyvar env v =
   let open TypeExpr.Polymorphic_variant in
   let constructor c =
     let open Constructor in
-    {c with arguments= List.map (type_expression env) c.arguments}
+    let doc = comment_docs env c.doc in
+    {c with arguments= List.map (type_expression env) c.arguments; doc}
   in
   let element = function
     | Type t ->

@@ -407,3 +407,13 @@ type any = [
 end = Reference
 
 include Reference
+
+let rec signature_identifier_of_resolved_reference (r : Resolved.signature) =
+  match r with
+  | `Local _ -> failwith "broken"
+  | `Identifier id -> id
+  | `Module(parent, name) -> `Module (signature_identifier_of_resolved_reference parent, name)
+  | `ModuleType(parent,name) -> `ModuleType (signature_identifier_of_resolved_reference parent, name)
+  | `SubstAlias(_m1,_m2) -> failwith "unhandled"
+  | `Canonical(_m1,_m2) -> failwith "unhandled"
+
