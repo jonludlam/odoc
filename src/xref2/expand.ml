@@ -1,8 +1,6 @@
 open Odoc_model
 open Lang
 
-
-
 let rec unit resolver t =
   let open Compilation_unit in
   let initial_env =
@@ -10,7 +8,7 @@ let rec unit resolver t =
     Env.empty |> Env.add_module t.id m
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
-  let initial_env = {initial_env with Env.resolver= Some resolver} in
+  let initial_env = { initial_env with Env.resolver = Some resolver } in
   let rec handle_import (imports, env) import =
     if List.exists (fun i -> i = import) imports then (imports, env)
     else
@@ -27,45 +25,41 @@ let rec unit resolver t =
           in
           List.fold_left handle_import (import :: imports, env) unit.imports
       | Import.Unresolved (str, _) -> (
-        match resolver.lookup_unit str with
-        | Forward_reference ->
-            let env = Env.add_root str Env.Forward env in
-            (import :: imports, env)
-        | Found f ->
-            let unit = resolver.resolve_unit f.root in
-            let m = Env.module_of_unit unit in
-            let env = Env.add_module unit.id m env in
-            let env =
-              Env.add_root
-                (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
-                (Env.Resolved (unit.id, m))
-                env
-            in
-            List.fold_left handle_import (import :: imports, env) unit.imports
-        | Not_found ->
-            (* Format.fprintf Format.err_formatter "Can't find: %s\n%!" str ;*)
-            (import :: imports, env) )
+          match resolver.lookup_unit str with
+          | Forward_reference ->
+              let env = Env.add_root str Env.Forward env in
+              (import :: imports, env)
+          | Found f ->
+              let unit = resolver.resolve_unit f.root in
+              let m = Env.module_of_unit unit in
+              let env = Env.add_module unit.id m env in
+              let env =
+                Env.add_root
+                  (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
+                  (Env.Resolved (unit.id, m))
+                  env
+              in
+              List.fold_left handle_import (import :: imports, env) unit.imports
+          | Not_found ->
+              (* Format.fprintf Format.err_formatter "Can't find: %s\n%!" str ;*)
+              (import :: imports, env) )
   in
-  let imports, env =
-    List.fold_left handle_import ([], initial_env) t.imports
-  in
-  {t with content= content env t.content; imports}
+  let imports, env = List.fold_left handle_import ([], initial_env) t.imports in
+  { t with content = content env t.content; imports }
 
 and content env =
   let open Compilation_unit in
   function
-  | Module m ->
-      Module (signature env m)
-  | Pack _ ->
-      failwith "Unhandled content"
+  | Module m -> Module (signature env m)
+  | Pack _ -> failwith "Unhandled content"
 
 and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
   let expansion =
-    {i.expansion with content= signature env i.expansion.content}
+    { i.expansion with content = signature env i.expansion.content }
   in
-  {i with expansion}
+  { i with expansion }
 
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
@@ -83,8 +77,8 @@ and signature : Env.t -> Signature.t -> _ =
             let m' = module_ env' m in
             (env, Module (r, m') :: items)
         | ModuleType mt ->
-        (*Format.fprintf Format.err_formatter "Expanding module_type %a\n%!" (Component.Fmt.model_identifier) (mt.id :> Paths.Identifier.t);*)
-        let env' =
+            (*Format.fprintf Format.err_formatter "Expanding module_type %a\n%!" (Component.Fmt.model_identifier) (mt.id :> Paths.Identifier.t);*)
+            let env' =
               Env.add_functor_args (mt.id :> Paths.Identifier.Signature.t) env
             in
             let mt' = module_type env' mt in
@@ -98,8 +92,7 @@ and signature : Env.t -> Signature.t -> _ =
         | Include i ->
             let i' = include_ env i in
             (env, Include i' :: items)
-        | x ->
-            (env, x :: items))
+        | x -> (env, x :: items))
       s (env, [])
   in
   items'
@@ -112,13 +105,15 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
     | Functor (Some arg, expr) ->
         let identifier =
           `Parameter
-            ( parent
-            , Odoc_model.Names.ParameterName.of_string
+            ( parent,
+              Odoc_model.Names.ParameterName.of_string
                 (Ident.Name.module_ arg.id) )
         in
         let lenv' =
-          { lenv with
-            Lang_of.module_= (arg.id, identifier) :: lenv.Lang_of.module_ }
+          {
+            lenv with
+            Lang_of.module_ = (arg.id, identifier) :: lenv.Lang_of.module_;
+          }
         in
         let lenv, args = get_env lenv' (`Result parent) expr in
         let arg_sg = Tools.signature_of_module_type_expr_nopath env arg.expr in
@@ -126,13 +121,12 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
         let arg_sg = signature env arg_sg in
         let arg_sg = Resolve2.signature env arg_sg in
         let lang_arg = Lang_of.functor_argument lenv arg in
-        let lang_arg' = {lang_arg with expansion= Some (Signature arg_sg)} in
+        let lang_arg' = { lang_arg with expansion = Some (Signature arg_sg) } in
         (lenv, Some lang_arg' :: args)
     | Functor (None, expr) ->
         let lenv, args = get_env lenv (`Result parent) expr in
         (lenv, None :: args)
-    | _ ->
-        (lenv, [])
+    | _ -> (lenv, [])
   in
   match expr with
   | Component.ModuleType.Functor _ ->
@@ -148,7 +142,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
       let sg = Resolve2.signature env sg in
       Odoc_model.Lang.Module.Functor (args, signature env sg)
   | Component.ModuleType.With (_expr, _subs) ->
-        Format.fprintf Format.err_formatter "Handling expansion of `with`\n";
+      Format.fprintf Format.err_formatter "Handling expansion of `with`\n";
       let sg = Tools.signature_of_module_type_expr_nopath env expr in
       let sg =
         Lang_of.signature
@@ -157,7 +151,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
       in
       let sg = Resolve2.signature env sg in
       Odoc_model.Lang.Module.Signature (signature env sg)
-    | _ ->
+  | _ ->
       let sg = Tools.signature_of_module_type_expr_nopath env expr in
       let sg =
         Lang_of.signature
@@ -170,8 +164,7 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
 and module_decl env (id : Paths_types.Identifier.module_) decl =
   let open Module in
   match decl with
-  | Alias path ->
-      Alias path
+  | Alias path -> Alias path
   | ModuleType mty ->
       ModuleType
         (module_type_expr env (id :> Paths_types.Identifier.signature) mty)
@@ -179,16 +172,13 @@ and module_decl env (id : Paths_types.Identifier.module_) decl =
 and module_type_expr env (id : Paths_types.Identifier.signature) expr =
   let open ModuleType in
   match expr with
-  | Path _ | Signature _ ->
-      expr
-  | With (expr, subs) ->
-      With (module_type_expr env id expr, subs)
-  | TypeOf decl ->
-      TypeOf decl
+  | Path _ | Signature _ -> expr
+  | With (expr, subs) -> With (module_type_expr env id expr, subs)
+  | TypeOf decl -> TypeOf decl
   | Functor (arg, expr) ->
       Functor
-        ( Component.Opt.map (functor_argument env id) arg
-        , module_type_expr env id expr )
+        ( Component.Opt.map (functor_argument env id) arg,
+          module_type_expr env id expr )
 
 and functor_argument env id arg =
   let functor_arg = Env.lookup_module arg.id env in
@@ -199,12 +189,16 @@ and functor_argument env id arg =
           expansion_of_module_type_expr
             (id :> Paths_types.Identifier.signature)
             env expr
-      | _ ->
-          failwith "error"
+      | _ -> failwith "error"
     in
-    {arg with expansion= Some expansion; expr= module_type_expr env id arg.expr}
+    {
+      arg with
+      expansion = Some expansion;
+      expr = module_type_expr env id arg.expr;
+    }
   with e ->
-    Format.fprintf Format.err_formatter "Error expanding functor argument: %s\n%!" (Printexc.to_string e);
+    Format.fprintf Format.err_formatter
+      "Error expanding functor argument: %s\n%!" (Printexc.to_string e);
     raise e
 
 and module_ env m =
@@ -212,18 +206,13 @@ and module_ env m =
   let id = m.id in
   let expansion_needed =
     match m.type_ with
-    | Alias p when Paths.Path.is_hidden (p :> Paths.Path.t) ->
-        true
+    | Alias p when Paths.Path.is_hidden (p :> Paths.Path.t) -> true
     | Alias (`Resolved p) -> (
-      match Paths.Path.Resolved.Module.canonical_ident p with
-      | Some i ->
-          i = m.id (* Self-canonical *)
-      | None ->
-          false )
-    | ModuleType _ ->
-        true
-    | Alias _ ->
-        false
+        match Paths.Path.Resolved.Module.canonical_ident p with
+        | Some i -> i = m.id (* Self-canonical *)
+        | None -> false )
+    | ModuleType _ -> true
+    | Alias _ -> false
   in
   if not expansion_needed then m
   else
@@ -232,7 +221,7 @@ and module_ env m =
     try
       match m'.type_ with
       | Alias _ ->
-          let _,sg = Tools.signature_of_module env (`Identifier id, m') in
+          let _, sg = Tools.signature_of_module env (`Identifier id, m') in
           let sg =
             Lang_of.signature
               (id :> Odoc_model.Paths.Identifier.Signature.t)
@@ -241,44 +230,45 @@ and module_ env m =
           let sg = signature env sg in
           (* Now phase-2 resolve this signature as canonical paths might now make sense *)
           let sg' = Resolve2.signature env sg in
-          { m with
-            type_
-          ; expansion= Some (Odoc_model.Lang.Module.Signature sg')
-          ; display_type= Some (ModuleType (ModuleType.Signature sg')) }
+          {
+            m with
+            type_;
+            expansion = Some (Odoc_model.Lang.Module.Signature sg');
+            display_type = Some (ModuleType (ModuleType.Signature sg'));
+          }
       | ModuleType expr ->
           let expansion =
             expansion_of_module_type_expr
               (id :> Paths_types.Identifier.signature)
               env expr
           in
-          {m with type_; expansion= Some expansion}
+          { m with type_; expansion = Some expansion }
     with e ->
       let bt = Printexc.get_backtrace () in
       Format.fprintf Format.err_formatter
         "Failed during expansion: %s (of module %a)\n%!" (Printexc.to_string e)
         Component.Fmt.model_identifier
-        (id :> Paths.Identifier.t) ;
-      Printf.fprintf stderr "backtrace:\n%s\n%!" bt ;
+        (id :> Paths.Identifier.t);
+      Printf.fprintf stderr "backtrace:\n%s\n%!" bt;
       m
 
 and module_type env m =
   let id = (m.id :> Odoc_model.Paths.Identifier.Signature.t) in
   let expr = Component.Opt.map (module_type_expr env id) m.expr in
   match expr with
-  | None ->
-      {m with expr; expansion= Some (Signature [])}
+  | None -> { m with expr; expansion = Some (Signature []) }
   | _ -> (
       let m' = Env.lookup_module_type m.id env in
       try
         let sg = Tools.signature_of_module_type_nopath env m' in
         let sg = Lang_of.signature id Lang_of.empty sg in
-        {m with expr; expansion= Some (Signature (signature env sg))}
+        { m with expr; expansion = Some (Signature (signature env sg)) }
       with e ->
         Format.fprintf Format.err_formatter
           "Got exception %s expading module type %a" (Printexc.to_string e)
           Component.Fmt.model_identifier
-          (id :> Paths.Identifier.t) ;
-        {m with expr} )
+          (id :> Paths.Identifier.t);
+        { m with expr } )
 
 and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t =
  fun env c ->
@@ -293,10 +283,11 @@ and class_ : Env.t -> Odoc_model.Lang.Class.t -> Odoc_model.Lang.Class.t =
         (c.id :> Paths_types.Identifier.path_class_type)
         sg
     in
-    {c with expansion= Some expansion}
+    { c with expansion = Some expansion }
   with e ->
-      let bt = Printexc.get_backtrace () in
-    Format.fprintf Format.err_formatter "Failed to expand class: %s\n%s\n%!" (Printexc.to_string e) bt;
+    let bt = Printexc.get_backtrace () in
+    Format.fprintf Format.err_formatter "Failed to expand class: %s\n%s\n%!"
+      (Printexc.to_string e) bt;
     c
 
 and class_type :
@@ -312,7 +303,7 @@ and class_type :
       (c.id :> Paths_types.Identifier.path_class_type)
       sg
   in
-  {c with expansion= Some expansion}
+  { c with expansion = Some expansion }
 
 let expand resolver y =
   let before = y in

@@ -1,6 +1,6 @@
 (* A bunch of association lists. Let's hashtbl them up later *)
 
-type lookup_result_found = {root: Odoc_model.Root.t; hidden: bool}
+type lookup_result_found = { root : Odoc_model.Root.t; hidden : bool }
 
 type lookup_unit_result =
   | Forward_reference
@@ -11,32 +11,34 @@ type root =
   | Resolved of (Odoc_model.Paths.Identifier.Module.t * Component.Module.t)
   | Forward
 
-type resolver =
-  { lookup_unit: string -> lookup_unit_result
-  ; resolve_unit: Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t
-  ; lookup_page: string -> Odoc_model.Root.t option
-  ; resolve_page: Odoc_model.Root.t -> Odoc_model.Lang.Page.t }
+type resolver = {
+  lookup_unit : string -> lookup_unit_result;
+  resolve_unit : Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t;
+  lookup_page : string -> Odoc_model.Root.t option;
+  resolve_page : Odoc_model.Root.t -> Odoc_model.Lang.Page.t;
+}
 
-type t =
-  { ident_max: int
-  ; modules: (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list
-  ; module_types:
-      (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list
-  ; types: (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list
-  ; values: (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list
-  ; titles:
-      (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content)
-      list
-  ; classes: (Odoc_model.Paths.Identifier.Class.t * Component.Class.t) list
-  ; class_types:
-      (Odoc_model.Paths.Identifier.ClassType.t * Component.ClassType.t) list
-  ; methods:
-      (Odoc_model.Paths.Identifier.Method.t * Component.Method.t) list
-  ; instance_variables:
-      (Odoc_model.Paths.Identifier.InstanceVariable.t * Component.InstanceVariable.t) list
-  ; elts: (string * Component.Element.any) list
-  ; roots: (string * root) list
-  ; resolver: resolver option }
+type t = {
+  ident_max : int;
+  modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list;
+  module_types :
+    (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list;
+  types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list;
+  values : (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list;
+  titles :
+    (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list;
+  classes : (Odoc_model.Paths.Identifier.Class.t * Component.Class.t) list;
+  class_types :
+    (Odoc_model.Paths.Identifier.ClassType.t * Component.ClassType.t) list;
+  methods : (Odoc_model.Paths.Identifier.Method.t * Component.Method.t) list;
+  instance_variables :
+    ( Odoc_model.Paths.Identifier.InstanceVariable.t
+    * Component.InstanceVariable.t )
+    list;
+  elts : (string * Component.Element.any) list;
+  roots : (string * root) list;
+  resolver : resolver option;
+}
 
 let pp_modules ppf modules =
   List.iter
@@ -70,70 +72,86 @@ let pp ppf env =
 exception MyFailure of Odoc_model.Paths.Identifier.t * t
 
 let empty =
-  { ident_max= 0
-  ; modules= []
-  ; module_types= []
-  ; types= []
-  ; values= []
-  ; titles= []
-  ; elts= []
-  ; roots= []
-  ; classes= []
-  ; class_types= []
-  ; methods= []
-  ; instance_variables= []
-  ; resolver= None }
+  {
+    ident_max = 0;
+    modules = [];
+    module_types = [];
+    types = [];
+    values = [];
+    titles = [];
+    elts = [];
+    roots = [];
+    classes = [];
+    class_types = [];
+    methods = [];
+    instance_variables = [];
+    resolver = None;
+  }
 
 let add_module identifier m env =
-  { env with
-    modules= (identifier, m) :: env.modules
-  ; elts=
+  {
+    env with
+    modules = (identifier, m) :: env.modules;
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `Module (identifier, m))
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_type identifier t env =
-  { env with
-    types= (identifier, t) :: env.types
-  ; elts=
+  {
+    env with
+    types = (identifier, t) :: env.types;
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `Type (identifier, t))
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_module_type identifier t env =
-  { env with
-    module_types= (identifier, t) :: env.module_types
-  ; elts=
+  {
+    env with
+    module_types = (identifier, t) :: env.module_types;
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `ModuleType (identifier, t))
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_value identifier t env =
-  { env with
-    values= (identifier, t) :: env.values
-  ; elts=
+  {
+    env with
+    values = (identifier, t) :: env.values;
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `Value (identifier, t))
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_label identifier env =
-  { env with
-    elts=
+  {
+    env with
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `Label identifier)
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_label_title label elts env =
-  {env with titles= (label, elts) :: env.titles}
+  { env with titles = (label, elts) :: env.titles }
 
 let add_class identifier t env =
-  { env with
-    classes= (identifier, t) :: env.classes
-  ; elts=
+  {
+    env with
+    classes = (identifier, t) :: env.classes;
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `Class (identifier, t))
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_class_type identifier t env =
-  { env with
-    class_types= (identifier, t) :: env.class_types
-  ; elts=
+  {
+    env with
+    class_types = (identifier, t) :: env.class_types;
+    elts =
       (Odoc_model.Paths.Identifier.name identifier, `ClassType (identifier, t))
-      :: env.elts }
+      :: env.elts;
+  }
 
 let add_docs (docs : Odoc_model.Comment.docs) env =
   List.fold_right
@@ -143,18 +161,16 @@ let add_docs (docs : Odoc_model.Comment.docs) env =
           let env = add_label label env in
           let env = add_label_title label nested_elements env in
           env
-      | _ ->
-          env)
+      | _ -> env)
     docs env
 
 let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
   match com with `Docs doc -> add_docs doc env | `Stop -> env
 
 let add_method identifier m env =
-  { env with
-    methods= (identifier, m) :: env.methods }
+  { env with methods = (identifier, m) :: env.methods }
 
-let add_root name ty env = {env with roots= (name, ty) :: env.roots}
+let add_root name ty env = { env with roots = (name, ty) :: env.roots }
 
 let lookup_module identifier env =
   try List.assoc identifier env.modules
@@ -162,10 +178,13 @@ let lookup_module identifier env =
     Format.fprintf Format.err_formatter
       "Failed to find module:\nIdentifier: %a\n\n"
       Component.Fmt.model_identifier
-      (identifier :> Odoc_model.Paths.Identifier.t) ;
-    List.iter (fun (ident,_) ->
-      Format.fprintf Format.err_formatter
-        "%a;\n" Component.Fmt.model_identifier (ident :> Odoc_model.Paths.Identifier.t)) env.modules;
+      (identifier :> Odoc_model.Paths.Identifier.t);
+    List.iter
+      (fun (ident, _) ->
+        Format.fprintf Format.err_formatter "%a;\n"
+          Component.Fmt.model_identifier
+          (ident :> Odoc_model.Paths.Identifier.t))
+      env.modules;
     raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -175,7 +194,7 @@ let lookup_type identifier env =
       "Failed to find type:\nIdentifier: %a\n\nEnv:\n%a\n\n%!"
       Component.Fmt.model_identifier
       (identifier :> Odoc_model.Paths.Identifier.t)
-      pp env ;
+      pp env;
     raise Not_found
 
 let lookup_module_type identifier env = List.assoc identifier env.module_types
@@ -195,58 +214,49 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
   | Module s ->
       let m =
         Odoc_model.Lang.Module.
-          { id= unit.id
-          ; doc= unit.doc
-          ; type_= ModuleType (Signature s)
-          ; canonical= None
-          ; hidden= unit.hidden
-          ; display_type= None
-          ; expansion= Some AlreadyASig }
+          {
+            id = unit.id;
+            doc = unit.doc;
+            type_ = ModuleType (Signature s);
+            canonical = None;
+            hidden = unit.hidden;
+            display_type = None;
+            expansion = Some AlreadyASig;
+          }
       in
       let idents = Component.LocalIdents.(module_ m empty) in
       let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
-      let ty =
-        Component.Of_Lang.(module_ ident_map m)
-      in
+      let ty = Component.Of_Lang.(module_ ident_map m) in
       ty
-  | Pack _ ->
-      failwith "Unsupported"
+  | Pack _ -> failwith "Unsupported"
 
 let lookup_root_module name env =
   match try Some (List.assoc name env.roots) with _ -> None with
-  | Some x ->
-      Some x
+  | Some x -> Some x
   | None -> (
-    match env.resolver with
-    | None ->
-        None
-    | Some r -> (
-      match r.lookup_unit name with
-      | Forward_reference ->
-          Some Forward
-      | Not_found ->
-          None
-      | Found u ->
-          let unit = r.resolve_unit u.root in
-          Some (Resolved (unit.id, module_of_unit unit)) ) )
+      match env.resolver with
+      | None -> None
+      | Some r -> (
+          match r.lookup_unit name with
+          | Forward_reference -> Some Forward
+          | Not_found -> None
+          | Found u ->
+              let unit = r.resolve_unit u.root in
+              Some (Resolved (unit.id, module_of_unit unit)) ) )
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option =
  fun f ->
   let rec inner acc = function
-    | x :: xs -> (
-      match f x with Some y -> Some y | None -> inner acc xs )
-    | [] ->
-        None
+    | x :: xs -> ( match f x with Some y -> Some y | None -> inner acc xs )
+    | [] -> None
   in
   inner []
 
 let lookup_any_by_name name env =
-  let filter_fn :
-      string * Component.Element.any -> Component.Element.any option = function
-    | n, (_ as item) when n = name ->
-        Some item
-    | _ ->
-        None
+  let filter_fn : string * Component.Element.any -> Component.Element.any option
+      = function
+    | n, (_ as item) when n = name -> Some item
+    | _ -> None
   in
   find_map filter_fn env.elts
 
@@ -254,10 +264,8 @@ let lookup_signature_by_name name env =
   let filter_fn :
       string * Component.Element.any -> Component.Element.signature option =
     function
-    | n, (#Component.Element.signature as item) when n = name ->
-        Some item
-    | _ ->
-        None
+    | n, (#Component.Element.signature as item) when n = name -> Some item
+    | _ -> None
   in
   find_map filter_fn env.elts
 
@@ -265,43 +273,35 @@ let lookup_module_by_name name env =
   let filter_fn :
       string * Component.Element.any -> Component.Element.module_ option =
     function
-    | n, (#Component.Element.module_ as item) when n = name ->
-        Some item
-    | _ ->
-        None
+    | n, (#Component.Element.module_ as item) when n = name -> Some item
+    | _ -> None
   in
   find_map filter_fn env.elts
 
-  let lookup_module_type_by_name name env =
-    let filter_fn :
-        string * Component.Element.any -> Component.Element.module_type option =
-      function
-      | n, (#Component.Element.module_type as item) when n = name ->
-          Some item
-      | _ ->
-          None
-    in
-    find_map filter_fn env.elts
-  
+let lookup_module_type_by_name name env =
+  let filter_fn :
+      string * Component.Element.any -> Component.Element.module_type option =
+    function
+    | n, (#Component.Element.module_type as item) when n = name -> Some item
+    | _ -> None
+  in
+  find_map filter_fn env.elts
+
 let lookup_datatype_by_name name env =
   let filter_fn :
-    string * Component.Element.any -> Component.Element.datatype option =
-  function
-  | n, (#Component.Element.datatype as item) when n = name ->
-      Some item
-  | _ ->
-      None
-in
-find_map filter_fn env.elts
+      string * Component.Element.any -> Component.Element.datatype option =
+    function
+    | n, (#Component.Element.datatype as item) when n = name -> Some item
+    | _ -> None
+  in
+  find_map filter_fn env.elts
 
 let lookup_value_by_name name env =
   let filter_fn :
       string * Component.Element.any -> Component.Element.value option =
     function
-    | n, (#Component.Element.value as item) when n = name ->
-        Some item
-    | _ ->
-        None
+    | n, (#Component.Element.value as item) when n = name -> Some item
+    | _ -> None
   in
   find_map filter_fn env.elts
 
@@ -312,27 +312,26 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
       match mty with
       | ModuleType.Functor (Some arg, res) ->
           ( `Parameter
-              ( parent
-              , Odoc_model.Names.ParameterName.of_string
-                  (Ident.Name.module_ arg.Component.FunctorArgument.id) )
-          , { Component.Module.doc= []
-            ; display_type= None
-            ; type_= ModuleType arg.expr
-            ; canonical= None
-            ; hidden= false
-            ; expansion= None } )
+              ( parent,
+                Odoc_model.Names.ParameterName.of_string
+                  (Ident.Name.module_ arg.Component.FunctorArgument.id) ),
+            {
+              Component.Module.doc = [];
+              display_type = None;
+              type_ = ModuleType arg.expr;
+              canonical = None;
+              hidden = false;
+              expansion = None;
+            } )
           :: find_args (`Result parent) res
-      | ModuleType.Functor (None, res) ->
-          find_args (`Result parent) res
-      | _ ->
-          []
+      | ModuleType.Functor (None, res) -> find_args (`Result parent) res
+      | _ -> []
     in
     match id with
     | (`Module _ | `Result _ | `Parameter _) as mid -> (
         let m = lookup_module mid env in
         match m.Component.Module.type_ with
-        | Alias _ ->
-            env
+        | Alias _ -> env
         | ModuleType e ->
             List.fold_left
               (fun env (id, m) -> add_module id m env)
@@ -344,29 +343,28 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
             List.fold_left
               (fun env (id, m) -> add_module id m env)
               env (find_args id e)
-        | None ->
-            env )
-    | `Root _ ->
-        env
+        | None -> env )
+    | `Root _ -> env
 
-let rec open_component_signature : Odoc_model.Paths.Identifier.Signature.t -> Component.Signature.t -> t -> t =
-    let open Component in
-    fun id s env ->
-        List.fold_left
-          (fun env orig ->
-            match orig with
-            | Signature.Type (tid, _, t) ->
-                let new_id = `Type (id, Ident.Name.type_ tid) in
-                add_type new_id t env
-            | Signature.Module (mid, _, m) ->
-                let new_id = `Module (id, Ident.Name.module_ mid) in
-                add_module new_id (Delayed.get m) env
-            | Signature.ModuleType (mid, m) ->
-                let new_id = `ModuleType (id, Ident.Name.module_type mid) in
-                add_module_type new_id m env
-            | Signature.Include i ->
-                open_component_signature id i.expansion_ env
-            | _ -> env) env s.items
+let rec open_component_signature :
+    Odoc_model.Paths.Identifier.Signature.t -> Component.Signature.t -> t -> t =
+  let open Component in
+  fun id s env ->
+    List.fold_left
+      (fun env orig ->
+        match orig with
+        | Signature.Type (tid, _, t) ->
+            let new_id = `Type (id, Ident.Name.type_ tid) in
+            add_type new_id t env
+        | Signature.Module (mid, _, m) ->
+            let new_id = `Module (id, Ident.Name.module_ mid) in
+            add_module new_id (Delayed.get m) env
+        | Signature.ModuleType (mid, m) ->
+            let new_id = `ModuleType (id, Ident.Name.module_type mid) in
+            add_module_type new_id m env
+        | Signature.Include i -> open_component_signature id i.expansion_ env
+        | _ -> env)
+      env s.items
 
 let open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t =
   let open Component in
@@ -380,8 +378,7 @@ let open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t =
             let map = map_of_idents idents empty in
             let ty = method_ map m in
             add_method m.Odoc_model.Lang.Method.id ty env
-        | _ ->
-            env)
+        | _ -> env)
       env s.items
 
 let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
@@ -406,30 +403,25 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             let map = map_of_idents idents empty in
             let ty = module_type map t in
             add_module_type t.Odoc_model.Lang.ModuleType.id ty env
-        | Odoc_model.Lang.Signature.Comment c ->
-            add_comment c env
-        | Odoc_model.Lang.Signature.TypExt _ ->
-            env
-        | Odoc_model.Lang.Signature.Exception _ ->
-            env
+        | Odoc_model.Lang.Signature.Comment c -> add_comment c env
+        | Odoc_model.Lang.Signature.TypExt _ -> env
+        | Odoc_model.Lang.Signature.Exception _ -> env
         | Odoc_model.Lang.Signature.ModuleSubstitution m ->
             let id = Ident.Of_Identifier.module_ m.id in
             let ty =
               Of_Lang.(
                 module_of_module_substitution
-                  {empty with modules= [(m.id, id)]}
+                  { empty with modules = [ (m.id, id) ] }
                   m)
             in
             add_module m.id ty env
-        | Odoc_model.Lang.Signature.TypeSubstitution _ ->
-            env
+        | Odoc_model.Lang.Signature.TypeSubstitution _ -> env
         | Odoc_model.Lang.Signature.Value v ->
             let idents = Component.LocalIdents.(value_ v empty) in
             let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
             let ty = Of_Lang.(value ident_map v) in
             add_value v.Odoc_model.Lang.Value.id ty env
-        | Odoc_model.Lang.Signature.External _ ->
-            env
+        | Odoc_model.Lang.Signature.External _ -> env
         | Odoc_model.Lang.Signature.Class (_, c) ->
             let idents = Component.LocalIdents.(class_ c empty) in
             let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
