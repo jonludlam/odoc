@@ -34,15 +34,15 @@ let rec make_prefix : Resolved.Signature.t -> Cpath.resolved_module option =
 let prefix_signature r s =
   match make_prefix r with
   | Some prefix ->
-      Format.fprintf Format.err_formatter
+(*      Format.fprintf Format.err_formatter
         "Prefixing with Cpath.resolved_module: %a\n%!"
-        Component.Fmt.resolved_module_path prefix;
+        Component.Fmt.resolved_module_path prefix;*)
       Tools.prefix_signature (prefix, s) |> snd
   | None ->
       let identifier = Resolved.Signature.identifier r in
-      Format.fprintf Format.err_formatter "Prefixing with Identifier: %a\n%!"
+(*      Format.fprintf Format.err_formatter "Prefixing with Identifier: %a\n%!"
         Component.Fmt.model_identifier
-        (identifier :> Identifier.t);
+        (identifier :> Identifier.t);*)
       Tools.prefix_ident_signature (identifier, s) |> snd
 
 let rec choose l =

@@ -128,7 +128,9 @@ let prefix_signature (path, s) =
                 Component.Delayed.put (fun () ->
                     Subst.module_ sub (Component.Delayed.get m)) )
         | ModuleType (id, mt) ->
-            ModuleType (Ident.Rename.module_type id, Subst.module_type sub mt)
+            ModuleType (Ident.Rename.module_type id,
+              Component.Delayed.put (fun () ->
+                Subst.module_type sub (Component.Delayed.get mt)))
         | Type (id, r, t) -> Type (Ident.Rename.type_ id, r, Subst.type_ sub t)
         | TypeSubstitution (id, t) ->
             TypeSubstitution (Ident.Rename.type_ id, Subst.type_ sub t)
@@ -212,7 +214,9 @@ let prefix_ident_signature
                 Component.Delayed.put (fun () ->
                     Subst.module_ sub (Component.Delayed.get m)) )
         | ModuleType (id, mt) ->
-            ModuleType (Ident.Rename.module_type id, Subst.module_type sub mt)
+            ModuleType (Ident.Rename.module_type id,
+              Component.Delayed.put (fun () ->
+                Subst.module_type sub (Component.Delayed.get mt)))
         | Type (id, r, t) -> Type (Ident.Rename.type_ id, r, Subst.type_ sub t)
         | TypeSubstitution (id, t) ->
             TypeSubstitution (Ident.Rename.type_ id, Subst.type_ sub t)
@@ -553,9 +557,9 @@ and lookup_and_resolve_module_type_from_resolved_path :
   match p with
   | `Local _id -> raise (ModuleType_lookup_failure (env, p))
   | `Identifier (#Identifier.ModuleType.t as i) ->
-      Format.(
+(*      Format.(
         fprintf err_formatter "lookin' up %a\n%!" Component.Fmt.model_identifier
-          i);
+          i);*)
       let m = Env.lookup_module_type i env in
       (`Identifier i, m)
   | `Substituted s ->
@@ -1065,7 +1069,12 @@ and fragmap_type :
             | x -> (x :: items, removed))
           ([], []) sg.items
       in
-      { items = List.rev items; removed = removed @ sg.removed }
+      let subst = List.fold_left (fun subst ty ->
+        match ty with
+        | Component.Signature.RType (id,replacement) ->
+          Subst.add_type_replacement (id :> Ident.path_type) replacement subst
+        | _ -> subst) Subst.identity removed in
+      Subst.signature subst { items = List.rev items; removed = removed @ sg.removed }
   | Some f ->
       let mapfn m =
         let new_subst =

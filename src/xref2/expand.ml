@@ -66,8 +66,8 @@ and signature : Env.t -> Signature.t -> _ =
   let open Signature in
   let env = Env.open_signature s env in
   let _, items' =
-    List.fold_right
-      (fun item (env, items) ->
+    List.fold_left
+      (fun (env, items) item ->
         match item with
         | Module (r, m) ->
             (*Format.fprintf Format.err_formatter "Expanding module %a\n%!" (Component.Fmt.model_identifier) (m.id :> Paths.Identifier.t);*)
@@ -93,9 +93,9 @@ and signature : Env.t -> Signature.t -> _ =
             let i' = include_ env i in
             (env, Include i' :: items)
         | x -> (env, x :: items))
-      s (env, [])
+      (env, []) s
   in
-  items'
+  List.rev items'
 
 and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
     expr =
@@ -176,6 +176,7 @@ and module_type_expr env (id : Paths_types.Identifier.signature) expr =
   | With (expr, subs) -> With (module_type_expr env id expr, subs)
   | TypeOf decl -> TypeOf decl
   | Functor (arg, expr) ->
+      
       Functor
         ( Component.Opt.map (functor_argument env id) arg,
           module_type_expr env id expr )
@@ -186,19 +187,19 @@ and functor_argument env id arg =
     let expansion =
       match functor_arg.type_ with
       | ModuleType expr ->
-          expansion_of_module_type_expr
-            (id :> Paths_types.Identifier.signature)
-            env expr
+          (try Some (expansion_of_module_type_expr
+            (arg.id :> Paths_types.Identifier.signature)
+            env expr) with _ -> None)
       | _ -> failwith "error"
     in
     {
       arg with
-      expansion = Some expansion;
+      expansion = expansion;
       expr = module_type_expr env id arg.expr;
     }
   with e ->
     Format.fprintf Format.err_formatter
-      "Error expanding functor argument: %s\n%!" (Printexc.to_string e);
+      "Error expanding functor argument: %s\nArgment: %a\n%!" (Printexc.to_string e) Component.Fmt.module_ functor_arg;
     raise e
 
 and module_ env m =

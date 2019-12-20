@@ -64,7 +64,7 @@ module Delayed = struct
         x.v <- Some v;
         v
 
-  let put : (unit -> 'a) -> 'a t = fun f -> { v = Some (f ()); get = f }
+  let put : (unit -> 'a) -> 'a t = fun f -> { v = None; get = f }
 end
 
 module Opt = struct
@@ -262,7 +262,7 @@ and Signature : sig
   type item =
     | Module of Ident.module_ * recursive * Module.t Delayed.t
     | ModuleSubstitution of Ident.module_ * ModuleSubstitution.t
-    | ModuleType of Ident.module_type * ModuleType.t
+    | ModuleType of Ident.module_type * ModuleType.t Delayed.t
     | Type of Ident.type_ * recursive * TypeDecl.t
     | TypeSubstitution of Ident.type_ * TypeDecl.t
     | Exception of Ident.exception_ * Exception.t
@@ -409,7 +409,7 @@ module Fmt = struct
               module_path m.ModuleSubstitution.manifest
         | ModuleType (id, mt) ->
             Format.fprintf ppf "@[<v 2>module type %a %a@]@," Ident.fmt id
-              module_type mt
+              module_type (Delayed.get mt)
         | Type (id, _, t) ->
             Format.fprintf ppf "@[<v 2>type %a %a@]@," Ident.fmt id type_decl t
         | TypeSubstitution (id, t) ->
@@ -952,16 +952,21 @@ module LocalIdents = struct
 
   let opt conv opt ids = match opt with Some x -> conv x ids | None -> ids
 
-  let rec module_ m ids = { ids with modules = m.Module.id :: ids.modules }
+  let rec module_ m ids = 
+    let ids = docs m.Module.doc ids in
+    { ids with modules = m.Module.id :: ids.modules }
 
   and module_substitution m ids =
+    let ids = docs m.ModuleSubstitution.doc ids in
     { ids with modules = m.ModuleSubstitution.id :: ids.modules }
 
   and module_type m ids =
+    let ids = docs m.ModuleType.doc ids in
     { ids with module_types = m.ModuleType.id :: ids.module_types }
 
   and type_decl t ids =
     let ids = opt type_decl_representation t.TypeDecl.representation ids in
+    let ids = docs t.TypeDecl.doc ids in
     { ids with types = t.TypeDecl.id :: ids.types }
 
   and type_decl_representation r ids =
@@ -971,33 +976,46 @@ module LocalIdents = struct
     | Variant cs -> List.fold_right type_decl_constructor cs ids
 
   and type_decl_field f ids =
+    let ids = docs f.TypeDecl.Field.doc ids in
     { ids with fields = f.TypeDecl.Field.id :: ids.fields }
 
   and type_decl_constructor c ids =
+    let ids = docs c.TypeDecl.Constructor.doc ids in
     { ids with constructors = c.TypeDecl.Constructor.id :: ids.constructors }
 
   and extension e ids =
+    let ids = docs e.Extension.doc ids in
     List.fold_right extension_constructor e.Extension.constructors ids
 
   and extension_constructor c ids =
+    let ids = docs c.Extension.Constructor.doc ids in
     { ids with extensions = c.Extension.Constructor.id :: ids.extensions }
 
   and exception_ e ids =
+    let ids = docs e.Exception.doc ids in
     { ids with exceptions = e.Exception.id :: ids.exceptions }
 
   and value_ v ids =
     docs v.Value.doc { ids with values = v.Value.id :: ids.values }
 
-  and external_ e ids = { ids with values = e.External.id :: ids.values }
+  and external_ e ids =
+    let ids = docs e.External.doc ids in
+    { ids with values = e.External.id :: ids.values }
 
-  and class_ c ids = { ids with classes = c.Class.id :: ids.classes }
+  and class_ c ids =
+    let ids = docs c.Class.doc ids in
+    { ids with classes = c.Class.id :: ids.classes }
 
   and class_type c ids =
+    let ids = docs c.ClassType.doc ids in
     { ids with class_types = c.ClassType.id :: ids.class_types }
 
-  and method_ m ids = { ids with methods = m.Method.id :: ids.methods }
+  and method_ m ids =
+    let ids = docs m.Method.doc ids in
+    { ids with methods = m.Method.id :: ids.methods }
 
   and instance_variable i ids =
+    let ids = docs i.InstanceVariable.doc ids in
     {
       ids with
       instance_variables = i.InstanceVariable.id :: ids.instance_variables;
@@ -1005,7 +1023,8 @@ module LocalIdents = struct
 
   and block_element d ids =
     match d with
-    | `Heading (_, id, _) -> { ids with labels = id :: ids.labels }
+    | `Heading (_, id, _) ->
+      { ids with labels = id :: ids.labels }
     | _ -> ids
 
   and docs d ids =
@@ -2111,7 +2130,7 @@ module Of_Lang = struct
             Signature.ModuleSubstitution (id, m')
         | ModuleType m ->
             let id = List.assoc m.id ident_map.module_types in
-            let m' = module_type ident_map m in
+            let m' = Delayed.put (fun () -> module_type ident_map m) in
             Signature.ModuleType (id, m')
         | Value v ->
             let id = List.assoc v.id ident_map.values in
@@ -2204,7 +2223,7 @@ module Find = struct
     let rec inner = function
       | Signature.ModuleType (id, m) :: _ when Ident.Name.module_type id = name
         ->
-          m
+          Delayed.get m
       | Signature.Include i :: rest -> (
           try inner i.Include.expansion_.items with _ -> inner rest )
       | _ :: rest -> inner rest

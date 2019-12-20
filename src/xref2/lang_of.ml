@@ -659,8 +659,6 @@ and module_expansion :
 
 and include_ parent map i =
   let open Component.Include in
-  Format.fprintf Format.err_formatter "Lang_of.include_: items=%d\n%!"
-    (List.length i.expansion_.items);
   {
     Odoc_model.Lang.Include.parent;
     doc = docs map i.doc;
@@ -784,6 +782,7 @@ and module_type_expr map identifier =
   | TypeOf decl -> TypeOf (module_decl map identifier decl)
 
 and module_type map id mty =
+  let mty = Component.Delayed.get mty in
   let identifier = List.assoc id map.module_type in
   let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
   let expansion = Opt.map (module_expansion map sig_id) mty.expansion in

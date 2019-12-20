@@ -1,43 +1,59 @@
+module ModuleMap = Map.Make(struct type t = Ident.module_ let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
+module ModuleTypeMap = Map.Make(struct type t = Ident.module_type let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
+module TypeMap = Map.Make(struct type t = Ident.path_type let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
+module ClassTypeMap = Map.Make(struct type t = Ident.path_class_type let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
+
+
 type t = {
-  module_ : (Ident.module_ * Cpath.resolved_module) list;
-  module_type : (Ident.module_type * Cpath.resolved_module_type) list;
-  type_ : (Ident.path_type * Cpath.resolved_type) list;
-  class_type : (Ident.path_class_type * Cpath.resolved_class_type) list;
+  module_ : Cpath.resolved_module ModuleMap.t;
+  module_type : Cpath.resolved_module_type ModuleTypeMap.t;
+  type_ : Cpath.resolved_type TypeMap.t;
+  class_type : Cpath.resolved_class_type ClassTypeMap.t;
+  type_replacement : Component.TypeExpr.t TypeMap.t
 }
 
-let identity = { module_ = []; module_type = []; type_ = []; class_type = [] }
+exception TypeReplacement of Component.TypeExpr.t
 
-let add_module id subst t = { t with module_ = (id, subst) :: t.module_ }
+let identity = { module_ = ModuleMap.empty ; module_type = ModuleTypeMap.empty; type_ = TypeMap.empty; class_type = ClassTypeMap.empty; type_replacement = TypeMap.empty }
+
+let add_module id subst t = { t with module_ = ModuleMap.add id subst t.module_ }
 
 let add_module_type id subst t =
-  { t with module_type = (id, subst) :: t.module_type }
+  { t with module_type = ModuleTypeMap.add id subst t.module_type }
 
 let add_type : Ident.type_ -> Cpath.resolved_type -> t -> t =
  fun id subst t ->
-  { t with type_ = ((id :> Ident.path_type), subst) :: t.type_ }
+  { t with type_ = TypeMap.add (id :> Ident.path_type) subst t.type_ }
 
 let add_class : Ident.class_ -> Cpath.resolved_class_type -> t -> t =
  fun id subst t ->
   {
     t with
-    type_ = ((id :> Ident.path_type), (subst :> Cpath.resolved_type)) :: t.type_;
-    class_type = ((id :> Ident.path_class_type), subst) :: t.class_type;
+    type_ = TypeMap.add (id :> Ident.path_type) (subst :> Cpath.resolved_type) t.type_;
+    class_type = ClassTypeMap.add (id :> Ident.path_class_type) subst t.class_type;
   }
 
 let add_class_type : Ident.class_type -> Cpath.resolved_class_type -> t -> t =
  fun id subst t ->
   {
     t with
-    type_ = ((id :> Ident.path_type), (subst :> Cpath.resolved_type)) :: t.type_;
-    class_type = ((id :> Ident.path_class_type), subst) :: t.class_type;
+    type_ = TypeMap.add (id :> Ident.path_type) (subst :> Cpath.resolved_type) t.type_;
+    class_type = ClassTypeMap.add (id :> Ident.path_class_type) subst t.class_type;
   }
+
+let add_type_replacement : Ident.path_type -> Component.TypeExpr.t -> t -> t =
+  fun id texp t ->
+    {
+      t with
+      type_replacement = TypeMap.add id texp t.type_replacement
+    }
 
 let rec resolved_module_path :
     t -> Cpath.resolved_module -> Cpath.resolved_module =
  fun s p ->
   match p with
   | `Local id -> (
-      match try Some (List.assoc id s.module_) with _ -> None with
+      match try Some (ModuleMap.find id s.module_) with _ -> None with
       | Some x -> x
       | None -> `Local id )
   | `Identifier _ -> p
@@ -69,7 +85,7 @@ and resolved_module_type_path :
  fun s p ->
   match p with
   | `Local id -> (
-      match try Some (List.assoc id s.module_type) with _ -> None with
+      match try Some (ModuleTypeMap.find id s.module_type) with _ -> None with
       | Some x -> x
       | None -> `Local id )
   | `Identifier _ -> p
@@ -87,7 +103,10 @@ and resolved_type_path : t -> Cpath.resolved_type -> Cpath.resolved_type =
  fun s p ->
   match p with
   | `Local id -> (
-      match try Some (List.assoc id s.type_) with _ -> None with
+      if TypeMap.mem id s.type_replacement then begin
+        raise (TypeReplacement (TypeMap.find id s.type_replacement))
+      end;
+      match try Some (TypeMap.find id s.type_) with _ -> None with
       | Some x -> x
       | None -> `Local id )
   | `Identifier _ -> p
@@ -108,7 +127,7 @@ and resolved_class_type_path :
  fun s p ->
   match p with
   | `Local id -> (
-      match try Some (List.assoc id s.class_type) with _ -> None with
+      match try Some (ClassTypeMap.find id s.class_type) with _ -> None with
       | Some x -> x
       | None -> `Local id )
   | `Identifier _ -> p
@@ -136,7 +155,7 @@ and resolved_module_reference :
  fun t r ->
   match r with
   | `Local id -> (
-      match try Some (List.assoc id t.module_) with _ -> None with
+      match try Some (ModuleMap.find id t.module_) with _ -> None with
       | Some x ->
           let p = Lang_of.(Path.resolved_module empty x) in
           `Identifier (Odoc_model.Paths.Path.Resolved.Module.identifier p)
@@ -161,7 +180,7 @@ and resolved_signature_reference :
  fun t r ->
   match r with
   | `Local (#Ident.module_ as id) -> (
-      match try Some (List.assoc id t.module_) with _ -> None with
+      match try Some (ModuleMap.find id t.module_) with _ -> None with
       | Some x ->
           let p = Lang_of.(Path.resolved_module empty x) in
           `Identifier
@@ -169,7 +188,7 @@ and resolved_signature_reference :
               :> Odoc_model.Paths.Identifier.Signature.t )
       | None -> r )
   | `Local (`LModuleType _ as id) -> (
-      match try Some (List.assoc id t.module_type) with _ -> None with
+      match try Some (ModuleTypeMap.find id t.module_type) with _ -> None with
       | Some x ->
           let p = Lang_of.(Path.resolved_module_type empty x) in
           `Identifier
@@ -200,7 +219,7 @@ and resolved_label_parent_reference :
  fun t r ->
   match r with
   | `Local (#Ident.module_ as id) -> (
-      match try Some (List.assoc id t.module_) with _ -> None with
+      match try Some (ModuleMap.find id t.module_) with _ -> None with
       | Some x ->
           let p = Lang_of.(Path.resolved_module empty x) in
           `Identifier
@@ -208,7 +227,7 @@ and resolved_label_parent_reference :
               :> Odoc_model.Paths.Identifier.LabelParent.t )
       | None -> r )
   | `Local (`LModuleType _ as id) -> (
-      match try Some (List.assoc id t.module_type) with _ -> None with
+      match try Some (ModuleTypeMap.find id t.module_type) with _ -> None with
       | Some x ->
           let p = Lang_of.(Path.resolved_module_type empty x) in
           `Identifier
@@ -284,18 +303,20 @@ and type_package s p =
 
 and type_expr s t =
   let open Component.TypeExpr in
-  match t with
-  | Var s -> Var s
-  | Any -> Any
-  | Alias (t, str) -> Alias (type_expr s t, str)
-  | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expr s t1, type_expr s t2)
-  | Tuple ts -> Tuple (List.map (type_expr s) ts)
-  | Constr (p, ts) -> Constr (type_path s p, List.map (type_expr s) ts)
-  | Polymorphic_variant v -> Polymorphic_variant (type_poly_var s v)
-  | Object o -> Object (type_object s o)
-  | Class (p, ts) -> Class (class_type_path s p, List.map (type_expr s) ts)
-  | Poly (strs, ts) -> Poly (strs, type_expr s ts)
-  | Package p -> Package (type_package s p)
+  try begin
+    match t with
+    | Var s -> Var s
+    | Any -> Any
+    | Alias (t, str) -> Alias (type_expr s t, str)
+    | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expr s t1, type_expr s t2)
+    | Tuple ts -> Tuple (List.map (type_expr s) ts)
+    | Constr (p, ts) -> Constr (type_path s p, List.map (type_expr s) ts)
+    | Polymorphic_variant v -> Polymorphic_variant (type_poly_var s v)
+    | Object o -> Object (type_object s o)
+    | Class (p, ts) -> Class (class_type_path s p, List.map (type_expr s) ts)
+    | Poly (strs, ts) -> Poly (strs, type_expr s ts)
+    | Package p -> Package (type_package s p)
+  end with TypeReplacement y -> y
 
 and module_expansion s t =
   let open Component.Module in
@@ -519,8 +540,6 @@ and rename_bound_idents s sg =
         (ClassType (id', r, c) :: sg)
         rest
   | Include i :: rest ->
-      Format.fprintf Format.err_formatter "rename_bound_idents: %d items\n%!"
-        (List.length i.Component.Include.expansion_.items);
       let s, items =
         rename_bound_idents s [] i.Component.Include.expansion_.items
       in
@@ -535,8 +554,8 @@ and removed_items s items =
   let open Component.Signature in
   List.map
     (function
-      | RModule (id, _) when List.mem_assoc id s.module_ ->
-          RModule (id, List.assoc id s.module_)
+      | RModule (id, _) when ModuleMap.mem id s.module_ ->
+          RModule (id, ModuleMap.find id s.module_)
       | x -> x)
     items
 
@@ -557,7 +576,11 @@ and apply_sig_map s items sg =
                     module_ s (Component.Delayed.get m)) )
         | ModuleSubstitution (id, m) ->
             ModuleSubstitution (id, module_substitution s m)
-        | ModuleType (id, mt) -> ModuleType (id, module_type s mt)
+        | ModuleType (id, mt) ->
+            ModuleType 
+              ( id, 
+                Component.Delayed.put (fun () ->
+                    module_type s (Component.Delayed.get mt)) )
         | Type (id, r, t) -> Type (id, r, type_ s t)
         | TypeSubstitution (id, t) -> TypeSubstitution (id, type_ s t)
         | Exception (id, e) -> Exception (id, exception_ s e)

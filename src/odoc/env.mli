@@ -24,7 +24,7 @@ type t = Odoc_xref2.Env.resolver
 type builder
 
 val create :
-  ?important_digests:bool -> directories:(Fs.Directory.t list) -> builder
+  ?important_digests:bool -> directories:(Fs.Directory.t list) -> open_modules:string list -> builder
 (** Prepare the environment for a given list of
     {{!Fs.Directory.t} include directories}
 

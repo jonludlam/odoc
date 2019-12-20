@@ -156,8 +156,8 @@ and comment_inline_element :
       | exception e ->
           let bt = Printexc.get_backtrace () in
           Format.fprintf Format.err_formatter
-            "Caught exception while resolving reference: %s\n%s\n%!"
-            (Printexc.to_string e) bt;
+            "Caught exception while resolving reference (%a): %s\n%s\n%!"
+            Component.Fmt.model_reference r (Printexc.to_string e) bt;
           `Reference (r, []) )
   | `Reference (r, content) as orig -> (
       (* Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve contentful reference: %a\n" (Component.Fmt.model_reference) r; *)
@@ -618,6 +618,7 @@ and type_expression : Env.t -> _ -> _ =
     | Package p -> Package (type_expression_package env p)
   with _ -> texpr
 
+  (*
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) ->
     ?hash:(Root.t -> int) ->
@@ -628,7 +629,7 @@ let build_resolver :
     Env.resolver =
  fun ?equal:_ ?hash:_ lookup_unit resolve_unit lookup_page resolve_page ->
   { Env.lookup_unit; resolve_unit; lookup_page; resolve_page }
-
+*)
 let resolve x y =
   let before = y in
   let after = unit x before in

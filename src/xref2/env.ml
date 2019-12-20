@@ -6,12 +6,13 @@ type lookup_unit_result =
   | Forward_reference
   | Found of lookup_result_found
   | Not_found
-
+ 
 type root =
   | Resolved of (Odoc_model.Paths.Identifier.Module.t * Component.Module.t)
   | Forward
 
 type resolver = {
+  open_units: string list;
   lookup_unit : string -> lookup_unit_result;
   resolve_unit : Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t;
   lookup_page : string -> Odoc_model.Root.t option;
@@ -175,7 +176,7 @@ let add_root name ty env = { env with roots = (name, ty) :: env.roots }
 let lookup_module identifier env =
   try List.assoc identifier env.modules
   with _ ->
-    Format.fprintf Format.err_formatter
+(*    Format.fprintf Format.err_formatter
       "Failed to find module:\nIdentifier: %a\n\n"
       Component.Fmt.model_identifier
       (identifier :> Odoc_model.Paths.Identifier.t);
@@ -184,7 +185,7 @@ let lookup_module identifier env =
         Format.fprintf Format.err_formatter "%a;\n"
           Component.Fmt.model_identifier
           (ident :> Odoc_model.Paths.Identifier.t))
-      env.modules;
+      env.modules;*)
     raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -311,7 +312,8 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
     let rec find_args parent mty =
       match mty with
       | ModuleType.Functor (Some arg, res) ->
-          ( `Parameter
+          ( arg.Component.FunctorArgument.id,
+            `Parameter
               ( parent,
                 Odoc_model.Names.ParameterName.of_string
                   (Ident.Name.module_ arg.Component.FunctorArgument.id) ),
@@ -327,22 +329,30 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
       | ModuleType.Functor (None, res) -> find_args (`Result parent) res
       | _ -> []
     in
+    (* We substituted back the parameters as identifiers to maintain the invariant that
+       components in the environment are 'self-contained' - that is, they only contain
+       local idents for things that are declared within themselves *)
+    let fold_fn (env, subst) (ident, identifier, m) =
+      let env' = add_module identifier (Subst.module_ subst m) env in
+      (env', Subst.add_module ident (`Identifier identifier) subst)
+    in
     match id with
     | (`Module _ | `Result _ | `Parameter _) as mid -> (
         let m = lookup_module mid env in
         match m.Component.Module.type_ with
         | Alias _ -> env
         | ModuleType e ->
-            List.fold_left
-              (fun env (id, m) -> add_module id m env)
-              env (find_args id e) )
+            let (env', _subst) = List.fold_left fold_fn
+              (env, Subst.identity) (find_args id e)
+            in
+              env')
     | `ModuleType _ as mtyid -> (
         let m = lookup_module_type mtyid env in
         match m.Component.ModuleType.expr with
         | Some e ->
-            List.fold_left
-              (fun env (id, m) -> add_module id m env)
-              env (find_args id e)
+            let (env', _subst) = List.fold_left fold_fn
+                            (env, Subst.identity) (find_args id e)
+              in env'
         | None -> env )
     | `Root _ -> env
 
@@ -361,7 +371,7 @@ let rec open_component_signature :
             add_module new_id (Delayed.get m) env
         | Signature.ModuleType (mid, m) ->
             let new_id = `ModuleType (id, Ident.Name.module_type mid) in
-            add_module_type new_id m env
+            add_module_type new_id (Delayed.get m) env
         | Signature.Include i -> open_component_signature id i.expansion_ env
         | _ -> env)
       env s.items

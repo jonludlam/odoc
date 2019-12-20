@@ -89,6 +89,12 @@ let rec unit (resolver : Env.resolver) t =
             | Not_found -> (import :: imports, env) ))
       ([], initial_env) t.imports
   in
+  let env = List.fold_left (fun env name ->
+    match resolver.lookup_unit name with
+    | Found f ->
+      let unit = resolver.resolve_unit f.root in
+      Env.open_unit unit env
+    | _ -> failwith "Can't open unresolved unit") env resolver.open_units in
   { t with content = content env t.content; imports }
 
 and content env =
@@ -474,13 +480,14 @@ and type_expression : Env.t -> _ -> _ =
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) ->
     ?hash:(Root.t -> int) ->
+    (string list) ->
     (string -> Env.lookup_unit_result) ->
     (Root.t -> Compilation_unit.t) ->
     (string -> Root.t option) ->
     (Root.t -> Page.t) ->
     Env.resolver =
- fun ?equal:_ ?hash:_ lookup_unit resolve_unit lookup_page resolve_page ->
-  { Env.lookup_unit; resolve_unit; lookup_page; resolve_page }
+ fun ?equal:_ ?hash:_ open_units lookup_unit resolve_unit lookup_page resolve_page ->
+  { Env.lookup_unit; resolve_unit; lookup_page; resolve_page; open_units }
 
 let resolve x y =
   let before = y in

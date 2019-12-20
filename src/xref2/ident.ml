@@ -264,6 +264,11 @@ module Rename = struct
     | `LClassType (n, _) -> `LClassType (n, fresh_int ())
 end
 
+let hash : any -> int = Hashtbl.hash 
+
+let compare : any -> any -> int = fun a b ->
+  Int.compare (hash a) (hash b)
+
 let reset () = counter := 0
 
 let rec fmt_aux ppf (id : any) =

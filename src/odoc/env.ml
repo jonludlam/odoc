@@ -183,7 +183,7 @@ let fetch_unit ap root =
 
 type builder = [ `Unit of Compilation_unit.t | `Page of Page.t ] -> t
 
-let create ?(important_digests=true) ~directories : builder =
+let create ?(important_digests=true) ~directories ~open_modules : builder =
   let ap = Accessible_paths.create ~directories in
   fun unit_or_page ->
     let lookup_unit target_name : Odoc_xref2.Env.lookup_unit_result =
@@ -229,7 +229,7 @@ let create ?(important_digests=true) ~directories : builder =
         else
           fetch_page ap root
     in
-    Odoc_xref2.Resolve.build_resolver lookup_unit fetch_unit lookup_page fetch_page
+    Odoc_xref2.Resolve.build_resolver open_modules lookup_unit fetch_unit lookup_page fetch_page
 
 let build builder unit =
   builder unit

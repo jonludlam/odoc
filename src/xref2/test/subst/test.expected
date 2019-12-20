@@ -7,16 +7,16 @@ the equations for t, u and v point to SubTargets rather than SubstituteMe
 BEFORE
 ======
 S: sig
-type tt/33 = SubstituteMe/24.t
-type uu/34 = SubstituteMe/24.u
-type vv/35 = SubstituteMe/24.v
+type tt/27 = SubstituteMe/24.t
+type uu/28 = SubstituteMe/24.u
+type vv/29 = SubstituteMe/24.v
 end
 
 AFTER 
 ======
 S: sig
-type tt/36 = SubTargets/25.t
-type uu/37 = SubTargets/25.u
-type vv/38 = SubTargets/25.v
+type tt/30 = SubTargets/25.t
+type uu/31 = SubTargets/25.u
+type vv/32 = SubTargets/25.v
 end
 

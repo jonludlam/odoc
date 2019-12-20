@@ -56,8 +56,15 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       let env = Env.build env (`Unit unit) in
+      let startresolve = Unix.gettimeofday () in
+      Format.fprintf Format.err_formatter "**** Resolve2...\n%!";
       let resolved = Odoc_xref2.Resolve2.resolve env unit in
+      let startexpand = Unix.gettimeofday () in
+      Format.fprintf Format.err_formatter "**** Expand...\n%!";
       let expanded = Odoc_xref2.Expand.expand env resolved in
+      let finishexpand = Unix.gettimeofday () in
+      Format.fprintf Format.err_formatter "**** Finished: Resolve=%f Expand=%f\n%!" (startexpand -. startresolve) (finishexpand -. startexpand);
+
       expanded
     in
     let pkg_dir =

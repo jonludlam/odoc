@@ -20,7 +20,11 @@ let cmti_of_string s =
     let env = Compmisc.initial_env () in
     let l = Lexing.from_string s in
     let p = Parse.interface l in
-    Typemod.type_interface "" env p;;
+    Typemod.type_interface
+#if OCAML_MAJOR = 4 && OCAML_MINOR < 09
+    ""
+#endif
+    env p;;
 
 let cmt_of_string s =
     let env = Compmisc.initial_env () in
@@ -485,13 +489,13 @@ let my_compilation_unit id docs s =
 let mkenv () =
   Odoc_odoc.Env.create
     ~important_digests:false
-    ~directories:(List.map Odoc_odoc.Fs.Directory.of_string 
+    ~directories:(List.map Odoc_odoc.Fs.Directory.of_string
 #if OCAML_MAJOR = 4 && OCAML_MINOR >= 08
     (Load_path.get_paths ())
 #else
     !Config.load_path
 #endif
-    )
+    ) ~open_modules:[]
 
 let resolve unit =
   let env = mkenv () in

@@ -33,11 +33,12 @@ let rec signature (prefix : Cpath.resolved_module) sg =
         | ModuleType (id, mt) ->
             ModuleType
               ( id,
-                module_type
-                  (`ModuleType
-                    ( prefix,
-                      ModuleTypeName.of_string (Ident.Name.module_type id) ))
-                  mt )
+                Component.Delayed.put (fun () ->
+                  module_type
+                    (`ModuleType
+                      ( prefix,
+                        ModuleTypeName.of_string (Ident.Name.module_type id) ))
+                    (Component.Delayed.get mt) ) )
         | Type (id, r, t) ->
             Type
               ( id,
