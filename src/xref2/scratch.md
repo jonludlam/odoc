@@ -65,55 +65,5 @@ let expanded =
 ```ocaml env=e1
 # #install_printer Common.Ident.print_with_scope;;
 # expanded;
-- : Component.ModuleType.expr =
-Odoc_xref2.Component.ModuleType.Functor
- (Some
-   {Odoc_xref2.Component.FunctorArgument.id = `LParameter ("X", 81);
-    expr =
-     Odoc_xref2.Component.ModuleType.Path
-      (`Resolved
-         (`Identifier
-            (`ModuleType (`Root (Common.root, "Root"), "For_let_syntax"))));
-    expansion = None},
- Odoc_xref2.Component.ModuleType.Functor
-  (Some
-    {Odoc_xref2.Component.FunctorArgument.id = `LParameter ("Intf", 82);
-     expr =
-      Odoc_xref2.Component.ModuleType.Signature
-       {Odoc_xref2.Component.Signature.items =
-         [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("S", 83),
-           {Odoc_xref2.Component.Delayed.v =
-             Some
-              {Odoc_xref2.Component.ModuleType.doc = []; expr = None;
-               expansion = None};
-            get = <fun>})];
-        removed = []};
-     expansion = Some Odoc_xref2.Component.Module.AlreadyASig},
-  Odoc_xref2.Component.ModuleType.Functor
-   (Some
-     {Odoc_xref2.Component.FunctorArgument.id = `LParameter ("Impl", 84);
-      expr =
-       Odoc_xref2.Component.ModuleType.Path
-        (`Resolved (`ModuleType (`Local (`LParameter ("Intf", 82)), "S")));
-      expansion = None},
-   Odoc_xref2.Component.ModuleType.With
-    (Odoc_xref2.Component.ModuleType.With
-      (Odoc_xref2.Component.ModuleType.Path
-        (`Resolved
-           (`Identifier
-              (`ModuleType (`Root (Common.root, "Root"), "Let_syntax")))),
-      [Odoc_xref2.Component.ModuleType.TypeSubst
-        (`Resolved (`Type (`Root, "t")),
-        {Odoc_xref2.Component.TypeDecl.Equation.params =
-          [(Odoc_model.Lang.TypeDecl.Var "a", None)];
-         private_ = false;
-         manifest =
-          Some
-           (Odoc_xref2.Component.TypeExpr.Constr
-             (`Resolved (`Type (`Local (`LParameter ("X", 81)), "t")), 
-             []));
-         constraints = []})]),
-    [Odoc_xref2.Component.ModuleType.ModuleSubst
-      (`Resolved (`Module (`Root, "Open_on_rhs_intf")),
-      `Resolved (`Local (`LParameter ("Intf", 82))))]))))
+- : string = ""
 ```

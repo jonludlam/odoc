@@ -1731,8 +1731,6 @@ val resolved : Odoc_model.Lang.Signature.t =
        constraints = []};
      representation = None})]
 # let expanded = Expand.signature Env.empty resolved;;
-Expanding module M__Hidden
-Expanding module N
 val expanded : Odoc_model.Lang.Signature.t =
   [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
     {Odoc_model.Lang.Module.id =
@@ -2268,7 +2266,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                            "u"),
                                          [], {contents = Types.Mnil});
                                        level = 100000000; scope = 0;
-                                       id = 1290665};
+                                       id = 1290697};
                                     type_variance = [];
                                     type_is_newtype = false;
                                     type_expansion_scope = 0;
@@ -2298,7 +2296,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                       (Path.Pdot (Path.Pident <abstr>, "u"),
                                       [], {contents = Types.Mnil});
                                     level = 100000000; scope = 0;
-                                    id = 1290666};
+                                    id = 1290698};
                                  type_variance = []; type_is_newtype = false;
                                  type_expansion_scope = 0;
                                  type_loc =
@@ -2343,7 +2341,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                Types.Tconstr
                                 (Path.Pdot (Path.Pident <abstr>, "u"), 
                                 [], {contents = Types.Mnil});
-                              level = 100000000; scope = 0; id = 1290666};
+                              level = 100000000; scope = 0; id = 1290698};
                            type_variance = []; type_is_newtype = false;
                            type_expansion_scope = 0;
                            type_loc =
@@ -2379,7 +2377,7 @@ let resolved = Resolve.signature Env.empty sg;;
                              Types.Tconstr
                               (Path.Pdot (Path.Pident <abstr>, "u"), 
                               [], {contents = Types.Mnil});
-                            level = 100000000; scope = 0; id = 1290666};
+                            level = 100000000; scope = 0; id = 1290698};
                          type_variance = []; type_is_newtype = false;
                          type_expansion_scope = 0;
                          type_loc =
@@ -2426,7 +2424,7 @@ let resolved = Resolve.signature Env.empty sg;;
                        {Types.desc =
                          Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                           [], {contents = Types.Mnil});
-                        level = 100000000; scope = 0; id = 1290666};
+                        level = 100000000; scope = 0; id = 1290698};
                      type_variance = []; type_is_newtype = false;
                      type_expansion_scope = 0;
                      type_loc =
@@ -2473,7 +2471,7 @@ let resolved = Resolve.signature Env.empty sg;;
                      {Types.desc =
                        Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                         [], {contents = Types.Mnil});
-                      level = 100000000; scope = 0; id = 1290666};
+                      level = 100000000; scope = 0; id = 1290698};
                    type_variance = []; type_is_newtype = false;
                    type_expansion_scope = 0;
                    type_loc =
@@ -2671,7 +2669,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                                 (Path.Pident <abstr>, "u"),
                                               [], {contents = Types.Mnil});
                                             level = 100000000; scope = 0;
-                                            id = 1290667};
+                                            id = 1290699};
                                          type_variance = [];
                                          type_is_newtype = false;
                                          type_expansion_scope = 0;
@@ -2718,7 +2716,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                                "u"),
                                              [], {contents = Types.Mnil});
                                            level = 100000000; scope = 0;
-                                           id = 1290667};
+                                           id = 1290699};
                                         type_variance = [];
                                         type_is_newtype = false;
                                         type_expansion_scope = 0;
@@ -2752,7 +2750,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                             "u"),
                                           [], {contents = Types.Mnil});
                                         level = 100000000; scope = 0;
-                                        id = 1290668};
+                                        id = 1290700};
                                      type_variance = [];
                                      type_is_newtype = false;
                                      type_expansion_scope = 0;
@@ -2812,7 +2810,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                         Types.Tconstr (Path.Pident <abstr>,
                                          [], {contents = Types.Mnil});
                                        level = 100000000; scope = 0;
-                                       id = 1290670};
+                                       id = 1290702};
                                     type_variance = [];
                                     type_is_newtype = false;
                                     type_expansion_scope = 0;
@@ -2853,7 +2851,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                         Types.Tconstr (Path.Pident <abstr>,
                                          [], {contents = Types.Mnil});
                                        level = 100000000; scope = 0;
-                                       id = 1290670};
+                                       id = 1290702};
                                      ctyp_env = <abstr>;
                                      ctyp_loc =
                                       {Location.loc_start =
@@ -2895,7 +2893,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                    Types.Tconstr
                                     (Path.Pdot (Path.Pident <abstr>, "u"),
                                     [], {contents = Types.Mnil});
-                                  level = 100000000; scope = 0; id = 1290668};
+                                  level = 100000000; scope = 0; id = 1290700};
                                type_variance = []; type_is_newtype = false;
                                type_expansion_scope = 0;
                                type_loc =
@@ -2919,7 +2917,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                  {Types.desc =
                                    Types.Tconstr (Path.Pident <abstr>, 
                                     [], {contents = Types.Mnil});
-                                  level = 100000000; scope = 0; id = 1290670};
+                                  level = 100000000; scope = 0; id = 1290702};
                                type_variance = []; type_is_newtype = false;
                                type_expansion_scope = 0;
                                type_loc =
@@ -2955,7 +2953,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                  Types.Tconstr
                                   (Path.Pdot (Path.Pident <abstr>, "u"), 
                                   [], {contents = Types.Mnil});
-                                level = 100000000; scope = 0; id = 1290668};
+                                level = 100000000; scope = 0; id = 1290700};
                              type_variance = []; type_is_newtype = false;
                              type_expansion_scope = 0;
                              type_loc =
@@ -2979,7 +2977,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                {Types.desc =
                                  Types.Tconstr (Path.Pident <abstr>, 
                                   [], {contents = Types.Mnil});
-                                level = 100000000; scope = 0; id = 1290670};
+                                level = 100000000; scope = 0; id = 1290702};
                              type_variance = []; type_is_newtype = false;
                              type_expansion_scope = 0;
                              type_loc =
@@ -3041,7 +3039,7 @@ let resolved = Resolve.signature Env.empty sg;;
                              Types.Tconstr
                               (Path.Pdot (Path.Pident <abstr>, "u"), 
                               [], {contents = Types.Mnil});
-                            level = 100000000; scope = 0; id = 1290668};
+                            level = 100000000; scope = 0; id = 1290700};
                          type_variance = []; type_is_newtype = false;
                          type_expansion_scope = 0;
                          type_loc =
@@ -3065,7 +3063,7 @@ let resolved = Resolve.signature Env.empty sg;;
                            {Types.desc =
                              Types.Tconstr (Path.Pident <abstr>, [],
                               {contents = Types.Mnil});
-                            level = 100000000; scope = 0; id = 1290670};
+                            level = 100000000; scope = 0; id = 1290702};
                          type_variance = []; type_is_newtype = false;
                          type_expansion_scope = 0;
                          type_loc =
@@ -3127,7 +3125,7 @@ let resolved = Resolve.signature Env.empty sg;;
                            Types.Tconstr
                             (Path.Pdot (Path.Pident <abstr>, "u"), [],
                             {contents = Types.Mnil});
-                          level = 100000000; scope = 0; id = 1290668};
+                          level = 100000000; scope = 0; id = 1290700};
                        type_variance = []; type_is_newtype = false;
                        type_expansion_scope = 0;
                        type_loc =
@@ -3151,7 +3149,7 @@ let resolved = Resolve.signature Env.empty sg;;
                          {Types.desc =
                            Types.Tconstr (Path.Pident <abstr>, [],
                             {contents = Types.Mnil});
-                          level = 100000000; scope = 0; id = 1290670};
+                          level = 100000000; scope = 0; id = 1290702};
                        type_variance = []; type_is_newtype = false;
                        type_expansion_scope = 0;
                        type_loc =
@@ -3190,7 +3188,7 @@ let resolved = Resolve.signature Env.empty sg;;
                       {Types.desc =
                         Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                          [], {contents = Types.Mnil});
-                       level = 100000000; scope = 0; id = 1290684};
+                       level = 100000000; scope = 0; id = 1290716};
                     type_variance = []; type_is_newtype = false;
                     type_expansion_scope = 0;
                     type_loc =
@@ -3213,7 +3211,7 @@ let resolved = Resolve.signature Env.empty sg;;
                       {Types.desc =
                         Types.Tconstr (Path.Pident <abstr>, [],
                          {contents = Types.Mnil});
-                       level = 100000000; scope = 0; id = 1290685};
+                       level = 100000000; scope = 0; id = 1290717};
                     type_variance = []; type_is_newtype = false;
                     type_expansion_scope = 0;
                     type_loc =
@@ -3263,7 +3261,7 @@ let resolved = Resolve.signature Env.empty sg;;
                      {Types.desc =
                        Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                         [], {contents = Types.Mnil});
-                      level = 100000000; scope = 0; id = 1290684};
+                      level = 100000000; scope = 0; id = 1290716};
                    type_variance = []; type_is_newtype = false;
                    type_expansion_scope = 0;
                    type_loc =
@@ -3286,7 +3284,7 @@ let resolved = Resolve.signature Env.empty sg;;
                      {Types.desc =
                        Types.Tconstr (Path.Pident <abstr>, [],
                         {contents = Types.Mnil});
-                      level = 100000000; scope = 0; id = 1290685};
+                      level = 100000000; scope = 0; id = 1290717};
                    type_variance = []; type_is_newtype = false;
                    type_expansion_scope = 0;
                    type_loc =
@@ -3370,7 +3368,7 @@ let resolved = Resolve.signature Env.empty sg;;
                  {Types.desc =
                    Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"), 
                     [], {contents = Types.Mnil});
-                  level = 100000000; scope = 0; id = 1290666};
+                  level = 100000000; scope = 0; id = 1290698};
                type_variance = []; type_is_newtype = false;
                type_expansion_scope = 0;
                type_loc =
@@ -3417,7 +3415,7 @@ let resolved = Resolve.signature Env.empty sg;;
                  {Types.desc =
                    Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"), 
                     [], {contents = Types.Mnil});
-                  level = 100000000; scope = 0; id = 1290684};
+                  level = 100000000; scope = 0; id = 1290716};
                type_variance = []; type_is_newtype = false;
                type_expansion_scope = 0;
                type_loc =
@@ -3440,7 +3438,7 @@ let resolved = Resolve.signature Env.empty sg;;
                  {Types.desc =
                    Types.Tconstr (Path.Pident <abstr>, [],
                     {contents = Types.Mnil});
-                  level = 100000000; scope = 0; id = 1290685};
+                  level = 100000000; scope = 0; id = 1290717};
                type_variance = []; type_is_newtype = false;
                type_expansion_scope = 0;
                type_loc =
