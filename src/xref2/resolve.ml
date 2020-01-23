@@ -73,10 +73,10 @@ let rec unit (resolver : Env.resolver) t =
         | Import.Unresolved (str, _) -> (
             match resolver.lookup_unit str with
             | Forward_reference ->
-                let env = Env.add_root str Env.Forward env in
+              let env = Env.add_root str Env.Forward env in
                 (import :: imports, env)
             | Found f ->
-                let unit = resolver.resolve_unit f.root in
+              let unit = resolver.resolve_unit f.root in
                 let m = Env.module_of_unit unit in
                 let env = Env.add_module unit.id m env in
                 let env =
@@ -86,7 +86,8 @@ let rec unit (resolver : Env.resolver) t =
                     env
                 in
                 (Resolved f.root :: imports, env)
-            | Not_found -> (import :: imports, env) ))
+            | Not_found ->  
+            (import :: imports, env) ))
       ([], initial_env) t.imports
   in
   let env = List.fold_left (fun env name ->
@@ -273,10 +274,11 @@ and include_ : Env.t -> Include.t -> Include.t =
   with e ->
     let i' = Component.Of_Lang.(module_decl empty i.decl) in
     Format.fprintf Format.err_formatter
-      "Failed to resolve include: %a\nGot exception %s (parent=%a)\n%!"
+      "Failed to resolve include: %a\nGot exception %s (parent=%a)\nbacktrace:\n%s\n%!"
       Component.Fmt.module_decl i' (Printexc.to_string e)
       Component.Fmt.model_identifier
-      (i.parent :> Paths.Identifier.t);
+      (i.parent :> Paths.Identifier.t)
+      (Printexc.get_backtrace ());
     raise e
 
 and functor_argument : Env.t -> FunctorArgument.t -> FunctorArgument.t =
@@ -297,22 +299,22 @@ and module_type_expr :
   | With (expr, subs) ->
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
       let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
-      Format.fprintf Format.err_formatter
-        "Handling `With` expression for %a (expr=%a) [%a]\n%!"
+(*      Format.fprintf Format.err_formatter
+        "Handling `With` expression for %a [%a]\n%!"
         Component.Fmt.model_identifier
         (id :> Paths.Identifier.t)
-        Component.Fmt.module_type_expr cexpr Component.Fmt.substitution_list
-        (List.map Component.Of_Lang.(module_type_substitution empty) subs);
+        Component.Fmt.substitution_list
+        (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
       With
         ( module_type_expr env id expr,
           List.fold_left
             (fun (sg, subs) sub ->
               try
-                Format.fprintf Format.err_formatter "Signature is: %a\n%!"
+                (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
                   Component.Fmt.signature sg;
                 Format.fprintf Format.err_formatter "Handling sub: %a\n%!"
                   Component.Fmt.substitution
-                  Component.Of_Lang.(module_type_substitution empty sub);
+                  Component.Of_Lang.(module_type_substitution empty sub); *)
                 match sub with
                 | ModuleEq (frag, decl) ->
                     let frag' =

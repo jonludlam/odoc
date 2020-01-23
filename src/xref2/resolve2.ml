@@ -83,6 +83,7 @@ let rec unit (resolver : Env.resolver) t =
     Env.empty |> Env.add_module t.id m
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
+  let initial_env = { initial_env with Env.resolver = Some resolver } in
   let imports, env =
     List.fold_left
       (fun (imports, env) import ->
@@ -416,22 +417,22 @@ and module_type_expr :
   | With (expr, subs) ->
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
       let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
-      Format.fprintf Format.err_formatter
+(*      Format.fprintf Format.err_formatter
         "Handling `With` expression for %a (expr=%a) [%a]\n%!"
         Component.Fmt.model_identifier
         (id :> Paths.Identifier.t)
         Component.Fmt.module_type_expr cexpr Component.Fmt.substitution_list
-        (List.map Component.Of_Lang.(module_type_substitution empty) subs);
+        (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
       With
         ( module_type_expr env id expr,
           List.fold_left
             (fun (sg, subs) sub ->
               try
-                Format.fprintf Format.err_formatter "Signature is: %a\n%!"
-                  Component.Fmt.signature sg;
-                Format.fprintf Format.err_formatter "Handling sub: %a\n%!"
+                (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
+                  Component.Fmt.signature sg; *)
+                (* Format.fprintf Format.err_formatter "Handling sub: %a\n%!"
                   Component.Fmt.substitution
-                  Component.Of_Lang.(module_type_substitution empty sub);
+                  Component.Of_Lang.(module_type_substitution empty sub); *)
                 match sub with
                 | ModuleEq (frag, decl) ->
                     let frag' =

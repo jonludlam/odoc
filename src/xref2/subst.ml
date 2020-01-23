@@ -3,18 +3,30 @@ module ModuleTypeMap = Map.Make(struct type t = Ident.module_type let compare a 
 module TypeMap = Map.Make(struct type t = Ident.path_type let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
 module ClassTypeMap = Map.Make(struct type t = Ident.path_class_type let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
 
+module ValueMap = Map.Make(struct type t = Ident.value let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any) end)
 
 type t = {
   module_ : Cpath.resolved_module ModuleMap.t;
   module_type : Cpath.resolved_module_type ModuleTypeMap.t;
   type_ : Cpath.resolved_type TypeMap.t;
   class_type : Cpath.resolved_class_type ClassTypeMap.t;
-  type_replacement : Component.TypeExpr.t TypeMap.t
+  type_replacement : Component.TypeExpr.t TypeMap.t;
+
+  ref_module : Cref.Resolved.module_ ModuleMap.t;
+  ref_value : Cref.Resolved.value ValueMap.t;
 }
 
 exception TypeReplacement of Component.TypeExpr.t
 
-let identity = { module_ = ModuleMap.empty ; module_type = ModuleTypeMap.empty; type_ = TypeMap.empty; class_type = ClassTypeMap.empty; type_replacement = TypeMap.empty }
+let identity = 
+  { module_ = ModuleMap.empty
+  ; module_type = ModuleTypeMap.empty
+  ; type_ = TypeMap.empty
+  ; class_type = ClassTypeMap.empty
+  ; type_replacement = TypeMap.empty
+  
+  ; ref_module = ModuleMap.empty
+  ; ref_value = ValueMap.empty }
 
 let add_module id subst t = { t with module_ = ModuleMap.add id subst t.module_ }
 
@@ -106,9 +118,9 @@ and resolved_type_path : t -> Cpath.resolved_type -> Cpath.resolved_type =
       if TypeMap.mem id s.type_replacement then begin
         raise (TypeReplacement (TypeMap.find id s.type_replacement))
       end;
-      match try Some (TypeMap.find id s.type_) with _ -> None with
+      match try Some (TypeMap.find id s.type_) with Not_found -> None with
       | Some x -> x
-      | None -> `Local id )
+      | None -> `Local id)
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (resolved_type_path s p)
   | `Type (p, n) -> `Type (resolved_module_path s p, n)

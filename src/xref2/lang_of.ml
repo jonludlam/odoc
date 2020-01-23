@@ -84,7 +84,7 @@ module Path = struct
   and resolved_module map (p : Cpath.resolved_module) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     match p with
-    | `Local id -> `Identifier (List.assoc id map.module_)
+    | `Local id -> `Identifier (try List.assoc id map.module_ with Not_found -> failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
     | `Substituted x -> resolved_module map x
     | `Identifier (#Odoc_model.Paths.Identifier.Module.t as y) -> `Identifier y
     | `Subst (mty, m) ->
@@ -152,7 +152,8 @@ module Path = struct
   and resolved_reference map (p : Cref.Resolved.any) =
     match p with
     | `Identifier s -> `Identifier s
-    | `Local id -> `Identifier (List.assoc id map.any)
+    | `Local id -> `Identifier (try List.assoc id map.any with Not_found ->
+      failwith (Format.asprintf "XXX Failed to find id: %a" Ident.fmt id))
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
@@ -452,21 +453,22 @@ module ExtractIDs = struct
 
   and signature_items parent map items =
     let open Signature in
+    let lpp = (parent :> Identifier.LabelParent.t) in
     List.fold_left
       (fun map item ->
         match item with
-        | Module (id, _, _) -> module_ parent map id
-        | ModuleSubstitution (id, _) -> module_ parent map id
-        | ModuleType (id, _) -> module_type parent map id
-        | Type (id, _, _) -> type_decl parent map id
-        | TypeSubstitution (id, _) -> type_decl parent map id
-        | Exception (id, _) -> exception_ parent map id
-        | Value (id, _) -> value_ parent map id
-        | External (id, _) -> value_ parent map id (* externals are values *)
-        | Class (id, _, _) -> class_ parent map id
-        | ClassType (id, _, _) -> class_type parent map id
+        | Module (id, _, m) -> docs lpp (module_ parent map id) (Delayed.get m).doc
+        | ModuleSubstitution (id, m) -> docs lpp (module_ parent map id) m.doc
+        | ModuleType (id, mt) -> docs lpp (module_type parent map id) (Delayed.get mt).doc
+        | Type (id, _, t) -> docs lpp (type_decl parent map id) t.doc
+        | TypeSubstitution (id, t) -> docs lpp (type_decl parent map id) t.doc
+        | Exception (id, e) -> docs lpp (exception_ parent map id) e.doc
+        | Value (id, v) -> docs lpp (value_ parent map id) v.doc
+        | External (id, e) -> docs lpp (value_ parent map id) e.doc (* externals are values *)
+        | Class (id, _, c) -> docs lpp (class_ parent map id) c.doc
+        | ClassType (id, _, c) -> docs lpp (class_type parent map id) c.doc
         | Include i -> include_ parent map i
-        | TypExt _ -> map
+        | TypExt t -> docs lpp map t.doc
         | Comment d -> docs_or_stop (parent :> Identifier.LabelParent.t) map d)
       map items
 
@@ -503,7 +505,13 @@ let rec signature_items id map items =
       | Value (id, v) ->
           Odoc_model.Lang.Signature.Value (value_ map id v) :: acc
       | Include i ->
-          Odoc_model.Lang.Signature.Include (include_ id map i) :: acc
+          begin
+            try
+            Odoc_model.Lang.Signature.Include (include_ id map i) :: acc
+            with e ->
+              Format.fprintf Format.err_formatter "Caught exception %s with include: %a" (Printexc.to_string e) Component.Fmt.include_ i;
+              raise e
+          end
       | External (id, e) ->
           Odoc_model.Lang.Signature.External (external_ map id e) :: acc
       | ModuleSubstitution (id, m) ->
@@ -1026,7 +1034,14 @@ and tag map t =
 and block_element map (d : Component.CComment.block_element) :
     Odoc_model.Comment.block_element =
   match d with
-  | `Heading (l, id, content) -> `Heading (l, List.assoc id map.labels, content)
+  | `Heading (l, id, content) -> begin
+    try
+      `Heading (l, List.assoc id map.labels, content)
+    with Not_found ->
+      Format.fprintf Format.err_formatter "Failed to find id: %a\n" Ident.fmt
+        id;
+      raise Not_found
+  end
   | `Tag t -> `Tag (tag map t)
   | #Component.CComment.nestable_block_element as n ->
       (nestable_block_element map n :> Odoc_model.Comment.block_element)

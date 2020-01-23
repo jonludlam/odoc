@@ -441,7 +441,7 @@ module Fmt = struct
 
   and class_type ppf _c = Format.fprintf ppf "<todo>"
 
-  and include_ ppf _i = Format.fprintf ppf "<todo>"
+  and include_ ppf i = Format.fprintf ppf "%a (sig = %a)" module_decl i.decl signature i.expansion_
 
   and value ppf v =
     let open Value in
@@ -560,7 +560,7 @@ module Fmt = struct
   and resolved_module_path : Format.formatter -> Cpath.resolved_module -> unit =
    fun ppf p ->
     match p with
-    | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
+    | `Local ident -> Format.fprintf ppf "local(%a)" Ident.fmt ident
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" resolved_module_path p1 module_path p2
     | `Identifier p ->
@@ -588,13 +588,13 @@ module Fmt = struct
   and module_path : Format.formatter -> Cpath.module_ -> unit =
    fun ppf p ->
     match p with
-    | `Resolved p -> Format.fprintf ppf "%a" resolved_module_path p
+    | `Resolved p -> Format.fprintf ppf "resolved(%a)" resolved_module_path p
     | `Dot (p, str) -> Format.fprintf ppf "%a.%s" module_path p str
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" module_path p1 module_path p2
     | `Substituted p -> Format.fprintf ppf "substituted(%a)" module_path p
     | `Forward s -> Format.fprintf ppf "forward(%s)" s
-    | `Root r -> Format.fprintf ppf "%s" r
+    | `Root r -> Format.fprintf ppf "root(%s)" r
 
   and resolved_module_type_path :
       Format.formatter -> Cpath.resolved_module_type -> unit =
@@ -675,11 +675,11 @@ module Fmt = struct
     | `Root s -> Format.fprintf ppf "root(%s)" s
     | `Forward s -> Format.fprintf ppf "forward(%s)" s
     | `Dot (parent, s) ->
-        Format.fprintf ppf "*%a.%s" model_path
+        Format.fprintf ppf "%a.%s" model_path
           (parent :> Odoc_model.Paths.Path.t)
           s
     | `Apply (func, arg) ->
-        Format.fprintf ppf "*%a(%a)" model_path
+        Format.fprintf ppf "%a(%a)" model_path
           (func :> Odoc_model.Paths.Path.t)
           model_path
           (arg :> Odoc_model.Paths.Path.t)
@@ -2289,7 +2289,7 @@ module Find = struct
           | Some _ as x -> x
           | None -> inner rest )
       | _ :: rest -> inner rest
-      | [] -> fail s name "label"
+      | [] -> None
     in
-    inner s.items
+    inner s.Signature.items
 end

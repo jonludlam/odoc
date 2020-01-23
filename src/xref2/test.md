@@ -661,37 +661,15 @@ now we can ask for the signature of this module:
 
 ```ocaml env=e1
 # let sg = Tools.signature_of_module env (p, m);;
-split: name=M frag=
-after sig=module N/43 : M/44.S
-          module M/44 = global(B)
-          
 val sg : Cpath.resolved_module * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    {Odoc_xref2.Component.Signature.items =
      [Odoc_xref2.Component.Signature.Module (`LModule ("N", 43),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.ModuleType
-             (Odoc_xref2.Component.ModuleType.Path
-               (`Dot (`Resolved (`Local (`LModule ("M", 44))), "S")));
-           canonical = None; hidden = false; display_type = None;
-           expansion = None};
-        get = <fun>});
+       {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
       Odoc_xref2.Component.Signature.Module (`LModule ("M", 44),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.Alias
-             (`Resolved
-                (`Identifier (`Module (`Root (Common.root, "Root"), "B"))));
-           canonical = None; hidden = false; display_type = None;
-           expansion = None};
-        get = <fun>})];
+       {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
     removed = []})
 ```
 
@@ -700,10 +678,6 @@ and we can see we've picked up the `type t` declaration in `M.S`. If we now ask 
 ```ocaml env=e1
 # let (p, m) = Tools.lookup_module_from_resolved_path env
       (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"));;
-split: name=M frag=
-after sig=module N/45 : M/46.S
-          module M/46 = global(B)
-          
 val p : Cpath.resolved_module =
   `Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N")
 val m : Component.Module.t =
@@ -719,10 +693,6 @@ val m : Component.Module.t =
            "S")));
    canonical = None; hidden = false; display_type = None; expansion = None}
 # Tools.signature_of_module env (p, m);;
-split: name=M frag=
-after sig=module N/49 : M/50.S
-          module M/50 = global(B)
-          
 - : Cpath.resolved_module * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
@@ -1761,6 +1731,8 @@ val resolved : Odoc_model.Lang.Signature.t =
        constraints = []};
      representation = None})]
 # let expanded = Expand.signature Env.empty resolved;;
+Expanding module M__Hidden
+Expanding module N
 val expanded : Odoc_model.Lang.Signature.t =
   [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
     {Odoc_model.Lang.Module.id =
@@ -2067,24 +2039,1438 @@ Odoc_xref2.Component.Find.Find_failure
 
 ```ocaml env=e1
 let test_data = {|
-module Test__F : sig
-  module type A = sig type t (** [t] is of type {!t} *) end
-  module B__ : sig type t end
+
+module EEE = struct
+  type u
 end
 
-module Test : sig
-  module F = Test__F
+module FFF = struct
+  module Caml = struct
+    include EEE
+  end
 end
 
-module Test__G : sig
-  include module type of Test.F
-  module N : A
-  module M = B__
-  type u = M.t
+module GGG = struct
+  include FFF
+
+  module Caml = struct
+    include Caml
+    type x = u
+  end
 end
 
 |};;
-let sg = Common.signature_of_mli_string test_data;;
+let cmt = Common.cmt_of_string test_data |> fst;;
+let _, _, sg = Odoc_loader__Cmt.read_implementation Common.root "Root" cmt;;
 let resolved = Resolve.signature Env.empty sg;;
-let expanded = Expand.signature Env.empty resolved;;
+(*let expanded = Expand.signature Env.empty resolved;;*)
+```
+
+```ocaml env=e1
+# cmt;;
+- : Typedtree.structure =
+{Typedtree.str_items =
+  [{Typedtree.str_desc =
+     Typedtree.Tstr_module
+      {Typedtree.mb_id = <abstr>;
+       mb_name =
+        {Asttypes.txt = "EEE";
+         loc =
+          {Location.loc_start =
+            {Lexing.pos_fname = ""; pos_lnum = 3; pos_bol = 4; pos_cnum = 13};
+           loc_end =
+            {Lexing.pos_fname = ""; pos_lnum = 3; pos_bol = 4; pos_cnum = 16};
+           loc_ghost = false}};
+       mb_presence = Types.Mp_present;
+       mb_expr =
+        {Typedtree.mod_desc =
+          Typedtree.Tmod_structure
+           {Typedtree.str_items =
+             [{Typedtree.str_desc =
+                Typedtree.Tstr_type (Asttypes.Recursive,
+                 [{Typedtree.typ_id = <abstr>;
+                   typ_name =
+                    {Asttypes.txt = "u";
+                     loc =
+                      {Location.loc_start =
+                        {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                         pos_cnum = 35};
+                       loc_end =
+                        {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                         pos_cnum = 36};
+                       loc_ghost = false}};
+                   typ_params = [];
+                   typ_type =
+                    {Types.type_params = []; type_arity = 0;
+                     type_kind = Types.Type_abstract;
+                     type_private = Asttypes.Public; type_manifest = None;
+                     type_variance = []; type_is_newtype = false;
+                     type_expansion_scope = 0;
+                     type_loc =
+                      {Location.loc_start =
+                        {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                         pos_cnum = 30};
+                       loc_end =
+                        {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                         pos_cnum = 36};
+                       loc_ghost = false};
+                     type_attributes = []; type_immediate = false;
+                     type_unboxed = {Types.unboxed = false; default = false}};
+                   typ_cstrs = []; typ_kind = Typedtree.Ttype_abstract;
+                   typ_private = Asttypes.Public; typ_manifest = None;
+                   typ_loc =
+                    {Location.loc_start =
+                      {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                       pos_cnum = 30};
+                     loc_end =
+                      {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                       pos_cnum = 36};
+                     loc_ghost = false};
+                   typ_attributes = []}]);
+               str_loc =
+                {Location.loc_start =
+                  {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                   pos_cnum = 30};
+                 loc_end =
+                  {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                   pos_cnum = 36};
+                 loc_ghost = false};
+               str_env = <abstr>}];
+            str_type =
+             [Types.Sig_type (<abstr>,
+               {Types.type_params = []; type_arity = 0;
+                type_kind = Types.Type_abstract;
+                type_private = Asttypes.Public; type_manifest = None;
+                type_variance = []; type_is_newtype = false;
+                type_expansion_scope = 0;
+                type_loc =
+                 {Location.loc_start =
+                   {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                    pos_cnum = 30};
+                  loc_end =
+                   {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                    pos_cnum = 36};
+                  loc_ghost = false};
+                type_attributes = []; type_immediate = false;
+                type_unboxed = {Types.unboxed = false; default = false}},
+               Types.Trec_first, Types.Exported)];
+            str_final_env = <abstr>};
+         mod_loc =
+          {Location.loc_start =
+            {Lexing.pos_fname = ""; pos_lnum = 3; pos_bol = 4; pos_cnum = 19};
+           loc_end =
+            {Lexing.pos_fname = ""; pos_lnum = 5; pos_bol = 37;
+             pos_cnum = 42};
+           loc_ghost = false};
+         mod_type =
+          Types.Mty_signature
+           [Types.Sig_type (<abstr>,
+             {Types.type_params = []; type_arity = 0;
+              type_kind = Types.Type_abstract;
+              type_private = Asttypes.Public; type_manifest = None;
+              type_variance = []; type_is_newtype = false;
+              type_expansion_scope = 0;
+              type_loc =
+               {Location.loc_start =
+                 {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                  pos_cnum = 30};
+                loc_end =
+                 {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                  pos_cnum = 36};
+                loc_ghost = false};
+              type_attributes = []; type_immediate = false;
+              type_unboxed = {Types.unboxed = false; default = false}},
+             Types.Trec_first, Types.Exported)];
+         mod_env = <abstr>; mod_attributes = []};
+       mb_attributes = [];
+       mb_loc =
+        {Location.loc_start =
+          {Lexing.pos_fname = ""; pos_lnum = 3; pos_bol = 4; pos_cnum = 6};
+         loc_end =
+          {Lexing.pos_fname = ""; pos_lnum = 5; pos_bol = 37; pos_cnum = 42};
+         loc_ghost = false}};
+    str_loc =
+     {Location.loc_start =
+       {Lexing.pos_fname = ""; pos_lnum = 3; pos_bol = 4; pos_cnum = 6};
+      loc_end =
+       {Lexing.pos_fname = ""; pos_lnum = 5; pos_bol = 37; pos_cnum = 42};
+      loc_ghost = false};
+    str_env = <abstr>};
+   {Typedtree.str_desc =
+     Typedtree.Tstr_module
+      {Typedtree.mb_id = <abstr>;
+       mb_name =
+        {Asttypes.txt = "FFF";
+         loc =
+          {Location.loc_start =
+            {Lexing.pos_fname = ""; pos_lnum = 7; pos_bol = 46;
+             pos_cnum = 55};
+           loc_end =
+            {Lexing.pos_fname = ""; pos_lnum = 7; pos_bol = 46;
+             pos_cnum = 58};
+           loc_ghost = false}};
+       mb_presence = Types.Mp_present;
+       mb_expr =
+        {Typedtree.mod_desc =
+          Typedtree.Tmod_structure
+           {Typedtree.str_items =
+             [{Typedtree.str_desc =
+                Typedtree.Tstr_module
+                 {Typedtree.mb_id = <abstr>;
+                  mb_name =
+                   {Asttypes.txt = "Caml";
+                    loc =
+                     {Location.loc_start =
+                       {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                        pos_cnum = 79};
+                      loc_end =
+                       {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                        pos_cnum = 83};
+                      loc_ghost = false}};
+                  mb_presence = Types.Mp_present;
+                  mb_expr =
+                   {Typedtree.mod_desc =
+                     Typedtree.Tmod_structure
+                      {Typedtree.str_items =
+                        [{Typedtree.str_desc =
+                           Typedtree.Tstr_include
+                            {Typedtree.incl_mod =
+                              {Typedtree.mod_desc =
+                                Typedtree.Tmod_ident (Path.Pident <abstr>,
+                                 {Asttypes.txt = Longident.Lident "EEE";
+                                  loc =
+                                   {Location.loc_start =
+                                     {Lexing.pos_fname = ""; pos_lnum = 9;
+                                      pos_bol = 93; pos_cnum = 107};
+                                    loc_end =
+                                     {Lexing.pos_fname = ""; pos_lnum = 9;
+                                      pos_bol = 93; pos_cnum = 110};
+                                    loc_ghost = false}});
+                               mod_loc =
+                                {Location.loc_start =
+                                  {Lexing.pos_fname = ""; pos_lnum = 9;
+                                   pos_bol = 93; pos_cnum = 107};
+                                 loc_end =
+                                  {Lexing.pos_fname = ""; pos_lnum = 9;
+                                   pos_bol = 93; pos_cnum = 110};
+                                 loc_ghost = false};
+                               mod_type =
+                                Types.Mty_signature
+                                 [Types.Sig_type (<abstr>,
+                                   {Types.type_params = []; type_arity = 0;
+                                    type_kind = Types.Type_abstract;
+                                    type_private = Asttypes.Public;
+                                    type_manifest =
+                                     Some
+                                      {Types.desc =
+                                        Types.Tconstr
+                                         (Path.Pdot (Path.Pident <abstr>,
+                                           "u"),
+                                         [], {contents = Types.Mnil});
+                                       level = 100000000; scope = 0;
+                                       id = 1290665};
+                                    type_variance = [];
+                                    type_is_newtype = false;
+                                    type_expansion_scope = 0;
+                                    type_loc =
+                                     {Location.loc_start =
+                                       {Lexing.pos_fname = ""; pos_lnum = 4;
+                                        pos_bol = 26; pos_cnum = 30};
+                                      loc_end =
+                                       {Lexing.pos_fname = ""; pos_lnum = 4;
+                                        pos_bol = 26; pos_cnum = 36};
+                                      loc_ghost = false};
+                                    type_attributes = [];
+                                    type_immediate = false;
+                                    type_unboxed =
+                                     {Types.unboxed = false; default = false}},
+                                   Types.Trec_first, Types.Exported)];
+                               mod_env = <abstr>; mod_attributes = []};
+                             incl_type =
+                              [Types.Sig_type (<abstr>,
+                                {Types.type_params = []; type_arity = 0;
+                                 type_kind = Types.Type_abstract;
+                                 type_private = Asttypes.Public;
+                                 type_manifest =
+                                  Some
+                                   {Types.desc =
+                                     Types.Tconstr
+                                      (Path.Pdot (Path.Pident <abstr>, "u"),
+                                      [], {contents = Types.Mnil});
+                                    level = 100000000; scope = 0;
+                                    id = 1290666};
+                                 type_variance = []; type_is_newtype = false;
+                                 type_expansion_scope = 0;
+                                 type_loc =
+                                  {Location.loc_start =
+                                    {Lexing.pos_fname = ""; pos_lnum = 4;
+                                     pos_bol = 26; pos_cnum = 30};
+                                   loc_end =
+                                    {Lexing.pos_fname = ""; pos_lnum = 4;
+                                     pos_bol = 26; pos_cnum = 36};
+                                   loc_ghost = false};
+                                 type_attributes = [];
+                                 type_immediate = false;
+                                 type_unboxed =
+                                  {Types.unboxed = false; default = false}},
+                                Types.Trec_first, Types.Exported)];
+                             incl_loc =
+                              {Location.loc_start =
+                                {Lexing.pos_fname = ""; pos_lnum = 9;
+                                 pos_bol = 93; pos_cnum = 99};
+                               loc_end =
+                                {Lexing.pos_fname = ""; pos_lnum = 9;
+                                 pos_bol = 93; pos_cnum = 110};
+                               loc_ghost = false};
+                             incl_attributes = []};
+                          str_loc =
+                           {Location.loc_start =
+                             {Lexing.pos_fname = ""; pos_lnum = 9;
+                              pos_bol = 93; pos_cnum = 99};
+                            loc_end =
+                             {Lexing.pos_fname = ""; pos_lnum = 9;
+                              pos_bol = 93; pos_cnum = 110};
+                            loc_ghost = false};
+                          str_env = <abstr>}];
+                       str_type =
+                        [Types.Sig_type (<abstr>,
+                          {Types.type_params = []; type_arity = 0;
+                           type_kind = Types.Type_abstract;
+                           type_private = Asttypes.Public;
+                           type_manifest =
+                            Some
+                             {Types.desc =
+                               Types.Tconstr
+                                (Path.Pdot (Path.Pident <abstr>, "u"), 
+                                [], {contents = Types.Mnil});
+                              level = 100000000; scope = 0; id = 1290666};
+                           type_variance = []; type_is_newtype = false;
+                           type_expansion_scope = 0;
+                           type_loc =
+                            {Location.loc_start =
+                              {Lexing.pos_fname = ""; pos_lnum = 4;
+                               pos_bol = 26; pos_cnum = 30};
+                             loc_end =
+                              {Lexing.pos_fname = ""; pos_lnum = 4;
+                               pos_bol = 26; pos_cnum = 36};
+                             loc_ghost = false};
+                           type_attributes = []; type_immediate = false;
+                           type_unboxed =
+                            {Types.unboxed = false; default = false}},
+                          Types.Trec_first, Types.Exported)];
+                       str_final_env = <abstr>};
+                    mod_loc =
+                     {Location.loc_start =
+                       {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                        pos_cnum = 86};
+                      loc_end =
+                       {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                        pos_cnum = 118};
+                      loc_ghost = false};
+                    mod_type =
+                     Types.Mty_signature
+                      [Types.Sig_type (<abstr>,
+                        {Types.type_params = []; type_arity = 0;
+                         type_kind = Types.Type_abstract;
+                         type_private = Asttypes.Public;
+                         type_manifest =
+                          Some
+                           {Types.desc =
+                             Types.Tconstr
+                              (Path.Pdot (Path.Pident <abstr>, "u"), 
+                              [], {contents = Types.Mnil});
+                            level = 100000000; scope = 0; id = 1290666};
+                         type_variance = []; type_is_newtype = false;
+                         type_expansion_scope = 0;
+                         type_loc =
+                          {Location.loc_start =
+                            {Lexing.pos_fname = ""; pos_lnum = 4;
+                             pos_bol = 26; pos_cnum = 30};
+                           loc_end =
+                            {Lexing.pos_fname = ""; pos_lnum = 4;
+                             pos_bol = 26; pos_cnum = 36};
+                           loc_ghost = false};
+                         type_attributes = []; type_immediate = false;
+                         type_unboxed =
+                          {Types.unboxed = false; default = false}},
+                        Types.Trec_first, Types.Exported)];
+                    mod_env = <abstr>; mod_attributes = []};
+                  mb_attributes = [];
+                  mb_loc =
+                   {Location.loc_start =
+                     {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                      pos_cnum = 72};
+                    loc_end =
+                     {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                      pos_cnum = 118};
+                    loc_ghost = false}};
+               str_loc =
+                {Location.loc_start =
+                  {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                   pos_cnum = 72};
+                 loc_end =
+                  {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                   pos_cnum = 118};
+                 loc_ghost = false};
+               str_env = <abstr>}];
+            str_type =
+             [Types.Sig_module (<abstr>, Types.Mp_present,
+               {Types.md_type =
+                 Types.Mty_signature
+                  [Types.Sig_type (<abstr>,
+                    {Types.type_params = []; type_arity = 0;
+                     type_kind = Types.Type_abstract;
+                     type_private = Asttypes.Public;
+                     type_manifest =
+                      Some
+                       {Types.desc =
+                         Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
+                          [], {contents = Types.Mnil});
+                        level = 100000000; scope = 0; id = 1290666};
+                     type_variance = []; type_is_newtype = false;
+                     type_expansion_scope = 0;
+                     type_loc =
+                      {Location.loc_start =
+                        {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                         pos_cnum = 30};
+                       loc_end =
+                        {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                         pos_cnum = 36};
+                       loc_ghost = false};
+                     type_attributes = []; type_immediate = false;
+                     type_unboxed = {Types.unboxed = false; default = false}},
+                    Types.Trec_first, Types.Exported)];
+                md_attributes = [];
+                md_loc =
+                 {Location.loc_start =
+                   {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                    pos_cnum = 72};
+                  loc_end =
+                   {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                    pos_cnum = 118};
+                  loc_ghost = false}},
+               Types.Trec_not, Types.Exported)];
+            str_final_env = <abstr>};
+         mod_loc =
+          {Location.loc_start =
+            {Lexing.pos_fname = ""; pos_lnum = 7; pos_bol = 46;
+             pos_cnum = 61};
+           loc_end =
+            {Lexing.pos_fname = ""; pos_lnum = 11; pos_bol = 119;
+             pos_cnum = 124};
+           loc_ghost = false};
+         mod_type =
+          Types.Mty_signature
+           [Types.Sig_module (<abstr>, Types.Mp_present,
+             {Types.md_type =
+               Types.Mty_signature
+                [Types.Sig_type (<abstr>,
+                  {Types.type_params = []; type_arity = 0;
+                   type_kind = Types.Type_abstract;
+                   type_private = Asttypes.Public;
+                   type_manifest =
+                    Some
+                     {Types.desc =
+                       Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
+                        [], {contents = Types.Mnil});
+                      level = 100000000; scope = 0; id = 1290666};
+                   type_variance = []; type_is_newtype = false;
+                   type_expansion_scope = 0;
+                   type_loc =
+                    {Location.loc_start =
+                      {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                       pos_cnum = 30};
+                     loc_end =
+                      {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                       pos_cnum = 36};
+                     loc_ghost = false};
+                   type_attributes = []; type_immediate = false;
+                   type_unboxed = {Types.unboxed = false; default = false}},
+                  Types.Trec_first, Types.Exported)];
+              md_attributes = [];
+              md_loc =
+               {Location.loc_start =
+                 {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                  pos_cnum = 72};
+                loc_end =
+                 {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                  pos_cnum = 118};
+                loc_ghost = false}},
+             Types.Trec_not, Types.Exported)];
+         mod_env = <abstr>; mod_attributes = []};
+       mb_attributes = [];
+       mb_loc =
+        {Location.loc_start =
+          {Lexing.pos_fname = ""; pos_lnum = 7; pos_bol = 46; pos_cnum = 48};
+         loc_end =
+          {Lexing.pos_fname = ""; pos_lnum = 11; pos_bol = 119;
+           pos_cnum = 124};
+         loc_ghost = false}};
+    str_loc =
+     {Location.loc_start =
+       {Lexing.pos_fname = ""; pos_lnum = 7; pos_bol = 46; pos_cnum = 48};
+      loc_end =
+       {Lexing.pos_fname = ""; pos_lnum = 11; pos_bol = 119; pos_cnum = 124};
+      loc_ghost = false};
+    str_env = <abstr>};
+   {Typedtree.str_desc =
+     Typedtree.Tstr_module
+      {Typedtree.mb_id = <abstr>;
+       mb_name =
+        {Asttypes.txt = "GGG";
+         loc =
+          {Location.loc_start =
+            {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128;
+             pos_cnum = 137};
+           loc_end =
+            {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128;
+             pos_cnum = 140};
+           loc_ghost = false}};
+       mb_presence = Types.Mp_present;
+       mb_expr =
+        {Typedtree.mod_desc =
+          Typedtree.Tmod_constraint
+           ({Typedtree.mod_desc =
+              Typedtree.Tmod_structure
+               {Typedtree.str_items =
+                 [{Typedtree.str_desc =
+                    Typedtree.Tstr_include
+                     {Typedtree.incl_mod =
+                       {Typedtree.mod_desc =
+                         Typedtree.Tmod_ident (Path.Pident <abstr>,
+                          {Asttypes.txt = Longident.Lident "FFF";
+                           loc =
+                            {Location.loc_start =
+                              {Lexing.pos_fname = ""; pos_lnum = 14;
+                               pos_bol = 150; pos_cnum = 162};
+                             loc_end =
+                              {Lexing.pos_fname = ""; pos_lnum = 14;
+                               pos_bol = 150; pos_cnum = 165};
+                             loc_ghost = false}});
+                        mod_loc =
+                         {Location.loc_start =
+                           {Lexing.pos_fname = ""; pos_lnum = 14;
+                            pos_bol = 150; pos_cnum = 162};
+                          loc_end =
+                           {Lexing.pos_fname = ""; pos_lnum = 14;
+                            pos_bol = 150; pos_cnum = 165};
+                          loc_ghost = false};
+                        mod_type =
+                         Types.Mty_signature
+                          [Types.Sig_module (<abstr>, Types.Mp_present,
+                            {Types.md_type =
+                              Types.Mty_alias
+                               (Path.Pdot (Path.Pident <abstr>, "Caml"));
+                             md_attributes = [];
+                             md_loc =
+                              {Location.loc_start =
+                                {Lexing.pos_fname = ""; pos_lnum = 8;
+                                 pos_bol = 68; pos_cnum = 72};
+                               loc_end =
+                                {Lexing.pos_fname = ""; pos_lnum = 10;
+                                 pos_bol = 111; pos_cnum = 118};
+                               loc_ghost = false}},
+                            Types.Trec_not, Types.Exported)];
+                        mod_env = <abstr>; mod_attributes = []};
+                      incl_type =
+                       [Types.Sig_module (<abstr>, Types.Mp_present,
+                         {Types.md_type =
+                           Types.Mty_alias
+                            (Path.Pdot (Path.Pident <abstr>, "Caml"));
+                          md_attributes = [];
+                          md_loc =
+                           {Location.loc_start =
+                             {Lexing.pos_fname = ""; pos_lnum = 8;
+                              pos_bol = 68; pos_cnum = 72};
+                            loc_end =
+                             {Lexing.pos_fname = ""; pos_lnum = 10;
+                              pos_bol = 111; pos_cnum = 118};
+                            loc_ghost = false}},
+                         Types.Trec_not, Types.Exported)];
+                      incl_loc =
+                       {Location.loc_start =
+                         {Lexing.pos_fname = ""; pos_lnum = 14;
+                          pos_bol = 150; pos_cnum = 154};
+                        loc_end =
+                         {Lexing.pos_fname = ""; pos_lnum = 14;
+                          pos_bol = 150; pos_cnum = 165};
+                        loc_ghost = false};
+                      incl_attributes = []};
+                   str_loc =
+                    {Location.loc_start =
+                      {Lexing.pos_fname = ""; pos_lnum = 14; pos_bol = 150;
+                       pos_cnum = 154};
+                     loc_end =
+                      {Lexing.pos_fname = ""; pos_lnum = 14; pos_bol = 150;
+                       pos_cnum = 165};
+                     loc_ghost = false};
+                   str_env = <abstr>};
+                  {Typedtree.str_desc =
+                    Typedtree.Tstr_module
+                     {Typedtree.mb_id = <abstr>;
+                      mb_name =
+                       {Asttypes.txt = "Caml";
+                        loc =
+                         {Location.loc_start =
+                           {Lexing.pos_fname = ""; pos_lnum = 16;
+                            pos_bol = 169; pos_cnum = 180};
+                          loc_end =
+                           {Lexing.pos_fname = ""; pos_lnum = 16;
+                            pos_bol = 169; pos_cnum = 184};
+                          loc_ghost = false}};
+                      mb_presence = Types.Mp_present;
+                      mb_expr =
+                       {Typedtree.mod_desc =
+                         Typedtree.Tmod_structure
+                          {Typedtree.str_items =
+                            [{Typedtree.str_desc =
+                               Typedtree.Tstr_include
+                                {Typedtree.incl_mod =
+                                  {Typedtree.mod_desc =
+                                    Typedtree.Tmod_constraint
+                                     ({Typedtree.mod_desc =
+                                        Typedtree.Tmod_ident
+                                         (Path.Pident <abstr>,
+                                         {Asttypes.txt =
+                                           Longident.Lident "Caml";
+                                          loc =
+                                           {Location.loc_start =
+                                             {Lexing.pos_fname = "";
+                                              pos_lnum = 17; pos_bol = 194;
+                                              pos_cnum = 208};
+                                            loc_end =
+                                             {Lexing.pos_fname = "";
+                                              pos_lnum = 17; pos_bol = 194;
+                                              pos_cnum = 212};
+                                            loc_ghost = false}});
+                                       mod_loc =
+                                        {Location.loc_start =
+                                          {Lexing.pos_fname = "";
+                                           pos_lnum = 17; pos_bol = 194;
+                                           pos_cnum = 208};
+                                         loc_end =
+                                          {Lexing.pos_fname = "";
+                                           pos_lnum = 17; pos_bol = 194;
+                                           pos_cnum = 212};
+                                         loc_ghost = false};
+                                       mod_type =
+                                        Types.Mty_alias (Path.Pident <abstr>);
+                                       mod_env = <abstr>;
+                                       mod_attributes = []},
+                                     Types.Mty_signature
+                                      [Types.Sig_type (<abstr>,
+                                        {Types.type_params = [];
+                                         type_arity = 0;
+                                         type_kind = Types.Type_abstract;
+                                         type_private = Asttypes.Public;
+                                         type_manifest =
+                                          Some
+                                           {Types.desc =
+                                             Types.Tconstr
+                                              (Path.Pdot
+                                                (Path.Pident <abstr>, "u"),
+                                              [], {contents = Types.Mnil});
+                                            level = 100000000; scope = 0;
+                                            id = 1290667};
+                                         type_variance = [];
+                                         type_is_newtype = false;
+                                         type_expansion_scope = 0;
+                                         type_loc =
+                                          {Location.loc_start =
+                                            {Lexing.pos_fname = "";
+                                             pos_lnum = 4; pos_bol = 26;
+                                             pos_cnum = 30};
+                                           loc_end =
+                                            {Lexing.pos_fname = "";
+                                             pos_lnum = 4; pos_bol = 26;
+                                             pos_cnum = 36};
+                                           loc_ghost = false};
+                                         type_attributes = [];
+                                         type_immediate = false;
+                                         type_unboxed =
+                                          {Types.unboxed = false;
+                                           default = false}},
+                                        Types.Trec_first, Types.Exported)],
+                                     Typedtree.Tmodtype_implicit,
+                                     Typedtree.Tcoerce_alias (<abstr>,
+                                      Path.Pident <abstr>,
+                                      Typedtree.Tcoerce_none));
+                                   mod_loc =
+                                    {Location.loc_start =
+                                      {Lexing.pos_fname = ""; pos_lnum = 17;
+                                       pos_bol = 194; pos_cnum = 208};
+                                     loc_end =
+                                      {Lexing.pos_fname = ""; pos_lnum = 17;
+                                       pos_bol = 194; pos_cnum = 212};
+                                     loc_ghost = false};
+                                   mod_type =
+                                    Types.Mty_signature
+                                     [Types.Sig_type (<abstr>,
+                                       {Types.type_params = [];
+                                        type_arity = 0;
+                                        type_kind = Types.Type_abstract;
+                                        type_private = Asttypes.Public;
+                                        type_manifest =
+                                         Some
+                                          {Types.desc =
+                                            Types.Tconstr
+                                             (Path.Pdot (Path.Pident <abstr>,
+                                               "u"),
+                                             [], {contents = Types.Mnil});
+                                           level = 100000000; scope = 0;
+                                           id = 1290667};
+                                        type_variance = [];
+                                        type_is_newtype = false;
+                                        type_expansion_scope = 0;
+                                        type_loc =
+                                         {Location.loc_start =
+                                           {Lexing.pos_fname = "";
+                                            pos_lnum = 4; pos_bol = 26;
+                                            pos_cnum = 30};
+                                          loc_end =
+                                           {Lexing.pos_fname = "";
+                                            pos_lnum = 4; pos_bol = 26;
+                                            pos_cnum = 36};
+                                          loc_ghost = false};
+                                        type_attributes = [];
+                                        type_immediate = false;
+                                        type_unboxed =
+                                         {Types.unboxed = false;
+                                          default = false}},
+                                       Types.Trec_first, Types.Exported)];
+                                   mod_env = <abstr>; mod_attributes = []};
+                                 incl_type =
+                                  [Types.Sig_type (<abstr>,
+                                    {Types.type_params = []; type_arity = 0;
+                                     type_kind = Types.Type_abstract;
+                                     type_private = Asttypes.Public;
+                                     type_manifest =
+                                      Some
+                                       {Types.desc =
+                                         Types.Tconstr
+                                          (Path.Pdot (Path.Pident <abstr>,
+                                            "u"),
+                                          [], {contents = Types.Mnil});
+                                        level = 100000000; scope = 0;
+                                        id = 1290668};
+                                     type_variance = [];
+                                     type_is_newtype = false;
+                                     type_expansion_scope = 0;
+                                     type_loc =
+                                      {Location.loc_start =
+                                        {Lexing.pos_fname = ""; pos_lnum = 4;
+                                         pos_bol = 26; pos_cnum = 30};
+                                       loc_end =
+                                        {Lexing.pos_fname = ""; pos_lnum = 4;
+                                         pos_bol = 26; pos_cnum = 36};
+                                       loc_ghost = false};
+                                     type_attributes = [];
+                                     type_immediate = false;
+                                     type_unboxed =
+                                      {Types.unboxed = false;
+                                       default = false}},
+                                    Types.Trec_first, Types.Exported)];
+                                 incl_loc =
+                                  {Location.loc_start =
+                                    {Lexing.pos_fname = ""; pos_lnum = 17;
+                                     pos_bol = 194; pos_cnum = 200};
+                                   loc_end =
+                                    {Lexing.pos_fname = ""; pos_lnum = 17;
+                                     pos_bol = 194; pos_cnum = 212};
+                                   loc_ghost = false};
+                                 incl_attributes = []};
+                              str_loc =
+                               {Location.loc_start =
+                                 {Lexing.pos_fname = ""; pos_lnum = 17;
+                                  pos_bol = 194; pos_cnum = 200};
+                                loc_end =
+                                 {Lexing.pos_fname = ""; pos_lnum = 17;
+                                  pos_bol = 194; pos_cnum = 212};
+                                loc_ghost = false};
+                              str_env = <abstr>};
+                             {Typedtree.str_desc =
+                               Typedtree.Tstr_type (Asttypes.Recursive,
+                                [{Typedtree.typ_id = <abstr>;
+                                  typ_name =
+                                   {Asttypes.txt = "x";
+                                    loc =
+                                     {Location.loc_start =
+                                       {Lexing.pos_fname = ""; pos_lnum = 18;
+                                        pos_bol = 213; pos_cnum = 224};
+                                      loc_end =
+                                       {Lexing.pos_fname = ""; pos_lnum = 18;
+                                        pos_bol = 213; pos_cnum = 225};
+                                      loc_ghost = false}};
+                                  typ_params = [];
+                                  typ_type =
+                                   {Types.type_params = []; type_arity = 0;
+                                    type_kind = Types.Type_abstract;
+                                    type_private = Asttypes.Public;
+                                    type_manifest =
+                                     Some
+                                      {Types.desc =
+                                        Types.Tconstr (Path.Pident <abstr>,
+                                         [], {contents = Types.Mnil});
+                                       level = 100000000; scope = 0;
+                                       id = 1290670};
+                                    type_variance = [];
+                                    type_is_newtype = false;
+                                    type_expansion_scope = 0;
+                                    type_loc =
+                                     {Location.loc_start =
+                                       {Lexing.pos_fname = ""; pos_lnum = 18;
+                                        pos_bol = 213; pos_cnum = 219};
+                                      loc_end =
+                                       {Lexing.pos_fname = ""; pos_lnum = 18;
+                                        pos_bol = 213; pos_cnum = 229};
+                                      loc_ghost = false};
+                                    type_attributes = [];
+                                    type_immediate = false;
+                                    type_unboxed =
+                                     {Types.unboxed = false; default = false}};
+                                  typ_cstrs = [];
+                                  typ_kind = Typedtree.Ttype_abstract;
+                                  typ_private = Asttypes.Public;
+                                  typ_manifest =
+                                   Some
+                                    {Typedtree.ctyp_desc =
+                                      Typedtree.Ttyp_constr
+                                       (Path.Pident <abstr>,
+                                       {Asttypes.txt = Longident.Lident "u";
+                                        loc =
+                                         {Location.loc_start =
+                                           {Lexing.pos_fname = "";
+                                            pos_lnum = 18; pos_bol = 213;
+                                            pos_cnum = 228};
+                                          loc_end =
+                                           {Lexing.pos_fname = "";
+                                            pos_lnum = 18; pos_bol = 213;
+                                            pos_cnum = 229};
+                                          loc_ghost = false}},
+                                       []);
+                                     ctyp_type =
+                                      {Types.desc =
+                                        Types.Tconstr (Path.Pident <abstr>,
+                                         [], {contents = Types.Mnil});
+                                       level = 100000000; scope = 0;
+                                       id = 1290670};
+                                     ctyp_env = <abstr>;
+                                     ctyp_loc =
+                                      {Location.loc_start =
+                                        {Lexing.pos_fname = "";
+                                         pos_lnum = 18; pos_bol = 213;
+                                         pos_cnum = 228};
+                                       loc_end =
+                                        {Lexing.pos_fname = "";
+                                         pos_lnum = 18; pos_bol = 213;
+                                         pos_cnum = 229};
+                                       loc_ghost = false};
+                                     ctyp_attributes = []};
+                                  typ_loc =
+                                   {Location.loc_start =
+                                     {Lexing.pos_fname = ""; pos_lnum = 18;
+                                      pos_bol = 213; pos_cnum = 219};
+                                    loc_end =
+                                     {Lexing.pos_fname = ""; pos_lnum = 18;
+                                      pos_bol = 213; pos_cnum = 229};
+                                    loc_ghost = false};
+                                  typ_attributes = []}]);
+                              str_loc =
+                               {Location.loc_start =
+                                 {Lexing.pos_fname = ""; pos_lnum = 18;
+                                  pos_bol = 213; pos_cnum = 219};
+                                loc_end =
+                                 {Lexing.pos_fname = ""; pos_lnum = 18;
+                                  pos_bol = 213; pos_cnum = 229};
+                                loc_ghost = false};
+                              str_env = <abstr>}];
+                           str_type =
+                            [Types.Sig_type (<abstr>,
+                              {Types.type_params = []; type_arity = 0;
+                               type_kind = Types.Type_abstract;
+                               type_private = Asttypes.Public;
+                               type_manifest =
+                                Some
+                                 {Types.desc =
+                                   Types.Tconstr
+                                    (Path.Pdot (Path.Pident <abstr>, "u"),
+                                    [], {contents = Types.Mnil});
+                                  level = 100000000; scope = 0; id = 1290668};
+                               type_variance = []; type_is_newtype = false;
+                               type_expansion_scope = 0;
+                               type_loc =
+                                {Location.loc_start =
+                                  {Lexing.pos_fname = ""; pos_lnum = 4;
+                                   pos_bol = 26; pos_cnum = 30};
+                                 loc_end =
+                                  {Lexing.pos_fname = ""; pos_lnum = 4;
+                                   pos_bol = 26; pos_cnum = 36};
+                                 loc_ghost = false};
+                               type_attributes = []; type_immediate = false;
+                               type_unboxed =
+                                {Types.unboxed = false; default = false}},
+                              Types.Trec_first, Types.Exported);
+                             Types.Sig_type (<abstr>,
+                              {Types.type_params = []; type_arity = 0;
+                               type_kind = Types.Type_abstract;
+                               type_private = Asttypes.Public;
+                               type_manifest =
+                                Some
+                                 {Types.desc =
+                                   Types.Tconstr (Path.Pident <abstr>, 
+                                    [], {contents = Types.Mnil});
+                                  level = 100000000; scope = 0; id = 1290670};
+                               type_variance = []; type_is_newtype = false;
+                               type_expansion_scope = 0;
+                               type_loc =
+                                {Location.loc_start =
+                                  {Lexing.pos_fname = ""; pos_lnum = 18;
+                                   pos_bol = 213; pos_cnum = 219};
+                                 loc_end =
+                                  {Lexing.pos_fname = ""; pos_lnum = 18;
+                                   pos_bol = 213; pos_cnum = 229};
+                                 loc_ghost = false};
+                               type_attributes = []; type_immediate = false;
+                               type_unboxed =
+                                {Types.unboxed = false; default = false}},
+                              Types.Trec_first, Types.Exported)];
+                           str_final_env = <abstr>};
+                        mod_loc =
+                         {Location.loc_start =
+                           {Lexing.pos_fname = ""; pos_lnum = 16;
+                            pos_bol = 169; pos_cnum = 187};
+                          loc_end =
+                           {Lexing.pos_fname = ""; pos_lnum = 19;
+                            pos_bol = 230; pos_cnum = 237};
+                          loc_ghost = false};
+                        mod_type =
+                         Types.Mty_signature
+                          [Types.Sig_type (<abstr>,
+                            {Types.type_params = []; type_arity = 0;
+                             type_kind = Types.Type_abstract;
+                             type_private = Asttypes.Public;
+                             type_manifest =
+                              Some
+                               {Types.desc =
+                                 Types.Tconstr
+                                  (Path.Pdot (Path.Pident <abstr>, "u"), 
+                                  [], {contents = Types.Mnil});
+                                level = 100000000; scope = 0; id = 1290668};
+                             type_variance = []; type_is_newtype = false;
+                             type_expansion_scope = 0;
+                             type_loc =
+                              {Location.loc_start =
+                                {Lexing.pos_fname = ""; pos_lnum = 4;
+                                 pos_bol = 26; pos_cnum = 30};
+                               loc_end =
+                                {Lexing.pos_fname = ""; pos_lnum = 4;
+                                 pos_bol = 26; pos_cnum = 36};
+                               loc_ghost = false};
+                             type_attributes = []; type_immediate = false;
+                             type_unboxed =
+                              {Types.unboxed = false; default = false}},
+                            Types.Trec_first, Types.Exported);
+                           Types.Sig_type (<abstr>,
+                            {Types.type_params = []; type_arity = 0;
+                             type_kind = Types.Type_abstract;
+                             type_private = Asttypes.Public;
+                             type_manifest =
+                              Some
+                               {Types.desc =
+                                 Types.Tconstr (Path.Pident <abstr>, 
+                                  [], {contents = Types.Mnil});
+                                level = 100000000; scope = 0; id = 1290670};
+                             type_variance = []; type_is_newtype = false;
+                             type_expansion_scope = 0;
+                             type_loc =
+                              {Location.loc_start =
+                                {Lexing.pos_fname = ""; pos_lnum = 18;
+                                 pos_bol = 213; pos_cnum = 219};
+                               loc_end =
+                                {Lexing.pos_fname = ""; pos_lnum = 18;
+                                 pos_bol = 213; pos_cnum = 229};
+                               loc_ghost = false};
+                             type_attributes = []; type_immediate = false;
+                             type_unboxed =
+                              {Types.unboxed = false; default = false}},
+                            Types.Trec_first, Types.Exported)];
+                        mod_env = <abstr>; mod_attributes = []};
+                      mb_attributes = [];
+                      mb_loc =
+                       {Location.loc_start =
+                         {Lexing.pos_fname = ""; pos_lnum = 16;
+                          pos_bol = 169; pos_cnum = 173};
+                        loc_end =
+                         {Lexing.pos_fname = ""; pos_lnum = 19;
+                          pos_bol = 230; pos_cnum = 237};
+                        loc_ghost = false}};
+                   str_loc =
+                    {Location.loc_start =
+                      {Lexing.pos_fname = ""; pos_lnum = 16; pos_bol = 169;
+                       pos_cnum = 173};
+                     loc_end =
+                      {Lexing.pos_fname = ""; pos_lnum = 19; pos_bol = 230;
+                       pos_cnum = 237};
+                     loc_ghost = false};
+                   str_env = <abstr>}];
+                str_type =
+                 [Types.Sig_module (<abstr>, Types.Mp_present,
+                   {Types.md_type =
+                     Types.Mty_alias
+                      (Path.Pdot (Path.Pident <abstr>, "Caml"));
+                    md_attributes = [];
+                    md_loc =
+                     {Location.loc_start =
+                       {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                        pos_cnum = 72};
+                      loc_end =
+                       {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                        pos_cnum = 118};
+                      loc_ghost = false}},
+                   Types.Trec_not, Types.Exported);
+                  Types.Sig_module (<abstr>, Types.Mp_present,
+                   {Types.md_type =
+                     Types.Mty_signature
+                      [Types.Sig_type (<abstr>,
+                        {Types.type_params = []; type_arity = 0;
+                         type_kind = Types.Type_abstract;
+                         type_private = Asttypes.Public;
+                         type_manifest =
+                          Some
+                           {Types.desc =
+                             Types.Tconstr
+                              (Path.Pdot (Path.Pident <abstr>, "u"), 
+                              [], {contents = Types.Mnil});
+                            level = 100000000; scope = 0; id = 1290668};
+                         type_variance = []; type_is_newtype = false;
+                         type_expansion_scope = 0;
+                         type_loc =
+                          {Location.loc_start =
+                            {Lexing.pos_fname = ""; pos_lnum = 4;
+                             pos_bol = 26; pos_cnum = 30};
+                           loc_end =
+                            {Lexing.pos_fname = ""; pos_lnum = 4;
+                             pos_bol = 26; pos_cnum = 36};
+                           loc_ghost = false};
+                         type_attributes = []; type_immediate = false;
+                         type_unboxed =
+                          {Types.unboxed = false; default = false}},
+                        Types.Trec_first, Types.Exported);
+                       Types.Sig_type (<abstr>,
+                        {Types.type_params = []; type_arity = 0;
+                         type_kind = Types.Type_abstract;
+                         type_private = Asttypes.Public;
+                         type_manifest =
+                          Some
+                           {Types.desc =
+                             Types.Tconstr (Path.Pident <abstr>, [],
+                              {contents = Types.Mnil});
+                            level = 100000000; scope = 0; id = 1290670};
+                         type_variance = []; type_is_newtype = false;
+                         type_expansion_scope = 0;
+                         type_loc =
+                          {Location.loc_start =
+                            {Lexing.pos_fname = ""; pos_lnum = 18;
+                             pos_bol = 213; pos_cnum = 219};
+                           loc_end =
+                            {Lexing.pos_fname = ""; pos_lnum = 18;
+                             pos_bol = 213; pos_cnum = 229};
+                           loc_ghost = false};
+                         type_attributes = []; type_immediate = false;
+                         type_unboxed =
+                          {Types.unboxed = false; default = false}},
+                        Types.Trec_first, Types.Exported)];
+                    md_attributes = [];
+                    md_loc =
+                     {Location.loc_start =
+                       {Lexing.pos_fname = ""; pos_lnum = 16; pos_bol = 169;
+                        pos_cnum = 173};
+                      loc_end =
+                       {Lexing.pos_fname = ""; pos_lnum = 19; pos_bol = 230;
+                        pos_cnum = 237};
+                      loc_ghost = false}},
+                   Types.Trec_not, Types.Exported)];
+                str_final_env = <abstr>};
+             mod_loc =
+              {Location.loc_start =
+                {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128;
+                 pos_cnum = 143};
+               loc_end =
+                {Lexing.pos_fname = ""; pos_lnum = 20; pos_bol = 238;
+                 pos_cnum = 243};
+               loc_ghost = false};
+             mod_type =
+              Types.Mty_signature
+               [Types.Sig_module (<abstr>, Types.Mp_present,
+                 {Types.md_type =
+                   Types.Mty_alias (Path.Pdot (Path.Pident <abstr>, "Caml"));
+                  md_attributes = [];
+                  md_loc =
+                   {Location.loc_start =
+                     {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+                      pos_cnum = 72};
+                    loc_end =
+                     {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+                      pos_cnum = 118};
+                    loc_ghost = false}},
+                 Types.Trec_not, Types.Exported);
+                Types.Sig_module (<abstr>, Types.Mp_present,
+                 {Types.md_type =
+                   Types.Mty_signature
+                    [Types.Sig_type (<abstr>,
+                      {Types.type_params = []; type_arity = 0;
+                       type_kind = Types.Type_abstract;
+                       type_private = Asttypes.Public;
+                       type_manifest =
+                        Some
+                         {Types.desc =
+                           Types.Tconstr
+                            (Path.Pdot (Path.Pident <abstr>, "u"), [],
+                            {contents = Types.Mnil});
+                          level = 100000000; scope = 0; id = 1290668};
+                       type_variance = []; type_is_newtype = false;
+                       type_expansion_scope = 0;
+                       type_loc =
+                        {Location.loc_start =
+                          {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                           pos_cnum = 30};
+                         loc_end =
+                          {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                           pos_cnum = 36};
+                         loc_ghost = false};
+                       type_attributes = []; type_immediate = false;
+                       type_unboxed =
+                        {Types.unboxed = false; default = false}},
+                      Types.Trec_first, Types.Exported);
+                     Types.Sig_type (<abstr>,
+                      {Types.type_params = []; type_arity = 0;
+                       type_kind = Types.Type_abstract;
+                       type_private = Asttypes.Public;
+                       type_manifest =
+                        Some
+                         {Types.desc =
+                           Types.Tconstr (Path.Pident <abstr>, [],
+                            {contents = Types.Mnil});
+                          level = 100000000; scope = 0; id = 1290670};
+                       type_variance = []; type_is_newtype = false;
+                       type_expansion_scope = 0;
+                       type_loc =
+                        {Location.loc_start =
+                          {Lexing.pos_fname = ""; pos_lnum = 18;
+                           pos_bol = 213; pos_cnum = 219};
+                         loc_end =
+                          {Lexing.pos_fname = ""; pos_lnum = 18;
+                           pos_bol = 213; pos_cnum = 229};
+                         loc_ghost = false};
+                       type_attributes = []; type_immediate = false;
+                       type_unboxed =
+                        {Types.unboxed = false; default = false}},
+                      Types.Trec_first, Types.Exported)];
+                  md_attributes = [];
+                  md_loc =
+                   {Location.loc_start =
+                     {Lexing.pos_fname = ""; pos_lnum = 16; pos_bol = 169;
+                      pos_cnum = 173};
+                    loc_end =
+                     {Lexing.pos_fname = ""; pos_lnum = 19; pos_bol = 230;
+                      pos_cnum = 237};
+                    loc_ghost = false}},
+                 Types.Trec_not, Types.Exported)];
+             mod_env = <abstr>; mod_attributes = []},
+           Types.Mty_signature
+            [Types.Sig_module (<abstr>, Types.Mp_present,
+              {Types.md_type =
+                Types.Mty_signature
+                 [Types.Sig_type (<abstr>,
+                   {Types.type_params = []; type_arity = 0;
+                    type_kind = Types.Type_abstract;
+                    type_private = Asttypes.Public;
+                    type_manifest =
+                     Some
+                      {Types.desc =
+                        Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
+                         [], {contents = Types.Mnil});
+                       level = 100000000; scope = 0; id = 1290684};
+                    type_variance = []; type_is_newtype = false;
+                    type_expansion_scope = 0;
+                    type_loc =
+                     {Location.loc_start =
+                       {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                        pos_cnum = 30};
+                      loc_end =
+                       {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                        pos_cnum = 36};
+                      loc_ghost = false};
+                    type_attributes = []; type_immediate = false;
+                    type_unboxed = {Types.unboxed = false; default = false}},
+                   Types.Trec_first, Types.Exported);
+                  Types.Sig_type (<abstr>,
+                   {Types.type_params = []; type_arity = 0;
+                    type_kind = Types.Type_abstract;
+                    type_private = Asttypes.Public;
+                    type_manifest =
+                     Some
+                      {Types.desc =
+                        Types.Tconstr (Path.Pident <abstr>, [],
+                         {contents = Types.Mnil});
+                       level = 100000000; scope = 0; id = 1290685};
+                    type_variance = []; type_is_newtype = false;
+                    type_expansion_scope = 0;
+                    type_loc =
+                     {Location.loc_start =
+                       {Lexing.pos_fname = ""; pos_lnum = 18; pos_bol = 213;
+                        pos_cnum = 219};
+                      loc_end =
+                       {Lexing.pos_fname = ""; pos_lnum = 18; pos_bol = 213;
+                        pos_cnum = 229};
+                      loc_ghost = false};
+                    type_attributes = []; type_immediate = false;
+                    type_unboxed = {Types.unboxed = false; default = false}},
+                   Types.Trec_first, Types.Exported)];
+               md_attributes = [];
+               md_loc =
+                {Location.loc_start =
+                  {Lexing.pos_fname = ""; pos_lnum = 16; pos_bol = 169;
+                   pos_cnum = 173};
+                 loc_end =
+                  {Lexing.pos_fname = ""; pos_lnum = 19; pos_bol = 230;
+                   pos_cnum = 237};
+                 loc_ghost = false}},
+              Types.Trec_not, Types.Exported)],
+           Typedtree.Tmodtype_implicit,
+           Typedtree.Tcoerce_structure ([(1, Typedtree.Tcoerce_none)],
+            [(<abstr>, 1, Typedtree.Tcoerce_none);
+             (<abstr>, 0, Typedtree.Tcoerce_none)]));
+         mod_loc =
+          {Location.loc_start =
+            {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128;
+             pos_cnum = 143};
+           loc_end =
+            {Lexing.pos_fname = ""; pos_lnum = 20; pos_bol = 238;
+             pos_cnum = 243};
+           loc_ghost = false};
+         mod_type =
+          Types.Mty_signature
+           [Types.Sig_module (<abstr>, Types.Mp_present,
+             {Types.md_type =
+               Types.Mty_signature
+                [Types.Sig_type (<abstr>,
+                  {Types.type_params = []; type_arity = 0;
+                   type_kind = Types.Type_abstract;
+                   type_private = Asttypes.Public;
+                   type_manifest =
+                    Some
+                     {Types.desc =
+                       Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
+                        [], {contents = Types.Mnil});
+                      level = 100000000; scope = 0; id = 1290684};
+                   type_variance = []; type_is_newtype = false;
+                   type_expansion_scope = 0;
+                   type_loc =
+                    {Location.loc_start =
+                      {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                       pos_cnum = 30};
+                     loc_end =
+                      {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                       pos_cnum = 36};
+                     loc_ghost = false};
+                   type_attributes = []; type_immediate = false;
+                   type_unboxed = {Types.unboxed = false; default = false}},
+                  Types.Trec_first, Types.Exported);
+                 Types.Sig_type (<abstr>,
+                  {Types.type_params = []; type_arity = 0;
+                   type_kind = Types.Type_abstract;
+                   type_private = Asttypes.Public;
+                   type_manifest =
+                    Some
+                     {Types.desc =
+                       Types.Tconstr (Path.Pident <abstr>, [],
+                        {contents = Types.Mnil});
+                      level = 100000000; scope = 0; id = 1290685};
+                   type_variance = []; type_is_newtype = false;
+                   type_expansion_scope = 0;
+                   type_loc =
+                    {Location.loc_start =
+                      {Lexing.pos_fname = ""; pos_lnum = 18; pos_bol = 213;
+                       pos_cnum = 219};
+                     loc_end =
+                      {Lexing.pos_fname = ""; pos_lnum = 18; pos_bol = 213;
+                       pos_cnum = 229};
+                     loc_ghost = false};
+                   type_attributes = []; type_immediate = false;
+                   type_unboxed = {Types.unboxed = false; default = false}},
+                  Types.Trec_first, Types.Exported)];
+              md_attributes = [];
+              md_loc =
+               {Location.loc_start =
+                 {Lexing.pos_fname = ""; pos_lnum = 16; pos_bol = 169;
+                  pos_cnum = 173};
+                loc_end =
+                 {Lexing.pos_fname = ""; pos_lnum = 19; pos_bol = 230;
+                  pos_cnum = 237};
+                loc_ghost = false}},
+             Types.Trec_not, Types.Exported)];
+         mod_env = <abstr>; mod_attributes = []};
+       mb_attributes = [];
+       mb_loc =
+        {Location.loc_start =
+          {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128;
+           pos_cnum = 130};
+         loc_end =
+          {Lexing.pos_fname = ""; pos_lnum = 20; pos_bol = 238;
+           pos_cnum = 243};
+         loc_ghost = false}};
+    str_loc =
+     {Location.loc_start =
+       {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128; pos_cnum = 130};
+      loc_end =
+       {Lexing.pos_fname = ""; pos_lnum = 20; pos_bol = 238; pos_cnum = 243};
+      loc_ghost = false};
+    str_env = <abstr>}];
+ str_type =
+  [Types.Sig_module (<abstr>, Types.Mp_present,
+    {Types.md_type =
+      Types.Mty_signature
+       [Types.Sig_type (<abstr>,
+         {Types.type_params = []; type_arity = 0;
+          type_kind = Types.Type_abstract; type_private = Asttypes.Public;
+          type_manifest = None; type_variance = []; type_is_newtype = false;
+          type_expansion_scope = 0;
+          type_loc =
+           {Location.loc_start =
+             {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+              pos_cnum = 30};
+            loc_end =
+             {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+              pos_cnum = 36};
+            loc_ghost = false};
+          type_attributes = []; type_immediate = false;
+          type_unboxed = {Types.unboxed = false; default = false}},
+         Types.Trec_first, Types.Exported)];
+     md_attributes = [];
+     md_loc =
+      {Location.loc_start =
+        {Lexing.pos_fname = ""; pos_lnum = 3; pos_bol = 4; pos_cnum = 6};
+       loc_end =
+        {Lexing.pos_fname = ""; pos_lnum = 5; pos_bol = 37; pos_cnum = 42};
+       loc_ghost = false}},
+    Types.Trec_not, Types.Exported);
+   Types.Sig_module (<abstr>, Types.Mp_present,
+    {Types.md_type =
+      Types.Mty_signature
+       [Types.Sig_module (<abstr>, Types.Mp_present,
+         {Types.md_type =
+           Types.Mty_signature
+            [Types.Sig_type (<abstr>,
+              {Types.type_params = []; type_arity = 0;
+               type_kind = Types.Type_abstract;
+               type_private = Asttypes.Public;
+               type_manifest =
+                Some
+                 {Types.desc =
+                   Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"), 
+                    [], {contents = Types.Mnil});
+                  level = 100000000; scope = 0; id = 1290666};
+               type_variance = []; type_is_newtype = false;
+               type_expansion_scope = 0;
+               type_loc =
+                {Location.loc_start =
+                  {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                   pos_cnum = 30};
+                 loc_end =
+                  {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                   pos_cnum = 36};
+                 loc_ghost = false};
+               type_attributes = []; type_immediate = false;
+               type_unboxed = {Types.unboxed = false; default = false}},
+              Types.Trec_first, Types.Exported)];
+          md_attributes = [];
+          md_loc =
+           {Location.loc_start =
+             {Lexing.pos_fname = ""; pos_lnum = 8; pos_bol = 68;
+              pos_cnum = 72};
+            loc_end =
+             {Lexing.pos_fname = ""; pos_lnum = 10; pos_bol = 111;
+              pos_cnum = 118};
+            loc_ghost = false}},
+         Types.Trec_not, Types.Exported)];
+     md_attributes = [];
+     md_loc =
+      {Location.loc_start =
+        {Lexing.pos_fname = ""; pos_lnum = 7; pos_bol = 46; pos_cnum = 48};
+       loc_end =
+        {Lexing.pos_fname = ""; pos_lnum = 11; pos_bol = 119; pos_cnum = 124};
+       loc_ghost = false}},
+    Types.Trec_not, Types.Exported);
+   Types.Sig_module (<abstr>, Types.Mp_present,
+    {Types.md_type =
+      Types.Mty_signature
+       [Types.Sig_module (<abstr>, Types.Mp_present,
+         {Types.md_type =
+           Types.Mty_signature
+            [Types.Sig_type (<abstr>,
+              {Types.type_params = []; type_arity = 0;
+               type_kind = Types.Type_abstract;
+               type_private = Asttypes.Public;
+               type_manifest =
+                Some
+                 {Types.desc =
+                   Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"), 
+                    [], {contents = Types.Mnil});
+                  level = 100000000; scope = 0; id = 1290684};
+               type_variance = []; type_is_newtype = false;
+               type_expansion_scope = 0;
+               type_loc =
+                {Location.loc_start =
+                  {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                   pos_cnum = 30};
+                 loc_end =
+                  {Lexing.pos_fname = ""; pos_lnum = 4; pos_bol = 26;
+                   pos_cnum = 36};
+                 loc_ghost = false};
+               type_attributes = []; type_immediate = false;
+               type_unboxed = {Types.unboxed = false; default = false}},
+              Types.Trec_first, Types.Exported);
+             Types.Sig_type (<abstr>,
+              {Types.type_params = []; type_arity = 0;
+               type_kind = Types.Type_abstract;
+               type_private = Asttypes.Public;
+               type_manifest =
+                Some
+                 {Types.desc =
+                   Types.Tconstr (Path.Pident <abstr>, [],
+                    {contents = Types.Mnil});
+                  level = 100000000; scope = 0; id = 1290685};
+               type_variance = []; type_is_newtype = false;
+               type_expansion_scope = 0;
+               type_loc =
+                {Location.loc_start =
+                  {Lexing.pos_fname = ""; pos_lnum = 18; pos_bol = 213;
+                   pos_cnum = 219};
+                 loc_end =
+                  {Lexing.pos_fname = ""; pos_lnum = 18; pos_bol = 213;
+                   pos_cnum = 229};
+                 loc_ghost = false};
+               type_attributes = []; type_immediate = false;
+               type_unboxed = {Types.unboxed = false; default = false}},
+              Types.Trec_first, Types.Exported)];
+          md_attributes = [];
+          md_loc =
+           {Location.loc_start =
+             {Lexing.pos_fname = ""; pos_lnum = 16; pos_bol = 169;
+              pos_cnum = 173};
+            loc_end =
+             {Lexing.pos_fname = ""; pos_lnum = 19; pos_bol = 230;
+              pos_cnum = 237};
+            loc_ghost = false}},
+         Types.Trec_not, Types.Exported)];
+     md_attributes = [];
+     md_loc =
+      {Location.loc_start =
+        {Lexing.pos_fname = ""; pos_lnum = 13; pos_bol = 128; pos_cnum = 130};
+       loc_end =
+        {Lexing.pos_fname = ""; pos_lnum = 20; pos_bol = 238; pos_cnum = 243};
+       loc_ghost = false}},
+    Types.Trec_not, Types.Exported)];
+ str_final_env = <abstr>}
 ```

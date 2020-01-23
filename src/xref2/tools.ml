@@ -1,6 +1,9 @@
 open Odoc_model.Names
 open Odoc_model.Paths
 
+exception OpaqueModule
+exception UnresolvedForwardPath
+
 let resolve_module_ref :
     (Env.t ->
     Reference.Module.t ->
@@ -61,7 +64,7 @@ let core_types =
 
 let prefix_signature (path, s) =
   let open Component.Signature in
-  let rec get_sub sub is =
+  let rec get_sub sub' is =
     List.fold_left
       (fun map item ->
         match item with
@@ -86,12 +89,13 @@ let prefix_signature (path, s) =
             Subst.add_type id
               (`Type (path, TypeName.of_string (Ident.Name.type_ id)))
               map
-        | Exception _ -> map
-        | TypExt _ -> map
-        | Value (_, _) -> map
-        | External (_, _) -> map
+        | Exception _
+        | TypExt _
+        | Value (_, _)
+        | External (_, _)
         | Comment _ -> map
         | Class (id, _, _) ->
+
             Subst.add_class id
               (`Class (path, ClassName.of_string (Ident.Name.class_ id)))
               map
@@ -100,8 +104,9 @@ let prefix_signature (path, s) =
               (`ClassType
                 (path, ClassName.of_string (Ident.Name.class_type id)))
               map
-        | Include i -> get_sub sub i.expansion_.items)
-      sub is
+        | Include i ->
+            get_sub map i.expansion_.items)
+      sub' is
   in
   let extend_sub_removed removed sub =
     List.fold_left
@@ -149,7 +154,8 @@ let prefix_signature (path, s) =
         | Comment c -> Comment c)
       s.items
   in
-  (path, { items; removed = s.removed })
+  let after =  { items; removed = s.removed } in
+  (path, after)
 
 let prefix_ident_signature
     ((ident, s) : Identifier.Signature.t * Component.Signature.t) =
@@ -200,7 +206,7 @@ let prefix_ident_signature
                 (`ClassType
                   (ident, ClassName.of_string (Ident.Name.class_type id))))
               map
-        | Include i -> get_sub sub i.expansion_.items)
+        | Include i -> get_sub map i.expansion_.items)
       sub is
   in
   let sub = get_sub Subst.identity s.items in
@@ -406,7 +412,7 @@ and lookup_and_resolve_module_from_resolved_path :
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
   match p with
   | `Local id ->
-      Format.fprintf Format.err_formatter "Trying to lookup module: %a"
+      Format.fprintf Format.err_formatter "Trying to lookup module: %a\n%!"
         Ident.fmt id;
       raise (Module_lookup_failure (env, p))
   | `Identifier i ->
@@ -548,7 +554,8 @@ and lookup_and_resolve_module_from_path :
       | Some Env.Forward -> Unresolved (`Forward r)
       | None -> Unresolved p )
   | `Forward f ->
-      lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
+    lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
+    |> map_unresolved (fun _ -> `Forward f)
 
 and lookup_and_resolve_module_type_from_resolved_path :
     bool -> Env.t -> Cpath.resolved_module_type -> module_type_lookup_result =
@@ -761,11 +768,14 @@ and module_type_expr_of_module_decl :
           if Cpath.is_resolved_module_substituted x' then
             (`SubstAlias (p, x'), y')
           else (p, y')
-      | Unresolved _ ->
+      | Unresolved p when Cpath.is_module_forward p ->
+        raise UnresolvedForwardPath
+      | Unresolved p' ->
           let err =
-            Format.asprintf "Failed to lookup alias module (path=%a)"
-              Component.Fmt.module_path path
-          in
+            Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
+            Component.Fmt.module_path path
+            Component.Fmt.module_path p'
+            in
           failwith err )
   | Component.Module.ModuleType expr -> (p, expr)
 
@@ -808,10 +818,13 @@ and signature_of_module_alias_path :
           (p''', m'')
       in
       (p'', m')
-  | Unresolved _ ->
+      | Unresolved p when Cpath.is_module_forward p ->
+        raise UnresolvedForwardPath
+  | Unresolved p' ->
       let err =
-        Format.asprintf "Failed to lookup alias module (path=%a)"
+        Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
           Component.Fmt.module_path path
+          Component.Fmt.module_path p'
       in
       failwith err
 
@@ -824,10 +837,13 @@ and signature_of_module_alias_nopath :
       let m' = signature_of_module_nopath env m in
       let m'' = Strengthen.signature p' m' in
       m''
-  | Unresolved _ ->
+  | Unresolved p when Cpath.is_module_forward p ->
+      raise UnresolvedForwardPath
+  | Unresolved p' ->
       let err =
-        Format.asprintf "Failed to lookup alias module (path=%a)"
+        Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
           Component.Fmt.module_path path
+          Component.Fmt.module_path p'
       in
       failwith err
 
@@ -899,14 +915,14 @@ and signature_of_module_type :
     Cpath.resolved_module * Component.Signature.t =
  fun env (p, m) ->
   match m.expr with
-  | None -> failwith "oh no"
+  | None -> raise OpaqueModule
   | Some expr -> signature_of_module_type_expr env (p, expr)
 
 and signature_of_module_type_nopath :
     Env.t -> Component.ModuleType.t -> Component.Signature.t =
  fun env m ->
   match m.expr with
-  | None -> failwith "oh no"
+  | None -> raise OpaqueModule
   | Some expr -> signature_of_module_type_expr_nopath env expr
 
 and signature_of_module_decl :
@@ -952,10 +968,6 @@ and fragmap_module :
     Component.Signature.t =
  fun env frag sub sg ->
   let name, frag' = Fragment.Module.split frag in
-  Format.(
-    fprintf err_formatter "split: name=%s frag=%a\n%!" name
-      Component.Fmt.(option model_fragment)
-      (opt_map (fun frag' -> (frag' :> Fragment.t)) frag'));
   let mapfn m =
     match (frag', sub) with
     | None, ModuleEq (_, type_) ->
@@ -1032,8 +1044,8 @@ and fragmap_module :
     Subst.signature sub
       { Component.Signature.items; removed = removed @ sg.removed }
   in
-  Format.(
-    fprintf err_formatter "after sig=%a\n%!" Component.Fmt.(signature) res);
+  (* Format.(
+    fprintf err_formatter "after sig=%a\n%!" Component.Fmt.(signature) res); *)
   res
 
 and fragmap_type :

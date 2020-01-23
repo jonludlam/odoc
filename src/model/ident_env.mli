@@ -48,6 +48,9 @@ module Path : sig
 
 end
 
+val find_module : t -> Ident.t -> Paths.Path.Resolved.Module.t
+
+val find_module_identifier : t -> Ident.t -> Paths.Identifier.Module.t
 
 module Fragment : sig
 

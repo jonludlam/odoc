@@ -66,9 +66,14 @@ val read_module_type : Ident_env.t ->
                        Paths.Identifier.Signature.t ->
                        Odoc_model.Compat.module_type -> Odoc_model.Lang.ModuleType.expr
 
+val read_signature_noenv : Ident_env.t ->
+                       Paths.Identifier.Signature.t ->
+                       Odoc_model.Compat.signature -> Odoc_model.Lang.Signature.t
+  
 val read_signature : Ident_env.t ->
                      Paths.Identifier.Signature.t ->
                      Odoc_model.Compat.signature -> Odoc_model.Lang.Signature.t
+
 
 val read_extension_constructor : Ident_env.t ->
                        Paths.Identifier.Signature.t ->

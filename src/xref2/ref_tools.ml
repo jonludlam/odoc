@@ -520,10 +520,10 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
               resolve_module_type_reference env r ~add_canonical:true
               >>= fun (x, _) -> return (x :> Resolved.t));
             (fun () ->
+              resolve_label_reference env r >>= fun x -> return (x :> Resolved.t));
+            (fun () ->
               resolve_value_reference env r >>= fun (x, _) ->
               return (x :> Resolved.t));
-            (fun () ->
-              resolve_label_reference env r >>= fun x -> return (x :> Resolved.t));
           ]
     | _ -> None
 

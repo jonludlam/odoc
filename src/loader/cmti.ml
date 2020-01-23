@@ -528,8 +528,7 @@ and read_module_type_declaration env parent mtd =
 
 and read_module_declaration env parent md =
   let open Module in
-  let name = parenthesise (Ident.name md.md_id) in
-  let id = `Module(parent, Odoc_model.Names.ModuleName.of_string name) in
+  let id = Env.find_module_identifier env md.md_id in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc = Doc_attr.attached container md.md_attributes in
   let canonical =
@@ -542,7 +541,7 @@ and read_module_declaration env parent md =
   let type_ =
     match md.md_type.mty_desc with
     | Tmty_alias(p, _) -> Alias (Env.Path.read_module env p)
-    | _ -> ModuleType (read_module_type env id container md.md_type)
+    | _ -> ModuleType (read_module_type env (id :> Identifier.Signature.t) container md.md_type)
   in
   let hidden =
     match canonical with
@@ -639,7 +638,7 @@ and read_include env parent incl =
   let doc = Doc_attr.attached container incl.incl_attributes in
   let expr = read_module_type env parent container incl.incl_mod in
   let decl = Module.ModuleType expr in
-  let content = Cmi.read_signature env parent (Odoc_model.Compat.signature incl.incl_type) in
+  let content = Cmi.read_signature_noenv env parent (Odoc_model.Compat.signature incl.incl_type) in
   let expansion = { content; resolved = false} in
     {parent; doc; decl; expansion}
 

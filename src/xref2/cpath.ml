@@ -176,6 +176,12 @@ let is_class_type_substituted : class_type -> bool = function
   | `Substituted _ -> true
   | `Dot (a, _) -> is_module_substituted a
 
+let rec is_module_forward : module_ -> bool = function
+  | `Forward _ -> true
+  | `Resolved _ -> false
+  | `Root _ -> false
+  | `Substituted p | `Dot (p, _) | `Apply (p, _) -> is_module_forward p
+
 let rec is_module_hidden : module_ -> bool = function
   | `Resolved r -> is_resolved_module_hidden r
   | `Substituted p | `Dot (p, _) | `Apply (p, _) -> is_module_hidden p
@@ -261,3 +267,4 @@ and module_of_module_reference : Reference.Module.t -> module_ = function
         name ) ->
       `Dot (module_of_module_reference parent, name)
   | _ -> failwith "Not a module reference"
+
