@@ -35,31 +35,28 @@ module rec Resolved : sig
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t ]
 
-  (* parent is [ signature | class_signature ] *)
-  and parent =
-    [ `Identifier of Identifier.parent
-    | `Local of Ident.parent
-    | `SubstAlias of Cpath.resolved_module * module_
+  type parent_no_id =
+    [ `SubstAlias of Cpath.resolved_module * module_
     | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_
     | `ModuleType of signature * ModuleTypeName.t
     | `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t
     | `Type of signature * TypeName.t ]
+
+  (* parent is [ signature | class_signature ] *)
+  type parent =
+    [ `Identifier of Identifier.parent
+    | `Local of Ident.parent
+    | parent_no_id ]
 
   (* The only difference between parent and label_parent
      is that the Identifier allows more types *)
   and label_parent =
     [ `Identifier of Identifier.label_parent
     | `Local of Ident.label_parent
-    | `SubstAlias of Cpath.resolved_module * module_
-    | `Module of signature * ModuleName.t
-    | `Canonical of module_ * Reference.module_
-    | `ModuleType of signature * ModuleTypeName.t
-    | `Class of signature * ClassName.t
-    | `ClassType of signature * ClassTypeName.t
-    | `Type of signature * TypeName.t ]
-
+    | parent_no_id ]
+  
   type s_substalias = [ `SubstAlias of Cpath.resolved_module * module_ ]
 
   type s_module = [ `Module of signature * ModuleName.t ]
@@ -98,9 +95,6 @@ module rec Resolved : sig
   type class_signature_no_id = [ s_class | s_class_type ]
 
   type datatype_no_id = [ | s_type ]
-
-  type parent_no_id =
-    [ signature_no_id | class_signature_no_id | datatype_no_id ]
 
   type module_type =
     [ `Identifier of Identifier.reference_module_type
@@ -153,7 +147,7 @@ module rec Resolved : sig
 
   type class_type =
     [ `Identifier of Identifier.reference_class_type
-    | `Local of Ident.class_type
+    | `Local of Ident.path_class_type
     | s_class
     | s_class_type ]
 

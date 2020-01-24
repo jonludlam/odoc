@@ -61,7 +61,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       let resolved = Odoc_xref2.Resolve2.resolve env unit in
       let startexpand = Unix.gettimeofday () in
       Format.fprintf Format.err_formatter "**** Expand...\n%!";
-      let expanded = Odoc_xref2.Expand.expand env resolved in
+      let expanded = Odoc_xref2.Expand.expand2 env resolved in
       let finishexpand = Unix.gettimeofday () in
       Format.fprintf Format.err_formatter "**** Finished: Resolve=%f Expand=%f\n%!" (startexpand -. startresolve) (finishexpand -. startexpand);
 

@@ -142,7 +142,7 @@ and comment_inline_element :
   | `Styled (s, ls) ->
       `Styled (s, List.map (with_location comment_inline_element env) ls)
   | `Reference (r, []) -> (
-      (*    Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n%!" (Component.Fmt.model_reference) r;*)
+      (* Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n%!" (Component.Fmt.model_reference) r; *)
       match Ref_tools.resolve_reference env r with
       | Some (`Identifier (#Odoc_model.Paths.Identifier.Label.t as i) as r) ->
           (* Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n%!" (Component.Fmt.model_resolved_reference) r; *)
@@ -153,7 +153,9 @@ and comment_inline_element :
       | Some x ->
           (* Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n%!" (Component.Fmt.model_resolved_reference) x; *)
           `Reference (`Resolved x, [])
-      | None -> `Reference (r, [])
+      | None ->
+        (* Format.fprintf Format.err_formatter "XXXXXXXXXX FAILED to resolve reference: %a\n%!" (Component.Fmt.model_reference) r; *)
+        `Reference (r, [])
       | exception e ->
           let bt = Printexc.get_backtrace () in
           Format.fprintf Format.err_formatter
@@ -283,6 +285,7 @@ and module_substitution env m =
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
   let open Signature in
+  (* Format.fprintf Format.err_formatter "In Resolve2.signature\n%!"; *)
   let env = Env.open_signature s env in
   List.map
     (fun item ->

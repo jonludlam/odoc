@@ -196,7 +196,7 @@ module Path = struct
   and resolved_signature_reference map (p : Cref.Resolved.signature) =
     match p with
     | `Identifier s -> `Identifier s
-    | `Local id -> `Identifier (List.assoc id map.signatures)
+    | `Local id -> `Identifier (try List.assoc id map.signatures with Not_found -> failwith (Format.asprintf "Not_found finding %a\n%!" Ident.fmt id))
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
@@ -493,7 +493,7 @@ let rec signature_items id map items =
           with e ->
             let bt = Printexc.get_backtrace () in
             Format.fprintf Format.err_formatter
-              "Failed during type lookup: %a\nbt:\n%s\n%!" Ident.fmt id bt;
+              "Failed (%s) during type lookup: %a\nbt:\n%s\n%!" (Printexc.to_string e) Ident.fmt id bt;
             raise e )
       | Exception (id', e) ->
           Odoc_model.Lang.Signature.Exception

@@ -34,14 +34,6 @@ module CComment = struct
     | `Open
     | `Closed ]
 
-  type heading_level =
-    [ `Title
-    | `Section
-    | `Subsection
-    | `Subsubsection
-    | `Paragraph
-    | `Subparagraph ]
-
   type block_element =
     [ nestable_block_element
     | `Heading of heading_level * Ident.label * link_content
@@ -382,7 +374,9 @@ module Element = struct
 
   type signature = [ module_ | module_type ]
 
-  type any = [ signature | value | type_ | label | class_ | class_type ]
+  type external_ = [ `External of Identifier.Value.t * External.t ]
+
+  type any = [ signature | value | type_ | label | class_ | class_type | external_ ]
 end
 
 module Fmt = struct
@@ -2165,6 +2159,8 @@ module Find = struct
 
   type type_ = [ `T of TypeDecl.t | class_type ]
 
+  type value = [ `V of Value.t | `E of External.t ]
+
   type ('a, 'b) found = Found of 'a | Replaced of 'b
 
   let careful_module_in_sig s name =
@@ -2234,9 +2230,10 @@ module Find = struct
   let opt_module_type_in_sig s name =
     try Some (module_type_in_sig s name) with _ -> None
 
-  let opt_value_in_sig s name =
+  let opt_value_in_sig s name : value option =
     let rec inner = function
-      | Signature.Value (id, m) :: _ when Ident.Name.value id = name -> Some m
+      | Signature.Value (id, m) :: _ when Ident.Name.value id = name -> Some (`V m)
+      | Signature.External (id, e) :: _ when Ident.Name.value id = name -> Some (`E e)
       | Signature.Include i :: rest -> (
           match inner i.Include.expansion_.items with
           | Some m -> Some m

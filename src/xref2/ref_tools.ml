@@ -14,7 +14,10 @@ type type_lookup_result =
     | `C of Component.Class.t
     | `CT of Component.ClassType.t ]
 
-type value_lookup_result = Resolved.Value.t * Component.Value.t
+type value_lookup_result =
+  Resolved.Value.t
+  * [ `V of Component.Value.t
+    | `E of Component.External.t ]
 
 type label_parent_lookup_result =
   Resolved.LabelParent.t
@@ -439,13 +442,17 @@ and resolve_value_reference : Env.t -> Value.t -> value_lookup_result option =
     match r with
     | `Root (name, _) -> (
         Env.lookup_value_by_name name env >>= function
-        | `Value (id, x) -> return (`Identifier id, x) )
+        | `Value (id, x) -> return (`Identifier id, `V x)
+        | `External (id, x) -> return (`Identifier id, `E x))
     | `Dot (parent, name) ->
         resolve_label_parent_reference env parent ~add_canonical:true
         >>= signature_lookup_result_of_label_parent
-        >>= fun (parent', _, sg) ->
-        Component.Find.opt_value_in_sig sg name >>= fun v ->
-        return (`Value (parent', name), v)
+        >>= fun (parent', _, sg) -> begin
+        match Component.Find.opt_value_in_sig sg name with
+        | Some v -> return (`Value (parent', name), v)
+        | None ->
+          None
+        end
     | _ -> failwith "erk"
 
 and resolve_label_reference : Env.t -> Label.t -> Resolved.Label.t option =
@@ -493,6 +500,8 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
         | `Class (id, _) ->
             return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | `ClassType (id, _) ->
+            return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
+        | `External (id, _) ->
             return (`Identifier (id :> Odoc_model.Paths.Identifier.t)) )
     | `Resolved r -> Some r
     | (`Root (_, `TModule) | `Module (_, _)) as r ->
@@ -511,17 +520,22 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
         choose
           [
             (fun () ->
+              (* Format.fprintf Format.err_formatter "Trying type reference\n%!"; *)
               resolve_type_reference env r >>= fun (x, _) ->
               return (x :> Resolved.t));
             (fun () ->
-              resolve_module_reference env r ~add_canonical:true
+            (* Format.fprintf Format.err_formatter "Trying module reference\n%!"; *)
+            resolve_module_reference env r ~add_canonical:true
               >>= fun (x, _) -> return (x :> Resolved.t));
             (fun () ->
-              resolve_module_type_reference env r ~add_canonical:true
+            (* Format.fprintf Format.err_formatter "Trying module_type reference\n%!"; *)
+            resolve_module_type_reference env r ~add_canonical:true
               >>= fun (x, _) -> return (x :> Resolved.t));
             (fun () ->
+              (* Format.fprintf Format.err_formatter "Trying label reference\n%!"; *)
               resolve_label_reference env r >>= fun x -> return (x :> Resolved.t));
             (fun () ->
+              (* Format.fprintf Format.err_formatter "Trying value reference\n%!"; *)
               resolve_value_reference env r >>= fun (x, _) ->
               return (x :> Resolved.t));
           ]

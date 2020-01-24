@@ -26,6 +26,7 @@ type t = {
     (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list;
   types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list;
   values : (Odoc_model.Paths.Identifier.Value.t * Component.Value.t) list;
+  externals : (Odoc_model.Paths.Identifier.Value.t * Component.External.t) list;
   titles :
     (Odoc_model.Paths.Identifier.Label.t * Odoc_model.Comment.link_content) list;
   classes : (Odoc_model.Paths.Identifier.Class.t * Component.Class.t) list;
@@ -65,9 +66,25 @@ let pp_types ppf types =
         Component.Fmt.type_decl m)
     types
 
+let pp_values ppf values =
+  List.iter
+    (fun (i, v) ->
+      Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier
+      (i :> Odoc_model.Paths.Identifier.t)
+      Component.Fmt.value v)
+    values
+
+let pp_externals ppf exts =
+  List.iter
+    (fun (i, e) ->
+      Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier
+      (i :> Odoc_model.Paths.Identifier.t)
+      Component.Fmt.external_ e)
+    exts
+
 let pp ppf env =
-  Format.fprintf ppf "@[<v>@,modules: %a @,module_types: %a @,types: %a@,"
-    pp_modules env.modules pp_module_types env.module_types pp_types env.types
+  Format.fprintf ppf "@[<v>@,ENV modules: %a @,ENV module_types: %a @,ENV types: %a@,ENV values: %a@,ENV externals: %a@,"
+    pp_modules env.modules pp_module_types env.module_types pp_types env.types pp_values env.values pp_externals env.externals
 
 (* Handy for extrating transient state *)
 exception MyFailure of Odoc_model.Paths.Identifier.t * t
@@ -79,6 +96,7 @@ let empty =
     module_types = [];
     types = [];
     values = [];
+    externals = [];
     titles = [];
     elts = [];
     roots = [];
@@ -125,6 +143,14 @@ let add_value identifier t env =
       :: env.elts;
   }
 
+let add_external identifier t env =
+  {
+    env with
+    externals = (identifier, t) :: env.externals;
+    elts =
+      (Odoc_model.Paths.Identifier.name identifier, `External (identifier, t))
+      :: env.elts;
+  }
 let add_label identifier env =
   {
     env with
@@ -299,9 +325,10 @@ let lookup_datatype_by_name name env =
 
 let lookup_value_by_name name env =
   let filter_fn :
-      string * Component.Element.any -> Component.Element.value option =
+      string * Component.Element.any -> [Component.Element.value | Component.Element.external_] option =
     function
     | n, (#Component.Element.value as item) when n = name -> Some item
+    | n, (#Component.Element.external_ as item) when n = name -> Some item
     | _ -> None
   in
   find_map filter_fn env.elts
@@ -394,7 +421,7 @@ let open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t =
 let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
   let open Component in
   let open Of_Lang in
-  fun s env ->
+  fun s e ->
     List.fold_left
       (fun env orig ->
         match orig with
@@ -431,7 +458,11 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
             let ty = Of_Lang.(value ident_map v) in
             add_value v.Odoc_model.Lang.Value.id ty env
-        | Odoc_model.Lang.Signature.External _ -> env
+        | Odoc_model.Lang.Signature.External e ->
+            let idents = Component.LocalIdents.(external_ e empty) in
+            let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
+            let ty = Of_Lang.(external_ ident_map e) in
+            add_external e.Odoc_model.Lang.External.id ty env
         | Odoc_model.Lang.Signature.Class (_, c) ->
             let idents = Component.LocalIdents.(class_ c empty) in
             let ident_map = Component.Of_Lang.(map_of_idents idents empty) in
@@ -444,7 +475,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             add_class_type c.id ty env
         | Odoc_model.Lang.Signature.Include i ->
             open_signature i.expansion.content env)
-      env s
+      e s
 
 let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
  fun unit env ->

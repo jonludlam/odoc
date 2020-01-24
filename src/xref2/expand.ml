@@ -166,9 +166,14 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
   | _ ->
       let sg = Tools.signature_of_module_type_expr_nopath env expr in
       let sg =
-        Lang_of.signature
-          (id :> Paths_types.Identifier.signature)
-          Lang_of.empty sg
+        try 
+          Lang_of.signature
+            (id :> Paths_types.Identifier.signature)
+            Lang_of.empty sg
+        with e ->
+          let str = Format.asprintf "Failed to translate signature:\n%a\n" Component.Fmt.signature sg in
+          Printf.fprintf stderr "%s\n%!" str;
+          raise e
       in
       let sg =
         match env.Env.resolver with
