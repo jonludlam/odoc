@@ -90,8 +90,8 @@ signature is as follows:
       {Odoc_xref2.Component.TypeDecl.Equation.params = []; private_ = false;
        manifest = None; constraints = []};
      representation = None})];
- values = []; titles = []; classes = []; class_types = []; methods = [];
- instance_variables = [];
+ values = []; externals = []; titles = []; classes = []; class_types = [];
+ methods = []; instance_variables = [];
  elts =
   [("u",
     `Type
@@ -399,10 +399,36 @@ val m : Component.ModuleType.t =
      (Odoc_xref2.Component.ModuleType.Signature
        {Odoc_xref2.Component.Signature.items =
          [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("N", 2),
-           {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
+           {Odoc_xref2.Component.Delayed.v =
+             Some
+              {Odoc_xref2.Component.ModuleType.doc = [];
+               expr =
+                Some
+                 (Odoc_xref2.Component.ModuleType.Signature
+                   {Odoc_xref2.Component.Signature.items =
+                     [Odoc_xref2.Component.Signature.Type (`LType ("t", 3),
+                       Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_xref2.Component.TypeDecl.doc = [];
+                        equation =
+                         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+                          private_ = false; manifest = None;
+                          constraints = []};
+                        representation = None})];
+                    removed = []});
+               expansion = Some Odoc_xref2.Component.Module.AlreadyASig};
+            get = <fun>});
           Odoc_xref2.Component.Signature.Module (`LModule ("B", 1),
            Odoc_model.Lang.Signature.Ordinary,
-           {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+           {Odoc_xref2.Component.Delayed.v =
+             Some
+              {Odoc_xref2.Component.Module.doc = [];
+               type_ =
+                Odoc_xref2.Component.Module.ModuleType
+                 (Odoc_xref2.Component.ModuleType.Path
+                   (`Resolved (`Local (`LModuleType ("N", 2)))));
+               canonical = None; hidden = false; display_type = None;
+               expansion = None};
+            get = <fun>})];
         removed = []});
    expansion = Some Odoc_xref2.Component.Module.AlreadyASig}
 ```
@@ -441,11 +467,39 @@ we look up `A` from the environment:
 - : Cpath.resolved_module * Component.Signature.t =
 (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("N", 5),
-     {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
-    Odoc_xref2.Component.Signature.Module (`LModule ("B", 6),
+   [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("N", 7),
+     {Odoc_xref2.Component.Delayed.v =
+       Some
+        {Odoc_xref2.Component.ModuleType.doc = [];
+         expr =
+          Some
+           (Odoc_xref2.Component.ModuleType.Signature
+             {Odoc_xref2.Component.Signature.items =
+               [Odoc_xref2.Component.Signature.Type (`LType ("t", 6),
+                 Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_xref2.Component.TypeDecl.doc = [];
+                  equation =
+                   {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})];
+              removed = []});
+         expansion = Some Odoc_xref2.Component.Module.AlreadyASig};
+      get = <fun>});
+    Odoc_xref2.Component.Signature.Module (`LModule ("B", 8),
      Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+     {Odoc_xref2.Component.Delayed.v =
+       Some
+        {Odoc_xref2.Component.Module.doc = [];
+         type_ =
+          Odoc_xref2.Component.Module.ModuleType
+           (Odoc_xref2.Component.ModuleType.Path
+             (`Resolved
+                (`ModuleType
+                   (`Identifier (`Module (`Root (Common.root, "Root"), "A")),
+                    "N"))));
+         canonical = None; hidden = false; display_type = None;
+         expansion = None};
+      get = <fun>})];
   removed = []})
 ```
 
@@ -664,12 +718,30 @@ now we can ask for the signature of this module:
 val sg : Cpath.resolved_module * Component.Signature.t =
   (`Identifier (`Module (`Root (Common.root, "Root"), "C")),
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule ("N", 43),
+     [Odoc_xref2.Component.Signature.Module (`LModule ("N", 44),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v = None; get = <fun>});
-      Odoc_xref2.Component.Signature.Module (`LModule ("M", 44),
+       {Odoc_xref2.Component.Delayed.v =
+         Some
+          {Odoc_xref2.Component.Module.doc = [];
+           type_ =
+            Odoc_xref2.Component.Module.ModuleType
+             (Odoc_xref2.Component.ModuleType.Path
+               (`Dot (`Resolved (`Local (`LModule ("M", 45))), "S")));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None};
+        get = <fun>});
+      Odoc_xref2.Component.Signature.Module (`LModule ("M", 45),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+       {Odoc_xref2.Component.Delayed.v =
+         Some
+          {Odoc_xref2.Component.Module.doc = [];
+           type_ =
+            Odoc_xref2.Component.Module.Alias
+             (`Resolved
+                (`Identifier (`Module (`Root (Common.root, "Root"), "B"))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None};
+        get = <fun>})];
     removed = []})
 ```
 
@@ -696,7 +768,7 @@ val m : Component.Module.t =
 - : Cpath.resolved_module * Component.Signature.t =
 (`Module (`Identifier (`Module (`Root (Common.root, "Root"), "C")), "N"),
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (`LType ("t", 57),
+   [Odoc_xref2.Component.Signature.Type (`LType ("t", 56),
      Odoc_model.Lang.Signature.Ordinary,
      {Odoc_xref2.Component.TypeDecl.doc = [];
       equation =
@@ -1017,9 +1089,23 @@ val p : Cpath.resolved_module =
                 (`Module (`Root (Common.root, "Root"), "FooBarInt"))))))
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (`LModule ("Foo", 19),
+    [Odoc_xref2.Component.Signature.Module (`LModule ("Foo", 20),
       Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v = None; get = <fun>})];
+      {Odoc_xref2.Component.Delayed.v =
+        Some
+         {Odoc_xref2.Component.Module.doc = [];
+          type_ =
+           Odoc_xref2.Component.Module.ModuleType
+            (Odoc_xref2.Component.ModuleType.Path
+              (`Dot
+                 (`Resolved
+                    (`Substituted
+                       (`Identifier
+                          (`Module (`Root (Common.root, "Root"), "Bar")))),
+                  "T")));
+          canonical = None; hidden = false; display_type = None;
+          expansion = None};
+       get = <fun>})];
    removed = []}
 ```
 
@@ -2029,6 +2115,10 @@ Odoc_xref2.Component.Find.Find_failure
        representation = None})];
    removed = []},
  "t", "type").
+Raised at file "src/xref2/component.ml", line 2156, characters 30-59
+Called from file "src/xref2/tools.ml", line 401, characters 11-51
+Called from file "src/xref2/tools.ml", line 639, characters 20-49
+Called from file "toplevel/toploop.ml", line 208, characters 17-27
 ```
 
 
@@ -2266,7 +2356,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                            "u"),
                                          [], {contents = Types.Mnil});
                                        level = 100000000; scope = 0;
-                                       id = 1290697};
+                                       id = 1355811};
                                     type_variance = [];
                                     type_is_newtype = false;
                                     type_expansion_scope = 0;
@@ -2296,7 +2386,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                       (Path.Pdot (Path.Pident <abstr>, "u"),
                                       [], {contents = Types.Mnil});
                                     level = 100000000; scope = 0;
-                                    id = 1290698};
+                                    id = 1355812};
                                  type_variance = []; type_is_newtype = false;
                                  type_expansion_scope = 0;
                                  type_loc =
@@ -2341,7 +2431,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                Types.Tconstr
                                 (Path.Pdot (Path.Pident <abstr>, "u"), 
                                 [], {contents = Types.Mnil});
-                              level = 100000000; scope = 0; id = 1290698};
+                              level = 100000000; scope = 0; id = 1355812};
                            type_variance = []; type_is_newtype = false;
                            type_expansion_scope = 0;
                            type_loc =
@@ -2377,7 +2467,7 @@ let resolved = Resolve.signature Env.empty sg;;
                              Types.Tconstr
                               (Path.Pdot (Path.Pident <abstr>, "u"), 
                               [], {contents = Types.Mnil});
-                            level = 100000000; scope = 0; id = 1290698};
+                            level = 100000000; scope = 0; id = 1355812};
                          type_variance = []; type_is_newtype = false;
                          type_expansion_scope = 0;
                          type_loc =
@@ -2424,7 +2514,7 @@ let resolved = Resolve.signature Env.empty sg;;
                        {Types.desc =
                          Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                           [], {contents = Types.Mnil});
-                        level = 100000000; scope = 0; id = 1290698};
+                        level = 100000000; scope = 0; id = 1355812};
                      type_variance = []; type_is_newtype = false;
                      type_expansion_scope = 0;
                      type_loc =
@@ -2471,7 +2561,7 @@ let resolved = Resolve.signature Env.empty sg;;
                      {Types.desc =
                        Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                         [], {contents = Types.Mnil});
-                      level = 100000000; scope = 0; id = 1290698};
+                      level = 100000000; scope = 0; id = 1355812};
                    type_variance = []; type_is_newtype = false;
                    type_expansion_scope = 0;
                    type_loc =
@@ -2669,7 +2759,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                                 (Path.Pident <abstr>, "u"),
                                               [], {contents = Types.Mnil});
                                             level = 100000000; scope = 0;
-                                            id = 1290699};
+                                            id = 1355813};
                                          type_variance = [];
                                          type_is_newtype = false;
                                          type_expansion_scope = 0;
@@ -2716,7 +2806,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                                "u"),
                                              [], {contents = Types.Mnil});
                                            level = 100000000; scope = 0;
-                                           id = 1290699};
+                                           id = 1355813};
                                         type_variance = [];
                                         type_is_newtype = false;
                                         type_expansion_scope = 0;
@@ -2750,7 +2840,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                             "u"),
                                           [], {contents = Types.Mnil});
                                         level = 100000000; scope = 0;
-                                        id = 1290700};
+                                        id = 1355814};
                                      type_variance = [];
                                      type_is_newtype = false;
                                      type_expansion_scope = 0;
@@ -2810,7 +2900,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                         Types.Tconstr (Path.Pident <abstr>,
                                          [], {contents = Types.Mnil});
                                        level = 100000000; scope = 0;
-                                       id = 1290702};
+                                       id = 1355816};
                                     type_variance = [];
                                     type_is_newtype = false;
                                     type_expansion_scope = 0;
@@ -2851,7 +2941,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                         Types.Tconstr (Path.Pident <abstr>,
                                          [], {contents = Types.Mnil});
                                        level = 100000000; scope = 0;
-                                       id = 1290702};
+                                       id = 1355816};
                                      ctyp_env = <abstr>;
                                      ctyp_loc =
                                       {Location.loc_start =
@@ -2893,7 +2983,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                    Types.Tconstr
                                     (Path.Pdot (Path.Pident <abstr>, "u"),
                                     [], {contents = Types.Mnil});
-                                  level = 100000000; scope = 0; id = 1290700};
+                                  level = 100000000; scope = 0; id = 1355814};
                                type_variance = []; type_is_newtype = false;
                                type_expansion_scope = 0;
                                type_loc =
@@ -2917,7 +3007,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                  {Types.desc =
                                    Types.Tconstr (Path.Pident <abstr>, 
                                     [], {contents = Types.Mnil});
-                                  level = 100000000; scope = 0; id = 1290702};
+                                  level = 100000000; scope = 0; id = 1355816};
                                type_variance = []; type_is_newtype = false;
                                type_expansion_scope = 0;
                                type_loc =
@@ -2953,7 +3043,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                  Types.Tconstr
                                   (Path.Pdot (Path.Pident <abstr>, "u"), 
                                   [], {contents = Types.Mnil});
-                                level = 100000000; scope = 0; id = 1290700};
+                                level = 100000000; scope = 0; id = 1355814};
                              type_variance = []; type_is_newtype = false;
                              type_expansion_scope = 0;
                              type_loc =
@@ -2977,7 +3067,7 @@ let resolved = Resolve.signature Env.empty sg;;
                                {Types.desc =
                                  Types.Tconstr (Path.Pident <abstr>, 
                                   [], {contents = Types.Mnil});
-                                level = 100000000; scope = 0; id = 1290702};
+                                level = 100000000; scope = 0; id = 1355816};
                              type_variance = []; type_is_newtype = false;
                              type_expansion_scope = 0;
                              type_loc =
@@ -3039,7 +3129,7 @@ let resolved = Resolve.signature Env.empty sg;;
                              Types.Tconstr
                               (Path.Pdot (Path.Pident <abstr>, "u"), 
                               [], {contents = Types.Mnil});
-                            level = 100000000; scope = 0; id = 1290700};
+                            level = 100000000; scope = 0; id = 1355814};
                          type_variance = []; type_is_newtype = false;
                          type_expansion_scope = 0;
                          type_loc =
@@ -3063,7 +3153,7 @@ let resolved = Resolve.signature Env.empty sg;;
                            {Types.desc =
                              Types.Tconstr (Path.Pident <abstr>, [],
                               {contents = Types.Mnil});
-                            level = 100000000; scope = 0; id = 1290702};
+                            level = 100000000; scope = 0; id = 1355816};
                          type_variance = []; type_is_newtype = false;
                          type_expansion_scope = 0;
                          type_loc =
@@ -3125,7 +3215,7 @@ let resolved = Resolve.signature Env.empty sg;;
                            Types.Tconstr
                             (Path.Pdot (Path.Pident <abstr>, "u"), [],
                             {contents = Types.Mnil});
-                          level = 100000000; scope = 0; id = 1290700};
+                          level = 100000000; scope = 0; id = 1355814};
                        type_variance = []; type_is_newtype = false;
                        type_expansion_scope = 0;
                        type_loc =
@@ -3149,7 +3239,7 @@ let resolved = Resolve.signature Env.empty sg;;
                          {Types.desc =
                            Types.Tconstr (Path.Pident <abstr>, [],
                             {contents = Types.Mnil});
-                          level = 100000000; scope = 0; id = 1290702};
+                          level = 100000000; scope = 0; id = 1355816};
                        type_variance = []; type_is_newtype = false;
                        type_expansion_scope = 0;
                        type_loc =
@@ -3188,7 +3278,7 @@ let resolved = Resolve.signature Env.empty sg;;
                       {Types.desc =
                         Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                          [], {contents = Types.Mnil});
-                       level = 100000000; scope = 0; id = 1290716};
+                       level = 100000000; scope = 0; id = 1355830};
                     type_variance = []; type_is_newtype = false;
                     type_expansion_scope = 0;
                     type_loc =
@@ -3211,7 +3301,7 @@ let resolved = Resolve.signature Env.empty sg;;
                       {Types.desc =
                         Types.Tconstr (Path.Pident <abstr>, [],
                          {contents = Types.Mnil});
-                       level = 100000000; scope = 0; id = 1290717};
+                       level = 100000000; scope = 0; id = 1355831};
                     type_variance = []; type_is_newtype = false;
                     type_expansion_scope = 0;
                     type_loc =
@@ -3261,7 +3351,7 @@ let resolved = Resolve.signature Env.empty sg;;
                      {Types.desc =
                        Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"),
                         [], {contents = Types.Mnil});
-                      level = 100000000; scope = 0; id = 1290716};
+                      level = 100000000; scope = 0; id = 1355830};
                    type_variance = []; type_is_newtype = false;
                    type_expansion_scope = 0;
                    type_loc =
@@ -3284,7 +3374,7 @@ let resolved = Resolve.signature Env.empty sg;;
                      {Types.desc =
                        Types.Tconstr (Path.Pident <abstr>, [],
                         {contents = Types.Mnil});
-                      level = 100000000; scope = 0; id = 1290717};
+                      level = 100000000; scope = 0; id = 1355831};
                    type_variance = []; type_is_newtype = false;
                    type_expansion_scope = 0;
                    type_loc =
@@ -3368,7 +3458,7 @@ let resolved = Resolve.signature Env.empty sg;;
                  {Types.desc =
                    Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"), 
                     [], {contents = Types.Mnil});
-                  level = 100000000; scope = 0; id = 1290698};
+                  level = 100000000; scope = 0; id = 1355812};
                type_variance = []; type_is_newtype = false;
                type_expansion_scope = 0;
                type_loc =
@@ -3415,7 +3505,7 @@ let resolved = Resolve.signature Env.empty sg;;
                  {Types.desc =
                    Types.Tconstr (Path.Pdot (Path.Pident <abstr>, "u"), 
                     [], {contents = Types.Mnil});
-                  level = 100000000; scope = 0; id = 1290716};
+                  level = 100000000; scope = 0; id = 1355830};
                type_variance = []; type_is_newtype = false;
                type_expansion_scope = 0;
                type_loc =
@@ -3438,7 +3528,7 @@ let resolved = Resolve.signature Env.empty sg;;
                  {Types.desc =
                    Types.Tconstr (Path.Pident <abstr>, [],
                     {contents = Types.Mnil});
-                  level = 100000000; scope = 0; id = 1290717};
+                  level = 100000000; scope = 0; id = 1355831};
                type_variance = []; type_is_newtype = false;
                type_expansion_scope = 0;
                type_loc =

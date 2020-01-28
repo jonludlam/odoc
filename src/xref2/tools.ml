@@ -4,6 +4,10 @@ open Odoc_model.Paths
 exception OpaqueModule
 exception UnresolvedForwardPath
 
+let is_compile = ref true
+
+let num_times = ref 0
+
 let resolve_module_ref :
     (Env.t ->
     Reference.Module.t ->
@@ -336,6 +340,14 @@ exception MyFailure of Component.Module.t * Component.Module.t
 
 exception Couldnt_find_functor_argument
 
+module Hashable = struct
+  type t = bool * bool * int * Cpath.resolved_module
+  let equal = Stdlib.(=)
+  let hash = Hashtbl.hash
+end
+module Memos1 = Hashtbl.Make(Hashable)
+let memo = Memos1.create 91
+
 let rec handle_apply is_resolve env func_path arg_path m =
   let func_path', mty = module_type_expr_of_module env (func_path, m) in
   let arg_id, result =
@@ -358,26 +370,37 @@ and add_canonical_path env m p : Cpath.resolved_module =
   | _ -> (
       match m.Component.Module.canonical with
       | Some (cp, cr) -> (
-          (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
-          match !resolve_module_ref env cr with
-          | Some (cp', _) ->
-              (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
-              `Canonical
-                ( p,
-                  `Resolved
-                    ( Cpath.resolved_module_of_resolved_module_reference cp'
-                    |> simplify_resolved_module_path env ) )
-          | _ ->
-              (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
-              `Canonical (p, cp)
-          | exception _e ->
-              Format.fprintf Format.err_formatter
-                "Warning: Failed to look up canonical path for module %a\n\
-                 %s\n\
-                 %!"
-                Component.Fmt.resolved_module_path p
-                (Printexc.get_backtrace ());
-              p )
+          if !is_compile then `Canonical (p, cp)
+          else begin
+            (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
+            match !resolve_module_ref env cr with
+            | Some (cp', _) ->
+                (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
+                begin
+                  try `Canonical
+                  ( p,
+                    `Resolved
+                      ( Cpath.resolved_module_of_resolved_module_reference cp'
+                      |> simplify_resolved_module_path env ) )
+                  with e ->
+                    let callstack = Printexc.get_callstack 20 in
+
+                    Format.fprintf Format.err_formatter "Argh: %a\nBacktrace:\n%s\n%!" Component.Fmt.model_resolved_reference (cp' :> Odoc_model.Paths.Reference.Resolved.t)
+                      (Printexc.raw_backtrace_to_string callstack);
+                    raise e
+                end
+            | _ ->
+                (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
+                `Canonical (p, cp)
+            | exception _e ->
+                Format.fprintf Format.err_formatter
+                  "Warning: Failed to look up canonical path for module %a\n\
+                  %s\n\
+                  %!"
+                  Component.Fmt.resolved_module_path p
+                  (Printexc.get_backtrace ());
+                p
+          end)
       | None -> p )
 
 and add_hidden m p = if m.Component.Module.hidden then `Hidden p else p
@@ -406,11 +429,16 @@ and handle_class_type_lookup env id p m =
   let c = Component.Find.class_type_in_sig sg id in
   (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
+
 and lookup_and_resolve_module_from_resolved_path :
     bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
  fun is_resolve add_canonical env p ->
-  (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
-  match p with
+  let id = (is_resolve, add_canonical, Env.id env, p) in
+  if Memos1.mem memo id then Memos1.find memo id
+  else begin
+ (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
+    let result = 
+   match p with
   | `Local id ->
       Format.fprintf Format.err_formatter "Trying to lookup module: %a\n%!"
         Ident.fmt id;
@@ -501,6 +529,10 @@ and lookup_and_resolve_module_from_resolved_path :
              %!"
             Component.Fmt.resolved_module_path p (Printexc.to_string e);
           (p1', m) )
+        in
+        Memos1.add memo id result;
+        result
+      end
 
 and lookup_module_from_path env cpath =
   lookup_and_resolve_module_from_path true true env cpath
@@ -612,7 +644,7 @@ and lookup_type_from_resolved_path :
   | `Identifier (`CoreType name) ->
       (* CoreTypes aren't put into the environment, so they can't be handled by the 
             next clause. We just look them up here in the list of core types *)
-      ( `Identifier (`CoreType name),
+            ( `Identifier (`CoreType name),
         Found (`T (List.assoc (TypeName.to_string name) core_types)) )
   | `Identifier (`Type _ as i) ->
       let t = Env.lookup_type i env in
@@ -888,7 +920,7 @@ and signature_of_module_type_expr :
       (p', handle_signature_with_subs env sg subs)
   | Component.ModuleType.Functor (_, expr) ->
       signature_of_module_type_expr env (incoming_path, expr)
-  | Component.ModuleType.TypeOf decl ->
+   | Component.ModuleType.TypeOf decl ->
       signature_of_module_decl env ~is_canonical:false (incoming_path, decl)
 
 and signature_of_module_type_expr_nopath :
@@ -905,7 +937,10 @@ and signature_of_module_type_expr_nopath :
   | Component.ModuleType.With (s, subs) ->
       let sg = signature_of_module_type_expr_nopath env s in
       handle_signature_with_subs env sg subs
-  | Component.ModuleType.Functor (_, expr) ->
+  | Component.ModuleType.Functor (None, expr) ->
+      signature_of_module_type_expr_nopath env expr
+  | Component.ModuleType.Functor (Some arg, expr) ->
+      ignore(arg);
       signature_of_module_type_expr_nopath env expr
   | Component.ModuleType.TypeOf decl -> signature_of_module_decl_nopath env decl
 

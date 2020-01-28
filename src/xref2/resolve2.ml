@@ -78,12 +78,13 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
+  Tools.is_compile := false;
   let initial_env =
     let m = Env.module_of_unit t in
     Env.empty |> Env.add_module t.id m
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
-  let initial_env = { initial_env with Env.resolver = Some resolver } in
+  let initial_env = Env.set_resolver initial_env resolver in
   let imports, env =
     List.fold_left
       (fun (imports, env) import ->
@@ -640,7 +641,7 @@ let resolve x y =
   after
 
 let resolve_page resolver y =
-  let env = Env.{ empty with resolver = Some resolver } in
+  let env = Env.set_resolver Env.empty resolver in
   {
     y with
     Page.content =

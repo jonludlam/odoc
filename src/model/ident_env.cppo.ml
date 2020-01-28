@@ -52,21 +52,21 @@ let add_module parent id env =
   in
   match shadowing with
   | [] ->
-    (* Format.fprintf Format.err_formatter "Adding module: %a\n%!" Ident.print_with_scope id; *)
+    Format.fprintf Format.err_formatter "Adding module: %a\n%!" Ident.print_with_scope id;
     let modules = Ident.add id module_ env.modules in
     let module_ids = Ident.add id ident env.module_ids in
     { env with modules; module_ids }
   | [(id',_)] ->
-    (* Format.fprintf Format.err_formatter "Renaming module: %a\n%!" Ident.print_with_scope id; *)
+    Format.fprintf Format.err_formatter "Renaming module: %a\n%!" Ident.print_with_scope id;
     let new_ident = `Module(parent, ModuleName.of_string (Printf.sprintf "%s/hidden" name)) in
     let new_module = `Hidden (`Identifier new_ident) in
-    let module_ids = Ident.add id' new_ident env.module_ids in
+    let module_ids = Ident.add id' new_ident (Ident.remove id' env.module_ids) in
     let module_ids = Ident.add id ident module_ids in
-    let modules = Ident.add id' new_module env.modules in
+    let modules = Ident.add id' new_module (Ident.remove id' env.modules) in
     let modules = Ident.add id module_ modules in
     { env with modules; module_ids }
-  | _ ->
-    failwith "This shouldn't happen...!"
+  | (id1', _) :: (id2', _) :: _ ->
+    failwith (Format.asprintf "This shouldn't happen...! %a %a %a" Ident.print_with_scope id1' Ident.print_with_scope id2' Ident.print_with_scope id)
 
 let add_parameter parent id env =
   let name = Ident.name id in

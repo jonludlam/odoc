@@ -456,7 +456,6 @@ and type_expression_package env p =
 and type_expression : Env.t -> _ -> _ =
  fun env texpr ->
   let open TypeExpr in
-  try
     match texpr with
     | Var _ | Any -> texpr
     | Alias (t, str) -> Alias (type_expression env t, str)
@@ -477,7 +476,6 @@ and type_expression : Env.t -> _ -> _ =
     | Class (path, ts) -> Class (path, List.map (type_expression env) ts)
     | Poly (strs, t) -> Poly (strs, type_expression env t)
     | Package p -> Package (type_expression_package env p)
-  with _ -> texpr
 
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) ->

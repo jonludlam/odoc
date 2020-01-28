@@ -947,21 +947,17 @@ module LocalIdents = struct
   let opt conv opt ids = match opt with Some x -> conv x ids | None -> ids
 
   let rec module_ m ids = 
-    let ids = docs m.Module.doc ids in
-    { ids with modules = m.Module.id :: ids.modules }
+    docs m.Module.doc ids
 
   and module_substitution m ids =
-    let ids = docs m.ModuleSubstitution.doc ids in
-    { ids with modules = m.ModuleSubstitution.id :: ids.modules }
+    docs m.ModuleSubstitution.doc ids
 
   and module_type m ids =
-    let ids = docs m.ModuleType.doc ids in
-    { ids with module_types = m.ModuleType.id :: ids.module_types }
+    docs m.ModuleType.doc ids
 
   and type_decl t ids =
     let ids = opt type_decl_representation t.TypeDecl.representation ids in
-    let ids = docs t.TypeDecl.doc ids in
-    { ids with types = t.TypeDecl.id :: ids.types }
+    docs t.TypeDecl.doc ids
 
   and type_decl_representation r ids =
     match r with
@@ -986,23 +982,19 @@ module LocalIdents = struct
     { ids with extensions = c.Extension.Constructor.id :: ids.extensions }
 
   and exception_ e ids =
-    let ids = docs e.Exception.doc ids in
-    { ids with exceptions = e.Exception.id :: ids.exceptions }
+    docs e.Exception.doc ids
 
   and value_ v ids =
-    docs v.Value.doc { ids with values = v.Value.id :: ids.values }
+    docs v.Value.doc ids
 
   and external_ e ids =
-    let ids = docs e.External.doc ids in
-    { ids with values = e.External.id :: ids.values }
+    docs e.External.doc ids
 
   and class_ c ids =
-    let ids = docs c.Class.doc ids in
-    { ids with classes = c.Class.id :: ids.classes }
+    docs c.Class.doc ids
 
   and class_type c ids =
-    let ids = docs c.ClassType.doc ids in
-    { ids with class_types = c.ClassType.id :: ids.class_types }
+    docs c.ClassType.doc ids
 
   and method_ m ids =
     let ids = docs m.Method.doc ids in
@@ -1039,20 +1031,39 @@ module LocalIdents = struct
       s ids
 
   and signature s ids =
+    let open Signature in
     List.fold_right
       (fun c ids ->
         match c with
-        | Signature.Module (_, m) -> module_ m ids
-        | ModuleType m -> module_type m ids
-        | ModuleSubstitution m -> module_substitution m ids
-        | Type (_, t) -> type_decl t ids
+        | Module (_, m) ->
+          let ids = module_ m ids in
+          { ids with modules = m.Module.id :: ids.modules }
+        | ModuleType m ->
+          let ids = module_type m ids in
+          { ids with module_types = m.ModuleType.id :: ids.module_types }
+        | ModuleSubstitution m ->
+          let ids = module_substitution m ids in
+          { ids with modules = m.ModuleSubstitution.id :: ids.modules }
+        | Type (_, t) ->
+          let ids = type_decl t ids in
+          { ids with types = t.TypeDecl.id :: ids.types }
         | TypeSubstitution t -> type_decl t ids
         | TypExt ext -> extension ext ids
-        | Exception e -> exception_ e ids
-        | Value v -> value_ v ids
-        | External e -> external_ e ids
-        | Class (_, c) -> class_ c ids
-        | ClassType (_, c) -> class_type c ids
+        | Exception e ->
+          let ids = exception_ e ids in
+          { ids with exceptions = e.Exception.id :: ids.exceptions }
+        | Value v ->
+          let ids = value_ v ids in
+          { ids with values = v.Value.id :: ids.values }
+        | External e ->
+          let ids = external_ e ids in
+          { ids with values = e.External.id :: ids.values }
+        | Class (_, c) ->
+          let ids = class_ c ids in
+          { ids with classes = c.Class.id :: ids.classes }
+        | ClassType (_, c) ->
+          let ids = class_type c ids in
+          { ids with class_types = c.ClassType.id :: ids.class_types }
         | Include i -> signature i.Include.expansion.content ids
         | Comment c -> docs_or_stop c ids)
       s ids

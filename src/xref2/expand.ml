@@ -10,7 +10,7 @@ let rec unit (resolver : Env.resolver) forward_references t =
   in
   let initial_env =
     if forward_references 
-    then { initial_env with Env.resolver = Some resolver }
+    then Env.set_resolver initial_env resolver
     else initial_env
   in
   let rec handle_import (imports, env) import =
@@ -124,9 +124,9 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
         let arg_sg = Lang_of.signature identifier lenv arg_sg in
         let arg_sg = signature env arg_sg in
         let arg_sg =
-          match env.Env.resolver with
-          | None -> Resolve.signature env arg_sg 
-          | Some _ -> Resolve2.signature env arg_sg in
+          if Env.has_resolver env
+          then Resolve2.signature env arg_sg 
+          else Resolve.signature env arg_sg in
         let lang_arg = Lang_of.functor_argument lenv arg in
         let lang_arg' = { lang_arg with expansion = Some (Signature arg_sg) } in
         (lenv, Some lang_arg' :: args)
@@ -147,9 +147,9 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
           expansion_env sg
       in
       let sg =
-        match env.Env.resolver with
-        | None -> Resolve.signature env sg 
-        | Some _ -> Resolve2.signature env sg in
+        if Env.has_resolver env
+        then Resolve2.signature env sg 
+        else Resolve.signature env sg in
       Odoc_model.Lang.Module.Functor (args, signature env sg)
   | Component.ModuleType.With (_expr, _subs) ->
       let sg = Tools.signature_of_module_type_expr_nopath env expr in
@@ -159,9 +159,9 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
           Lang_of.empty sg
       in
       let sg =
-        match env.Env.resolver with
-        | None -> Resolve.signature env sg 
-        | Some _ -> Resolve2.signature env sg in
+        if Env.has_resolver env
+        then Resolve2.signature env sg 
+        else Resolve.signature env sg in
       Odoc_model.Lang.Module.Signature (signature env sg)
   | _ ->
       let sg = Tools.signature_of_module_type_expr_nopath env expr in
@@ -176,9 +176,9 @@ and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
           raise e
       in
       let sg =
-        match env.Env.resolver with
-        | None -> Resolve.signature env sg 
-        | Some _ -> Resolve2.signature env sg in
+        if Env.has_resolver env
+        then Resolve2.signature env sg 
+        else Resolve.signature env sg in
       Odoc_model.Lang.Module.Signature (signature env sg)
 
 and module_decl env (id : Paths_types.Identifier.module_) decl =
@@ -249,20 +249,20 @@ and module_ env m =
                 (id :> Odoc_model.Paths.Identifier.Signature.t)
                 Lang_of.empty sg
             with e ->
-              Format.fprintf Format.err_formatter "Failed translating signature: %a" Component.Fmt.signature sg;
+              Format.fprintf Format.err_formatter "Failed translating signature: %a %a" Component.Fmt.model_identifier (id :> Odoc_model.Paths.Identifier.t) Component.Fmt.signature sg;
               raise e
           in
           let sg = signature env sg in
           (* Now phase-2 resolve this signature as canonical paths might now make sense *)
           let sg' =
-            match env.Env.resolver with
-            | None -> Resolve.signature env sg 
-            | Some _ -> Resolve2.signature env sg in
+            if Env.has_resolver env
+            then Resolve2.signature env sg 
+            else Resolve.signature env sg in
           {
             m with
             type_;
             expansion = Some (Odoc_model.Lang.Module.Signature sg');
-            display_type = Some (ModuleType (ModuleType.Signature sg'));
+            display_type = None; (* Some (ModuleType (ModuleType.Signature sg')); *)
           }
       | ModuleType expr ->
           let expansion =

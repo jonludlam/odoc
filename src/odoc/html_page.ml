@@ -48,7 +48,8 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       let fmt = Format.formatter_of_out_channel oc in
       Format.fprintf fmt "%a@?" (Tyxml.Html.pp ()) content;
       close_out oc
-    )
+    );
+    Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times
   | Compilation_unit {hidden = _; _} ->
     (* If hidden, we should not generate HTML. See
          https://github.com/ocaml/odoc/issues/99. *)
@@ -64,7 +65,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       let expanded = Odoc_xref2.Expand.expand2 env resolved in
       let finishexpand = Unix.gettimeofday () in
       Format.fprintf Format.err_formatter "**** Finished: Resolve=%f Expand=%f\n%!" (startexpand -. startresolve) (finishexpand -. startexpand);
-
+      Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times;
       expanded
     in
     let pkg_dir =

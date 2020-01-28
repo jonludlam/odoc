@@ -249,7 +249,8 @@ and resolved_module_of_resolved_signature_reference :
   | `Identifier (#Identifier.Module.t as i) -> `Identifier i
   | (`SubstAlias _ | `Canonical _ | `Module _) as r' ->
       resolved_module_of_resolved_module_reference r'
-  | `ModuleType _ | `Identifier _ -> failwith "Not a module reference"
+  | `ModuleType (_, n) -> failwith ("Not a module reference: " ^ n)
+  | `Identifier _ -> failwith ("Not a module reference : identifier")
 
 and module_of_module_reference : Reference.Module.t -> module_ = function
   | `Resolved r -> `Resolved (resolved_module_of_resolved_module_reference r)

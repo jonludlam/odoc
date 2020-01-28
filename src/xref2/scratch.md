@@ -64,6 +64,158 @@ let expanded =
 
 ```ocaml env=e1
 # #install_printer Common.Ident.print_with_scope;;
-# expanded;
-- : string = ""
+# m';
+- : Component.Module.t =
+{Odoc_xref2.Component.Module.doc = [];
+ type_ =
+  Odoc_xref2.Component.Module.ModuleType
+   (Odoc_xref2.Component.ModuleType.Functor
+     (Some
+       {Odoc_xref2.Component.FunctorArgument.id = `LParameter ("X", 107);
+        expr =
+         Odoc_xref2.Component.ModuleType.Path
+          (`Resolved
+             (`Identifier
+                (`ModuleType (`Root (Common.root, "Root"), "For_let_syntax"))));
+        expansion = None},
+     Odoc_xref2.Component.ModuleType.Functor
+      (Some
+        {Odoc_xref2.Component.FunctorArgument.id = `LParameter ("Intf", 108);
+         expr =
+          Odoc_xref2.Component.ModuleType.Signature
+           {Odoc_xref2.Component.Signature.items =
+             [Odoc_xref2.Component.Signature.ModuleType
+               (`LModuleType ("S", 109),
+               {Odoc_xref2.Component.Delayed.v =
+                 Some
+                  {Odoc_xref2.Component.ModuleType.doc = []; expr = None;
+                   expansion = None};
+                get = <fun>})];
+            removed = []};
+         expansion = Some Odoc_xref2.Component.Module.AlreadyASig},
+      Odoc_xref2.Component.ModuleType.Functor
+       (Some
+         {Odoc_xref2.Component.FunctorArgument.id = `LParameter ("Impl", 110);
+          expr =
+           Odoc_xref2.Component.ModuleType.Path
+            (`Resolved
+               (`ModuleType (`Local (`LParameter ("Intf", 108)), "S")));
+          expansion = None},
+       Odoc_xref2.Component.ModuleType.With
+        (Odoc_xref2.Component.ModuleType.With
+          (Odoc_xref2.Component.ModuleType.Path
+            (`Resolved
+               (`Identifier
+                  (`ModuleType (`Root (Common.root, "Root"), "Let_syntax")))),
+          [Odoc_xref2.Component.ModuleType.TypeSubst
+            (`Resolved (`Type (`Root, "t")),
+            {Odoc_xref2.Component.TypeDecl.Equation.params =
+              [(Odoc_model.Lang.TypeDecl.Var "a", None)];
+             private_ = false;
+             manifest =
+              Some
+               (Odoc_xref2.Component.TypeExpr.Constr
+                 (`Resolved (`Type (`Local (`LParameter ("X", 107)), "t")),
+                 []));
+             constraints = []})]),
+        [Odoc_xref2.Component.ModuleType.ModuleSubst
+          (`Resolved (`Module (`Root, "Open_on_rhs_intf")),
+          `Resolved (`Local (`LParameter ("Intf", 108))))])))));
+ canonical = None; hidden = false; display_type = None; expansion = None}
+```
+
+
+```ocaml env=e1
+let test_data = {|
+module With10 : sig
+  module type T = sig
+    module M : sig
+      module type S
+    end
+    module N : M.S
+  end
+  (** {!With10.T} is a submodule type. *)
+end
+|};;
+let cmti = Common.cmti_of_string test_data;;
+let _, _, sg = Odoc_loader__Cmti.read_interface Common.root "Root" cmti;;
+let resolved = Resolve2.signature Env.empty sg;;
+let env = Env.open_signature resolved Env.empty;;
+let with10 = Common.LangUtils.Lens.(get (Signature.module_ "With10") resolved);;
+let id = with10.Odoc_model.Lang.Module.id;;
+let m' = Env.lookup_module id env;;
+let expr = match m'.Component.Module.type_ with | Component.Module.ModuleType e -> e | _ -> failwith "bah";;
+
+(*let expanded = 
+    Expand.expansion_of_module_type_expr (id :> Odoc_model.Paths.Identifier.Signature.t) env expr;;*)
+```
+
+```ocaml env=e1
+# #install_printer Common.Ident.print_with_scope;;
+# m';;
+- : Component.Module.t =
+{Odoc_xref2.Component.Module.doc = [];
+ type_ =
+  Odoc_xref2.Component.Module.ModuleType
+   (Odoc_xref2.Component.ModuleType.Signature
+     {Odoc_xref2.Component.Signature.items =
+       [Odoc_xref2.Component.Signature.ModuleType (`LModuleType ("T", 147),
+         {Odoc_xref2.Component.Delayed.v =
+           Some
+            {Odoc_xref2.Component.ModuleType.doc =
+              [`Paragraph
+                 [`Reference
+                    (`Resolved
+                       (`ModuleType (`Local (`LModule ("With10", 146)), "T")),
+                     []);
+                  `Space; `Word "is"; `Space; `Word "a"; `Space;
+                  `Word "submodule"; `Space; `Word "type."]];
+             expr =
+              Some
+               (Odoc_xref2.Component.ModuleType.Signature
+                 {Odoc_xref2.Component.Signature.items =
+                   [Odoc_xref2.Component.Signature.Module
+                     (`LModule ("M", 148),
+                     Odoc_model.Lang.Signature.Ordinary,
+                     {Odoc_xref2.Component.Delayed.v =
+                       Some
+                        {Odoc_xref2.Component.Module.doc = [];
+                         type_ =
+                          Odoc_xref2.Component.Module.ModuleType
+                           (Odoc_xref2.Component.ModuleType.Signature
+                             {Odoc_xref2.Component.Signature.items =
+                               [Odoc_xref2.Component.Signature.ModuleType
+                                 (`LModuleType ("S", 150),
+                                 {Odoc_xref2.Component.Delayed.v =
+                                   Some
+                                    {Odoc_xref2.Component.ModuleType.doc = [];
+                                     expr = None; expansion = None};
+                                  get = <fun>})];
+                              removed = []});
+                         canonical = None; hidden = false;
+                         display_type = None;
+                         expansion =
+                          Some Odoc_xref2.Component.Module.AlreadyASig};
+                      get = <fun>});
+                    Odoc_xref2.Component.Signature.Module
+                     (`LModule ("N", 149),
+                     Odoc_model.Lang.Signature.Ordinary,
+                     {Odoc_xref2.Component.Delayed.v =
+                       Some
+                        {Odoc_xref2.Component.Module.doc = [];
+                         type_ =
+                          Odoc_xref2.Component.Module.ModuleType
+                           (Odoc_xref2.Component.ModuleType.Path
+                             (`Resolved
+                                (`ModuleType
+                                   (`Local (`LModule ("M", 148)), "S"))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None};
+                      get = <fun>})];
+                  removed = []});
+             expansion = Some Odoc_xref2.Component.Module.AlreadyASig};
+          get = <fun>})];
+      removed = []});
+ canonical = None; hidden = false; display_type = None;
+ expansion = Some Odoc_xref2.Component.Module.AlreadyASig}
 ```
