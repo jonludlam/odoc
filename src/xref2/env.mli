@@ -46,6 +46,7 @@ val pp_externals :
     (Odoc_model.Paths.Identifier.Value.t *
        Component.External.t) list -> unit
 
+val pp : Format.formatter -> t -> unit
 val set_resolver : t -> resolver -> t
 val has_resolver : t -> bool
 val id : t -> int

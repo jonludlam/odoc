@@ -52,12 +52,12 @@ let add_module parent id env =
   in
   match shadowing with
   | [] ->
-    Format.fprintf Format.err_formatter "Adding module: %a\n%!" Ident.print_with_scope id;
+    (* Format.fprintf Format.err_formatter "Adding module: %a\n%!" Ident.print_with_scope id; *)
     let modules = Ident.add id module_ env.modules in
     let module_ids = Ident.add id ident env.module_ids in
     { env with modules; module_ids }
   | [(id',_)] ->
-    Format.fprintf Format.err_formatter "Renaming module: %a\n%!" Ident.print_with_scope id;
+    (* Format.fprintf Format.err_formatter "Renaming module: %a\n%!" Ident.print_with_scope id; *)
     let new_ident = `Module(parent, ModuleName.of_string (Printf.sprintf "%s/hidden" name)) in
     let new_module = `Hidden (`Identifier new_ident) in
     let module_ids = Ident.add id' new_ident (Ident.remove id' env.module_ids) in
