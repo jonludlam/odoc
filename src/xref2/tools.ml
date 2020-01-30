@@ -649,15 +649,24 @@ and lookup_type_from_resolved_path :
   | `Identifier (`Type _ as i) ->
       let t = Env.lookup_type i env in
       (`Identifier i, Found (`T t))
+  | `Identifier (`Class _ as i) ->
+      let t = Env.lookup_class i env in
+      (`Identifier i, Found (`C t))
+  | `Identifier (`ClassType _ as i) ->
+      let t = Env.lookup_class_type i env in
+      (`Identifier i, Found (`CT t))
   | `Substituted s ->
       let p, t = lookup_type_from_resolved_path env s in
       (`Substituted p, t)
   | `Type (p, id) ->
       let p, m = lookup_and_resolve_module_from_resolved_path true true env p in
       handle_type_lookup env id p m
-  | `Class (_p, _id) -> failwith "class"
-  | `ClassType (_p, _id) -> failwith "class type"
-  | _ -> failwith "class"
+  | `Class (p, id) ->
+      let p, m = lookup_and_resolve_module_from_resolved_path true true env p in
+      handle_type_lookup env id p m
+  | `ClassType (p, id) ->
+      let p, m = lookup_and_resolve_module_from_resolved_path true true env p in
+      handle_type_lookup env id p m
 
 and lookup_type_from_path :
     Env.t -> Cpath.type_ -> (type_lookup_result, Cpath.type_) ResultMonad.t =
