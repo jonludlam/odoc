@@ -19,6 +19,8 @@ type resolver = {
   resolve_page : Odoc_model.Root.t -> Odoc_model.Lang.Page.t;
 }
 
+let unique_id = ref 0
+
 type t = {
   id : int;
   modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list;
@@ -45,7 +47,7 @@ type t = {
 let set_resolver t resolver = {t with resolver = Some resolver }
 let has_resolver t = match t.resolver with None -> false | _ -> true
 let id t = t.id
- 
+
 let pp_modules ppf modules =
   List.iter
     (fun (i, m) ->
@@ -114,7 +116,7 @@ let empty =
 let add_module identifier m env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     modules = (identifier, m) :: env.modules;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Module (identifier, m))
@@ -124,7 +126,7 @@ let add_module identifier m env =
 let add_type identifier t env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     types = (identifier, t) :: env.types;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Type (identifier, t))
@@ -134,7 +136,7 @@ let add_type identifier t env =
 let add_module_type identifier t env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     module_types = (identifier, t) :: env.module_types;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `ModuleType (identifier, t))
@@ -144,7 +146,7 @@ let add_module_type identifier t env =
 let add_value identifier t env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     values = (identifier, t) :: env.values;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Value (identifier, t))
@@ -154,7 +156,7 @@ let add_value identifier t env =
 let add_external identifier t env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     externals = (identifier, t) :: env.externals;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `External (identifier, t))
@@ -163,7 +165,7 @@ let add_external identifier t env =
 let add_label identifier env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Label identifier)
       :: env.elts;
@@ -171,13 +173,13 @@ let add_label identifier env =
 
 let add_label_title label elts env =
   { env with 
-  id = env.id + 1;
+  id = (incr unique_id; !unique_id);
   titles = (label, elts) :: env.titles }
 
 let add_class identifier t env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     classes = (identifier, t) :: env.classes;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Class (identifier, t))
@@ -187,7 +189,7 @@ let add_class identifier t env =
 let add_class_type identifier t env =
   {
     env with
-    id = env.id + 1;
+    id = (incr unique_id; !unique_id);
     class_types = (identifier, t) :: env.class_types;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `ClassType (identifier, t))
@@ -210,7 +212,7 @@ let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
 
 let add_method identifier m env =
   { env with 
-  id = env.id + 1;
+  id = (incr unique_id; !unique_id);
   methods = (identifier, m) :: env.methods }
 
 let add_root name ty env = { env with roots = (name, ty) :: env.roots }
