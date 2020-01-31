@@ -1,6 +1,66 @@
 open Odoc_model
 open Lang
 
+type expansion =
+  | Signature of Component.Signature.t
+  | Functor of Component.FunctorArgument.t option * Component.ModuleType.expr
+
+let rec aux_expansion_of_module : Env.t -> Component.Module.t -> expansion =
+  let open Component.Module in
+  fun env m ->
+    aux_expansion_of_module_decl env m.type_
+
+and aux_expansion_of_module_decl env ty =
+  let open Component.Module in
+  match ty with
+  | Alias path -> aux_expansion_of_module_alias env path
+  | ModuleType expr -> aux_expansion_of_module_type_expr env expr
+
+and aux_expansion_of_module_alias env path =
+  match Tools.lookup_and_resolve_module_from_path false false env path with
+  | Resolved (p, m) -> begin
+    match aux_expansion_of_module env m with
+    | Signature sg ->
+      Signature (Strengthen.signature p sg)
+    | Functor _ as x -> x
+  end
+  | Unresolved p ->
+    let err = Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
+    Component.Fmt.module_path path
+    Component.Fmt.module_path p
+    in
+    failwith err
+
+and aux_expansion_of_module_type_expr env expr : expansion =
+  let open Component.ModuleType in
+  match expr with
+  | Path p -> begin
+    match Tools.lookup_and_resolve_module_type_from_path false env p with
+    | Resolved (_, mt) -> aux_expansion_of_module_type env mt
+    | Unresolved p ->
+      let p = Component.Fmt.(string_of module_type_path p) in
+      failwith (Printf.sprintf "Couldn't find signature: %s" p)
+    end
+  | Signature s -> Signature s
+  | With (s, subs) -> begin
+    let expn = aux_expansion_of_module_type_expr env s in
+    match expn with
+    | Functor _ -> failwith "This shouldn't be possible!"
+    | Signature sg ->
+    let sg = Tools.handle_signature_with_subs env sg subs in
+    Signature sg
+    end
+  | Functor (arg, expr) ->
+    Functor (arg, expr)
+  | TypeOf decl -> aux_expansion_of_module_decl env decl
+
+and aux_expansion_of_module_type env mt =
+    let open Component.ModuleType in
+    match mt.expr with
+    | None -> raise Tools.OpaqueModule
+    | Some expr -> aux_expansion_of_module_type_expr env expr
+    
+
 let rec unit (resolver : Env.resolver) forward_references t =
   let open Compilation_unit in
   let initial_env =
@@ -100,86 +160,41 @@ and signature : Env.t -> Signature.t -> _ =
   in
   List.rev items'
 
-and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
-    expr =
-  let rec get_env lenv parent :
-      Component.ModuleType.expr -> Lang_of.maps * FunctorArgument.t option list
-      = function
-    | Functor (Some arg, expr) ->
+and handle_expansion env id expansion =
+  let handle_argument parent arg_opt expr env =
+    (* If there's an argument, extend the environment with the argument, then
+      do the substitution on the signature to replace the local identifier with
+      the global one *)
+    match arg_opt with
+      | None -> (env, expr)
+      | Some arg ->
         let identifier =
           `Parameter
             ( parent,
               Odoc_model.Names.ParameterName.of_string
-                (Ident.Name.module_ arg.id) )
+                (Ident.Name.module_ arg.Component.FunctorArgument.id) )
         in
-        let lenv' =
-          {
-            lenv with
-            Lang_of.module_ = (arg.id, identifier) :: lenv.Lang_of.module_;
-          }
-        in
+        let env' = Env.add_module identifier (Component.module_of_functor_argument arg) env in
         let subst = Subst.add_module arg.id (`Identifier identifier) Subst.identity in
-        let lenv, args = get_env lenv' (`Result parent) (Subst.module_type_expr subst expr) in
-        let arg_sg = Tools.signature_of_module_type_expr_nopath env arg.expr in
-        let arg_sg = Lang_of.signature identifier lenv arg_sg in
-        let arg_sg = signature env arg_sg in
-        let arg_sg =
-          if Env.has_resolver env
-          then Resolve2.signature env arg_sg 
-          else Resolve.signature env arg_sg in
-        let lang_arg = Lang_of.functor_argument lenv arg in
-        let lang_arg' = { lang_arg with expansion = Some (Signature arg_sg) } in
-        (lenv, Some lang_arg' :: args)
-    | Functor (None, expr) ->
-        let lenv, args = get_env lenv (`Result parent) expr in
-        (lenv, None :: args)
-    | _ -> (lenv, [])
+        (env', Subst.module_type_expr subst expr)
   in
-  match expr with
-  | Component.ModuleType.Functor _ ->
-      let expansion_env, args =
-        get_env Lang_of.empty (id :> Paths_types.Identifier.signature) expr
-      in
-      let sg = Tools.signature_of_module_type_expr_nopath env expr in
-      let sg =
-        Lang_of.signature
-          (id :> Paths_types.Identifier.signature)
-          expansion_env sg
-      in
-      let sg =
-        if Env.has_resolver env
-        then Resolve2.signature env sg 
-        else Resolve.signature env sg in
-      Odoc_model.Lang.Module.Functor (args, signature env sg)
-  | Component.ModuleType.With (_expr, _subs) ->
-      let sg = Tools.signature_of_module_type_expr_nopath env expr in
-      let sg =
-        Lang_of.signature
-          (id :> Paths_types.Identifier.signature)
-          Lang_of.empty sg
-      in
-      let sg =
-        if Env.has_resolver env
-        then Resolve2.signature env sg 
-        else Resolve.signature env sg in
-      Odoc_model.Lang.Module.Signature (signature env sg)
-  | _ ->
-      let sg = Tools.signature_of_module_type_expr_nopath env expr in
-      let sg =
-        try 
-          Lang_of.signature
-            (id :> Paths_types.Identifier.signature)
-            Lang_of.empty sg
-        with e ->
-          let str = Format.asprintf "Failed to translate signature:\n%a\n" Component.Fmt.signature sg in
-          Printf.fprintf stderr "%s\n%!" str;
-          raise e
-      in
-      let sg =
-        if Env.has_resolver env
-        then Resolve2.signature env sg 
-        else Resolve.signature env sg in
-      Odoc_model.Lang.Module.Signature (signature env sg)
+  let rec expand id env args expansion =
+    match expansion with
+    | Signature sg -> begin
+      match args with
+      | [] -> Component.Module.Signature sg
+      | args -> Component.Module.Functor (args, sg)
+    end 
+    | Functor (arg, expr) -> begin
+      let (env', expr') = handle_argument id arg expr env in
+      expand (`Result id) env' (arg :: args) (aux_expansion_of_module_type_expr env expr')
+    end
+  in
+  Lang_of.(module_expansion empty id (expand id env [] expansion))
+
+and expansion_of_module_type_expr (id : Paths_types.Identifier.signature) env
+    expr =
+    handle_expansion env id (aux_expansion_of_module_type_expr env expr)
 
 and module_decl env (id : Paths_types.Identifier.module_) decl =
   let open Module in
@@ -195,13 +210,13 @@ and module_type_expr env (id : Paths_types.Identifier.signature) expr =
   | Path _ | Signature _ -> expr
   | With (expr, subs) -> With (module_type_expr env id expr, subs)
   | TypeOf decl -> TypeOf decl
-  | Functor (arg, expr) ->
-      
+  | Functor (arg_opt, expr) ->
       Functor
-        ( Component.Opt.map (functor_argument env id) arg,
+        ( Component.Opt.map (functor_argument env) arg_opt,
           module_type_expr env id expr )
 
-and functor_argument env id arg =
+and functor_argument env arg =
+  let open FunctorArgument in
   let functor_arg = Env.lookup_module arg.id env in
   try
     let expansion =
@@ -215,7 +230,7 @@ and functor_argument env id arg =
     {
       arg with
       expansion = expansion;
-      expr = module_type_expr env id arg.expr;
+      expr = module_type_expr env (arg.id :> Odoc_model.Paths.Identifier.Signature.t) arg.expr;
     }
   with e ->
     Format.fprintf Format.err_formatter
@@ -242,26 +257,12 @@ and module_ env m =
     try
       match m'.type_ with
       | Alias _ ->
-          let _, sg = Tools.signature_of_module env (`Identifier id, m') in
-          let sg =
-            try
-              Lang_of.signature
-                (id :> Odoc_model.Paths.Identifier.Signature.t)
-                Lang_of.empty sg
-            with e ->
-              Format.fprintf Format.err_formatter "Failed translating signature: %a %a" Component.Fmt.model_identifier (id :> Odoc_model.Paths.Identifier.t) Component.Fmt.signature sg;
-              raise e
-          in
-          let sg = signature env sg in
-          (* Now phase-2 resolve this signature as canonical paths might now make sense *)
-          let sg' =
-            if Env.has_resolver env
-            then Resolve2.signature env sg 
-            else Resolve.signature env sg in
+          let expn = aux_expansion_of_module env m' in
+          let expansion = handle_expansion env (id :> Odoc_model.Paths.Identifier.Signature.t) expn in
           {
             m with
             type_;
-            expansion = Some (Odoc_model.Lang.Module.Signature sg');
+            expansion = Some expansion;
             display_type = None; (* Some (ModuleType (ModuleType.Signature sg')); *)
           }
       | ModuleType expr ->
@@ -291,9 +292,9 @@ and module_type env m =
   | _ -> (
       let m' = Env.lookup_module_type m.id env in
       try
-        let sg = Tools.signature_of_module_type_nopath env m' in
-        let sg = Lang_of.signature id Lang_of.empty sg in
-        { m with expr; expansion = Some (Signature (signature env sg)) }
+        let expn = aux_expansion_of_module_type env m' in
+        let expansion = handle_expansion env (m.id :> Odoc_model.Paths.Identifier.Signature.t) expn in
+        { m with expr; expansion = Some (expansion) }
       with e ->
         Format.fprintf Format.err_formatter
           "Got exception %s expading module type %a" (Printexc.to_string e)

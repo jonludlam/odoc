@@ -2306,3 +2306,13 @@ module Find = struct
     in
     inner s.Signature.items
 end
+
+let module_of_functor_argument (arg : FunctorArgument.t) =
+  {
+    Module.doc = [];
+    display_type = None;
+    type_ = ModuleType arg.expr;
+    canonical = None;
+    hidden = false;
+    expansion = None;
+  }
