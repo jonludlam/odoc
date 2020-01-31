@@ -45,6 +45,8 @@ module CComment = struct
 end
 
 module Delayed = struct
+  let eager = ref false
+
   type 'a t = { mutable v : 'a option; get : unit -> 'a }
 
   let get : 'a t -> 'a =
@@ -56,7 +58,8 @@ module Delayed = struct
         x.v <- Some v;
         v
 
-  let put : (unit -> 'a) -> 'a t = fun f -> { v = None; get = f }
+  let put : (unit -> 'a) -> 'a t = fun f ->
+    if !eager then {v = Some (f ()); get = f} else { v = None; get = f }
 end
 
 module Opt = struct
@@ -1047,7 +1050,9 @@ module LocalIdents = struct
         | Type (_, t) ->
           let ids = type_decl t ids in
           { ids with types = t.TypeDecl.id :: ids.types }
-        | TypeSubstitution t -> type_decl t ids
+        | TypeSubstitution t ->
+          let ids = type_decl t ids in
+          { ids with types = t.TypeDecl.id :: ids.types }
         | TypExt ext -> extension ext ids
         | Exception e ->
           let ids = exception_ e ids in
