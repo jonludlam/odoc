@@ -21,11 +21,11 @@ type resolver = {
 
 type t
 
-val pp_modules :
+(*val pp_modules :
     Format.formatter ->
       (Odoc_model.Paths.Identifier.Module.t *
        Component.Module.t) list -> unit
-
+*)
 val pp_module_types :
     Format.formatter ->
       (Odoc_model.Paths.Identifier.ModuleType.t *
@@ -140,3 +140,5 @@ val empty : t
     val open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t
 
 val modules_of : t -> (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list
+val len : int ref
+val n : int ref

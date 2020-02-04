@@ -144,12 +144,15 @@ let rec unit (resolver : Env.resolver) t =
   in
             let end_ = Unix.gettimeofday () in
             Format.fprintf Format.err_formatter "Took %f seconds\n%!" (end_ -. start);
-  {
+  let result = {
     t with
     content = content env t.content;
     imports;
     doc = comment_docs env t.doc;
-  }
+  } in
+  Format.fprintf Format.err_formatter "Avg length of modules: %f\n%!" (float_of_int !Env.len /. float_of_int !Env.n);
+
+  result
 
 and content env =
   let open Compilation_unit in

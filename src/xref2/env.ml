@@ -21,9 +21,11 @@ type resolver = {
 
 let unique_id = ref 0
 
+module ModuleMap = Map.Make(struct type t = Odoc_model.Paths.Identifier.Module.t let compare (a : t) (b : t) = Stdlib.compare a b end)
+
 type t = {
   id : int;
-  modules : (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list;
+  modules : Component.Module.t ModuleMap.t;
   module_types :
     (Odoc_model.Paths.Identifier.ModuleType.t * Component.ModuleType.t) list;
   types : (Odoc_model.Paths.Identifier.Type.t * Component.TypeDecl.t) list;
@@ -54,7 +56,7 @@ let pp_modules ppf modules =
       Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier
         (i :> Odoc_model.Paths.Identifier.t)
         Component.Fmt.module_ m)
-    modules
+    (ModuleMap.bindings modules)
 
 let pp_module_types ppf module_types =
   List.iter
@@ -98,7 +100,7 @@ exception MyFailure of Odoc_model.Paths.Identifier.t * t
 let empty =
   {
     id = 0;
-    modules = [];
+    modules = ModuleMap.empty;
     module_types = [];
     types = [];
     values = [];
@@ -118,7 +120,7 @@ let add_module identifier m env =
   {
     env with
     id = (incr unique_id; (*Format.fprintf Format.err_formatter "unique_id=%d\n%!" !unique_id; *)!unique_id);
-    modules = (identifier, m) :: env.modules;
+    modules = ModuleMap.add identifier m env.modules;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Module (identifier, m))
       :: env.elts;
@@ -218,8 +220,15 @@ let add_method identifier m env =
 
 let add_root name ty env = { env with roots = (name, ty) :: env.roots }
 
+let len = ref 0
+let n = ref 0
+
 let lookup_module identifier env =
-  try List.assoc identifier env.modules
+  try
+    let l = ModuleMap.cardinal env.modules in
+    len := !len + l;
+    n := !n + 1;
+    ModuleMap.find identifier env.modules
   with _ ->
     (* Format.fprintf Format.err_formatter
       "Failed to find module:\nIdentifier: %a\n\n"
@@ -276,19 +285,29 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
       ty
   | Pack _ -> failwith "Unsupported"
 
+let roots = Hashtbl.create 91
+
 let lookup_root_module name env =
   match try Some (List.assoc name env.roots) with _ -> None with
   | Some x -> Some x
   | None -> (
-      match env.resolver with
-      | None -> None
-      | Some r -> (
-          match r.lookup_unit name with
-          | Forward_reference -> Some Forward
-          | Not_found -> None
-          | Found u ->
-              let unit = r.resolve_unit u.root in
-              Some (Resolved (unit.id, module_of_unit unit)) ) )
+      match Hashtbl.find_opt roots name
+      with
+      | Some x -> x
+      | None -> 
+        match env.resolver with
+        | None -> None
+        | Some r -> (
+            let result = 
+              match r.lookup_unit name with
+              | Forward_reference -> Some Forward
+              | Not_found -> None
+              | Found u ->
+                  let unit = r.resolve_unit u.root in
+                  Some (Resolved (unit.id, module_of_unit unit))
+            in
+            Hashtbl.add roots name result;
+            result))
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option =
  fun f ->
@@ -500,4 +519,4 @@ let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
  fun unit env ->
   match unit.content with Module s -> open_signature s env | Pack _ -> env
 
-let modules_of env = env.modules
+let modules_of env = ModuleMap.bindings env.modules

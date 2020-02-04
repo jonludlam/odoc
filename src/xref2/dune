@@ -1,7 +1,7 @@
 (library
  (name odoc_xref2)
  (public_name odoc.xref2)
- (preprocess (pps landmarks.ppx --auto))
+; (preprocess (pps landmarks.ppx --auto))
  (libraries compiler-libs.common odoc_model odoc_loader landmarks unix)
  )
 (alias

@@ -341,7 +341,7 @@ exception MyFailure of Component.Module.t * Component.Module.t
 exception Couldnt_find_functor_argument
 
 module Hashable = struct
-  type t = bool * bool * int * Cpath.resolved_module
+  type t = bool * bool * Cpath.resolved_module
   let equal = Stdlib.(=)
   let hash = Hashtbl.hash
 end
@@ -380,7 +380,7 @@ and add_canonical_path env m p : Cpath.resolved_module =
       | Some (cp, cr) -> (
           if !is_compile then `Canonical (p, cp)
           else begin
-            Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);
+            (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
             match !resolve_module_ref env cr with
             | Some (cp', _) ->
                 (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
@@ -437,15 +437,48 @@ and handle_class_type_lookup env id p m =
   let c = Component.Find.class_type_in_sig sg id in
   (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
+and verify_resolved_module_path : Env.t -> Cpath.resolved_module -> bool = fun env p ->
+    match p with
+   | `Local _id -> false
+   | `Identifier i -> (try ignore(Env.lookup_module i env); true with _ -> false)
+   | `Substituted x -> verify_resolved_module_path env x
+   | `Apply (func_path, arg_path) -> verify_resolved_module_path env func_path && verify_module_path env arg_path
+   | `Module (p, _) -> verify_resolved_module_path env p
+   | `Alias (p1, p2) -> verify_resolved_module_path env p1 && verify_resolved_module_path env p2
+   | `Subst (p1, p2) -> verify_resolved_module_type_path env p1 && verify_resolved_module_path env p2
+   | `SubstAlias (p1, p2) -> verify_resolved_module_path env p1 && verify_resolved_module_path env p2
+   | `Hidden p1 -> verify_resolved_module_path env p1
+   | `Canonical (p1, p2) -> verify_resolved_module_path env p1 && verify_module_path env p2
+
+and verify_module_path : Env.t -> Cpath.module_ -> bool = fun env p ->
+    match p with
+    | `Resolved p -> verify_resolved_module_path env p
+    | `Forward _ -> true
+    | `Dot (p, _) -> verify_module_path env p
+    | `Apply (p1, p2) -> verify_module_path env p1 && verify_module_path env p2
+    | `Substituted s -> verify_module_path env s
+    | `Root r -> (try ignore(Env.lookup_root_module r env); false with _ -> true)
+
+and verify_module_type_path : Env.t -> Cpath.module_type -> bool = fun env p ->
+    match p with
+    | `Resolved p -> verify_resolved_module_type_path env p
+    | `Substituted p -> verify_module_type_path env p
+    | `Dot (p, _) -> verify_module_path env p
+
+and verify_resolved_module_type_path : Env.t -> Cpath.resolved_module_type -> bool = fun env p ->
+    match p with
+    | `Local _ -> false
+    | `Identifier i -> (try ignore(Env.lookup_module_type i env); true with _ -> false)
+    | `ModuleType (p, _) -> verify_resolved_module_path env p
+    | `Substituted p -> verify_resolved_module_type_path env p
 
 and lookup_and_resolve_module_from_resolved_path :
     bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
  fun is_resolve add_canonical env p ->
-  let id = (is_resolve, add_canonical, Env.id env, p) in
-  if Memos1.mem memo id then Memos1.find memo id
-  else begin
- (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
-    let result = 
+  let id = (is_resolve, add_canonical, p) in
+   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
+  let resolve () =
+  (* Format.fprintf Format.err_formatter "."; *)
    match p with
   | `Local id ->
       Format.fprintf Format.err_formatter "Trying to lookup module: %a\n%!"
@@ -521,26 +554,43 @@ and lookup_and_resolve_module_from_resolved_path :
       let p' = unsimplify_resolved_module_path env p in
       (`Canonical (p1', `Resolved p'), m)
   | `Canonical (p1, p2) -> (
+      
       let p1', m =
         lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
           env p1
       in
-      match
-        lookup_and_resolve_module_from_path is_resolve add_canonical env p2
-      with
-      | Resolved (p, _) -> (`Canonical (p1', `Resolved p), m)
-      | Unresolved _p2 -> (p1', m)
-      | exception e ->
-          Format.fprintf Format.err_formatter
-            "Warning: Failed to look up canonical path for module %a (got \
-             exception %s)\n\
-             %!"
-            Component.Fmt.resolved_module_path p (Printexc.to_string e);
-          (p1', m) )
-        in
-        Memos1.add memo id result;
-        result
-      end
+      if !is_compile then (p1', m)
+      else begin
+        match
+          lookup_and_resolve_module_from_path is_resolve add_canonical env p2
+        with
+        | Resolved (p, _) -> (`Canonical (p1', `Resolved p), m)
+        | Unresolved _p2 -> (p1', m)
+        | exception e ->
+            Format.fprintf Format.err_formatter
+              "Warning: Failed to look up canonical path for module %a (got \
+              exception %s)\n\
+              %!"
+              Component.Fmt.resolved_module_path p (Printexc.to_string e);
+      (p1', m) end)
+  in
+  match Memos1.find_all memo id with
+  | [] ->
+        let resolved = resolve () in
+        Memos1.add memo id resolved;
+        resolved
+  | xs ->
+        let rec find =
+          function
+          | (p,m)::xs ->
+            if verify_resolved_module_path env p
+            then ((*Format.fprintf Format.err_formatter "x";*) (p, m))
+            else find xs
+          | [] -> 
+            let resolved = resolve () in
+            Memos1.add memo id resolved;
+            resolved
+        in find xs
 
 and lookup_module_from_path env cpath =
   lookup_and_resolve_module_from_path true true env cpath

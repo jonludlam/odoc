@@ -64,20 +64,82 @@ let signature_lookup_result_of_label_parent :
   | _ -> None
 
   module Hashable = struct
-    type t = bool * int * Resolved.Signature.t
+    type t = bool * Resolved.Signature.t
     let equal = Stdlib.(=)
     let hash = Hashtbl.hash
   end
   module Memos1 = Hashtbl.Make(Hashable)
-  let memo = Memos1.create 91
+(*  let memo = Memos1.create 91*)
 
   module Hashable2 = struct
-    type t = bool * int * Signature.t
+    type t = bool * Signature.t
     let equal = Stdlib.(=)
     let hash = Hashtbl.hash
   end
   module Memos2 = Hashtbl.Make(Hashable2)
-  let memo2 = Memos2.create 91
+let memo2 = Memos2.create 91 
+
+let rec verify_resolved_signature : Env.t -> Resolved.Signature.t -> bool =
+  fun env r ->
+  match r with
+  | `Identifier (`Root (_root, name) as i) -> (
+    try ignore(Env.lookup_module i env); true
+    with _ ->
+      match Env.lookup_root_module name env with
+      | Some (_r) -> true
+      | None -> false
+      )
+  | `Identifier (#Identifier.Module.t as i) -> (
+    try ignore(Env.lookup_module i env); true
+    with _ -> Format.fprintf Format.err_formatter "failed module lookup (%a)\n%!" Component.Fmt.model_identifier (i :> Identifier.t); false)
+  | `Identifier (`ModuleType _ as i) -> (
+    try ignore(Env.lookup_module_type i env); true with _ -> Format.fprintf Format.err_formatter "failed module type lookup\n%!";false)
+  | `Module (p, _) -> verify_resolved_signature env p
+  | `ModuleType (p, _) -> verify_resolved_signature env p
+  | `Canonical (p1, p2) -> verify_resolved_signature env (p1 :> Resolved.Signature.t) && verify_signature env (p2 :> Signature.t)
+  | `SubstAlias (_p1, _p2) -> false
+
+and verify_signature : Env.t -> Signature.t -> bool =
+  fun env r ->
+  match r with
+  | `Resolved r -> verify_resolved_signature env r
+  | `Root (id, _) ->
+    let exists fn =
+        try ignore(fn id env); true with _ -> false
+    in
+    (* We need to check that this _wouldn't_ be resolved *)
+    let result = (not (exists Env.lookup_module_by_name)) &&
+    (not (exists Env.lookup_module_type_by_name)) &&
+    (not (exists Env.lookup_root_module)) in
+    if result then result else (Format.fprintf Format.err_formatter "failed root check\n"; result)
+  | `Dot (p, _) -> verify_label_parent env p
+  | `Module (p,_) -> verify_signature env p
+  | `ModuleType (p, _) -> verify_signature env p
+
+and verify_label_parent : Env.t -> LabelParent.t -> bool =
+  fun env r ->
+  match r with
+  | `Resolved r -> verify_resolved_label_parent env r
+  | ( `Module _ | `ModuleType _
+      | `Root (_, #Odoc_model.Paths_types.Reference.tag_module) ) as sr ->
+    verify_signature env sr
+  | `Dot (p, _) ->
+    verify_label_parent env p
+  | `Root _ -> true
+  | `Type (p, _) 
+  | `ClassType (p, _) 
+  | `Class (p, _) -> verify_signature env p
+
+and verify_resolved_label_parent env r =
+  match r with
+  | (`Module _ | `ModuleType _ | `Canonical _ | `SubstAlias _ ) as s ->
+      verify_resolved_signature env s
+  | `Identifier (#Identifier.Signature.t) as s ->
+    verify_resolved_signature env s
+  | `Identifier _ -> true
+  | `Class (p, _)
+  | `ClassType (p, _)
+  | `Type (p, _) -> verify_resolved_signature env p
 
   
 let rec resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
@@ -168,9 +230,9 @@ and resolve_resolved_signature_reference :
     add_canonical:bool ->
     signature_lookup_result =
  fun env r ~add_canonical ->
- let id = (add_canonical, Env.id env, r) in
-  if Memos1.mem memo id then Memos1.find memo id
-  else begin
+ let _id = (add_canonical, Env.id env, r) in
+ (* if Memos1.mem memo id then Memos1.find memo id
+  else *)begin
  (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
     let result = 
   match r with
@@ -198,7 +260,7 @@ and resolve_resolved_signature_reference :
         env,
         Tools.signature_of_module_type_nopath env m |> prefix_signature r' )
         in
-        Memos1.add memo id result;
+(*        Memos1.add memo id result;*)
               result
             end
       
@@ -370,12 +432,10 @@ and resolve_signature_reference :
     =
   let open Tools.OptionMonad in
   fun env r ~add_canonical ->
-  let id = (add_canonical, Env.id env, r) in
-  if Memos2.mem memo2 id then Memos2.find memo2 id
-  else begin
+  let id = (add_canonical, r) in
  (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
-    let result = 
-
+    let resolve () = 
+(* Format.fprintf Format.err_formatter "B"; *)
     match r with
     | `Resolved r ->
         Some (resolve_resolved_signature_reference env r ~add_canonical)
@@ -468,9 +528,26 @@ and resolve_signature_reference :
         in
         return (r', env, sg)
         in
-        Memos2.add memo2 id result;
-              result
-            end
+(*        Memos2.add memo2 id result; *)
+  match Memos2.find_all memo2 id with
+  | [] ->
+          let resolved = resolve () in
+          Memos2.add memo2 id resolved;
+          resolved
+  | xs ->
+          let rec find =
+            function
+            | [] ->
+              let resolved = resolve () in
+              Memos2.add memo2 id resolved;
+              resolved
+            | Some (p, e, m)::xs ->
+              if verify_resolved_signature env p
+              then ((*Format.fprintf Format.err_formatter "G";*) Some (p, e, m))
+              else find xs
+            | None::xs ->
+              find xs
+          in find xs
 
 
 and resolve_value_reference : Env.t -> Value.t -> value_lookup_result option =
@@ -588,12 +665,12 @@ and add_canonical_path env m p : Resolved.Module.t =
       Format.fprintf Format.err_formatter "....\n%!";
       match m.Component.Module.canonical with
       | Some (_, cr) -> (
-          Format.fprintf Format.err_formatter
+          (*Format.fprintf Format.err_formatter
             "Handling canonical path for %a (cr=%a)\n%!"
             Component.Fmt.model_resolved_reference
             (p :> Resolved.t)
             Component.Fmt.model_reference
-            (cr :> Reference.t);
+            (cr :> Reference.t);*)
           match resolve_module_reference ~add_canonical:false env cr with
           | Some (cp', _) ->
               Format.fprintf Format.err_formatter "Got it! %a\n%!"
