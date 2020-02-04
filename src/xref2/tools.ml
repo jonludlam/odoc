@@ -347,6 +347,14 @@ module Hashable = struct
 end
 module Memos1 = Hashtbl.Make(Hashable)
 let memo = Memos1.create 91
+(*
+module Hashable2 = struct
+  type t = bool * bool * int * Cpath.module_
+  let equal = Stdlib.(=)
+  let hash = Hashtbl.hash
+end
+module Memos2 = Hashtbl.Make(Hashable2)
+let memo2 = Memos2.create 91*)
 
 let rec handle_apply is_resolve env func_path arg_path m =
   let func_path', mty = module_type_expr_of_module env (func_path, m) in
@@ -372,7 +380,7 @@ and add_canonical_path env m p : Cpath.resolved_module =
       | Some (cp, cr) -> (
           if !is_compile then `Canonical (p, cp)
           else begin
-            (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
+            Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);
             match !resolve_module_ref env cr with
             | Some (cp', _) ->
                 (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
@@ -508,10 +516,10 @@ and lookup_and_resolve_module_from_resolved_path :
       in
       let p, _ =
         lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env
-          (unsimplify_resolved_module_path env p2)
+          env p2
       in
-      (`Canonical (p1', `Resolved p), m)
+      let p' = unsimplify_resolved_module_path env p in
+      (`Canonical (p1', `Resolved p'), m)
   | `Canonical (p1, p2) -> (
       let p1', m =
         lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
@@ -548,6 +556,9 @@ and lookup_and_resolve_module_from_path :
     (module_lookup_result, Cpath.module_) ResultMonad.t =
  fun is_resolve add_canonical env p ->
   let open ResultMonad in
+  (*let id = (is_resolve, add_canonical, Env.id env, p) in*)
+  (*if Memos2.mem memo2 id then Memos2.find memo2 id
+  else*) begin
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_path: looking up %a\n%!" Component.Fmt.path p; *)
   match p with
   | `Dot (parent, id) ->
@@ -588,6 +599,7 @@ and lookup_and_resolve_module_from_path :
   | `Forward f ->
     lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
     |> map_unresolved (fun _ -> `Forward f)
+      end
 
 and lookup_and_resolve_module_type_from_resolved_path :
     bool -> Env.t -> Cpath.resolved_module_type -> module_type_lookup_result =

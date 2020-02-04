@@ -114,9 +114,10 @@ let empty =
   }
 
 let add_module identifier m env =
+(*  Format.fprintf Format.err_formatter "Adding module: %a\n%!" Component.Fmt.model_identifier (identifier : Odoc_model.Paths.Identifier.Module.t :> Odoc_model.Paths.Identifier.t);*)
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id = (incr unique_id; (*Format.fprintf Format.err_formatter "unique_id=%d\n%!" !unique_id; *)!unique_id);
     modules = (identifier, m) :: env.modules;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Module (identifier, m))
@@ -220,7 +221,7 @@ let add_root name ty env = { env with roots = (name, ty) :: env.roots }
 let lookup_module identifier env =
   try List.assoc identifier env.modules
   with _ ->
-(*    Format.fprintf Format.err_formatter
+    (* Format.fprintf Format.err_formatter
       "Failed to find module:\nIdentifier: %a\n\n"
       Component.Fmt.model_identifier
       (identifier :> Odoc_model.Paths.Identifier.t);
@@ -229,7 +230,7 @@ let lookup_module identifier env =
         Format.fprintf Format.err_formatter "%a;\n"
           Component.Fmt.model_identifier
           (ident :> Odoc_model.Paths.Identifier.t))
-      env.modules;*)
+      env.modules; *)
     raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -498,3 +499,5 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
 let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
  fun unit env ->
   match unit.content with Module s -> open_signature s env | Pack _ -> env
+
+let modules_of env = env.modules

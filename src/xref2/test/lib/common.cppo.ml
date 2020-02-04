@@ -500,7 +500,7 @@ let mkenv () =
 let resolve unit =
   let env = mkenv () in
   let resolve_env = Odoc_odoc.Env.build env (`Unit unit) in
-  let result = Odoc_xref2.Resolve.resolve resolve_env unit in
+  let result = Odoc_xref2.Compile.compile resolve_env unit in
   result
 
 

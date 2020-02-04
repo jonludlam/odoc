@@ -628,7 +628,8 @@ module Path = struct
     let open Paths_types.Resolved_path in
     function
     | `Identifier _ -> false
-    | `Canonical (_, _) -> false
+    | `Canonical (_, `Resolved _) -> false
+    | `Canonical (_, _) -> false (* TODO *)
     | `Hidden _ -> true
     | `Subst(p1, p2) -> is_resolved_hidden (p1 : module_type :> any) || is_resolved_hidden (p2 : module_ :> any)
     | `SubstAlias(p1, p2) -> is_resolved_hidden (p1 : module_ :> any) || is_resolved_hidden (p2 : module_ :> any)

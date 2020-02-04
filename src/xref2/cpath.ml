@@ -192,6 +192,7 @@ and is_resolved_module_hidden : resolved_module -> bool = function
   | `Local _ -> false
   | `Identifier _ -> false
   | `Hidden _ -> true
+  | `Canonical (_, `Resolved _) -> false
   | `Substituted p | `Canonical (p, _) | `Apply (p, _) | `Module (p, _) ->
       is_resolved_module_hidden p
   | `Subst (p1, p2) ->

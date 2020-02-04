@@ -33,7 +33,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     let page = Page.load input in
     let odoctree =
       let resolve_env = Env.build env (`Page page) in
-      Odoc_xref2.Resolve2.resolve_page resolve_env page
+      Odoc_xref2.Link.resolve_page resolve_env page
     in
     let pkg_name = root.package in
     let pages = to_html_tree_page ?theme_uri ~syntax odoctree in
@@ -57,16 +57,13 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       let env = Env.build env (`Unit unit) in
-      let startresolve = Unix.gettimeofday () in
-      Format.fprintf Format.err_formatter "**** Resolve2...\n%!";
-      let resolved = Odoc_xref2.Resolve2.resolve env unit in
-      let startexpand = Unix.gettimeofday () in
-      Format.fprintf Format.err_formatter "**** Expand...\n%!";
-      let expanded = Odoc_xref2.Expand.expand2 env resolved in
-      let finishexpand = Unix.gettimeofday () in
-      Format.fprintf Format.err_formatter "**** Finished: Resolve=%f Expand=%f\n%!" (startexpand -. startresolve) (finishexpand -. startexpand);
+      let startlink = Unix.gettimeofday () in
+      Format.fprintf Format.err_formatter "**** Link...\n%!";
+      let linked = Odoc_xref2.Link.link env unit in
+      let finishlink = Unix.gettimeofday () in
+      Format.fprintf Format.err_formatter "**** Finished: Link=%f\n%!" (finishlink -. startlink);
       Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times;
-      expanded
+      linked
     in
     let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package
@@ -126,7 +123,7 @@ let from_mld ~env ?(syntax=Odoc_html.Tree.OCaml) ~package ~output:root_dir input
     let page = Odoc_model.Lang.Page.{ name; content; digest } in
 (*    let page = Odoc_xref.Lookup.lookup_page page in*)
     let env = Env.build env (`Page page) in
-    let resolved = Odoc_xref2.Resolve.resolve_page env page in
+    let resolved = Odoc_xref2.Link.resolve_page env page in
     let pages = to_html_tree_page ~syntax resolved in
     let pkg_dir = Fs.Directory.reach_from ~dir:root_dir root.package in
     Fs.Directory.mkdir_p pkg_dir;

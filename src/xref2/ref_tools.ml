@@ -63,6 +63,23 @@ let signature_lookup_result_of_label_parent :
       Some (rr', env, s)
   | _ -> None
 
+  module Hashable = struct
+    type t = bool * int * Resolved.Signature.t
+    let equal = Stdlib.(=)
+    let hash = Hashtbl.hash
+  end
+  module Memos1 = Hashtbl.Make(Hashable)
+  let memo = Memos1.create 91
+
+  module Hashable2 = struct
+    type t = bool * int * Signature.t
+    let equal = Stdlib.(=)
+    let hash = Hashtbl.hash
+  end
+  module Memos2 = Hashtbl.Make(Hashable2)
+  let memo2 = Memos2.create 91
+
+  
 let rec resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
   let open Tools.OptionMonad in
   fun env r ->
@@ -151,6 +168,11 @@ and resolve_resolved_signature_reference :
     add_canonical:bool ->
     signature_lookup_result =
  fun env r ~add_canonical ->
+ let id = (add_canonical, Env.id env, r) in
+  if Memos1.mem memo id then Memos1.find memo id
+  else begin
+ (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
+    let result = 
   match r with
   | `Identifier i ->
       let sg =
@@ -175,7 +197,11 @@ and resolve_resolved_signature_reference :
       ( r,
         env,
         Tools.signature_of_module_type_nopath env m |> prefix_signature r' )
-
+        in
+        Memos1.add memo id result;
+              result
+            end
+      
 and resolve_resolved_module_reference :
     Env.t -> Resolved.Module.t -> add_canonical:bool -> module_lookup_result =
  fun env r ~add_canonical ->
@@ -344,6 +370,12 @@ and resolve_signature_reference :
     =
   let open Tools.OptionMonad in
   fun env r ~add_canonical ->
+  let id = (add_canonical, Env.id env, r) in
+  if Memos2.mem memo2 id then Memos2.find memo2 id
+  else begin
+ (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
+    let result = 
+
     match r with
     | `Resolved r ->
         Some (resolve_resolved_signature_reference env r ~add_canonical)
@@ -435,6 +467,11 @@ and resolve_signature_reference :
             sg env
         in
         return (r', env, sg)
+        in
+        Memos2.add memo2 id result;
+              result
+            end
+
 
 and resolve_value_reference : Env.t -> Value.t -> value_lookup_result option =
   let open Tools.OptionMonad in
