@@ -263,25 +263,6 @@ let len = ref 0
 
 let n = ref 0
 
-let lookup_module identifier env =
-  try
-    let l = ModuleMap.cardinal env.modules in
-    len := !len + l;
-    n := !n + 1;
-    ModuleMap.find identifier env.modules
-  with _ ->
-    (* Format.fprintf Format.err_formatter
-         "Failed to find module:\nIdentifier: %a\n\n"
-         Component.Fmt.model_identifier
-         (identifier :> Odoc_model.Paths.Identifier.t);
-       List.iter
-         (fun (ident, _) ->
-           Format.fprintf Format.err_formatter "%a;\n"
-             Component.Fmt.model_identifier
-             (ident :> Odoc_model.Paths.Identifier.t))
-         env.modules; *)
-    raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
-
 let lookup_type identifier env =
   try List.assoc identifier env.types
   with Not_found ->
@@ -347,6 +328,34 @@ let lookup_root_module name env =
               in
               Hashtbl.add roots name result;
               result ) )
+
+
+let lookup_module identifier env =
+  try
+    let l = ModuleMap.cardinal env.modules in
+    len := !len + l;
+    n := !n + 1;
+    ModuleMap.find identifier env.modules
+  with _ ->
+    match identifier with
+    | `Root (_, name) ->
+      (match lookup_root_module name env with
+      | Some (Resolved (_, m)) -> m
+      | _ ->
+        raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env)))
+      | _ -> 
+    Format.fprintf Format.err_formatter
+         "Failed to find module:\nIdentifier: %a\n\n"
+         Component.Fmt.model_identifier
+         (identifier :> Odoc_model.Paths.Identifier.t);
+(*       List.iter
+         (fun (ident, _) ->
+           Format.fprintf Format.err_formatter "%a;\n"
+             Component.Fmt.model_identifier
+             (ident :> Odoc_model.Paths.Identifier.t))
+         env.modules; *)
+         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
+
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option =
  fun f ->

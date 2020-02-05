@@ -6,6 +6,10 @@ module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
 
+let with_dummy_location v = Location_.
+  { location = { file=""; start={line=0; column=0;}; end_={line=0; column=1} }
+  ; value=v }
+
 let rec should_reresolve : Paths.Path.Resolved.t -> bool =
  fun p ->
   let open Paths.Path.Resolved in
@@ -28,6 +32,14 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
 
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true
+
+ let add_module_docs m expn =
+  let open Odoc_model.Lang in
+  match expn with
+  | Module.Signature sg ->
+    let doc = Signature.Comment (`Docs m.Module.doc) in
+    Module.Signature (doc::sg)
+  | _ -> expn
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
@@ -91,7 +103,7 @@ let rec unit (resolver : Env.resolver) t =
   in
   let initial_env = Env.set_resolver initial_env resolver in
   let start = Unix.gettimeofday () in
-  let rec resolve_units (units, env) imports =
+  let (*rec*) resolve_units (units, env) imports =
     List.fold_left
       (fun (imports, env) import ->
         if List.mem import imports then (imports, env)
@@ -136,9 +148,9 @@ let rec unit (resolver : Env.resolver) t =
                         env
                     in
                     (* Format.fprintf Format.err_formatter "Recursing...\n%!"; *)
-                    let imports, env =
+                    (*let imports, env =
                       resolve_units (imports, env) unit.imports
-                    in
+                    in*)
                     (* Format.fprintf Format.err_formatter "Finished...\n%!"; *)
                     (Resolved f.root :: imports, env)
               | Not_found ->
@@ -404,9 +416,18 @@ and module_ : Env.t -> Module.t -> Module.t =
           (env, expansion)
       | _ -> (env, m.expansion)
     in
+    let doc, expansion =
+      match m.doc with
+      | (_::_) -> m.doc, expansion
+      | [] ->
+        match expansion with
+        | Some (Signature (Comment (`Docs _doc) :: Comment (`Docs d2) :: expansion))
+          -> d2, Some (Signature (expansion))
+        | _ -> [], expansion
+    in
     {
       m with
-      doc = comment_docs env m.doc;
+      doc = comment_docs env doc;
       type_ = module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_;
       expansion = Opt.map (module_expansion env) expansion;
     }

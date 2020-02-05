@@ -321,11 +321,20 @@ and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
   try
+    let decl = Component.Of_Lang.(module_decl empty i.decl) in
+    let _, expn = Expand_tools.aux_expansion_of_module_decl env decl |> Expand_tools.handle_expansion env i.parent in
+    let expansion =
+      try (
+        match expn with
+        | Module.Signature sg ->
+          { resolved=true; content = signature env sg }
+        | _ -> i.expansion
+      ) with _ -> i.expansion
+    in
     {
       i with
       decl = module_decl env i.parent i.decl;
-      expansion =
-        { resolved = true; content = signature env i.expansion.content };
+      expansion
     }
   with e ->
     let i' = Component.Of_Lang.(module_decl empty i.decl) in

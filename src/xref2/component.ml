@@ -737,7 +737,7 @@ module Fmt = struct
   and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
     match p with
     | `Root (_, unit_name) ->
-        Format.fprintf ppf "%s" (Odoc_model.Names.UnitName.to_string unit_name)
+        Format.fprintf ppf "(root %s)" (Odoc_model.Names.UnitName.to_string unit_name)
     | `Module (`Root _, name) ->
         Format.fprintf ppf "%s" (Odoc_model.Names.ModuleName.to_string name)
     | `ModuleType (`Root _, name) ->
@@ -1729,7 +1729,7 @@ module Of_Lang = struct
     match expr with
     | Var s -> TypeExpr.Var s
     | Any -> Any
-    | Constr (p, _) -> Constr (type_path ident_map p, [])
+    | Constr (p, xs) -> Constr (type_path ident_map p, List.map (type_expression ident_map) xs)
     | Arrow (lbl, t1, t2) ->
         Arrow (lbl, type_expression ident_map t1, type_expression ident_map t2)
     | Tuple ts -> Tuple (List.map (type_expression ident_map) ts)

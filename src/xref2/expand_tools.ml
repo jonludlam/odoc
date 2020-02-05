@@ -15,9 +15,12 @@ and aux_expansion_of_module_decl env ty =
 and aux_expansion_of_module_alias env path =
   match Tools.lookup_and_resolve_module_from_path false false env path with
   | Resolved (p, m) -> (
-      match aux_expansion_of_module env m with
-      | Signature sg -> Signature (Strengthen.signature p sg)
-      | Functor _ as x -> x )
+      match aux_expansion_of_module env m, m.doc with
+      | Signature sg, [] -> Signature (Strengthen.signature p sg)
+      | Signature sg, docs ->
+        let sg = Strengthen.signature p sg in
+        Signature {sg with items = Comment (`Docs docs) :: sg.items}
+      | Functor _ as x, _ -> x )
   | Unresolved p ->
       let err =
         Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"

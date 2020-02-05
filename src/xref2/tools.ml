@@ -1082,9 +1082,12 @@ and signature_of_module :
     Cpath.resolved_module * Component.Module.t ->
     Cpath.resolved_module * Component.Signature.t =
  fun env (path, m) ->
-  match m.canonical with
-  | Some _ -> signature_of_module_decl env ~is_canonical:true (path, m.type_)
-  | None -> signature_of_module_decl env ~is_canonical:false (path, m.type_)
+  (* match m.expansion with
+  | Some (Signature s) -> (path, s)
+  | _ -> *)
+    match m.canonical with
+    | Some _ -> signature_of_module_decl env ~is_canonical:true (path, m.type_)
+    | None -> signature_of_module_decl env ~is_canonical:false (path, m.type_)
 
 and signature_of_module_nopath :
     Env.t -> Component.Module.t -> Component.Signature.t =
