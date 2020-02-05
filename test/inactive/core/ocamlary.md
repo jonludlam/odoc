@@ -24,6 +24,11 @@ let compile_unit unit =
   let env = Odoc_odoc.Env.build builder (`Unit unit) in
   Compile.compile env unit
 
+let load read =
+  match read ~make_root with
+  | Ok unit -> compile_unit unit
+  | Error e -> Error.raise_exception e
+
 (* Shorten output of ['a with_location] values *)
 let with_location_printer print_value pp (v : 'a Location_.with_location) = print_value pp v.value;;
 #install_printer with_location_printer;;
@@ -36,15 +41,53 @@ let root_printer pp (_ : Root.t) = Format.fprintf pp "<root>";;
 ## Cmti
 
 ```ocaml
-let compiled = Odoc_loader.read_cmti ~make_root ~filename:".ocamlary.objs/byte/ocamlary.cmti"
-let compiled =
-  match compiled with
-  | Ok c -> c
-  | Error _ -> assert false
-```
-
-```ocaml
-# compiled.Lang.Compilation_unit.content;;
+# (load (Odoc_loader.read_cmti ~filename:".ocamlary.objs/byte/ocamlary.cmti")).content;;
+File "test/inactive/core/ocamlary.mli", line 20, characters 4-31:
+'{C This text is centered. }': bad markup.
+Suggestion: did you mean '{!C This text is centered. }' or '[C This text is centered. ]'?
+File "test/inactive/core/ocamlary.mli", line 21, characters 4-35:
+'{L This text is left-aligned. }': bad markup.
+Suggestion: did you mean '{!L This text is left-aligned. }' or '[L This text is left-aligned. ]'?
+File "test/inactive/core/ocamlary.mli", line 22, characters 4-36:
+'{R This text is right-aligned. }': bad markup.
+Suggestion: did you mean '{!R This text is right-aligned. }' or '[R This text is right-aligned. ]'?
+File "test/inactive/core/ocamlary.mli", line 27, characters 40-43:
+'{ol ...}' (numbered list) should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 51, characters 31-45:
+'{v ... v}' (verbatim text) should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 55, characters 32-48:
+'{v ... v}' (verbatim text) should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 59, characters 28-49:
+'{%...%}' (raw markup) needs a target language.
+Suggestion: try '{%html:...%}'.
+File "test/inactive/core/ocamlary.mli", line 63, characters 47-74:
+'{!modules ...}' should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 88, characters 4-16:
+'{0': heading level should be lower than top heading level '0'.
+File "test/inactive/core/ocamlary.mli", line 94, characters 4-16:
+'6': bad heading level (0-5 allowed).
+File "test/inactive/core/ocamlary.mli", line 95, characters 4-16:
+'7': bad heading level (0-5 allowed).
+File "test/inactive/core/ocamlary.mli", line 96, characters 4-16:
+'8': bad heading level (0-5 allowed).
+File "test/inactive/core/ocamlary.mli", line 97, characters 4-16:
+'9': bad heading level (0-5 allowed).
+File "test/inactive/core/ocamlary.mli", line 111, characters 4-28:
+'9000': bad heading level (0-5 allowed).
+File "test/inactive/core/ocamlary.mli", line 121, characters 45-57:
+'{[...]}' (code block) should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 121, characters 58-73:
+Paragraph should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 167, characters 45-52:
+'modtype' is deprecated, use 'module-type' instead.
+File "test/inactive/core/ocamlary.mli", line 175, characters 38-40:
+'{3 ...}' (section heading) should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 175, characters 64-69:
+Paragraph should begin on its own line.
+File "test/inactive/core/ocamlary.mli", line 186, characters 33-40:
+'modtype' is deprecated, use 'module-type' instead.
+File "test/inactive/core/ocamlary.mli", line 237, characters 4-8:
+Unknown tag '@foo'.
 - : Lang.Compilation_unit.content =
 Odoc_model.Lang.Compilation_unit.Module
  [Odoc_model.Lang.Signature.Comment
@@ -189,8 +232,7 @@ Odoc_model.Lang.Compilation_unit.Module
     type_ =
      Odoc_model.Lang.Module.ModuleType
       (Odoc_model.Lang.ModuleType.Signature []);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "Empty");
@@ -209,7 +251,17 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type (`ModuleType (`Root (<root>, "Ocamlary"), "Empty"), "t");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest = None; constraints = []};
+           representation = None})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "MissingComment");
@@ -230,7 +282,19 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type
+              (`ModuleType (`Root (<root>, "Ocamlary"), "MissingComment"),
+               "t");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest = None; constraints = []};
+           representation = None})])};
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Heading
@@ -247,7 +311,8 @@ Odoc_model.Lang.Compilation_unit.Module
      Odoc_model.Lang.Module.Alias
       (`Resolved
          (`Identifier (`Module (`Root (<root>, "Ocamlary"), "Empty"))));
-    canonical = None; hidden = false; display_type = None; expansion = None});
+    canonical = None; hidden = false; display_type = None;
+    expansion = Some (Odoc_model.Lang.Module.Signature [])});
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Heading
@@ -261,7 +326,7 @@ Odoc_model.Lang.Compilation_unit.Module
         [`Word "A"; `Space; `Word "plain,"; `Space; `Word "empty"; `Space;
          `Word "module"; `Space; `Word "signature"]];
     expr = Some (Odoc_model.Lang.ModuleType.Signature []);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion = Some (Odoc_model.Lang.Module.Signature [])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "EmptySigAlias");
@@ -277,7 +342,7 @@ Odoc_model.Lang.Compilation_unit.Module
         (`Resolved
            (`Identifier
               (`ModuleType (`Root (<root>, "Ocamlary"), "EmptySig")))));
-    expansion = None};
+    expansion = Some (Odoc_model.Lang.Module.Signature [])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id =
      `Module (`Root (<root>, "Ocamlary"), "ModuleWithSignature");
@@ -329,8 +394,7 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "SigForMod");
@@ -363,10 +427,35 @@ Odoc_model.Lang.Compilation_unit.Module
                       "Empty");
                   doc = [];
                   expr = Some (Odoc_model.Lang.ModuleType.Signature []);
+                  expansion = Some (Odoc_model.Lang.Module.Signature [])}]);
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module
+              (`ModuleType (`Root (<root>, "Ocamlary"), "SigForMod"),
+               "Inner");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Module
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "SigForMod"),
+                         "Inner"),
+                      "Empty");
+                  doc = [];
+                  expr = Some (Odoc_model.Lang.ModuleType.Signature []);
                   expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion = Some Odoc_model.Lang.Module.AlreadyASig})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "SuperSig");
@@ -374,6 +463,285 @@ Odoc_model.Lang.Compilation_unit.Module
     expr =
      Some
       (Odoc_model.Lang.ModuleType.Signature
+        [Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+               "SubSigA");
+           doc = [];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Comment
+                 (`Docs
+                    [`Heading
+                       (`Subsubsection,
+                        `Label
+                          (`ModuleType
+                             (`ModuleType
+                                (`Root (<root>, "Ocamlary"), "SuperSig"),
+                              "SubSigA"),
+                           "subSig"),
+                        [`Word "A"; `Space; `Word "Labeled"; `Space;
+                         `Word "Section"; `Space; `Word "Header"; `Space;
+                         `Word "Inside"; `Space; `Word "of"; `Space;
+                         `Word "a"; `Space; `Word "Signature"])]);
+                Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "SubSigA"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "SubSigA"),
+                      "SubSigAMod");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`ModuleType
+                                  (`ModuleType
+                                     (`Root (<root>, "Ocamlary"), "SuperSig"),
+                                   "SubSigA"),
+                                "SubSigAMod"),
+                             "sub_sig_a_mod");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false; manifest = None;
+                           constraints = []};
+                         representation = None})]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Comment
+                 (`Docs
+                    [`Heading
+                       (`Subsubsection,
+                        `Label
+                          (`ModuleType
+                             (`ModuleType
+                                (`Root (<root>, "Ocamlary"), "SuperSig"),
+                              "SubSigA"),
+                           "subSig"),
+                        [`Word "A"; `Space; `Word "Labeled"; `Space;
+                         `Word "Section"; `Space; `Word "Header"; `Space;
+                         `Word "Inside"; `Space; `Word "of"; `Space;
+                         `Word "a"; `Space; `Word "Signature"])]);
+                Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "SubSigA"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "SubSigA"),
+                      "SubSigAMod");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`ModuleType
+                                  (`ModuleType
+                                     (`Root (<root>, "Ocamlary"), "SuperSig"),
+                                   "SubSigA"),
+                                "SubSigAMod"),
+                             "sub_sig_a_mod");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false; manifest = None;
+                           constraints = []};
+                         representation = None})]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = Some Odoc_model.Lang.Module.AlreadyASig})])};
+         Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+               "SubSigB");
+           doc = [];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Comment
+                 (`Docs
+                    [`Heading
+                       (`Subsubsection,
+                        `Label
+                          (`ModuleType
+                             (`ModuleType
+                                (`Root (<root>, "Ocamlary"), "SuperSig"),
+                              "SubSigB"),
+                           "subSig"),
+                        [`Word "Another"; `Space; `Word "Labeled"; `Space;
+                         `Word "Section"; `Space; `Word "Header"; `Space;
+                         `Word "Inside"; `Space; `Word "of"; `Space;
+                         `Word "a"; `Space; `Word "Signature"])]);
+                Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "SubSigB"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Comment
+                 (`Docs
+                    [`Heading
+                       (`Subsubsection,
+                        `Label
+                          (`ModuleType
+                             (`ModuleType
+                                (`Root (<root>, "Ocamlary"), "SuperSig"),
+                              "SubSigB"),
+                           "subSig"),
+                        [`Word "Another"; `Space; `Word "Labeled"; `Space;
+                         `Word "Section"; `Space; `Word "Header"; `Space;
+                         `Word "Inside"; `Space; `Word "of"; `Space;
+                         `Word "a"; `Space; `Word "Signature"])]);
+                Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "SubSigB"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])};
+         Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+               "EmptySig");
+           doc = [];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "EmptySig"),
+                      "not_actually_empty");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "EmptySig"),
+                      "not_actually_empty");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])};
+         Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"), "One");
+           doc = [];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "One"),
+                      "two");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+                         "One"),
+                      "two");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])};
+         Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
+               "SuperSig");
+           doc = []; expr = Some (Odoc_model.Lang.ModuleType.Signature []);
+           expansion = Some (Odoc_model.Lang.Module.Signature [])}]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
         [Odoc_model.Lang.Signature.ModuleType
           {Odoc_model.Lang.ModuleType.id =
             `ModuleType
@@ -530,8 +898,7 @@ Odoc_model.Lang.Compilation_unit.Module
               (`ModuleType (`Root (<root>, "Ocamlary"), "SuperSig"),
                "SuperSig");
            doc = []; expr = Some (Odoc_model.Lang.ModuleType.Signature []);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion = Some Odoc_model.Lang.Module.AlreadyASig}])};
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Paragraph
@@ -575,8 +942,7 @@ Odoc_model.Lang.Compilation_unit.Module
               (`Dot (`Dot (`Root "Stdlib", "Buffer"), "t"), []),
              Odoc_model.Lang.TypeExpr.Constr
               (`Resolved (`Identifier (`CoreType "unit")), []))}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Paragraph
@@ -1103,7 +1469,7 @@ Odoc_model.Lang.Compilation_unit.Module
                            constraints = []};
                          representation = None})]);
                   canonical = None; hidden = false; display_type = None;
-                  expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                  expansion = None});
                 Odoc_model.Lang.Signature.ModuleType
                  {Odoc_model.Lang.ModuleType.id =
                    `ModuleType
@@ -1143,6 +1509,46 @@ Odoc_model.Lang.Compilation_unit.Module
                            manifest =
                             Some
                              (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Identifier
+                                        (`Module
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "CollectionModule"),
+                                               "InnerModuleA"),
+                                            "InnerModuleA'")),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`ModuleType
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CollectionModule"),
+                                   "InnerModuleA"),
+                                "InnerModuleTypeA'"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
                                (`Dot
                                   (`Resolved
                                      (`Identifier
@@ -1156,10 +1562,9 @@ Odoc_model.Lang.Compilation_unit.Module
                                    "t"),
                                []));
                            constraints = []};
-                         representation = None})]);
-                  expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
+                         representation = None})])}]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.ModuleType
           {Odoc_model.Lang.ModuleType.id =
             `ModuleType
@@ -1173,18 +1578,53 @@ Odoc_model.Lang.Compilation_unit.Module
            expr =
             Some
              (Odoc_model.Lang.ModuleType.Path
-               (`Dot
-                  (`Resolved
+               (`Resolved
+                  (`ModuleType
                      (`Identifier
                         (`Module
                            (`Module
                               (`Root (<root>, "Ocamlary"),
                                "CollectionModule"),
-                            "InnerModuleA"))),
-                   "InnerModuleTypeA'")));
-           expansion = None}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                            "InnerModuleA")),
+                      "InnerModuleTypeA'"))));
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module
+                           (`Root (<root>, "Ocamlary"), "CollectionModule"),
+                         "InnerModuleTypeA"),
+                      "t");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "t"; `Word "."]];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Dot
+                           (`Resolved
+                              (`Module
+                                 (`Identifier
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "CollectionModule"),
+                                        "InnerModuleA")),
+                                  "InnerModuleA'")),
+                            "t"),
+                        []));
+                    constraints = []};
+                  representation = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION");
@@ -1197,7 +1637,225 @@ Odoc_model.Lang.Compilation_unit.Module
           (`Resolved
              (`Identifier
                 (`Module (`Root (<root>, "Ocamlary"), "CollectionModule"))))));
-    expansion = None};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type
+              (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION"),
+               "collection");
+           doc =
+            [`Paragraph
+               [`Word "This"; `Space; `Word "comment"; `Space; `Word "is";
+                `Space; `Word "for"; `Space; `Code_span "collection";
+                `Word "."]];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest =
+              Some
+               (Odoc_model.Lang.TypeExpr.Constr
+                 (`Resolved
+                    (`Type
+                       (`Identifier
+                          (`Module
+                             (`Root (<root>, "Ocamlary"), "CollectionModule")),
+                        "collection")),
+                 []));
+             constraints = []};
+           representation = None});
+         Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type
+              (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION"),
+               "element");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest =
+              Some
+               (Odoc_model.Lang.TypeExpr.Constr
+                 (`Resolved
+                    (`Type
+                       (`Identifier
+                          (`Module
+                             (`Root (<root>, "Ocamlary"), "CollectionModule")),
+                        "element")),
+                 []));
+             constraints = []};
+           representation = None});
+         Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module
+              (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION"),
+               "InnerModuleA");
+           doc =
+            [`Paragraph
+               [`Word "This"; `Space; `Word "comment"; `Space; `Word "is";
+                `Space; `Word "for"; `Space; `Code_span "InnerModuleA";
+                `Word "."]];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Module
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "COLLECTION"),
+                         "InnerModuleA"),
+                      "t");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "t"; `Word "."]];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Identifier
+                              (`Type
+                                 (`ModuleType
+                                    (`Root (<root>, "Ocamlary"),
+                                     "COLLECTION"),
+                                  "collection"))),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`Module
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "COLLECTION"),
+                         "InnerModuleA"),
+                      "InnerModuleA'");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "InnerModuleA'"; `Word "."]];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`ModuleType
+                                     (`Root (<root>, "Ocamlary"),
+                                      "COLLECTION"),
+                                   "InnerModuleA"),
+                                "InnerModuleA'"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Identifier
+                                     (`Type
+                                        (`Root (<root>, "Ocamlary"),
+                                         "a_function"))),
+                               []));
+                           constraints = []};
+                         representation = None})]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Module
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "COLLECTION"),
+                         "InnerModuleA"),
+                      "InnerModuleTypeA'");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "InnerModuleTypeA'"; `Word "."]];
+                  expr =
+                   Some
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`ModuleType
+                               (`Module
+                                  (`ModuleType
+                                     (`Root (<root>, "Ocamlary"),
+                                      "COLLECTION"),
+                                   "InnerModuleA"),
+                                "InnerModuleTypeA'"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Dot
+                                  (`Resolved
+                                     (`Identifier
+                                        (`Module
+                                           (`Module
+                                              (`ModuleType
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "COLLECTION"),
+                                               "InnerModuleA"),
+                                            "InnerModuleA'"))),
+                                   "t"),
+                               []));
+                           constraints = []};
+                         representation = None})]);
+                  expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
+           canonical = None; hidden = false; display_type = None;
+           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+         Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION"),
+               "InnerModuleTypeA");
+           doc =
+            [`Paragraph
+               [`Word "This"; `Space; `Word "comment"; `Space; `Word "is";
+                `Space; `Word "for"; `Space; `Code_span "InnerModuleTypeA";
+                `Word "."]];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Path
+               (`Dot
+                  (`Resolved
+                     (`Identifier
+                        (`Module
+                           (`ModuleType
+                              (`Root (<root>, "Ocamlary"), "COLLECTION"),
+                            "InnerModuleA"))),
+                   "InnerModuleTypeA'")));
+           expansion = None}])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id =
      `Module (`Root (<root>, "Ocamlary"), "Recollection");
@@ -1214,14 +1872,358 @@ Odoc_model.Lang.Compilation_unit.Module
              (`Resolved
                 (`Identifier
                    (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION"))));
-           expansion = None},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Recollection"),
+                         "C"),
+                      "collection");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "collection"; `Word "."]];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Identifier
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"),
+                                     "CollectionModule")),
+                               "collection")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Recollection"),
+                         "C"),
+                      "element");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Identifier
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"),
+                                     "CollectionModule")),
+                               "element")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Recollection"),
+                         "C"),
+                      "InnerModuleA");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "InnerModuleA"; `Word "."]];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "Recollection"),
+                                   "C"),
+                                "InnerModuleA"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Identifier
+                                     (`Type
+                                        (`Parameter
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Recollection"),
+                                            "C"),
+                                         "collection"))),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "Recollection"),
+                                   "C"),
+                                "InnerModuleA"),
+                             "InnerModuleA'");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "InnerModuleA'"; `Word "."]];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Signature
+                             [Odoc_model.Lang.Signature.Type
+                               (Odoc_model.Lang.Signature.Ordinary,
+                               {Odoc_model.Lang.TypeDecl.id =
+                                 `Type
+                                   (`Module
+                                      (`Module
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "Recollection"),
+                                             "C"),
+                                          "InnerModuleA"),
+                                       "InnerModuleA'"),
+                                    "t");
+                                doc =
+                                 [`Paragraph
+                                    [`Word "This"; `Space; `Word "comment";
+                                     `Space; `Word "is"; `Space; `Word "for";
+                                     `Space; `Code_span "t"; `Word "."]];
+                                equation =
+                                 {Odoc_model.Lang.TypeDecl.Equation.params =
+                                   [];
+                                  private_ = false;
+                                  manifest =
+                                   Some
+                                    (Odoc_model.Lang.TypeExpr.Constr
+                                      (`Resolved
+                                         (`Identifier
+                                            (`Type
+                                               (`Root (<root>, "Ocamlary"),
+                                                "a_function"))),
+                                      []));
+                                  constraints = []};
+                                representation = None})]);
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None});
+                       Odoc_model.Lang.Signature.ModuleType
+                        {Odoc_model.Lang.ModuleType.id =
+                          `ModuleType
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "Recollection"),
+                                   "C"),
+                                "InnerModuleA"),
+                             "InnerModuleTypeA'");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "InnerModuleTypeA'"; `Word "."]];
+                         expr =
+                          Some
+                           (Odoc_model.Lang.ModuleType.Signature
+                             [Odoc_model.Lang.Signature.Type
+                               (Odoc_model.Lang.Signature.Ordinary,
+                               {Odoc_model.Lang.TypeDecl.id =
+                                 `Type
+                                   (`ModuleType
+                                      (`Module
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "Recollection"),
+                                             "C"),
+                                          "InnerModuleA"),
+                                       "InnerModuleTypeA'"),
+                                    "t");
+                                doc =
+                                 [`Paragraph
+                                    [`Word "This"; `Space; `Word "comment";
+                                     `Space; `Word "is"; `Space; `Word "for";
+                                     `Space; `Code_span "t"; `Word "."]];
+                                equation =
+                                 {Odoc_model.Lang.TypeDecl.Equation.params =
+                                   [];
+                                  private_ = false;
+                                  manifest =
+                                   Some
+                                    (Odoc_model.Lang.TypeExpr.Constr
+                                      (`Resolved
+                                         (`Type
+                                            (`Identifier
+                                               (`Module
+                                                  (`Module
+                                                     (`Parameter
+                                                        (`Module
+                                                           (`Root
+                                                              (<root>,
+                                                               "Ocamlary"),
+                                                            "Recollection"),
+                                                         "C"),
+                                                      "InnerModuleA"),
+                                                   "InnerModuleA'")),
+                                             "t")),
+                                      []));
+                                  constraints = []};
+                                representation = None})]);
+                         expansion =
+                          Some
+                           (Odoc_model.Lang.Module.Signature
+                             [Odoc_model.Lang.Signature.Type
+                               (Odoc_model.Lang.Signature.Ordinary,
+                               {Odoc_model.Lang.TypeDecl.id =
+                                 `Type
+                                   (`ModuleType
+                                      (`Module
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "Recollection"),
+                                             "C"),
+                                          "InnerModuleA"),
+                                       "InnerModuleTypeA'"),
+                                    "t");
+                                doc =
+                                 [`Paragraph
+                                    [`Word "This"; `Space; `Word "comment";
+                                     `Space; `Word "is"; `Space; `Word "for";
+                                     `Space; `Code_span "t"; `Word "."]];
+                                equation =
+                                 {Odoc_model.Lang.TypeDecl.Equation.params =
+                                   [];
+                                  private_ = false;
+                                  manifest =
+                                   Some
+                                    (Odoc_model.Lang.TypeExpr.Constr
+                                      (`Dot
+                                         (`Resolved
+                                            (`Identifier
+                                               (`Module
+                                                  (`Module
+                                                     (`Parameter
+                                                        (`Module
+                                                           (`Root
+                                                              (<root>,
+                                                               "Ocamlary"),
+                                                            "Recollection"),
+                                                         "C"),
+                                                      "InnerModuleA"),
+                                                   "InnerModuleA'"))),
+                                          "t"),
+                                      []));
+                                  constraints = []};
+                                representation = None})])}]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None});
+                Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Recollection"),
+                         "C"),
+                      "InnerModuleTypeA");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "InnerModuleTypeA"; `Word "."]];
+                  expr =
+                   Some
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`ModuleType
+                            (`Identifier
+                               (`Module
+                                  (`Parameter
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "Recollection"),
+                                      "C"),
+                                   "InnerModuleA")),
+                             "InnerModuleTypeA'"))));
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "Recollection"),
+                                   "C"),
+                                "InnerModuleTypeA"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Dot
+                                  (`Resolved
+                                     (`Module
+                                        (`Identifier
+                                           (`Module
+                                              (`Parameter
+                                                 (`Module
+                                                    (`Root
+                                                       (<root>, "Ocamlary"),
+                                                     "Recollection"),
+                                                  "C"),
+                                               "InnerModuleA")),
+                                         "InnerModuleA'")),
+                                   "t"),
+                               []));
+                           constraints = []};
+                         representation = None})])}])},
         Odoc_model.Lang.ModuleType.With
          (Odoc_model.Lang.ModuleType.Path
            (`Resolved
               (`Identifier
                  (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))),
          [Odoc_model.Lang.ModuleType.TypeEq
-           (`Dot (`Resolved `Root, "collection"),
+           (`Resolved (`Type (`Root, "collection")),
            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
             manifest =
              Some
@@ -1239,19 +2241,19 @@ Odoc_model.Lang.Compilation_unit.Module
                   [])]));
             constraints = []});
           Odoc_model.Lang.ModuleType.TypeEq
-           (`Dot (`Resolved `Root, "element"),
+           (`Resolved (`Type (`Root, "element")),
            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
             manifest =
              Some
               (Odoc_model.Lang.TypeExpr.Constr
-                (`Dot
-                   (`Resolved
+                (`Resolved
+                   (`Type
                       (`Identifier
                          (`Parameter
                             (`Module
                                (`Root (<root>, "Ocamlary"), "Recollection"),
-                             "C"))),
-                    "collection"),
+                             "C")),
+                       "collection")),
                 []));
             constraints = []})])));
     canonical = None; hidden = false; display_type = None; expansion = None});
@@ -1275,7 +2277,22 @@ Odoc_model.Lang.Compilation_unit.Module
                      (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "MMM"), "C");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Path
+               (`Resolved
+                  (`Identifier
+                     (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "RECOLLECTION");
@@ -1286,16 +2303,38 @@ Odoc_model.Lang.Compilation_unit.Module
         (Odoc_model.Lang.ModuleType.Path
           (`Resolved
              (`Identifier (`ModuleType (`Root (<root>, "Ocamlary"), "MMM")))),
-        [Odoc_model.Lang.ModuleType.ModuleEq (`Dot (`Resolved `Root, "C"),
+        [Odoc_model.Lang.ModuleType.ModuleEq
+          (`Resolved (`Module (`Root, "C")),
           Odoc_model.Lang.Module.Alias
-           (`Apply
-              (`Resolved
+           (`Resolved
+              (`Apply
                  (`Identifier
-                    (`Module (`Root (<root>, "Ocamlary"), "Recollection"))),
-               `Resolved
-                 (`Identifier
-                    (`Module (`Root (<root>, "Ocamlary"), "CollectionModule"))))))]));
-    expansion = None};
+                    (`Module (`Root (<root>, "Ocamlary"), "Recollection")),
+                  `Resolved
+                    (`Identifier
+                       (`Module
+                          (`Root (<root>, "Ocamlary"), "CollectionModule")))))))]));
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module
+              (`ModuleType (`Root (<root>, "Ocamlary"), "RECOLLECTION"), "C");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.Alias
+             (`Apply
+                (`Resolved
+                   (`Identifier
+                      (`Module (`Root (<root>, "Ocamlary"), "Recollection"))),
+                 `Resolved
+                   (`Identifier
+                      (`Module
+                         (`Root (<root>, "Ocamlary"), "CollectionModule")))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "RecollectionModule");
@@ -1337,6 +2376,662 @@ Odoc_model.Lang.Compilation_unit.Module
                                            "CollectionModule"))),
                                   "element"),
                               [])]));
+                        constraints = []};
+                      representation = None});
+                    Odoc_model.Lang.Signature.Type
+                     (Odoc_model.Lang.Signature.Ordinary,
+                     {Odoc_model.Lang.TypeDecl.id =
+                       `Type
+                         (`ModuleType
+                            (`Root (<root>, "Ocamlary"),
+                             "RecollectionModule"),
+                          "element");
+                      doc = [];
+                      equation =
+                       {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                        private_ = false;
+                        manifest =
+                         Some
+                          (Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Type
+                                  (`Identifier
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "CollectionModule")),
+                                   "collection")),
+                            []));
+                        constraints = []};
+                      representation = None});
+                    Odoc_model.Lang.Signature.Module
+                     (Odoc_model.Lang.Signature.Ordinary,
+                     {Odoc_model.Lang.Module.id =
+                       `Module
+                         (`ModuleType
+                            (`Root (<root>, "Ocamlary"),
+                             "RecollectionModule"),
+                          "InnerModuleA");
+                      doc =
+                       [`Paragraph
+                          [`Word "This"; `Space; `Word "comment"; `Space;
+                           `Word "is"; `Space; `Word "for"; `Space;
+                           `Code_span "InnerModuleA"; `Word "."]];
+                      type_ =
+                       Odoc_model.Lang.Module.ModuleType
+                        (Odoc_model.Lang.ModuleType.Signature
+                          [Odoc_model.Lang.Signature.Type
+                            (Odoc_model.Lang.Signature.Ordinary,
+                            {Odoc_model.Lang.TypeDecl.id =
+                              `Type
+                                (`Module
+                                   (`ModuleType
+                                      (`Root (<root>, "Ocamlary"),
+                                       "RecollectionModule"),
+                                    "InnerModuleA"),
+                                 "t");
+                             doc =
+                              [`Paragraph
+                                 [`Word "This"; `Space; `Word "comment";
+                                  `Space; `Word "is"; `Space; `Word "for";
+                                  `Space; `Code_span "t"; `Word "."]];
+                             equation =
+                              {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                               private_ = false;
+                               manifest =
+                                Some
+                                 (Odoc_model.Lang.TypeExpr.Constr
+                                   (`Resolved
+                                      (`Identifier
+                                         (`Type
+                                            (`ModuleType
+                                               (`Root (<root>, "Ocamlary"),
+                                                "RecollectionModule"),
+                                             "collection"))),
+                                   []));
+                               constraints = []};
+                             representation = None});
+                           Odoc_model.Lang.Signature.Module
+                            (Odoc_model.Lang.Signature.Ordinary,
+                            {Odoc_model.Lang.Module.id =
+                              `Module
+                                (`Module
+                                   (`ModuleType
+                                      (`Root (<root>, "Ocamlary"),
+                                       "RecollectionModule"),
+                                    "InnerModuleA"),
+                                 "InnerModuleA'");
+                             doc =
+                              [`Paragraph
+                                 [`Word "This"; `Space; `Word "comment";
+                                  `Space; `Word "is"; `Space; `Word "for";
+                                  `Space; `Code_span "InnerModuleA'";
+                                  `Word "."]];
+                             type_ =
+                              Odoc_model.Lang.Module.ModuleType
+                               (Odoc_model.Lang.ModuleType.Signature
+                                 [Odoc_model.Lang.Signature.Type
+                                   (Odoc_model.Lang.Signature.Ordinary,
+                                   {Odoc_model.Lang.TypeDecl.id =
+                                     `Type
+                                       (`Module
+                                          (`Module
+                                             (`ModuleType
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "RecollectionModule"),
+                                              "InnerModuleA"),
+                                           "InnerModuleA'"),
+                                        "t");
+                                    doc =
+                                     [`Paragraph
+                                        [`Word "This"; `Space;
+                                         `Word "comment"; `Space; `Word "is";
+                                         `Space; `Word "for"; `Space;
+                                         `Code_span "t"; `Word "."]];
+                                    equation =
+                                     {Odoc_model.Lang.TypeDecl.Equation.params
+                                       = [];
+                                      private_ = false;
+                                      manifest =
+                                       Some
+                                        (Odoc_model.Lang.TypeExpr.Constr
+                                          (`Resolved
+                                             (`Identifier
+                                                (`Type
+                                                   (`Root
+                                                      (<root>, "Ocamlary"),
+                                                    "a_function"))),
+                                          [Odoc_model.Lang.TypeExpr.Constr
+                                            (`Resolved
+                                               (`Identifier
+                                                  (`CoreType "unit")),
+                                            []);
+                                           Odoc_model.Lang.TypeExpr.Constr
+                                            (`Resolved
+                                               (`Identifier
+                                                  (`CoreType "unit")),
+                                            [])]));
+                                      constraints = []};
+                                    representation = None})]);
+                             canonical = None; hidden = false;
+                             display_type = None; expansion = None});
+                           Odoc_model.Lang.Signature.ModuleType
+                            {Odoc_model.Lang.ModuleType.id =
+                              `ModuleType
+                                (`Module
+                                   (`ModuleType
+                                      (`Root (<root>, "Ocamlary"),
+                                       "RecollectionModule"),
+                                    "InnerModuleA"),
+                                 "InnerModuleTypeA'");
+                             doc =
+                              [`Paragraph
+                                 [`Word "This"; `Space; `Word "comment";
+                                  `Space; `Word "is"; `Space; `Word "for";
+                                  `Space; `Code_span "InnerModuleTypeA'";
+                                  `Word "."]];
+                             expr =
+                              Some
+                               (Odoc_model.Lang.ModuleType.Signature
+                                 [Odoc_model.Lang.Signature.Type
+                                   (Odoc_model.Lang.Signature.Ordinary,
+                                   {Odoc_model.Lang.TypeDecl.id =
+                                     `Type
+                                       (`ModuleType
+                                          (`Module
+                                             (`ModuleType
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "RecollectionModule"),
+                                              "InnerModuleA"),
+                                           "InnerModuleTypeA'"),
+                                        "t");
+                                    doc =
+                                     [`Paragraph
+                                        [`Word "This"; `Space;
+                                         `Word "comment"; `Space; `Word "is";
+                                         `Space; `Word "for"; `Space;
+                                         `Code_span "t"; `Word "."]];
+                                    equation =
+                                     {Odoc_model.Lang.TypeDecl.Equation.params
+                                       = [];
+                                      private_ = false;
+                                      manifest =
+                                       Some
+                                        (Odoc_model.Lang.TypeExpr.Constr
+                                          (`Resolved
+                                             (`Type
+                                                (`Identifier
+                                                   (`Module
+                                                      (`Module
+                                                         (`ModuleType
+                                                            (`Root
+                                                               (<root>,
+                                                                "Ocamlary"),
+                                                             "RecollectionModule"),
+                                                          "InnerModuleA"),
+                                                       "InnerModuleA'")),
+                                                 "t")),
+                                          []));
+                                      constraints = []};
+                                    representation = None})]);
+                             expansion =
+                              Some
+                               (Odoc_model.Lang.Module.Signature
+                                 [Odoc_model.Lang.Signature.Type
+                                   (Odoc_model.Lang.Signature.Ordinary,
+                                   {Odoc_model.Lang.TypeDecl.id =
+                                     `Type
+                                       (`ModuleType
+                                          (`Module
+                                             (`ModuleType
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "RecollectionModule"),
+                                              "InnerModuleA"),
+                                           "InnerModuleTypeA'"),
+                                        "t");
+                                    doc =
+                                     [`Paragraph
+                                        [`Word "This"; `Space;
+                                         `Word "comment"; `Space; `Word "is";
+                                         `Space; `Word "for"; `Space;
+                                         `Code_span "t"; `Word "."]];
+                                    equation =
+                                     {Odoc_model.Lang.TypeDecl.Equation.params
+                                       = [];
+                                      private_ = false;
+                                      manifest =
+                                       Some
+                                        (Odoc_model.Lang.TypeExpr.Constr
+                                          (`Dot
+                                             (`Resolved
+                                                (`Identifier
+                                                   (`Module
+                                                      (`Module
+                                                         (`ModuleType
+                                                            (`Root
+                                                               (<root>,
+                                                                "Ocamlary"),
+                                                             "RecollectionModule"),
+                                                          "InnerModuleA"),
+                                                       "InnerModuleA'"))),
+                                              "t"),
+                                          []));
+                                      constraints = []};
+                                    representation = None})])}]);
+                      canonical = None; hidden = false; display_type = None;
+                      expansion = None});
+                    Odoc_model.Lang.Signature.ModuleType
+                     {Odoc_model.Lang.ModuleType.id =
+                       `ModuleType
+                         (`ModuleType
+                            (`Root (<root>, "Ocamlary"),
+                             "RecollectionModule"),
+                          "InnerModuleTypeA");
+                      doc =
+                       [`Paragraph
+                          [`Word "This"; `Space; `Word "comment"; `Space;
+                           `Word "is"; `Space; `Word "for"; `Space;
+                           `Code_span "InnerModuleTypeA"; `Word "."]];
+                      expr =
+                       Some
+                        (Odoc_model.Lang.ModuleType.Path
+                          (`Resolved
+                             (`ModuleType
+                                (`Identifier
+                                   (`Module
+                                      (`ModuleType
+                                         (`Root (<root>, "Ocamlary"),
+                                          "RecollectionModule"),
+                                       "InnerModuleA")),
+                                 "InnerModuleTypeA'"))));
+                      expansion =
+                       Some
+                        (Odoc_model.Lang.Module.Signature
+                          [Odoc_model.Lang.Signature.Type
+                            (Odoc_model.Lang.Signature.Ordinary,
+                            {Odoc_model.Lang.TypeDecl.id =
+                              `Type
+                                (`ModuleType
+                                   (`ModuleType
+                                      (`Root (<root>, "Ocamlary"),
+                                       "RecollectionModule"),
+                                    "InnerModuleTypeA"),
+                                 "t");
+                             doc =
+                              [`Paragraph
+                                 [`Word "This"; `Space; `Word "comment";
+                                  `Space; `Word "is"; `Space; `Word "for";
+                                  `Space; `Code_span "t"; `Word "."]];
+                             equation =
+                              {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                               private_ = false;
+                               manifest =
+                                Some
+                                 (Odoc_model.Lang.TypeExpr.Constr
+                                   (`Dot
+                                      (`Resolved
+                                         (`Module
+                                            (`Identifier
+                                               (`Module
+                                                  (`ModuleType
+                                                     (`Root
+                                                        (<root>, "Ocamlary"),
+                                                      "RecollectionModule"),
+                                                   "InnerModuleA")),
+                                             "InnerModuleA'")),
+                                       "t"),
+                                   []));
+                               constraints = []};
+                             representation = None})])}])));
+           expansion =
+            {Odoc_model.Lang.Include.resolved = true;
+             content =
+              [Odoc_model.Lang.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.TypeDecl.id =
+                  `Type
+                    (`ModuleType
+                       (`Root (<root>, "Ocamlary"), "RecollectionModule"),
+                     "collection");
+                 doc = [];
+                 equation =
+                  {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                   private_ = false;
+                   manifest =
+                    Some
+                     (Odoc_model.Lang.TypeExpr.Constr
+                       (`Resolved (`Identifier (`CoreType "list")),
+                       [Odoc_model.Lang.TypeExpr.Constr
+                         (`Dot
+                            (`Resolved
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CollectionModule"))),
+                             "element"),
+                         [])]));
+                   constraints = []};
+                 representation = None});
+               Odoc_model.Lang.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.TypeDecl.id =
+                  `Type
+                    (`ModuleType
+                       (`Root (<root>, "Ocamlary"), "RecollectionModule"),
+                     "element");
+                 doc = [];
+                 equation =
+                  {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                   private_ = false;
+                   manifest =
+                    Some
+                     (Odoc_model.Lang.TypeExpr.Constr
+                       (`Resolved
+                          (`Type
+                             (`Identifier
+                                (`Module
+                                   (`Root (<root>, "Ocamlary"),
+                                    "CollectionModule")),
+                              "collection")),
+                       []));
+                   constraints = []};
+                 representation = None});
+               Odoc_model.Lang.Signature.Module
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.Module.id =
+                  `Module
+                    (`ModuleType
+                       (`Root (<root>, "Ocamlary"), "RecollectionModule"),
+                     "InnerModuleA");
+                 doc =
+                  [`Paragraph
+                     [`Word "This"; `Space; `Word "comment"; `Space;
+                      `Word "is"; `Space; `Word "for"; `Space;
+                      `Code_span "InnerModuleA"; `Word "."]];
+                 type_ =
+                  Odoc_model.Lang.Module.ModuleType
+                   (Odoc_model.Lang.ModuleType.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`Module
+                              (`ModuleType
+                                 (`Root (<root>, "Ocamlary"),
+                                  "RecollectionModule"),
+                               "InnerModuleA"),
+                            "t");
+                        doc =
+                         [`Paragraph
+                            [`Word "This"; `Space; `Word "comment"; `Space;
+                             `Word "is"; `Space; `Word "for"; `Space;
+                             `Code_span "t"; `Word "."]];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Resolved
+                                 (`Identifier
+                                    (`Type
+                                       (`ModuleType
+                                          (`Root (<root>, "Ocamlary"),
+                                           "RecollectionModule"),
+                                        "collection"))),
+                              []));
+                          constraints = []};
+                        representation = None});
+                      Odoc_model.Lang.Signature.Module
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.Module.id =
+                         `Module
+                           (`Module
+                              (`ModuleType
+                                 (`Root (<root>, "Ocamlary"),
+                                  "RecollectionModule"),
+                               "InnerModuleA"),
+                            "InnerModuleA'");
+                        doc =
+                         [`Paragraph
+                            [`Word "This"; `Space; `Word "comment"; `Space;
+                             `Word "is"; `Space; `Word "for"; `Space;
+                             `Code_span "InnerModuleA'"; `Word "."]];
+                        type_ =
+                         Odoc_model.Lang.Module.ModuleType
+                          (Odoc_model.Lang.ModuleType.Signature
+                            [Odoc_model.Lang.Signature.Type
+                              (Odoc_model.Lang.Signature.Ordinary,
+                              {Odoc_model.Lang.TypeDecl.id =
+                                `Type
+                                  (`Module
+                                     (`Module
+                                        (`ModuleType
+                                           (`Root (<root>, "Ocamlary"),
+                                            "RecollectionModule"),
+                                         "InnerModuleA"),
+                                      "InnerModuleA'"),
+                                   "t");
+                               doc =
+                                [`Paragraph
+                                   [`Word "This"; `Space; `Word "comment";
+                                    `Space; `Word "is"; `Space; `Word "for";
+                                    `Space; `Code_span "t"; `Word "."]];
+                               equation =
+                                {Odoc_model.Lang.TypeDecl.Equation.params =
+                                  [];
+                                 private_ = false;
+                                 manifest =
+                                  Some
+                                   (Odoc_model.Lang.TypeExpr.Constr
+                                     (`Resolved
+                                        (`Identifier
+                                           (`Type
+                                              (`Root (<root>, "Ocamlary"),
+                                               "a_function"))),
+                                     [Odoc_model.Lang.TypeExpr.Constr
+                                       (`Resolved
+                                          (`Identifier (`CoreType "unit")),
+                                       []);
+                                      Odoc_model.Lang.TypeExpr.Constr
+                                       (`Resolved
+                                          (`Identifier (`CoreType "unit")),
+                                       [])]));
+                                 constraints = []};
+                               representation = None})]);
+                        canonical = None; hidden = false;
+                        display_type = None; expansion = None});
+                      Odoc_model.Lang.Signature.ModuleType
+                       {Odoc_model.Lang.ModuleType.id =
+                         `ModuleType
+                           (`Module
+                              (`ModuleType
+                                 (`Root (<root>, "Ocamlary"),
+                                  "RecollectionModule"),
+                               "InnerModuleA"),
+                            "InnerModuleTypeA'");
+                        doc =
+                         [`Paragraph
+                            [`Word "This"; `Space; `Word "comment"; `Space;
+                             `Word "is"; `Space; `Word "for"; `Space;
+                             `Code_span "InnerModuleTypeA'"; `Word "."]];
+                        expr =
+                         Some
+                          (Odoc_model.Lang.ModuleType.Signature
+                            [Odoc_model.Lang.Signature.Type
+                              (Odoc_model.Lang.Signature.Ordinary,
+                              {Odoc_model.Lang.TypeDecl.id =
+                                `Type
+                                  (`ModuleType
+                                     (`Module
+                                        (`ModuleType
+                                           (`Root (<root>, "Ocamlary"),
+                                            "RecollectionModule"),
+                                         "InnerModuleA"),
+                                      "InnerModuleTypeA'"),
+                                   "t");
+                               doc =
+                                [`Paragraph
+                                   [`Word "This"; `Space; `Word "comment";
+                                    `Space; `Word "is"; `Space; `Word "for";
+                                    `Space; `Code_span "t"; `Word "."]];
+                               equation =
+                                {Odoc_model.Lang.TypeDecl.Equation.params =
+                                  [];
+                                 private_ = false;
+                                 manifest =
+                                  Some
+                                   (Odoc_model.Lang.TypeExpr.Constr
+                                     (`Resolved
+                                        (`Type
+                                           (`Identifier
+                                              (`Module
+                                                 (`Module
+                                                    (`ModuleType
+                                                       (`Root
+                                                          (<root>,
+                                                           "Ocamlary"),
+                                                        "RecollectionModule"),
+                                                     "InnerModuleA"),
+                                                  "InnerModuleA'")),
+                                            "t")),
+                                     []));
+                                 constraints = []};
+                               representation = None})]);
+                        expansion =
+                         Some
+                          (Odoc_model.Lang.Module.Signature
+                            [Odoc_model.Lang.Signature.Type
+                              (Odoc_model.Lang.Signature.Ordinary,
+                              {Odoc_model.Lang.TypeDecl.id =
+                                `Type
+                                  (`ModuleType
+                                     (`Module
+                                        (`ModuleType
+                                           (`Root (<root>, "Ocamlary"),
+                                            "RecollectionModule"),
+                                         "InnerModuleA"),
+                                      "InnerModuleTypeA'"),
+                                   "t");
+                               doc =
+                                [`Paragraph
+                                   [`Word "This"; `Space; `Word "comment";
+                                    `Space; `Word "is"; `Space; `Word "for";
+                                    `Space; `Code_span "t"; `Word "."]];
+                               equation =
+                                {Odoc_model.Lang.TypeDecl.Equation.params =
+                                  [];
+                                 private_ = false;
+                                 manifest =
+                                  Some
+                                   (Odoc_model.Lang.TypeExpr.Constr
+                                     (`Dot
+                                        (`Resolved
+                                           (`Identifier
+                                              (`Module
+                                                 (`Module
+                                                    (`ModuleType
+                                                       (`Root
+                                                          (<root>,
+                                                           "Ocamlary"),
+                                                        "RecollectionModule"),
+                                                     "InnerModuleA"),
+                                                  "InnerModuleA'"))),
+                                         "t"),
+                                     []));
+                                 constraints = []};
+                               representation = None})])}]);
+                 canonical = None; hidden = false; display_type = None;
+                 expansion = None});
+               Odoc_model.Lang.Signature.ModuleType
+                {Odoc_model.Lang.ModuleType.id =
+                  `ModuleType
+                    (`ModuleType
+                       (`Root (<root>, "Ocamlary"), "RecollectionModule"),
+                     "InnerModuleTypeA");
+                 doc =
+                  [`Paragraph
+                     [`Word "This"; `Space; `Word "comment"; `Space;
+                      `Word "is"; `Space; `Word "for"; `Space;
+                      `Code_span "InnerModuleTypeA"; `Word "."]];
+                 expr =
+                  Some
+                   (Odoc_model.Lang.ModuleType.Path
+                     (`Resolved
+                        (`ModuleType
+                           (`Identifier
+                              (`Module
+                                 (`ModuleType
+                                    (`Root (<root>, "Ocamlary"),
+                                     "RecollectionModule"),
+                                  "InnerModuleA")),
+                            "InnerModuleTypeA'"))));
+                 expansion =
+                  Some
+                   (Odoc_model.Lang.Module.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`ModuleType
+                              (`ModuleType
+                                 (`Root (<root>, "Ocamlary"),
+                                  "RecollectionModule"),
+                               "InnerModuleTypeA"),
+                            "t");
+                        doc =
+                         [`Paragraph
+                            [`Word "This"; `Space; `Word "comment"; `Space;
+                             `Word "is"; `Space; `Word "for"; `Space;
+                             `Code_span "t"; `Word "."]];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Dot
+                                 (`Resolved
+                                    (`Module
+                                       (`Identifier
+                                          (`Module
+                                             (`ModuleType
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "RecollectionModule"),
+                                              "InnerModuleA")),
+                                        "InnerModuleA'")),
+                                  "t"),
+                              []));
+                          constraints = []};
+                        representation = None})])}]}}]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Include
+          {Odoc_model.Lang.Include.parent =
+            `ModuleType (`Root (<root>, "Ocamlary"), "RecollectionModule");
+           doc = [];
+           decl =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.TypeOf
+               (Odoc_model.Lang.Module.ModuleType
+                 (Odoc_model.Lang.ModuleType.Signature
+                   [Odoc_model.Lang.Signature.Type
+                     (Odoc_model.Lang.Signature.Ordinary,
+                     {Odoc_model.Lang.TypeDecl.id =
+                       `Type
+                         (`ModuleType
+                            (`Root (<root>, "Ocamlary"),
+                             "RecollectionModule"),
+                          "collection");
+                      doc = [];
+                      equation =
+                       {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                        private_ = false;
+                        manifest =
+                         Some
+                          (Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved (`Identifier (`CoreType "list")),
+                            []));
                         constraints = []};
                       representation = None});
                     Odoc_model.Lang.Signature.Type
@@ -1461,16 +3156,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                                    (`Root
                                                       (<root>, "Ocamlary"),
                                                     "a_function"))),
-                                          [Odoc_model.Lang.TypeExpr.Constr
-                                            (`Resolved
-                                               (`Identifier
-                                                  (`CoreType "unit")),
-                                            []);
-                                           Odoc_model.Lang.TypeExpr.Constr
-                                            (`Resolved
-                                               (`Identifier
-                                                  (`CoreType "unit")),
-                                            [])]));
+                                          []));
                                       constraints = []};
                                     representation = None})]);
                              canonical = None; hidden = false;
@@ -1582,16 +3268,7 @@ Odoc_model.Lang.Compilation_unit.Module
                    manifest =
                     Some
                      (Odoc_model.Lang.TypeExpr.Constr
-                       (`Resolved (`Identifier (`CoreType "list")),
-                       [Odoc_model.Lang.TypeExpr.Constr
-                         (`Dot
-                            (`Resolved
-                               (`Identifier
-                                  (`Module
-                                     (`Root (<root>, "Ocamlary"),
-                                      "CollectionModule"))),
-                             "element"),
-                         [])]));
+                       (`Resolved (`Identifier (`CoreType "list")), []));
                    constraints = []};
                  representation = None});
                Odoc_model.Lang.Signature.Type
@@ -1711,14 +3388,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                            (`Type
                                               (`Root (<root>, "Ocamlary"),
                                                "a_function"))),
-                                     [Odoc_model.Lang.TypeExpr.Constr
-                                       (`Resolved
-                                          (`Identifier (`CoreType "unit")),
-                                       []);
-                                      Odoc_model.Lang.TypeExpr.Constr
-                                       (`Resolved
-                                          (`Identifier (`CoreType "unit")),
-                                       [])]));
+                                     []));
                                  constraints = []};
                                representation = None})]);
                         canonical = None; hidden = false;
@@ -1807,8 +3477,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                      "RecollectionModule"),
                                   "InnerModuleA"))),
                          "InnerModuleTypeA'")));
-                 expansion = None}]}}]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+                 expansion = None}]}}])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "A");
@@ -1837,7 +3506,30 @@ Odoc_model.Lang.Compilation_unit.Module
                      (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type (`ModuleType (`Root (<root>, "Ocamlary"), "A"), "t");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest = None; constraints = []};
+           representation = None});
+         Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "A"), "Q");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Path
+               (`Resolved
+                  (`Identifier
+                     (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "B");
@@ -1866,7 +3558,30 @@ Odoc_model.Lang.Compilation_unit.Module
                      (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type (`ModuleType (`Root (<root>, "Ocamlary"), "B"), "t");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest = None; constraints = []};
+           representation = None});
+         Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "B"), "Q");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Path
+               (`Resolved
+                  (`Identifier
+                     (`ModuleType (`Root (<root>, "Ocamlary"), "COLLECTION")))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "C");
@@ -1886,6 +3601,79 @@ Odoc_model.Lang.Compilation_unit.Module
     expr =
      Some
       (Odoc_model.Lang.ModuleType.Signature
+        [Odoc_model.Lang.Signature.Include
+          {Odoc_model.Lang.Include.parent =
+            `ModuleType (`Root (<root>, "Ocamlary"), "C");
+           doc = [];
+           decl =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Path
+               (`Resolved
+                  (`Identifier
+                     (`ModuleType (`Root (<root>, "Ocamlary"), "A")))));
+           expansion =
+            {Odoc_model.Lang.Include.resolved = true;
+             content =
+              [Odoc_model.Lang.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.TypeDecl.id =
+                  `Type (`ModuleType (`Root (<root>, "Ocamlary"), "C"), "t");
+                 doc = [];
+                 equation =
+                  {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                   private_ = false; manifest = None; constraints = []};
+                 representation = None});
+               Odoc_model.Lang.Signature.Module
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.Module.id =
+                  `Module
+                    (`ModuleType (`Root (<root>, "Ocamlary"), "C"), "Q");
+                 doc = [];
+                 type_ =
+                  Odoc_model.Lang.Module.ModuleType
+                   (Odoc_model.Lang.ModuleType.Path
+                     (`Resolved
+                        (`Identifier
+                           (`ModuleType
+                              (`Root (<root>, "Ocamlary"), "COLLECTION")))));
+                 canonical = None; hidden = false; display_type = None;
+                 expansion = None})]}};
+         Odoc_model.Lang.Signature.Include
+          {Odoc_model.Lang.Include.parent =
+            `ModuleType (`Root (<root>, "Ocamlary"), "C");
+           doc = [];
+           decl =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.With
+               (Odoc_model.Lang.ModuleType.Path
+                 (`Resolved
+                    (`Identifier
+                       (`ModuleType (`Root (<root>, "Ocamlary"), "B")))),
+               [Odoc_model.Lang.ModuleType.TypeSubst
+                 (`Resolved (`Type (`Root, "t")),
+                 {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                  private_ = false;
+                  manifest =
+                   Some
+                    (Odoc_model.Lang.TypeExpr.Constr
+                      (`Resolved
+                         (`Identifier
+                            (`Type
+                               (`ModuleType (`Root (<root>, "Ocamlary"), "C"),
+                                "t"))),
+                      []));
+                  constraints = []});
+                Odoc_model.Lang.ModuleType.ModuleSubst
+                 (`Resolved (`Module (`Root, "Q")),
+                 `Resolved
+                   (`Identifier
+                      (`Module
+                         (`ModuleType (`Root (<root>, "Ocamlary"), "C"), "Q"))))]));
+           expansion =
+            {Odoc_model.Lang.Include.resolved = true; content = []}}]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
         [Odoc_model.Lang.Signature.Include
           {Odoc_model.Lang.Include.parent =
             `ModuleType (`Root (<root>, "Ocamlary"), "C");
@@ -1955,8 +3743,7 @@ Odoc_model.Lang.Compilation_unit.Module
                       (`Module
                          (`ModuleType (`Root (<root>, "Ocamlary"), "C"), "Q"))))]));
            expansion =
-            {Odoc_model.Lang.Include.resolved = false; content = []}}]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+            {Odoc_model.Lang.Include.resolved = false; content = []}}])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id =
      `Module (`Root (<root>, "Ocamlary"), "FunctorTypeOf");
@@ -1979,7 +3766,355 @@ Odoc_model.Lang.Compilation_unit.Module
                   (`Identifier
                      (`Module
                         (`Root (<root>, "Ocamlary"), "CollectionModule")))));
-           expansion = None},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Parameter
+                        (`Module
+                           (`Root (<root>, "Ocamlary"), "FunctorTypeOf"),
+                         "Collection"),
+                      "collection");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "collection"; `Word "."]];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Identifier
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"),
+                                     "CollectionModule")),
+                               "collection")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Parameter
+                        (`Module
+                           (`Root (<root>, "Ocamlary"), "FunctorTypeOf"),
+                         "Collection"),
+                      "element");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Identifier
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"),
+                                     "CollectionModule")),
+                               "element")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`Parameter
+                        (`Module
+                           (`Root (<root>, "Ocamlary"), "FunctorTypeOf"),
+                         "Collection"),
+                      "InnerModuleA");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "InnerModuleA"; `Word "."]];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "FunctorTypeOf"),
+                                   "Collection"),
+                                "InnerModuleA"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Identifier
+                                     (`Type
+                                        (`Parameter
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "FunctorTypeOf"),
+                                            "Collection"),
+                                         "collection"))),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "FunctorTypeOf"),
+                                   "Collection"),
+                                "InnerModuleA"),
+                             "InnerModuleA'");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "InnerModuleA'"; `Word "."]];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Signature
+                             [Odoc_model.Lang.Signature.Type
+                               (Odoc_model.Lang.Signature.Ordinary,
+                               {Odoc_model.Lang.TypeDecl.id =
+                                 `Type
+                                   (`Module
+                                      (`Module
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "FunctorTypeOf"),
+                                             "Collection"),
+                                          "InnerModuleA"),
+                                       "InnerModuleA'"),
+                                    "t");
+                                doc =
+                                 [`Paragraph
+                                    [`Word "This"; `Space; `Word "comment";
+                                     `Space; `Word "is"; `Space; `Word "for";
+                                     `Space; `Code_span "t"; `Word "."]];
+                                equation =
+                                 {Odoc_model.Lang.TypeDecl.Equation.params =
+                                   [];
+                                  private_ = false;
+                                  manifest =
+                                   Some
+                                    (Odoc_model.Lang.TypeExpr.Constr
+                                      (`Resolved
+                                         (`Identifier
+                                            (`Type
+                                               (`Root (<root>, "Ocamlary"),
+                                                "a_function"))),
+                                      []));
+                                  constraints = []};
+                                representation = None})]);
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None});
+                       Odoc_model.Lang.Signature.ModuleType
+                        {Odoc_model.Lang.ModuleType.id =
+                          `ModuleType
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "FunctorTypeOf"),
+                                   "Collection"),
+                                "InnerModuleA"),
+                             "InnerModuleTypeA'");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "InnerModuleTypeA'"; `Word "."]];
+                         expr =
+                          Some
+                           (Odoc_model.Lang.ModuleType.Signature
+                             [Odoc_model.Lang.Signature.Type
+                               (Odoc_model.Lang.Signature.Ordinary,
+                               {Odoc_model.Lang.TypeDecl.id =
+                                 `Type
+                                   (`ModuleType
+                                      (`Module
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "FunctorTypeOf"),
+                                             "Collection"),
+                                          "InnerModuleA"),
+                                       "InnerModuleTypeA'"),
+                                    "t");
+                                doc =
+                                 [`Paragraph
+                                    [`Word "This"; `Space; `Word "comment";
+                                     `Space; `Word "is"; `Space; `Word "for";
+                                     `Space; `Code_span "t"; `Word "."]];
+                                equation =
+                                 {Odoc_model.Lang.TypeDecl.Equation.params =
+                                   [];
+                                  private_ = false;
+                                  manifest =
+                                   Some
+                                    (Odoc_model.Lang.TypeExpr.Constr
+                                      (`Resolved
+                                         (`Type
+                                            (`Identifier
+                                               (`Module
+                                                  (`Module
+                                                     (`Parameter
+                                                        (`Module
+                                                           (`Root
+                                                              (<root>,
+                                                               "Ocamlary"),
+                                                            "FunctorTypeOf"),
+                                                         "Collection"),
+                                                      "InnerModuleA"),
+                                                   "InnerModuleA'")),
+                                             "t")),
+                                      []));
+                                  constraints = []};
+                                representation = None})]);
+                         expansion =
+                          Some
+                           (Odoc_model.Lang.Module.Signature
+                             [Odoc_model.Lang.Signature.Type
+                               (Odoc_model.Lang.Signature.Ordinary,
+                               {Odoc_model.Lang.TypeDecl.id =
+                                 `Type
+                                   (`ModuleType
+                                      (`Module
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "FunctorTypeOf"),
+                                             "Collection"),
+                                          "InnerModuleA"),
+                                       "InnerModuleTypeA'"),
+                                    "t");
+                                doc =
+                                 [`Paragraph
+                                    [`Word "This"; `Space; `Word "comment";
+                                     `Space; `Word "is"; `Space; `Word "for";
+                                     `Space; `Code_span "t"; `Word "."]];
+                                equation =
+                                 {Odoc_model.Lang.TypeDecl.Equation.params =
+                                   [];
+                                  private_ = false;
+                                  manifest =
+                                   Some
+                                    (Odoc_model.Lang.TypeExpr.Constr
+                                      (`Dot
+                                         (`Resolved
+                                            (`Identifier
+                                               (`Module
+                                                  (`Module
+                                                     (`Parameter
+                                                        (`Module
+                                                           (`Root
+                                                              (<root>,
+                                                               "Ocamlary"),
+                                                            "FunctorTypeOf"),
+                                                         "Collection"),
+                                                      "InnerModuleA"),
+                                                   "InnerModuleA'"))),
+                                          "t"),
+                                      []));
+                                  constraints = []};
+                                representation = None})])}]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None});
+                Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module
+                           (`Root (<root>, "Ocamlary"), "FunctorTypeOf"),
+                         "Collection"),
+                      "InnerModuleTypeA");
+                  doc =
+                   [`Paragraph
+                      [`Word "This"; `Space; `Word "comment"; `Space;
+                       `Word "is"; `Space; `Word "for"; `Space;
+                       `Code_span "InnerModuleTypeA"; `Word "."]];
+                  expr =
+                   Some
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`ModuleType
+                            (`Identifier
+                               (`Module
+                                  (`Parameter
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "FunctorTypeOf"),
+                                      "Collection"),
+                                   "InnerModuleA")),
+                             "InnerModuleTypeA'"))));
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "FunctorTypeOf"),
+                                   "Collection"),
+                                "InnerModuleTypeA"),
+                             "t");
+                         doc =
+                          [`Paragraph
+                             [`Word "This"; `Space; `Word "comment"; `Space;
+                              `Word "is"; `Space; `Word "for"; `Space;
+                              `Code_span "t"; `Word "."]];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Dot
+                                  (`Resolved
+                                     (`Module
+                                        (`Identifier
+                                           (`Module
+                                              (`Parameter
+                                                 (`Module
+                                                    (`Root
+                                                       (<root>, "Ocamlary"),
+                                                     "FunctorTypeOf"),
+                                                  "Collection"),
+                                               "InnerModuleA")),
+                                         "InnerModuleA'")),
+                                   "t"),
+                               []));
+                           constraints = []};
+                         representation = None})])}])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
            {Odoc_model.Lang.TypeDecl.id =
@@ -1997,15 +4132,20 @@ Odoc_model.Lang.Compilation_unit.Module
               manifest =
                Some
                 (Odoc_model.Lang.TypeExpr.Constr
-                  (`Dot
-                     (`Resolved
-                        (`Identifier
-                           (`Parameter
+                  (`Resolved
+                     (`Type
+                        (`Alias
+                           (`Identifier
                               (`Module
                                  (`Root (<root>, "Ocamlary"),
-                                  "FunctorTypeOf"),
-                               "Collection"))),
-                      "collection"),
+                                  "CollectionModule")),
+                            `Identifier
+                              (`Parameter
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"),
+                                     "FunctorTypeOf"),
+                                  "Collection"))),
+                         "collection")),
                   []));
               constraints = []};
             representation = None})]));
@@ -2036,8 +4176,27 @@ Odoc_model.Lang.Compilation_unit.Module
                      (`ModuleType
                         (`Root (<root>, "Ocamlary"), "EmptySigAlias")))));
            expansion =
-            {Odoc_model.Lang.Include.resolved = false; content = []}}]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+            {Odoc_model.Lang.Include.resolved = true; content = []}}]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Include
+          {Odoc_model.Lang.Include.parent =
+            `ModuleType (`Root (<root>, "Ocamlary"), "IncludeModuleType");
+           doc =
+            [`Paragraph
+               [`Word "This"; `Space; `Word "comment"; `Space; `Word "is";
+                `Space; `Word "for"; `Space;
+                `Code_span "include EmptySigAlias"; `Word "."]];
+           decl =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Path
+               (`Resolved
+                  (`Identifier
+                     (`ModuleType
+                        (`Root (<root>, "Ocamlary"), "EmptySigAlias")))));
+           expansion =
+            {Odoc_model.Lang.Include.resolved = false; content = []}}])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "ToInclude");
@@ -2045,6 +4204,75 @@ Odoc_model.Lang.Compilation_unit.Module
     expr =
      Some
       (Odoc_model.Lang.ModuleType.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module
+              (`ModuleType (`Root (<root>, "Ocamlary"), "ToInclude"),
+               "IncludedA");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Module
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "ToInclude"),
+                         "IncludedA"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})]);
+           canonical = None; hidden = false; display_type = None;
+           expansion = None});
+         Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "ToInclude"),
+               "IncludedB");
+           doc = [];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "ToInclude"),
+                         "IncludedB"),
+                      "s");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "ToInclude"),
+                         "IncludedB"),
+                      "s");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
         [Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -2094,8 +4322,7 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion = Some Odoc_model.Lang.Module.AlreadyASig}])};
   Odoc_model.Lang.Signature.Include
    {Odoc_model.Lang.Include.parent = `Root (<root>, "Ocamlary"); doc = [];
     decl =
@@ -2105,7 +4332,7 @@ Odoc_model.Lang.Compilation_unit.Module
            (`Identifier
               (`ModuleType (`Root (<root>, "Ocamlary"), "ToInclude")))));
     expansion =
-     {Odoc_model.Lang.Include.resolved = false;
+     {Odoc_model.Lang.Include.resolved = true;
       content =
        [Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
          {Odoc_model.Lang.Module.id =
@@ -2125,7 +4352,7 @@ Odoc_model.Lang.Compilation_unit.Module
                    private_ = false; manifest = None; constraints = []};
                  representation = None})]);
           canonical = None; hidden = false; display_type = None;
-          expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+          expansion = None});
         Odoc_model.Lang.Signature.ModuleType
          {Odoc_model.Lang.ModuleType.id =
            `ModuleType (`Root (<root>, "Ocamlary"), "IncludedB");
@@ -2144,7 +4371,20 @@ Odoc_model.Lang.Compilation_unit.Module
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})]);
-          expansion = Some Odoc_model.Lang.Module.AlreadyASig}]}};
+          expansion =
+           Some
+            (Odoc_model.Lang.Module.Signature
+              [Odoc_model.Lang.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.TypeDecl.id =
+                  `Type
+                    (`ModuleType (`Root (<root>, "Ocamlary"), "IncludedB"),
+                     "s");
+                 doc = [];
+                 equation =
+                  {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                   private_ = false; manifest = None; constraints = []};
+                 representation = None})])}]}};
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Heading
@@ -3544,14 +5784,12 @@ Odoc_model.Lang.Compilation_unit.Module
                   "Leisureforce");
               doc = []; args = Odoc_model.Lang.TypeDecl.Constructor.Tuple [];
               res = None}]}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.TypExt
    {Odoc_model.Lang.Extension.type_path =
-     `Dot
-       (`Resolved
-          (`Identifier (`Module (`Root (<root>, "Ocamlary"), "ExtMod"))),
-        "t");
+     `Resolved
+       (`Type
+          (`Identifier (`Module (`Root (<root>, "Ocamlary"), "ExtMod")), "t"));
     doc = []; type_params = []; private_ = false;
     constructors =
      [{Odoc_model.Lang.Extension.Constructor.id =
@@ -3563,10 +5801,9 @@ Odoc_model.Lang.Compilation_unit.Module
        args = Odoc_model.Lang.TypeDecl.Constructor.Tuple []; res = None}]};
   Odoc_model.Lang.Signature.TypExt
    {Odoc_model.Lang.Extension.type_path =
-     `Dot
-       (`Resolved
-          (`Identifier (`Module (`Root (<root>, "Ocamlary"), "ExtMod"))),
-        "t");
+     `Resolved
+       (`Type
+          (`Identifier (`Module (`Root (<root>, "Ocamlary"), "ExtMod")), "t"));
     doc = []; type_params = []; private_ = false;
     constructors =
      [{Odoc_model.Lang.Extension.Constructor.id =
@@ -3622,7 +5859,7 @@ Odoc_model.Lang.Compilation_unit.Module
      Odoc_model.Lang.Class.ClassType
       (Odoc_model.Lang.ClassType.Signature
         {Odoc_model.Lang.ClassSignature.self = None; items = []});
-    expansion = None});
+    expansion = Some {Odoc_model.Lang.ClassSignature.self = None; items = []}});
   Odoc_model.Lang.Signature.Class (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Class.id =
      `Class (`Root (<root>, "Ocamlary"), "one_method_class");
@@ -3641,7 +5878,18 @@ Odoc_model.Lang.Compilation_unit.Module
              type_ =
               Odoc_model.Lang.TypeExpr.Constr
                (`Resolved (`Identifier (`CoreType "unit")), [])}]});
-    expansion = None});
+    expansion =
+     Some
+      {Odoc_model.Lang.ClassSignature.self = None;
+       items =
+        [Odoc_model.Lang.ClassSignature.Method
+          {Odoc_model.Lang.Method.id =
+            `Method
+              (`Class (`Root (<root>, "Ocamlary"), "one_method_class"), "go");
+           doc = []; private_ = false; virtual_ = false;
+           type_ =
+            Odoc_model.Lang.TypeExpr.Constr
+             (`Resolved (`Identifier (`CoreType "unit")), [])}]}});
   Odoc_model.Lang.Signature.Class (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Class.id =
      `Class (`Root (<root>, "Ocamlary"), "two_method_class");
@@ -3672,7 +5920,31 @@ Odoc_model.Lang.Compilation_unit.Module
              type_ =
               Odoc_model.Lang.TypeExpr.Constr
                (`Resolved (`Identifier (`CoreType "unit")), [])}]});
-    expansion = None});
+    expansion =
+     Some
+      {Odoc_model.Lang.ClassSignature.self = None;
+       items =
+        [Odoc_model.Lang.ClassSignature.Method
+          {Odoc_model.Lang.Method.id =
+            `Method
+              (`Class (`Root (<root>, "Ocamlary"), "two_method_class"),
+               "one");
+           doc = []; private_ = false; virtual_ = false;
+           type_ =
+            Odoc_model.Lang.TypeExpr.Constr
+             (`Resolved
+                (`Identifier
+                   (`Class (`Root (<root>, "Ocamlary"), "one_method_class"))),
+             [])};
+         Odoc_model.Lang.ClassSignature.Method
+          {Odoc_model.Lang.Method.id =
+            `Method
+              (`Class (`Root (<root>, "Ocamlary"), "two_method_class"),
+               "undo");
+           doc = []; private_ = false; virtual_ = false;
+           type_ =
+            Odoc_model.Lang.TypeExpr.Constr
+             (`Resolved (`Identifier (`CoreType "unit")), [])}]}});
   Odoc_model.Lang.Signature.Class (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Class.id =
      `Class (`Root (<root>, "Ocamlary"), "param_class");
@@ -3690,7 +5962,15 @@ Odoc_model.Lang.Compilation_unit.Module
                  (`Class (`Root (<root>, "Ocamlary"), "param_class"), "v");
               doc = []; private_ = false; virtual_ = false;
               type_ = Odoc_model.Lang.TypeExpr.Var "a"}]}));
-    expansion = None});
+    expansion =
+     Some
+      {Odoc_model.Lang.ClassSignature.self = None;
+       items =
+        [Odoc_model.Lang.ClassSignature.Method
+          {Odoc_model.Lang.Method.id =
+            `Method (`Class (`Root (<root>, "Ocamlary"), "param_class"), "v");
+           doc = []; private_ = false; virtual_ = false;
+           type_ = Odoc_model.Lang.TypeExpr.Var "a"}]}});
   Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.TypeDecl.id =
      `Type (`Root (<root>, "Ocamlary"), "my_unit_object");
@@ -3768,8 +6048,57 @@ Odoc_model.Lang.Compilation_unit.Module
                             Odoc_model.Lang.TypeExpr.Constr
                              (`Resolved (`Identifier (`CoreType "int")),
                              [])}]});
-                  expansion = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+                  expansion =
+                   Some
+                    {Odoc_model.Lang.ClassSignature.self = None;
+                     items =
+                      [Odoc_model.Lang.ClassSignature.Method
+                        {Odoc_model.Lang.Method.id =
+                          `Method
+                            (`Class
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep1"),
+                                   "S"),
+                                "c"),
+                             "m");
+                         doc = []; private_ = false; virtual_ = false;
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved (`Identifier (`CoreType "int")),
+                           [])}]}})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Class
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Class.id =
+                   `Class
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep1"), "S"),
+                      "c");
+                  doc = []; virtual_ = false; params = [];
+                  type_ =
+                   Odoc_model.Lang.Class.ClassType
+                    (Odoc_model.Lang.ClassType.Signature
+                      {Odoc_model.Lang.ClassSignature.self = None;
+                       items =
+                        [Odoc_model.Lang.ClassSignature.Method
+                          {Odoc_model.Lang.Method.id =
+                            `Method
+                              (`Class
+                                 (`ModuleType
+                                    (`Module
+                                       (`Root (<root>, "Ocamlary"), "Dep1"),
+                                     "S"),
+                                  "c"),
+                               "m");
+                           doc = []; private_ = false; virtual_ = false;
+                           type_ =
+                            Odoc_model.Lang.TypeExpr.Constr
+                             (`Resolved (`Identifier (`CoreType "int")),
+                             [])}]});
+                  expansion = None})])};
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -3797,9 +6126,8 @@ Odoc_model.Lang.Compilation_unit.Module
                   canonical = None; hidden = false; display_type = None;
                   expansion = None})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None})]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep2");
     doc = [];
@@ -3855,8 +6183,56 @@ Odoc_model.Lang.Compilation_unit.Module
                        canonical = None; hidden = false; display_type = None;
                        expansion = None})]);
                 canonical = None; hidden = false; display_type = None;
-                expansion = Some Odoc_model.Lang.Module.AlreadyASig})];
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+                expansion = None})];
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep2"), "Arg"),
+                      "S");
+                  doc = []; expr = None; expansion = None};
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep2"), "Arg"),
+                      "X");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`Module
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep2"),
+                                   "Arg"),
+                                "X"),
+                             "Y");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`Parameter
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Dep2"),
+                                          "Arg"),
+                                       "S")))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None})]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None})])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.Module
            (Odoc_model.Lang.Signature.Ordinary,
@@ -3880,18 +6256,18 @@ Odoc_model.Lang.Compilation_unit.Module
                    type_ =
                     Odoc_model.Lang.Module.ModuleType
                      (Odoc_model.Lang.ModuleType.Path
-                       (`Dot
-                          (`Resolved
+                       (`Resolved
+                          (`ModuleType
                              (`Identifier
                                 (`Parameter
                                    (`Module
                                       (`Root (<root>, "Ocamlary"), "Dep2"),
-                                    "Arg"))),
-                           "S")));
+                                    "Arg")),
+                              "S"))));
                    canonical = None; hidden = false; display_type = None;
                    expansion = None})]);
             canonical = None; hidden = false; display_type = None;
-            expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+            expansion = None});
           Odoc_model.Lang.Signature.Module
            (Odoc_model.Lang.Signature.Ordinary,
            {Odoc_model.Lang.Module.id =
@@ -3900,14 +6276,14 @@ Odoc_model.Lang.Compilation_unit.Module
             doc = [];
             type_ =
              Odoc_model.Lang.Module.Alias
-              (`Dot
-                 (`Resolved
+              (`Resolved
+                 (`Module
                     (`Identifier
                        (`Module
                           (`Result
                              (`Module (`Root (<root>, "Ocamlary"), "Dep2")),
-                           "A"))),
-                  "Y"));
+                           "A")),
+                     "Y")));
             canonical = None; hidden = false; display_type = None;
             expansion = None})]));
     canonical = None; hidden = false; display_type = None; expansion = None});
@@ -3919,17 +6295,35 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Dot
-                (`Apply
-                   (`Resolved
-                      (`Identifier
-                         (`Module (`Root (<root>, "Ocamlary"), "Dep2"))),
-                    `Resolved
-                      (`Identifier
-                         (`Module (`Root (<root>, "Ocamlary"), "Dep1")))),
-                 "B"),
-              "c"),
+          (`Resolved
+             (`Type
+                (`Alias
+                   (`Subst
+                      (`ModuleType
+                         (`Identifier
+                            (`Module (`Root (<root>, "Ocamlary"), "Dep1")),
+                          "S"),
+                       `Module
+                         (`Module
+                            (`Apply
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep2")),
+                                `Resolved
+                                  (`Identifier
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"), "Dep1")))),
+                             "A"),
+                          "Y")),
+                    `Module
+                      (`Apply
+                         (`Identifier
+                            (`Module (`Root (<root>, "Ocamlary"), "Dep2")),
+                          `Resolved
+                            (`Identifier
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep1")))),
+                       "B")),
+                 "c")),
           []));
       constraints = []};
     representation = None});
@@ -3947,8 +6341,7 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep4");
     doc = [];
@@ -3974,7 +6367,21 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep4"), "T"),
+                      "b");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])};
          Odoc_model.Lang.Signature.ModuleType
           {Odoc_model.Lang.ModuleType.id =
             `ModuleType (`Module (`Root (<root>, "Ocamlary"), "Dep4"), "S");
@@ -4012,8 +6419,41 @@ Odoc_model.Lang.Compilation_unit.Module
                    Odoc_model.Lang.Module.ModuleType
                     (Odoc_model.Lang.ModuleType.Signature []);
                   canonical = None; hidden = false; display_type = None;
-                  expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+                  expansion = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep4"), "S"),
+                      "X");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`Identifier
+                            (`ModuleType
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep4"),
+                                "T")))));
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep4"), "S"),
+                      "Y");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature []);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = Some Odoc_model.Lang.Module.AlreadyASig})])};
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -4028,8 +6468,7 @@ Odoc_model.Lang.Compilation_unit.Module
                         (`Module (`Root (<root>, "Ocamlary"), "Dep4"), "T")))));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep5");
     doc = [];
@@ -4098,8 +6537,51 @@ Odoc_model.Lang.Compilation_unit.Module
                         Odoc_model.Lang.Module.ModuleType
                          (Odoc_model.Lang.ModuleType.Signature []);
                        canonical = None; hidden = false; display_type = None;
-                       expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
-                expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+                       expansion = None})]);
+                expansion =
+                 Some
+                  (Odoc_model.Lang.Module.Signature
+                    [Odoc_model.Lang.Signature.Module
+                      (Odoc_model.Lang.Signature.Ordinary,
+                      {Odoc_model.Lang.Module.id =
+                        `Module
+                          (`ModuleType
+                             (`Parameter
+                                (`Module (`Root (<root>, "Ocamlary"), "Dep5"),
+                                 "Arg"),
+                              "S"),
+                           "X");
+                       doc = [];
+                       type_ =
+                        Odoc_model.Lang.Module.ModuleType
+                         (Odoc_model.Lang.ModuleType.Path
+                           (`Resolved
+                              (`Identifier
+                                 (`ModuleType
+                                    (`Parameter
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Dep5"),
+                                        "Arg"),
+                                     "T")))));
+                       canonical = None; hidden = false; display_type = None;
+                       expansion = None});
+                     Odoc_model.Lang.Signature.Module
+                      (Odoc_model.Lang.Signature.Ordinary,
+                      {Odoc_model.Lang.Module.id =
+                        `Module
+                          (`ModuleType
+                             (`Parameter
+                                (`Module (`Root (<root>, "Ocamlary"), "Dep5"),
+                                 "Arg"),
+                              "S"),
+                           "Y");
+                       doc = [];
+                       type_ =
+                        Odoc_model.Lang.Module.ModuleType
+                         (Odoc_model.Lang.ModuleType.Signature []);
+                       canonical = None; hidden = false; display_type = None;
+                       expansion = Some Odoc_model.Lang.Module.AlreadyASig})])};
               Odoc_model.Lang.Signature.Module
                (Odoc_model.Lang.Signature.Ordinary,
                {Odoc_model.Lang.Module.id =
@@ -4120,7 +6602,137 @@ Odoc_model.Lang.Compilation_unit.Module
                               "T")))));
                 canonical = None; hidden = false; display_type = None;
                 expansion = None})];
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep5"), "Arg"),
+                      "T");
+                  doc = []; expr = None; expansion = None};
+                Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep5"), "Arg"),
+                      "S");
+                  doc = [];
+                  expr =
+                   Some
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5"),
+                                   "Arg"),
+                                "S"),
+                             "X");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`Parameter
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Dep5"),
+                                          "Arg"),
+                                       "T")))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None});
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5"),
+                                   "Arg"),
+                                "S"),
+                             "Y");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Signature []);
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5"),
+                                   "Arg"),
+                                "S"),
+                             "X");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`Parameter
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Dep5"),
+                                          "Arg"),
+                                       "T")))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None});
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5"),
+                                   "Arg"),
+                                "S"),
+                             "Y");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Signature []);
+                         canonical = None; hidden = false;
+                         display_type = None;
+                         expansion = Some Odoc_model.Lang.Module.AlreadyASig})])};
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep5"), "Arg"),
+                      "X");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`Identifier
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5"),
+                                   "Arg"),
+                                "T")))));
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None})])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.Module
            (Odoc_model.Lang.Signature.Ordinary,
@@ -4132,15 +6744,15 @@ Odoc_model.Lang.Compilation_unit.Module
              Odoc_model.Lang.Module.ModuleType
               (Odoc_model.Lang.ModuleType.With
                 (Odoc_model.Lang.ModuleType.Path
-                  (`Dot
-                     (`Resolved
+                  (`Resolved
+                     (`ModuleType
                         (`Identifier
                            (`Parameter
                               (`Module (`Root (<root>, "Ocamlary"), "Dep5"),
-                               "Arg"))),
-                      "S")),
+                               "Arg")),
+                         "S"))),
                 [Odoc_model.Lang.ModuleType.ModuleEq
-                  (`Dot (`Resolved `Root, "Y"),
+                  (`Resolved (`Module (`Root, "Y")),
                   Odoc_model.Lang.Module.Alias
                    (`Resolved
                       (`Identifier
@@ -4156,19 +6768,31 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Dot
-                (`Dot
-                   (`Apply
-                      (`Resolved
-                         (`Identifier
-                            (`Module (`Root (<root>, "Ocamlary"), "Dep5"))),
-                       `Resolved
-                         (`Identifier
-                            (`Module (`Root (<root>, "Ocamlary"), "Dep4")))),
-                    "Z"),
-                 "X"),
-              "b"),
+          (`Resolved
+             (`Type
+                (`Subst
+                   (`ModuleType
+                      (`Identifier
+                         (`Module (`Root (<root>, "Ocamlary"), "Dep4")),
+                       "T"),
+                    `Module
+                      (`Subst
+                         (`ModuleType
+                            (`Identifier
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep4")),
+                             "S"),
+                          `Module
+                            (`Apply
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5")),
+                                `Resolved
+                                  (`Identifier
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"), "Dep4")))),
+                             "Z")),
+                       "X")),
+                 "b")),
           []));
       constraints = []};
     representation = None});
@@ -4180,19 +6804,29 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Dot
-                (`Dot
-                   (`Apply
-                      (`Resolved
-                         (`Identifier
-                            (`Module (`Root (<root>, "Ocamlary"), "Dep5"))),
-                       `Resolved
-                         (`Identifier
-                            (`Module (`Root (<root>, "Ocamlary"), "Dep4")))),
-                    "Z"),
-                 "Y"),
-              "a"),
+          (`Resolved
+             (`Type
+                (`Alias
+                   (`Identifier
+                      (`Module (`Root (<root>, "Ocamlary"), "Dep3")),
+                    `Module
+                      (`Subst
+                         (`ModuleType
+                            (`Identifier
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep4")),
+                             "S"),
+                          `Module
+                            (`Apply
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep5")),
+                                `Resolved
+                                  (`Identifier
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"), "Dep4")))),
+                             "Z")),
+                       "Y")),
+                 "a")),
           []));
       constraints = []};
     representation = None});
@@ -4221,7 +6855,21 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep6"), "S"),
+                      "d");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])};
          Odoc_model.Lang.Signature.ModuleType
           {Odoc_model.Lang.ModuleType.id =
             `ModuleType (`Module (`Root (<root>, "Ocamlary"), "Dep6"), "T");
@@ -4229,6 +6877,65 @@ Odoc_model.Lang.Compilation_unit.Module
            expr =
             Some
              (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep6"), "T"),
+                      "R");
+                  doc = [];
+                  expr =
+                   Some
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`Identifier
+                            (`ModuleType
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep6"),
+                                "S")))));
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`ModuleType
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep6"),
+                                   "T"),
+                                "R"),
+                             "d");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false; manifest = None;
+                           constraints = []};
+                         representation = None})])};
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep6"), "T"),
+                      "Y");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`Identifier
+                            (`ModuleType
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep6"),
+                                   "T"),
+                                "R")))));
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
                [Odoc_model.Lang.Signature.ModuleType
                  {Odoc_model.Lang.ModuleType.id =
                    `ModuleType
@@ -4265,8 +6972,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                    "T"),
                                 "R")))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+                  expansion = None})])};
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -4281,8 +6987,7 @@ Odoc_model.Lang.Compilation_unit.Module
                         (`Module (`Root (<root>, "Ocamlary"), "Dep6"), "T")))));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep7");
     doc = [];
@@ -4361,7 +7066,59 @@ Odoc_model.Lang.Compilation_unit.Module
                                      "R")))));
                        canonical = None; hidden = false; display_type = None;
                        expansion = None})]);
-                expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+                expansion =
+                 Some
+                  (Odoc_model.Lang.Module.Signature
+                    [Odoc_model.Lang.Signature.ModuleType
+                      {Odoc_model.Lang.ModuleType.id =
+                        `ModuleType
+                          (`ModuleType
+                             (`Parameter
+                                (`Module (`Root (<root>, "Ocamlary"), "Dep7"),
+                                 "Arg"),
+                              "T"),
+                           "R");
+                       doc = [];
+                       expr =
+                        Some
+                         (Odoc_model.Lang.ModuleType.Path
+                           (`Resolved
+                              (`Identifier
+                                 (`ModuleType
+                                    (`Parameter
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Dep7"),
+                                        "Arg"),
+                                     "S")))));
+                       expansion = None};
+                     Odoc_model.Lang.Signature.Module
+                      (Odoc_model.Lang.Signature.Ordinary,
+                      {Odoc_model.Lang.Module.id =
+                        `Module
+                          (`ModuleType
+                             (`Parameter
+                                (`Module (`Root (<root>, "Ocamlary"), "Dep7"),
+                                 "Arg"),
+                              "T"),
+                           "Y");
+                       doc = [];
+                       type_ =
+                        Odoc_model.Lang.Module.ModuleType
+                         (Odoc_model.Lang.ModuleType.Path
+                           (`Resolved
+                              (`Identifier
+                                 (`ModuleType
+                                    (`ModuleType
+                                       (`Parameter
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "Dep7"),
+                                           "Arg"),
+                                        "T"),
+                                     "R")))));
+                       canonical = None; hidden = false; display_type = None;
+                       expansion = None})])};
               Odoc_model.Lang.Signature.Module
                (Odoc_model.Lang.Signature.Ordinary,
                {Odoc_model.Lang.Module.id =
@@ -4382,7 +7139,154 @@ Odoc_model.Lang.Compilation_unit.Module
                               "T")))));
                 canonical = None; hidden = false; display_type = None;
                 expansion = None})];
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep7"), "Arg"),
+                      "S");
+                  doc = []; expr = None; expansion = None};
+                Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep7"), "Arg"),
+                      "T");
+                  doc = [];
+                  expr =
+                   Some
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.ModuleType
+                        {Odoc_model.Lang.ModuleType.id =
+                          `ModuleType
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep7"),
+                                   "Arg"),
+                                "T"),
+                             "R");
+                         doc = [];
+                         expr =
+                          Some
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`Parameter
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Dep7"),
+                                          "Arg"),
+                                       "S")))));
+                         expansion = None};
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep7"),
+                                   "Arg"),
+                                "T"),
+                             "Y");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`ModuleType
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "Dep7"),
+                                             "Arg"),
+                                          "T"),
+                                       "R")))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.ModuleType
+                        {Odoc_model.Lang.ModuleType.id =
+                          `ModuleType
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep7"),
+                                   "Arg"),
+                                "T"),
+                             "R");
+                         doc = [];
+                         expr =
+                          Some
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`Parameter
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Dep7"),
+                                          "Arg"),
+                                       "S")))));
+                         expansion = None};
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep7"),
+                                   "Arg"),
+                                "T"),
+                             "Y");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`ModuleType
+                                         (`Parameter
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "Dep7"),
+                                             "Arg"),
+                                          "T"),
+                                       "R")))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None})])};
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep7"), "Arg"),
+                      "X");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`Identifier
+                            (`ModuleType
+                               (`Parameter
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep7"),
+                                   "Arg"),
+                                "T")))));
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None})])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.Module
            (Odoc_model.Lang.Signature.Ordinary,
@@ -4393,13 +7297,13 @@ Odoc_model.Lang.Compilation_unit.Module
             type_ =
              Odoc_model.Lang.Module.ModuleType
               (Odoc_model.Lang.ModuleType.Path
-                (`Dot
-                   (`Resolved
+                (`Resolved
+                   (`ModuleType
                       (`Identifier
                          (`Parameter
                             (`Module (`Root (<root>, "Ocamlary"), "Dep7"),
-                             "Arg"))),
-                    "T")));
+                             "Arg")),
+                       "T"))));
             canonical = None; hidden = false; display_type = None;
             expansion = None})]));
     canonical = None; hidden = false; display_type = None; expansion = None});
@@ -4411,19 +7315,51 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Dot
-                (`Dot
-                   (`Apply
-                      (`Resolved
-                         (`Identifier
-                            (`Module (`Root (<root>, "Ocamlary"), "Dep7"))),
-                       `Resolved
-                         (`Identifier
-                            (`Module (`Root (<root>, "Ocamlary"), "Dep6")))),
-                    "M"),
-                 "Y"),
-              "d"),
+          (`Resolved
+             (`Type
+                (`Subst
+                   (`ModuleType
+                      (`Subst
+                         (`ModuleType
+                            (`Identifier
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep6")),
+                             "T"),
+                          `Subst
+                            (`ModuleType
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep6")),
+                                "T"),
+                             `Module
+                               (`Apply
+                                  (`Identifier
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"), "Dep7")),
+                                   `Resolved
+                                     (`Identifier
+                                        (`Module
+                                           (`Root (<root>, "Ocamlary"),
+                                            "Dep6")))),
+                                "M"))),
+                       "R"),
+                    `Module
+                      (`Subst
+                         (`ModuleType
+                            (`Identifier
+                               (`Module (`Root (<root>, "Ocamlary"), "Dep6")),
+                             "T"),
+                          `Module
+                            (`Apply
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep7")),
+                                `Resolved
+                                  (`Identifier
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"), "Dep6")))),
+                             "M")),
+                       "Y")),
+                 "d")),
           []));
       constraints = []};
     representation = None});
@@ -4452,9 +7388,22 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep8"), "T"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep9");
     doc = [];
@@ -4473,7 +7422,16 @@ Odoc_model.Lang.Compilation_unit.Module
                       (`Module (`Root (<root>, "Ocamlary"), "Dep9"), "X"),
                     "T");
                 doc = []; expr = None; expansion = None}];
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep9"), "X"),
+                      "T");
+                  doc = []; expr = None; expansion = None}])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.ModuleType
            {Odoc_model.Lang.ModuleType.id =
@@ -4483,13 +7441,13 @@ Odoc_model.Lang.Compilation_unit.Module
             expr =
              Some
               (Odoc_model.Lang.ModuleType.Path
-                (`Dot
-                   (`Resolved
+                (`Resolved
+                   (`ModuleType
                       (`Identifier
                          (`Parameter
                             (`Module (`Root (<root>, "Ocamlary"), "Dep9"),
-                             "X"))),
-                    "T")));
+                             "X")),
+                       "T"))));
             expansion = None}]));
     canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.ModuleType
@@ -4500,23 +7458,37 @@ Odoc_model.Lang.Compilation_unit.Module
      Some
       (Odoc_model.Lang.ModuleType.With
         (Odoc_model.Lang.ModuleType.Path
-          (`Dot
-             (`Apply
-                (`Resolved
+          (`Resolved
+             (`ModuleType
+                (`Apply
                    (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "Dep9"))),
-                 `Resolved
-                   (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "Dep8")))),
-              "T")),
-        [Odoc_model.Lang.ModuleType.TypeEq (`Dot (`Resolved `Root, "t"),
+                      (`Module (`Root (<root>, "Ocamlary"), "Dep9")),
+                    `Resolved
+                      (`Identifier
+                         (`Module (`Root (<root>, "Ocamlary"), "Dep8")))),
+                 "T"))),
+        [Odoc_model.Lang.ModuleType.TypeEq (`Resolved (`Type (`Root, "t")),
           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
            manifest =
             Some
              (Odoc_model.Lang.TypeExpr.Constr
                (`Resolved (`Identifier (`CoreType "int")), []));
            constraints = []})]));
-    expansion = None};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type (`ModuleType (`Root (<root>, "Ocamlary"), "Dep10"), "t");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest =
+              Some
+               (Odoc_model.Lang.TypeExpr.Constr
+                 (`Resolved (`Identifier (`CoreType "int")), []));
+             constraints = []};
+           representation = None})])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep11");
     doc = [];
@@ -4558,10 +7530,58 @@ Odoc_model.Lang.Compilation_unit.Module
                             Odoc_model.Lang.TypeExpr.Constr
                              (`Resolved (`Identifier (`CoreType "int")),
                              [])}]});
-                  expansion = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                  expansion =
+                   Some
+                    {Odoc_model.Lang.ClassSignature.self = None;
+                     items =
+                      [Odoc_model.Lang.ClassSignature.Method
+                        {Odoc_model.Lang.Method.id =
+                          `Method
+                            (`Class
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Dep11"),
+                                   "S"),
+                                "c"),
+                             "m");
+                         doc = []; private_ = false; virtual_ = false;
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved (`Identifier (`CoreType "int")),
+                           [])}]}})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Class
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Class.id =
+                   `Class
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep11"), "S"),
+                      "c");
+                  doc = []; virtual_ = false; params = [];
+                  type_ =
+                   Odoc_model.Lang.Class.ClassType
+                    (Odoc_model.Lang.ClassType.Signature
+                      {Odoc_model.Lang.ClassSignature.self = None;
+                       items =
+                        [Odoc_model.Lang.ClassSignature.Method
+                          {Odoc_model.Lang.Method.id =
+                            `Method
+                              (`Class
+                                 (`ModuleType
+                                    (`Module
+                                       (`Root (<root>, "Ocamlary"), "Dep11"),
+                                     "S"),
+                                  "c"),
+                               "m");
+                           doc = []; private_ = false; virtual_ = false;
+                           type_ =
+                            Odoc_model.Lang.TypeExpr.Constr
+                             (`Resolved (`Identifier (`CoreType "int")),
+                             [])}]});
+                  expansion = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "Dep12");
     doc = [];
@@ -4580,7 +7600,17 @@ Odoc_model.Lang.Compilation_unit.Module
                       (`Module (`Root (<root>, "Ocamlary"), "Dep12"), "Arg"),
                     "S");
                 doc = []; expr = None; expansion = None}];
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "Dep12"),
+                         "Arg"),
+                      "S");
+                  doc = []; expr = None; expansion = None}])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.ModuleType
            {Odoc_model.Lang.ModuleType.id =
@@ -4590,13 +7620,13 @@ Odoc_model.Lang.Compilation_unit.Module
             expr =
              Some
               (Odoc_model.Lang.ModuleType.Path
-                (`Dot
-                   (`Resolved
+                (`Resolved
+                   (`ModuleType
                       (`Identifier
                          (`Parameter
                             (`Module (`Root (<root>, "Ocamlary"), "Dep12"),
-                             "Arg"))),
-                    "S")));
+                             "Arg")),
+                       "S"))));
             expansion = None}]));
     canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
@@ -4605,13 +7635,14 @@ Odoc_model.Lang.Compilation_unit.Module
     type_ =
      Odoc_model.Lang.Module.ModuleType
       (Odoc_model.Lang.ModuleType.Path
-        (`Dot
-           (`Apply
-              (`Resolved
-                 (`Identifier (`Module (`Root (<root>, "Ocamlary"), "Dep12"))),
-               `Resolved
-                 (`Identifier (`Module (`Root (<root>, "Ocamlary"), "Dep11")))),
-            "T")));
+        (`Resolved
+           (`ModuleType
+              (`Apply
+                 (`Identifier (`Module (`Root (<root>, "Ocamlary"), "Dep12")),
+                  `Resolved
+                    (`Identifier
+                       (`Module (`Root (<root>, "Ocamlary"), "Dep11")))),
+               "T"))));
     canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.TypeDecl.id = `Type (`Root (<root>, "Ocamlary"), "dep5");
@@ -4621,10 +7652,10 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Resolved
-                (`Identifier (`Module (`Root (<root>, "Ocamlary"), "Dep13"))),
-              "c"),
+          (`Resolved
+             (`Type
+                (`Identifier (`Module (`Root (<root>, "Ocamlary"), "Dep13")),
+                 "c")),
           []));
       constraints = []};
     representation = None});
@@ -4635,6 +7666,44 @@ Odoc_model.Lang.Compilation_unit.Module
     expr =
      Some
       (Odoc_model.Lang.ModuleType.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "With1"), "M");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Module
+                        (`ModuleType (`Root (<root>, "Ocamlary"), "With1"),
+                         "M"),
+                      "S");
+                  doc = []; expr = None; expansion = None}]);
+           canonical = None; hidden = false; display_type = None;
+           expansion = None});
+         Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "With1"), "N");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.Path
+               (`Resolved
+                  (`ModuleType
+                     (`Identifier
+                        (`Module
+                           (`ModuleType (`Root (<root>, "Ocamlary"), "With1"),
+                            "M")),
+                      "S"))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
         [Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -4669,8 +7738,7 @@ Odoc_model.Lang.Compilation_unit.Module
                             "M"))),
                    "S")));
            canonical = None; hidden = false; display_type = None;
-           expansion = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion = None})])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "With2");
     doc = [];
@@ -4696,9 +7764,22 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "With2"), "S"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "With3");
     doc = [];
@@ -4708,7 +7789,8 @@ Odoc_model.Lang.Compilation_unit.Module
         (Odoc_model.Lang.ModuleType.Path
           (`Resolved
              (`Identifier (`ModuleType (`Root (<root>, "Ocamlary"), "With1")))),
-        [Odoc_model.Lang.ModuleType.ModuleEq (`Dot (`Resolved `Root, "M"),
+        [Odoc_model.Lang.ModuleType.ModuleEq
+          (`Resolved (`Module (`Root, "M")),
           Odoc_model.Lang.Module.Alias
            (`Resolved
               (`Identifier (`Module (`Root (<root>, "Ocamlary"), "With2")))))]));
@@ -4721,13 +7803,13 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Dot
-                (`Resolved
+          (`Resolved
+             (`Type
+                (`Module
                    (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "With3"))),
-                 "N"),
-              "t"),
+                      (`Module (`Root (<root>, "Ocamlary"), "With3")),
+                    "N"),
+                 "t")),
           []));
       constraints = []};
     representation = None});
@@ -4740,7 +7822,8 @@ Odoc_model.Lang.Compilation_unit.Module
         (Odoc_model.Lang.ModuleType.Path
           (`Resolved
              (`Identifier (`ModuleType (`Root (<root>, "Ocamlary"), "With1")))),
-        [Odoc_model.Lang.ModuleType.ModuleSubst (`Dot (`Resolved `Root, "M"),
+        [Odoc_model.Lang.ModuleType.ModuleSubst
+          (`Resolved (`Module (`Root, "M")),
           `Resolved
             (`Identifier (`Module (`Root (<root>, "Ocamlary"), "With2"))))]));
     canonical = None; hidden = false; display_type = None; expansion = None});
@@ -4752,13 +7835,13 @@ Odoc_model.Lang.Compilation_unit.Module
       manifest =
        Some
         (Odoc_model.Lang.TypeExpr.Constr
-          (`Dot
-             (`Dot
-                (`Resolved
+          (`Resolved
+             (`Type
+                (`Module
                    (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "With4"))),
-                 "N"),
-              "t"),
+                      (`Module (`Root (<root>, "Ocamlary"), "With4")),
+                    "N"),
+                 "t")),
           []));
       constraints = []};
     representation = None});
@@ -4787,7 +7870,21 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "With5"), "S"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])};
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -4802,8 +7899,7 @@ Odoc_model.Lang.Compilation_unit.Module
                         (`Module (`Root (<root>, "Ocamlary"), "With5"), "S")))));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "With6");
     doc = [];
@@ -4868,10 +7964,63 @@ Odoc_model.Lang.Compilation_unit.Module
                          canonical = None; hidden = false;
                          display_type = None; expansion = None})]);
                   canonical = None; hidden = false; display_type = None;
-                  expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                  expansion = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "With6"), "T"),
+                      "M");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.ModuleType
+                        {Odoc_model.Lang.ModuleType.id =
+                          `ModuleType
+                            (`Module
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "With6"),
+                                   "T"),
+                                "M"),
+                             "S");
+                         doc = []; expr = None; expansion = None};
+                       Odoc_model.Lang.Signature.Module
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.Module.id =
+                          `Module
+                            (`Module
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "With6"),
+                                   "T"),
+                                "M"),
+                             "N");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.Module.ModuleType
+                           (Odoc_model.Lang.ModuleType.Path
+                             (`Resolved
+                                (`Identifier
+                                   (`ModuleType
+                                      (`Module
+                                         (`ModuleType
+                                            (`Module
+                                               (`Root (<root>, "Ocamlary"),
+                                                "With6"),
+                                             "T"),
+                                          "M"),
+                                       "S")))));
+                         canonical = None; hidden = false;
+                         display_type = None; expansion = None})]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = Some Odoc_model.Lang.Module.AlreadyASig})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "With7");
     doc = [];
@@ -4890,7 +8039,16 @@ Odoc_model.Lang.Compilation_unit.Module
                       (`Module (`Root (<root>, "Ocamlary"), "With7"), "X"),
                     "T");
                 doc = []; expr = None; expansion = None}];
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.ModuleType
+                 {Odoc_model.Lang.ModuleType.id =
+                   `ModuleType
+                     (`Parameter
+                        (`Module (`Root (<root>, "Ocamlary"), "With7"), "X"),
+                      "T");
+                  doc = []; expr = None; expansion = None}])},
         Odoc_model.Lang.ModuleType.Signature
          [Odoc_model.Lang.Signature.ModuleType
            {Odoc_model.Lang.ModuleType.id =
@@ -4900,13 +8058,13 @@ Odoc_model.Lang.Compilation_unit.Module
             expr =
              Some
               (Odoc_model.Lang.ModuleType.Path
-                (`Dot
-                   (`Resolved
+                (`Resolved
+                   (`ModuleType
                       (`Identifier
                          (`Parameter
                             (`Module (`Root (<root>, "Ocamlary"), "With7"),
-                             "X"))),
-                    "T")));
+                             "X")),
+                       "T"))));
             expansion = None}]));
     canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.ModuleType
@@ -4917,35 +8075,70 @@ Odoc_model.Lang.Compilation_unit.Module
      Some
       (Odoc_model.Lang.ModuleType.With
         (Odoc_model.Lang.ModuleType.Path
-          (`Dot
-             (`Apply
-                (`Resolved
+          (`Resolved
+             (`ModuleType
+                (`Apply
                    (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "With7"))),
-                 `Resolved
-                   (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "With6")))),
-              "T")),
-        [Odoc_model.Lang.ModuleType.ModuleEq (`Dot (`Resolved `Root, "M"),
+                      (`Module (`Root (<root>, "Ocamlary"), "With7")),
+                    `Resolved
+                      (`Identifier
+                         (`Module (`Root (<root>, "Ocamlary"), "With6")))),
+                 "T"))),
+        [Odoc_model.Lang.ModuleType.ModuleEq
+          (`Resolved (`Module (`Root, "M")),
           Odoc_model.Lang.Module.Alias
            (`Resolved
               (`Identifier (`Module (`Root (<root>, "Ocamlary"), "With5")))));
          Odoc_model.Lang.ModuleType.TypeEq
-          (`Dot (`Dot (`Dot (`Resolved `Root, "M"), "N"), "t"),
+          (`Resolved (`Type (`Module (`Module (`Root, "M"), "N"), "t")),
           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
            manifest =
             Some
              (Odoc_model.Lang.TypeExpr.Constr
-               (`Dot
-                  (`Dot
-                     (`Resolved
+               (`Resolved
+                  (`Type
+                     (`Module
                         (`Identifier
-                           (`Module (`Root (<root>, "Ocamlary"), "With5"))),
-                      "N"),
-                   "t"),
+                           (`Module (`Root (<root>, "Ocamlary"), "With5")),
+                         "N"),
+                      "t")),
                []));
            constraints = []})]));
-    expansion = None};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "With8"), "M");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.With
+               (Odoc_model.Lang.ModuleType.TypeOf
+                 (Odoc_model.Lang.Module.Alias
+                   (`Resolved
+                      (`Identifier
+                         (`Module (`Root (<root>, "Ocamlary"), "With5"))))),
+               [Odoc_model.Lang.ModuleType.TypeEq
+                 (`Dot (`Dot (`Resolved `Root, "N"), "t"),
+                 {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                  private_ = false;
+                  manifest =
+                   Some
+                    (Odoc_model.Lang.TypeExpr.Constr
+                      (`Dot
+                         (`Dot
+                            (`Resolved
+                               (`Identifier
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "With5"))),
+                             "N"),
+                          "t"),
+                      []));
+                  constraints = []})]));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "With9");
     doc = [];
@@ -4971,9 +8164,22 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "With9"), "S"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id =
      `Module (`Root (<root>, "Ocamlary"), "With10");
@@ -4992,6 +8198,57 @@ Odoc_model.Lang.Compilation_unit.Module
            expr =
             Some
              (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "With10"), "T"),
+                      "M");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Signature
+                      [Odoc_model.Lang.Signature.ModuleType
+                        {Odoc_model.Lang.ModuleType.id =
+                          `ModuleType
+                            (`Module
+                               (`ModuleType
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "With10"),
+                                   "T"),
+                                "M"),
+                             "S");
+                         doc = []; expr = None; expansion = None}]);
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None});
+                Odoc_model.Lang.Signature.Module
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.Module.id =
+                   `Module
+                     (`ModuleType
+                        (`Module (`Root (<root>, "Ocamlary"), "With10"), "T"),
+                      "N");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.Module.ModuleType
+                    (Odoc_model.Lang.ModuleType.Path
+                      (`Resolved
+                         (`ModuleType
+                            (`Identifier
+                               (`Module
+                                  (`ModuleType
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "With10"),
+                                      "T"),
+                                   "M")),
+                             "S"))));
+                  canonical = None; hidden = false; display_type = None;
+                  expansion = None})]);
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
                [Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -5039,10 +8296,8 @@ Odoc_model.Lang.Compilation_unit.Module
                                    "M"))),
                           "S")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                  expansion = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "With11");
@@ -5051,28 +8306,70 @@ Odoc_model.Lang.Compilation_unit.Module
      Some
       (Odoc_model.Lang.ModuleType.With
         (Odoc_model.Lang.ModuleType.Path
-          (`Dot
-             (`Apply
-                (`Resolved
+          (`Resolved
+             (`ModuleType
+                (`Apply
                    (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "With7"))),
-                 `Resolved
-                   (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "With10")))),
-              "T")),
-        [Odoc_model.Lang.ModuleType.ModuleEq (`Dot (`Resolved `Root, "M"),
+                      (`Module (`Root (<root>, "Ocamlary"), "With7")),
+                    `Resolved
+                      (`Identifier
+                         (`Module (`Root (<root>, "Ocamlary"), "With10")))),
+                 "T"))),
+        [Odoc_model.Lang.ModuleType.ModuleEq
+          (`Resolved (`Module (`Root, "M")),
           Odoc_model.Lang.Module.Alias
            (`Resolved
               (`Identifier (`Module (`Root (<root>, "Ocamlary"), "With9")))));
          Odoc_model.Lang.ModuleType.TypeEq
-          (`Dot (`Dot (`Resolved `Root, "N"), "t"),
+          (`Resolved (`Type (`Module (`Root, "N"), "t")),
           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
            manifest =
             Some
              (Odoc_model.Lang.TypeExpr.Constr
                (`Resolved (`Identifier (`CoreType "int")), []));
            constraints = []})]));
-    expansion = None};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "With11"), "N");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.ModuleType
+             (Odoc_model.Lang.ModuleType.With
+               (Odoc_model.Lang.ModuleType.Path
+                 (`Dot
+                    (`Resolved
+                       (`Identifier
+                          (`Module
+                             (`ModuleType
+                                (`Root (<root>, "Ocamlary"), "With11"),
+                              "M"))),
+                     "S")),
+               [Odoc_model.Lang.ModuleType.TypeEq
+                 (`Dot (`Resolved `Root, "t"),
+                 {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                  private_ = false;
+                  manifest =
+                   Some
+                    (Odoc_model.Lang.TypeExpr.Constr
+                      (`Resolved (`Identifier (`CoreType "int")), []));
+                  constraints = []})]));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None});
+         Odoc_model.Lang.Signature.Module
+          (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.Module.id =
+            `Module (`ModuleType (`Root (<root>, "Ocamlary"), "With11"), "M");
+           doc = [];
+           type_ =
+            Odoc_model.Lang.Module.Alias
+             (`Resolved
+                (`Identifier (`Module (`Root (<root>, "Ocamlary"), "With9"))));
+           canonical = None; hidden = false; display_type = None;
+           expansion = None})])};
   Odoc_model.Lang.Signature.ModuleType
    {Odoc_model.Lang.ModuleType.id =
      `ModuleType (`Root (<root>, "Ocamlary"), "NestedInclude1");
@@ -5103,8 +8400,50 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "NestedInclude1"),
+                         "NestedInclude2"),
+                      "nested_include");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}]);
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.ModuleType
+          {Odoc_model.Lang.ModuleType.id =
+            `ModuleType
+              (`ModuleType (`Root (<root>, "Ocamlary"), "NestedInclude1"),
+               "NestedInclude2");
+           doc = [];
+           expr =
+            Some
+             (Odoc_model.Lang.ModuleType.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`ModuleType
+                           (`Root (<root>, "Ocamlary"), "NestedInclude1"),
+                         "NestedInclude2"),
+                      "nested_include");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})]);
+           expansion = Some Odoc_model.Lang.Module.AlreadyASig}])};
   Odoc_model.Lang.Signature.Include
    {Odoc_model.Lang.Include.parent = `Root (<root>, "Ocamlary"); doc = [];
     decl =
@@ -5114,7 +8453,7 @@ Odoc_model.Lang.Compilation_unit.Module
            (`Identifier
               (`ModuleType (`Root (<root>, "Ocamlary"), "NestedInclude1")))));
     expansion =
-     {Odoc_model.Lang.Include.resolved = false;
+     {Odoc_model.Lang.Include.resolved = true;
       content =
        [Odoc_model.Lang.Signature.ModuleType
          {Odoc_model.Lang.ModuleType.id =
@@ -5135,7 +8474,21 @@ Odoc_model.Lang.Compilation_unit.Module
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})]);
-          expansion = Some Odoc_model.Lang.Module.AlreadyASig}]}};
+          expansion =
+           Some
+            (Odoc_model.Lang.Module.Signature
+              [Odoc_model.Lang.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.TypeDecl.id =
+                  `Type
+                    (`ModuleType
+                       (`Root (<root>, "Ocamlary"), "NestedInclude2"),
+                     "nested_include");
+                 doc = [];
+                 equation =
+                  {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                   private_ = false; manifest = None; constraints = []};
+                 representation = None})])}]}};
   Odoc_model.Lang.Signature.Include
    {Odoc_model.Lang.Include.parent = `Root (<root>, "Ocamlary"); doc = [];
     decl =
@@ -5146,7 +8499,7 @@ Odoc_model.Lang.Compilation_unit.Module
              (`Identifier
                 (`ModuleType (`Root (<root>, "Ocamlary"), "NestedInclude2")))),
         [Odoc_model.Lang.ModuleType.TypeEq
-          (`Dot (`Resolved `Root, "nested_include"),
+          (`Resolved (`Type (`Root, "nested_include")),
           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
            manifest =
             Some
@@ -5154,7 +8507,7 @@ Odoc_model.Lang.Compilation_unit.Module
                (`Resolved (`Identifier (`CoreType "int")), []));
            constraints = []})]));
     expansion =
-     {Odoc_model.Lang.Include.resolved = false;
+     {Odoc_model.Lang.Include.resolved = true;
       content =
        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
          {Odoc_model.Lang.TypeDecl.id =
@@ -5200,9 +8553,8 @@ Odoc_model.Lang.Compilation_unit.Module
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None})]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id =
      `Module (`Root (<root>, "Ocamlary"), "DoubleInclude3");
@@ -5223,7 +8575,7 @@ Odoc_model.Lang.Compilation_unit.Module
                        (`Module
                           (`Root (<root>, "Ocamlary"), "DoubleInclude1"))))));
            expansion =
-            {Odoc_model.Lang.Include.resolved = false;
+            {Odoc_model.Lang.Include.resolved = true;
              content =
               [Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
@@ -5252,22 +8604,21 @@ Odoc_model.Lang.Compilation_unit.Module
                           constraints = []};
                         representation = None})]);
                  canonical = None; hidden = false; display_type = None;
-                 expansion = Some Odoc_model.Lang.Module.AlreadyASig})]}}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+                 expansion = None})]}}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Include
    {Odoc_model.Lang.Include.parent = `Root (<root>, "Ocamlary"); doc = [];
     decl =
      Odoc_model.Lang.Module.ModuleType
       (Odoc_model.Lang.ModuleType.TypeOf
         (Odoc_model.Lang.Module.Alias
-          (`Dot
-             (`Resolved
+          (`Resolved
+             (`Module
                 (`Identifier
-                   (`Module (`Root (<root>, "Ocamlary"), "DoubleInclude3"))),
-              "DoubleInclude2"))));
+                   (`Module (`Root (<root>, "Ocamlary"), "DoubleInclude3")),
+                 "DoubleInclude2")))));
     expansion =
-     {Odoc_model.Lang.Include.resolved = false;
+     {Odoc_model.Lang.Include.resolved = true;
       content =
        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
          {Odoc_model.Lang.TypeDecl.id =
@@ -5307,9 +8658,24 @@ Odoc_model.Lang.Compilation_unit.Module
                    {Odoc_model.Lang.TypeDecl.Equation.params = [];
                     private_ = false; manifest = None; constraints = []};
                   representation = None})]);
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig}]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`ModuleType
+                        (`Module
+                           (`Root (<root>, "Ocamlary"), "IncludeInclude1"),
+                         "IncludeInclude2"),
+                      "include_include");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false; manifest = None; constraints = []};
+                  representation = None})])}]);
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Include
    {Odoc_model.Lang.Include.parent = `Root (<root>, "Ocamlary"); doc = [];
     decl =
@@ -5320,7 +8686,7 @@ Odoc_model.Lang.Compilation_unit.Module
              (`Identifier
                 (`Module (`Root (<root>, "Ocamlary"), "IncludeInclude1"))))));
     expansion =
-     {Odoc_model.Lang.Include.resolved = false;
+     {Odoc_model.Lang.Include.resolved = true;
       content =
        [Odoc_model.Lang.Signature.ModuleType
          {Odoc_model.Lang.ModuleType.id =
@@ -5341,7 +8707,21 @@ Odoc_model.Lang.Compilation_unit.Module
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})]);
-          expansion = Some Odoc_model.Lang.Module.AlreadyASig}]}};
+          expansion =
+           Some
+            (Odoc_model.Lang.Module.Signature
+              [Odoc_model.Lang.Signature.Type
+                (Odoc_model.Lang.Signature.Ordinary,
+                {Odoc_model.Lang.TypeDecl.id =
+                  `Type
+                    (`ModuleType
+                       (`Root (<root>, "Ocamlary"), "IncludeInclude2"),
+                     "include_include");
+                 doc = [];
+                 equation =
+                  {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                   private_ = false; manifest = None; constraints = []};
+                 representation = None})])}]}};
   Odoc_model.Lang.Signature.Include
    {Odoc_model.Lang.Include.parent = `Root (<root>, "Ocamlary"); doc = [];
     decl =
@@ -5351,7 +8731,7 @@ Odoc_model.Lang.Compilation_unit.Module
            (`Identifier
               (`ModuleType (`Root (<root>, "Ocamlary"), "IncludeInclude2")))));
     expansion =
-     {Odoc_model.Lang.Include.resolved = false;
+     {Odoc_model.Lang.Include.resolved = true;
       content =
        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
          {Odoc_model.Lang.TypeDecl.id =
@@ -5472,7 +8852,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                "t"))),
                      [Odoc_model.Lang.TypeExpr.Var "a"]))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -5529,9 +8909,85 @@ Odoc_model.Lang.Compilation_unit.Module
                              (`Root ("Ocamlary", `TUnknown), "CanonicalTest"),
                            "Base"),
                         "List"));
-                  hidden = false; display_type = None; expansion = None})]);
+                  hidden = false; display_type = None;
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CanonicalTest"),
+                                   "Base__"),
+                                "List"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params =
+                            [(Odoc_model.Lang.TypeDecl.Var "a", None)];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "CanonicalTest"),
+                                               "Base__List"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CanonicalTest"),
+                                   "Base__"),
+                                "List"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base__"),
+                                         "List"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base__"),
+                                         "List"),
+                                      "t"))),
+                            []))}])})]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -5553,20 +9009,101 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"),
-                                       "CanonicalTest"),
-                                    "Base__")))),
-                        "List"));
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "CanonicalTest"),
+                                       "Base__"))),
+                              "List"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "CanonicalTest"),
+                                 "Base"),
+                              "List"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CanonicalTest"),
+                                   "Base"),
+                                "List"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params =
+                            [(Odoc_model.Lang.TypeDecl.Var "a", None)];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "CanonicalTest"),
+                                               "Base__List"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CanonicalTest"),
+                                   "Base"),
+                                "List"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base"),
+                                         "List"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base"),
+                                         "List"),
+                                      "t"))),
+                            []))}])})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -5591,16 +9128,22 @@ Odoc_model.Lang.Compilation_unit.Module
                    Odoc_model.Lang.Module.ModuleType
                     (Odoc_model.Lang.ModuleType.TypeOf
                       (Odoc_model.Lang.Module.Alias
-                        (`Dot
-                           (`Resolved
-                              (`Hidden
-                                 (`Identifier
-                                    (`Module
+                        (`Resolved
+                           (`Canonical
+                              (`Module
+                                 (`Hidden
+                                    (`Identifier
                                        (`Module
-                                          (`Root (<root>, "Ocamlary"),
-                                           "CanonicalTest"),
-                                        "Base__")))),
-                            "List"))));
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "CanonicalTest"),
+                                           "Base__"))),
+                                  "List"),
+                               `Dot
+                                 (`Dot
+                                    (`Dot (`Root "Ocamlary", "CanonicalTest"),
+                                     "Base"),
+                                  "List"))))));
                   canonical = None; hidden = false; display_type = None;
                   expansion = None});
                 Odoc_model.Lang.Signature.Module
@@ -5615,18 +9158,99 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"),
-                                       "CanonicalTest"),
-                                    "Base__")))),
-                        "List"));
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "CanonicalTest"),
+                                       "Base__"))),
+                              "List"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "CanonicalTest"),
+                                 "Base"),
+                              "List"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CanonicalTest"),
+                                   "Base__Tests"),
+                                "L"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params =
+                            [(Odoc_model.Lang.TypeDecl.Var "a", None)];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "CanonicalTest"),
+                                               "Base__List"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"),
+                                      "CanonicalTest"),
+                                   "Base__Tests"),
+                                "L"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base__Tests"),
+                                         "L"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base__Tests"),
+                                         "L"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Value
                  {Odoc_model.Lang.Value.id =
                    `Value
@@ -5639,31 +9263,65 @@ Odoc_model.Lang.Compilation_unit.Module
                   type_ =
                    Odoc_model.Lang.TypeExpr.Arrow (None,
                     Odoc_model.Lang.TypeExpr.Constr
-                     (`Dot
-                        (`Resolved
-                           (`Identifier
-                              (`Module
+                     (`Resolved
+                        (`Type
+                           (`Alias
+                              (`Canonical
+                                 (`Module
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "CanonicalTest"),
+                                              "Base__"))),
+                                     "List"),
+                                  `Dot
+                                    (`Dot
+                                       (`Dot
+                                          (`Root "Ocamlary", "CanonicalTest"),
+                                        "Base"),
+                                     "List")),
+                               `Identifier
                                  (`Module
                                     (`Module
-                                       (`Root (<root>, "Ocamlary"),
-                                        "CanonicalTest"),
-                                     "Base__Tests"),
-                                  "L"))),
-                         "t"),
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "CanonicalTest"),
+                                        "Base__Tests"),
+                                     "L"))),
+                            "t")),
                      [Odoc_model.Lang.TypeExpr.Constr
                        (`Resolved (`Identifier (`CoreType "int")), [])]),
                     Odoc_model.Lang.TypeExpr.Constr
-                     (`Dot
-                        (`Resolved
-                           (`Identifier
-                              (`Module
+                     (`Resolved
+                        (`Type
+                           (`Alias
+                              (`Canonical
+                                 (`Module
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "CanonicalTest"),
+                                              "Base__"))),
+                                     "List"),
+                                  `Dot
+                                    (`Dot
+                                       (`Dot
+                                          (`Root "Ocamlary", "CanonicalTest"),
+                                        "Base"),
+                                     "List")),
+                               `Identifier
                                  (`Module
                                     (`Module
-                                       (`Root (<root>, "Ocamlary"),
-                                        "CanonicalTest"),
-                                     "Base__Tests"),
-                                  "L"))),
-                         "t"),
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "CanonicalTest"),
+                                        "Base__Tests"),
+                                     "L"))),
+                            "t")),
                      [Odoc_model.Lang.TypeExpr.Constr
                        (`Resolved (`Identifier (`CoreType "float")),
                        [])]))};
@@ -5687,32 +9345,44 @@ Odoc_model.Lang.Compilation_unit.Module
                   type_ =
                    Odoc_model.Lang.TypeExpr.Arrow (None,
                     Odoc_model.Lang.TypeExpr.Constr
-                     (`Dot
-                        (`Dot
-                           (`Resolved
-                              (`Hidden
-                                 (`Identifier
-                                    (`Module
+                     (`Resolved
+                        (`Type
+                           (`Canonical
+                              (`Module
+                                 (`Hidden
+                                    (`Identifier
                                        (`Module
-                                          (`Root (<root>, "Ocamlary"),
-                                           "CanonicalTest"),
-                                        "Base__")))),
-                            "List"),
-                         "t"),
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "CanonicalTest"),
+                                           "Base__"))),
+                                  "List"),
+                               `Dot
+                                 (`Dot
+                                    (`Dot (`Root "Ocamlary", "CanonicalTest"),
+                                     "Base"),
+                                  "List")),
+                            "t")),
                      [Odoc_model.Lang.TypeExpr.Var "a"]),
                     Odoc_model.Lang.TypeExpr.Constr
-                     (`Dot
-                        (`Dot
-                           (`Resolved
-                              (`Hidden
-                                 (`Identifier
-                                    (`Module
+                     (`Resolved
+                        (`Type
+                           (`Canonical
+                              (`Module
+                                 (`Hidden
+                                    (`Identifier
                                        (`Module
-                                          (`Root (<root>, "Ocamlary"),
-                                           "CanonicalTest"),
-                                        "Base__")))),
-                            "List"),
-                         "t"),
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "CanonicalTest"),
+                                           "Base__"))),
+                                  "List"),
+                               `Dot
+                                 (`Dot
+                                    (`Dot (`Root "Ocamlary", "CanonicalTest"),
+                                     "Base"),
+                                  "List")),
+                            "t")),
                      [Odoc_model.Lang.TypeExpr.Var "a"]))};
                 Odoc_model.Lang.Signature.Value
                  {Odoc_model.Lang.Value.id =
@@ -5742,23 +9412,29 @@ Odoc_model.Lang.Compilation_unit.Module
                   type_ =
                    Odoc_model.Lang.TypeExpr.Arrow (None,
                     Odoc_model.Lang.TypeExpr.Constr
-                     (`Dot
-                        (`Dot
-                           (`Resolved
-                              (`Hidden
-                                 (`Identifier
-                                    (`Module
+                     (`Resolved
+                        (`Type
+                           (`Canonical
+                              (`Module
+                                 (`Hidden
+                                    (`Identifier
                                        (`Module
-                                          (`Root (<root>, "Ocamlary"),
-                                           "CanonicalTest"),
-                                        "Base__")))),
-                            "List"),
-                         "t"),
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "CanonicalTest"),
+                                           "Base__"))),
+                                  "List"),
+                               `Dot
+                                 (`Dot
+                                    (`Dot (`Root "Ocamlary", "CanonicalTest"),
+                                     "Base"),
+                                  "List")),
+                            "t")),
                      [Odoc_model.Lang.TypeExpr.Var "a"]),
                     Odoc_model.Lang.TypeExpr.Constr
                      (`Resolved (`Identifier (`CoreType "unit")), []))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -5771,41 +9447,47 @@ Odoc_model.Lang.Compilation_unit.Module
              (Odoc_model.Lang.ModuleType.With
                (Odoc_model.Lang.ModuleType.TypeOf
                  (Odoc_model.Lang.Module.Alias
-                   (`Dot
-                      (`Resolved
+                   (`Resolved
+                      (`Module
                          (`Identifier
                             (`Module
                                (`Module
                                   (`Root (<root>, "Ocamlary"),
                                    "CanonicalTest"),
-                                "Base"))),
-                       "List"))),
+                                "Base")),
+                          "List")))),
                [Odoc_model.Lang.ModuleType.TypeEq
-                 (`Dot (`Resolved `Root, "t"),
+                 (`Resolved (`Type (`Root, "t")),
                  {Odoc_model.Lang.TypeDecl.Equation.params =
                    [(Odoc_model.Lang.TypeDecl.Var "c", None)];
                   private_ = false;
                   manifest =
                    Some
                     (Odoc_model.Lang.TypeExpr.Constr
-                      (`Dot
-                         (`Dot
-                            (`Resolved
-                               (`Hidden
-                                  (`Identifier
-                                     (`Module
+                      (`Resolved
+                         (`Type
+                            (`Canonical
+                               (`Module
+                                  (`Hidden
+                                     (`Identifier
                                         (`Module
-                                           (`Root (<root>, "Ocamlary"),
-                                            "CanonicalTest"),
-                                         "Base__")))),
-                             "List"),
-                          "t"),
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "CanonicalTest"),
+                                            "Base__"))),
+                                   "List"),
+                                `Dot
+                                  (`Dot
+                                     (`Dot
+                                        (`Root "Ocamlary", "CanonicalTest"),
+                                      "Base"),
+                                   "List")),
+                             "t")),
                       [Odoc_model.Lang.TypeExpr.Var "c"]));
                   constraints = []})]));
            canonical = None; hidden = false; display_type = None;
            expansion = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Value
    {Odoc_model.Lang.Value.id = `Value (`Root (<root>, "Ocamlary"), "test");
     doc =
@@ -5843,15 +9525,20 @@ Odoc_model.Lang.Compilation_unit.Module
     type_ =
      Odoc_model.Lang.TypeExpr.Arrow (None,
       Odoc_model.Lang.TypeExpr.Constr
-       (`Dot
-          (`Dot
-             (`Dot
-                (`Resolved
-                   (`Identifier
-                      (`Module (`Root (<root>, "Ocamlary"), "CanonicalTest"))),
-                 "Base__"),
-              "List"),
-           "t"),
+       (`Resolved
+          (`Type
+             (`Canonical
+                (`Module
+                   (`Module
+                      (`Identifier
+                         (`Module
+                            (`Root (<root>, "Ocamlary"), "CanonicalTest")),
+                       "Base__"),
+                    "List"),
+                 `Dot
+                   (`Dot (`Dot (`Root "Ocamlary", "CanonicalTest"), "Base"),
+                    "List")),
+              "t")),
        [Odoc_model.Lang.TypeExpr.Var "a"]),
       Odoc_model.Lang.TypeExpr.Constr
        (`Resolved (`Identifier (`CoreType "unit")), []))};
@@ -5925,7 +9612,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                "t"))),
                      []))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -5979,7 +9666,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                "t"))),
                      []))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6033,7 +9720,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                "t"))),
                      []))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6087,7 +9774,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                "t"))),
                      []))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6141,7 +9828,7 @@ Odoc_model.Lang.Compilation_unit.Module
                                "t"))),
                      []))}]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6190,7 +9877,80 @@ Odoc_model.Lang.Compilation_unit.Module
                           (`Dot (`Root ("Ocamlary", `TUnknown), "Aliases"),
                            "Foo"),
                         "A"));
-                  hidden = false; display_type = None; expansion = None});
+                  hidden = false; display_type = None;
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "A"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__A"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "A"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "A"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "A"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6230,7 +9990,80 @@ Odoc_model.Lang.Compilation_unit.Module
                           (`Dot (`Root ("Ocamlary", `TUnknown), "Aliases"),
                            "Foo"),
                         "B"));
-                  hidden = false; display_type = None; expansion = None});
+                  hidden = false; display_type = None;
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "B"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__B"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "B"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "B"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "B"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6270,7 +10103,80 @@ Odoc_model.Lang.Compilation_unit.Module
                           (`Dot (`Root ("Ocamlary", `TUnknown), "Aliases"),
                            "Foo"),
                         "C"));
-                  hidden = false; display_type = None; expansion = None});
+                  hidden = false; display_type = None;
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "C"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__C"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "C"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "C"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "C"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6310,7 +10216,80 @@ Odoc_model.Lang.Compilation_unit.Module
                           (`Dot (`Root ("Ocamlary", `TUnknown), "Aliases"),
                            "Foo"),
                         "D"));
-                  hidden = false; display_type = None; expansion = None});
+                  hidden = false; display_type = None;
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "D"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__D"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "D"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "D"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "D"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6330,9 +10309,81 @@ Odoc_model.Lang.Compilation_unit.Module
                                    (`Root (<root>, "Ocamlary"), "Aliases"),
                                  "Foo__E")))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "E"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__E"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo__"),
+                                "E"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "E"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo__"),
+                                         "E"),
+                                      "t"))),
+                            []))}])})]);
            canonical = None; hidden = true; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6352,17 +10403,95 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "A"));
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "Foo__"))),
+                              "A"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                              "A"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "A"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__A"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "A"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "A"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "A"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6374,17 +10503,95 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "B"));
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "Foo__"))),
+                              "B"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                              "B"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "B"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__B"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "B"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "B"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "B"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6396,17 +10603,95 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "C"));
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "Foo__"))),
+                              "C"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                              "C"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "C"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__C"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "C"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "C"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "C"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6418,17 +10703,95 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "D"));
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "Foo__"))),
+                              "D"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                              "D"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "D"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__D"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "D"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "D"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "D"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6440,19 +10803,91 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
+                    (`Resolved
+                       (`Module
                           (`Hidden
                              (`Identifier
                                 (`Module
                                    (`Module
                                       (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "E"));
+                                    "Foo__"))),
+                           "E")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "E"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__E"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Foo"),
+                                "E"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "E"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Foo"),
+                                         "E"),
+                                      "t"))),
+                            []))}])})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6460,15 +10895,75 @@ Odoc_model.Lang.Compilation_unit.Module
            doc = [];
            type_ =
             Odoc_model.Lang.Module.Alias
-             (`Dot
-                (`Resolved
+             (`Resolved
+                (`Module
                    (`Identifier
                       (`Module
                          (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                          "Foo"))),
-                 "A"));
+                          "Foo")),
+                    "A")));
            canonical = None; hidden = false; display_type = None;
-           expansion = None});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Module
+                        (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                         "A'"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Hidden
+                                 (`Identifier
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "Foo__A"))),
+                               "t")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Value
+                 {Odoc_model.Lang.Value.id =
+                   `Value
+                     (`Module
+                        (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                         "A'"),
+                      "id");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.TypeExpr.Arrow (None,
+                    Odoc_model.Lang.TypeExpr.Constr
+                     (`Resolved
+                        (`Identifier
+                           (`Type
+                              (`Module
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"), "Aliases"),
+                                  "A'"),
+                               "t"))),
+                     []),
+                    Odoc_model.Lang.TypeExpr.Constr
+                     (`Resolved
+                        (`Identifier
+                           (`Type
+                              (`Module
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"), "Aliases"),
+                                  "A'"),
+                               "t"))),
+                     []))}])});
          Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.TypeDecl.id =
             `Type (`Module (`Root (<root>, "Ocamlary"), "Aliases"), "tata");
@@ -6478,16 +10973,32 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Dot
-                       (`Resolved
-                          (`Identifier
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Canonical
                              (`Module
+                                (`Hidden
+                                   (`Identifier
+                                      (`Module
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Aliases"),
+                                          "Foo__"))),
+                                 "A"),
+                              `Dot
+                                (`Dot
+                                   (`Dot (`Root "Ocamlary", "Aliases"),
+                                    "Foo"),
+                                 "A")),
+                           `Module
+                             (`Identifier
                                 (`Module
-                                   (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "A"),
-                     "t"),
+                                   (`Module
+                                      (`Root (<root>, "Ocamlary"), "Aliases"),
+                                    "Foo")),
+                              "A")),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6500,17 +11011,23 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Dot
-                       (`Resolved
-                          (`Hidden
-                             (`Identifier
-                                (`Module
+                 (`Resolved
+                    (`Type
+                       (`Canonical
+                          (`Module
+                             (`Hidden
+                                (`Identifier
                                    (`Module
-                                      (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "B"),
-                     "t"),
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "Foo__"))),
+                              "B"),
+                           `Dot
+                             (`Dot
+                                (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                              "B")),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6523,17 +11040,25 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Dot
-                       (`Resolved
+                 (`Resolved
+                    (`Type
+                       (`Alias
                           (`Hidden
                              (`Identifier
                                 (`Module
                                    (`Module
                                       (`Root (<root>, "Ocamlary"), "Aliases"),
-                                    "Foo__")))),
-                        "E"),
-                     "t"),
+                                    "Foo__E"))),
+                           `Module
+                             (`Hidden
+                                (`Identifier
+                                   (`Module
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "Foo__"))),
+                              "E")),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6546,13 +11071,30 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Resolved
-                       (`Identifier
-                          (`Module
-                             (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                              "A'"))),
-                     "t"),
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Canonical
+                             (`Module
+                                (`Hidden
+                                   (`Identifier
+                                      (`Module
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Aliases"),
+                                          "Foo__"))),
+                                 "A"),
+                              `Dot
+                                (`Dot
+                                   (`Dot (`Root "Ocamlary", "Aliases"),
+                                    "Foo"),
+                                 "A")),
+                           `Identifier
+                             (`Module
+                                (`Module
+                                   (`Root (<root>, "Ocamlary"), "Aliases"),
+                                 "A'"))),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6565,16 +11107,23 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Dot
-                       (`Resolved
-                          (`Identifier
-                             (`Module
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Hidden
+                             (`Identifier
                                 (`Module
-                                   (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "E"),
-                     "t"),
+                                   (`Module
+                                      (`Root (<root>, "Ocamlary"), "Aliases"),
+                                    "Foo__E"))),
+                           `Module
+                             (`Identifier
+                                (`Module
+                                   (`Module
+                                      (`Root (<root>, "Ocamlary"), "Aliases"),
+                                    "Foo")),
+                              "E")),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6597,16 +11146,88 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
+                    (`Resolved
+                       (`Module
                           (`Identifier
                              (`Module
                                 (`Module
                                    (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "A"));
+                                 "Foo")),
+                           "A")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "A"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__A"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "A"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "A"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "A"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6618,16 +11239,88 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
+                    (`Resolved
+                       (`Module
                           (`Identifier
                              (`Module
                                 (`Module
                                    (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "B"));
+                                 "Foo")),
+                           "B")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "B"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__B"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "B"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "B"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "B"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6639,16 +11332,88 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
+                    (`Resolved
+                       (`Module
                           (`Identifier
                              (`Module
                                 (`Module
                                    (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "C"));
+                                 "Foo")),
+                           "C")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "C"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__C"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "C"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "C"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "C"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6660,16 +11425,88 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
+                    (`Resolved
+                       (`Module
                           (`Identifier
                              (`Module
                                 (`Module
                                    (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "D"));
+                                 "Foo")),
+                           "D")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None});
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "D"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__D"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "D"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "D"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "D"),
+                                      "t"))),
+                            []))}])});
                 Odoc_model.Lang.Signature.Module
                  (Odoc_model.Lang.Signature.Ordinary,
                  {Odoc_model.Lang.Module.id =
@@ -6681,18 +11518,90 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
+                    (`Resolved
+                       (`Module
                           (`Identifier
                              (`Module
                                 (`Module
                                    (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Foo"))),
-                        "E"));
+                                 "Foo")),
+                           "E")));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "E"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Hidden
+                                        (`Identifier
+                                           (`Module
+                                              (`Module
+                                                 (`Root (<root>, "Ocamlary"),
+                                                  "Aliases"),
+                                               "Foo__E"))),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "Std"),
+                                "E"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "E"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "Std"),
+                                         "E"),
+                                      "t"))),
+                            []))}])})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.TypeDecl.id =
             `Type (`Module (`Root (<root>, "Ocamlary"), "Aliases"), "stde");
@@ -6702,16 +11611,23 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Dot
-                       (`Resolved
-                          (`Identifier
-                             (`Module
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Hidden
+                             (`Identifier
                                 (`Module
-                                   (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "Std"))),
-                        "E"),
-                     "t"),
+                                   (`Module
+                                      (`Root (<root>, "Ocamlary"), "Aliases"),
+                                    "Foo__E"))),
+                           `Module
+                             (`Identifier
+                                (`Module
+                                   (`Module
+                                      (`Root (<root>, "Ocamlary"), "Aliases"),
+                                    "Std")),
+                              "E")),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6742,7 +11658,7 @@ Odoc_model.Lang.Compilation_unit.Module
                           (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
                            "Foo"))))));
            expansion =
-            {Odoc_model.Lang.Include.resolved = false;
+            {Odoc_model.Lang.Include.resolved = true;
              content =
               [Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
@@ -6752,17 +11668,86 @@ Odoc_model.Lang.Compilation_unit.Module
                  doc = [];
                  type_ =
                   Odoc_model.Lang.Module.Alias
-                   (`Dot
-                      (`Resolved
-                         (`Hidden
-                            (`Identifier
-                               (`Module
+                   (`Resolved
+                      (`Canonical
+                         (`Module
+                            (`Hidden
+                               (`Identifier
                                   (`Module
-                                     (`Root (<root>, "Ocamlary"), "Aliases"),
-                                   "Foo__")))),
-                       "A"));
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "Aliases"),
+                                      "Foo__"))),
+                             "A"),
+                          `Dot
+                            (`Dot (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                             "A"))));
                  canonical = None; hidden = false; display_type = None;
-                 expansion = None});
+                 expansion =
+                  Some
+                   (Odoc_model.Lang.Module.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "A"),
+                            "t");
+                        doc = [];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Resolved
+                                 (`Type
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "Aliases"),
+                                              "Foo__A"))),
+                                     "t")),
+                              []));
+                          constraints = []};
+                        representation = None});
+                      Odoc_model.Lang.Signature.Value
+                       {Odoc_model.Lang.Value.id =
+                         `Value
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "A"),
+                            "id");
+                        doc = [];
+                        type_ =
+                         Odoc_model.Lang.TypeExpr.Arrow (None,
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "A"),
+                                     "t"))),
+                           []),
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "A"),
+                                     "t"))),
+                           []))}])});
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
                 {Odoc_model.Lang.Module.id =
@@ -6771,17 +11756,86 @@ Odoc_model.Lang.Compilation_unit.Module
                  doc = [];
                  type_ =
                   Odoc_model.Lang.Module.Alias
-                   (`Dot
-                      (`Resolved
-                         (`Hidden
-                            (`Identifier
-                               (`Module
+                   (`Resolved
+                      (`Canonical
+                         (`Module
+                            (`Hidden
+                               (`Identifier
                                   (`Module
-                                     (`Root (<root>, "Ocamlary"), "Aliases"),
-                                   "Foo__")))),
-                       "B"));
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "Aliases"),
+                                      "Foo__"))),
+                             "B"),
+                          `Dot
+                            (`Dot (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                             "B"))));
                  canonical = None; hidden = false; display_type = None;
-                 expansion = None});
+                 expansion =
+                  Some
+                   (Odoc_model.Lang.Module.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "B"),
+                            "t");
+                        doc = [];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Resolved
+                                 (`Type
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "Aliases"),
+                                              "Foo__B"))),
+                                     "t")),
+                              []));
+                          constraints = []};
+                        representation = None});
+                      Odoc_model.Lang.Signature.Value
+                       {Odoc_model.Lang.Value.id =
+                         `Value
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "B"),
+                            "id");
+                        doc = [];
+                        type_ =
+                         Odoc_model.Lang.TypeExpr.Arrow (None,
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "B"),
+                                     "t"))),
+                           []),
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "B"),
+                                     "t"))),
+                           []))}])});
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
                 {Odoc_model.Lang.Module.id =
@@ -6790,17 +11844,86 @@ Odoc_model.Lang.Compilation_unit.Module
                  doc = [];
                  type_ =
                   Odoc_model.Lang.Module.Alias
-                   (`Dot
-                      (`Resolved
-                         (`Hidden
-                            (`Identifier
-                               (`Module
+                   (`Resolved
+                      (`Canonical
+                         (`Module
+                            (`Hidden
+                               (`Identifier
                                   (`Module
-                                     (`Root (<root>, "Ocamlary"), "Aliases"),
-                                   "Foo__")))),
-                       "C"));
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "Aliases"),
+                                      "Foo__"))),
+                             "C"),
+                          `Dot
+                            (`Dot (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                             "C"))));
                  canonical = None; hidden = false; display_type = None;
-                 expansion = None});
+                 expansion =
+                  Some
+                   (Odoc_model.Lang.Module.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "C"),
+                            "t");
+                        doc = [];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Resolved
+                                 (`Type
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "Aliases"),
+                                              "Foo__C"))),
+                                     "t")),
+                              []));
+                          constraints = []};
+                        representation = None});
+                      Odoc_model.Lang.Signature.Value
+                       {Odoc_model.Lang.Value.id =
+                         `Value
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "C"),
+                            "id");
+                        doc = [];
+                        type_ =
+                         Odoc_model.Lang.TypeExpr.Arrow (None,
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "C"),
+                                     "t"))),
+                           []),
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "C"),
+                                     "t"))),
+                           []))}])});
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
                 {Odoc_model.Lang.Module.id =
@@ -6809,17 +11932,86 @@ Odoc_model.Lang.Compilation_unit.Module
                  doc = [];
                  type_ =
                   Odoc_model.Lang.Module.Alias
-                   (`Dot
-                      (`Resolved
-                         (`Hidden
-                            (`Identifier
-                               (`Module
+                   (`Resolved
+                      (`Canonical
+                         (`Module
+                            (`Hidden
+                               (`Identifier
                                   (`Module
-                                     (`Root (<root>, "Ocamlary"), "Aliases"),
-                                   "Foo__")))),
-                       "D"));
+                                     (`Module
+                                        (`Root (<root>, "Ocamlary"),
+                                         "Aliases"),
+                                      "Foo__"))),
+                             "D"),
+                          `Dot
+                            (`Dot (`Dot (`Root "Ocamlary", "Aliases"), "Foo"),
+                             "D"))));
                  canonical = None; hidden = false; display_type = None;
-                 expansion = None});
+                 expansion =
+                  Some
+                   (Odoc_model.Lang.Module.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "D"),
+                            "t");
+                        doc = [];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Resolved
+                                 (`Type
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "Aliases"),
+                                              "Foo__D"))),
+                                     "t")),
+                              []));
+                          constraints = []};
+                        representation = None});
+                      Odoc_model.Lang.Signature.Value
+                       {Odoc_model.Lang.Value.id =
+                         `Value
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "D"),
+                            "id");
+                        doc = [];
+                        type_ =
+                         Odoc_model.Lang.TypeExpr.Arrow (None,
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "D"),
+                                     "t"))),
+                           []),
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "D"),
+                                     "t"))),
+                           []))}])});
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
                 {Odoc_model.Lang.Module.id =
@@ -6828,17 +12020,81 @@ Odoc_model.Lang.Compilation_unit.Module
                  doc = [];
                  type_ =
                   Odoc_model.Lang.Module.Alias
-                   (`Dot
-                      (`Resolved
+                   (`Resolved
+                      (`Module
                          (`Hidden
                             (`Identifier
                                (`Module
                                   (`Module
                                      (`Root (<root>, "Ocamlary"), "Aliases"),
-                                   "Foo__")))),
-                       "E"));
+                                   "Foo__"))),
+                          "E")));
                  canonical = None; hidden = false; display_type = None;
-                 expansion = None})]}};
+                 expansion =
+                  Some
+                   (Odoc_model.Lang.Module.Signature
+                     [Odoc_model.Lang.Signature.Type
+                       (Odoc_model.Lang.Signature.Ordinary,
+                       {Odoc_model.Lang.TypeDecl.id =
+                         `Type
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "E"),
+                            "t");
+                        doc = [];
+                        equation =
+                         {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                          private_ = false;
+                          manifest =
+                           Some
+                            (Odoc_model.Lang.TypeExpr.Constr
+                              (`Resolved
+                                 (`Type
+                                    (`Hidden
+                                       (`Identifier
+                                          (`Module
+                                             (`Module
+                                                (`Root (<root>, "Ocamlary"),
+                                                 "Aliases"),
+                                              "Foo__E"))),
+                                     "t")),
+                              []));
+                          constraints = []};
+                        representation = None});
+                      Odoc_model.Lang.Signature.Value
+                       {Odoc_model.Lang.Value.id =
+                         `Value
+                           (`Module
+                              (`Module
+                                 (`Root (<root>, "Ocamlary"), "Aliases"),
+                               "E"),
+                            "id");
+                        doc = [];
+                        type_ =
+                         Odoc_model.Lang.TypeExpr.Arrow (None,
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "E"),
+                                     "t"))),
+                           []),
+                          Odoc_model.Lang.TypeExpr.Constr
+                           (`Resolved
+                              (`Identifier
+                                 (`Type
+                                    (`Module
+                                       (`Module
+                                          (`Root (<root>, "Ocamlary"),
+                                           "Aliases"),
+                                        "E"),
+                                     "t"))),
+                           []))}])})]}};
          Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.TypeDecl.id =
             `Type (`Module (`Root (<root>, "Ocamlary"), "Aliases"), "testa");
@@ -6848,13 +12104,30 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Resolved
-                       (`Identifier
-                          (`Module
-                             (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                              "A"))),
-                     "t"),
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Canonical
+                             (`Module
+                                (`Hidden
+                                   (`Identifier
+                                      (`Module
+                                         (`Module
+                                            (`Root (<root>, "Ocamlary"),
+                                             "Aliases"),
+                                          "Foo__"))),
+                                 "A"),
+                              `Dot
+                                (`Dot
+                                   (`Dot (`Root "Ocamlary", "Aliases"),
+                                    "Foo"),
+                                 "A")),
+                           `Identifier
+                             (`Module
+                                (`Module
+                                   (`Root (<root>, "Ocamlary"), "Aliases"),
+                                 "A"))),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -6963,10 +12236,9 @@ Odoc_model.Lang.Compilation_unit.Module
                           (`Dot (`Root ("Ocamlary", `TUnknown), "Aliases"),
                            "P2"),
                         "Z"));
-                  hidden = false; display_type = None;
-                  expansion = Some Odoc_model.Lang.Module.AlreadyASig})]);
+                  hidden = false; display_type = None; expansion = None})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -6986,18 +12258,104 @@ Odoc_model.Lang.Compilation_unit.Module
                   doc = [];
                   type_ =
                    Odoc_model.Lang.Module.Alias
-                    (`Dot
-                       (`Resolved
-                          (`Identifier
-                             (`Module
+                    (`Resolved
+                       (`Canonical
+                          (`Module
+                             (`Identifier
                                 (`Module
-                                   (`Root (<root>, "Ocamlary"), "Aliases"),
-                                 "P1"))),
-                        "Y"));
+                                   (`Module
+                                      (`Root (<root>, "Ocamlary"), "Aliases"),
+                                    "P1")),
+                              "Y"),
+                           `Dot
+                             (`Dot (`Dot (`Root "Ocamlary", "Aliases"), "P2"),
+                              "Z"))));
                   canonical = None; hidden = false; display_type = None;
-                  expansion = None})]);
+                  expansion =
+                   Some
+                    (Odoc_model.Lang.Module.Signature
+                      [Odoc_model.Lang.Signature.Type
+                        (Odoc_model.Lang.Signature.Ordinary,
+                        {Odoc_model.Lang.TypeDecl.id =
+                          `Type
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "P2"),
+                                "Z"),
+                             "t");
+                         doc = [];
+                         equation =
+                          {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                           private_ = false;
+                           manifest =
+                            Some
+                             (Odoc_model.Lang.TypeExpr.Constr
+                               (`Resolved
+                                  (`Type
+                                     (`Canonical
+                                        (`Module
+                                           (`Identifier
+                                              (`Module
+                                                 (`Module
+                                                    (`Root
+                                                       (<root>, "Ocamlary"),
+                                                     "Aliases"),
+                                                  "P1")),
+                                            "Y"),
+                                         `Dot
+                                           (`Dot
+                                              (`Dot
+                                                 (`Root "Ocamlary",
+                                                  "Aliases"),
+                                               "P2"),
+                                            "Z")),
+                                      "t")),
+                               []));
+                           constraints = []};
+                         representation = None});
+                       Odoc_model.Lang.Signature.Value
+                        {Odoc_model.Lang.Value.id =
+                          `Value
+                            (`Module
+                               (`Module
+                                  (`Module
+                                     (`Root (<root>, "Ocamlary"), "Aliases"),
+                                   "P2"),
+                                "Z"),
+                             "id");
+                         doc = [];
+                         type_ =
+                          Odoc_model.Lang.TypeExpr.Arrow (None,
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "P2"),
+                                         "Z"),
+                                      "t"))),
+                            []),
+                           Odoc_model.Lang.TypeExpr.Constr
+                            (`Resolved
+                               (`Identifier
+                                  (`Type
+                                     (`Module
+                                        (`Module
+                                           (`Module
+                                              (`Root (<root>, "Ocamlary"),
+                                               "Aliases"),
+                                            "P2"),
+                                         "Z"),
+                                      "t"))),
+                            []))}])})]);
            canonical = None; hidden = false; display_type = None;
-           expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+           expansion = None});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -7005,15 +12363,85 @@ Odoc_model.Lang.Compilation_unit.Module
            doc = [];
            type_ =
             Odoc_model.Lang.Module.Alias
-             (`Dot
-                (`Resolved
-                   (`Identifier
-                      (`Module
-                         (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                          "P1"))),
-                 "Y"));
+             (`Resolved
+                (`Canonical
+                   (`Module
+                      (`Identifier
+                         (`Module
+                            (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                             "P1")),
+                       "Y"),
+                    `Dot
+                      (`Dot (`Dot (`Root "Ocamlary", "Aliases"), "P2"), "Z"))));
            canonical = None; hidden = false; display_type = None;
-           expansion = None});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Module
+                        (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                         "X1"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Canonical
+                                 (`Module
+                                    (`Identifier
+                                       (`Module
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "Aliases"),
+                                           "P1")),
+                                     "Y"),
+                                  `Dot
+                                    (`Dot
+                                       (`Dot (`Root "Ocamlary", "Aliases"),
+                                        "P2"),
+                                     "Z")),
+                               "t")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Value
+                 {Odoc_model.Lang.Value.id =
+                   `Value
+                     (`Module
+                        (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                         "X1"),
+                      "id");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.TypeExpr.Arrow (None,
+                    Odoc_model.Lang.TypeExpr.Constr
+                     (`Resolved
+                        (`Identifier
+                           (`Type
+                              (`Module
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"), "Aliases"),
+                                  "X1"),
+                               "t"))),
+                     []),
+                    Odoc_model.Lang.TypeExpr.Constr
+                     (`Resolved
+                        (`Identifier
+                           (`Type
+                              (`Module
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"), "Aliases"),
+                                  "X1"),
+                               "t"))),
+                     []))}])});
          Odoc_model.Lang.Signature.Module
           (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.Module.id =
@@ -7021,15 +12449,82 @@ Odoc_model.Lang.Compilation_unit.Module
            doc = [];
            type_ =
             Odoc_model.Lang.Module.Alias
-             (`Dot
-                (`Resolved
+             (`Resolved
+                (`Module
                    (`Identifier
                       (`Module
                          (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                          "P2"))),
-                 "Z"));
+                          "P2")),
+                    "Z")));
            canonical = None; hidden = false; display_type = None;
-           expansion = None});
+           expansion =
+            Some
+             (Odoc_model.Lang.Module.Signature
+               [Odoc_model.Lang.Signature.Type
+                 (Odoc_model.Lang.Signature.Ordinary,
+                 {Odoc_model.Lang.TypeDecl.id =
+                   `Type
+                     (`Module
+                        (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                         "X2"),
+                      "t");
+                  doc = [];
+                  equation =
+                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                    private_ = false;
+                    manifest =
+                     Some
+                      (Odoc_model.Lang.TypeExpr.Constr
+                        (`Resolved
+                           (`Type
+                              (`Canonical
+                                 (`Module
+                                    (`Identifier
+                                       (`Module
+                                          (`Module
+                                             (`Root (<root>, "Ocamlary"),
+                                              "Aliases"),
+                                           "P1")),
+                                     "Y"),
+                                  `Dot
+                                    (`Dot
+                                       (`Dot (`Root "Ocamlary", "Aliases"),
+                                        "P2"),
+                                     "Z")),
+                               "t")),
+                        []));
+                    constraints = []};
+                  representation = None});
+                Odoc_model.Lang.Signature.Value
+                 {Odoc_model.Lang.Value.id =
+                   `Value
+                     (`Module
+                        (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
+                         "X2"),
+                      "id");
+                  doc = [];
+                  type_ =
+                   Odoc_model.Lang.TypeExpr.Arrow (None,
+                    Odoc_model.Lang.TypeExpr.Constr
+                     (`Resolved
+                        (`Identifier
+                           (`Type
+                              (`Module
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"), "Aliases"),
+                                  "X2"),
+                               "t"))),
+                     []),
+                    Odoc_model.Lang.TypeExpr.Constr
+                     (`Resolved
+                        (`Identifier
+                           (`Type
+                              (`Module
+                                 (`Module
+                                    (`Root (<root>, "Ocamlary"), "Aliases"),
+                                  "X2"),
+                               "t"))),
+                     []))}])});
          Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
           {Odoc_model.Lang.TypeDecl.id =
             `Type (`Module (`Root (<root>, "Ocamlary"), "Aliases"), "p1");
@@ -7039,13 +12534,28 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Resolved
-                       (`Identifier
-                          (`Module
-                             (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                              "X1"))),
-                     "t"),
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Canonical
+                             (`Module
+                                (`Identifier
+                                   (`Module
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "P1")),
+                                 "Y"),
+                              `Dot
+                                (`Dot
+                                   (`Dot (`Root "Ocamlary", "Aliases"), "P2"),
+                                 "Z")),
+                           `Identifier
+                             (`Module
+                                (`Module
+                                   (`Root (<root>, "Ocamlary"), "Aliases"),
+                                 "X1"))),
+                        "t")),
                  []));
              constraints = []};
            representation = None});
@@ -7058,18 +12568,32 @@ Odoc_model.Lang.Compilation_unit.Module
              manifest =
               Some
                (Odoc_model.Lang.TypeExpr.Constr
-                 (`Dot
-                    (`Resolved
-                       (`Identifier
-                          (`Module
-                             (`Module (`Root (<root>, "Ocamlary"), "Aliases"),
-                              "X2"))),
-                     "t"),
+                 (`Resolved
+                    (`Type
+                       (`Alias
+                          (`Canonical
+                             (`Module
+                                (`Identifier
+                                   (`Module
+                                      (`Module
+                                         (`Root (<root>, "Ocamlary"),
+                                          "Aliases"),
+                                       "P1")),
+                                 "Y"),
+                              `Dot
+                                (`Dot
+                                   (`Dot (`Root "Ocamlary", "Aliases"), "P2"),
+                                 "Z")),
+                           `Identifier
+                             (`Module
+                                (`Module
+                                   (`Root (<root>, "Ocamlary"), "Aliases"),
+                                 "X2"))),
+                        "t")),
                  []));
              constraints = []};
            representation = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Heading
@@ -7150,7 +12674,17 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+    expansion =
+     Some
+      (Odoc_model.Lang.Module.Signature
+        [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+          {Odoc_model.Lang.TypeDecl.id =
+            `Type (`ModuleType (`Root (<root>, "Ocamlary"), "M"), "t");
+           doc = [];
+           equation =
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest = None; constraints = []};
+           representation = None})])};
   Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
    {Odoc_model.Lang.Module.id = `Module (`Root (<root>, "Ocamlary"), "M");
     doc = [];
@@ -7165,8 +12699,7 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Paragraph [`Word "Here"; `Space; `Word "goes:"];
@@ -7197,8 +12730,7 @@ Odoc_model.Lang.Compilation_unit.Module
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest = None; constraints = []};
            representation = None})]);
-    canonical = None; hidden = false; display_type = None;
-    expansion = Some Odoc_model.Lang.Module.AlreadyASig});
+    canonical = None; hidden = false; display_type = None; expansion = None});
   Odoc_model.Lang.Signature.Comment
    (`Docs
       [`Paragraph

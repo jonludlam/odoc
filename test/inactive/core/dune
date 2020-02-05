@@ -6,7 +6,6 @@
  (name runtest)
  (deps
   (:x ocamlary.md)
-  testCommon.ml
   (package odoc)
   .ocamlary.objs/byte/ocamlary.cmti)
  (action
