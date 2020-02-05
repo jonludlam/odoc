@@ -250,6 +250,7 @@ let prefix_ident_signature
 let flatten_module_alias : Cpath.resolved_module -> Cpath.resolved_module =
   function
   | `Alias (`Alias (z, _), x) -> `Alias (z, x)
+(*  | `Alias (`Canonical (`Alias(z, _), c), x) -> `Canonical (`Alias (z, x), c)*)
   | x -> x
 
 let rec simplify_resolved_module_path :
@@ -281,7 +282,7 @@ let unsimplify_resolved_module_path :
       match id with
       | `Module ((#Identifier.Module.t as parent), id) ->
           `Module (fix_module_ident parent, id)
-      | `Root _ -> failwith "Hit root during unsimplify"
+      | `Root _r -> failwith "Hit root during unsimplify"
       | `Parameter _ -> failwith "Hit paremeter during unsimplify"
       | `Result _ -> failwith "Hit result during unsimplify"
       | `Module _ -> failwith "Hit unusual module parent during unsimplify" )
@@ -347,6 +348,9 @@ module Hashable = struct
 end
 module Memos1 = Hashtbl.Make(Hashable)
 let memo = Memos1.create 91
+
+let reset_cache () =
+  Memos1.clear memo
 (*
 module Hashable2 = struct
   type t = bool * bool * int * Cpath.module_
@@ -554,25 +558,26 @@ and lookup_and_resolve_module_from_resolved_path :
       let p' = unsimplify_resolved_module_path env p in
       (`Canonical (p1', `Resolved p'), m)
   | `Canonical (p1, p2) -> (
-      
       let p1', m =
         lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
           env p1
       in
-      if !is_compile then (p1', m)
+      if !is_compile then (`Canonical (p1', p2), m)
       else begin
         match
           lookup_and_resolve_module_from_path is_resolve add_canonical env p2
         with
-        | Resolved (p, _) -> (`Canonical (p1', `Resolved p), m)
-        | Unresolved _p2 -> (p1', m)
+        | Resolved (p, _) ->
+            let p' = simplify_resolved_module_path env p in
+            (`Canonical (p1', `Resolved p'), m)
+        | Unresolved p2 -> (`Canonical (p1', p2), m)
         | exception e ->
             Format.fprintf Format.err_formatter
               "Warning: Failed to look up canonical path for module %a (got \
               exception %s)\n\
               %!"
               Component.Fmt.resolved_module_path p (Printexc.to_string e);
-      (p1', m) end)
+            (`Canonical (p1', p2), m) end)
   in
   match Memos1.find_all memo id with
   | [] ->

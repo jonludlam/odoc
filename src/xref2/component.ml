@@ -1346,8 +1346,7 @@ module Of_Lang = struct
     | `Subst (p1, p2) ->
         `Subst (resolved_module_type_path ident_map p1, recurse p2)
     | `SubstAlias (p1, p2) -> `SubstAlias (recurse p1, recurse p2)
-    | `Canonical (p1, _p2) -> recurse p1
-    (*        `Canonical (recurse p1, module_path ident_map p2) *)
+    | `Canonical (p1, p2) -> `Canonical (recurse p1, module_path ident_map p2)
     | `Hidden p1 -> `Hidden (recurse p1)
 
   and resolved_module_type_path :

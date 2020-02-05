@@ -50,9 +50,12 @@ and module_type_path :
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(module_type_path empty p) in
+    Format.fprintf Format.err_formatter "Link.module_type_path: resolving %a\n%!" Component.Fmt.module_type_path cp;
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Resolved (p', _) ->
+        Format.fprintf Format.err_formatter "It became: %a\n%!" Component.Fmt.resolved_module_type_path p';
         `Resolved (Cpath.resolved_module_type_path_of_cpath p')
+
     | Unresolved p -> Cpath.module_type_path_of_cpath p
     | exception e ->
         Format.fprintf Format.err_formatter
@@ -367,6 +370,7 @@ and module_ : Env.t -> Module.t -> Module.t =
           match Paths.Path.Resolved.Module.canonical_ident p with
           | Some i -> i = m.id (* Self-canonical *)
           | None -> false )
+      | ModuleType (Signature _) -> false
       | ModuleType _ -> true
       | Alias _ -> false
     in
@@ -413,12 +417,7 @@ and module_decl :
   let open Module in
   match decl with
   | ModuleType expr -> ModuleType (module_type_expr env id expr)
-  | Alias p -> (
-      let cp = Component.Of_Lang.(module_path empty p) in
-      match Tools.lookup_and_resolve_module_from_path true true env cp with
-      | Resolved (p', _) ->
-          Alias (`Resolved (Cpath.resolved_module_path_of_cpath p'))
-      | Unresolved p' -> Alias (Cpath.module_path_of_cpath p') )
+  | Alias p -> Alias (module_path env p)
 
 and module_type : Env.t -> ModuleType.t -> ModuleType.t =
  fun env m ->
