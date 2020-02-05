@@ -34,11 +34,12 @@ let rec signature (prefix : Cpath.resolved_module) sg =
             ModuleType
               ( id,
                 Component.Delayed.put (fun () ->
-                  module_type
-                    (`ModuleType
-                      ( prefix,
-                        ModuleTypeName.of_string (Ident.Name.module_type id) ))
-                    (Component.Delayed.get mt) ) )
+                    module_type
+                      (`ModuleType
+                        ( prefix,
+                          ModuleTypeName.of_string (Ident.Name.module_type id)
+                        ))
+                      (Component.Delayed.get mt)) )
         | Type (id, r, t) ->
             Type
               ( id,
@@ -46,9 +47,8 @@ let rec signature (prefix : Cpath.resolved_module) sg =
                 type_decl
                   (`Type (prefix, TypeName.of_string (Ident.Name.type_ id)))
                   t )
-        | Exception _ | TypExt _ | Value _ | External _ | Class _
-        | ClassType _ | Include _ | ModuleSubstitution _ | TypeSubstitution _
-        | Comment _ ->
+        | Exception _ | TypExt _ | Value _ | External _ | Class _ | ClassType _
+        | Include _ | ModuleSubstitution _ | TypeSubstitution _ | Comment _ ->
             item)
       sg.items
   in

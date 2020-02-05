@@ -2,6 +2,7 @@ open Odoc_model.Names
 open Odoc_model.Paths
 
 exception OpaqueModule
+
 exception UnresolvedForwardPath
 
 let is_compile = ref true
@@ -93,13 +94,9 @@ let prefix_signature (path, s) =
             Subst.add_type id
               (`Type (path, TypeName.of_string (Ident.Name.type_ id)))
               map
-        | Exception _
-        | TypExt _
-        | Value (_, _)
-        | External (_, _)
-        | Comment _ -> map
+        | Exception _ | TypExt _ | Value (_, _) | External (_, _) | Comment _ ->
+            map
         | Class (id, _, _) ->
-
             Subst.add_class id
               (`Class (path, ClassName.of_string (Ident.Name.class_ id)))
               map
@@ -108,8 +105,7 @@ let prefix_signature (path, s) =
               (`ClassType
                 (path, ClassName.of_string (Ident.Name.class_type id)))
               map
-        | Include i ->
-            get_sub map i.expansion_.items)
+        | Include i -> get_sub map i.expansion_.items)
       sub' is
   in
   let extend_sub_removed removed sub =
@@ -137,9 +133,10 @@ let prefix_signature (path, s) =
                 Component.Delayed.put (fun () ->
                     Subst.module_ sub (Component.Delayed.get m)) )
         | ModuleType (id, mt) ->
-            ModuleType (Ident.Rename.module_type id,
-              Component.Delayed.put (fun () ->
-                Subst.module_type sub (Component.Delayed.get mt)))
+            ModuleType
+              ( Ident.Rename.module_type id,
+                Component.Delayed.put (fun () ->
+                    Subst.module_type sub (Component.Delayed.get mt)) )
         | Type (id, r, t) -> Type (Ident.Rename.type_ id, r, Subst.type_ sub t)
         | TypeSubstitution (id, t) ->
             TypeSubstitution (Ident.Rename.type_ id, Subst.type_ sub t)
@@ -158,7 +155,7 @@ let prefix_signature (path, s) =
         | Comment c -> Comment c)
       s.items
   in
-  let after =  { items; removed = s.removed } in
+  let after = { items; removed = s.removed } in
   (path, after)
 
 let prefix_ident_signature
@@ -224,9 +221,10 @@ let prefix_ident_signature
                 Component.Delayed.put (fun () ->
                     Subst.module_ sub (Component.Delayed.get m)) )
         | ModuleType (id, mt) ->
-            ModuleType (Ident.Rename.module_type id,
-              Component.Delayed.put (fun () ->
-                Subst.module_type sub (Component.Delayed.get mt)))
+            ModuleType
+              ( Ident.Rename.module_type id,
+                Component.Delayed.put (fun () ->
+                    Subst.module_type sub (Component.Delayed.get mt)) )
         | Type (id, r, t) -> Type (Ident.Rename.type_ id, r, Subst.type_ sub t)
         | TypeSubstitution (id, t) ->
             TypeSubstitution (Ident.Rename.type_ id, Subst.type_ sub t)
@@ -250,7 +248,7 @@ let prefix_ident_signature
 let flatten_module_alias : Cpath.resolved_module -> Cpath.resolved_module =
   function
   | `Alias (`Alias (z, _), x) -> `Alias (z, x)
-(*  | `Alias (`Canonical (`Alias(z, _), c), x) -> `Canonical (`Alias (z, x), c)*)
+  (*  | `Alias (`Canonical (`Alias(z, _), c), x) -> `Canonical (`Alias (z, x), c)*)
   | x -> x
 
 let rec simplify_resolved_module_path :
@@ -343,14 +341,18 @@ exception Couldnt_find_functor_argument
 
 module Hashable = struct
   type t = bool * bool * Cpath.resolved_module
-  let equal = Stdlib.(=)
+
+  let equal = Stdlib.( = )
+
   let hash = Hashtbl.hash
 end
-module Memos1 = Hashtbl.Make(Hashable)
+
+module Memos1 = Hashtbl.Make (Hashable)
+
 let memo = Memos1.create 91
 
-let reset_cache () =
-  Memos1.clear memo
+let reset_cache () = Memos1.clear memo
+
 (*
 module Hashable2 = struct
   type t = bool * bool * int * Cpath.module_
@@ -383,36 +385,37 @@ and add_canonical_path env m p : Cpath.resolved_module =
       match m.Component.Module.canonical with
       | Some (cp, cr) -> (
           if !is_compile then `Canonical (p, cp)
-          else begin
+          else
             (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
             match !resolve_module_ref env cr with
-            | Some (cp', _) ->
-                (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
-                begin
-                  try `Canonical
-                  ( p,
-                    `Resolved
-                      ( Cpath.resolved_module_of_resolved_module_reference cp'
-                      |> simplify_resolved_module_path env ) )
-                  with e ->
-                    let callstack = Printexc.get_callstack 20 in
+            | Some (cp', _) -> (
+                try
+                  (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
+                  `Canonical
+                    ( p,
+                      `Resolved
+                        ( Cpath.resolved_module_of_resolved_module_reference cp'
+                        |> simplify_resolved_module_path env ) )
+                with e ->
+                  let callstack = Printexc.get_callstack 20 in
 
-                    Format.fprintf Format.err_formatter "Argh: %a\nBacktrace:\n%s\n%!" Component.Fmt.model_resolved_reference (cp' :> Odoc_model.Paths.Reference.Resolved.t)
-                      (Printexc.raw_backtrace_to_string callstack);
-                    raise e
-                end
+                  Format.fprintf Format.err_formatter
+                    "Argh: %a\nBacktrace:\n%s\n%!"
+                    Component.Fmt.model_resolved_reference
+                    (cp' :> Odoc_model.Paths.Reference.Resolved.t)
+                    (Printexc.raw_backtrace_to_string callstack);
+                  raise e )
             | _ ->
                 (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
                 `Canonical (p, cp)
             | exception _e ->
                 Format.fprintf Format.err_formatter
                   "Warning: Failed to look up canonical path for module %a\n\
-                  %s\n\
-                  %!"
+                   %s\n\
+                   %!"
                   Component.Fmt.resolved_module_path p
                   (Printexc.get_backtrace ());
-                p
-          end)
+                p )
       | None -> p )
 
 and add_hidden m p = if m.Component.Module.hidden then `Hidden p else p
@@ -441,161 +444,185 @@ and handle_class_type_lookup env id p m =
   let c = Component.Find.class_type_in_sig sg id in
   (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
-and verify_resolved_module_path : Env.t -> Cpath.resolved_module -> bool = fun env p ->
-    match p with
-   | `Local _id -> false
-   | `Identifier i -> (try ignore(Env.lookup_module i env); true with _ -> false)
-   | `Substituted x -> verify_resolved_module_path env x
-   | `Apply (func_path, arg_path) -> verify_resolved_module_path env func_path && verify_module_path env arg_path
-   | `Module (p, _) -> verify_resolved_module_path env p
-   | `Alias (p1, p2) -> verify_resolved_module_path env p1 && verify_resolved_module_path env p2
-   | `Subst (p1, p2) -> verify_resolved_module_type_path env p1 && verify_resolved_module_path env p2
-   | `SubstAlias (p1, p2) -> verify_resolved_module_path env p1 && verify_resolved_module_path env p2
-   | `Hidden p1 -> verify_resolved_module_path env p1
-   | `Canonical (p1, p2) -> verify_resolved_module_path env p1 && verify_module_path env p2
+and verify_resolved_module_path : Env.t -> Cpath.resolved_module -> bool =
+ fun env p ->
+  match p with
+  | `Local _id -> false
+  | `Identifier i -> (
+      try
+        ignore (Env.lookup_module i env);
+        true
+      with _ -> false )
+  | `Substituted x -> verify_resolved_module_path env x
+  | `Apply (func_path, arg_path) ->
+      verify_resolved_module_path env func_path
+      && verify_module_path env arg_path
+  | `Module (p, _) -> verify_resolved_module_path env p
+  | `Alias (p1, p2) ->
+      verify_resolved_module_path env p1 && verify_resolved_module_path env p2
+  | `Subst (p1, p2) ->
+      verify_resolved_module_type_path env p1
+      && verify_resolved_module_path env p2
+  | `SubstAlias (p1, p2) ->
+      verify_resolved_module_path env p1 && verify_resolved_module_path env p2
+  | `Hidden p1 -> verify_resolved_module_path env p1
+  | `Canonical (p1, p2) ->
+      verify_resolved_module_path env p1 && verify_module_path env p2
 
-and verify_module_path : Env.t -> Cpath.module_ -> bool = fun env p ->
-    match p with
-    | `Resolved p -> verify_resolved_module_path env p
-    | `Forward _ -> true
-    | `Dot (p, _) -> verify_module_path env p
-    | `Apply (p1, p2) -> verify_module_path env p1 && verify_module_path env p2
-    | `Substituted s -> verify_module_path env s
-    | `Root r -> (try ignore(Env.lookup_root_module r env); false with _ -> true)
+and verify_module_path : Env.t -> Cpath.module_ -> bool =
+ fun env p ->
+  match p with
+  | `Resolved p -> verify_resolved_module_path env p
+  | `Forward _ -> true
+  | `Dot (p, _) -> verify_module_path env p
+  | `Apply (p1, p2) -> verify_module_path env p1 && verify_module_path env p2
+  | `Substituted s -> verify_module_path env s
+  | `Root r -> (
+      try
+        ignore (Env.lookup_root_module r env);
+        false
+      with _ -> true )
 
-and verify_module_type_path : Env.t -> Cpath.module_type -> bool = fun env p ->
-    match p with
-    | `Resolved p -> verify_resolved_module_type_path env p
-    | `Substituted p -> verify_module_type_path env p
-    | `Dot (p, _) -> verify_module_path env p
+and verify_module_type_path : Env.t -> Cpath.module_type -> bool =
+ fun env p ->
+  match p with
+  | `Resolved p -> verify_resolved_module_type_path env p
+  | `Substituted p -> verify_module_type_path env p
+  | `Dot (p, _) -> verify_module_path env p
 
-and verify_resolved_module_type_path : Env.t -> Cpath.resolved_module_type -> bool = fun env p ->
-    match p with
-    | `Local _ -> false
-    | `Identifier i -> (try ignore(Env.lookup_module_type i env); true with _ -> false)
-    | `ModuleType (p, _) -> verify_resolved_module_path env p
-    | `Substituted p -> verify_resolved_module_type_path env p
+and verify_resolved_module_type_path :
+    Env.t -> Cpath.resolved_module_type -> bool =
+ fun env p ->
+  match p with
+  | `Local _ -> false
+  | `Identifier i -> (
+      try
+        ignore (Env.lookup_module_type i env);
+        true
+      with _ -> false )
+  | `ModuleType (p, _) -> verify_resolved_module_path env p
+  | `Substituted p -> verify_resolved_module_type_path env p
 
 and lookup_and_resolve_module_from_resolved_path :
     bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
  fun is_resolve add_canonical env p ->
   let id = (is_resolve, add_canonical, p) in
-   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
+  (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
   let resolve () =
-  (* Format.fprintf Format.err_formatter "."; *)
-   match p with
-  | `Local id ->
-      Format.fprintf Format.err_formatter "Trying to lookup module: %a\n%!"
-        Ident.fmt id;
-      raise (Module_lookup_failure (env, p))
-  | `Identifier i ->
-      let m = Env.lookup_module i env in
-      if add_canonical then (add_canonical_path env m p, m) else (p, m)
-  | `Substituted x ->
-      let p, m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env x
-      in
-      (`Substituted p, m)
-  | `Apply (func_path, arg_path) ->
-      let func_path', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env func_path
-      in
-      let arg_path' =
-        match
-          lookup_and_resolve_module_from_path is_resolve add_canonical env
-            arg_path
-        with
-        | Resolved (x, _) -> x
-        | Unresolved _ -> failwith "erk2"
-      in
-      handle_apply is_resolve env func_path' arg_path' m
-  | `Module (p, name) ->
-      let p, m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p
-      in
-      let p', m' =
-        handle_module_lookup env add_canonical
-          (Odoc_model.Names.ModuleName.to_string name)
-          p m
-      in
-      (p', m')
-  | `Alias (p1, p2) ->
-      let p2', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p2
-      in
-      (`Alias (p1, p2'), m)
-  | `Subst (p1, p2) ->
-      let p2', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p2
-      in
-      (`Subst (p1, p2'), m)
-  | `SubstAlias (p1, p2) ->
-      let p2', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p2
-      in
-      (`SubstAlias (p1, p2'), m)
-  | `Hidden p ->
-      let p', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p
-      in
-      (`Hidden p', m)
-  | `Canonical (p1, `Resolved p2) ->
-      let p1', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p1
-      in
-      let p, _ =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p2
-      in
-      let p' = unsimplify_resolved_module_path env p in
-      (`Canonical (p1', `Resolved p'), m)
-  | `Canonical (p1, p2) -> (
-      let p1', m =
-        lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
-          env p1
-      in
-      if !is_compile then (`Canonical (p1', p2), m)
-      else begin
-        match
-          lookup_and_resolve_module_from_path is_resolve add_canonical env p2
-        with
-        | Resolved (p, _) ->
-            let p' = simplify_resolved_module_path env p in
-            (`Canonical (p1', `Resolved p'), m)
-        | Unresolved p2 -> (`Canonical (p1', p2), m)
-        | exception e ->
-            Format.fprintf Format.err_formatter
-              "Warning: Failed to look up canonical path for module %a (got \
-              exception %s)\n\
-              %!"
-              Component.Fmt.resolved_module_path p (Printexc.to_string e);
-            (`Canonical (p1', p2), m) end)
+    (* Format.fprintf Format.err_formatter "."; *)
+    match p with
+    | `Local id ->
+        Format.fprintf Format.err_formatter "Trying to lookup module: %a\n%!"
+          Ident.fmt id;
+        raise (Module_lookup_failure (env, p))
+    | `Identifier i ->
+        let m = Env.lookup_module i env in
+        if add_canonical then (add_canonical_path env m p, m) else (p, m)
+    | `Substituted x ->
+        let p, m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env x
+        in
+        (`Substituted p, m)
+    | `Apply (func_path, arg_path) ->
+        let func_path', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env func_path
+        in
+        let arg_path' =
+          match
+            lookup_and_resolve_module_from_path is_resolve add_canonical env
+              arg_path
+          with
+          | Resolved (x, _) -> x
+          | Unresolved _ -> failwith "erk2"
+        in
+        handle_apply is_resolve env func_path' arg_path' m
+    | `Module (p, name) ->
+        let p, m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p
+        in
+        let p', m' =
+          handle_module_lookup env add_canonical
+            (Odoc_model.Names.ModuleName.to_string name)
+            p m
+        in
+        (p', m')
+    | `Alias (p1, p2) ->
+        let p2', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p2
+        in
+        (`Alias (p1, p2'), m)
+    | `Subst (p1, p2) ->
+        let p2', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p2
+        in
+        (`Subst (p1, p2'), m)
+    | `SubstAlias (p1, p2) ->
+        let p2', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p2
+        in
+        (`SubstAlias (p1, p2'), m)
+    | `Hidden p ->
+        let p', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p
+        in
+        (`Hidden p', m)
+    | `Canonical (p1, `Resolved p2) ->
+        let p1', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p1
+        in
+        let p, _ =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p2
+        in
+        let p' = unsimplify_resolved_module_path env p in
+        (`Canonical (p1', `Resolved p'), m)
+    | `Canonical (p1, p2) -> (
+        let p1', m =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p1
+        in
+        if !is_compile then (`Canonical (p1', p2), m)
+        else
+          match
+            lookup_and_resolve_module_from_path is_resolve add_canonical env p2
+          with
+          | Resolved (p, _) ->
+              let p' = simplify_resolved_module_path env p in
+              (`Canonical (p1', `Resolved p'), m)
+          | Unresolved p2 -> (`Canonical (p1', p2), m)
+          | exception e ->
+              Format.fprintf Format.err_formatter
+                "Warning: Failed to look up canonical path for module %a (got \
+                 exception %s)\n\
+                 %!"
+                Component.Fmt.resolved_module_path p (Printexc.to_string e);
+              (`Canonical (p1', p2), m) )
   in
   match Memos1.find_all memo id with
   | [] ->
-        let resolved = resolve () in
-        Memos1.add memo id resolved;
-        resolved
+      let resolved = resolve () in
+      Memos1.add memo id resolved;
+      resolved
   | xs ->
-        let rec find =
-          function
-          | (p,m)::xs ->
-            if verify_resolved_module_path env p
-            then ((*Format.fprintf Format.err_formatter "x";*) (p, m))
+      let rec find = function
+        | (p, m) :: xs ->
+            if verify_resolved_module_path env p then
+              ((*Format.fprintf Format.err_formatter "x";*) p, m)
             else find xs
-          | [] -> 
+        | [] ->
             let resolved = resolve () in
             Memos1.add memo id resolved;
             resolved
-        in find xs
+      in
+      find xs
 
 and lookup_module_from_path env cpath =
   lookup_and_resolve_module_from_path true true env cpath
@@ -613,7 +640,7 @@ and lookup_and_resolve_module_from_path :
   let open ResultMonad in
   (*let id = (is_resolve, add_canonical, Env.id env, p) in*)
   (*if Memos2.mem memo2 id then Memos2.find memo2 id
-  else*) begin
+    else*)
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_path: looking up %a\n%!" Component.Fmt.path p; *)
   match p with
   | `Dot (parent, id) ->
@@ -652,9 +679,8 @@ and lookup_and_resolve_module_from_path :
       | Some Env.Forward -> Unresolved (`Forward r)
       | None -> Unresolved p )
   | `Forward f ->
-    lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
-    |> map_unresolved (fun _ -> `Forward f)
-      end
+      lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
+      |> map_unresolved (fun _ -> `Forward f)
 
 and lookup_and_resolve_module_type_from_resolved_path :
     bool -> Env.t -> Cpath.resolved_module_type -> module_type_lookup_result =
@@ -663,9 +689,9 @@ and lookup_and_resolve_module_type_from_resolved_path :
   match p with
   | `Local _id -> raise (ModuleType_lookup_failure (env, p))
   | `Identifier (#Identifier.ModuleType.t as i) ->
-(*      Format.(
-        fprintf err_formatter "lookin' up %a\n%!" Component.Fmt.model_identifier
-          i);*)
+      (* Format.(
+         fprintf err_formatter "lookin' up %a\n%!" Component.Fmt.model_identifier
+           i);*)
       let m = Env.lookup_module_type i env in
       (`Identifier i, m)
   | `Substituted s ->
@@ -709,9 +735,9 @@ and lookup_type_from_resolved_path :
   match p with
   | `Local _id -> raise (Type_lookup_failure (env, p))
   | `Identifier (`CoreType name) ->
-      (* CoreTypes aren't put into the environment, so they can't be handled by the 
+      (* CoreTypes aren't put into the environment, so they can't be handled by the
             next clause. We just look them up here in the list of core types *)
-            ( `Identifier (`CoreType name),
+      ( `Identifier (`CoreType name),
         Found (`T (List.assoc (TypeName.to_string name) core_types)) )
   | `Identifier (`Type _ as i) ->
       let t = Env.lookup_type i env in
@@ -877,13 +903,12 @@ and module_type_expr_of_module_decl :
             (`SubstAlias (p, x'), y')
           else (p, y')
       | Unresolved p when Cpath.is_module_forward p ->
-        raise UnresolvedForwardPath
+          raise UnresolvedForwardPath
       | Unresolved p' ->
           let err =
             Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
-            Component.Fmt.module_path path
-            Component.Fmt.module_path p'
-            in
+              Component.Fmt.module_path path Component.Fmt.module_path p'
+          in
           failwith err )
   | Component.Module.ModuleType expr -> (p, expr)
 
@@ -926,13 +951,11 @@ and signature_of_module_alias_path :
           (p''', m'')
       in
       (p'', m')
-      | Unresolved p when Cpath.is_module_forward p ->
-        raise UnresolvedForwardPath
+  | Unresolved p when Cpath.is_module_forward p -> raise UnresolvedForwardPath
   | Unresolved p' ->
       let err =
         Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
-          Component.Fmt.module_path path
-          Component.Fmt.module_path p'
+          Component.Fmt.module_path path Component.Fmt.module_path p'
       in
       failwith err
 
@@ -945,13 +968,11 @@ and signature_of_module_alias_nopath :
       let m' = signature_of_module_nopath env m in
       let m'' = Strengthen.signature p' m' in
       m''
-  | Unresolved p when Cpath.is_module_forward p ->
-      raise UnresolvedForwardPath
+  | Unresolved p when Cpath.is_module_forward p -> raise UnresolvedForwardPath
   | Unresolved p' ->
       let err =
         Format.asprintf "Failed to lookup alias module (path=%a) (res=%a)"
-          Component.Fmt.module_path path
-          Component.Fmt.module_path p'
+          Component.Fmt.module_path path Component.Fmt.module_path p'
       in
       failwith err
 
@@ -996,7 +1017,7 @@ and signature_of_module_type_expr :
       (p', handle_signature_with_subs env sg subs)
   | Component.ModuleType.Functor (_, expr) ->
       signature_of_module_type_expr env (incoming_path, expr)
-   | Component.ModuleType.TypeOf decl ->
+  | Component.ModuleType.TypeOf decl ->
       signature_of_module_decl env ~is_canonical:false (incoming_path, decl)
 
 and signature_of_module_type_expr_nopath :
@@ -1016,7 +1037,7 @@ and signature_of_module_type_expr_nopath :
   | Component.ModuleType.Functor (None, expr) ->
       signature_of_module_type_expr_nopath env expr
   | Component.ModuleType.Functor (Some arg, expr) ->
-      ignore(arg);
+      ignore arg;
       signature_of_module_type_expr_nopath env expr
   | Component.ModuleType.TypeOf decl -> signature_of_module_decl_nopath env decl
 
@@ -1156,7 +1177,7 @@ and fragmap_module :
       { Component.Signature.items; removed = removed @ sg.removed }
   in
   (* Format.(
-    fprintf err_formatter "after sig=%a\n%!" Component.Fmt.(signature) res); *)
+     fprintf err_formatter "after sig=%a\n%!" Component.Fmt.(signature) res); *)
   res
 
 and fragmap_type :
@@ -1192,12 +1213,19 @@ and fragmap_type :
             | x -> (x :: items, removed))
           ([], []) sg.items
       in
-      let subst = List.fold_left (fun subst ty ->
-        match ty with
-        | Component.Signature.RType (id,replacement) ->
-          Subst.add_type_replacement (id :> Ident.path_type) replacement subst
-        | _ -> subst) Subst.identity removed in
-      Subst.signature subst { items = List.rev items; removed = removed @ sg.removed }
+      let subst =
+        List.fold_left
+          (fun subst ty ->
+            match ty with
+            | Component.Signature.RType (id, replacement) ->
+                Subst.add_type_replacement
+                  (id :> Ident.path_type)
+                  replacement subst
+            | _ -> subst)
+          Subst.identity removed
+      in
+      Subst.signature subst
+        { items = List.rev items; removed = removed @ sg.removed }
   | Some f ->
       let mapfn m =
         let new_subst =

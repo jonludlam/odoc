@@ -6,13 +6,13 @@ type lookup_unit_result =
   | Forward_reference
   | Found of lookup_result_found
   | Not_found
- 
+
 type root =
   | Resolved of (Odoc_model.Paths.Identifier.Module.t * Component.Module.t)
   | Forward
 
 type resolver = {
-  open_units: string list;
+  open_units : string list;
   lookup_unit : string -> lookup_unit_result;
   resolve_unit : Odoc_model.Root.t -> Odoc_model.Lang.Compilation_unit.t;
   lookup_page : string -> Odoc_model.Root.t option;
@@ -21,7 +21,11 @@ type resolver = {
 
 let unique_id = ref 0
 
-module ModuleMap = Map.Make(struct type t = Odoc_model.Paths.Identifier.Module.t let compare (a : t) (b : t) = Stdlib.compare a b end)
+module ModuleMap = Map.Make (struct
+  type t = Odoc_model.Paths.Identifier.Module.t
+
+  let compare (a : t) (b : t) = Stdlib.compare a b
+end)
 
 type t = {
   id : int;
@@ -46,8 +50,10 @@ type t = {
   resolver : resolver option;
 }
 
-let set_resolver t resolver = {t with resolver = Some resolver }
+let set_resolver t resolver = { t with resolver = Some resolver }
+
 let has_resolver t = match t.resolver with None -> false | _ -> true
+
 let id t = t.id
 
 let pp_modules ppf modules =
@@ -78,21 +84,28 @@ let pp_values ppf values =
   List.iter
     (fun (i, v) ->
       Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier
-      (i :> Odoc_model.Paths.Identifier.t)
-      Component.Fmt.value v)
+        (i :> Odoc_model.Paths.Identifier.t)
+        Component.Fmt.value v)
     values
 
 let pp_externals ppf exts =
   List.iter
     (fun (i, e) ->
       Format.fprintf ppf "%a: %a @," Component.Fmt.model_identifier
-      (i :> Odoc_model.Paths.Identifier.t)
-      Component.Fmt.external_ e)
+        (i :> Odoc_model.Paths.Identifier.t)
+        Component.Fmt.external_ e)
     exts
 
 let pp ppf env =
-  Format.fprintf ppf "@[<v>@,ENV modules: %a @,ENV module_types: %a @,ENV types: %a@,ENV values: %a@,ENV externals: %a@,"
-    pp_modules env.modules pp_module_types env.module_types pp_types env.types pp_values env.values pp_externals env.externals
+  Format.fprintf ppf
+    "@[<v>@,\
+     ENV modules: %a @,\
+     ENV module_types: %a @,\
+     ENV types: %a@,\
+     ENV values: %a@,\
+     ENV externals: %a@,"
+    pp_modules env.modules pp_module_types env.module_types pp_types env.types
+    pp_values env.values pp_externals env.externals
 
 (* Handy for extrating transient state *)
 exception MyFailure of Odoc_model.Paths.Identifier.t * t
@@ -116,10 +129,13 @@ let empty =
   }
 
 let add_module identifier m env =
-(*  Format.fprintf Format.err_formatter "Adding module: %a\n%!" Component.Fmt.model_identifier (identifier : Odoc_model.Paths.Identifier.Module.t :> Odoc_model.Paths.Identifier.t);*)
+  (*  Format.fprintf Format.err_formatter "Adding module: %a\n%!" Component.Fmt.model_identifier (identifier : Odoc_model.Paths.Identifier.Module.t :> Odoc_model.Paths.Identifier.t);*)
   {
     env with
-    id = (incr unique_id; (*Format.fprintf Format.err_formatter "unique_id=%d\n%!" !unique_id; *)!unique_id);
+    id =
+      ( incr unique_id;
+        (*Format.fprintf Format.err_formatter "unique_id=%d\n%!" !unique_id; *)
+        !unique_id );
     modules = ModuleMap.add identifier m env.modules;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Module (identifier, m))
@@ -129,7 +145,9 @@ let add_module identifier m env =
 let add_type identifier t env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     types = (identifier, t) :: env.types;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Type (identifier, t))
@@ -139,7 +157,9 @@ let add_type identifier t env =
 let add_module_type identifier t env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     module_types = (identifier, t) :: env.module_types;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `ModuleType (identifier, t))
@@ -149,7 +169,9 @@ let add_module_type identifier t env =
 let add_value identifier t env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     values = (identifier, t) :: env.values;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Value (identifier, t))
@@ -159,30 +181,41 @@ let add_value identifier t env =
 let add_external identifier t env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     externals = (identifier, t) :: env.externals;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `External (identifier, t))
       :: env.elts;
   }
+
 let add_label identifier env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Label identifier)
       :: env.elts;
   }
 
 let add_label_title label elts env =
-  { env with 
-  id = (incr unique_id; !unique_id);
-  titles = (label, elts) :: env.titles }
+  {
+    env with
+    id =
+      ( incr unique_id;
+        !unique_id );
+    titles = (label, elts) :: env.titles;
+  }
 
 let add_class identifier t env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     classes = (identifier, t) :: env.classes;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `Class (identifier, t))
@@ -192,7 +225,9 @@ let add_class identifier t env =
 let add_class_type identifier t env =
   {
     env with
-    id = (incr unique_id; !unique_id);
+    id =
+      ( incr unique_id;
+        !unique_id );
     class_types = (identifier, t) :: env.class_types;
     elts =
       (Odoc_model.Paths.Identifier.name identifier, `ClassType (identifier, t))
@@ -214,13 +249,18 @@ let add_comment (com : Odoc_model.Comment.docs_or_stop) env =
   match com with `Docs doc -> add_docs doc env | `Stop -> env
 
 let add_method identifier m env =
-  { env with 
-  id = (incr unique_id; !unique_id);
-  methods = (identifier, m) :: env.methods }
+  {
+    env with
+    id =
+      ( incr unique_id;
+        !unique_id );
+    methods = (identifier, m) :: env.methods;
+  }
 
 let add_root name ty env = { env with roots = (name, ty) :: env.roots }
 
 let len = ref 0
+
 let n = ref 0
 
 let lookup_module identifier env =
@@ -231,15 +271,15 @@ let lookup_module identifier env =
     ModuleMap.find identifier env.modules
   with _ ->
     (* Format.fprintf Format.err_formatter
-      "Failed to find module:\nIdentifier: %a\n\n"
-      Component.Fmt.model_identifier
-      (identifier :> Odoc_model.Paths.Identifier.t);
-    List.iter
-      (fun (ident, _) ->
-        Format.fprintf Format.err_formatter "%a;\n"
-          Component.Fmt.model_identifier
-          (ident :> Odoc_model.Paths.Identifier.t))
-      env.modules; *)
+         "Failed to find module:\nIdentifier: %a\n\n"
+         Component.Fmt.model_identifier
+         (identifier :> Odoc_model.Paths.Identifier.t);
+       List.iter
+         (fun (ident, _) ->
+           Format.fprintf Format.err_formatter "%a;\n"
+             Component.Fmt.model_identifier
+             (ident :> Odoc_model.Paths.Identifier.t))
+         env.modules; *)
     raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_type identifier env =
@@ -291,23 +331,22 @@ let lookup_root_module name env =
   match try Some (List.assoc name env.roots) with _ -> None with
   | Some x -> Some x
   | None -> (
-      match Hashtbl.find_opt roots name
-      with
+      match Hashtbl.find_opt roots name with
       | Some x -> x
-      | None -> 
-        match env.resolver with
-        | None -> None
-        | Some r -> (
-            let result = 
-              match r.lookup_unit name with
-              | Forward_reference -> Some Forward
-              | Not_found -> None
-              | Found u ->
-                  let unit = r.resolve_unit u.root in
-                  Some (Resolved (unit.id, module_of_unit unit))
-            in
-            Hashtbl.add roots name result;
-            result))
+      | None -> (
+          match env.resolver with
+          | None -> None
+          | Some r ->
+              let result =
+                match r.lookup_unit name with
+                | Forward_reference -> Some Forward
+                | Not_found -> None
+                | Found u ->
+                    let unit = r.resolve_unit u.root in
+                    Some (Resolved (unit.id, module_of_unit unit))
+              in
+              Hashtbl.add roots name result;
+              result ) )
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option =
  fun f ->
@@ -363,7 +402,8 @@ let lookup_datatype_by_name name env =
 
 let lookup_value_by_name name env =
   let filter_fn :
-      string * Component.Element.any -> [Component.Element.value | Component.Element.external_] option =
+      string * Component.Element.any ->
+      [ Component.Element.value | Component.Element.external_ ] option =
     function
     | n, (#Component.Element.value as item) when n = name -> Some item
     | n, (#Component.Element.external_ as item) when n = name -> Some item
@@ -407,17 +447,18 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
         match m.Component.Module.type_ with
         | Alias _ -> env
         | ModuleType e ->
-            let (env', _subst) = List.fold_left fold_fn
-              (env, Subst.identity) (find_args id e)
+            let env', _subst =
+              List.fold_left fold_fn (env, Subst.identity) (find_args id e)
             in
-              env')
+            env' )
     | `ModuleType _ as mtyid -> (
         let m = lookup_module_type mtyid env in
         match m.Component.ModuleType.expr with
         | Some e ->
-            let (env', _subst) = List.fold_left fold_fn
-                            (env, Subst.identity) (find_args id e)
-              in env'
+            let env', _subst =
+              List.fold_left fold_fn (env, Subst.identity) (find_args id e)
+            in
+            env'
         | None -> env )
     | `Root _ -> env
 

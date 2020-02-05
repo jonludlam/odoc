@@ -50,12 +50,14 @@ and module_type_path :
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(module_type_path empty p) in
-    Format.fprintf Format.err_formatter "Link.module_type_path: resolving %a\n%!" Component.Fmt.module_type_path cp;
+    Format.fprintf Format.err_formatter
+      "Link.module_type_path: resolving %a\n%!" Component.Fmt.module_type_path
+      cp;
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Resolved (p', _) ->
-        Format.fprintf Format.err_formatter "It became: %a\n%!" Component.Fmt.resolved_module_type_path p';
+        Format.fprintf Format.err_formatter "It became: %a\n%!"
+          Component.Fmt.resolved_module_type_path p';
         `Resolved (Cpath.resolved_module_type_path_of_cpath p')
-
     | Unresolved p -> Cpath.module_type_path_of_cpath p
     | exception e ->
         Format.fprintf Format.err_formatter
@@ -92,68 +94,73 @@ let rec unit (resolver : Env.resolver) t =
   let rec resolve_units (units, env) imports =
     List.fold_left
       (fun (imports, env) import ->
-        if List.mem import imports then (imports, env) else
-        match import with
-        | Import.Resolved root ->
-           (* Format.fprintf Format.err_formatter "Found root: %s\n%!" (Odoc_model.Root.to_string root); *)
-            let unit = resolver.resolve_unit root in
-            let m = Env.module_of_unit unit in
-            let env = Env.add_module unit.id m env in
-            let env =
-              Env.add_root
-                (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
-                (Env.Resolved (unit.id, m))
-                env
-            in
-            (import :: imports, env)
-        | Import.Unresolved (str, _) -> (
-            match resolver.lookup_unit str with
-            | Forward_reference ->
-                (* Format.fprintf Format.err_formatter "Didn't find: %s\n%!" str; *)
-                let env = Env.add_root str Env.Forward env in
-                (import :: imports, env)
-            | Found f ->
-                (* Format.fprintf Format.err_formatter "Found: %s\n%!" str; *)
-                let unit = resolver.resolve_unit f.root in
-                let m = Env.module_of_unit unit in
-                let imported_already =
-                  try
-                    ignore(Env.lookup_module unit.id env);
-                    true
-                  with _ ->
-                    false
-               in
-               if imported_already then (imports, env) else
-                let env = Env.add_module unit.id m env in
-                let env =
-                  Env.add_root
-                    (Odoc_model.Root.Odoc_file.name f.root.Odoc_model.Root.file)
-                    (Env.Resolved (unit.id, m))
-                    env
-                in
-                (* Format.fprintf Format.err_formatter "Recursing...\n%!"; *)
-                let (imports, env) = resolve_units (imports, env) unit.imports in
-                (* Format.fprintf Format.err_formatter "Finished...\n%!"; *)
-                (Resolved f.root :: imports, env)
-            | Not_found ->
-                Format.fprintf Format.err_formatter "Not found at all: %s\n%!" str;
-                (import :: imports, env) ))
-          (units, env) imports
-      in
-    
-            let imports, env =
-              resolve_units
-              ([], initial_env) t.imports
+        if List.mem import imports then (imports, env)
+        else
+          match import with
+          | Import.Resolved root ->
+              (* Format.fprintf Format.err_formatter "Found root: %s\n%!" (Odoc_model.Root.to_string root); *)
+              let unit = resolver.resolve_unit root in
+              let m = Env.module_of_unit unit in
+              let env = Env.add_module unit.id m env in
+              let env =
+                Env.add_root
+                  (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
+                  (Env.Resolved (unit.id, m))
+                  env
+              in
+              (import :: imports, env)
+          | Import.Unresolved (str, _) -> (
+              match resolver.lookup_unit str with
+              | Forward_reference ->
+                  (* Format.fprintf Format.err_formatter "Didn't find: %s\n%!" str; *)
+                  let env = Env.add_root str Env.Forward env in
+                  (import :: imports, env)
+              | Found f ->
+                  (* Format.fprintf Format.err_formatter "Found: %s\n%!" str; *)
+                  let unit = resolver.resolve_unit f.root in
+                  let m = Env.module_of_unit unit in
+                  let imported_already =
+                    try
+                      ignore (Env.lookup_module unit.id env);
+                      true
+                    with _ -> false
+                  in
+                  if imported_already then (imports, env)
+                  else
+                    let env = Env.add_module unit.id m env in
+                    let env =
+                      Env.add_root
+                        (Odoc_model.Root.Odoc_file.name
+                           f.root.Odoc_model.Root.file)
+                        (Env.Resolved (unit.id, m))
+                        env
+                    in
+                    (* Format.fprintf Format.err_formatter "Recursing...\n%!"; *)
+                    let imports, env =
+                      resolve_units (imports, env) unit.imports
+                    in
+                    (* Format.fprintf Format.err_formatter "Finished...\n%!"; *)
+                    (Resolved f.root :: imports, env)
+              | Not_found ->
+                  Format.fprintf Format.err_formatter "Not found at all: %s\n%!"
+                    str;
+                  (import :: imports, env) ))
+      (units, env) imports
   in
-            let end_ = Unix.gettimeofday () in
-            Format.fprintf Format.err_formatter "Took %f seconds\n%!" (end_ -. start);
-  let result = {
-    t with
-    content = content env t.content;
-    imports;
-    doc = comment_docs env t.doc;
-  } in
-  Format.fprintf Format.err_formatter "Avg length of modules: %f\n%!" (float_of_int !Env.len /. float_of_int !Env.n);
+
+  let imports, env = resolve_units ([], initial_env) t.imports in
+  let end_ = Unix.gettimeofday () in
+  Format.fprintf Format.err_formatter "Took %f seconds\n%!" (end_ -. start);
+  let result =
+    {
+      t with
+      content = content env t.content;
+      imports;
+      doc = comment_docs env t.doc;
+    }
+  in
+  Format.fprintf Format.err_formatter "Avg length of modules: %f\n%!"
+    (float_of_int !Env.len /. float_of_int !Env.n);
 
   result
 
@@ -186,8 +193,8 @@ and comment_inline_element :
           (* Format.fprintf Format.err_formatter "XXXXXXXXXX resolved reference: %a\n%!" (Component.Fmt.model_resolved_reference) x; *)
           `Reference (`Resolved x, [])
       | None ->
-        (* Format.fprintf Format.err_formatter "XXXXXXXXXX FAILED to resolve reference: %a\n%!" (Component.Fmt.model_reference) r; *)
-        `Reference (r, [])
+          (* Format.fprintf Format.err_formatter "XXXXXXXXXX FAILED to resolve reference: %a\n%!" (Component.Fmt.model_reference) r; *)
+          `Reference (r, [])
       | exception e ->
           let bt = Printexc.get_backtrace () in
           Format.fprintf Format.err_formatter
@@ -344,25 +351,35 @@ and module_expansion : Env.t -> Module.expansion -> Module.expansion =
   | AlreadyASig -> AlreadyASig
   | Signature sg -> Signature (signature env sg)
   | Functor (args, sg) ->
-    let env' = List.fold_right (fun arg_opt env ->
-      match arg_opt with
-      | None -> env
-      | Some arg ->
-      let identifier = arg.FunctorArgument.id
-        in
-      let env' = Env.add_module identifier (Component.module_of_functor_argument (Component.Of_Lang.functor_argument Component.Of_Lang.empty (Ident.Of_Identifier.module_ arg.id) arg)) env in
-      env') args (env) in
-    Functor (List.map (functor_argument_opt env') args, signature env' sg)
+      let env' =
+        List.fold_right
+          (fun arg_opt env ->
+            match arg_opt with
+            | None -> env
+            | Some arg ->
+                let identifier = arg.FunctorArgument.id in
+                let env' =
+                  Env.add_module identifier
+                    (Component.module_of_functor_argument
+                       (Component.Of_Lang.functor_argument
+                          Component.Of_Lang.empty
+                          (Ident.Of_Identifier.module_ arg.id)
+                          arg))
+                    env
+                in
+                env')
+          args env
+      in
+      Functor (List.map (functor_argument_opt env') args, signature env' sg)
 
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
-  
   try
-    let env =
-      Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env
+    let env = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
+    let type_ =
+      module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_
     in
-    let type_ = module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_ in
     let expansion_needed =
       match type_ with
       | Alias p when Paths.Path.is_hidden (p :> Paths.Path.t) -> true
@@ -375,16 +392,17 @@ and module_ : Env.t -> Module.t -> Module.t =
       | Alias _ -> false
     in
     let env, expansion =
-      match m.expansion, expansion_needed with
+      match (m.expansion, expansion_needed) with
       | None, true ->
-        let m' = Env.lookup_module m.id env in
-        let env, expansion =
-          try 
-            let env, e = Expand_tools.expansion_of_module env m.id m' in
-            env, Some e
-          with Tools.OpaqueModule -> env, None
-        in env, expansion
-      | _ -> env, m.expansion
+          let m' = Env.lookup_module m.id env in
+          let env, expansion =
+            try
+              let env, e = Expand_tools.expansion_of_module env m.id m' in
+              (env, Some e)
+            with Tools.OpaqueModule -> (env, None)
+          in
+          (env, expansion)
+      | _ -> (env, m.expansion)
     in
     {
       m with
@@ -400,11 +418,14 @@ and module_ : Env.t -> Module.t -> Module.t =
         Component.Fmt.signature sg;
       Printf.fprintf stderr "Backtrace: %s\n%!" bt;
       raise e
-  | Env.MyFailure (x,_) as e->
+  | Env.MyFailure (x, _) as e ->
       Format.fprintf Format.err_formatter
-          "Failed to expand module: looking up identifier %a while expanding module %a\n%!"
-          Component.Fmt.model_identifier x Component.Fmt.model_identifier (m.id :> Paths.Identifier.t);
-      raise e          
+        "Failed to expand module: looking up identifier %a while expanding \
+         module %a\n\
+         %!"
+        Component.Fmt.model_identifier x Component.Fmt.model_identifier
+        (m.id :> Paths.Identifier.t);
+      raise e
   | e ->
       Printf.fprintf stderr "Failed to resolve module: %s\n%s\n%!"
         (Printexc.to_string e)
@@ -458,39 +479,41 @@ and include_ : Env.t -> Include.t -> Include.t =
         { resolved = true; content = signature env i.expansion.content };
       doc = comment_docs env i.doc;
     }
-  with | Env.MyFailure (_id, _env) as e ->
-(*  Format.fprintf Format.err_formatter
-  "Failed to find module:\nIdentifier: %a\n\n"
-  Component.Fmt.model_identifier
-  (id :> Odoc_model.Paths.Identifier.t);
-List.iter
-  (fun (ident, _) ->
-    Format.fprintf Format.err_formatter "%a;\n"
-      Component.Fmt.model_identifier
-      (ident :> Odoc_model.Paths.Identifier.t))
-  (Env.modules_of env);
+  with Env.MyFailure (_id, _env) as e ->
+    (* Format.fprintf Format.err_formatter
+         "Failed to find module:\nIdentifier: %a\n\n"
+         Component.Fmt.model_identifier
+         (id :> Odoc_model.Paths.Identifier.t);
+       List.iter
+         (fun (ident, _) ->
+           Format.fprintf Format.err_formatter "%a;\n"
+             Component.Fmt.model_identifier
+             (ident :> Odoc_model.Paths.Identifier.t))
+         (Env.modules_of env);
 
-    let i' = Component.Of_Lang.(module_decl empty i.decl) in
-    Format.fprintf Format.err_formatter
-      "Failed to resolve include: %a\nGot exception %s (parent=%a)\n%!"
-      Component.Fmt.module_decl i' (Printexc.to_string e)
-      Component.Fmt.model_identifier
-      (i.parent :> Paths.Identifier.t);*)
+           let i' = Component.Of_Lang.(module_decl empty i.decl) in
+           Format.fprintf Format.err_formatter
+             "Failed to resolve include: %a\nGot exception %s (parent=%a)\n%!"
+             Component.Fmt.module_decl i' (Printexc.to_string e)
+             Component.Fmt.model_identifier
+             (i.parent :> Paths.Identifier.t);*)
     raise e
 
 and functor_argument : Env.t -> FunctorArgument.t -> FunctorArgument.t =
  fun env a ->
   let functor_arg = Env.lookup_module a.id env in
   let env, expn =
-   match a.expansion, functor_arg.type_ with
-   | None, ModuleType expr -> (
-     try
-       let env, e = Expand_tools.expansion_of_module_type_expr
-         env (a.id :> Paths_types.Identifier.signature)
-         expr in
-       env, Some e
-     with Tools.OpaqueModule -> env, None)
-   | x, _ -> env, x
+    match (a.expansion, functor_arg.type_) with
+    | None, ModuleType expr -> (
+        try
+          let env, e =
+            Expand_tools.expansion_of_module_type_expr env
+              (a.id :> Paths_types.Identifier.signature)
+              expr
+          in
+          (env, Some e)
+        with Tools.OpaqueModule -> (env, None) )
+    | x, _ -> (env, x)
   in
   {
     a with
@@ -511,22 +534,22 @@ and module_type_expr :
   | With (expr, subs) ->
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
       let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
-(*      Format.fprintf Format.err_formatter
-        "Handling `With` expression for %a (expr=%a) [%a]\n%!"
-        Component.Fmt.model_identifier
-        (id :> Paths.Identifier.t)
-        Component.Fmt.module_type_expr cexpr Component.Fmt.substitution_list
-        (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
+      (* Format.fprintf Format.err_formatter
+         "Handling `With` expression for %a (expr=%a) [%a]\n%!"
+         Component.Fmt.model_identifier
+         (id :> Paths.Identifier.t)
+         Component.Fmt.module_type_expr cexpr Component.Fmt.substitution_list
+         (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
       With
         ( module_type_expr env id expr,
           List.fold_left
             (fun (sg, subs) sub ->
               try
                 (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
-                  Component.Fmt.signature sg; *)
+                   Component.Fmt.signature sg; *)
                 (* Format.fprintf Format.err_formatter "Handling sub: %a\n%!"
-                  Component.Fmt.substitution
-                  Component.Of_Lang.(module_type_substitution empty sub); *)
+                   Component.Fmt.substitution
+                   Component.Of_Lang.(module_type_substitution empty sub); *)
                 match sub with
                 | ModuleEq (frag, decl) ->
                     let frag' =
@@ -713,7 +736,7 @@ and type_expression : Env.t -> _ -> _ =
     | Package p -> Package (type_expression_package env p)
   with _ -> texpr
 
-  (*
+(*
 let build_resolver :
     ?equal:(Root.t -> Root.t -> bool) ->
     ?hash:(Root.t -> int) ->

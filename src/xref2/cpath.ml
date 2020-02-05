@@ -251,7 +251,7 @@ and resolved_module_of_resolved_signature_reference :
   | (`SubstAlias _ | `Canonical _ | `Module _) as r' ->
       resolved_module_of_resolved_module_reference r'
   | `ModuleType (_, n) -> failwith ("Not a module reference: " ^ n)
-  | `Identifier _ -> failwith ("Not a module reference : identifier")
+  | `Identifier _ -> failwith "Not a module reference : identifier"
 
 and module_of_module_reference : Reference.Module.t -> module_ = function
   | `Resolved r -> `Resolved (resolved_module_of_resolved_module_reference r)
@@ -269,4 +269,3 @@ and module_of_module_reference : Reference.Module.t -> module_ = function
         name ) ->
       `Dot (module_of_module_reference parent, name)
   | _ -> failwith "Not a module reference"
-

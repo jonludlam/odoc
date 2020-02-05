@@ -46,9 +46,7 @@ module rec Resolved : sig
 
   (* parent is [ signature | class_signature ] *)
   type parent =
-    [ `Identifier of Identifier.parent
-    | `Local of Ident.parent
-    | parent_no_id ]
+    [ `Identifier of Identifier.parent | `Local of Ident.parent | parent_no_id ]
 
   (* The only difference between parent and label_parent
      is that the Identifier allows more types *)
@@ -56,7 +54,7 @@ module rec Resolved : sig
     [ `Identifier of Identifier.label_parent
     | `Local of Ident.label_parent
     | parent_no_id ]
-  
+
   type s_substalias = [ `SubstAlias of Cpath.resolved_module * module_ ]
 
   type s_module = [ `Module of signature * ModuleName.t ]

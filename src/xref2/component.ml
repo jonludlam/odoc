@@ -58,8 +58,9 @@ module Delayed = struct
         x.v <- Some v;
         v
 
-  let put : (unit -> 'a) -> 'a t = fun f ->
-    if !eager then {v = Some (f ()); get = f} else { v = None; get = f }
+  let put : (unit -> 'a) -> 'a t =
+   fun f ->
+    if !eager then { v = Some (f ()); get = f } else { v = None; get = f }
 end
 
 module Opt = struct
@@ -379,7 +380,8 @@ module Element = struct
 
   type external_ = [ `External of Identifier.Value.t * External.t ]
 
-  type any = [ signature | value | type_ | label | class_ | class_type | external_ ]
+  type any =
+    [ signature | value | type_ | label | class_ | class_type | external_ ]
 end
 
 module Fmt = struct
@@ -438,7 +440,8 @@ module Fmt = struct
 
   and class_type ppf _c = Format.fprintf ppf "<todo>"
 
-  and include_ ppf i = Format.fprintf ppf "%a (sig = %a)" module_decl i.decl signature i.expansion_
+  and include_ ppf i =
+    Format.fprintf ppf "%a (sig = %a)" module_decl i.decl signature i.expansion_
 
   and value ppf v =
     let open Value in
@@ -949,14 +952,11 @@ module LocalIdents = struct
 
   let opt conv opt ids = match opt with Some x -> conv x ids | None -> ids
 
-  let rec module_ m ids = 
-    docs m.Module.doc ids
+  let rec module_ m ids = docs m.Module.doc ids
 
-  and module_substitution m ids =
-    docs m.ModuleSubstitution.doc ids
+  and module_substitution m ids = docs m.ModuleSubstitution.doc ids
 
-  and module_type m ids =
-    docs m.ModuleType.doc ids
+  and module_type m ids = docs m.ModuleType.doc ids
 
   and type_decl t ids =
     let ids = opt type_decl_representation t.TypeDecl.representation ids in
@@ -984,20 +984,15 @@ module LocalIdents = struct
     let ids = docs c.Extension.Constructor.doc ids in
     { ids with extensions = c.Extension.Constructor.id :: ids.extensions }
 
-  and exception_ e ids =
-    docs e.Exception.doc ids
+  and exception_ e ids = docs e.Exception.doc ids
 
-  and value_ v ids =
-    docs v.Value.doc ids
+  and value_ v ids = docs v.Value.doc ids
 
-  and external_ e ids =
-    docs e.External.doc ids
+  and external_ e ids = docs e.External.doc ids
 
-  and class_ c ids =
-    docs c.Class.doc ids
+  and class_ c ids = docs c.Class.doc ids
 
-  and class_type c ids =
-    docs c.ClassType.doc ids
+  and class_type c ids = docs c.ClassType.doc ids
 
   and method_ m ids =
     let ids = docs m.Method.doc ids in
@@ -1012,8 +1007,7 @@ module LocalIdents = struct
 
   and block_element d ids =
     match d with
-    | `Heading (_, id, _) ->
-      { ids with labels = id :: ids.labels }
+    | `Heading (_, id, _) -> { ids with labels = id :: ids.labels }
     | _ -> ids
 
   and docs d ids =
@@ -1039,36 +1033,36 @@ module LocalIdents = struct
       (fun c ids ->
         match c with
         | Module (_, m) ->
-          let ids = module_ m ids in
-          { ids with modules = m.Module.id :: ids.modules }
+            let ids = module_ m ids in
+            { ids with modules = m.Module.id :: ids.modules }
         | ModuleType m ->
-          let ids = module_type m ids in
-          { ids with module_types = m.ModuleType.id :: ids.module_types }
+            let ids = module_type m ids in
+            { ids with module_types = m.ModuleType.id :: ids.module_types }
         | ModuleSubstitution m ->
-          let ids = module_substitution m ids in
-          { ids with modules = m.ModuleSubstitution.id :: ids.modules }
+            let ids = module_substitution m ids in
+            { ids with modules = m.ModuleSubstitution.id :: ids.modules }
         | Type (_, t) ->
-          let ids = type_decl t ids in
-          { ids with types = t.TypeDecl.id :: ids.types }
+            let ids = type_decl t ids in
+            { ids with types = t.TypeDecl.id :: ids.types }
         | TypeSubstitution t ->
-          let ids = type_decl t ids in
-          { ids with types = t.TypeDecl.id :: ids.types }
+            let ids = type_decl t ids in
+            { ids with types = t.TypeDecl.id :: ids.types }
         | TypExt ext -> extension ext ids
         | Exception e ->
-          let ids = exception_ e ids in
-          { ids with exceptions = e.Exception.id :: ids.exceptions }
+            let ids = exception_ e ids in
+            { ids with exceptions = e.Exception.id :: ids.exceptions }
         | Value v ->
-          let ids = value_ v ids in
-          { ids with values = v.Value.id :: ids.values }
+            let ids = value_ v ids in
+            { ids with values = v.Value.id :: ids.values }
         | External e ->
-          let ids = external_ e ids in
-          { ids with values = e.External.id :: ids.values }
+            let ids = external_ e ids in
+            { ids with values = e.External.id :: ids.values }
         | Class (_, c) ->
-          let ids = class_ c ids in
-          { ids with classes = c.Class.id :: ids.classes }
+            let ids = class_ c ids in
+            { ids with classes = c.Class.id :: ids.classes }
         | ClassType (_, c) ->
-          let ids = class_type c ids in
-          { ids with class_types = c.ClassType.id :: ids.class_types }
+            let ids = class_type c ids in
+            { ids with class_types = c.ClassType.id :: ids.class_types }
         | Include i -> signature i.Include.expansion.content ids
         | Comment c -> docs_or_stop c ids)
       s ids
@@ -2247,8 +2241,10 @@ module Find = struct
 
   let opt_value_in_sig s name : value option =
     let rec inner = function
-      | Signature.Value (id, m) :: _ when Ident.Name.value id = name -> Some (`V m)
-      | Signature.External (id, e) :: _ when Ident.Name.value id = name -> Some (`E e)
+      | Signature.Value (id, m) :: _ when Ident.Name.value id = name ->
+          Some (`V m)
+      | Signature.External (id, e) :: _ when Ident.Name.value id = name ->
+          Some (`E e)
       | Signature.Include i :: rest -> (
           match inner i.Include.expansion_.items with
           | Some m -> Some m

@@ -84,7 +84,11 @@ module Path = struct
   and resolved_module map (p : Cpath.resolved_module) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     match p with
-    | `Local id -> `Identifier (try List.assoc id map.module_ with Not_found -> failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
+    | `Local id ->
+        `Identifier
+          ( try List.assoc id map.module_
+            with Not_found ->
+              failwith (Format.asprintf "Not_found: %a" Ident.fmt id) )
     | `Substituted x -> resolved_module map x
     | `Identifier (#Odoc_model.Paths.Identifier.Module.t as y) -> `Identifier y
     | `Subst (mty, m) ->
@@ -152,8 +156,12 @@ module Path = struct
   and resolved_reference map (p : Cref.Resolved.any) =
     match p with
     | `Identifier s -> `Identifier s
-    | `Local id -> `Identifier (try List.assoc id map.any with Not_found ->
-      failwith (Format.asprintf "XXX Failed to find id: %a" Ident.fmt id))
+    | `Local id ->
+        `Identifier
+          ( try List.assoc id map.any
+            with Not_found ->
+              failwith
+                (Format.asprintf "XXX Failed to find id: %a" Ident.fmt id) )
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
@@ -196,7 +204,12 @@ module Path = struct
   and resolved_signature_reference map (p : Cref.Resolved.signature) =
     match p with
     | `Identifier s -> `Identifier s
-    | `Local id -> `Identifier (try List.assoc id map.signatures with Not_found -> failwith (Format.asprintf "Not_found finding %a\n%!" Ident.fmt id))
+    | `Local id ->
+        `Identifier
+          ( try List.assoc id map.signatures
+            with Not_found ->
+              failwith (Format.asprintf "Not_found finding %a\n%!" Ident.fmt id)
+          )
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
@@ -457,14 +470,17 @@ module ExtractIDs = struct
     List.fold_left
       (fun map item ->
         match item with
-        | Module (id, _, m) -> docs lpp (module_ parent map id) (Delayed.get m).doc
+        | Module (id, _, m) ->
+            docs lpp (module_ parent map id) (Delayed.get m).doc
         | ModuleSubstitution (id, m) -> docs lpp (module_ parent map id) m.doc
-        | ModuleType (id, mt) -> docs lpp (module_type parent map id) (Delayed.get mt).doc
+        | ModuleType (id, mt) ->
+            docs lpp (module_type parent map id) (Delayed.get mt).doc
         | Type (id, _, t) -> docs lpp (type_decl parent map id) t.doc
         | TypeSubstitution (id, t) -> docs lpp (type_decl parent map id) t.doc
         | Exception (id, e) -> docs lpp (exception_ parent map id) e.doc
         | Value (id, v) -> docs lpp (value_ parent map id) v.doc
-        | External (id, e) -> docs lpp (value_ parent map id) e.doc (* externals are values *)
+        | External (id, e) ->
+            docs lpp (value_ parent map id) e.doc (* externals are values *)
         | Class (id, _, c) -> docs lpp (class_ parent map id) c.doc
         | ClassType (id, _, c) -> docs lpp (class_type parent map id) c.doc
         | Include i -> include_ parent map i
@@ -493,7 +509,8 @@ let rec signature_items id map items =
           with e ->
             let bt = Printexc.get_backtrace () in
             Format.fprintf Format.err_formatter
-              "Failed (%s) during type lookup: %a\nbt:\n%s\n%!" (Printexc.to_string e) Ident.fmt id bt;
+              "Failed (%s) during type lookup: %a\nbt:\n%s\n%!"
+              (Printexc.to_string e) Ident.fmt id bt;
             raise e )
       | Exception (id', e) ->
           Odoc_model.Lang.Signature.Exception
@@ -504,14 +521,13 @@ let rec signature_items id map items =
       | TypExt t -> Odoc_model.Lang.Signature.TypExt (typ_ext map id t) :: acc
       | Value (id, v) ->
           Odoc_model.Lang.Signature.Value (value_ map id v) :: acc
-      | Include i ->
-          begin
-            try
-            Odoc_model.Lang.Signature.Include (include_ id map i) :: acc
-            with e ->
-              Format.fprintf Format.err_formatter "Caught exception %s with include: %a" (Printexc.to_string e) Component.Fmt.include_ i;
-              raise e
-          end
+      | Include i -> (
+          try Odoc_model.Lang.Signature.Include (include_ id map i) :: acc
+          with e ->
+            Format.fprintf Format.err_formatter
+              "Caught exception %s with include: %a" (Printexc.to_string e)
+              Component.Fmt.include_ i;
+            raise e )
       | External (id, e) ->
           Odoc_model.Lang.Signature.External (external_ map id e) :: acc
       | ModuleSubstitution (id, m) ->
@@ -1034,14 +1050,12 @@ and tag map t =
 and block_element map (d : Component.CComment.block_element) :
     Odoc_model.Comment.block_element =
   match d with
-  | `Heading (l, id, content) -> begin
-    try
-      `Heading (l, List.assoc id map.labels, content)
-    with Not_found ->
-      Format.fprintf Format.err_formatter "Failed to find id: %a\n" Ident.fmt
-        id;
-      raise Not_found
-  end
+  | `Heading (l, id, content) -> (
+      try `Heading (l, List.assoc id map.labels, content)
+      with Not_found ->
+        Format.fprintf Format.err_formatter "Failed to find id: %a\n" Ident.fmt
+          id;
+        raise Not_found )
   | `Tag t -> `Tag (tag map t)
   | #Component.CComment.nestable_block_element as n ->
       (nestable_block_element map n :> Odoc_model.Comment.block_element)
