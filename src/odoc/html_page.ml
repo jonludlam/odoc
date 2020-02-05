@@ -85,7 +85,9 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       let fmt = Format.formatter_of_out_channel oc in
       Format.fprintf fmt "%a@?" (Tyxml.Html.pp ()) content;
       close_out oc
-    )
+    );
+    Compilation_unit.save (Fs.File.set_ext "odocl" input) odoctree
+
 
 (* Used only for [--index-for] which is deprecated and available only for
    backward compatibility. It should be removed whenever. *)
