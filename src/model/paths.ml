@@ -629,7 +629,7 @@ module Path = struct
     function
     | `Identifier _ -> false
     | `Canonical (_, `Resolved _) -> false
-    | `Canonical (_, _) -> false (* TODO *)
+    | `Canonical (x, _) -> is_resolved_hidden (x : module_ :> any)
     | `Hidden _ -> true
     | `Subst(p1, p2) -> is_resolved_hidden (p1 : module_type :> any) || is_resolved_hidden (p2 : module_ :> any)
     | `SubstAlias(p1, p2) -> is_resolved_hidden (p1 : module_ :> any) || is_resolved_hidden (p2 : module_ :> any)
@@ -639,7 +639,7 @@ module Path = struct
     | `Type (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `Class (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `ClassType (p, _) -> is_resolved_hidden (p : module_ :> any)
-    | `Alias (p1, p2) -> is_resolved_hidden (p1 : module_ :> any) || is_resolved_hidden (p2 : module_ :> any)
+    | `Alias (p1, _p2) -> is_resolved_hidden (p1 : module_ :> any) (*|| is_resolved_hidden (p2 : module_ :> any)*)
 
   and is_path_hidden : Paths_types.Path.any -> bool =
     let open Paths_types.Path in
@@ -840,6 +840,12 @@ module Path = struct
       let identifier = function
         | `Identifier id -> id
         | `ModuleType(m, n) -> `ModuleType(parent_module_identifier m, n)
+
+      let canonical_ident : t -> Identifier.ModuleType.t option = function
+        | `Identifier _id -> None
+        | `ModuleType (p, n) -> begin
+            match Module.canonical_ident p with | Some x -> Some (`ModuleType((x :>Identifier.Signature.t), n)) | None -> None
+        end 
 
       let rebase : Reversed.t -> t -> t =
         fun new_base t ->

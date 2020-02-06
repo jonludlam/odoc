@@ -667,10 +667,24 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
   try
     let equation = type_decl_equation env t.equation in
     let doc = comment_docs env t.doc in
+    let hidden_path = match equation.Equation.manifest with
+      | Some (Constr (`Resolved path,_)) when Paths.Path.Resolved.Type.is_hidden path -> Some path
+      | _ -> None
+    in
     let representation =
       Opt.map (type_decl_representation env) t.representation
     in
-    { t with equation; doc; representation }
+    let default = { t with equation; doc; representation } in
+
+    match hidden_path with
+    | Some p -> (
+      let p' = Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p in
+      match Tools.lookup_type_from_resolved_path env p' with
+      | (_, Found (`T t')) ->
+        Format.fprintf Format.err_formatter "XXXXXXX - replacing type at id %a maybe: %a\n%!" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t) Component.Fmt.resolved_type_path p';
+        { default with equation = Lang_of.type_decl_equation Lang_of.empty t'.equation }
+      | _ -> default)
+    | None -> default
   with e ->
     Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"
       Component.Fmt.model_identifier
@@ -762,9 +776,20 @@ and type_expression : Env.t -> _ -> _ =
     | Constr (path, ts) -> (
         let cp = Component.Of_Lang.(type_path empty path) in
         match Tools.lookup_type_from_path env cp with
-        | Resolved (cp, Found _t) ->
-            let p = Cpath.resolved_type_path_of_cpath cp in
-            Constr (`Resolved p, ts)
+        | Resolved (cp', Found (`T t)) -> begin
+            let p = Cpath.resolved_type_path_of_cpath cp' in
+            if Cpath.is_resolved_type_hidden cp'
+            then match t.Component.TypeDecl.equation.Component.TypeDecl.Equation.manifest with
+            | Some expr ->
+              Format.fprintf Format.err_formatter "Here we go...%a \n" Component.Fmt.type_path cp;
+              type_expression env (Lang_of.(type_expr empty expr))
+            | None -> 
+                Constr (`Resolved p, ts)
+            else Constr (`Resolved p, ts)
+            end
+        | Resolved (cp', Found _) ->
+          let p = Cpath.resolved_type_path_of_cpath cp' in
+          Constr (`Resolved p, ts)
         | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
         | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) )
     | Polymorphic_variant v ->
