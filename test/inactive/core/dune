@@ -7,7 +7,9 @@
  (deps
   (:x ocamlary.md)
   (package odoc)
-  .ocamlary.objs/byte/ocamlary.cmti)
+  .ocamlary.objs/byte/ocamlary.cmti
+  .ocamlary.objs/byte/ocamlary.cmt
+  .ocamlary.objs/byte/ocamlary.cmi)
  (action
   (progn
    (run ocaml-mdx test %{x})
