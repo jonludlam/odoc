@@ -425,10 +425,16 @@ and module_ : Env.t -> Module.t -> Module.t =
           -> d2, Some (Signature (expansion))
         | _ -> [], expansion
     in
+    let display_type =
+      match expansion with
+      | Some (Signature sg) -> Some (ModuleType (Signature sg))
+      | _ -> None
+    in
     {
       m with
       doc = comment_docs env doc;
       type_ = module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_;
+      display_type;
       expansion = Opt.map (module_expansion env) expansion;
     }
   with
@@ -475,11 +481,23 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
           Some
             (module_type_expr env' (m.id :> Paths.Identifier.Signature.t) expr)
     in
+(*    let self_canonical =
+      match m.expr with
+      | Some (Path (`Resolved p)) when Paths.Path.Resolved.ModuleType.canonical_ident p = Some m.id ->
+        true
+      | _ -> false
+    in*)
+    let display_expr =
+      match expr', m.expansion with
+      | Some (Path (`Resolved p)), Some (Signature sg) when Paths.Path.Resolved.ModuleType.is_hidden p -> Some (Some (Signature sg))
+      | _ -> None
+    in
     let doc = comment_docs env m.doc in
     {
       m with
       expr = expr';
       expansion = Opt.map (module_expansion env') m.expansion;
+      display_expr;
       doc;
     }
   with e ->

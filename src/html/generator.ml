@@ -1612,8 +1612,9 @@ struct
 
   and module_type ?theme_uri (t : Odoc_model.Lang.ModuleType.t) =
     let modname = Paths.Identifier.name t.id in
+    let expr = match t.display_expr with | Some e -> e | None -> t.expr in
     let mty =
-      match t.expr with
+      match expr with
       | None -> []
       | Some expr ->
         Html.txt " = " :: mty (t.id :> Paths.Identifier.Signature.t) expr
@@ -1625,7 +1626,7 @@ struct
         let expansion =
           match expansion with
           | AlreadyASig ->
-            begin match t.expr with
+            begin match expr with
             | Some (Signature sg) -> Odoc_model.Lang.Module.Signature sg
             | _ -> assert false
             end

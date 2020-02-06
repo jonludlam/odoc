@@ -814,6 +814,7 @@ and module_type map id mty =
     Odoc_model.Lang.ModuleType.id = identifier;
     doc = docs map mty.doc;
     expr = Opt.map (module_type_expr map sig_id) mty.expr;
+    display_expr = None;
     expansion;
   }
 
