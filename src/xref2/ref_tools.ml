@@ -20,7 +20,7 @@ type value_lookup_result =
 type label_parent_lookup_result =
   Resolved.LabelParent.t
   * Env.t
-  * [ `S of Component.Signature.t | `CS of Component.ClassSignature.t ]
+  * [ `S of Component.Signature.t | `CS of Component.ClassSignature.t | `Page of (string * Identifier.Label.t) list ]
 
 let rec make_prefix : Resolved.Signature.t -> Cpath.resolved_module option =
   let open Tools.OptionMonad in
@@ -446,6 +446,15 @@ and resolve_label_parent_reference :
               in
               return (r', env, `S sg));
           ]
+    | `Root (name, _) ->
+        Env.lookup_page name env >>= fun p ->
+        let labels = List.fold_right
+                (fun element l ->
+                  match element.Odoc_model.Location_.value with
+                  | `Heading (_, (`Label (_, name) as x), _nested_elements) ->
+                    (name,x) :: l
+                  | _ -> l) p.Odoc_model.Lang.Page.content [] in
+        return ((`Identifier (p.Odoc_model.Lang.Page.name :> Identifier.LabelParent.t)), env, `Page labels)
     | _ -> None
 
 and resolve_signature_reference :
@@ -600,12 +609,14 @@ and resolve_label_reference : Env.t -> Label.t -> Resolved.Label.t option =
         | _ -> None )
     | `Dot (parent, name) -> (
         resolve_label_parent_reference env parent ~add_canonical:true
-        >>= fun (p, _, sg) ->
+        >>= fun (p, _env, sg) ->
         match sg with
         | `S sg ->
             Component.Find.opt_label_in_sig sg name >>= fun _ ->
             Some (`Label (p, name))
-        | `CS _sg -> None )
+        | `CS _sg -> None
+        | `Page p -> (
+            try Some (`Identifier (List.assoc name p)) with _ -> None))
     | `Label (parent, name) -> (
         resolve_label_parent_reference env parent ~add_canonical:true
         >>= fun (p, _, sg) ->
@@ -613,7 +624,9 @@ and resolve_label_reference : Env.t -> Label.t -> Resolved.Label.t option =
         | `S sg ->
             Component.Find.opt_label_in_sig sg name >>= fun _ ->
             Some (`Label (p, name))
-        | `CS _sg -> None )
+        | `CS _sg -> None
+        | `Page p -> (
+            try Some (`Identifier (List.assoc name p)) with _ -> None)) 
 
 and resolve_reference : Env.t -> t -> Resolved.t option =
   let open Tools.OptionMonad in
@@ -650,6 +663,11 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
         resolve_value_reference env r >>= fun (x, _) -> return (x :> Resolved.t)
     | (`Root (_, `TLabel) | `Label (_, _)) as r ->
         resolve_label_reference env r >>= fun x -> return (x :> Resolved.t)
+    | (`Root (name, `TPage)) -> (
+        match Env.lookup_page name env with
+        | Some p -> Some (`Identifier (p.Odoc_model.Lang.Page.name :> Identifier.t))
+        | None -> None
+      )
     | `Dot (_, _) as r ->
         choose
           [
@@ -676,13 +694,13 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
     | _ -> None
 
 and add_canonical_path env m p : Resolved.Module.t =
-  Format.fprintf Format.err_formatter "add_canonical_path: %a\n%!"
+  (* Format.fprintf Format.err_formatter "add_canonical_path: %a\n%!"
     Component.Fmt.model_resolved_reference
-    (p :> Resolved.t);
+    (p :> Resolved.t); *)
   match p with
   | `Canonical (_, `Resolved _) -> p
   | `Canonical (p, _) | p -> (
-      Format.fprintf Format.err_formatter "....\n%!";
+      (* Format.fprintf Format.err_formatter "....\n%!"; *)
       match m.Component.Module.canonical with
       | Some (_, cr) -> (
           (*Format.fprintf Format.err_formatter
@@ -693,12 +711,12 @@ and add_canonical_path env m p : Resolved.Module.t =
             (cr :> Reference.t);*)
           match resolve_module_reference ~add_canonical:false env cr with
           | Some (cp', _) ->
-              Format.fprintf Format.err_formatter "Got it! %a\n%!"
-                Component.Fmt.model_resolved_reference
-                (cp' :> Reference.Resolved.t);
+              (* Format.fprintf Format.err_formatter "Got it! %a\n%!" *)
+                (* Component.Fmt.model_resolved_reference *)
+                (* (cp' :> Reference.Resolved.t); *)
               `Canonical (p, `Resolved cp')
           | _ ->
-              Format.fprintf Format.err_formatter "No idea :/\n%!";
+              (* Format.fprintf Format.err_formatter "No idea :/\n%!"; *)
               `Canonical (p, cr)
           | exception _e ->
               Format.fprintf Format.err_formatter
@@ -710,7 +728,7 @@ and add_canonical_path env m p : Resolved.Module.t =
                 (Printexc.get_backtrace ());
               p )
       | None ->
-          Format.fprintf Format.err_formatter "not canonical\n%!";
+          (* Format.fprintf Format.err_formatter "not canonical\n%!"; *)
           p )
 
 let _ =

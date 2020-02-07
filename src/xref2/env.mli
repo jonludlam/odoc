@@ -136,6 +136,9 @@ val lookup_class :
 val lookup_class_type :
   Odoc_model.Paths_types.Identifier.class_type -> t -> Component.ClassType.t
 
+val lookup_page :
+  string -> t -> Odoc_model.Lang.Page.t option
+
 val module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t
 
 val lookup_root_module : string -> t -> root option

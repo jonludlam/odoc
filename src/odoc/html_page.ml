@@ -49,7 +49,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       Format.fprintf fmt "%a@?" (Tyxml.Html.pp ()) content;
       close_out oc
     );
-    Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times
+    (* Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times *)
   | Compilation_unit {hidden = _; _} ->
     (* If hidden, we should not generate HTML. See
          https://github.com/ocaml/odoc/issues/99. *)
@@ -57,12 +57,12 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       let env = Env.build env (`Unit unit) in
-      let startlink = Unix.gettimeofday () in
-      Format.fprintf Format.err_formatter "**** Link...\n%!";
+      (* let startlink = Unix.gettimeofday () in *)
+      (* Format.fprintf Format.err_formatter "**** Link...\n%!"; *)
       let linked = Odoc_xref2.Link.link env unit in
-      let finishlink = Unix.gettimeofday () in
-      Format.fprintf Format.err_formatter "**** Finished: Link=%f\n%!" (finishlink -. startlink);
-      Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times;
+      (* let finishlink = Unix.gettimeofday () in *)
+      (* Format.fprintf Format.err_formatter "**** Finished: Link=%f\n%!" (finishlink -. startlink); *)
+      (* Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times; *)
       linked
     in
     let pkg_dir =

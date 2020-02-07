@@ -62,13 +62,13 @@ and module_type_path :
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(module_type_path empty p) in
-    Format.fprintf Format.err_formatter
+    (* Format.fprintf Format.err_formatter
       "Link.module_type_path: resolving %a\n%!" Component.Fmt.module_type_path
-      cp;
+      cp; *)
     match Tools.lookup_and_resolve_module_type_from_path true env cp with
     | Resolved (p', _) ->
-        Format.fprintf Format.err_formatter "It became: %a\n%!"
-          Component.Fmt.resolved_module_type_path p';
+        (* Format.fprintf Format.err_formatter "It became: %a\n%!"
+          Component.Fmt.resolved_module_type_path p'; *)
         `Resolved (Cpath.resolved_module_type_path_of_cpath p')
     | Unresolved p -> Cpath.module_type_path_of_cpath p
     | exception e ->
@@ -102,7 +102,6 @@ let rec unit (resolver : Env.resolver) t =
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
   let initial_env = Env.set_resolver initial_env resolver in
-  let start = Unix.gettimeofday () in
   let (*rec*) resolve_units (units, env) imports =
     List.fold_left
       (fun (imports, env) import ->
@@ -161,8 +160,7 @@ let rec unit (resolver : Env.resolver) t =
   in
 
   let imports, env = resolve_units ([], initial_env) t.imports in
-  let end_ = Unix.gettimeofday () in
-  Format.fprintf Format.err_formatter "Took %f seconds\n%!" (end_ -. start);
+  (* Format.fprintf Format.err_formatter "Took %f seconds\n%!" (end_ -. start); *)
   let result =
     {
       t with
@@ -171,8 +169,8 @@ let rec unit (resolver : Env.resolver) t =
       doc = comment_docs env t.doc;
     }
   in
-  Format.fprintf Format.err_formatter "Avg length of modules: %f\n%!"
-    (float_of_int !Env.len /. float_of_int !Env.n);
+  (* Format.fprintf Format.err_formatter "Avg length of modules: %f\n%!"
+    (float_of_int !Env.len /. float_of_int !Env.n); *)
 
   result
 
@@ -681,7 +679,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
       let p' = Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p in
       match Tools.lookup_type_from_resolved_path env p' with
       | (_, Found (`T t')) ->
-        Format.fprintf Format.err_formatter "XXXXXXX - replacing type at id %a maybe: %a\n%!" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t) Component.Fmt.resolved_type_path p';
+        (* Format.fprintf Format.err_formatter "XXXXXXX - replacing type at id %a maybe: %a\n%!" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t) Component.Fmt.resolved_type_path p'; *)
         { default with equation = Lang_of.type_decl_equation Lang_of.empty t'.equation }
       | _ -> default)
     | None -> default

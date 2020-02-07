@@ -356,6 +356,15 @@ let lookup_module identifier env =
          env.modules; *)
          raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
+let lookup_page name env =
+  match env.resolver with
+  | None -> None
+  | Some r ->
+    match r.lookup_page name with
+    | None -> None
+    | Some root ->
+      Some (r.resolve_page root)
+
 
 let find_map : ('a -> 'b option) -> 'a list -> 'b option =
  fun f ->
