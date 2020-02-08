@@ -321,13 +321,19 @@ and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
   try
+    let remove_docs_from_signature =
+      let open Signature in
+      function
+      | Comment (`Docs _) :: xs -> xs
+      | xs -> xs
+    in
     let decl = Component.Of_Lang.(module_decl empty i.decl) in
     let _, expn = Expand_tools.aux_expansion_of_module_decl env decl |> Expand_tools.handle_expansion env i.parent in
     let expansion =
       try (
         match expn with
         | Module.Signature sg ->
-          { resolved=true; content = signature env sg }
+          { resolved=true; content = remove_docs_from_signature (signature env sg) }
         | _ -> i.expansion
       ) with _ -> i.expansion
     in
