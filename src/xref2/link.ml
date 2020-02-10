@@ -70,7 +70,8 @@ and module_type_path :
         (* Format.fprintf Format.err_formatter "It became: %a\n%!"
           Component.Fmt.resolved_module_type_path p'; *)
         `Resolved (Cpath.resolved_module_type_path_of_cpath p')
-    | Unresolved p -> Cpath.module_type_path_of_cpath p
+    | Unresolved _p ->
+      failwith "Unresolved module type path" 
     | exception e ->
         Format.fprintf Format.err_formatter
           "Failed to lookup module_type path (%s): %a\n%!"
@@ -85,7 +86,8 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
     let cp = Component.Of_Lang.(module_path empty p) in
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
-    | Unresolved p -> Cpath.module_path_of_cpath p
+    | Unresolved _p ->
+      failwith "Unresolved module path" 
     | exception e ->
         Format.fprintf Format.err_formatter
           "Failed to lookup module path (%s): %a\n%!" (Printexc.to_string e)
@@ -579,8 +581,8 @@ and module_type_expr :
          (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
       With
         ( module_type_expr env id expr,
-          List.fold_left
-            (fun (sg, subs) sub ->
+          List.fold_right
+            (fun sub (sg, subs) ->
               try
                 (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
                    Component.Fmt.signature sg; *)
@@ -642,7 +644,7 @@ and module_type_expr :
                   "Exception caught while resolving fragments: %s\n%s\n%!"
                   (Printexc.to_string e) bt;
                 raise e)
-            (sg, []) subs
+            subs (sg, [])
           |> snd |> List.rev )
   | Functor (arg, res) ->
       let arg' = Opt.map (functor_argument env) arg in
@@ -779,7 +781,7 @@ and type_expression : Env.t -> _ -> _ =
             if Cpath.is_resolved_type_hidden cp'
             then match t.Component.TypeDecl.equation.Component.TypeDecl.Equation.manifest with
             | Some expr ->
-              Format.fprintf Format.err_formatter "Here we go...%a \n" Component.Fmt.type_path cp;
+              (* Format.fprintf Format.err_formatter "Here we go...%a \n" Component.Fmt.type_path cp; *)
               type_expression env (Lang_of.(type_expr empty expr))
             | None -> 
                 Constr (`Resolved p, ts)

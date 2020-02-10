@@ -103,7 +103,8 @@ let pp ppf env =
      ENV module_types: %a @,\
      ENV types: %a@,\
      ENV values: %a@,\
-     ENV externals: %a@,"
+     ENV externals: %a@,\
+     END OF ENV"
     pp_modules env.modules pp_module_types env.module_types pp_types env.types
     pp_values env.values pp_externals env.externals
 
@@ -267,9 +268,10 @@ let lookup_type identifier env =
   try List.assoc identifier env.types
   with Not_found ->
     Format.fprintf Format.std_formatter
-      "Failed to find type:\nIdentifier: %a\n\nEnv:\n%a\n\n%!"
+      "Failed to find type:\nIdentifier: %a\nCalled: %s\nEnv:\n%a\n\n%!"
       Component.Fmt.model_identifier
       (identifier :> Odoc_model.Paths.Identifier.t)
+      (Printexc.raw_backtrace_to_string (Printexc.get_callstack 100))
       pp env;
     raise Not_found
 
@@ -343,18 +345,8 @@ let lookup_module identifier env =
       | Some (Resolved (_, m)) -> m
       | _ ->
         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env)))
-      | _ -> 
-    Format.fprintf Format.err_formatter
-         "Failed to find module:\nIdentifier: %a\n\n"
-         Component.Fmt.model_identifier
-         (identifier :> Odoc_model.Paths.Identifier.t);
-(*       List.iter
-         (fun (ident, _) ->
-           Format.fprintf Format.err_formatter "%a;\n"
-             Component.Fmt.model_identifier
-             (ident :> Odoc_model.Paths.Identifier.t))
-         env.modules; *)
-         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
+    | _ -> 
+      raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_page name env =
   match env.resolver with
@@ -531,6 +523,10 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             let idents = LocalIdents.(module_ t empty) in
             let map = map_of_idents idents empty in
             let ty = module_ map t in
+            let exists_already = try ignore(lookup_module t.Odoc_model.Lang.Module.id env); true with _ -> false in
+            (if exists_already then begin
+              Format.fprintf Format.err_formatter "WARNING: module %a already exists\n%!" Component.Fmt.model_identifier (t.Odoc_model.Lang.Module.id :> Odoc_model.Paths.Identifier.t);
+              end);
             add_module t.Odoc_model.Lang.Module.id ty env
         | Odoc_model.Lang.Signature.ModuleType t ->
             let idents = LocalIdents.(module_type t empty) in
