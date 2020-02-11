@@ -333,6 +333,19 @@ and module_expansion : Env.t -> Module.expansion -> Module.expansion =
       in
       Functor (List.map (functor_argument_opt env') args, signature env' sg)
 
+and should_hide_moduletype : ModuleType.expr -> bool =
+  function
+  | Signature _ -> false
+  | TypeOf x -> should_hide_module_decl x
+  | With (e, _) -> should_hide_moduletype e
+  | Functor _ -> false
+  | Path p -> Paths.Path.is_hidden (p :> Paths.Path.t) 
+
+and should_hide_module_decl : Module.decl -> bool =
+  function
+  | ModuleType t -> should_hide_moduletype t
+  | Alias p -> Paths.Path.is_hidden (p :> Paths.Path.t) 
+
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
@@ -386,7 +399,7 @@ and module_ : Env.t -> Module.t -> Module.t =
         | _ -> [], expansion
     in
     let override_display_type =
-      (self_canonical || hidden_alias || not (moduletype_expansion))
+      (self_canonical || should_hide_module_decl m.type_)
     in
     let display_type =
       match override_display_type, expansion with
