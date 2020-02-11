@@ -104,77 +104,26 @@ let rec unit (resolver : Env.resolver) t =
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
   let initial_env = Env.set_resolver initial_env resolver in
-  let (*rec*) resolve_units (units, env) imports =
+  let env =
     List.fold_right
-      (fun import (imports, env) ->
-        if List.mem import imports then (imports, env)
-        else
+      (fun import env ->
           match import with
           | Import.Resolved root ->
-              (* Format.fprintf Format.err_formatter "Found root: %s\n%!" (Odoc_model.Root.to_string root); *)
               let unit = resolver.resolve_unit root in
               let m = Env.module_of_unit unit in
               let env = Env.add_module unit.id m env in
-              let env =
-                Env.add_root
+              Env.add_root
                   (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
                   (Env.Resolved (unit.id, m))
                   env
-              in
-              (import :: imports, env)
-          | Import.Unresolved (str, _) -> (
-              match resolver.lookup_unit str with
-              | Forward_reference ->
-                  (* Format.fprintf Format.err_formatter "Didn't find: %s\n%!" str; *)
-                  let env = Env.add_root str Env.Forward env in
-                  (import :: imports, env)
-              | Found f ->
-                  (* Format.fprintf Format.err_formatter "Found: %s\n%!" str; *)
-                  let unit = resolver.resolve_unit f.root in
-                  let m = Env.module_of_unit unit in
-                  let imported_already =
-                    try
-                      ignore (Env.lookup_module unit.id env);
-                      true
-                    with _ -> false
-                  in
-                  if imported_already then (imports, env)
-                  else
-                    let env = Env.add_module unit.id m env in
-                    let env =
-                      Env.add_root
-                        (Odoc_model.Root.Odoc_file.name
-                           f.root.Odoc_model.Root.file)
-                        (Env.Resolved (unit.id, m))
-                        env
-                    in
-                    (* Format.fprintf Format.err_formatter "Recursing...\n%!"; *)
-                    (*let imports, env =
-                      resolve_units (imports, env) unit.imports
-                    in*)
-                    (* Format.fprintf Format.err_formatter "Finished...\n%!"; *)
-                    (Resolved f.root :: imports, env)
-              | Not_found ->
-                  Format.fprintf Format.err_formatter "Not found at all: %s\n%!"
-                    str;
-                  (import :: imports, env) ))
-      imports (units, env)
+          | Import.Unresolved (_str, _) -> env)
+      t.imports initial_env
   in
-
-  let imports, env = resolve_units ([], initial_env) t.imports in
-  (* Format.fprintf Format.err_formatter "Took %f seconds\n%!" (end_ -. start); *)
-  let result =
-    {
-      t with
-      content = content env t.content;
-      imports;
-      doc = comment_docs env t.doc;
-    }
-  in
-  (* Format.fprintf Format.err_formatter "Avg length of modules: %f\n%!"
-    (float_of_int !Env.len /. float_of_int !Env.n); *)
-
-  result
+  {
+    t with
+    content = content env t.content;
+    doc = comment_docs env t.doc;
+  }
 
 and content env =
   let open Compilation_unit in

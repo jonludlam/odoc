@@ -57,11 +57,10 @@ let rec unit (resolver : Env.resolver) t =
     Env.empty |> Env.add_module t.id m
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
-  let imports, env =
+  let initial_env = Env.set_resolver initial_env resolver in
+  let env =
     List.fold_right
-      (fun import (imports, env) ->
-        if List.mem import imports then (imports, env)
-        else
+      (fun import env ->
           match import with
           | Import.Resolved root ->
               let unit = resolver.resolve_unit root in
@@ -73,38 +72,11 @@ let rec unit (resolver : Env.resolver) t =
                   (Env.Resolved (unit.id, m))
                   env
               in
-              (import :: imports, env)
-          | Import.Unresolved (str, _) -> (
-              match resolver.lookup_unit str with
-              | Forward_reference ->
-                  let env = Env.add_root str Env.Forward env in
-                  (import :: imports, env)
-              | Found f ->
-                  let unit = resolver.resolve_unit f.root in
-                  let m = Env.module_of_unit unit in
-                  let env = Env.add_module unit.id m env in
-                  let env =
-                    Env.add_root
-                      (Odoc_model.Root.Odoc_file.name
-                         f.root.Odoc_model.Root.file)
-                      (Env.Resolved (unit.id, m))
-                      env
-                  in
-                  (import :: imports, env)
-              | Not_found -> (import :: imports, env) ))
-      t.imports ([], initial_env)
+              env
+          | Import.Unresolved (_str, _) -> env)
+      t.imports initial_env
   in
-  let env =
-    List.fold_right
-      (fun name env ->
-        match resolver.lookup_unit name with
-        | Found f ->
-            let unit = resolver.resolve_unit f.root in
-            Env.open_unit unit env
-        | _ -> failwith "Can't open unresolved unit")
-      resolver.open_units env
-  in
-  { t with content = content env t.content; imports }
+  { t with content = content env t.content; }
 
 and content env =
   let open Compilation_unit in
