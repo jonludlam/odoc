@@ -414,9 +414,9 @@ module ExtractIDs = struct
 
   and include_ parent map i = signature parent map i.Include.expansion_
 
-  and docs parent map =
-    List.fold_left
-      (fun map item ->
+  and docs parent map d =
+    List.fold_right
+      (fun item map ->
         match item with
         | `Heading (_, id, _) ->
             let identifier =
@@ -424,7 +424,7 @@ module ExtractIDs = struct
             in
             { map with labels = (id, identifier) :: map.labels }
         | _ -> map)
-      map
+      d map
 
   and docs_or_stop parent map = function
     | `Docs d -> docs parent map d
@@ -454,21 +454,21 @@ module ExtractIDs = struct
 
   and class_signature parent map sg =
     let open ClassSignature in
-    List.fold_left
-      (fun map item ->
+    List.fold_right
+      (fun item map ->
         match item with
         | Method (id, _) -> method_ parent map id
         | InstanceVariable (id, _) -> instance_variable parent map id
         | Inherit _ -> map
         | Constraint _ -> map
         | Comment c -> docs_or_stop (parent :> Identifier.LabelParent.t) map c)
-      map sg
+      sg map
 
   and signature_items parent map items =
     let open Signature in
     let lpp = (parent :> Identifier.LabelParent.t) in
-    List.fold_left
-      (fun map item ->
+    List.fold_right
+      (fun item map ->
         match item with
         | Module (id, _, m) ->
             docs lpp (module_ parent map id) (Delayed.get m).doc
@@ -486,7 +486,7 @@ module ExtractIDs = struct
         | Include i -> include_ parent map i
         | TypExt t -> docs lpp map t.doc
         | Comment d -> docs_or_stop (parent :> Identifier.LabelParent.t) map d)
-      map items
+      items map
 
   and signature parent map sg =
     let open Signature in

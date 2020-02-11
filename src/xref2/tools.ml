@@ -70,8 +70,8 @@ let core_types =
 let prefix_signature (path, s) =
   let open Component.Signature in
   let rec get_sub sub' is =
-    List.fold_left
-      (fun map item ->
+    List.fold_right
+      (fun item map ->
         match item with
         | Type (id, _, _) ->
             Subst.add_type id
@@ -106,11 +106,11 @@ let prefix_signature (path, s) =
                 (path, ClassName.of_string (Ident.Name.class_type id)))
               map
         | Include i -> get_sub map i.expansion_.items)
-      sub' is
+      is sub'
   in
   let extend_sub_removed removed sub =
-    List.fold_left
-      (fun map item ->
+    List.fold_right
+      (fun item map ->
         match item with
         | Component.Signature.RModule (id, _) ->
             Subst.add_module id
@@ -120,7 +120,7 @@ let prefix_signature (path, s) =
             Subst.add_type id
               (`Type (path, TypeName.of_string (Ident.Name.type_ id)))
               map)
-      sub removed
+      removed sub
   in
   let sub = get_sub Subst.identity s.items |> extend_sub_removed s.removed in
   let items =
@@ -162,8 +162,8 @@ let prefix_ident_signature
     ((ident, s) : Identifier.Signature.t * Component.Signature.t) =
   let open Component.Signature in
   let rec get_sub sub is =
-    List.fold_left
-      (fun map item ->
+    List.fold_right
+      (fun item map ->
         match item with
         | Type (id, _, _) ->
             Subst.add_type id
@@ -208,7 +208,7 @@ let prefix_ident_signature
                   (ident, ClassName.of_string (Ident.Name.class_type id))))
               map
         | Include i -> get_sub map i.expansion_.items)
-      sub is
+      is sub
   in
   let sub = get_sub Subst.identity s.items in
   let items =
@@ -1030,7 +1030,9 @@ and signature_of_module_type_expr :
   | Component.ModuleType.Functor (_, expr) ->
       signature_of_module_type_expr env (incoming_path, expr)
   | Component.ModuleType.TypeOf decl ->
-      signature_of_module_decl env ~is_canonical:false (incoming_path, decl)
+      let (p', sg) = signature_of_module_decl env ~is_canonical:false (incoming_path, decl) in
+      (p', Strengthen.signature p' sg)
+
 
 and signature_of_module_type_expr_nopath :
     Env.t -> Component.ModuleType.expr -> Component.Signature.t =
@@ -1051,7 +1053,8 @@ and signature_of_module_type_expr_nopath :
   | Component.ModuleType.Functor (Some arg, expr) ->
       ignore arg;
       signature_of_module_type_expr_nopath env expr
-  | Component.ModuleType.TypeOf decl -> signature_of_module_decl_nopath env decl
+  | Component.ModuleType.TypeOf decl ->
+     signature_of_module_decl_nopath env decl
 
 and signature_of_module_type :
     Env.t ->
@@ -1164,8 +1167,8 @@ and fragmap_module :
     | _, TypeEq _ | _, TypeSubst _ -> failwith "Can't happen"
   in
   let rec handle_items items =
-    List.fold_left
-        (fun (items, removed) item ->
+    List.fold_right
+        (fun item (items, removed) ->
           match item with
           | Component.Signature.Module (id, r, m)
             when Ident.Name.module_ id = ModuleName.to_string name -> (
@@ -1183,15 +1186,15 @@ and fragmap_module :
             let (items', removed') = handle_items expansion_.items in
             (Component.Signature.Include {i with expansion_ = {expansion_ with items = items'}}::items, removed' @ removed)
           | x -> (x :: items, removed))
-        ([], []) items
+        items ([], [])
   in
   let items, removed = handle_items sg.items in     
-  let sub_of_removed sub removed =
+  let sub_of_removed removed sub =
     match removed with
     | Component.Signature.RModule (id, p) -> Subst.add_module id p sub
     | _ -> sub
   in
-  let sub = List.fold_left sub_of_removed Subst.identity removed in
+  let sub = List.fold_right sub_of_removed removed Subst.identity in
   let res =
     Subst.signature sub
       { Component.Signature.items; removed = removed @ sg.removed }
@@ -1220,8 +1223,8 @@ and fragmap_type :
         | _ -> failwith "Can't happen"
       in
       let rec handle_items items init =
-        List.fold_left
-          (fun (items, removed) item ->
+        List.fold_right
+          (fun item (items, removed) ->
             match item with
             | Component.Signature.Type (id, r, t)
               when Ident.Name.type_ id = name -> (
@@ -1234,19 +1237,19 @@ and fragmap_type :
               let (items', removed') = handle_items expansion_.items ([], removed) in
               (Component.Signature.Include {i with expansion_ = {i.expansion_ with items = items'}}::items, removed')
             | x -> (x :: items, removed))
-          init items
+          items init
       in
       let items, removed = handle_items sg.items ([],[]) in
       let subst =
-        List.fold_left
-          (fun subst ty ->
+        List.fold_right
+          (fun ty subst ->
             match ty with
             | Component.Signature.RType (id, replacement) ->
                 Subst.add_type_replacement
                   (id :> Ident.path_type)
                   replacement subst
             | _ -> subst)
-          Subst.identity removed
+          removed Subst.identity
       in
       Subst.signature subst
         { items = List.rev items; removed = removed @ sg.removed }

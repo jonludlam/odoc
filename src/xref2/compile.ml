@@ -58,8 +58,8 @@ let rec unit (resolver : Env.resolver) t =
     |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
   in
   let imports, env =
-    List.fold_left
-      (fun (imports, env) import ->
+    List.fold_right
+      (fun import (imports, env) ->
         if List.mem import imports then (imports, env)
         else
           match import with
@@ -92,17 +92,17 @@ let rec unit (resolver : Env.resolver) t =
                   in
                   (import :: imports, env)
               | Not_found -> (import :: imports, env) ))
-      ([], initial_env) t.imports
+      t.imports ([], initial_env)
   in
   let env =
-    List.fold_left
-      (fun env name ->
+    List.fold_right
+      (fun name env ->
         match resolver.lookup_unit name with
         | Found f ->
             let unit = resolver.resolve_unit f.root in
             Env.open_unit unit env
         | _ -> failwith "Can't open unresolved unit")
-      env resolver.open_units
+      resolver.open_units env
   in
   { t with content = content env t.content; imports }
 
@@ -474,7 +474,7 @@ and module_type_expr :
                   (Printexc.to_string e) bt;
                 raise e)
             (sg, []) subs
-          |> snd |> List.rev )
+          |> snd |> List.rev)
   | Functor (arg, res) ->
       let arg' = Opt.map (functor_argument env) arg in
       let res' = module_type_expr env id res in

@@ -105,8 +105,8 @@ let rec unit (resolver : Env.resolver) t =
   in
   let initial_env = Env.set_resolver initial_env resolver in
   let (*rec*) resolve_units (units, env) imports =
-    List.fold_left
-      (fun (imports, env) import ->
+    List.fold_right
+      (fun import (imports, env) ->
         if List.mem import imports then (imports, env)
         else
           match import with
@@ -158,7 +158,7 @@ let rec unit (resolver : Env.resolver) t =
                   Format.fprintf Format.err_formatter "Not found at all: %s\n%!"
                     str;
                   (import :: imports, env) ))
-      (units, env) imports
+      imports (units, env)
   in
 
   let imports, env = resolve_units ([], initial_env) t.imports in
@@ -392,16 +392,27 @@ and module_ : Env.t -> Module.t -> Module.t =
     let type_ =
       module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_
     in
-    let expansion_needed =
+    let hidden_alias =
       match type_ with
       | Alias p when Paths.Path.is_hidden (p :> Paths.Path.t) -> true
+      | _ -> false
+    in
+    let self_canonical =
+      match type_ with
       | Alias (`Resolved p) -> (
           match Paths.Path.Resolved.Module.canonical_ident p with
           | Some i -> i = m.id (* Self-canonical *)
           | None -> false )
-      | ModuleType (Signature _) -> false
-      | ModuleType _ -> true
+      | _ -> false
+    in
+    let moduletype_expansion =
+      match type_ with
       | Alias _ -> false
+      | ModuleType (Signature _) -> false
+      | _ -> true
+    in
+    let expansion_needed =
+      moduletype_expansion || (self_canonical || hidden_alias)
     in
     let env, expansion =
       match (m.expansion, expansion_needed) with
@@ -425,9 +436,12 @@ and module_ : Env.t -> Module.t -> Module.t =
           -> d2, Some (Signature (expansion))
         | _ -> [], expansion
     in
+    let override_display_type =
+      (self_canonical || hidden_alias || not (moduletype_expansion))
+    in
     let display_type =
-      match expansion with
-      | Some (Signature sg) -> Some (ModuleType (Signature sg))
+      match override_display_type, expansion with
+      | true, Some (Signature sg) -> Some (ModuleType (Signature sg))
       | _ -> None
     in
     {
@@ -581,8 +595,8 @@ and module_type_expr :
          (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
       With
         ( module_type_expr env id expr,
-          List.fold_right
-            (fun sub (sg, subs) ->
+          List.fold_left
+            (fun (sg, subs) sub ->
               try
                 (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
                    Component.Fmt.signature sg; *)
@@ -644,8 +658,8 @@ and module_type_expr :
                   "Exception caught while resolving fragments: %s\n%s\n%!"
                   (Printexc.to_string e) bt;
                 raise e)
-            subs (sg, [])
-          |> snd |> List.rev )
+            (sg, []) subs
+          |> snd |> List.rev)
   | Functor (arg, res) ->
       let arg' = Opt.map (functor_argument env) arg in
       let res' = module_type_expr env id res in
