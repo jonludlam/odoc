@@ -283,10 +283,13 @@ and module_substitution env m =
   { m with manifest = module_path env m.manifest; doc }
 
 and signature : Env.t -> Signature.t -> _ =
+  fun env s ->
+  let env = Env.open_signature s env in
+  signature_items env s
+
+and signature_items : Env.t -> Signature.t -> _ =
  fun env s ->
   let open Signature in
-  (* Format.fprintf Format.err_formatter "In Resolve2.signature\n%!"; *)
-  let env = Env.open_signature s env in
   List.map
     (fun item ->
       match item with
@@ -491,7 +494,7 @@ and include_ : Env.t -> Include.t -> Include.t =
       i with
       decl = module_decl env i.parent i.decl;
       expansion =
-        { resolved = true; content = signature env i.expansion.content };
+        { resolved = true; content = signature_items env i.expansion.content };
       doc = comment_docs env i.doc;
     }
   with Env.MyFailure (_id, _env) as e ->

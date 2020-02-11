@@ -183,27 +183,31 @@ and module_substitution env m =
   let open ModuleSubstitution in
   { m with manifest = module_path env m.manifest }
 
+and signature_items : Env.t -> Signature.t -> _ =
+    fun env s ->
+let open Signature in
+List.map
+(fun item ->
+  match item with
+  | Module (r, m) -> Module (r, module_ env m)
+  | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
+  | Type (r, t) -> Type (r, type_decl env t)
+  | TypeSubstitution t -> TypeSubstitution (type_decl env t)
+  | ModuleType mt -> ModuleType (module_type env mt)
+  | Value v -> Value (value_ env v)
+  | Comment c -> Comment c
+  | TypExt t -> TypExt (extension env t)
+  | Exception e -> Exception (exception_ env e)
+  | External e -> External (external_ env e)
+  | Class (r, c) -> Class (r, class_ env c)
+  | ClassType (r, c) -> ClassType (r, class_type env c)
+  | Include i -> Include (include_ env i))
+s
+
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
-  let open Signature in
   let env = Env.open_signature s env in
-  List.map
-    (fun item ->
-      match item with
-      | Module (r, m) -> Module (r, module_ env m)
-      | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
-      | Type (r, t) -> Type (r, type_decl env t)
-      | TypeSubstitution t -> TypeSubstitution (type_decl env t)
-      | ModuleType mt -> ModuleType (module_type env mt)
-      | Value v -> Value (value_ env v)
-      | Comment c -> Comment c
-      | TypExt t -> TypExt (extension env t)
-      | Exception e -> Exception (exception_ env e)
-      | External e -> External (external_ env e)
-      | Class (r, c) -> Class (r, class_ env c)
-      | ClassType (r, c) -> ClassType (r, class_type env c)
-      | Include i -> Include (include_ env i))
-    s
+  signature_items env s
 
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
@@ -305,7 +309,7 @@ and include_ : Env.t -> Include.t -> Include.t =
       try (
         match expn with
         | Module.Signature sg ->
-          { resolved=true; content = remove_docs_from_signature (signature env sg) }
+          { resolved=true; content = remove_docs_from_signature (signature_items env sg) }
         | _ -> i.expansion
       ) with _ -> i.expansion
     in
