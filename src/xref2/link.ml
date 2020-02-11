@@ -98,27 +98,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
   Tools.is_compile := false;
-  let initial_env =
-    let m = Env.module_of_unit t in
-    Env.empty |> Env.add_module t.id m
-    |> Env.add_root (Paths.Identifier.name t.id) (Env.Resolved (t.id, m))
-  in
-  let initial_env = Env.set_resolver initial_env resolver in
-  let env =
-    List.fold_right
-      (fun import env ->
-          match import with
-          | Import.Resolved root ->
-              let unit = resolver.resolve_unit root in
-              let m = Env.module_of_unit unit in
-              let env = Env.add_module unit.id m env in
-              Env.add_root
-                  (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
-                  (Env.Resolved (unit.id, m))
-                  env
-          | Import.Unresolved (_str, _) -> env)
-      t.imports initial_env
-  in
+  let env = Env.initial_env t resolver in
   {
     t with
     content = content env t.content;

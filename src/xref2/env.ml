@@ -574,4 +574,27 @@ let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
  fun unit env ->
   match unit.content with Module s -> open_signature s env | Pack _ -> env
 
+let initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> t =
+  fun t resolver ->
+  let open Odoc_model.Lang.Compilation_unit in
+  let initial_env =
+    let m = module_of_unit t in
+    empty |> add_module t.id m
+    |> add_root (Odoc_model.Paths.Identifier.name t.id) (Resolved (t.id, m))
+  in
+  let initial_env = set_resolver initial_env resolver in
+    List.fold_right
+      (fun import env ->
+          match import with
+          | Import.Resolved root ->
+              let unit = resolver.resolve_unit root in
+              let m = module_of_unit unit in
+              let env = add_module unit.id m env in
+              add_root
+                  (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
+                  (Resolved (unit.id, m))
+                  env
+          | Import.Unresolved (_str, _) -> env)
+      t.imports initial_env
+
 let modules_of env = ModuleMap.bindings env.modules

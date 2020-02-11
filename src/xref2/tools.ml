@@ -512,6 +512,7 @@ and lookup_and_resolve_module_from_resolved_path :
     bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
  fun is_resolve add_canonical env p ->
   let id = (is_resolve, add_canonical, p) in
+  let env_id = Env.id env in
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
   let resolve () =
     (* Format.fprintf Format.err_formatter "."; *)
@@ -614,20 +615,24 @@ and lookup_and_resolve_module_from_resolved_path :
   match Memos1.find_all memo id with
   | [] ->
       let resolved = resolve () in
-      Memos1.add memo id resolved;
+      Memos1.add memo id (resolved, env_id);
       resolved
   | xs ->
-      let rec find = function
-        | (p, m) :: xs ->
+      let rec find_fast = function
+        | (result, id) :: _ when id=env_id -> result
+        | _ :: ys -> find_fast ys
+        | [] -> find xs
+      and find = function
+        | ((p, m), _) :: xs ->
             if verify_resolved_module_path env p then
               ((*Format.fprintf Format.err_formatter "x";*) p, m)
             else find xs
         | [] ->
             let resolved = resolve () in
-            Memos1.add memo id resolved;
+            Memos1.add memo id (resolved, env_id);
             resolved
       in
-      find xs
+      find_fast xs
 
 and lookup_module_from_path env cpath =
   lookup_and_resolve_module_from_path true true env cpath
