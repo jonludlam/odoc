@@ -353,14 +353,14 @@ let memo = Memos1.create 91
 
 let reset_cache () = Memos1.clear memo
 
-(*
+
 module Hashable2 = struct
-  type t = bool * bool * int * Cpath.module_
+  type t = bool * bool * Cpath.module_
   let equal = Stdlib.(=)
   let hash = Hashtbl.hash
 end
 module Memos2 = Hashtbl.Make(Hashable2)
-let memo2 = Memos2.create 91*)
+let memo2 = Memos2.create 91
 
 let rec handle_apply is_resolve env func_path arg_path m =
   let func_path', mty = module_type_expr_of_module env (func_path, m) in
@@ -410,7 +410,7 @@ and add_canonical_path env m p : Cpath.resolved_module =
                 `Canonical (p, cp)
             | exception _e ->
                 Format.fprintf Format.err_formatter
-                  "Warning: Failed to look up canonical path for module %a\n\
+                  "Tools.add_canonical_path: Warning: Failed to look up canonical path for module %a\n\
                    %s\n\
                    %!"
                   Component.Fmt.resolved_module_path p
@@ -648,11 +648,11 @@ and lookup_and_resolve_module_from_path :
     (module_lookup_result, Cpath.module_) ResultMonad.t =
  fun is_resolve add_canonical env p ->
   let open ResultMonad in
-  (*let id = (is_resolve, add_canonical, Env.id env, p) in*)
-  (*if Memos2.mem memo2 id then Memos2.find memo2 id
-    else*)
+  let id = (is_resolve, add_canonical, p) in
+  let env_id = Env.id env in
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_path: looking up %a\n%!" Component.Fmt.path p; *)
-  match p with
+  let resolve () = 
+    match p with
   | `Dot (parent, id) ->
       lookup_and_resolve_module_from_path is_resolve add_canonical env parent
       |> map_unresolved (fun p' -> `Dot (p', id))
@@ -691,8 +691,31 @@ and lookup_and_resolve_module_from_path :
   | `Forward f ->
       lookup_and_resolve_module_from_path is_resolve add_canonical env (`Root f)
       |> map_unresolved (fun _ -> `Forward f)
+  in
+  match Memos2.find_all memo2 id with
+  | [] ->
+      let resolved = resolve () in
+      Memos2.add memo2 id (resolved, env_id);
+      resolved
+  | xs ->
+      let rec find_fast = function
+        | (result, id) :: _ when id=env_id -> result
+        | _ :: ys -> find_fast ys
+        | [] -> find xs
+      and find = function
+        | (Resolved (p, m), _) :: xs ->
+            if verify_resolved_module_path env p then
+              Resolved ((*Format.fprintf Format.err_formatter "x";*) p, m)
+            else find xs
+        | _::xs -> find xs
+        | [] ->
+            let resolved = resolve () in
+            Memos2.add memo2 id (resolved, env_id);
+            resolved
+      in
+      find_fast xs
 
-and lookup_and_resolve_module_type_from_resolved_path :
+      and lookup_and_resolve_module_type_from_resolved_path :
     bool -> Env.t -> Cpath.resolved_module_type -> module_type_lookup_result =
  fun is_resolve env p ->
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_type_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
@@ -766,7 +789,7 @@ and lookup_type_from_resolved_path :
         let p, m = lookup_and_resolve_module_from_resolved_path true true env p in
         handle_type_lookup env id p m
       with e ->
-        Format.fprintf Format.err_formatter "Here...\n%!";
+        Format.fprintf Format.err_formatter "Here...\n%s\n%!" (Printexc.get_backtrace ());
         (match p with
         | `Identifier _ident -> Format.fprintf Format.err_formatter "Identifier\n%!";
         | _ -> Format.fprintf Format.err_formatter "Not ident\n%!");
@@ -1188,8 +1211,20 @@ and fragmap_module :
               | Right p -> (items, Component.Signature.RModule (id, p) :: removed)
               )
           | Component.Signature.Include ({ expansion_; _ } as i) ->
+            let decl =
+              if List.exists
+              (function
+              | Component.Signature.Module (id, _, _) when Ident.Name.module_ id = ModuleName.to_string name -> true
+              | _ -> false
+              ) expansion_.items
+              then
+                match i.decl with
+                | Component.Module.Alias _ -> Component.Module.ModuleType (With (TypeOf i.decl, [sub]))
+                | ModuleType ty -> ModuleType (With (ty, [sub]))
+              else i.decl
+            in
             let (items', removed') = handle_items expansion_.items in
-            (Component.Signature.Include {i with expansion_ = {expansion_ with items = items'}}::items, removed' @ removed)
+            (Component.Signature.Include {i with decl; expansion_ = {expansion_ with items = items'}}::items, removed' @ removed)
           | x -> (x :: items, removed))
         items ([], [])
   in
@@ -1239,8 +1274,20 @@ and fragmap_type :
                 | Right y ->
                     (items, Component.Signature.RType (id, y) :: removed) )
             | Component.Signature.Include ({ expansion_; _ } as i) ->
+            let decl =
+              if List.exists
+              (function
+              | Component.Signature.Type (id, _, _) when Ident.Name.type_ id = TypeName.to_string name -> true
+              | _ -> false
+              ) expansion_.items
+              then
+                match i.decl with
+                | Component.Module.Alias _ -> Component.Module.ModuleType (With (TypeOf i.decl, [sub]))
+                | ModuleType ty -> ModuleType (With (ty, [sub]))
+              else i.decl
+            in
               let (items', removed') = handle_items expansion_.items ([], removed) in
-              (Component.Signature.Include {i with expansion_ = {i.expansion_ with items = items'}}::items, removed')
+              (Component.Signature.Include {i with decl; expansion_ = {i.expansion_ with items = items'}}::items, removed')
             | x -> (x :: items, removed))
           items init
       in

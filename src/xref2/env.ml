@@ -523,10 +523,6 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             let idents = LocalIdents.(module_ t empty) in
             let map = map_of_idents idents empty in
             let ty = module_ map t in
-            let exists_already = try ignore(lookup_module t.Odoc_model.Lang.Module.id env); true with _ -> false in
-            (if exists_already then begin
-              Format.fprintf Format.err_formatter "WARNING: module %a already exists\n%!" Component.Fmt.model_identifier (t.Odoc_model.Lang.Module.id :> Odoc_model.Paths.Identifier.t);
-              end);
             add_module t.Odoc_model.Lang.Module.id ty env
         | Odoc_model.Lang.Signature.ModuleType t ->
             let idents = LocalIdents.(module_type t empty) in

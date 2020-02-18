@@ -6,6 +6,8 @@ module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
 
+exception Loop
+
 let with_dummy_location v = Location_.
   { location = { file=""; start={line=0; column=0;}; end_={line=0; column=1} }
   ; value=v }
@@ -43,8 +45,12 @@ and should_resolve : Paths.Path.t -> bool =
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
-  if not (should_resolve (p :> Paths.Path.t)) then p
-  else
+  if not (should_resolve (p :> Paths.Path.t)) 
+  then begin
+    Format.fprintf Format.err_formatter "Not reresolving\n%!";
+    p
+  end else begin
+    Format.fprintf Format.err_formatter "Reresolving...\n%!";
     let cp = Component.Of_Lang.(type_path empty p) in
     match Tools.lookup_type_from_path env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
@@ -55,6 +61,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
           Component.Fmt.model_path
           (p :> Paths.Path.t);
         p
+  end
 
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
@@ -81,8 +88,13 @@ and module_type_path :
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
  fun env p ->
-  if not (should_resolve (p :> Paths.Path.t)) then p
-  else
+   Format.fprintf Format.err_formatter "Link.module_path: %a\n%!" Component.Fmt.model_path (p :> Paths.Path.t);
+  if not (should_resolve (p :> Paths.Path.t))
+  then begin
+    Format.fprintf Format.err_formatter "Not reresolving\n%!";
+    p
+  end else begin
+    Format.fprintf Format.err_formatter "Reresolving...\n%!";
     let cp = Component.Of_Lang.(module_path empty p) in
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
@@ -94,6 +106,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
           Component.Fmt.model_path
           (p :> Paths.Path.t);
         p
+  end
 
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
@@ -113,7 +126,10 @@ and content env =
 
 and value_ env t =
   let open Value in
-  { t with doc = comment_docs env t.doc; type_ = type_expression env t.type_ }
+  Format.fprintf Format.err_formatter "Handling %a\n%!" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t);
+  let result = { t with doc = comment_docs env t.doc; type_ = type_expression env [] t.type_ } in
+  Format.fprintf Format.err_formatter "Done\n%!";
+  result
 
 and comment_inline_element :
     Env.t -> Comment.inline_element -> Comment.inline_element =
@@ -185,7 +201,7 @@ and comment env = function
 
 and exception_ env e =
   let open Exception in
-  let res = Opt.map (type_expression env) e.res in
+  let res = Opt.map (type_expression env []) e.res in
   let args = type_decl_constructor_argument env e.args in
   let doc = comment_docs env e.doc in
   { e with res; args; doc }
@@ -197,7 +213,7 @@ and extension env t =
     {
       c with
       args = type_decl_constructor_argument env c.args;
-      res = Opt.map (type_expression env) c.res;
+      res = Opt.map (type_expression env []) c.res;
       doc = comment_docs env c.doc;
     }
   in
@@ -208,12 +224,12 @@ and extension env t =
 
 and external_ env e =
   let open External in
-  { e with type_ = type_expression env e.type_; doc = comment_docs env e.doc }
+  { e with type_ = type_expression env [] e.type_; doc = comment_docs env e.doc }
 
 and class_type_expr env =
   let open ClassType in
   function
-  | Constr (path, texps) -> Constr (path, List.map (type_expression env) texps)
+  | Constr (path, texps) -> Constr (path, List.map (type_expression env []) texps)
   | Signature s -> Signature (class_signature env s)
 
 and class_type env c =
@@ -228,31 +244,31 @@ and class_signature env c =
     | Method m -> Method (method_ env m)
     | InstanceVariable i -> InstanceVariable (instance_variable env i)
     | Constraint (t1, t2) ->
-        Constraint (type_expression env t1, type_expression env t2)
+        Constraint (type_expression env [] t1, type_expression env [] t2)
     | Inherit c -> Inherit (class_type_expr env c)
     | Comment c -> Comment c
   in
   {
-    self = Opt.map (type_expression env) c.self;
+    self = Opt.map (type_expression env []) c.self;
     items = List.map map_item c.items;
   }
 
 and method_ env m =
   let open Method in
   let doc = comment_docs env m.doc in
-  { m with type_ = type_expression env m.type_; doc }
+  { m with type_ = type_expression env [] m.type_; doc }
 
 and instance_variable env i =
   let open InstanceVariable in
   let doc = comment_docs env i.doc in
-  { i with type_ = type_expression env i.type_; doc }
+  { i with type_ = type_expression env [] i.type_; doc }
 
 and class_ env c =
   let open Class in
   let rec map_decl = function
     | ClassType expr -> ClassType (class_type_expr env expr)
     | Arrow (lbl, expr, decl) ->
-        Arrow (lbl, type_expression env expr, map_decl decl)
+        Arrow (lbl, type_expression env [] expr, map_decl decl)
   in
   let doc = comment_docs env c.doc in
   { c with type_ = map_decl c.type_; doc }
@@ -332,10 +348,17 @@ and should_hide_module_decl : Module.decl -> bool =
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
+  let start_time = Unix.gettimeofday () in
+  Format.fprintf Format.err_formatter "Processing Module %a\n%!" Component.Fmt.model_identifier (m.id :> Paths.Identifier.t);
   try
     let env = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
+    let m' = Env.lookup_module m.id env in
     let type_ =
-      module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_
+      match module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_ with
+      | Alias (`Resolved p) ->
+        let p' = Component.Of_Lang.resolved_module_path Component.Of_Lang.empty p in
+        Alias (`Resolved (Lang_of.Path.resolved_module Lang_of.empty (Tools.add_canonical_path env m' p')))
+      | t -> t
     in
     let hidden_alias =
       match type_ with
@@ -346,7 +369,8 @@ and module_ : Env.t -> Module.t -> Module.t =
       match type_ with
       | Alias (`Resolved p) -> (
           match Paths.Path.Resolved.Module.canonical_ident p with
-          | Some i -> i = m.id (* Self-canonical *)
+          | Some i ->
+            i = m.id (* Self-canonical *)
           | None -> false )
       | _ -> false
     in
@@ -357,12 +381,12 @@ and module_ : Env.t -> Module.t -> Module.t =
       | _ -> true
     in
     let expansion_needed =
-      moduletype_expansion || (self_canonical || hidden_alias)
+      moduletype_expansion || self_canonical || hidden_alias
     in
+    Format.fprintf Format.err_formatter "moduletype_expansion=%b self_canonical=%b hidden_alias=%b expansion_needed=%b\n%!" moduletype_expansion self_canonical hidden_alias expansion_needed;
     let env, expansion =
       match (m.expansion, expansion_needed) with
       | None, true ->
-          let m' = Env.lookup_module m.id env in
           let env, expansion =
             try
               let env, e = Expand_tools.expansion_of_module env m.id m' in
@@ -389,13 +413,17 @@ and module_ : Env.t -> Module.t -> Module.t =
       | true, Some (Signature sg) -> Some (ModuleType (Signature sg))
       | _ -> None
     in
+    let result =
     {
       m with
       doc = comment_docs env doc;
       type_ = module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_;
       display_type;
       expansion = Opt.map (module_expansion env) expansion;
-    }
+    } in
+    let end_time = Unix.gettimeofday () in
+    Format.fprintf Format.err_formatter "Finished\n%!%f seconds for module %a\n%!" (end_time -. start_time) Component.Fmt.model_identifier (m.id :> Paths.Identifier.t);
+    result
   with
   | Component.Find.Find_failure (sg, name, ty) as e ->
       let bt = Printexc.get_backtrace () in
@@ -625,9 +653,11 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
   let open TypeDecl in
   try
     let equation = type_decl_equation env t.equation in
+    let params = equation.params in
+    (List.iter (function | (Odoc_model.Lang.TypeDecl.Var _, _) -> () | _ -> failwith "Unexpected param") params);
     let doc = comment_docs env t.doc in
     let hidden_path = match equation.Equation.manifest with
-      | Some (Constr (`Resolved path,_)) when Paths.Path.Resolved.Type.is_hidden path -> Some path
+      | Some (Constr (`Resolved path, params)) when Paths.Path.Resolved.Type.is_hidden path -> Some (path, params)
       | _ -> None
     in
     let representation =
@@ -636,12 +666,17 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
     let default = { t with equation; doc; representation } in
 
     match hidden_path with
-    | Some p -> (
+    | Some (p, params) -> (
       let p' = Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p in
       match Tools.lookup_type_from_resolved_path env p' with
-      | (_, Found (`T t')) ->
+      | (_, Found (`T t')) -> begin
+        try
         (* Format.fprintf Format.err_formatter "XXXXXXX - replacing type at id %a maybe: %a\n%!" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t) Component.Fmt.resolved_type_path p'; *)
-        { default with equation = Lang_of.type_decl_equation Lang_of.empty t'.equation }
+          { default with equation = Simplify.collapse_eqns default.equation (Lang_of.type_decl_equation Lang_of.empty t'.equation) params }
+        with e ->
+          Format.fprintf Format.err_formatter "Failed to do the simplify thing for %a\n%!" Component.Fmt.model_identifier (t.id :> Paths.Identifier.t);
+          raise e
+      end
       | _ -> default)
     | None -> default
   with e ->
@@ -653,10 +688,10 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
 
 and type_decl_equation env t =
   let open TypeDecl.Equation in
-  let manifest = Opt.map (type_expression env) t.manifest in
+  let manifest = Opt.map (type_expression env []) t.manifest in
   let constraints =
     List.map
-      (fun (tex1, tex2) -> (type_expression env tex1, type_expression env tex2))
+      (fun (tex1, tex2) -> (type_expression env [] tex1, type_expression env [] tex2))
       t.constraints
   in
   { t with manifest; constraints }
@@ -664,44 +699,44 @@ and type_decl_equation env t =
 and type_decl_field env f =
   let open TypeDecl.Field in
   let doc = comment_docs env f.doc in
-  { f with type_ = type_expression env f.type_; doc }
+  { f with type_ = type_expression env [] f.type_; doc }
 
 and type_decl_constructor_argument env c =
   let open TypeDecl.Constructor in
   match c with
-  | Tuple ts -> Tuple (List.map (type_expression env) ts)
+  | Tuple ts -> Tuple (List.map (type_expression env []) ts)
   | Record fs -> Record (List.map (type_decl_field env) fs)
 
 and type_decl_constructor env c =
   let open TypeDecl.Constructor in
   let doc = comment_docs env c.doc in
   let args = type_decl_constructor_argument env c.args in
-  let res = Opt.map (type_expression env) c.res in
+  let res = Opt.map (type_expression env []) c.res in
   { c with doc; args; res }
 
-and type_expression_polyvar env v =
+and type_expression_polyvar env visited v =
   let open TypeExpr.Polymorphic_variant in
   let constructor c =
     let open Constructor in
     let doc = comment_docs env c.doc in
-    { c with arguments = List.map (type_expression env) c.arguments; doc }
+    { c with arguments = List.map (type_expression env visited) c.arguments; doc }
   in
   let element = function
-    | Type t -> Type (type_expression env t)
+    | Type t -> Type (type_expression env visited t)
     | Constructor c -> Constructor (constructor c)
   in
   { v with elements = List.map element v.elements }
 
-and type_expression_object env o =
+and type_expression_object env visited o =
   let open TypeExpr.Object in
-  let method_ m = { m with type_ = type_expression env m.type_ } in
+  let method_ m = { m with type_ = type_expression env visited m.type_ } in
   let field = function
     | Method m -> Method (method_ m)
-    | Inherit t -> Inherit (type_expression env t)
+    | Inherit t -> Inherit (type_expression env visited t)
   in
   { o with fields = List.map field o.fields }
 
-and type_expression_package env p =
+and type_expression_package env visited p =
   let open TypeExpr.Package in
   let cp = Component.Of_Lang.(module_type_path empty p.path) in
   match Tools.lookup_and_resolve_module_type_from_path true env cp with
@@ -714,7 +749,7 @@ and type_expression_package env p =
       in
       let substitution (frag, t) =
         let frag' = Tools.resolve_mt_type_fragment env (identifier, sg) frag in
-        (`Resolved frag', type_expression env t)
+        (`Resolved frag', type_expression env visited t)
       in
       {
         path = module_type_path env p.path;
@@ -723,26 +758,42 @@ and type_expression_package env p =
   | Unresolved p' -> { p with path = Cpath.module_type_path_of_cpath p' }
 
 and type_expression : Env.t -> _ -> _ =
- fun env texpr ->
+ fun env visited texpr ->
   let open TypeExpr in
   try
     match texpr with
     | Var _ | Any -> texpr
-    | Alias (t, str) -> Alias (type_expression env t, str)
+    | Alias (t, str) -> Alias (type_expression env visited t, str)
     | Arrow (lbl, t1, t2) ->
-        Arrow (lbl, type_expression env t1, type_expression env t2)
-    | Tuple ts -> Tuple (List.map (type_expression env) ts)
+        Arrow (lbl, type_expression env visited t1, type_expression env visited t2)
+    | Tuple ts -> Tuple (List.map (type_expression env visited) ts)
     | Constr (path, ts) -> (
         let cp = Component.Of_Lang.(type_path empty path) in
+        let ts = List.map (type_expression env visited) ts in
         match Tools.lookup_type_from_path env cp with
         | Resolved (cp', Found (`T t)) -> begin
             let p = Cpath.resolved_type_path_of_cpath cp' in
+            if List.mem p visited then raise Loop else
             if Cpath.is_resolved_type_hidden cp'
-            then match t.Component.TypeDecl.equation.Component.TypeDecl.Equation.manifest with
-            | Some expr ->
+            then match t.Component.TypeDecl.equation with
+            | { manifest = Some expr; params; _} ->
+              let map = List.fold_left2 (fun acc param sub ->
+                match param with
+                | (Odoc_model.Lang.TypeDecl.Var x, _) -> (x, sub) :: acc
+                | Any, _ -> acc) [] params ts in
+              
               (* Format.fprintf Format.err_formatter "Here we go...%a \n" Component.Fmt.type_path cp; *)
-              type_expression env (Lang_of.(type_expr empty expr))
-            | None -> 
+                Format.fprintf Format.err_formatter "here we are... %d before=%a (path=%a)\n%!" (List.length visited) Component.Fmt.type_decl t Component.Fmt.type_path cp;
+                begin
+                  try
+                    let t' = Simplify.type_expr map Lang_of.(type_expr empty expr) in
+                    type_expression env (p :: visited) t'
+                  with
+                  | Loop ->
+                    Format.fprintf Format.err_formatter "Loop detected\n%!";
+                    Constr (`Resolved p, ts)
+                end 
+            | _ ->
                 Constr (`Resolved p, ts)
             else Constr (`Resolved p, ts)
             end
@@ -752,11 +803,11 @@ and type_expression : Env.t -> _ -> _ =
         | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
         | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) )
     | Polymorphic_variant v ->
-        Polymorphic_variant (type_expression_polyvar env v)
-    | Object o -> Object (type_expression_object env o)
-    | Class (path, ts) -> Class (path, List.map (type_expression env) ts)
-    | Poly (strs, t) -> Poly (strs, type_expression env t)
-    | Package p -> Package (type_expression_package env p)
+        Polymorphic_variant (type_expression_polyvar env visited v)
+    | Object o -> Object (type_expression_object env visited o)
+    | Class (path, ts) -> Class (path, List.map (type_expression env visited) ts)
+    | Poly (strs, t) -> Poly (strs, type_expression env visited t)
+    | Package p -> Package (type_expression_package env visited p)
   with _ -> texpr
 
 (*

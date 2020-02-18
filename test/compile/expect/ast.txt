@@ -62,3 +62,11 @@ File "cases/ast.mli", line 74, characters 4-10:
 Unknown tag '@Class'.
 File "cases/ast.mli", line 77, characters 6-13:
 Unknown tag '@Method'.
+Processing ModuleType Mt
+Finished rocessing ModuleType Mt
+Processing Module M
+Processing Module M.N
+Finished processing Module M.N
+Finished processing Module M
+Processing Module F
+Finished processing Module F

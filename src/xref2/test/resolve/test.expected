@@ -293,13 +293,8 @@ module A : sig
 module B = resolved[global(A)]
 type t = resolved[global(B)].t
 
-AFTER 
-===== 
-module A : sig
-  type A.t
-  end
-module B = resolved[global(A)]
-type t = resolved[(global(A) -> global(B)).t]
+FAILURE Odoc_xref2.Component.Find.Find_failure(_, "t", "type")
+Backtrace:
 
 Module alias
 Resolve a module alias
@@ -322,14 +317,8 @@ module B = resolved[global(A)]
 module C = resolved[global(B)]
 type t = resolved[global(C)].t
 
-AFTER 
-===== 
-module A : sig
-  type A.t
-  end
-module B = resolved[global(A)]
-module C = resolved[global(B)]
-type t = resolved[(global(A) -> global(C)).t]
+FAILURE Not_found
+Backtrace:
 
 Functor
 Resolve a functor
@@ -494,7 +483,7 @@ module type ARG = sig
   module type ARG.S
   end
 module F : ((param F X) : resolved[global(ARG)]) -> sig
-  module F.result.N : resolved[global((param F X)).S]
+  module F.result.N : resolved[global((param F X))].S
   end
 module M : sig
   module type M.S = sig

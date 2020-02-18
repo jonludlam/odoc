@@ -720,7 +720,7 @@ and add_canonical_path env m p : Resolved.Module.t =
               `Canonical (p, cr)
           | exception _e ->
               Format.fprintf Format.err_formatter
-                "Warning: Failed to look up canonical path for module %a\n\
+                "Ref_tools: Warning: Failed to look up canonical path for module %a\n\
                  %s\n\
                  %!"
                 Component.Fmt.model_resolved_reference

@@ -91,9 +91,13 @@ and type_decl :
   let equation =
     let e = t.Component.TypeDecl.equation in
     let open Component.TypeDecl.Equation in
+    let constr_params = List.map (fun (desc,_) ->
+      match desc with
+      | Odoc_model.Lang.TypeDecl.Var x -> Component.TypeExpr.Var x
+      | Any -> Any) e.params in
     let manifest =
       match e.manifest with
-      | None -> Some (Component.TypeExpr.Constr (`Resolved path, []))
+      | None -> Some (Component.TypeExpr.Constr (`Resolved path, constr_params))
       | _ -> e.manifest
     in
     {

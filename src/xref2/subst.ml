@@ -592,7 +592,7 @@ and include_ s i =
   {
     i with
     decl = module_decl s i.decl;
-    expansion_ = apply_sig_map s i.expansion_.items i.expansion_;
+    expansion_ = apply_sig_map s i.expansion_.items i.expansion_.removed;
   }
 
 and value s v =
@@ -803,12 +803,12 @@ and removed_items s items =
 
 and signature s sg =
   let s, items = rename_bound_idents s [] sg.items in
-  apply_sig_map s items sg
+  apply_sig_map s items sg.removed
 
-and apply_sig_map s items sg =
+and apply_sig_map s items removed =
   let open Component.Signature in
   let items =
-    List.rev_map
+    List.map
       (function
         | Module (id, r, m) ->
             Module
@@ -835,4 +835,4 @@ and apply_sig_map s items sg =
         | Comment c -> Comment (docs_or_stop s c))
       items
   in
-  { items; removed = removed_items s sg.removed }
+  { items; removed = removed_items s removed }

@@ -63,8 +63,12 @@ and content env =
 
 and value_ env t =
   let open Value in
-  { t with type_ = type_expression env t.type_ }
-
+  try
+    { t with type_ = type_expression env t.type_ }
+  with e ->
+    Format.fprintf Format.err_formatter "Failed to compile value: %a\n%!" (Component.Fmt.model_identifier) (t.id :> Paths.Identifier.t);
+    raise e
+  
 and exception_ env e =
   let open Exception in
   let res = Opt.map (type_expression env) e.res in
@@ -255,7 +259,15 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
             try
               let env, e = Expand_tools.expansion_of_module_type env m.id m' in
               (env, Some e)
-            with Tools.OpaqueModule -> (env, None)
+            with 
+            | Tools.OpaqueModule -> (env, None)
+            | e ->
+              (match m'.expr with
+              | Some (Component.ModuleType.Signature sg) ->
+                Format.fprintf Format.err_formatter "Failed to expand module_type: %a\n%!sig:\n%!%a\n%!" (Component.Fmt.model_identifier) (m.id :> Paths.Identifier.t)
+                  Component.Fmt.signature sg
+              | _ -> ());
+              raise e
           in
           ( expansion,
             Some
@@ -264,7 +276,7 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
     in
     { m with expr = expr'; expansion }
   with e ->
-    Format.fprintf Format.err_formatter "Failed to resolve module_type (%a): %s"
+    Format.fprintf Format.err_formatter "Failed to resolve module_type (%a): %s\n%!"
       Component.Fmt.model_identifier
       (m.id :> Paths.Identifier.t)
       (Printexc.to_string e);
@@ -274,7 +286,7 @@ and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
   try
-    let remove_docs_from_signature =
+    let remove_top_doc_from_signature =
       let open Signature in
       function
       | Comment (`Docs _) :: xs -> xs
@@ -283,12 +295,12 @@ and include_ : Env.t -> Include.t -> Include.t =
     let decl = Component.Of_Lang.(module_decl empty i.decl) in
     let _, expn = Expand_tools.aux_expansion_of_module_decl env decl |> Expand_tools.handle_expansion env i.parent in
     let expansion =
-      try (
+      (* try ( *)
         match expn with
         | Module.Signature sg ->
-          { resolved=true; content = remove_docs_from_signature (signature_items env sg) }
+          { resolved=true; content = remove_top_doc_from_signature (signature env sg) }
         | _ -> i.expansion
-      ) with _ -> i.expansion
+      (* ) with _ -> i.expansion *)
     in
     {
       i with
@@ -296,6 +308,7 @@ and include_ : Env.t -> Include.t -> Include.t =
       expansion
     }
   with e ->
+    let bt = Printexc.get_backtrace () in
     let i' = Component.Of_Lang.(module_decl empty i.decl) in
     Format.fprintf Format.err_formatter
       "Failed to resolve include: %a\n\
@@ -306,7 +319,7 @@ and include_ : Env.t -> Include.t -> Include.t =
       Component.Fmt.module_decl i' (Printexc.to_string e)
       Component.Fmt.model_identifier
       (i.parent :> Paths.Identifier.t)
-      (Printexc.get_backtrace ());
+      bt;
     raise e
 
 and expansion : Env.t -> Module.expansion -> Module.expansion =
