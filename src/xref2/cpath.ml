@@ -57,6 +57,37 @@ and class_type =
   | `Substituted of class_type
   | `Dot of module_ * string ]
 
+let rec resolved_module_hash : resolved_module -> int =
+  function
+  | `Local id -> Hashtbl.hash (0, Ident.hash (id :> Ident.any))
+  | `Identifier id -> Hashtbl.hash (1, Odoc_model.Paths.Identifier.hash (id :> Odoc_model.Paths.Identifier.t ))
+  | `Substituted s -> Hashtbl.hash (2, resolved_module_hash s)
+  | `Subst (mt, m) -> Hashtbl.hash (3, resolved_module_type_hash mt, resolved_module_hash m)
+  | `SubstAlias (m1, m2) -> Hashtbl.hash (4, resolved_module_hash m1, resolved_module_hash m2)
+  | `Hidden h -> Hashtbl.hash (5, resolved_module_hash h)
+  | `Module (m, n) -> Hashtbl.hash (6, resolved_module_hash m, n)
+  | `Canonical (m, m2) -> Hashtbl.hash (7, resolved_module_hash m, module_hash m2)
+  | `Apply (m1, m2) -> Hashtbl.hash (8, resolved_module_hash m1, module_hash m2)
+  | `Alias (m1, m2) -> Hashtbl.hash (9, resolved_module_hash m1, resolved_module_hash m2)
+
+and module_hash : module_ -> int =
+  function
+  | `Resolved r -> Hashtbl.hash (10, resolved_module_hash r)
+  | `Substituted s -> Hashtbl.hash (11, module_hash s)
+  | `Root r -> Hashtbl.hash (12, r)
+  | `Forward f -> Hashtbl.hash (13, f)
+  | `Dot (m, s) -> Hashtbl.hash (14, module_hash m, s)
+  | `Apply (m1, m2) -> Hashtbl.hash (15, module_hash m1, module_hash m2)
+
+and resolved_module_type_hash : resolved_module_type -> int =
+  function
+  | `Local id -> Hashtbl.hash (16, Ident.hash (id :> Ident.any))
+  | `Substituted m -> Hashtbl.hash (17, resolved_module_type_hash m)
+  | `Identifier id -> Hashtbl.hash (18, Odoc_model.Paths.Identifier.(hash (id :> t)))
+  | `ModuleType (p, n) -> Hashtbl.hash (10, resolved_module_hash p, n)
+
+
+
 type local_path_error =
   | ErrModule of module_
   | ErrModuleType of module_type

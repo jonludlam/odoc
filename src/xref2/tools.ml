@@ -9,6 +9,9 @@ let is_compile = ref true
 
 let num_times = ref 0
 
+let time_wasted_start = ref 0.0
+let time_wasted = ref 0.0
+
 let resolve_module_ref :
     (Env.t ->
     Reference.Module.t ->
@@ -344,12 +347,12 @@ module Hashable = struct
 
   let equal = Stdlib.( = )
 
-  let hash = Hashtbl.hash
+  let hash (b1,b2,m) = Hashtbl.hash (1001, b1, b2, Cpath.resolved_module_hash m)
 end
 
 module Memos1 = Hashtbl.Make (Hashable)
 
-let memo = Memos1.create 91
+let memo = Memos1.create 10000
 
 let reset_cache () = Memos1.clear memo
 
@@ -360,7 +363,7 @@ module Hashable2 = struct
   let hash = Hashtbl.hash
 end
 module Memos2 = Hashtbl.Make(Hashable2)
-let memo2 = Memos2.create 91
+let memo2 = Memos2.create 10000
 
 let rec handle_apply is_resolve env func_path arg_path m =
   let func_path', mty = module_type_expr_of_module env (func_path, m) in
@@ -604,12 +607,12 @@ and lookup_and_resolve_module_from_resolved_path :
               let p' = simplify_resolved_module_path env p in
               (`Canonical (p1', `Resolved p'), m)
           | Unresolved p2 -> (`Canonical (p1', p2), m)
-          | exception e ->
-              Format.fprintf Format.err_formatter
+          | exception _e ->
+(*              Format.fprintf Format.err_formatter
                 "Warning: Failed to look up canonical path for module %a (got \
                  exception %s)\n\
                  %!"
-                Component.Fmt.resolved_module_path p (Printexc.to_string e);
+                Component.Fmt.resolved_module_path p (Printexc.to_string e); *)
               (`Canonical (p1', p2), m) )
   in
   match Memos1.find_all memo id with
@@ -621,16 +624,30 @@ and lookup_and_resolve_module_from_resolved_path :
       let rec find_fast = function
         | (result, id) :: _ when id=env_id -> result
         | _ :: ys -> find_fast ys
-        | [] -> find xs
+        | [] ->
+          find xs
       and find = function
         | ((p, m), _) :: xs ->
-            if verify_resolved_module_path env p then
+            if verify_resolved_module_path env p then begin
               ((*Format.fprintf Format.err_formatter "x";*) p, m)
-            else find xs
+            end else begin
+              find xs
+            end
         | [] ->
-            let resolved = resolve () in
-            Memos1.add memo id (resolved, env_id);
-            resolved
+            let time_measure_in_progress = !time_wasted_start <> 0.0 in
+            if not time_measure_in_progress then
+              time_wasted_start := Unix.gettimeofday ();
+            let (p, m) = resolve () in
+            (if verify_resolved_module_path env p then 
+              Memos1.add memo id ((p,m), env_id)
+            else begin
+              if not time_measure_in_progress then begin
+                let end_time = Unix.gettimeofday () in
+                time_wasted := !time_wasted +. (end_time -. !time_wasted_start);
+                time_wasted_start := 0.0;
+              end
+            end);
+            (p,m)
       in
       find_fast xs
 
@@ -1146,7 +1163,7 @@ and fragmap_module :
     Component.Signature.t =
  fun env frag sub sg ->
   let name, frag' = Fragment.Module.split frag in
-  let mapfn m =
+  let map_module m =
     match (frag', sub) with
     | None, ModuleEq (_, type_) ->
         (* Finished the substitution *)
@@ -1194,41 +1211,44 @@ and fragmap_module :
               } )
     | _, TypeEq _ | _, TypeSubst _ -> failwith "Can't happen"
   in
+  let map_include i expansion_ =
+         let decl =
+           match i.Component.Include.decl with
+           | Component.Module.Alias p -> Component.Module.ModuleType (With (TypeOf (Alias p), [sub]))
+           | Component.Module.ModuleType (With (p, subs)) -> ModuleType (With (p, sub::subs))
+           | Component.Module.ModuleType expr -> ModuleType (With (expr, [sub]))
+         in
+         { i with decl; expansion_}
+       in
   let rec handle_items items =
     List.fold_right
-        (fun item (items, removed) ->
-          match item with
-          | Component.Signature.Module (id, r, m)
-            when Ident.Name.module_ id = ModuleName.to_string name -> (
-              if name = "Named" then Format.fprintf Format.err_formatter "I'm replacing a module called 'Named'!\n%!";
-              let m = Component.Delayed.get m in
-              match mapfn m with
-              | Left m ->
-                  ( Component.Signature.Module
-                      (id, r, Component.Delayed.put (fun () -> m))
-                    :: items,
-                    removed )
-              | Right p -> (items, Component.Signature.RModule (id, p) :: removed)
-              )
-          | Component.Signature.Include ({ expansion_; _ } as i) ->
-            let decl =
-              if List.exists
-              (function
-              | Component.Signature.Module (id, _, _) when Ident.Name.module_ id = ModuleName.to_string name -> true
-              | _ -> false
-              ) expansion_.items
-              then
-                match i.decl with
-                | Component.Module.Alias _ -> Component.Module.ModuleType (With (TypeOf i.decl, [sub]))
-                | ModuleType ty -> ModuleType (With (ty, [sub]))
-              else i.decl
-            in
-            let (items', removed') = handle_items expansion_.items in
-            (Component.Signature.Include {i with decl; expansion_ = {expansion_ with items = items'}}::items, removed' @ removed)
-          | x -> (x :: items, removed))
-        items ([], [])
-  in
-  let items, removed = handle_items sg.items in     
+    (fun item (items, handled, removed) ->
+             match item with
+             | Component.Signature.Module (id, r, m)
+               when Ident.Name.module_ id = ModuleName.to_string name -> (
+                 let m = Component.Delayed.get m in
+                 match map_module m with
+                 | Left m ->
+                     ( Component.Signature.Module
+                         (id, r, Component.Delayed.put (fun () -> m))
+                       :: items,
+                       true,
+                       removed )
+                 | Right p -> (items, true, Component.Signature.RModule (id, p) :: removed)
+                 )
+             | Component.Signature.Include i ->
+               let (items', handled', removed') = handle_items i.expansion_.items in
+               let expansion = Component.Signature.{items=items'; removed=removed'} in
+               let component =
+                 if handled'
+                 then Component.Signature.Include (map_include i expansion)
+                 else Component.Signature.Include ({i with expansion_ = expansion}) in
+               (component::items, handled || handled', removed @ removed')
+             | x -> (x :: items, handled, removed))
+           items ([], false, [])
+        in
+       let items, _handled, removed = handle_items sg.items in     
+    
   let sub_of_removed removed sub =
     match removed with
     | Component.Signature.RModule (id, p) -> Subst.add_module id p sub
@@ -1251,6 +1271,15 @@ and fragmap_type :
     Component.Signature.t =
  fun _env frag sub sg ->
   let name, frag' = Fragment.Type.split frag in
+  let map_include i expansion_ =
+    let decl =
+      match i.Component.Include.decl with
+      | Component.Module.Alias p -> Component.Module.ModuleType (With (TypeOf (Alias p), [sub]))
+      | Component.Module.ModuleType (With (p, subs)) -> ModuleType (With (p, sub::subs))
+      | Component.Module.ModuleType expr -> ModuleType (With (expr, [sub]))
+    in
+    { i with decl; expansion_}
+  in
   match frag' with
   | None ->
       let mapfn t =
@@ -1264,34 +1293,28 @@ and fragmap_type :
       in
       let rec handle_items items init =
         List.fold_right
-          (fun item (items, removed) ->
+          (fun item (items, handled, removed) ->
             match item with
             | Component.Signature.Type (id, r, t)
               when Ident.Name.type_ id = name -> (
                 match mapfn t with
                 | Left x ->
-                    (Component.Signature.Type (id, r, x) :: items, removed)
+                    (Component.Signature.Type (id, r, x) :: items, true, removed)
                 | Right y ->
-                    (items, Component.Signature.RType (id, y) :: removed) )
+                    (items, true, Component.Signature.RType (id, y) :: removed) )
             | Component.Signature.Include ({ expansion_; _ } as i) ->
-            let decl =
-              if List.exists
-              (function
-              | Component.Signature.Type (id, _, _) when Ident.Name.type_ id = TypeName.to_string name -> true
-              | _ -> false
-              ) expansion_.items
-              then
-                match i.decl with
-                | Component.Module.Alias _ -> Component.Module.ModuleType (With (TypeOf i.decl, [sub]))
-                | ModuleType ty -> ModuleType (With (ty, [sub]))
-              else i.decl
-            in
-              let (items', removed') = handle_items expansion_.items ([], removed) in
-              (Component.Signature.Include {i with decl; expansion_ = {i.expansion_ with items = items'}}::items, removed')
-            | x -> (x :: items, removed))
-          items init
+            let (items', handled', removed') = handle_items expansion_.items ([], false, []) in
+                           let expansion_ = Component.Signature.{items=items'; removed=removed'} in
+                           let component =
+                             if handled'
+                             then Component.Signature.Include (map_include i expansion_)
+                             else Component.Signature.Include {i with expansion_}
+                           in
+                           (component::items, handled' || handled, removed' @ removed)
+                         | x -> (x :: items, handled, removed))
+              items init
       in
-      let items, removed = handle_items sg.items ([],[]) in
+      let items, _, removed = handle_items sg.items ([],false,[]) in
       let subst =
         List.fold_right
           (fun ty subst ->
@@ -1304,7 +1327,7 @@ and fragmap_type :
           removed Subst.identity
       in
       Subst.signature subst
-        { items = List.rev items; removed = removed @ sg.removed }
+        { items; removed = removed @ sg.removed }
   | Some f ->
       let mapfn m =
         let new_subst =
@@ -1342,20 +1365,27 @@ and fragmap_type :
             }
       in
       let rec handle_items items =
-        List.map
-          (function
+        List.fold_right (fun item (items, handled) -> 
+          match item with
             | Component.Signature.Module (id, r, m)
               when Ident.Name.module_ id = ModuleName.to_string name ->
                 let m = Component.Delayed.get m in
-                Component.Signature.Module
-                  (id, r, Component.Delayed.put (fun () -> mapfn m))
+                let item = Component.Signature.Module
+                  (id, r, Component.Delayed.put (fun () -> mapfn m)) in
+                (item :: items, true)
             | Component.Signature.Include ({expansion_; _} as i) ->
-                let items' = handle_items expansion_.items in
-                Component.Signature.Include {i with expansion_ = {expansion_ with items=items'}}
-            | x -> x)
-          items
+              let (items', handled') = handle_items expansion_.items in
+              let expansion_ = Component.Signature.{items=items'; removed=expansion_.removed} in
+              let component =
+                if handled'
+                then Component.Signature.Include (map_include i expansion_)
+                else Component.Signature.Include {i with expansion_}
+              in
+              (component::items, handled' || handled)
+            | x -> (x::items, handled))
+          items ([], false)
       in
-      let items = handle_items sg.items in
+      let (items, _) = handle_items sg.items in
       { sg with items }
 
 and find_module_with_replacement :

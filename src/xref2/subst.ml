@@ -712,7 +712,7 @@ and docs_or_stop s = function `Docs d -> `Docs (docs s d) | `Stop -> `Stop
 and rename_bound_idents s sg =
   let open Component.Signature in
   function
-  | [] -> (s, sg)
+  | [] -> (s, List.rev sg)
   | Module (id, r, m) :: rest ->
       let id' = Ident.Rename.module_ id in
       rename_bound_idents
