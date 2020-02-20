@@ -121,7 +121,7 @@ let rec unit (resolver : Env.resolver) t =
 and content env =
   let open Compilation_unit in
   function
-  | Module m -> Module (List.rev (signature env (List.rev m)))
+  | Module m -> Module (signature env m)
   | Pack _ -> failwith "Unhandled content"
 
 and value_ env t =
