@@ -452,65 +452,6 @@ and handle_class_type_lookup env id p m =
   let c = Component.Find.class_type_in_sig sg id in
   (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
-and verify_resolved_module_path : Env.t -> Cpath.resolved_module -> bool =
- fun env p ->
-  match p with
-  | `Local _id -> false
-  | `Identifier i -> (
-      try
-        ignore (Env.lookup_module i env);
-        true
-      with _ -> false )
-  | `Substituted x -> verify_resolved_module_path env x
-  | `Apply (func_path, arg_path) ->
-      verify_resolved_module_path env func_path
-      && verify_module_path env arg_path
-  | `Module (p, _) -> verify_resolved_module_path env p
-  | `Alias (p1, p2) ->
-      verify_resolved_module_path env p1 && verify_resolved_module_path env p2
-  | `Subst (p1, p2) ->
-      verify_resolved_module_type_path env p1
-      && verify_resolved_module_path env p2
-  | `SubstAlias (p1, p2) ->
-      verify_resolved_module_path env p1 && verify_resolved_module_path env p2
-  | `Hidden p1 -> verify_resolved_module_path env p1
-  | `Canonical (p1, p2) ->
-      verify_resolved_module_path env p1 && verify_module_path env p2
-
-and verify_module_path : Env.t -> Cpath.module_ -> bool =
- fun env p ->
-  match p with
-  | `Resolved p -> verify_resolved_module_path env p
-  | `Forward _ -> true
-  | `Dot (p, _) -> verify_module_path env p
-  | `Apply (p1, p2) -> verify_module_path env p1 && verify_module_path env p2
-  | `Substituted s -> verify_module_path env s
-  | `Root r -> (
-      try
-        ignore (Env.lookup_root_module r env);
-        false
-      with _ -> true )
-
-and verify_module_type_path : Env.t -> Cpath.module_type -> bool =
- fun env p ->
-  match p with
-  | `Resolved p -> verify_resolved_module_type_path env p
-  | `Substituted p -> verify_module_type_path env p
-  | `Dot (p, _) -> verify_module_path env p
-
-and verify_resolved_module_type_path :
-    Env.t -> Cpath.resolved_module_type -> bool =
- fun env p ->
-  match p with
-  | `Local _ -> false
-  | `Identifier i -> (
-      try
-        ignore (Env.lookup_module_type i env);
-        true
-      with _ -> false )
-  | `ModuleType (p, _) -> verify_resolved_module_path env p
-  | `Substituted p -> verify_resolved_module_type_path env p
-
 and lookup_and_resolve_module_from_resolved_path :
     bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
  fun is_resolve add_canonical env' p ->

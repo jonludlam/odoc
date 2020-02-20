@@ -345,15 +345,6 @@ and should_hide_module_decl : Module.decl -> bool =
   | ModuleType t -> should_hide_moduletype t
   | Alias p -> Paths.Path.is_hidden (p :> Paths.Path.t) 
 
-and skip id = 
-  (* ignore(id); false  *)
-  let str = Format.asprintf "%a" Component.Fmt.model_identifier (id :> Paths.Identifier.t) in
-  let regex = Str.regexp_string "Core_kernel_private" in
-  try
-    ignore(Str.search_forward regex str 0);
-    false
-  with _ -> true
-
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
