@@ -21,7 +21,8 @@ type resolver = {
 
 type lookup_type =
   | Module of Odoc_model.Paths_types.Identifier.reference_module * bool
-  | RootModule of string * root option
+  | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
+  | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
 
 type t
 

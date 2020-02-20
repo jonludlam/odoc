@@ -29,7 +29,8 @@ end)
 
 type lookup_type =
   | Module of Odoc_model.Paths_types.Identifier.reference_module * bool
-  | RootModule of string * root option
+  | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
+  | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
 
 type recorder = 
   { mutable lookups: lookup_type list }
@@ -295,7 +296,20 @@ let lookup_type identifier env =
       pp env;
     raise Not_found
 
-let lookup_module_type identifier env = List.assoc identifier env.module_types
+let lookup_module_type identifier env =
+  let maybe_record_result res =
+    match env.recorder with
+    | Some r -> 
+      r.lookups <- res :: r.lookups
+    | None -> ()
+  in
+  try
+    let result = List.assoc identifier env.module_types in
+    maybe_record_result (ModuleType (identifier,true));
+    result
+  with e ->
+    maybe_record_result (ModuleType (identifier,false));
+    raise e
 
 let lookup_value identifier env = List.assoc identifier env.values
 
@@ -351,9 +365,14 @@ let lookup_root_module name env =
                 in
                 Hashtbl.add roots name result;
                 result ) ) in
-  (match env.recorder with
-  | Some r -> r.lookups <- RootModule (name, result) :: r.lookups
-  | None -> ());
+  (match env.recorder, result with
+  | Some r, Some Forward ->
+    r.lookups <- RootModule (name, Some `Forward) :: r.lookups
+  | Some r, Some (Resolved (id,_)) ->
+    r.lookups <- RootModule (name, Some (`Resolved id)) :: r.lookups
+  | Some r, None ->
+    r.lookups <- RootModule (name, None) :: r.lookups
+  | None,_ -> ());
   result
 
 

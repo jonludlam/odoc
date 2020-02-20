@@ -513,11 +513,11 @@ and verify_resolved_module_type_path :
 
 and lookup_and_resolve_module_from_resolved_path :
     bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
- fun is_resolve add_canonical env p ->
+ fun is_resolve add_canonical env' p ->
   let id = (is_resolve, add_canonical, p) in
-  let env_id = Env.id env in
+  let env_id = Env.id env' in
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
-  let resolve () =
+  let resolve env =
     (* Format.fprintf Format.err_formatter "."; *)
     match p with
     | `Local id ->
@@ -617,18 +617,18 @@ and lookup_and_resolve_module_from_resolved_path :
   in
   match Memos1.find_all memo id with
   | [] ->
-      let resolved = resolve () in
-      Memos1.add memo id (resolved, env_id);
+      let (lookups, resolved) = Env.with_recorded_lookups env' resolve in
+      Memos1.add memo id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
-        | (result, id) :: _ when id=env_id -> result
+        | (result, id, _lookups) :: _ when id=env_id -> result
         | _ :: ys -> find_fast ys
         | [] ->
           find xs
       and find = function
-        | ((p, m), _) :: xs ->
-            if verify_resolved_module_path env p then begin
+        | ((p, m), _, lookups) :: xs ->
+            if verify_lookups env' lookups then begin
               ((*Format.fprintf Format.err_formatter "x";*) p, m)
             end else begin
               find xs
@@ -637,19 +637,31 @@ and lookup_and_resolve_module_from_resolved_path :
             let time_measure_in_progress = !time_wasted_start <> 0.0 in
             if not time_measure_in_progress then
               time_wasted_start := Unix.gettimeofday ();
-            let (p, m) = resolve () in
-            (if verify_resolved_module_path env p then 
-              Memos1.add memo id ((p,m), env_id)
-            else begin
-              if not time_measure_in_progress then begin
-                let end_time = Unix.gettimeofday () in
-                time_wasted := !time_wasted +. (end_time -. !time_wasted_start);
-                time_wasted_start := 0.0;
-              end
-            end);
+            let (lookups, (p, m)) = Env.with_recorded_lookups env' resolve in
+            Memos1.add memo id ((p,m), env_id, lookups);
             (p,m)
       in
       find_fast xs
+
+and verify_lookups env lookups =
+  let bad_lookup = function
+  | Env.Module (id, found) ->
+    let actually_found = try ignore(Env.lookup_module id env); true with _ -> false in
+    found <> actually_found
+  | Env.RootModule (name, res) ->
+    let actual_result = Env.lookup_root_module name env in
+    begin
+      match res, actual_result with
+      | None, None -> false
+      | Some `Forward, Some Forward -> false
+      | Some (`Resolved id1), Some Resolved (id2, _) -> id1 <> id2
+      | _ -> true
+    end
+  | Env.ModuleType (id, found) ->
+    let actually_found = try ignore(Env.lookup_module_type id env); true with _ -> false in
+    found <> actually_found
+  in
+  not (List.exists bad_lookup lookups)
 
 and lookup_module_from_path env cpath =
   lookup_and_resolve_module_from_path true true env cpath
@@ -663,12 +675,12 @@ and lookup_and_resolve_module_from_path :
     Env.t ->
     Cpath.module_ ->
     (module_lookup_result, Cpath.module_) ResultMonad.t =
- fun is_resolve add_canonical env p ->
+ fun is_resolve add_canonical env' p ->
   let open ResultMonad in
   let id = (is_resolve, add_canonical, p) in
-  let env_id = Env.id env in
+  let env_id = Env.id env' in
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_from_path: looking up %a\n%!" Component.Fmt.path p; *)
-  let resolve () = 
+  let resolve env = 
     match p with
   | `Dot (parent, id) ->
       lookup_and_resolve_module_from_path is_resolve add_canonical env parent
@@ -711,24 +723,24 @@ and lookup_and_resolve_module_from_path :
   in
   match Memos2.find_all memo2 id with
   | [] ->
-      let resolved = resolve () in
-      Memos2.add memo2 id (resolved, env_id);
+      let (lookups, resolved) = Env.with_recorded_lookups env' resolve in
+      Memos2.add memo2 id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
-        | (result, id) :: _ when id=env_id -> result
+        | (result, id, _lookups) :: _ when id=env_id -> result
         | _ :: ys -> find_fast ys
         | [] -> find xs
       and find = function
-        | (Resolved (p, m), _) :: xs ->
-            if verify_resolved_module_path env p then
-              Resolved ((*Format.fprintf Format.err_formatter "x";*) p, m)
-            else find xs
-        | _::xs -> find xs
+        | (r, _, lookups) :: xs ->
+            if verify_lookups env' lookups then
+              r
+            else
+              find xs
         | [] ->
-            let resolved = resolve () in
-            Memos2.add memo2 id (resolved, env_id);
-            resolved
+            let (lookups, result) = Env.with_recorded_lookups env' resolve in
+            Memos2.add memo2 id (result, env_id, lookups);
+            result
       in
       find_fast xs
 
