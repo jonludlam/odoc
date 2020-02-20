@@ -27,6 +27,13 @@ module ModuleMap = Map.Make (struct
   let compare (a : t) (b : t) = Stdlib.compare a b
 end)
 
+type lookup_type =
+  | Module of Odoc_model.Paths_types.Identifier.reference_module * bool
+  | RootModule of string * root option
+
+type recorder = 
+  { mutable lookups: lookup_type list }
+
 type t = {
   id : int;
   modules : Component.Module.t ModuleMap.t;
@@ -48,13 +55,25 @@ type t = {
   elts : (string * Component.Element.any) list;
   roots : (string * root) list;
   resolver : resolver option;
+
+  recorder : recorder option
 }
 
 let set_resolver t resolver = { t with resolver = Some resolver }
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
-
 let id t = t.id
+
+let with_recorded_lookups env f =
+  let recorder = { lookups = [] } in
+  let env' = { env with recorder = Some recorder } in
+  let result = f env' in
+  begin
+    match env.recorder with
+    | Some r -> r.lookups <- recorder.lookups @ r.lookups
+    | None -> ()
+  end;
+  (recorder.lookups, result)
 
 let pp_modules ppf modules =
   List.iter
@@ -127,6 +146,7 @@ let empty =
     methods = [];
     instance_variables = [];
     resolver = None;
+    recorder = None;
   }
 
 let add_module identifier m env =
@@ -311,28 +331,33 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
 let roots = Hashtbl.create 91
 
 let lookup_root_module name env =
-  match try Some (List.assoc name env.roots) with _ -> None with
-  | Some x -> Some x
-  | None -> (
-      match Hashtbl.find_opt roots name with
-      | Some x -> x
-      | None -> (
-          match env.resolver with
-          | None -> None
-          | Some r ->
-              let result =
-                match r.lookup_unit name with
-                | Forward_reference -> Some Forward
-                | Not_found -> None
-                | Found u ->
-                    let unit = r.resolve_unit u.root in
-                    Some (Resolved (unit.id, module_of_unit unit))
-              in
-              Hashtbl.add roots name result;
-              result ) )
+  let result =
+    match try Some (List.assoc name env.roots) with _ -> None with
+    | Some x -> Some x
+    | None -> (
+        match Hashtbl.find_opt roots name with
+        | Some x -> x
+        | None -> (
+            match env.resolver with
+            | None -> None
+            | Some r ->
+                let result =
+                  match r.lookup_unit name with
+                  | Forward_reference -> Some Forward
+                  | Not_found -> None
+                  | Found u ->
+                      let unit = r.resolve_unit u.root in
+                      Some (Resolved (unit.id, module_of_unit unit))
+                in
+                Hashtbl.add roots name result;
+                result ) ) in
+  (match env.recorder with
+  | Some r -> r.lookups <- RootModule (name, result) :: r.lookups
+  | None -> ());
+  result
 
 
-let lookup_module identifier env =
+let lookup_module_internal identifier env =
   try
     let l = ModuleMap.cardinal env.modules in
     len := !len + l;
@@ -348,6 +373,22 @@ let lookup_module identifier env =
     | _ -> 
       raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
+let lookup_module identifier env =
+  let maybe_record_result res =
+    match env.recorder with
+    | Some r -> 
+      r.lookups <- res :: r.lookups
+    | None -> ()
+  in
+  try
+    let result = lookup_module_internal identifier env in
+    maybe_record_result (Module (identifier,true));
+    result
+  with e ->
+    maybe_record_result (Module (identifier,false));
+    raise e
+
+  
 let lookup_page name env =
   match env.resolver with
   | None -> None

@@ -19,6 +19,10 @@ type resolver = {
   resolve_page : Odoc_model.Root.t -> Odoc_model.Lang.Page.t;
 }
 
+type lookup_type =
+  | Module of Odoc_model.Paths_types.Identifier.reference_module * bool
+  | RootModule of string * root option
+
 type t
 
 (*val pp_modules :
@@ -45,6 +49,9 @@ val pp_externals :
   Format.formatter ->
   (Odoc_model.Paths.Identifier.Value.t * Component.External.t) list ->
   unit
+
+val with_recorded_lookups :
+  t -> (t -> 'a) -> (lookup_type list * 'a)
 
 val pp : Format.formatter -> t -> unit
 
