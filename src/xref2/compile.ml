@@ -53,7 +53,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
   let env = Env.initial_env t resolver in
-  { t with content = content env t.content; }
+  { t with content = content env t.content }
 
 and content env =
   let open Compilation_unit in
@@ -63,12 +63,13 @@ and content env =
 
 and value_ env t =
   let open Value in
-  try
-    { t with type_ = type_expression env t.type_ }
+  try { t with type_ = type_expression env t.type_ }
   with e ->
-    Format.fprintf Format.err_formatter "Failed to compile value: %a\n%!" (Component.Fmt.model_identifier) (t.id :> Paths.Identifier.t);
+    Format.fprintf Format.err_formatter "Failed to compile value: %a\n%!"
+      Component.Fmt.model_identifier
+      (t.id :> Paths.Identifier.t);
     raise e
-  
+
 and exception_ env e =
   let open Exception in
   let res = Opt.map (type_expression env) e.res in
@@ -165,25 +166,25 @@ and module_substitution env m =
   { m with manifest = module_path env m.manifest }
 
 and signature_items : Env.t -> Signature.t -> _ =
-    fun env s ->
-let open Signature in
-List.map
-(fun item ->
-  match item with
-  | Module (r, m) -> Module (r, module_ env m)
-  | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
-  | Type (r, t) -> Type (r, type_decl env t)
-  | TypeSubstitution t -> TypeSubstitution (type_decl env t)
-  | ModuleType mt -> ModuleType (module_type env mt)
-  | Value v -> Value (value_ env v)
-  | Comment c -> Comment c
-  | TypExt t -> TypExt (extension env t)
-  | Exception e -> Exception (exception_ env e)
-  | External e -> External (external_ env e)
-  | Class (r, c) -> Class (r, class_ env c)
-  | ClassType (r, c) -> ClassType (r, class_type env c)
-  | Include i -> Include (include_ env i))
-s
+ fun env s ->
+  let open Signature in
+  List.map
+    (fun item ->
+      match item with
+      | Module (r, m) -> Module (r, module_ env m)
+      | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
+      | Type (r, t) -> Type (r, type_decl env t)
+      | TypeSubstitution t -> TypeSubstitution (type_decl env t)
+      | ModuleType mt -> ModuleType (module_type env mt)
+      | Value v -> Value (value_ env v)
+      | Comment c -> Comment c
+      | TypExt t -> TypExt (extension env t)
+      | Exception e -> Exception (exception_ env e)
+      | External e -> External (external_ env e)
+      | Class (r, c) -> Class (r, class_ env c)
+      | ClassType (r, c) -> ClassType (r, class_type env c)
+      | Include i -> Include (include_ env i))
+    s
 
 and signature : Env.t -> Signature.t -> _ =
  fun env s ->
@@ -259,15 +260,18 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
             try
               let env, e = Expand_tools.expansion_of_module_type env m.id m' in
               (env, Some e)
-            with 
+            with
             | Tools.OpaqueModule -> (env, None)
             | e ->
-              (match m'.expr with
-              | Some (Component.ModuleType.Signature sg) ->
-                Format.fprintf Format.err_formatter "Failed to expand module_type: %a\n%!sig:\n%!%a\n%!" (Component.Fmt.model_identifier) (m.id :> Paths.Identifier.t)
-                  Component.Fmt.signature sg
-              | _ -> ());
-              raise e
+                ( match m'.expr with
+                | Some (Component.ModuleType.Signature sg) ->
+                    Format.fprintf Format.err_formatter
+                      "Failed to expand module_type: %a\n%!sig:\n%!%a\n%!"
+                      Component.Fmt.model_identifier
+                      (m.id :> Paths.Identifier.t)
+                      Component.Fmt.signature sg
+                | _ -> () );
+                raise e
           in
           ( expansion,
             Some
@@ -276,7 +280,8 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
     in
     { m with expr = expr'; expansion }
   with e ->
-    Format.fprintf Format.err_formatter "Failed to resolve module_type (%a): %s\n%!"
+    Format.fprintf Format.err_formatter
+      "Failed to resolve module_type (%a): %s\n%!"
       Component.Fmt.model_identifier
       (m.id :> Paths.Identifier.t)
       (Printexc.to_string e);
@@ -288,25 +293,25 @@ and include_ : Env.t -> Include.t -> Include.t =
   try
     let remove_top_doc_from_signature =
       let open Signature in
-      function
-      | Comment (`Docs _) :: xs -> xs
-      | xs -> xs
+      function Comment (`Docs _) :: xs -> xs | xs -> xs
     in
     let decl = Component.Of_Lang.(module_decl empty i.decl) in
-    let _, expn = Expand_tools.aux_expansion_of_module_decl env decl |> Expand_tools.handle_expansion env i.parent in
+    let _, expn =
+      Expand_tools.aux_expansion_of_module_decl env decl
+      |> Expand_tools.handle_expansion env i.parent
+    in
     let expansion =
       (* try ( *)
-        match expn with
-        | Module.Signature sg ->
-          { resolved=true; content = remove_top_doc_from_signature (signature env sg) }
-        | _ -> i.expansion
+      match expn with
+      | Module.Signature sg ->
+          {
+            resolved = true;
+            content = remove_top_doc_from_signature (signature env sg);
+          }
+      | _ -> i.expansion
       (* ) with _ -> i.expansion *)
     in
-    {
-      i with
-      decl = module_decl env i.parent i.decl;
-      expansion
-    }
+    { i with decl = module_decl env i.parent i.decl; expansion }
   with e ->
     let bt = Printexc.get_backtrace () in
     let i' = Component.Of_Lang.(module_decl empty i.decl) in
@@ -440,7 +445,7 @@ and module_type_expr :
                   (Printexc.to_string e) bt;
                 raise e)
             (sg, []) subs
-          |> snd |> List.rev)
+          |> snd |> List.rev )
   | Functor (arg, res) ->
       let arg' = Opt.map (functor_argument env) arg in
       let res' = module_type_expr env id res in
