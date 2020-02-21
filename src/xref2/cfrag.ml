@@ -3,13 +3,13 @@ open Odoc_model.Names
 
 type resolved_signature =
   [ `Root
-  | `Subst of Cpath.resolved_module_type * resolved_module
-  | `SubstAlias of Cpath.resolved_module * resolved_module
+  | `Subst of Cpath.Resolved.module_type * resolved_module
+  | `SubstAlias of Cpath.Resolved.module_ * resolved_module
   | `Module of resolved_signature * ModuleName.t ]
 
 and resolved_module =
-  [ `Subst of Cpath.resolved_module_type * resolved_module
-  | `SubstAlias of Cpath.resolved_module * resolved_module
+  [ `Subst of Cpath.Resolved.module_type * resolved_module
+  | `SubstAlias of Cpath.Resolved.module_ * resolved_module
   | `Module of resolved_signature * ModuleName.t ]
 
 and resolved_type =

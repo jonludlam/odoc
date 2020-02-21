@@ -303,7 +303,7 @@ and Signature : sig
   (* When doing destructive substitution we keep track of the items that have been removed,
        and the path they've been substituted with *)
   type removed_item =
-    | RModule of Ident.module_ * Cpath.resolved_module
+    | RModule of Ident.module_ * Cpath.Resolved.module_
     | RType of Ident.type_ * TypeExpr.t
 
   type t = { items : item list; removed : removed_item list }
@@ -389,10 +389,10 @@ end =
 
 and Substitution : sig
   type t = {
-    module_ : Cpath.resolved_module ModuleMap.t;
-    module_type : Cpath.resolved_module_type ModuleTypeMap.t;
-    type_ : Cpath.resolved_type TypeMap.t;
-    class_type : Cpath.resolved_class_type ClassTypeMap.t;
+    module_ : Cpath.Resolved.module_ ModuleMap.t;
+    module_type : Cpath.Resolved.module_type ModuleTypeMap.t;
+    type_ : Cpath.Resolved.type_ TypeMap.t;
+    class_type : Cpath.Resolved.class_type ClassTypeMap.t;
     type_replacement : TypeExpr.t TypeMap.t;
     (* Reference maps *)
     ref_module : Cref.Resolved.module_ ModuleMap.t;
@@ -604,7 +604,7 @@ module Fmt = struct
     | Poly (_ss, _t) -> Format.fprintf ppf "(poly)"
     | Package x -> type_package ppf x
 
-  and resolved_module_path : Format.formatter -> Cpath.resolved_module -> unit =
+  and resolved_module_path : Format.formatter -> Cpath.Resolved.module_ -> unit =
    fun ppf p ->
     match p with
     | `Local ident -> Format.fprintf ppf "local(%a)" Ident.fmt ident
@@ -644,7 +644,7 @@ module Fmt = struct
     | `Root r -> Format.fprintf ppf "root(%s)" r
 
   and resolved_module_type_path :
-      Format.formatter -> Cpath.resolved_module_type -> unit =
+      Format.formatter -> Cpath.Resolved.module_type -> unit =
    fun ppf p ->
     match p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
@@ -665,7 +665,7 @@ module Fmt = struct
     | `Dot (m, s) ->
         Format.fprintf ppf "%a.%s" module_path m (ModuleTypeName.to_string s)
 
-  and resolved_type_path : Format.formatter -> Cpath.resolved_type -> unit =
+  and resolved_type_path : Format.formatter -> Cpath.Resolved.type_ -> unit =
    fun ppf p ->
     match p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
@@ -692,7 +692,7 @@ module Fmt = struct
     | `Dot (m, s) -> Format.fprintf ppf "%a.%s" module_path m s
 
   and resolved_class_type_path :
-      Format.formatter -> Cpath.resolved_class_type -> unit =
+      Format.formatter -> Cpath.Resolved.class_type -> unit =
    fun ppf p ->
     match p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
@@ -1370,7 +1370,7 @@ module Of_Lang = struct
       ~default:(`Identifier i)
 
   let rec resolved_module_path :
-      _ -> Odoc_model.Paths.Path.Resolved.Module.t -> Cpath.resolved_module =
+      _ -> Odoc_model.Paths.Path.Resolved.Module.t -> Cpath.Resolved.module_ =
    fun ident_map p ->
     let recurse p = resolved_module_path ident_map p in
     match p with
@@ -1387,7 +1387,7 @@ module Of_Lang = struct
   and resolved_module_type_path :
       _ ->
       Odoc_model.Paths.Path.Resolved.ModuleType.t ->
-      Cpath.resolved_module_type =
+      Cpath.Resolved.module_type =
    fun ident_map p ->
     match p with
     | `Identifier i -> identifier ident_map.module_types i
@@ -1395,7 +1395,7 @@ module Of_Lang = struct
         `ModuleType (resolved_module_path ident_map p, name)
 
   and resolved_type_path :
-      _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.resolved_type =
+      _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =
    fun ident_map p ->
     match p with
     | `Identifier i -> identifier ident_map.path_types i
@@ -1406,7 +1406,7 @@ module Of_Lang = struct
   and resolved_class_type_path :
       _ ->
       Odoc_model.Paths.Path.Resolved.ClassType.t ->
-      Cpath.resolved_class_type =
+      Cpath.Resolved.class_type =
    fun ident_map p ->
     match p with
     | `Identifier i -> identifier ident_map.path_class_types i

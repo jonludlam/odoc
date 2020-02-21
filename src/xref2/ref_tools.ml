@@ -22,7 +22,7 @@ type label_parent_lookup_result =
   * Env.t
   * [ `S of Component.Signature.t | `CS of Component.ClassSignature.t | `Page of (string * Identifier.Label.t) list ]
 
-let rec make_prefix : Resolved.Signature.t -> Cpath.resolved_module option =
+let rec make_prefix : Resolved.Signature.t -> Cpath.Resolved.module_ option =
   let open Tools.OptionMonad in
   function
   | `Module (parent, name) ->

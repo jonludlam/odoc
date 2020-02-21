@@ -272,14 +272,14 @@ let prefix_ident_signature
   in
   (ident, { items; removed = s.removed })
 
-let flatten_module_alias : Cpath.resolved_module -> Cpath.resolved_module =
+let flatten_module_alias : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
   function
   | `Alias (`Alias (z, _), x) -> `Alias (z, x)
   (*  | `Alias (`Canonical (`Alias(z, _), c), x) -> `Canonical (`Alias (z, x), c)*)
   | x -> x
 
 let rec simplify_resolved_module_path :
-    Env.t -> Cpath.resolved_module -> Cpath.resolved_module =
+    Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun env cpath ->
   match cpath with
   | `Module (parent, name) -> (
@@ -297,7 +297,7 @@ let rec simplify_resolved_module_path :
       cpath
 
 let unsimplify_resolved_module_path :
-    Env.t -> Cpath.resolved_module -> Cpath.resolved_module =
+    Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun env cpath ->
   let rec fix_module_ident id =
     try
@@ -327,7 +327,7 @@ let unsimplify_resolved_module_path :
   inner cpath
 
 let rec get_canonical_path :
-    Cpath.resolved_module -> Cpath.resolved_module option =
+    Cpath.Resolved.module_ -> Cpath.Resolved.module_ option =
  fun cp ->
   match cp with
   | `Canonical (_, `Resolved r) -> Some r
@@ -342,32 +342,32 @@ let rec get_canonical_path :
   | `Alias _ -> None
   | `Canonical _ -> None
 
-type module_lookup_result = Cpath.resolved_module * Component.Module.t
+type module_lookup_result = Cpath.Resolved.module_ * Component.Module.t
 
 type module_type_lookup_result =
-  Cpath.resolved_module_type * Component.ModuleType.t
+  Cpath.Resolved.module_type * Component.ModuleType.t
 
 type type_lookup_result =
-  Cpath.resolved_type
+  Cpath.Resolved.type_
   * (Find.type_, Component.TypeExpr.t) Find.found
 
 type class_type_lookup_result =
-  Cpath.resolved_class_type * Find.class_type
+  Cpath.Resolved.class_type * Find.class_type
 
-exception Type_lookup_failure of Env.t * Cpath.resolved_type
+exception Type_lookup_failure of Env.t * Cpath.Resolved.type_
 
-exception Module_lookup_failure of Env.t * Cpath.resolved_module
+exception Module_lookup_failure of Env.t * Cpath.Resolved.module_
 
-exception ModuleType_lookup_failure of Env.t * Cpath.resolved_module_type
+exception ModuleType_lookup_failure of Env.t * Cpath.Resolved.module_type
 
-exception ClassType_lookup_failure of Env.t * Cpath.resolved_class_type
+exception ClassType_lookup_failure of Env.t * Cpath.Resolved.class_type
 
 exception MyFailure of Component.Module.t * Component.Module.t
 
 exception Couldnt_find_functor_argument
 
 module Hashable = struct
-  type t = bool * bool * Cpath.resolved_module
+  type t = bool * bool * Cpath.Resolved.module_
 
   let equal = Stdlib.( = )
 
@@ -410,7 +410,7 @@ let rec handle_apply is_resolve env func_path arg_path m =
       (Subst.add_module arg_id substitution ref_subst Subst.identity)
       new_module )
 
-and add_canonical_path env m p : Cpath.resolved_module =
+and add_canonical_path env m p : Cpath.Resolved.module_ =
   match p with
   | `Canonical _ -> p
   | _ -> (
@@ -487,7 +487,7 @@ and handle_class_type_lookup env id p m =
   (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
 and lookup_and_resolve_module_from_resolved_path :
-    bool -> bool -> Env.t -> Cpath.resolved_module -> module_lookup_result =
+    bool -> bool -> Env.t -> Cpath.Resolved.module_ -> module_lookup_result =
  fun is_resolve add_canonical env' p ->
   let id = (is_resolve, add_canonical, p) in
   let env_id = Env.id env' in
@@ -723,7 +723,7 @@ and lookup_and_resolve_module_from_path :
       find_fast xs
 
 and lookup_and_resolve_module_type_from_resolved_path :
-    bool -> Env.t -> Cpath.resolved_module_type -> module_type_lookup_result =
+    bool -> Env.t -> Cpath.Resolved.module_type -> module_type_lookup_result =
  fun is_resolve env p ->
   (* Format.fprintf Format.err_formatter "lookup_and_resolve_module_type_from_resolved_path: looking up %a\n%!" Component.Fmt.resolved_path p; *)
   match p with
@@ -770,7 +770,7 @@ and lookup_and_resolve_module_type_from_path :
         >>= fun (p, m) -> return (`Substituted p, m)
 
 and lookup_type_from_resolved_path :
-    Env.t -> Cpath.resolved_type -> type_lookup_result =
+    Env.t -> Cpath.Resolved.type_ -> type_lookup_result =
  fun env p ->
   match p with
   | `Local _id -> raise (Type_lookup_failure (env, p))
@@ -830,7 +830,7 @@ and lookup_type_from_path :
         >>= fun (p, m) -> return (`Substituted p, m)
 
 and lookup_class_type_from_resolved_path :
-    Env.t -> Cpath.resolved_class_type -> class_type_lookup_result =
+    Env.t -> Cpath.Resolved.class_type -> class_type_lookup_result =
  fun env p ->
   match p with
   | `Local _id -> raise (ClassType_lookup_failure (env, p))
@@ -873,10 +873,10 @@ and lookup_class_type_from_path :
 
 and lookup_signature_from_resolved_fragment :
     Env.t ->
-    Cpath.resolved_module ->
+    Cpath.Resolved.module_ ->
     Fragment.Resolved.Signature.t ->
     Component.Signature.t ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env p f s ->
   match f with
   | `Root -> (p, s)
@@ -886,10 +886,10 @@ and lookup_signature_from_resolved_fragment :
 
 and lookup_module_from_resolved_fragment :
     Env.t ->
-    Cpath.resolved_module ->
+    Cpath.Resolved.module_ ->
     Fragment.Resolved.Module.t ->
     Component.Signature.t ->
-    Ident.module_ * Cpath.resolved_module * Component.Module.t =
+    Ident.module_ * Cpath.Resolved.module_ * Component.Module.t =
  fun env p f s ->
   match f with
   | `Subst (_, _) | `SubstAlias (_, _) -> failwith "What do we do with these?"
@@ -909,10 +909,10 @@ and lookup_module_from_resolved_fragment :
 
 and lookup_module_from_fragment :
     Env.t ->
-    Cpath.resolved_module ->
+    Cpath.Resolved.module_ ->
     Fragment.Module.t ->
     Component.Signature.t ->
-    Ident.module_ * Cpath.resolved_module * Component.Module.t =
+    Ident.module_ * Cpath.Resolved.module_ * Component.Module.t =
  fun env p f s ->
   match f with
   | `Dot (parent, name) ->
@@ -929,10 +929,10 @@ and lookup_module_from_fragment :
 
 and lookup_signature_from_fragment :
     Env.t ->
-    Cpath.resolved_module ->
+    Cpath.Resolved.module_ ->
     Fragment.Signature.t ->
     Component.Signature.t ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env p f s ->
   match f with
   | `Dot (_, _) as f' ->
@@ -942,8 +942,8 @@ and lookup_signature_from_fragment :
 
 and module_type_expr_of_module_decl :
     Env.t ->
-    Cpath.resolved_module * Component.Module.decl ->
-    Cpath.resolved_module * Component.ModuleType.expr =
+    Cpath.Resolved.module_ * Component.Module.decl ->
+    Cpath.Resolved.module_ * Component.ModuleType.expr =
  fun env (p, decl) ->
   match decl with
   | Component.Module.Alias path -> (
@@ -965,16 +965,16 @@ and module_type_expr_of_module_decl :
 
 and module_type_expr_of_module :
     Env.t ->
-    Cpath.resolved_module * Component.Module.t ->
-    Cpath.resolved_module * Component.ModuleType.expr =
+    Cpath.Resolved.module_ * Component.Module.t ->
+    Cpath.Resolved.module_ * Component.ModuleType.expr =
  fun env (p, m) -> module_type_expr_of_module_decl env (p, m.type_)
 
 and signature_of_module_alias_path :
     Env.t ->
     is_canonical:bool ->
-    Cpath.resolved_module ->
+    Cpath.Resolved.module_ ->
     Cpath.module_ ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env ~is_canonical incoming_path path ->
   match lookup_and_resolve_module_from_path false true env path with
   | Resolved (p', m) ->
@@ -1045,8 +1045,8 @@ and handle_signature_with_subs :
 
 and signature_of_module_type_expr :
     Env.t ->
-    Cpath.resolved_module * Component.ModuleType.expr ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.ModuleType.expr ->
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env (incoming_path, m) ->
   match m with
   | Component.ModuleType.Path p -> (
@@ -1097,8 +1097,8 @@ and signature_of_module_type_expr_nopath :
 
 and signature_of_module_type :
     Env.t ->
-    Cpath.resolved_module * Component.ModuleType.t ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.ModuleType.t ->
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env (p, m) ->
   match m.expr with
   | None -> raise OpaqueModule
@@ -1114,8 +1114,8 @@ and signature_of_module_type_nopath :
 and signature_of_module_decl :
     Env.t ->
     is_canonical:bool ->
-    Cpath.resolved_module * Component.Module.decl ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.Module.decl ->
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env ~is_canonical (incoming_path, decl) ->
   match decl with
   | Component.Module.Alias path ->
@@ -1133,8 +1133,8 @@ and signature_of_module_decl_nopath :
 
 and signature_of_module :
     Env.t ->
-    Cpath.resolved_module * Component.Module.t ->
-    Cpath.resolved_module * Component.Signature.t =
+    Cpath.Resolved.module_ * Component.Module.t ->
+    Cpath.Resolved.module_ * Component.Signature.t =
  fun env (path, m) ->
   (* match m.expansion with
      | Some (Signature s) -> (path, s)
@@ -1410,10 +1410,10 @@ and find_module_with_replacement :
 
 let rec resolve_resolved_signature_fragment :
     Env.t ->
-    Cpath.resolved_module * Component.Signature.t ->
+    Cpath.Resolved.module_ * Component.Signature.t ->
     Odoc_model.Paths.Fragment.Resolved.Signature.t ->
     Odoc_model.Paths.Fragment.Resolved.Signature.t
-    * Cpath.resolved_module
+    * Cpath.Resolved.module_
     * Component.Signature.t =
  fun env (p, sg) frag ->
   match frag with
@@ -1431,10 +1431,10 @@ let rec resolve_resolved_signature_fragment :
 
 and resolve_signature_fragment :
     Env.t ->
-    Cpath.resolved_module * Component.Signature.t ->
+    Cpath.Resolved.module_ * Component.Signature.t ->
     Odoc_model.Paths.Fragment.Signature.t ->
     Odoc_model.Paths.Fragment.Resolved.Signature.t
-    * Cpath.resolved_module
+    * Cpath.Resolved.module_
     * Component.Signature.t =
  fun env (p, sg) frag ->
   match frag with
@@ -1447,10 +1447,10 @@ and resolve_signature_fragment :
 
 and resolve_resolved_module_fragment :
     Env.t ->
-    Cpath.resolved_module * Component.Signature.t ->
+    Cpath.Resolved.module_ * Component.Signature.t ->
     Odoc_model.Paths.Fragment.Resolved.Module.t ->
     Odoc_model.Paths.Fragment.Resolved.Module.t
-    * Cpath.resolved_module
+    * Cpath.Resolved.module_
     * Component.Module.t =
  fun env (p, sg) frag ->
   match frag with
@@ -1469,7 +1469,7 @@ and resolve_resolved_module_fragment :
 
 and resolve_module_fragment :
     Env.t ->
-    Cpath.resolved_module * Component.Signature.t ->
+    Cpath.Resolved.module_ * Component.Signature.t ->
     Odoc_model.Paths.Fragment.Module.t ->
     Odoc_model.Paths.Fragment.Resolved.Module.t =
  fun env (p, sg) frag ->
@@ -1487,7 +1487,7 @@ and resolve_module_fragment :
 
 and resolve_resolved_type_fragment :
     Env.t ->
-    Cpath.resolved_module * Component.Signature.t ->
+    Cpath.Resolved.module_ * Component.Signature.t ->
     Odoc_model.Paths.Fragment.Resolved.Type.t ->
     Odoc_model.Paths.Fragment.Resolved.Type.t * type_lookup_result =
  fun env (p, sg) frag ->
@@ -1507,7 +1507,7 @@ and resolve_resolved_type_fragment :
 
 and resolve_type_fragment :
     Env.t ->
-    Cpath.resolved_module * Component.Signature.t ->
+    Cpath.Resolved.module_ * Component.Signature.t ->
     Odoc_model.Paths.Fragment.Type.t ->
     Odoc_model.Paths.Fragment.Resolved.Type.t =
  fun env (p, sg) frag ->
@@ -1646,8 +1646,8 @@ and resolve_mt_type_fragment :
 
 let rec class_signature_of_class :
     Env.t ->
-    Cpath.resolved_class_type * Component.Class.t ->
-    Cpath.resolved_class_type * Component.ClassSignature.t =
+    Cpath.Resolved.class_type * Component.Class.t ->
+    Cpath.Resolved.class_type * Component.ClassSignature.t =
  fun env (p, c) ->
   let rec inner decl =
     match decl with
@@ -1659,8 +1659,8 @@ let rec class_signature_of_class :
 
 and class_signature_of_class_type_expr :
     Env.t ->
-    Cpath.resolved_class_type * Component.ClassType.expr ->
-    Cpath.resolved_class_type * Component.ClassSignature.t =
+    Cpath.Resolved.class_type * Component.ClassType.expr ->
+    Cpath.Resolved.class_type * Component.ClassSignature.t =
  fun env (p, e) ->
   match e with
   | Signature s -> (p, s)
@@ -1676,6 +1676,6 @@ and class_signature_of_class_type_expr :
 
 and class_signature_of_class_type :
     Env.t ->
-    Cpath.resolved_class_type * Component.ClassType.t ->
-    Cpath.resolved_class_type * Component.ClassSignature.t =
+    Cpath.Resolved.class_type * Component.ClassType.t ->
+    Cpath.Resolved.class_type * Component.ClassSignature.t =
  fun env (p, c) -> class_signature_of_class_type_expr env (p, c.expr)

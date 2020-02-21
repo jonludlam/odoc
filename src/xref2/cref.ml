@@ -16,7 +16,7 @@ module rec Resolved : sig
   and module_ =
     [ `Identifier of Identifier.module_
     | `Local of Ident.module_
-    | `SubstAlias of Cpath.resolved_module * module_
+    | `SubstAlias of Cpath.Resolved.module_ * module_
     | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_ ]
 
@@ -24,7 +24,7 @@ module rec Resolved : sig
   and signature =
     [ `Identifier of Identifier.signature
     | `Local of Ident.signature
-    | `SubstAlias of Cpath.resolved_module * module_
+    | `SubstAlias of Cpath.Resolved.module_ * module_
     | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_
     | `ModuleType of signature * ModuleTypeName.t ]
@@ -36,7 +36,7 @@ module rec Resolved : sig
     | `ClassType of signature * ClassTypeName.t ]
 
   type parent_no_id =
-    [ `SubstAlias of Cpath.resolved_module * module_
+    [ `SubstAlias of Cpath.Resolved.module_ * module_
     | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_
     | `ModuleType of signature * ModuleTypeName.t
@@ -55,7 +55,7 @@ module rec Resolved : sig
     | `Local of Ident.label_parent
     | parent_no_id ]
 
-  type s_substalias = [ `SubstAlias of Cpath.resolved_module * module_ ]
+  type s_substalias = [ `SubstAlias of Cpath.Resolved.module_ * module_ ]
 
   type s_module = [ `Module of signature * ModuleName.t ]
 
@@ -341,7 +341,7 @@ end =
 
 include Reference
 
-let rec resolved_module_reference_of_resolved_module_path : Cpath.resolved_module -> Resolved.module_ =
+let rec resolved_module_reference_of_resolved_module_path : Cpath.Resolved.module_ -> Resolved.module_ =
   function
   | `Local id -> `Local id
   | `Identifier id -> `Identifier id

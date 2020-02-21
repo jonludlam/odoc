@@ -34,7 +34,7 @@ let add_module_type id subst ref_subst t =
     ref_module_type = ModuleTypeMap.add id ref_subst t.ref_module_type;
   }
 
-let add_type : Ident.type_ -> Cpath.resolved_type -> Cref.Resolved.type_ -> t -> t =
+let add_type : Ident.type_ -> Cpath.Resolved.type_ -> Cref.Resolved.type_ -> t -> t =
  fun id subst ref_subst t ->
   {
     t with
@@ -42,12 +42,12 @@ let add_type : Ident.type_ -> Cpath.resolved_type -> Cref.Resolved.type_ -> t ->
     ref_type = TypeMap.add (id :> Ident.path_type) ref_subst t.ref_type;
   }
 
-let add_class : Ident.class_ -> Cpath.resolved_class_type -> Cref.Resolved.class_type -> t -> t =
+let add_class : Ident.class_ -> Cpath.Resolved.class_type -> Cref.Resolved.class_type -> t -> t =
  fun id subst ref_subst t ->
   {
     t with
     type_ =
-      TypeMap.add (id :> Ident.path_type) (subst :> Cpath.resolved_type) t.type_;
+      TypeMap.add (id :> Ident.path_type) (subst :> Cpath.Resolved.type_) t.type_;
     class_type =
       ClassTypeMap.add (id :> Ident.path_class_type) subst t.class_type;
     ref_type =
@@ -59,12 +59,12 @@ let add_class : Ident.class_ -> Cpath.resolved_class_type -> Cref.Resolved.class
       ClassTypeMap.add (id :> Ident.path_class_type) ref_subst t.ref_class_type;
   }
 
-let add_class_type : Ident.class_type -> Cpath.resolved_class_type -> Cref.Resolved.class_type -> t -> t =
+let add_class_type : Ident.class_type -> Cpath.Resolved.class_type -> Cref.Resolved.class_type -> t -> t =
  fun id subst ref_subst t ->
   {
     t with
     type_ =
-      TypeMap.add (id :> Ident.path_type) (subst :> Cpath.resolved_type) t.type_;
+      TypeMap.add (id :> Ident.path_type) (subst :> Cpath.Resolved.type_) t.type_;
     class_type =
       ClassTypeMap.add (id :> Ident.path_class_type) subst t.class_type;
     ref_type =
@@ -84,7 +84,7 @@ let add_id_map : Ident.any -> Ident.any -> t -> t =
  fun id new_id t -> { t with id_any = IdentMap.add id new_id t.id_any }
 
 let rec resolved_module_path :
-    t -> Cpath.resolved_module -> Cpath.resolved_module =
+    t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun s p ->
   match p with
   | `Local id -> (
@@ -116,7 +116,7 @@ and module_path : t -> Cpath.module_ -> Cpath.module_ =
   | `Root _ -> p
 
 and resolved_module_type_path :
-    t -> Cpath.resolved_module_type -> Cpath.resolved_module_type =
+    t -> Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
  fun s p ->
   match p with
   | `Local id -> (
@@ -134,7 +134,7 @@ and module_type_path : t -> Cpath.module_type -> Cpath.module_type =
   | `Substituted p -> `Substituted (module_type_path s p)
   | `Dot (p, n) -> `Dot (module_path s p, n)
 
-and resolved_type_path : t -> Cpath.resolved_type -> Cpath.resolved_type =
+and resolved_type_path : t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
  fun s p ->
   match p with
   | `Local id -> (
@@ -157,7 +157,7 @@ and type_path : t -> Cpath.type_ -> Cpath.type_ =
   | `Dot (p, n) -> `Dot (module_path s p, n)
 
 and resolved_class_type_path :
-    t -> Cpath.resolved_class_type -> Cpath.resolved_class_type =
+    t -> Cpath.Resolved.class_type -> Cpath.Resolved.class_type =
  fun s p ->
   match p with
   | `Local id -> (

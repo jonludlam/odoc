@@ -1,63 +1,72 @@
 open Odoc_model.Paths
 open Odoc_model.Names
 
-type resolved_module =
+module rec Resolved : sig
+  type module_ =
   [ `Local of Ident.module_
   | `Identifier of Identifier.Module.t
-  | `Substituted of resolved_module
-  | `Subst of resolved_module_type * resolved_module
-  | `SubstAlias of resolved_module * resolved_module
-  | `Hidden of resolved_module
-  | `Module of resolved_module * ModuleName.t
-  | `Canonical of resolved_module * module_
-  | `Apply of resolved_module * module_
-  | `Alias of resolved_module * resolved_module ]
+  | `Substituted of module_
+  | `Subst of module_type * module_
+  | `SubstAlias of module_ * module_
+  | `Hidden of module_
+  | `Module of module_ * ModuleName.t
+  | `Canonical of module_ * Cpath.module_
+  | `Apply of module_ * Cpath.module_
+  | `Alias of module_ * module_ ]
 
-and module_ =
-  [ `Resolved of resolved_module
+  and module_type =
+  [ `Local of Ident.module_type
+  | `Substituted of module_type
+  | `Identifier of Identifier.ModuleType.t
+  | `ModuleType of module_ * ModuleTypeName.t ]
+
+  and type_ =
+  [ `Local of Ident.path_type
+  | `Identifier of Odoc_model.Paths_types.Identifier.path_type
+  | `Substituted of type_
+  | `Type of module_ * TypeName.t
+  | `Class of module_ * ClassName.t
+  | `ClassType of module_ * ClassTypeName.t ]
+
+  and class_type =
+  [ `Local of Ident.path_class_type
+  | `Substituted of class_type
+  | `Identifier of Odoc_model.Paths_types.Identifier.path_class_type
+  | `Class of module_ * ClassName.t
+  | `ClassType of module_ * ClassTypeName.t ]
+end = Resolved
+
+and Cpath : sig 
+  type module_ =
+  [ `Resolved of Resolved.module_
   | `Substituted of module_
   | `Root of string
   | `Forward of string
   | `Dot of module_ * string
   | `Apply of module_ * module_ ]
 
-and resolved_module_type =
-  [ `Local of Ident.module_type
-  | `Substituted of resolved_module_type
-  | `Identifier of Identifier.ModuleType.t
-  | `ModuleType of resolved_module * ModuleTypeName.t ]
 
 and module_type =
-  [ `Resolved of resolved_module_type
+  [ `Resolved of Resolved.module_type
   | `Substituted of module_type
   | `Dot of module_ * string ]
 
-and resolved_type =
-  [ `Local of Ident.path_type
-  | `Identifier of Odoc_model.Paths_types.Identifier.path_type
-  | `Substituted of resolved_type
-  | `Type of resolved_module * TypeName.t
-  | `Class of resolved_module * ClassName.t
-  | `ClassType of resolved_module * ClassTypeName.t ]
 
 and type_ =
-  [ `Resolved of resolved_type
+  [ `Resolved of Resolved.type_
   | `Substituted of type_
   | `Dot of module_ * string ]
 
-and resolved_class_type =
-  [ `Local of Ident.path_class_type
-  | `Substituted of resolved_class_type
-  | `Identifier of Odoc_model.Paths_types.Identifier.path_class_type
-  | `Class of resolved_module * ClassName.t
-  | `ClassType of resolved_module * ClassTypeName.t ]
-
 and class_type =
-  [ `Resolved of resolved_class_type
-  | `Substituted of class_type
-  | `Dot of module_ * string ]
+[ `Resolved of Resolved.class_type
+| `Substituted of class_type
+| `Dot of module_ * string ]
 
-let rec resolved_module_hash : resolved_module -> int =
+end = Cpath
+
+include Cpath
+
+let rec resolved_module_hash : Resolved.module_ -> int =
   function
   | `Local id -> Hashtbl.hash (0, Ident.hash (id :> Ident.any))
   | `Identifier id -> Hashtbl.hash (1, Odoc_model.Paths.Identifier.hash (id :> Odoc_model.Paths.Identifier.t ))
@@ -79,7 +88,7 @@ and module_hash : module_ -> int =
   | `Dot (m, s) -> Hashtbl.hash (14, module_hash m, s)
   | `Apply (m1, m2) -> Hashtbl.hash (15, module_hash m1, module_hash m2)
 
-and resolved_module_type_hash : resolved_module_type -> int =
+and resolved_module_type_hash : Resolved.module_type -> int =
   function
   | `Local id -> Hashtbl.hash (16, Ident.hash (id :> Ident.any))
   | `Substituted m -> Hashtbl.hash (17, resolved_module_type_hash m)
@@ -98,7 +107,7 @@ exception LocalPath of local_path_error
 exception TypesNeedRefining
 
 let rec resolved_module_path_of_cpath :
-    resolved_module -> Path.Resolved.Module.t = function
+    Resolved.module_ -> Path.Resolved.Module.t = function
   | `Local _ as y -> raise (LocalPath (ErrModule (`Resolved y)))
   | `Substituted y -> resolved_module_path_of_cpath y
   | `Identifier (#Identifier.Module.t as x) -> `Identifier x
@@ -118,13 +127,13 @@ let rec resolved_module_path_of_cpath :
   | `Module (p, m) -> `Module (resolved_module_path_of_cpath p, m)
 
 and resolved_module_type_path_of_cpath :
-    resolved_module_type -> Path.Resolved.ModuleType.t = function
+    Resolved.module_type -> Path.Resolved.ModuleType.t = function
   | `Local _ as y -> raise (LocalPath (ErrModuleType (`Resolved y)))
   | `Identifier (#Identifier.ModuleType.t as x) -> `Identifier x
   | `Substituted y -> resolved_module_type_path_of_cpath y
   | `ModuleType (p, m) -> `ModuleType (resolved_module_path_of_cpath p, m)
 
-and resolved_type_path_of_cpath : resolved_type -> Path.Resolved.Type.t =
+and resolved_type_path_of_cpath : Resolved.type_ -> Path.Resolved.Type.t =
   function
   | `Identifier (#Odoc_model.Paths_types.Identifier.path_type as x) ->
       `Identifier x
@@ -152,7 +161,7 @@ and type_path_of_cpath : type_ -> Path.Type.t = function
   | `Substituted r -> type_path_of_cpath r
   | `Dot (p, x) -> `Dot (module_path_of_cpath p, x)
 
-let rec is_resolved_module_substituted : resolved_module -> bool = function
+let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
   | `Local _ -> false
   | `Substituted _ -> true
   | `Identifier _ -> false
@@ -165,21 +174,21 @@ let rec is_resolved_module_substituted : resolved_module -> bool = function
   | `Module (a, _) ->
       is_resolved_module_substituted a
 
-and is_resolved_module_type_substituted : resolved_module_type -> bool =
+and is_resolved_module_type_substituted : Resolved.module_type -> bool =
   function
   | `Local _ -> false
   | `Substituted _ -> true
   | `Identifier _ -> false
   | `ModuleType (a, _) -> is_resolved_module_substituted a
 
-and is_resolved_type_substituted : resolved_type -> bool = function
+and is_resolved_type_substituted : Resolved.type_ -> bool = function
   | `Local _ -> false
   | `Substituted _ -> true
   | `Identifier _ -> false
   | `Type (a, _) | `Class (a, _) | `ClassType (a, _) ->
       is_resolved_module_substituted a
 
-and is_resolved_class_type_substituted : resolved_class_type -> bool = function
+and is_resolved_class_type_substituted : Resolved.class_type -> bool = function
   | `Local _ -> false
   | `Substituted _ -> true
   | `Identifier _ -> false
@@ -219,7 +228,7 @@ let rec is_module_hidden : module_ -> bool = function
   | `Forward _ -> false
   | `Root _ -> false
 
-and is_resolved_module_hidden : resolved_module -> bool = function
+and is_resolved_module_hidden : Resolved.module_ -> bool = function
   | `Local _ -> false
   | `Identifier _ -> false
   | `Hidden _ -> true
@@ -236,7 +245,7 @@ and is_module_type_hidden : module_type -> bool = function
   | `Substituted p -> is_module_type_hidden p
   | `Dot (p, _) -> is_module_hidden p
 
-and is_resolved_module_type_hidden : resolved_module_type -> bool = function
+and is_resolved_module_type_hidden : Resolved.module_type -> bool = function
   | `Local _ -> false
   | `Identifier _ -> false
   | `Substituted p -> is_resolved_module_type_hidden p
@@ -247,14 +256,14 @@ and is_type_hidden : type_ -> bool = function
   | `Substituted p -> is_type_hidden p
   | `Dot (p, _) -> is_module_hidden p
 
-and is_resolved_type_hidden : resolved_type -> bool = function
+and is_resolved_type_hidden : Resolved.type_ -> bool = function
   | `Local _ -> false
   | `Identifier _ -> false
   | `Substituted p -> is_resolved_type_hidden p
   | `Type (p, _) | `Class (p, _) | `ClassType (p, _) ->
       is_resolved_module_hidden p
 
-and is_resolved_class_type_hidden : resolved_class_type -> bool = function
+and is_resolved_class_type_hidden : Resolved.class_type -> bool = function
   | `Local _ -> false
   | `Identifier _ -> false
   | `Substituted p -> is_resolved_class_type_hidden p
@@ -266,7 +275,7 @@ and is_class_type_hidden : class_type -> bool = function
   | `Dot (p, _) -> is_module_hidden p
 
 let rec resolved_module_of_resolved_module_reference :
-    Reference.Resolved.Module.t -> resolved_module = function
+    Reference.Resolved.Module.t -> Resolved.module_ = function
   | `Module (parent, name) ->
       `Module (resolved_module_of_resolved_signature_reference parent, name)
   | `Identifier i -> `Identifier i
@@ -277,7 +286,7 @@ let rec resolved_module_of_resolved_module_reference :
           module_of_module_reference m2 )
 
 and resolved_module_of_resolved_signature_reference :
-    Reference.Resolved.Signature.t -> resolved_module = function
+    Reference.Resolved.Signature.t -> Resolved.module_ = function
   | `Identifier (#Identifier.Module.t as i) -> `Identifier i
   | (`SubstAlias _ | `Canonical _ | `Module _) as r' ->
       resolved_module_of_resolved_module_reference r'

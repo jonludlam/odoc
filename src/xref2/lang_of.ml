@@ -81,7 +81,7 @@ module Path = struct
     | `Resolved x -> `Resolved (resolved_class_type map x)
     | `Dot (p, n) -> `Dot (module_ map p, n)
 
-  and resolved_module map (p : Cpath.resolved_module) :
+  and resolved_module map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     match p with
     | `Local id ->
@@ -101,7 +101,7 @@ module Path = struct
     | `Apply (m1, m2) -> `Apply (resolved_module map m1, module_ map m2)
     | `Alias (m1, m2) -> `Alias (resolved_module map m1, resolved_module map m2)
 
-  and resolved_module_type map (p : Cpath.resolved_module_type) :
+  and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     match p with
     | `Identifier (#Odoc_model.Paths.Identifier.ModuleType.t as y) ->
@@ -110,7 +110,7 @@ module Path = struct
     | `ModuleType (p, name) -> `ModuleType (resolved_module map p, name)
     | `Substituted s -> resolved_module_type map s
 
-  and resolved_type map (p : Cpath.resolved_type) :
+  and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =
     match p with
     | `Identifier (#Odoc_model.Paths_types.Identifier.path_type as y) ->
@@ -121,7 +121,7 @@ module Path = struct
     | `ClassType (p, name) -> `ClassType (resolved_module map p, name)
     | `Substituted s -> resolved_type map s
 
-  and resolved_class_type map (p : Cpath.resolved_class_type) :
+  and resolved_class_type map (p : Cpath.Resolved.class_type) :
       Odoc_model.Paths.Path.Resolved.ClassType.t =
     match p with
     | `Identifier (#Odoc_model.Paths_types.Identifier.path_class_type as y) ->
