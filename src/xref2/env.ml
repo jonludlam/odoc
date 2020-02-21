@@ -509,7 +509,7 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
        local idents for things that are declared within themselves *)
     let fold_fn (env, subst) (ident, identifier, m) =
       let env' = add_module identifier (Subst.module_ subst m) env in
-      (env', Subst.add_module ident (`Identifier identifier) subst)
+      (env', Subst.add_module ident (`Identifier identifier) (`Identifier identifier) subst)
     in
     match id with
     | (`Module _ | `Result _ | `Parameter _) as mid -> (

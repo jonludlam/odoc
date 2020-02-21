@@ -341,6 +341,28 @@ end =
 
 include Reference
 
+let rec resolved_module_reference_of_resolved_module_path : Cpath.resolved_module -> Resolved.module_ =
+  function
+  | `Local id -> `Local id
+  | `Identifier id -> `Identifier id
+  | `Substituted s -> resolved_module_reference_of_resolved_module_path s
+  | `Subst (_, m) -> resolved_module_reference_of_resolved_module_path m
+  | `SubstAlias (m1, m2) -> `SubstAlias (m1, resolved_module_reference_of_resolved_module_path m2)
+  | `Hidden m -> resolved_module_reference_of_resolved_module_path m
+  | `Module (p, m) -> `Module ((resolved_module_reference_of_resolved_module_path p :> Resolved.signature), m)
+  | `Canonical (p, _) -> resolved_module_reference_of_resolved_module_path p
+  | `Apply (p, _) -> resolved_module_reference_of_resolved_module_path p
+  | `Alias (p1, _) -> resolved_module_reference_of_resolved_module_path p1
+
+and module_reference_of_module_path : Cpath.module_ -> module_ =
+  function
+  | `Resolved p -> `Resolved (resolved_module_reference_of_resolved_module_path p)
+  | `Substituted p -> module_reference_of_module_path p
+  | `Root r -> `Root (r, `TModule)
+  | `Forward r -> `Root (r, `TModule)
+  | `Dot (p, m) -> `Dot ((module_reference_of_module_path p :> label_parent), m)
+  | `Apply (m1, _) -> module_reference_of_module_path m1
+
 let rec signature_identifier_of_resolved_reference (r : Resolved.signature) =
   match r with
   | `Local _ -> failwith "broken"

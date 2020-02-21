@@ -73,41 +73,54 @@ let core_types =
 
 let prefix_signature (path, s) =
   let open Component.Signature in
+  let rpath = (Cref.resolved_module_reference_of_resolved_module_path path :> Cref.Resolved.signature) in
   let rec get_sub sub' is =
     List.fold_right
       (fun item map ->
         match item with
         | Type (id, _, _) ->
+            let name = TypeName.of_string (Ident.Name.type_ id) in
             Subst.add_type id
-              (`Type (path, TypeName.of_string (Ident.Name.type_ id)))
+              (`Type (path,name))
+              (`Type (rpath,name))
               map
         | Module (id, _, _) ->
+            let name = ModuleName.of_string (Ident.Name.module_ id) in
             Subst.add_module id
-              (`Module (path, ModuleName.of_string (Ident.Name.module_ id)))
+              (`Module (path, name))
+              (`Module (rpath, name))
               map
         | ModuleType (id, _) ->
+            let name = ModuleTypeName.of_string (Ident.Name.module_type id) in
             Subst.add_module_type id
-              (`ModuleType
-                (path, ModuleTypeName.of_string (Ident.Name.module_type id)))
+              (`ModuleType (path, name))
+              (`ModuleType (rpath, name))
               map
         | ModuleSubstitution (id, _) ->
+            let name = ModuleName.of_string (Ident.Name.module_ id) in
             Subst.add_module id
-              (`Module (path, ModuleName.of_string (Ident.Name.module_ id)))
+            (`Module (path, name))
+              (`Module (rpath, name))
               map
         | TypeSubstitution (id, _) ->
+            let name = TypeName.of_string (Ident.Name.type_ id) in
             Subst.add_type id
-              (`Type (path, TypeName.of_string (Ident.Name.type_ id)))
+              (`Type (path, name))
+              (`Type (rpath, name))
               map
         | Exception _ | TypExt _ | Value (_, _) | External (_, _) | Comment _ ->
             map
         | Class (id, _, _) ->
+            let name = ClassName.of_string (Ident.Name.class_ id) in
             Subst.add_class id
-              (`Class (path, ClassName.of_string (Ident.Name.class_ id)))
+              (`Class (path, name))
+              (`Class (rpath, name))
               map
         | ClassType (id, _, _) ->
+            let name = ClassTypeName.of_string (Ident.Name.class_type id) in
             Subst.add_class_type id
-              (`ClassType
-                (path, ClassName.of_string (Ident.Name.class_type id)))
+              (`ClassType (path, name))
+              (`ClassType (rpath, name))
               map
         | Include i -> get_sub map i.expansion_.items)
       is sub'
@@ -117,12 +130,16 @@ let prefix_signature (path, s) =
       (fun item map ->
         match item with
         | Component.Signature.RModule (id, _) ->
+            let name = ModuleName.of_string (Ident.Name.module_ id) in
             Subst.add_module id
-              (`Module (path, ModuleName.of_string (Ident.Name.module_ id)))
+              (`Module (path, name))
+              (`Module (rpath, name))
               map
         | Component.Signature.RType (id, _) ->
+            let name = TypeName.of_string (Ident.Name.type_ id) in
             Subst.add_type id
-              (`Type (path, TypeName.of_string (Ident.Name.type_ id)))
+              (`Type (path,name))
+              (`Type (rpath, name))
               map)
       removed sub
   in
@@ -170,30 +187,35 @@ let prefix_ident_signature
       (fun item map ->
         match item with
         | Type (id, _, _) ->
+            let ident = `Type (ident, TypeName.of_string (Ident.Name.type_ id)) in
             Subst.add_type id
-              (`Identifier
-                (`Type (ident, TypeName.of_string (Ident.Name.type_ id))))
+              (`Identifier ident)
+              (`Identifier ident)
               map
         | Module (id, _, _) ->
+            let mident = (`Module (ident, ModuleName.of_string (Ident.Name.module_ id))) in
             Subst.add_module id
-              (`Identifier
-                (`Module (ident, ModuleName.of_string (Ident.Name.module_ id))))
+              (`Identifier mident)
+              (`Identifier mident)
               map
         | ModuleType (id, _) ->
+            let ident = `ModuleType
+            (ident, ModuleTypeName.of_string (Ident.Name.module_type id)) in
             Subst.add_module_type id
-              (`Identifier
-                (`ModuleType
-                  (ident, ModuleTypeName.of_string (Ident.Name.module_type id))))
+              (`Identifier ident)
+              (`Identifier ident) 
               map
         | ModuleSubstitution (id, _) ->
+            let mident = (`Module (ident, ModuleName.of_string (Ident.Name.module_ id))) in
             Subst.add_module id
-              (`Identifier
-                (`Module (ident, ModuleName.of_string (Ident.Name.module_ id))))
+              (`Identifier mident)
+              (`Identifier mident)
               map
         | TypeSubstitution (id, _) ->
+            let ident = `Type (ident, TypeName.of_string (Ident.Name.type_ id)) in
             Subst.add_type id
-              (`Identifier
-                (`Type (ident, TypeName.of_string (Ident.Name.type_ id))))
+              (`Identifier ident)
+              (`Identifier ident)
               map
         | Exception _ -> map
         | TypExt _ -> map
@@ -201,15 +223,16 @@ let prefix_ident_signature
         | External (_, _) -> map
         | Comment _ -> map
         | Class (id, _, _) ->
+            let ident = `Class (ident, ClassName.of_string (Ident.Name.class_ id)) in
             Subst.add_class id
-              (`Identifier
-                (`Class (ident, ClassName.of_string (Ident.Name.class_ id))))
+              (`Identifier ident)
+              (`Identifier ident)      
               map
         | ClassType (id, _, _) ->
+            let ident = `ClassType (ident, ClassTypeName.of_string (Ident.Name.class_type id)) in
             Subst.add_class_type id
-              (`Identifier
-                (`ClassType
-                  (ident, ClassName.of_string (Ident.Name.class_type id))))
+              (`Identifier ident)
+              (`Identifier ident)
               map
         | Include i -> get_sub map i.expansion_.items)
       is sub
@@ -381,9 +404,10 @@ let rec handle_apply is_resolve env func_path arg_path m =
   let new_module = { m with Component.Module.type_ = ModuleType result } in
   let path = `Apply (func_path', `Substituted (`Resolved arg_path)) in
   let substitution = if is_resolve then `Substituted arg_path else arg_path in
+  let ref_subst = Cref.resolved_module_reference_of_resolved_module_path arg_path in
   ( path,
     Subst.module_
-      (Subst.add_module arg_id substitution Subst.identity)
+      (Subst.add_module arg_id substitution ref_subst Subst.identity)
       new_module )
 
 and add_canonical_path env m p : Cpath.resolved_module =
@@ -1226,7 +1250,7 @@ and fragmap_module :
 
   let sub_of_removed removed sub =
     match removed with
-    | Component.Signature.RModule (id, p) -> Subst.add_module id p sub
+    | Component.Signature.RModule (id, p) -> Subst.add_module id p (Cref.resolved_module_reference_of_resolved_module_path p) sub
     | _ -> sub
   in
   let sub = List.fold_right sub_of_removed removed Subst.identity in

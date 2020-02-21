@@ -58,70 +58,31 @@ let identity =
     id_any = IdentMap.empty;
   }
 
-(* hack *)
-let module_ref_of_module_path : Cpath.resolved_module -> Cref.Resolved.module_ =
-  function
-  | `Local x -> `Local x
-  | `Identifier x -> `Identifier x
-  | x ->
-      let p = Lang_of.(Path.resolved_module empty x) in
-      `Identifier (Odoc_model.Paths.Path.Resolved.Module.identifier p)
-
-let add_module id subst t =
-  let ref_subst = module_ref_of_module_path subst in
+let add_module id subst ref_subst t =
   {
     t with
     module_ = ModuleMap.add id subst t.module_;
     ref_module = ModuleMap.add id ref_subst t.ref_module;
   }
 
-(* hack *)
-let module_type_ref_of_module_type_path :
-    Cpath.resolved_module_type -> Cref.Resolved.module_type = function
-  | `Local x -> `Local x
-  | `Identifier x -> `Identifier x
-  | x ->
-      let p = Lang_of.(Path.resolved_module_type empty x) in
-      `Identifier (Odoc_model.Paths.Path.Resolved.ModuleType.identifier p)
 
-let add_module_type id subst t =
-  let ref_subst = module_type_ref_of_module_type_path subst in
+let add_module_type id subst ref_subst t =
   {
     t with
     module_type = ModuleTypeMap.add id subst t.module_type;
     ref_module_type = ModuleTypeMap.add id ref_subst t.ref_module_type;
   }
 
-(* hack *)
-let type_ref_of_type_path : Cpath.resolved_type -> Cref.Resolved.type_ =
-  function
-  | `Local x -> `Local x
-  | `Identifier x -> `Identifier x
-  | x ->
-      let p = Lang_of.(Path.resolved_type empty x) in
-      `Identifier (Odoc_model.Paths.Path.Resolved.Type.identifier p)
-
-let add_type : Ident.type_ -> Cpath.resolved_type -> t -> t =
- fun id subst t ->
-  let ref_subst = type_ref_of_type_path subst in
+let add_type : Ident.type_ -> Cpath.resolved_type -> Cref.Resolved.type_ -> t -> t =
+ fun id subst ref_subst t ->
   {
     t with
     type_ = TypeMap.add (id :> Ident.path_type) subst t.type_;
     ref_type = TypeMap.add (id :> Ident.path_type) ref_subst t.ref_type;
   }
 
-(* hack *)
-let class_ref_of_class_path :
-    Cpath.resolved_class_type -> Cref.Resolved.class_type = function
-  | `Local x -> `Local x
-  | `Identifier x -> `Identifier x
-  | x ->
-      let p = Lang_of.(Path.resolved_class_type empty x) in
-      `Identifier (Odoc_model.Paths.Path.Resolved.ClassType.identifier p)
-
-let add_class : Ident.class_ -> Cpath.resolved_class_type -> t -> t =
- fun id subst t ->
-  let ref_subst = class_ref_of_class_path subst in
+let add_class : Ident.class_ -> Cpath.resolved_class_type -> Cref.Resolved.class_type -> t -> t =
+ fun id subst ref_subst t ->
   {
     t with
     type_ =
@@ -137,9 +98,8 @@ let add_class : Ident.class_ -> Cpath.resolved_class_type -> t -> t =
       ClassTypeMap.add (id :> Ident.path_class_type) ref_subst t.ref_class_type;
   }
 
-let add_class_type : Ident.class_type -> Cpath.resolved_class_type -> t -> t =
- fun id subst t ->
-  let ref_subst = class_ref_of_class_path subst in
+let add_class_type : Ident.class_type -> Cpath.resolved_class_type -> Cref.Resolved.class_type -> t -> t =
+ fun id subst ref_subst t ->
   {
     t with
     type_ =
@@ -716,35 +676,35 @@ and rename_bound_idents s sg =
   | Module (id, r, m) :: rest ->
       let id' = Ident.Rename.module_ id in
       rename_bound_idents
-        ( add_module id (`Local id') s
+        ( add_module id (`Local id') (`Local id) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (Module (id', r, m) :: sg)
         rest
   | ModuleSubstitution (id, m) :: rest ->
       let id' = Ident.Rename.module_ id in
       rename_bound_idents
-        ( add_module id (`Local id') s
+        ( add_module id (`Local id') (`Local id) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (ModuleSubstitution (id', m) :: sg)
         rest
   | ModuleType (id, mt) :: rest ->
       let id' = Ident.Rename.module_type id in
       rename_bound_idents
-        ( add_module_type id (`Local id') s
+        ( add_module_type id (`Local id') (`Local id) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (ModuleType (id', mt) :: sg)
         rest
   | Type (id, r, t) :: rest ->
       let id' = Ident.Rename.type_ id in
       rename_bound_idents
-        ( add_type id (`Local (id' :> Ident.path_type)) s
+        ( add_type id (`Local (id' :> Ident.path_type)) (`Local (id' :> Ident.path_type)) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (Type (id', r, t) :: sg)
         rest
   | TypeSubstitution (id, t) :: rest ->
       let id' = Ident.Rename.type_ id in
       rename_bound_idents
-        ( add_type id (`Local (id' :> Ident.path_type)) s
+        ( add_type id (`Local (id' :> Ident.path_type)) (`Local (id' :> Ident.path_type)) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (TypeSubstitution (id', t) :: sg)
         rest
@@ -770,14 +730,14 @@ and rename_bound_idents s sg =
   | Class (id, r, c) :: rest ->
       let id' = Ident.Rename.class_ id in
       rename_bound_idents
-        ( add_class id (`Local (id' :> Ident.path_class_type)) s
+        ( add_class id (`Local (id' :> Ident.path_class_type)) (`Local (id' :> Ident.path_class_type)) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (Class (id', r, c) :: sg)
         rest
   | ClassType (id, r, c) :: rest ->
       let id' = Ident.Rename.class_type id in
       rename_bound_idents
-        ( add_class_type id (`Local (id' :> Ident.path_class_type)) s
+        ( add_class_type id (`Local (id' :> Ident.path_class_type)) (`Local (id' :> Ident.path_class_type)) s
         |> add_id_map (id :> Ident.any) (id' :> Ident.any) )
         (ClassType (id', r, c) :: sg)
         rest
