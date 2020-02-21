@@ -326,10 +326,10 @@ type module_type_lookup_result =
 
 type type_lookup_result =
   Cpath.resolved_type
-  * (Component.Find.type_, Component.TypeExpr.t) Component.Find.found
+  * (Find.type_, Component.TypeExpr.t) Find.found
 
 type class_type_lookup_result =
-  Cpath.resolved_class_type * Component.Find.class_type
+  Cpath.resolved_class_type * Find.class_type
 
 exception Type_lookup_failure of Env.t * Cpath.resolved_type
 
@@ -431,8 +431,8 @@ and add_hidden m p = if m.Component.Module.hidden then `Hidden p else p
 
 and handle_module_lookup env add_canonical id p m =
   let p', sg = signature_of_module env (p, m) |> prefix_signature in
-  match Component.Find.careful_module_in_sig sg id with
-  | Component.Find.Found m' ->
+  match Find.careful_module_in_sig sg id with
+  | Find.Found m' ->
       let p' = `Module (p', Odoc_model.Names.ModuleName.of_string id) in
       let p'' = if add_canonical then add_canonical_path env m' p' else p' in
       (p'', m')
@@ -440,13 +440,13 @@ and handle_module_lookup env add_canonical id p m =
 
 and handle_module_type_lookup env id p m =
   let p', sg = signature_of_module env (p, m) |> prefix_signature in
-  let mt = Component.Find.module_type_in_sig sg id in
+  let mt = Find.module_type_in_sig sg id in
   (`ModuleType (p', Odoc_model.Names.ModuleTypeName.of_string id), mt)
 
 and handle_type_lookup env id p m : type_lookup_result =
   let p', sg = signature_of_module env (p, m) |> prefix_signature in
   try
-    let mt = Component.Find.careful_type_in_sig sg id in
+    let mt = Find.careful_type_in_sig sg id in
     (`Type (p', Odoc_model.Names.TypeName.of_string id), mt)
   with e ->
     Format.fprintf Format.err_formatter
@@ -459,7 +459,7 @@ and handle_type_lookup env id p m : type_lookup_result =
 
 and handle_class_type_lookup env id p m =
   let p', sg = signature_of_module env (p, m) |> prefix_signature in
-  let c = Component.Find.class_type_in_sig sg id in
+  let c = Find.class_type_in_sig sg id in
   (`ClassType (p', Odoc_model.Names.TypeName.of_string id), c)
 
 and lookup_and_resolve_module_from_resolved_path :
@@ -1378,7 +1378,7 @@ and fragmap_type :
 and find_module_with_replacement :
     Env.t -> Component.Signature.t -> string -> Component.Module.t =
  fun env sg name ->
-  match Component.Find.careful_module_in_sig sg name with
+  match Find.careful_module_in_sig sg name with
   | Found m -> m
   | Replaced path ->
       let _, m = lookup_module_from_resolved_path env path in
@@ -1473,7 +1473,7 @@ and resolve_resolved_type_fragment :
         resolve_resolved_signature_fragment env (p, sg) parent
       in
       let t' =
-        Component.Find.careful_type_in_sig sg
+        Find.careful_type_in_sig sg
           (Odoc_model.Names.TypeName.to_string name)
       in
 
@@ -1494,7 +1494,7 @@ and resolve_type_fragment :
   | `Dot (parent, name) ->
       let parent, _, sg = resolve_signature_fragment env (p, sg) parent in
       let _ =
-        Component.Find.careful_type_in_sig sg
+        Find.careful_type_in_sig sg
           (Odoc_model.Names.TypeName.to_string name)
       in
       `Type (parent, Odoc_model.Names.TypeName.of_string name)
@@ -1598,7 +1598,7 @@ and resolve_mt_resolved_type_fragment :
         resolve_mt_resolved_signature_fragment env (p, sg) parent
       in
       let _t' =
-        Component.Find.careful_type_in_sig sg
+        Find.careful_type_in_sig sg
           (Odoc_model.Names.TypeName.to_string name)
       in
       `Type (parent, Odoc_model.Names.TypeName.of_string name)
@@ -1615,7 +1615,7 @@ and resolve_mt_type_fragment :
   | `Dot (parent, name) ->
       let parent, _, sg = resolve_mt_signature_fragment env (p, sg) parent in
       let _ =
-        Component.Find.careful_type_in_sig sg
+        Find.careful_type_in_sig sg
           (Odoc_model.Names.TypeName.to_string name)
       in
       `Type (parent, Odoc_model.Names.TypeName.of_string name)

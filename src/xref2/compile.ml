@@ -220,7 +220,7 @@ and module_ : Env.t -> Module.t -> Module.t =
       expansion;
     }
   with
-  | Component.Find.Find_failure (sg, name, ty) as e ->
+  | Find.Find_failure (sg, name, ty) as e ->
       let bt = Printexc.get_backtrace () in
       Format.fprintf Format.err_formatter
         "Find failure: Failed to find %s %s in %a\n" ty name
