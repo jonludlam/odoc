@@ -1,48 +1,9 @@
-module ModuleMap = Map.Make (struct
-  type t = Ident.module_
 
-  let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any)
-end)
-
-module ModuleTypeMap = Map.Make (struct
-  type t = Ident.module_type
-
-  let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any)
-end)
-
-module TypeMap = Map.Make (struct
-  type t = Ident.path_type
-
-  let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any)
-end)
-
-module ClassTypeMap = Map.Make (struct
-  type t = Ident.path_class_type
-
-  let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any)
-end)
-
-module IdentMap = Map.Make (struct
-  type t = Ident.any
-
-  let compare = Ident.compare
-end)
-
-type t = {
-  module_ : Cpath.resolved_module ModuleMap.t;
-  module_type : Cpath.resolved_module_type ModuleTypeMap.t;
-  type_ : Cpath.resolved_type TypeMap.t;
-  class_type : Cpath.resolved_class_type ClassTypeMap.t;
-  type_replacement : Component.TypeExpr.t TypeMap.t;
-  (* Reference maps *)
-  ref_module : Cref.Resolved.module_ ModuleMap.t;
-  ref_module_type : Cref.Resolved.module_type ModuleTypeMap.t;
-  ref_type : Cref.Resolved.type_ TypeMap.t;
-  ref_class_type : Cref.Resolved.class_type ClassTypeMap.t;
-  id_any : Ident.any IdentMap.t;
-}
 
 exception TypeReplacement of Component.TypeExpr.t
+
+open Component
+open Substitution
 
 let identity =
   {
