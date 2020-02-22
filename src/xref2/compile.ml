@@ -52,8 +52,8 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
-  let env = Env.initial_env t resolver in
-  { t with content = content env t.content }
+  let imports, env = Env.initial_env t resolver in
+  { t with content = content env t.content; imports }
 
 and content env =
   let open Compilation_unit in

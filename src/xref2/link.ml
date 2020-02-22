@@ -113,7 +113,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
   Tools.is_compile := false;
-  let env = Env.initial_env t resolver in
+  let (_, env) = Env.initial_env t resolver in
   { t with content = content env t.content; doc = comment_docs env t.doc }
 
 and content env =
@@ -180,7 +180,15 @@ and comment_nestable_block_element env (x : Comment.nestable_block_element) =
           List.map
             (List.map (with_location comment_nestable_block_element env))
             ys )
-  | x -> x
+  | `Modules refs ->
+    let refs = List.map (fun r ->
+      match Ref_tools.resolve_module_reference env ~add_canonical:false r with
+      | Some (r, _) -> `Resolved r
+      | None -> r
+      | exception _e ->
+        Format.fprintf Format.err_formatter "Error resolving reference: %a\n%!" Component.Fmt.model_reference (r :> Odoc_model.Paths.Reference.t);
+        r) refs in
+    `Modules refs
 
 and comment_block_element env (x : Comment.block_element) =
   match x with

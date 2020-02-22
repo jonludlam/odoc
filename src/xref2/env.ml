@@ -630,7 +630,7 @@ let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =
  fun unit env ->
   match unit.content with Module s -> open_signature s env | Pack _ -> env
 
-let initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> t =
+let initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> Odoc_model.Lang.Compilation_unit.Import.t list * t =
   fun t resolver ->
   let open Odoc_model.Lang.Compilation_unit in
   let initial_env =
@@ -640,17 +640,27 @@ let initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> t =
   in
   let initial_env = set_resolver initial_env resolver in
     List.fold_right
-      (fun import env ->
+      (fun import (imports, env) ->
           match import with
           | Import.Resolved root ->
               let unit = resolver.resolve_unit root in
+              Format.fprintf Format.err_formatter "resolved one (%a)\n%!" Component.Fmt.model_identifier (unit.id :> Odoc_model.Paths.Identifier.t);
               let m = module_of_unit unit in
               let env = add_module unit.id m env in
-              add_root
+              let env' = add_root
                   (Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file)
                   (Resolved (unit.id, m))
-                  env
-          | Import.Unresolved (_str, _) -> env)
-      t.imports initial_env
+                  env in
+              (import::imports, env')
+          | Import.Unresolved (str, _) -> begin
+            match resolver.lookup_unit str with
+            | Forward_reference -> 
+              (import::imports, env)
+            | Found x ->
+              (Import.Resolved x.root :: imports, env)
+            | Not_found ->
+              (import::imports, env)
+          end)
+      t.imports ([], initial_env)
 
 let modules_of env = ModuleMap.bindings env.modules

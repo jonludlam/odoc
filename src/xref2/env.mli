@@ -182,7 +182,7 @@ val open_signature : Odoc_model.Lang.Signature.t -> t -> t
 
 val open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t
 
-val initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> t
+val initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> Odoc_model.Lang.Compilation_unit.Import.t list * t
 
 val modules_of :
   t -> (Odoc_model.Paths.Identifier.Module.t * Component.Module.t) list
