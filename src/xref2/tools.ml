@@ -422,12 +422,16 @@ and add_canonical_path env m p : Cpath.Resolved.module_ =
             match !resolve_module_ref env cr with
             | Some (cp', _) -> (
                 try
+                  let resolved_path =
+                    Cpath.resolved_module_of_resolved_module_reference cp'
+                    |> simplify_resolved_module_path env in
+
+                  (* This is a simple way to ensure a) the path is correct and b) 
+                     that we record the env lookups needed for the canonical path
+                     so that the memoization is correct *)
+                  ignore(lookup_module_from_resolved_path env resolved_path);
                   (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
-                  `Canonical
-                    ( p,
-                      `Resolved
-                        ( Cpath.resolved_module_of_resolved_module_reference cp'
-                        |> simplify_resolved_module_path env ) )
+                  `Canonical ( p, `Resolved resolved_path )
                 with e ->
                   let callstack = Printexc.get_callstack 20 in
 

@@ -32,6 +32,27 @@ type lookup_type =
   | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
   | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
 
+let pp_lookup_type fmt =
+  let fmtrm fmt = function
+    | Some `Forward -> Format.fprintf fmt "Some (Forward)"
+    | Some (`Resolved id) -> Format.fprintf fmt "Some (Resolved %a)" Component.Fmt.model_identifier (id :> Odoc_model.Paths.Identifier.t)
+    | None -> Format.fprintf fmt "None"
+  in
+  function
+  | Module (r, b) -> Format.fprintf fmt "Module %a, %b" Component.Fmt.model_identifier (r :> Odoc_model.Paths.Identifier.t) b
+  | ModuleType (r, b) -> Format.fprintf fmt "ModuleType %a, %b" Component.Fmt.model_identifier (r :> Odoc_model.Paths.Identifier.t) b
+  | RootModule (str, res) ->
+    Format.fprintf fmt "RootModule %s %a" str fmtrm res
+
+let pp_lookup_type_list fmt ls =
+  let rec inner fmt =
+    function 
+    | [] -> Format.fprintf fmt ""
+    | [x] -> Format.fprintf fmt "%a" pp_lookup_type x
+    | x::ys -> Format.fprintf fmt "%a; %a" pp_lookup_type x inner ys
+  in
+  Format.fprintf fmt "[%a]" inner ls
+
 type recorder = 
   { mutable lookups: lookup_type list }
 
@@ -68,13 +89,19 @@ let id t = t.id
 let with_recorded_lookups env f =
   let recorder = { lookups = [] } in
   let env' = { env with recorder = Some recorder } in
-  let result = f env' in
-  begin
+  let restore () =
     match env.recorder with
-    | Some r -> r.lookups <- recorder.lookups @ r.lookups
+    | Some r ->
+      r.lookups <- recorder.lookups @ r.lookups
     | None -> ()
-  end;
-  (recorder.lookups, result)
+  in
+  try
+    let result = f env' in
+    restore ();
+    (recorder.lookups, result)
+  with e ->
+    restore ();
+    raise e
 
 let pp_modules ppf modules =
   List.iter

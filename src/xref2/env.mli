@@ -24,6 +24,8 @@ type lookup_type =
   | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
   | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
 
+val pp_lookup_type_list : Format.formatter -> lookup_type list -> unit
+
 type t
 
 (*val pp_modules :
