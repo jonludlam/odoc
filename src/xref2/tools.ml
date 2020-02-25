@@ -379,7 +379,6 @@ module Memos1 = Hashtbl.Make (Hashable)
 
 let memo = Memos1.create 10000
 
-let reset_cache () = Memos1.clear memo
 
 module Hashable2 = struct
   type t = bool * bool * Cpath.module_
@@ -393,14 +392,28 @@ module Memos2 = Hashtbl.Make (Hashable2)
 
 let memo2 = Memos2.create 10000
 
+let reset_cache () = Memos1.clear memo; Memos2.clear memo2
+
+
 let rec handle_apply is_resolve env func_path arg_path m =
-  let func_path', mty = module_type_expr_of_module env (func_path, m) in
-  let arg_id, result =
+
+  let func_path', mty' = module_type_expr_of_module env (func_path, m) in
+  let rec find_functor mty =
     match mty with
     | Component.ModuleType.Functor (Some arg, expr) ->
         (arg.Component.FunctorArgument.id, expr)
-    | _ -> failwith "Application must take a functor"
+    | Component.ModuleType.Path mty_path -> begin
+        match lookup_and_resolve_module_type_from_path false env mty_path with
+        | Resolved (_, { Component.ModuleType.expr = Some mty'; _ }) ->
+          find_functor mty'
+        | _ ->
+          raise OpaqueModule
+      end
+    | _ -> 
+      Format.fprintf Format.err_formatter "Got this instead: %a\n%!" Component.Fmt.module_type_expr mty;
+      failwith "Application must take a functor"
   in
+  let arg_id, result = find_functor mty' in
   let new_module = { m with Component.Module.type_ = ModuleType result } in
   let path = `Apply (func_path', `Substituted (`Resolved arg_path)) in
   let substitution = if is_resolve then `Substituted arg_path else arg_path in
