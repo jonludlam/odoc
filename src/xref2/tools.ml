@@ -426,11 +426,7 @@ and add_canonical_path env m p : Cpath.Resolved.module_ =
                     Cpath.resolved_module_of_resolved_module_reference cp'
                     |> simplify_resolved_module_path env in
 
-                  (* This is a simple way to ensure a) the path is correct and b) 
-                     that we record the env lookups needed for the canonical path
-                     so that the memoization is correct *)
-                  ignore(lookup_module_from_resolved_path env resolved_path);
-                  (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
+                     (*Format.fprintf Format.err_formatter "Got it! %a\n%!" (Component.Fmt.model_resolved_reference) (cp' :> Reference.Resolved.t);*)
                   `Canonical ( p, `Resolved resolved_path )
                 with e ->
                   let callstack = Printexc.get_callstack 20 in
@@ -563,7 +559,7 @@ and lookup_and_resolve_module_from_resolved_path :
         (`Hidden p', m)
     | `Canonical (p1, `Resolved p2) ->
         let p1', m =
-          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+          lookup_and_resolve_module_from_resolved_path is_resolve false
             env p1
         in
         let p, _ =
@@ -574,7 +570,7 @@ and lookup_and_resolve_module_from_resolved_path :
         (`Canonical (p1', `Resolved p'), m)
     | `Canonical (p1, p2) -> (
         let p1', m =
-          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+          lookup_and_resolve_module_from_resolved_path is_resolve false
             env p1
         in
         if !is_compile then (`Canonical (p1', p2), m)
@@ -644,6 +640,13 @@ and verify_lookups env lookups =
           with _ -> false
         in
         found <> actually_found
+    | Env.ModuleByName (name, result) -> begin
+        let actually_found = Env.lookup_module_by_name name env in
+        match result, actually_found with
+        | None, None -> false
+        | Some id, Some (`Module (id', _)) -> id <> id'
+        | _ -> true
+    end
   in
   not (List.exists bad_lookup lookups)
 

@@ -20,6 +20,14 @@ let with_dummy_location v =
       value = v;
     }
 
+let rec is_forward : Paths.Path.Module.t -> bool =
+  function
+    | `Resolved _ -> false
+    | `Root _ -> false
+    | `Forward _ -> true
+    | `Dot (p, _) -> is_forward p
+    | `Apply (p1, p2) -> is_forward p1 || is_forward p2
+
 let rec should_reresolve : Paths.Path.Resolved.t -> bool =
  fun p ->
   let open Paths.Path.Resolved in
@@ -102,19 +110,30 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
     let cp = Component.Of_Lang.(module_path empty p) in
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
-    | Unresolved _p -> failwith "Unresolved module path"
+    | Unresolved _ ->
+      if is_forward p
+      then begin
+        Format.fprintf Format.err_formatter "Skipping resolution of forward path %a\n%!" Component.Fmt.model_path (p :> Odoc_model.Paths.Path.t);
+        p
+      end else begin
+        Format.fprintf Format.err_formatter
+        "Failed to lookup module path: %a\n%!" 
+        Component.Fmt.model_path
+        (p :> Paths.Path.t);
+        failwith "Failed to resolve module path"
+      end
     | exception e ->
         Format.fprintf Format.err_formatter
           "Failed to lookup module path (%s): %a\n%!" (Printexc.to_string e)
           Component.Fmt.model_path
           (p :> Paths.Path.t);
-        p
+      raise e
 
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
   Tools.is_compile := false;
-  let (_, env) = Env.initial_env t resolver in
-  { t with content = content env t.content; doc = comment_docs env t.doc }
+  let (imports, env) = Env.initial_env t resolver in
+  { t with content = content env t.content; doc = comment_docs env t.doc; imports }
 
 and content env =
   let open Compilation_unit in

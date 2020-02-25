@@ -31,6 +31,7 @@ type lookup_type =
   | Module of Odoc_model.Paths_types.Identifier.reference_module * bool
   | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
   | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
+  | ModuleByName of string * Odoc_model.Paths_types.Identifier.reference_module option
 
 let pp_lookup_type fmt =
   let fmtrm fmt = function
@@ -38,11 +39,16 @@ let pp_lookup_type fmt =
     | Some (`Resolved id) -> Format.fprintf fmt "Some (Resolved %a)" Component.Fmt.model_identifier (id :> Odoc_model.Paths.Identifier.t)
     | None -> Format.fprintf fmt "None"
   in
+  let id_opt fmt = function
+    | Some id -> Format.fprintf fmt "Some %a" Component.Fmt.model_identifier (id :> Odoc_model.Paths.Identifier.t)
+    | None -> Format.fprintf fmt "None"
+  in
   function
   | Module (r, b) -> Format.fprintf fmt "Module %a, %b" Component.Fmt.model_identifier (r :> Odoc_model.Paths.Identifier.t) b
   | ModuleType (r, b) -> Format.fprintf fmt "ModuleType %a, %b" Component.Fmt.model_identifier (r :> Odoc_model.Paths.Identifier.t) b
   | RootModule (str, res) ->
     Format.fprintf fmt "RootModule %s %a" str fmtrm res
+  | ModuleByName (n, r) -> Format.fprintf fmt "ModuleByName %s, %a" n id_opt r
 
 let pp_lookup_type_list fmt ls =
   let rec inner fmt =
@@ -470,7 +476,7 @@ let lookup_signature_by_name name env =
   in
   find_map filter_fn env.elts
 
-let lookup_module_by_name name env =
+let lookup_module_by_name_internal name env =
   let filter_fn :
       string * Component.Element.any -> Component.Element.module_ option =
     function
@@ -478,6 +484,19 @@ let lookup_module_by_name name env =
     | _ -> None
   in
   find_map filter_fn env.elts
+
+let lookup_module_by_name name env =
+  let maybe_record_result res =
+    match res, env.recorder with
+    | Some (`Module (id, _)), Some r ->
+      r.lookups <- (ModuleByName (name, Some id)) :: r.lookups
+    | None, Some r -> 
+      r.lookups <- (ModuleByName (name, None)) :: r.lookups
+    | _ -> ()
+  in
+  let result = lookup_module_by_name_internal name env in
+  maybe_record_result result;
+  result
 
 let lookup_module_type_by_name name env =
   let filter_fn :
@@ -671,7 +690,6 @@ let initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> Odoc_model.L
           match import with
           | Import.Resolved root ->
               let unit = resolver.resolve_unit root in
-              Format.fprintf Format.err_formatter "resolved one (%a)\n%!" Component.Fmt.model_identifier (unit.id :> Odoc_model.Paths.Identifier.t);
               let m = module_of_unit unit in
               let env = add_module unit.id m env in
               let env' = add_root
