@@ -412,7 +412,8 @@ module ExtractIDs = struct
       any = ((id :> Ident.any), (identifier :> Identifier.t)) :: map.any;
     }
 
-  and include_ parent map i = signature parent map i.Include.expansion_
+  and include_ parent map i =
+    signature parent map i.Include.expansion_
 
   and docs parent map d =
     List.fold_right
@@ -483,7 +484,7 @@ module ExtractIDs = struct
             docs lpp (value_ parent map id) e.doc (* externals are values *)
         | Class (id, _, c) -> docs lpp (class_ parent map id) c.doc
         | ClassType (id, _, c) -> docs lpp (class_type parent map id) c.doc
-        | Include i -> include_ parent map i
+        | Include i -> docs lpp (include_ parent map i) i.doc
         | TypExt t -> docs lpp map t.doc
         | Comment d -> docs_or_stop (parent :> Identifier.LabelParent.t) map d)
       items map
@@ -538,7 +539,8 @@ let rec signature_items id map items =
           Odoc_model.Lang.Signature.TypeSubstitution (type_decl map id t) :: acc
       | Class (id, r, c) ->
           Odoc_model.Lang.Signature.Class (r, class_ map id c) :: acc
-      | ClassType _ -> acc
+      | ClassType (id, r, c) ->
+          Odoc_model.Lang.Signature.ClassType (r, class_type map id c) :: acc
       | Comment c ->
           Odoc_model.Lang.Signature.Comment (docs_or_stop map c) :: acc)
     items []

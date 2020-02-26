@@ -211,7 +211,6 @@ and module_ : Env.t -> Module.t -> Module.t =
       with
       | Tools.OpaqueModule -> None
       | Tools.UnresolvedForwardPath -> None
-      | _ -> None
   in
   try
     {
@@ -367,8 +366,12 @@ and module_type_expr :
     =
  fun env id expr ->
   let open ModuleType in
-  match expr with
-  | Signature s -> Signature (signature env s)
+  let rec inner resolve_signatures = 
+    function
+    | Signature s -> 
+      if resolve_signatures
+      then Signature (signature env s)
+      else Signature s
   | Path p -> Path (module_type_path env p)
   | With (expr, subs) ->
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
@@ -380,7 +383,7 @@ and module_type_expr :
          Component.Fmt.substitution_list
          (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
       With
-        ( module_type_expr env id expr,
+        ( inner false expr,
           List.fold_left
             (fun (sg, subs) sub ->
               try
@@ -450,7 +453,9 @@ and module_type_expr :
       let arg' = Opt.map (functor_argument env) arg in
       let res' = module_type_expr env id res in
       Functor (arg', res')
-  | TypeOf decl -> TypeOf (module_decl env id decl)
+  | TypeOf (ModuleType expr) -> TypeOf (ModuleType (inner resolve_signatures expr))
+  | TypeOf (Alias p) -> TypeOf (Alias (module_path env p))
+  in inner true expr
 
 and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
  fun env t ->
@@ -543,7 +548,10 @@ and type_expression : Env.t -> _ -> _ =
           let p = Cpath.resolved_type_path_of_cpath cp in
           Constr (`Resolved p, ts)
       | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
-      | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) )
+      | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts)
+      | exception e ->
+        Format.fprintf Format.err_formatter "Exception handling type expression: %a\n%!" Component.Fmt.type_expr (Component.Of_Lang.(type_expression empty texpr));
+        raise e)
   | Polymorphic_variant v -> Polymorphic_variant (type_expression_polyvar env v)
   | Object o -> Object (type_expression_object env o)
   | Class (path, ts) -> Class (path, List.map (type_expression env) ts)

@@ -479,7 +479,19 @@ module Fmt = struct
         | Include i -> Format.fprintf ppf "@[<v 2>include %a@]@," include_ i
         | Comment _c -> ())
       sg.items;
-    Format.fprintf ppf "@]"
+    Format.fprintf ppf "@] (removed=[%a])" removed_item_list sg.removed
+
+  and removed_item ppf r =
+    let open Signature in
+    match r with
+    | RModule (id, path) -> Format.fprintf ppf "module %a (%a)" Ident.fmt id resolved_module_path path
+    | RType (id, texpr) -> Format.fprintf ppf "type %a (%a)" Ident.fmt id type_expr texpr 
+
+  and removed_item_list ppf r =
+    match r with
+    | [] -> ()
+    | [x] -> Format.fprintf ppf "%a" removed_item x
+    | x::ys -> Format.fprintf ppf "%a;%a" removed_item x removed_item_list ys
 
   and external_ ppf _ = Format.fprintf ppf "<todo>"
 
@@ -1104,7 +1116,9 @@ module LocalIdents = struct
         | ClassType (_, c) ->
             let ids = class_type c ids in
             { ids with class_types = c.ClassType.id :: ids.class_types }
-        | Include i -> signature i.Include.expansion.content ids
+        | Include i ->
+            let ids = docs i.Include.doc ids in
+            signature i.Include.expansion.content ids
         | Comment c -> docs_or_stop c ids)
       s ids
 end
