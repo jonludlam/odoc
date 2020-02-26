@@ -29,8 +29,8 @@ let functor_arg_pos { Odoc_model.Lang.FunctorArgument.id ; _ } =
     | `Result p -> 1 + inner_sig p
     | `Module _ -> 1
     | `ModuleType _ -> 1
-    | `Root _
-    | `Parameter _ -> failwith "Invalid assumptions (2)"
+    | `Root _ -> 1 
+    | `Parameter _ -> 1
   in inner id
 
 let a_href = Tree.Relative_link.to_sub_element

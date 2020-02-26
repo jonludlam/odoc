@@ -84,7 +84,8 @@ let rec from_identifier : stop_before:bool ->
         | `Result x -> argument_number (i+1) x
         | `Module _ -> i
         | `ModuleType _ -> i
-        | _ -> failwith "Invalid assumptions!"
+        | `Parameter _ -> i
+        | `Root _ -> i
       in
       let arg_num = argument_number 1 functor_id in
       from_identifier_no_anchor (functor_id :> Identifier.t) ("arg " ^ ParameterName.to_string arg_name)
