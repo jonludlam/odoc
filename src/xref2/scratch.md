@@ -10,8 +10,11 @@ open Odoc_xref_test;;
 
 ```ocaml env=e1
 let test_data = {|
-type ('a, 'b) t = 'a * 'b
-type 'c u = (float, 'c) t
+module type RESULT = sig type u type v end
+module Make (S : sig type t end)
+  : Compute_ranges_intf.S
+      with type u := S.t
+           type v = S.t
 |}
 let sg = Common.signature_of_mli_string test_data;;
 ```

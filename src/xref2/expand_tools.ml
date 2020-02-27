@@ -71,6 +71,7 @@ and handle_expansion env id expansion =
               Odoc_model.Names.ParameterName.of_string
                 (Ident.Name.module_ arg.Component.FunctorArgument.id) )
         in
+        Format.fprintf Format.err_formatter "Adding identifier %a to env\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
         let env' =
           Env.add_module identifier
             (Component.module_of_functor_argument arg)
@@ -90,7 +91,7 @@ and handle_expansion env id expansion =
     | Functor (arg, expr) ->
         let env', expr' = handle_argument id arg expr env in
         expand (`Result id) env' (arg :: args)
-          (aux_expansion_of_module_type_expr env expr')
+          (aux_expansion_of_module_type_expr env' expr')
   in
   let env, e = expand id env [] expansion in
   (env, Lang_of.(module_expansion empty id e))
