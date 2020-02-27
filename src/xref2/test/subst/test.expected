@@ -10,7 +10,7 @@ S: sig
 type tt/27 = resolved(local(SubstituteMe/24)).t
 type uu/28 = resolved(local(SubstituteMe/24)).u
 type vv/29 = resolved(local(SubstituteMe/24)).v
-end
+ (removed=[])end
 
 AFTER 
 ======
@@ -18,5 +18,5 @@ S: sig
 type tt/30 = resolved(local(SubTargets/25)).t
 type uu/31 = resolved(local(SubTargets/25)).u
 type vv/32 = resolved(local(SubTargets/25)).v
-end
+ (removed=[])end
 

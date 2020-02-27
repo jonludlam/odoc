@@ -293,8 +293,13 @@ module (root Root).A : sig
 module (root Root).B = resolved[global((root Root).A)]
 type (root Root).t = resolved[global((root Root).B)].t
 
-FAILURE Odoc_xref2.Find.Find_failure(_, "t", "type")
-Backtrace:
+AFTER 
+===== 
+module (root Root).A : sig
+  type (root Root).A.t
+  end
+module (root Root).B = resolved[global((root Root).A)]
+type (root Root).t = resolved[(global((root Root).A) -> global((root Root).B)).t]
 
 Module alias
 Resolve a module alias
@@ -317,8 +322,14 @@ module (root Root).B = resolved[global((root Root).A)]
 module (root Root).C = resolved[global((root Root).B)]
 type (root Root).t = resolved[global((root Root).C)].t
 
-FAILURE Not_found
-Backtrace:
+AFTER 
+===== 
+module (root Root).A : sig
+  type (root Root).A.t
+  end
+module (root Root).B = resolved[global((root Root).A)]
+module (root Root).C = resolved[global((root Root).B)]
+type (root Root).t = resolved[(global((root Root).A) -> global((root Root).C)).t]
 
 Functor
 Resolve a functor
@@ -483,7 +494,7 @@ module type (root Root).ARG = sig
   module type (root Root).ARG.S
   end
 module (root Root).F : ((param (root Root).F X) : resolved[global((root Root).ARG)]) -> sig
-  module (root Root).F.result.N : resolved[global((param (root Root).F X))].S
+  module (root Root).F.result.N : resolved[global((param (root Root).F X)).S]
   end
 module (root Root).M : sig
   module type (root Root).M.S = sig

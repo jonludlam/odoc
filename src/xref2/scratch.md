@@ -12,9 +12,9 @@ open Odoc_xref_test;;
 let test_data = {|
 module type RESULT = sig type u type v end
 module Make (S : sig type t end)
-  : Compute_ranges_intf.S
+  : RESULT
       with type u := S.t
-           type v = S.t
+      with type v = S.t
 |}
 let sg = Common.signature_of_mli_string test_data;;
 ```
@@ -22,34 +22,82 @@ let sg = Common.signature_of_mli_string test_data;;
 ```ocaml env=e1
 # sg;;
 - : Odoc_model.Lang.Signature.t =
-[Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "t");
+[Odoc_model.Lang.Signature.ModuleType
+  {Odoc_model.Lang.ModuleType.id =
+    `ModuleType (`Root (Common.root, "Root"), "RESULT");
    doc = [];
-   equation =
-    {Odoc_model.Lang.TypeDecl.Equation.params =
-      [(Odoc_model.Lang.TypeDecl.Var "a", None);
-       (Odoc_model.Lang.TypeDecl.Var "b", None)];
-     private_ = false;
-     manifest =
-      Some
-       (Odoc_model.Lang.TypeExpr.Tuple
-         [Odoc_model.Lang.TypeExpr.Var "a"; Odoc_model.Lang.TypeExpr.Var "b"]);
-     constraints = []};
-   representation = None});
- Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
-  {Odoc_model.Lang.TypeDecl.id = `Type (`Root (Common.root, "Root"), "u");
+   expr =
+    Some
+     (Odoc_model.Lang.ModuleType.Signature
+       [Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+         {Odoc_model.Lang.TypeDecl.id =
+           `Type (`ModuleType (`Root (Common.root, "Root"), "RESULT"), "u");
+          doc = [];
+          equation =
+           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+            manifest = None; constraints = []};
+          representation = None});
+        Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
+         {Odoc_model.Lang.TypeDecl.id =
+           `Type (`ModuleType (`Root (Common.root, "Root"), "RESULT"), "v");
+          doc = [];
+          equation =
+           {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+            manifest = None; constraints = []};
+          representation = None})]);
+   display_expr = None; expansion = Some Odoc_model.Lang.Module.AlreadyASig};
+ Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
+  {Odoc_model.Lang.Module.id = `Module (`Root (Common.root, "Root"), "Make");
    doc = [];
-   equation =
-    {Odoc_model.Lang.TypeDecl.Equation.params =
-      [(Odoc_model.Lang.TypeDecl.Var "c", None)];
-     private_ = false;
-     manifest =
-      Some
-       (Odoc_model.Lang.TypeExpr.Constr
-         (`Resolved (`Identifier (`Type (`Root (Common.root, "Root"), "t"))),
-         [Odoc_model.Lang.TypeExpr.Constr
-           (`Resolved (`Identifier (`CoreType "float")), []);
-          Odoc_model.Lang.TypeExpr.Var "c"]));
-     constraints = []};
-   representation = None})]
+   type_ =
+    Odoc_model.Lang.Module.ModuleType
+     (Odoc_model.Lang.ModuleType.Functor
+       (Some
+         {Odoc_model.Lang.FunctorArgument.id =
+           `Parameter (`Module (`Root (Common.root, "Root"), "Make"), "S");
+          expr =
+           Odoc_model.Lang.ModuleType.Signature
+            [Odoc_model.Lang.Signature.Type
+              (Odoc_model.Lang.Signature.Ordinary,
+              {Odoc_model.Lang.TypeDecl.id =
+                `Type
+                  (`Parameter
+                     (`Module (`Root (Common.root, "Root"), "Make"), "S"),
+                   "t");
+               doc = [];
+               equation =
+                {Odoc_model.Lang.TypeDecl.Equation.params = [];
+                 private_ = false; manifest = None; constraints = []};
+               representation = None})];
+          expansion = Some Odoc_model.Lang.Module.AlreadyASig},
+       Odoc_model.Lang.ModuleType.With
+        (Odoc_model.Lang.ModuleType.With
+          (Odoc_model.Lang.ModuleType.Path
+            (`Resolved
+               (`Identifier
+                  (`ModuleType (`Root (Common.root, "Root"), "RESULT")))),
+          [Odoc_model.Lang.ModuleType.TypeSubst (`Dot (`Resolved `Root, "u"),
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest =
+              Some
+               (Odoc_model.Lang.TypeExpr.Constr
+                 (`Dot
+                    (`Resolved
+                       (`Identifier (`Parameter (`Module (`Root ...), "S"))),
+                       "t"),
+                    []));
+              constraints = []})]),
+          [Odoc_model.Lang.ModuleType.TypeEq (`Dot (`Resolved `Root, "v"),
+            {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
+             manifest =
+              Some
+               (Odoc_model.Lang.TypeExpr.Constr
+                 (`Dot
+                    (`Resolved
+                       (`Identifier
+                          (`Parameter (`Module (`Root (...), "Make"), "S"))),
+                     "t"),
+                 []));
+             constraints = []})])));
+    canonical = None; hidden = false; display_type = None; expansion = None})]
 ```
