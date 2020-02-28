@@ -551,7 +551,11 @@ and lookup_and_resolve_module_from_resolved_path :
           lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
             env p2
         in
-        (`Alias (p1, p2'), m)
+        let p1', _ =
+          lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
+            env p1
+        in
+        (`Alias (p1', p2'), m)
     | `Subst (p1, p2) ->
         let p2', m =
           lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
