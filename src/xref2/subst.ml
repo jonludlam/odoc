@@ -94,7 +94,7 @@ let rec resolved_module_path :
   | `Identifier _ -> p
   | `Apply (p1, p2) -> `Apply (resolved_module_path s p1, module_path s p2)
   | `Substituted p -> `Substituted (resolved_module_path s p)
-  | `Module (p, n) -> `Module (resolved_module_path s p, n)
+  | `Module (p, n) -> `Module (resolved_parent_path s p, n)
   | `Alias (p1, p2) ->
       `Alias (resolved_module_path s p1, resolved_module_path s p2)
   | `Subst (p1, p2) ->
@@ -104,6 +104,10 @@ let rec resolved_module_path :
   | `Hidden p1 -> `Hidden (resolved_module_path s p1)
   | `Canonical (p1, p2) ->
       `Canonical (resolved_module_path s p1, module_path s p2)
+
+and resolved_parent_path s = function
+  | `Module m -> `Module (resolved_module_path s m)
+  | `ModuleType m -> `ModuleType (resolved_module_type_path s m)
 
 and module_path : t -> Cpath.module_ -> Cpath.module_ =
  fun s p ->
@@ -125,7 +129,7 @@ and resolved_module_type_path :
       | None -> `Local id )
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (resolved_module_type_path s p)
-  | `ModuleType (p, n) -> `ModuleType (resolved_module_path s p, n)
+  | `ModuleType (p, n) -> `ModuleType (resolved_parent_path s p, n)
 
 and module_type_path : t -> Cpath.module_type -> Cpath.module_type =
  fun s p ->
@@ -145,9 +149,9 @@ and resolved_type_path : t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
       | None -> `Local id )
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (resolved_type_path s p)
-  | `Type (p, n) -> `Type (resolved_module_path s p, n)
-  | `ClassType (p, n) -> `ClassType (resolved_module_path s p, n)
-  | `Class (p, n) -> `Class (resolved_module_path s p, n)
+  | `Type (p, n) -> `Type (resolved_parent_path s p, n)
+  | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
+  | `Class (p, n) -> `Class (resolved_parent_path s p, n)
 
 and type_path : t -> Cpath.type_ -> Cpath.type_ =
  fun s p ->
@@ -166,8 +170,8 @@ and resolved_class_type_path :
       | None -> `Local id )
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (resolved_class_type_path s p)
-  | `ClassType (p, n) -> `ClassType (resolved_module_path s p, n)
-  | `Class (p, n) -> `Class (resolved_module_path s p, n)
+  | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
+  | `Class (p, n) -> `Class (resolved_parent_path s p, n)
 
 and class_type_path : t -> Cpath.class_type -> Cpath.class_type =
  fun s p ->

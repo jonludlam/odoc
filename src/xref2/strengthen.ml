@@ -28,7 +28,7 @@ let rec signature (prefix : Cpath.Resolved.module_) sg =
                 Component.Delayed.put (fun () ->
                     module_
                       (`Module
-                        (prefix, ModuleName.of_string (Ident.Name.module_ id)))
+                        (`Module prefix, ModuleName.of_string (Ident.Name.module_ id)))
                       (Component.Delayed.get m)) )
         | ModuleType (id, mt) ->
             ModuleType
@@ -36,7 +36,7 @@ let rec signature (prefix : Cpath.Resolved.module_) sg =
                 Component.Delayed.put (fun () ->
                     module_type
                       (`ModuleType
-                        ( prefix,
+                        ( `Module prefix,
                           ModuleTypeName.of_string (Ident.Name.module_type id)
                         ))
                       (Component.Delayed.get mt)) )
@@ -45,7 +45,7 @@ let rec signature (prefix : Cpath.Resolved.module_) sg =
               ( id,
                 r,
                 type_decl
-                  (`Type (prefix, TypeName.of_string (Ident.Name.type_ id)))
+                  (`Type (`Module prefix, TypeName.of_string (Ident.Name.type_ id)))
                   t )
         | Exception _ | TypExt _ | Value _ | External _ | Class _ | ClassType _
         | Include _ | ModuleSubstitution _ | TypeSubstitution _ | Comment _ ->

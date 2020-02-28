@@ -349,7 +349,7 @@ let rec resolved_module_reference_of_resolved_module_path : Cpath.Resolved.modul
   | `Subst (_, m) -> resolved_module_reference_of_resolved_module_path m
   | `SubstAlias (m1, m2) -> `SubstAlias (m1, resolved_module_reference_of_resolved_module_path m2)
   | `Hidden m -> resolved_module_reference_of_resolved_module_path m
-  | `Module (p, m) -> `Module ((resolved_module_reference_of_resolved_module_path p :> Resolved.signature), m)
+  | `Module (p, m) -> `Module (resolved_signature_reference_of_resolved_parent_path p, m)
   | `Canonical (p, _) -> resolved_module_reference_of_resolved_module_path p
   | `Apply (p, _) -> resolved_module_reference_of_resolved_module_path p
   | `Alias (p1, _) -> resolved_module_reference_of_resolved_module_path p1
@@ -362,6 +362,18 @@ and module_reference_of_module_path : Cpath.module_ -> module_ =
   | `Forward r -> `Root (r, `TModule)
   | `Dot (p, m) -> `Dot ((module_reference_of_module_path p :> label_parent), m)
   | `Apply (m1, _) -> module_reference_of_module_path m1
+
+and resolved_module_type_reference_of_resolved_module_type_path : Cpath.Resolved.module_type -> Resolved.module_type =
+  function
+  | `Local l -> `Local l
+  | `Identifier id -> `Identifier id
+  | `Substituted s -> resolved_module_type_reference_of_resolved_module_type_path s
+  | `ModuleType (p, m) -> `ModuleType (resolved_signature_reference_of_resolved_parent_path p, m)
+
+and resolved_signature_reference_of_resolved_parent_path : Cpath.Resolved.parent -> Resolved.signature =
+  function
+  | `Module m -> (resolved_module_reference_of_resolved_module_path m :> Resolved.signature)
+  | `ModuleType m -> (resolved_module_type_reference_of_resolved_module_type_path m :> Resolved.signature)
 
 let rec signature_identifier_of_resolved_reference (r : Resolved.signature) =
   match r with

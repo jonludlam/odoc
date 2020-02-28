@@ -96,18 +96,23 @@ module Path = struct
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module map m2)
     | `Hidden h -> `Hidden (resolved_module map h)
-    | `Module (p, n) -> `Module (resolved_module map p, n)
+    | `Module (p, n) -> `Module (resolved_parent map p, n)
     | `Canonical (r, m) -> `Canonical (resolved_module map r, module_ map m)
     | `Apply (m1, m2) -> `Apply (resolved_module map m1, module_ map m2)
     | `Alias (m1, m2) -> `Alias (resolved_module map m1, resolved_module map m2)
 
+  and resolved_parent map (p : Cpath.Resolved.parent) =
+    match p with
+    | `Module m -> resolved_module map m
+    | `ModuleType _ -> failwith "Invalid path found"
+  
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     match p with
     | `Identifier (#Odoc_model.Paths.Identifier.ModuleType.t as y) ->
         `Identifier y
     | `Local id -> `Identifier (List.assoc id map.module_type)
-    | `ModuleType (p, name) -> `ModuleType (resolved_module map p, name)
+    | `ModuleType (p, name) -> `ModuleType (resolved_parent map p, name)
     | `Substituted s -> resolved_module_type map s
 
   and resolved_type map (p : Cpath.Resolved.type_) :
@@ -116,9 +121,9 @@ module Path = struct
     | `Identifier (#Odoc_model.Paths_types.Identifier.path_type as y) ->
         `Identifier y
     | `Local id -> `Identifier (List.assoc id map.path_type)
-    | `Type (p, name) -> `Type (resolved_module map p, name)
-    | `Class (p, name) -> `Class (resolved_module map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_module map p, name)
+    | `Type (p, name) -> `Type (resolved_parent map p, name)
+    | `Class (p, name) -> `Class (resolved_parent map p, name)
+    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
     | `Substituted s -> resolved_type map s
 
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
@@ -127,8 +132,8 @@ module Path = struct
     | `Identifier (#Odoc_model.Paths_types.Identifier.path_class_type as y) ->
         `Identifier y
     | `Local id -> `Identifier (List.assoc id map.path_class_type)
-    | `Class (p, name) -> `Class (resolved_module map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_module map p, name)
+    | `Class (p, name) -> `Class (resolved_parent map p, name)
+    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
     | `Substituted s -> resolved_class_type map s
 
   and resolved_label_parent_reference map (p : Cref.Resolved.label_parent) =

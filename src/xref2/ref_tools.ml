@@ -26,7 +26,7 @@ let rec make_prefix : Resolved.Signature.t -> Cpath.Resolved.module_ option =
   let open Tools.OptionMonad in
   function
   | `Module (parent, name) ->
-      make_prefix parent >>= fun p -> return (`Module (p, name))
+      make_prefix parent >>= fun p -> return (`Module (`Module p, name))
   | `Identifier (#Identifier.Module.t as i) -> return (`Identifier i)
   | `Canonical (m, _r) -> make_prefix (m :> Resolved.Signature.t)
   | `SubstAlias (_, r) -> make_prefix (r :> Resolved.Signature.t)
@@ -38,7 +38,7 @@ let prefix_signature r s =
       (* Format.fprintf Format.err_formatter
          "Prefixing with Cpath.resolved_module: %a\n%!"
          Component.Fmt.resolved_module_path prefix;*)
-      Tools.prefix_signature (prefix, s) |> snd
+      Tools.prefix_signature (`Module prefix, s) |> snd
   | None ->
       let identifier = Resolved.Signature.identifier r in
       (* Format.fprintf Format.err_formatter "Prefixing with Identifier: %a\n%!"
