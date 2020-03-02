@@ -304,6 +304,46 @@ module Path = struct
     | `InstanceVariable (p, n) ->
         `InstanceVariable (class_signature_reference map p, n)
     | `Label (p, n) -> `Label (label_parent_reference map p, n)
+
+    let rec module_fragment : maps -> Cfrag.module_ -> Odoc_model.Paths.Fragment.Module.t =
+      fun map f ->
+        match f with
+        | `Resolved r -> `Resolved (resolved_module_fragment map r)
+        | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
+
+    and signature_fragment : maps -> Cfrag.signature -> Odoc_model.Paths.Fragment.Signature.t =
+      fun map f ->
+        match f with
+       | `Resolved r -> `Resolved (resolved_signature_fragment map r)
+       | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
+
+and type_fragment : maps -> Cfrag.type_ -> Odoc_model.Paths.Fragment.Type.t =
+    fun map f ->
+      match f with
+      | `Resolved r -> `Resolved (resolved_type_fragment map r)
+      | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
+
+and resolved_module_fragment : maps -> Cfrag.resolved_module -> Odoc_model.Paths.Fragment.Resolved.Module.t =
+      fun map f ->
+        match f with
+        | `Subst (p, f) -> `Subst (resolved_module_type map p, resolved_module_fragment map f)
+        | `SubstAlias (p, f) -> `SubstAlias (resolved_module map p, resolved_module_fragment map f)
+        | `Module (p, n) -> `Module (resolved_signature_fragment map p, n)
+
+and resolved_signature_fragment : maps -> Cfrag.resolved_signature -> Odoc_model.Paths.Fragment.Resolved.Signature.t =
+      fun map f ->
+      match f with
+  | `Root -> `Root
+  | `Subst _ | `SubstAlias _ | `Module _ as x -> (resolved_module_fragment map x :> Odoc_model.Paths.Fragment.Resolved.Signature.t)
+
+and resolved_type_fragment : maps -> Cfrag.resolved_type -> Odoc_model.Paths.Fragment.Resolved.Type.t = 
+      fun map f ->
+      match f with
+  | `Type (p, n) -> `Type (resolved_signature_fragment map p, n)
+  | `ClassType (p, n) -> `ClassType (resolved_signature_fragment map p, n)
+  | `Class (p, n) -> `Class (resolved_signature_fragment map p, n)
+
+
 end
 
 module ExtractIDs = struct
@@ -782,10 +822,10 @@ and module_type_expr map identifier =
   let substitution = function
     | Component.ModuleType.ModuleEq (frag, decl) ->
         Odoc_model.Lang.ModuleType.ModuleEq
-          (frag, module_decl map identifier decl)
-    | ModuleSubst (frag, path) -> ModuleSubst (frag, Path.module_ map path)
-    | TypeEq (frag, eqn) -> TypeEq (frag, type_decl_equation map eqn)
-    | TypeSubst (frag, eqn) -> TypeSubst (frag, type_decl_equation map eqn)
+          (Path.module_fragment map frag, module_decl map identifier decl)
+    | ModuleSubst (frag, path) -> ModuleSubst (Path.module_fragment map frag, Path.module_ map path)
+    | TypeEq (frag, eqn) -> TypeEq (Path.type_fragment map frag, type_decl_equation map eqn)
+    | TypeSubst (frag, eqn) -> TypeSubst (Path.type_fragment map frag, type_decl_equation map eqn)
   in
   function
   | Component.ModuleType.Path p ->
@@ -906,7 +946,7 @@ and type_expr_package map t =
       Path.module_type map t.Component.TypeExpr.Package.path;
     substitutions =
       List.map
-        (fun (frag, texpr) -> (frag, type_expr map texpr))
+        (fun (frag, texpr) -> (Path.type_fragment map frag, type_expr map texpr))
         t.substitutions;
   }
 
