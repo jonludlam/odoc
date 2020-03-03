@@ -253,7 +253,7 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
   let open ModuleType in
   try
     let env = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
-    let expansion, expr' =
+    let expansion', expr' =
       match m.expr with
       | None -> (None, None)
       | Some expr ->
@@ -280,7 +280,7 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
               (module_type_expr env (m.id :> Paths.Identifier.Signature.t) expr)
           )
     in
-    { m with expr = expr'; expansion }
+    { m with expr = expr'; expansion = Opt.map (expansion env) expansion' }
   with e ->
     Format.fprintf Format.err_formatter
       "Failed to resolve module_type (%a): %s\n%!"
@@ -377,23 +377,45 @@ and module_type_expr :
       else Signature s
   | Path p -> Path (module_type_path env p)
   | With (expr, subs) ->
+      let expr = inner false expr in
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
       let csubs = List.map Component.Of_Lang.(module_type_substitution empty) subs in
       let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
-      let parent = match id with
+      Format.fprintf Format.err_formatter "Before: sig=%a\n%!" Component.Fmt.signature sg;
+      let rec find_parent expr =
+        match expr with
+        | Component.ModuleType.Signature _ -> None
+        | Path (`Resolved p) -> Some (`ModuleType p)
+        | Path _ -> None
+        | With (e, _) -> find_parent e
+        | Functor _ -> failwith "Impossible"
+        | TypeOf (Alias (`Resolved p)) -> Some (`Module p)
+        | TypeOf (Alias _) -> None
+        | TypeOf (ModuleType t) -> find_parent t
+      in
+(*      let parent = match id with
         | `ModuleType _ as x -> `ModuleType (`Identifier x)
         | `Root _ | `Module _ | `Parameter _ | `Result _ as x -> `Module (`Identifier x)
-      in
+      in*)
+      let parent_opt = find_parent cexpr in
       (* Format.fprintf Format.err_formatter
          "Handling `With` expression for %a [%a]\n%!"
          Component.Fmt.model_identifier
          (id :> Paths.Identifier.t)
          Component.Fmt.substitution_list
          (List.map Component.Of_Lang.(module_type_substitution empty) subs);*)
-      With
+      begin
+        match parent_opt with
+        | None -> With (expr, subs)
+        | Some parent ->
+          Tools.without_memoizing (fun () ->
+        
+          With
         ( inner false expr,
           List.fold_left2
             (fun (sg, subs) csub lsub ->
+              Format.fprintf Format.err_formatter "Step: sig=%a\n%!" Component.Fmt.signature sg;
+
               try
                 (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
                      Component.Fmt.signature sg;
@@ -455,7 +477,8 @@ and module_type_expr :
                   (Printexc.to_string e) bt;
                 raise e)
             (sg, []) csubs subs
-          |> snd |> List.rev )
+          |> snd |> List.rev ))
+                    end
   | Functor (arg, res) ->
       let arg' = Opt.map (functor_argument env) arg in
       let res' = module_type_expr env id res in

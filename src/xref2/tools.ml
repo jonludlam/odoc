@@ -400,6 +400,13 @@ let memo2 = Memos2.create 10000
 
 let reset_cache () = Memos1.clear memo; Memos2.clear memo2
 
+let without_memoizing_count = ref 0
+
+let without_memoizing f =
+  incr without_memoizing_count;
+  let result = f () in
+  decr without_memoizing_count;
+  result
 
 let rec handle_apply is_resolve env func_path arg_path m =
 
@@ -628,7 +635,8 @@ and lookup_and_resolve_module_from_resolved_path :
   match Memos1.find_all memo id with
   | [] ->
       let lookups, resolved = Env.with_recorded_lookups env' resolve in
-      Memos1.add memo id (resolved, env_id, lookups);
+      if !without_memoizing_count = 0 then
+        Memos1.add memo id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
@@ -645,7 +653,8 @@ and lookup_and_resolve_module_from_resolved_path :
             if not time_measure_in_progress then
               time_wasted_start := Unix.gettimeofday ();
             let lookups, (p, m) = Env.with_recorded_lookups env' resolve in
-            Memos1.add memo id ((p, m), env_id, lookups);
+            if !without_memoizing_count = 0 then
+              Memos1.add memo id ((p, m), env_id, lookups);
             (p, m)
       in
       find_fast xs
@@ -747,7 +756,8 @@ and lookup_and_resolve_module_from_path :
   match Memos2.find_all memo2 id with
   | [] ->
       let lookups, resolved = Env.with_recorded_lookups env' resolve in
-      Memos2.add memo2 id (resolved, env_id, lookups);
+      if !without_memoizing_count = 0 then
+        Memos2.add memo2 id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
@@ -759,7 +769,8 @@ and lookup_and_resolve_module_from_path :
             if verify_lookups env' lookups then r else find xs
         | [] ->
             let lookups, result = Env.with_recorded_lookups env' resolve in
-            Memos2.add memo2 id (result, env_id, lookups);
+            if !without_memoizing_count = 0 then
+              Memos2.add memo2 id (result, env_id, lookups);
             result
       in
       find_fast xs
@@ -1668,12 +1679,12 @@ and resolve_mt_module_fragment :
   match frag with
   | `Resolved r -> r
   | `Dot (parent, name) ->
-    let pfrag, ppath, sg =
-      resolve_mt_signature_fragment env (p, sg) parent
-    in
-    let _ = find_module_with_replacement env sg name in
-    let new_id = `Module (ppath, Odoc_model.Names.ModuleName.of_string name) in    
-    get_module_frag pfrag ppath (`Module new_id)
+    let pfrag, ppath, sg = resolve_mt_signature_fragment env (p, sg) parent in
+    let m' = find_module_with_replacement env sg name in
+    let new_id = `Module (ppath, Odoc_model.Names.ModuleName.of_string name) in
+    let (cp, _) = signature_of_module env (new_id, m') in
+    Format.fprintf Format.err_formatter "Orig: %a after: %a\n%!module: %a\n%!" Component.Fmt.resolved_module_path new_id Component.Fmt.resolved_module_path cp Component.Fmt.module_ m';
+    get_module_frag pfrag ppath (`Module cp)
 
 and resolve_mt_type_fragment :
     Env.t ->
