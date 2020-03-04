@@ -1183,27 +1183,6 @@ module Fragment = struct
       let open Paths_types.Resolved_fragment in 
       (m : module_ :> signature)
 
-    let rec parent_resolved_path : Path.Resolved.Module.t -> Paths_types.Resolved_fragment.signature -> Path.Resolved.Module.t = fun root -> 
-      function
-      | `Root -> root
-      | `Subst(sub, p) ->
-        `Subst(sub, parent_resolved_path root (sig_of_mod p))
-      | `SubstAlias(sub, p) ->
-        `SubstAlias(sub, parent_resolved_path root (sig_of_mod p))
-      | `Module(m, n) ->
-        `Module(parent_resolved_path root m, n)
-
-    let rec parent_unresolved_path : Path.Module.t -> Paths_types.Resolved_fragment.signature -> Path.Module.t = fun root -> function
-      | `Root -> root
-      | `Subst(_, p) -> parent_unresolved_path root (sig_of_mod p)
-      | `SubstAlias(_, p) -> parent_unresolved_path root (sig_of_mod p)
-      | `Module(m, n) -> `Dot(parent_unresolved_path root m, (ModuleName.to_string n))
-
-    let parent_path root frag =
-      match root with
-      | `Resolved root -> `Resolved (parent_resolved_path root frag)
-      | _ -> parent_unresolved_path root frag
-
     type base_name =
       | Base
       | Branch of ModuleName.t * Paths_types.Resolved_fragment.signature
@@ -1227,31 +1206,6 @@ module Fragment = struct
 
       let hash s =
         hash (s : t :> Paths_types.Resolved_fragment.any)
-
-      let rec resolved_path : Path.Resolved.Module.t -> t -> Path.Resolved.Module.t =
-        fun root frag ->
-        match frag with
-        | `Root -> root
-        | `Subst(sub, p) ->
-          `Subst(sub, resolved_path root (sig_of_mod p))
-        | `SubstAlias(sub, p) ->
-          `SubstAlias(sub, resolved_path root (sig_of_mod p))
-        | `Module(m, n) ->
-          `Module(parent_resolved_path root m, n)
-
-      let rec unresolved_path : Path.Module.t -> t -> Path.Module.t =
-        fun root frag ->
-        match frag with
-        | `Root -> root
-        | `Subst(_, p) -> unresolved_path root (sig_of_mod p)
-        | `SubstAlias(_, p) -> unresolved_path root (sig_of_mod p)
-        | `Module(m, n) -> `Dot(parent_unresolved_path root m, ModuleName.to_string n)
-
-      let path : Path.Module.t -> t -> Path.Module.t =
-        fun root frag ->
-        match root with
-        | `Resolved root -> `Resolved (resolved_path root frag)
-        | _ -> unresolved_path root frag
 
       let rec split : t -> string * t option = function
         | `Root -> "", None
@@ -1282,29 +1236,6 @@ module Fragment = struct
       let hash s =
         hash (s : t :> Paths_types.Resolved_fragment.any)
 
-      let resolved_path : Path.Resolved.Module.t -> t -> Path.Resolved.Module.t =
-        fun root frag ->
-        match frag with
-        | `Subst(sub, p) ->
-          `Subst(sub, Signature.resolved_path root (sig_of_mod p))
-        | `SubstAlias(sub, p) ->
-          `SubstAlias(sub, Signature.resolved_path root (sig_of_mod p))
-        | `Module(m, n) ->
-          `Module(parent_resolved_path root m, n)
-
-      let unresolved_path : Path.Module.t -> t -> Path.Module.t =
-        fun root frag ->
-        match frag with
-        | `Subst(_, p) -> Signature.unresolved_path root (sig_of_mod p)
-        | `SubstAlias(_, p) -> Signature.unresolved_path root (sig_of_mod p)
-        | `Module(m, n) -> `Dot(parent_unresolved_path root m, ModuleName.to_string n)
-
-      let path : Path.Module.t -> t -> Path.Module.t =
-        fun root frag ->
-        match root with
-        | `Resolved root -> `Resolved (resolved_path root frag)
-        | _ -> unresolved_path root frag
-
       let rec split : t -> string * t option = function
         | `Subst(_,p) -> split p
         | `SubstAlias(_,p) -> split p
@@ -1331,23 +1262,6 @@ module Fragment = struct
 
       let hash s =
         hash (s : t :> Paths_types.Resolved_fragment.any)
-
-      let resolved_path : Path.Resolved.Module.t -> t -> Path.Resolved.Type.t = fun root ->
-        function
-        | `Type(m,n) -> `Type (Signature.resolved_path root m, n)
-        | `Class(m,n) -> `Class (Signature.resolved_path root m, n)
-        | `ClassType(m,n) -> `ClassType (Signature.resolved_path root m, n)
-
-      let unresolved_path : Path.Module.t -> t -> Path.Type.t = fun root ->
-        function
-        | `Type(m,n) -> `Dot (Signature.unresolved_path root m, TypeName.to_string n)
-        | `Class(m,n) -> `Dot (Signature.unresolved_path root m, ClassName.to_string n)
-        | `ClassType(m,n) -> `Dot (Signature.unresolved_path root m, ClassTypeName.to_string n)
-
-      let path :  Path.Module.t -> t -> Path.Type.t = fun root frag ->
-        match root with
-        | `Resolved root -> `Resolved (resolved_path root frag)
-        | _ -> unresolved_path root frag
 
       let split : t -> string * t option =
         function
@@ -1403,10 +1317,6 @@ module Fragment = struct
   end
 
   type t = Paths_types.Fragment.any
-
-  let rec parent_path : Path.Module.t -> Paths_types.Fragment.signature -> Path.Module.t = fun root -> function
-    | `Resolved r -> Resolved.parent_path root r
-    | `Dot(m, n) -> `Dot(parent_path root m, n)
 
   type base_name =
     | Base
@@ -1470,11 +1380,6 @@ module Fragment = struct
         | Base -> name, None
         | Branch(base, m) -> ModuleName.to_string base, Some(`Dot(m, name))
 
-    let path : Path.Module.t -> t -> Path.Module.t =
-      fun root -> function
-        | `Resolved r -> Resolved.Signature.path root r
-        | `Dot(m, s) -> `Dot(parent_path root m, s)
-
   end
 
   module Module = struct
@@ -1500,10 +1405,6 @@ module Fragment = struct
         | Base -> name, None
         | Branch(base, m) -> ModuleName.to_string base, Some(`Dot(m, name))
 
-    let path : Path.Module.t -> t -> Path.Module.t =
-      fun root -> function
-        | `Resolved r -> Resolved.Module.path root r
-        | `Dot(m, s) -> `Dot(parent_path root m, s)
   end
 
   module Type = struct
@@ -1528,11 +1429,6 @@ module Fragment = struct
         match split_parent m with
         | Base -> name, None
         | Branch(base, m) -> ModuleName.to_string base, Some(`Dot(m, name))
-
-    let path : Path.Module.t -> t -> Path.Type.t =
-      fun root -> function
-        | `Resolved r -> Resolved.Type.path root r
-        | `Dot(m, s) -> `Dot(parent_path root m, s)
 
   end
 
