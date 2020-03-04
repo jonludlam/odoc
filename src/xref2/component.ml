@@ -698,6 +698,7 @@ module Fmt = struct
       match p with
       | `Module m -> resolved_module_path ppf m
       | `ModuleType m -> Format.fprintf ppf ">>%a<<" resolved_module_type_path m
+      | `FragmentRoot -> Format.fprintf ppf "FragmentRoot"
 
   and type_path : Format.formatter -> Cpath.type_ -> unit =
    fun ppf p ->

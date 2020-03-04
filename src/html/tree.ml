@@ -188,6 +188,85 @@ module Relative_link = struct
         | `Class (rr, s) -> dot (render_resolved ( rr :> t)) (ClassName.to_string s)
         | `ClassType (rr, s) -> dot (render_resolved (rr :> t)) (ClassTypeName.to_string s)
 
+    let rec pp_resolved_frag ppf (f : Fragment.Resolved.t) =
+      let open Fragment.Resolved in
+      match f with
+      | `Root -> Format.fprintf ppf "root"
+      | `Subst (_x,y) -> Format.fprintf ppf "subst(...,%a)" pp_resolved_frag (y :> t)
+      | `SubstAlias (_,y) -> Format.fprintf ppf "substalias(...,%a)" pp_resolved_frag (y :> t)
+      | `Module (p,n)
+      | `Class (p,n)
+      | `ClassType (p,n)
+      | `Type (p, n) -> Format.fprintf ppf "%a.%s" pp_resolved_frag (p :> t) n
+    
+    and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
+      match p with
+      | `Root (_, unit_name) ->
+          Format.fprintf ppf "(root %s)" (Odoc_model.Names.UnitName.to_string unit_name)
+      | `Module (parent, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+            (Odoc_model.Names.ModuleName.to_string name)
+      | `ModuleType (parent, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+            (Odoc_model.Names.ModuleTypeName.to_string name)
+      | `Type (parent, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+            (Odoc_model.Names.TypeName.to_string name)
+      | `Parameter (parent, name) ->
+          Format.fprintf ppf "(param %a %s)" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+            (Odoc_model.Names.ParameterName.to_string name)
+      | `Result parent ->
+          Format.fprintf ppf "%a.result" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+      | `CoreType name ->
+          Format.fprintf ppf "%s" (Odoc_model.Names.TypeName.to_string name)
+      | `Constructor (ty, x) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (ty :> Odoc_model.Paths.Identifier.t)
+            x
+      | `Value (parent, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+            name
+      | `CoreException name -> Format.fprintf ppf "%s" name
+      | `Class (sg, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (sg :> Odoc_model.Paths.Identifier.t)
+            name
+      | `ClassType (sg, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (sg :> Odoc_model.Paths.Identifier.t)
+            name
+      | `InstanceVariable (sg, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (sg :> Odoc_model.Paths.Identifier.t)
+            name
+      | `Method (sg, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (sg :> Odoc_model.Paths.Identifier.t)
+            name
+      | `Label (parent, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (parent :> Odoc_model.Paths.Identifier.t)
+            name
+      | `Field (ty, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (ty :> Odoc_model.Paths.Identifier.t)
+            name
+      | `Exception (p, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (p :> Odoc_model.Paths.Identifier.t)
+            name
+      | `Extension (p, name) ->
+          Format.fprintf ppf "%a.%s" model_identifier
+            (p :> Odoc_model.Paths.Identifier.t)
+            name
+      | `Page (_, name) -> Format.fprintf ppf "%s" name
+  
     let rec to_html : stop_before:bool ->
       Identifier.Signature.t -> Fragment.t -> _ =
       fun ~stop_before id fragment ->
@@ -205,6 +284,8 @@ module Relative_link = struct
         | `Resolved rr ->
           let id = Resolved.identifier id (rr :> Resolved.t) in
           let txt = render_resolved rr in
+
+          Format.fprintf Format.err_formatter "Formatting resolved fragment: %s %a %a\n%!" txt pp_resolved_frag (rr :> Resolved.t) model_identifier id;
           begin match Id.href ~stop_before id with
           | href ->
             [ Html.a ~a:[ Html.a_href href ] [ Html.txt txt ] ]
@@ -222,7 +303,7 @@ module Relative_link = struct
     Of_path.to_html ~stop_before p
 
   let of_fragment ~base frag =
-    Of_fragment.to_html ~stop_before:false base frag
+    Of_fragment.to_html ~stop_before:true base frag
 
   let to_sub_element ~kind name =
     (* FIXME: Reuse [Url]. *)

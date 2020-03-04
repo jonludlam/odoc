@@ -1266,7 +1266,7 @@ module Fragment = struct
       let rec identifier : Identifier.Signature.t -> t -> Identifier.Signature.t =
         fun root -> function
           | `Root -> root
-          | `Subst(_, p) -> identifier root (sig_of_mod p)
+          | `Subst(s, _) -> (Path.Resolved.ModuleType.identifier s :> Identifier.Signature.t)
           | `SubstAlias(_, p) -> identifier root (sig_of_mod p)
           | `Module(m, n) -> `Module (identifier root m, n)
 
@@ -1390,7 +1390,9 @@ module Fragment = struct
     let rec identifier : Identifier.Signature.t -> t -> Identifier.t =
       fun root -> function
         | `Root -> (root :> Identifier.t)
-        | `Subst(_, p) -> identifier root (p :> t)
+        | `Subst(s, _) ->
+          Format.fprintf Format.err_formatter "Got a subst!\n%!";
+          Path.Resolved.identifier (s :> Path.Resolved.t)
         | `SubstAlias(_, p) -> identifier root (p :> t)
         | `Module(m, n) -> `Module (Signature.identifier root m, n)
         | `Type(m, n) -> `Type(Signature.identifier root m, n)

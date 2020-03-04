@@ -4,7 +4,8 @@ open Odoc_model.Names
 module rec Resolved : sig
   type parent =
   [ `Module of module_
-  | `ModuleType of module_type ]
+  | `ModuleType of module_type
+  | `FragmentRoot ]
 
   and module_ =
   [ `Local of Ident.module_
@@ -103,6 +104,7 @@ and resolved_parent_hash : Resolved.parent -> int =
   function
   | `Module m -> Hashtbl.hash (20,resolved_module_hash m)
   | `ModuleType m -> Hashtbl.hash (21, resolved_module_type_hash m)
+  | `FragmentRoot -> Hashtbl.hash (22)
 
 
 type local_path_error =
@@ -136,7 +138,8 @@ let rec resolved_module_path_of_cpath :
 
 and resolved_module_path_of_cpath_parent : Resolved.parent -> Path.Resolved.Module.t = function
 | `Module m -> resolved_module_path_of_cpath m
-| `ModuleType _ -> failwith "Can't do it"
+| `ModuleType _ 
+| `FragmentRoot -> failwith "Can't do it"
 
 and resolved_module_type_path_of_cpath :
     Resolved.module_type -> Path.Resolved.ModuleType.t = function
@@ -190,6 +193,7 @@ let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
 and is_resolved_parent_substituted = function
 | `Module m -> is_resolved_module_substituted m
 | `ModuleType m -> is_resolved_module_type_substituted m
+| `FragmentRoot -> false
 
 and is_resolved_module_type_substituted : Resolved.module_type -> bool =
   function
@@ -261,6 +265,7 @@ and is_resolved_module_hidden : Resolved.module_ -> bool = function
 and is_resolved_parent_hidden : Resolved.parent -> bool = function
   | `Module m -> is_resolved_module_hidden m
   | `ModuleType m -> is_resolved_module_type_hidden m
+  | `FragmentRoot -> false
 
   and is_module_type_hidden : module_type -> bool = function
   | `Resolved r -> is_resolved_module_type_hidden r

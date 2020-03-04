@@ -108,6 +108,7 @@ let rec resolved_module_path :
 and resolved_parent_path s = function
   | `Module m -> `Module (resolved_module_path s m)
   | `ModuleType m -> `ModuleType (resolved_module_type_path s m)
+  | `FragmentRoot as x -> x
 
 and module_path : t -> Cpath.module_ -> Cpath.module_ =
  fun s p ->
@@ -321,6 +322,46 @@ and reference : t -> Cref.any -> Cref.any =
   | `InstanceVariable _ -> r (* FIXME *)
   | `Label _ -> r
 
+let rec resolved_signature_fragment : t -> Cfrag.resolved_signature -> Cfrag.resolved_signature =
+  fun t r ->
+  match r with
+  | `Root -> `Root
+  | `Subst _
+  | `SubstAlias _
+  | `Module _ as x -> (resolved_module_fragment t x :> Cfrag.resolved_signature)
+
+and resolved_module_fragment : t -> Cfrag.resolved_module -> Cfrag.resolved_module =
+  fun t r ->
+  match r with
+  | `Subst (mty, f) -> `Subst (resolved_module_type_path t mty, resolved_module_fragment t f)
+  | `SubstAlias (m, f) -> `SubstAlias (resolved_module_path t m, resolved_module_fragment t f)
+  | `Module (sg, n) -> `Module (resolved_signature_fragment t sg, n)
+
+and resolved_type_fragment : t -> Cfrag.resolved_type -> Cfrag.resolved_type =
+  fun t r ->
+    match r with
+    | `Type (s,n) -> `Type (resolved_signature_fragment t s, n)
+    | `ClassType (s,n) -> `ClassType (resolved_signature_fragment t s, n)
+    | `Class (s,n) -> `Class (resolved_signature_fragment t s, n)
+
+let rec signature_fragment : t -> Cfrag.signature -> Cfrag.signature =
+  fun t r ->
+  match r with
+  | `Resolved f -> `Resolved (resolved_signature_fragment t f)
+  | `Dot (sg, n) -> `Dot (signature_fragment t sg, n)
+
+let module_fragment : t -> Cfrag.module_ -> Cfrag.module_ =
+  fun t r ->
+  match r with
+  | `Resolved r -> `Resolved (resolved_module_fragment t r)
+  | `Dot (sg, n) -> `Dot (signature_fragment t sg, n)
+
+let type_fragment : t -> Cfrag.type_ -> Cfrag.type_ =
+  fun t r ->
+  match r with
+  | `Resolved r -> `Resolved (resolved_type_fragment t r)
+  | `Dot (sg, n) -> `Dot (signature_fragment t sg, n)
+
 let option_ conv s x = match x with Some x -> Some (conv s x) | None -> None
 
 let list conv s xs = List.map (conv s) xs
@@ -434,10 +475,10 @@ and module_type_expr s t =
 and module_type_substitution s sub =
   let open Component.ModuleType in
   match sub with
-  | ModuleEq (f, m) -> ModuleEq (f, module_decl s m)
-  | ModuleSubst (f, p) -> ModuleSubst (f, module_path s p)
-  | TypeEq (f, eq) -> TypeEq (f, type_decl_equation s eq)
-  | TypeSubst (f, eq) -> TypeSubst (f, type_decl_equation s eq)
+  | ModuleEq (f, m) -> ModuleEq (module_fragment s f, module_decl s m)
+  | ModuleSubst (f, p) -> ModuleSubst (module_fragment s f, module_path s p)
+  | TypeEq (f, eq) -> TypeEq (type_fragment s f, type_decl_equation s eq)
+  | TypeSubst (f, eq) -> TypeSubst (type_fragment s f, type_decl_equation s eq)
 
 and module_decl s t =
   match t with

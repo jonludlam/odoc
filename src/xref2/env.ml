@@ -84,7 +84,9 @@ type t = {
   roots : (string * root) list;
   resolver : resolver option;
 
-  recorder : recorder option
+  recorder : recorder option;
+
+  fragmentroot : Component.Signature.t option
 }
 
 let set_resolver t resolver = { t with resolver = Some resolver }
@@ -181,7 +183,11 @@ let empty =
     instance_variables = [];
     resolver = None;
     recorder = None;
+    fragmentroot = None;
   }
+
+let add_fragment_root sg env =
+  { env with fragmentroot = Some sg }
 
 let add_module identifier m env =
   (*  Format.fprintf Format.err_formatter "Adding module: %a\n%!" Component.Fmt.model_identifier (identifier : Odoc_model.Paths.Identifier.Module.t :> Odoc_model.Paths.Identifier.t);*)
@@ -317,6 +323,11 @@ let add_root name ty env = { env with roots = (name, ty) :: env.roots }
 let len = ref 0
 
 let n = ref 0
+
+let lookup_fragment_root env =
+  match env.fragmentroot with
+  | Some sg -> sg
+  | None -> failwith "Looking up fragment root"
 
 let lookup_type identifier env =
   try List.assoc identifier env.types

@@ -571,6 +571,13 @@ and lookup_and_resolve_module_from_resolved_path :
           (p'', m')
         | Replaced p -> lookup_and_resolve_module_from_resolved_path false false env p
         end
+    | `Module (`FragmentRoot, name) -> begin
+        let sg = Env.lookup_fragment_root env in
+        match Find.careful_module_in_sig sg name with
+        | Find.Found m' ->
+          (p, m')
+        | Replaced p -> lookup_and_resolve_module_from_resolved_path false false env p
+        end
     | `Alias (p1, p2) ->
         let p2', m =
           lookup_and_resolve_module_from_resolved_path is_resolve add_canonical
@@ -800,7 +807,11 @@ and lookup_and_resolve_module_type_from_resolved_path :
       (p', mt)
   | `ModuleType (`ModuleType _, _) ->
       failwith "Unhandled 2"
-        
+  | `ModuleType (`FragmentRoot, name) ->
+      let sg = Env.lookup_fragment_root env in
+      let mt = Find.module_type_in_sig sg name in
+      (p, mt)
+
 
 and lookup_and_resolve_module_type_from_path :
     bool ->
@@ -870,6 +881,10 @@ and lookup_type_from_resolved_path :
   | `Type (`ModuleType _, _) -> failwith "Unhandled 3"
   | `ClassType (`ModuleType _, _) -> failwith "Unhandled 4"
   | `Class (`ModuleType _, _) -> failwith "Unhandled 5"
+  | `Type (`FragmentRoot, _) -> failwith "Unhandled 11"
+  | `ClassType (`FragmentRoot, _) -> failwith "Unhandled 12"
+  | `Class (`FragmentRoot, _) -> failwith "Unhandled 13"
+  
 
 and lookup_type_from_path :
     Env.t -> Cpath.type_ -> (type_lookup_result, Cpath.type_) ResultMonad.t =
@@ -912,6 +927,8 @@ and lookup_class_type_from_resolved_path :
       (p', t)
   | `ClassType (`ModuleType _, _) -> failwith "Unhandled 6"
   | `Class (`ModuleType _, _) -> failwith "Unhandled 7"
+  | `ClassType (`FragmentRoot, _) -> failwith "Unhandled 14"
+  | `Class (`FragmentRoot, _) -> failwith "Unhandled 15"
     
 and lookup_class_type_from_path :
     Env.t ->
@@ -1124,6 +1141,7 @@ and signature_of_module_type_expr :
               then `Module (`Subst (p, mpath))
               else incoming_path
             | `ModuleType _ -> incoming_path
+            | `FragmentRoot -> incoming_path
           in
           (outgoing_path, sg)
       | Unresolved _p ->
@@ -1190,7 +1208,8 @@ and signature_of_module_decl :
   | Component.Module.ModuleType expr ->
       match signature_of_module_type_expr env (`Module incoming_path, expr) with
       | (`Module m, sg) -> (m, sg)
-      | (`ModuleType _, _) ->
+      | (`ModuleType _, _)
+      | (`FragmentRoot, _) ->
         failwith "Something odd happening here..."
 
 
@@ -1231,6 +1250,11 @@ and fragmap_module :
   let map_module m =
     match (frag', sub) with
     | None, ModuleEq (_, type_) ->
+        let type_ = match type_ with
+          | Alias (`Resolved p) -> Component.Module.Alias (`Resolved (`Substituted p))
+          | Alias _
+          | ModuleType _ -> type_
+        in
         (* Finished the substitution *)
         Left { m with Component.Module.type_; expansion = None }
     | None, ModuleSubst (_, p) -> (
@@ -1595,10 +1619,37 @@ and resolve_type_fragment :
       `Type (parent, Odoc_model.Names.TypeName.of_string name)
 *)
 
+let rec simplify_module_path : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
+    function
+    | `Local _
+    | `Identifier _ as x -> x
+    | `Substituted x -> x
+    | `Subst (mty, m) -> `Subst (simplify_module_type_path mty, simplify_module_path m)
+    | `Hidden x -> x
+    | `Module (p, m) -> `Module (simplify_parent_path p, m)
+    | `Canonical (_, `Resolved m) -> simplify_module_path m
+    | `Canonical (m, _) -> simplify_module_path m
+    | `Apply (x, y) -> `Apply (simplify_module_path x, y)
+    | `Alias (a, _b) -> simplify_module_path a
+    | `SubstAlias (_a, _b) -> failwith "not sure"
+
+and simplify_module_type_path : Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
+    function
+    | `Local _
+    | `Identifier _ as x -> x
+    | `Substituted x -> simplify_module_type_path x
+    | `ModuleType (p, n) -> `ModuleType (simplify_parent_path p, n)
+  
+and simplify_parent_path : Cpath.Resolved.parent -> Cpath.Resolved.parent =
+  function
+  | `Module m -> `Module (simplify_module_path m)
+  | `ModuleType m -> `ModuleType (simplify_module_type_path m)
+  | `FragmentRoot -> `FragmentRoot
+
 let rec get_module_frag : Cfrag.resolved_signature -> Cpath.Resolved.parent -> Cpath.Resolved.parent -> Cfrag.resolved_module = fun parent_frag parent_path cp ->
         match cp with
         | `Module (`Module (p', name)) -> assert(p'=parent_path); `Module (parent_frag, Odoc_model.Names.ModuleName.of_string name)
-        | `Module (`Subst (mty, p')) -> `Subst (mty, (get_module_frag parent_frag parent_path (`Module p')))
+        | `Module (`Subst (mty, p')) -> `Subst (simplify_module_type_path mty, (get_module_frag parent_frag parent_path (`Module p')))
         | `Module (`Canonical (p, _)) -> get_module_frag parent_frag parent_path (`Module p)
         | `Module (`Substituted s) -> get_module_frag parent_frag parent_path (`Module s)
         | `Module (`Hidden s) -> get_module_frag parent_frag parent_path (`Module s)
@@ -1608,6 +1659,7 @@ let rec get_module_frag : Cfrag.resolved_signature -> Cpath.Resolved.parent -> C
         | `Module (`SubstAlias (_,_)) -> assert false
         | `Module (`Apply _) -> assert false 
         | `ModuleType (_) -> assert false
+        | `FragmentRoot -> assert false
 
 let rec resolve_mt_resolved_signature_fragment :
     Env.t ->
@@ -1680,11 +1732,9 @@ and resolve_mt_module_fragment :
   | `Resolved r -> r
   | `Dot (parent, name) ->
     let pfrag, ppath, sg = resolve_mt_signature_fragment env (p, sg) parent in
-    let m' = find_module_with_replacement env sg name in
+    let _ = find_module_with_replacement env sg name in
     let new_id = `Module (ppath, Odoc_model.Names.ModuleName.of_string name) in
-    let (cp, _) = signature_of_module env (new_id, m') in
-    Format.fprintf Format.err_formatter "Orig: %a after: %a\n%!module: %a\n%!" Component.Fmt.resolved_module_path new_id Component.Fmt.resolved_module_path cp Component.Fmt.module_ m';
-    get_module_frag pfrag ppath (`Module cp)
+    get_module_frag pfrag ppath (`Module new_id)
 
 and resolve_mt_type_fragment :
     Env.t ->

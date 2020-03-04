@@ -374,6 +374,7 @@ and resolved_signature_reference_of_resolved_parent_path : Cpath.Resolved.parent
   function
   | `Module m -> (resolved_module_reference_of_resolved_module_path m :> Resolved.signature)
   | `ModuleType m -> (resolved_module_type_reference_of_resolved_module_type_path m :> Resolved.signature)
+  | `FragmentRoot -> `Local (`LRoot ("dummy", 0))
 
 let rec signature_identifier_of_resolved_reference (r : Resolved.signature) =
   match r with

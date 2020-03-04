@@ -69,6 +69,8 @@ exception MyFailure of Odoc_model.Paths.Identifier.t * t
 
 val empty : t
 
+val add_fragment_root : Component.Signature.t -> t -> t
+
 val add_module :
   Odoc_model.Paths_types.Identifier.reference_module ->
   Component.Module.t ->
@@ -121,6 +123,8 @@ val add_method :
   t
 
 val add_root : string -> root -> t -> t
+
+val lookup_fragment_root : t -> Component.Signature.t
 
 val lookup_module :
   Odoc_model.Paths_types.Identifier.reference_module -> t -> Component.Module.t

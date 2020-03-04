@@ -104,8 +104,9 @@ module Path = struct
   and resolved_parent map (p : Cpath.Resolved.parent) =
     match p with
     | `Module m -> resolved_module map m
-    | `ModuleType _ -> failwith "Invalid path found"
-  
+    | `ModuleType _ 
+    | `FragmentRoot -> failwith "Invalid"
+
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     match p with
