@@ -16,9 +16,9 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
   match Tools.lookup_type_from_path env cp with
   | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
   | Unresolved p -> Cpath.type_path_of_cpath p
-  | exception e ->
-      Format.fprintf Format.err_formatter
-        "Failed to lookup type path (%s): %a\n%!" (Printexc.to_string e)
+  | exception _ ->
+      Lookup_failures.report
+        "Failed to lookup type path %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -30,9 +30,9 @@ and module_type_path :
   match Tools.lookup_and_resolve_module_type_from_path true env cp with
   | Resolved (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
   | Unresolved p -> Cpath.module_type_path_of_cpath p
-  | exception e ->
-      Format.fprintf Format.err_formatter
-        "Failed to lookup module_type path (%s): %a\n%!" (Printexc.to_string e)
+  | exception _ ->
+      Lookup_failures.report
+        "Failed to lookup module_type path: %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -43,9 +43,9 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   match Tools.lookup_and_resolve_module_from_path true true env cp with
   | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
   | Unresolved p -> Cpath.module_path_of_cpath p
-  | exception e ->
-      Format.fprintf Format.err_formatter
-        "Failed to lookup module path (%s): %a\n%!" (Printexc.to_string e)
+  | exception _ ->
+      Lookup_failures.report
+        "Failed to lookup module path: %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -65,10 +65,10 @@ and value_ env t =
   let open Value in
   try { t with type_ = type_expression env t.type_ }
   with e ->
-    Format.fprintf Format.err_formatter "Failed to compile value: %a\n%!"
+    Lookup_failures.report_important e "%a"
       Component.Fmt.model_identifier
       (t.id :> Paths.Identifier.t);
-    raise e
+    t
 
 and exception_ env e =
   let open Exception in
@@ -212,8 +212,10 @@ and module_ : Env.t -> Module.t -> Module.t =
       | Tools.OpaqueModule -> None
       | Tools.UnresolvedForwardPath -> None
       | e ->
-        Format.fprintf Format.err_formatter "Failed to expand module id: %a\n%!%a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t) Component.Fmt.module_ m';
-        raise e
+        Lookup_failures.report_important e "Failed to expand module id %a"
+          Component.Fmt.model_identifier
+          (m.id :> Odoc_model.Paths.Identifier.t);
+        m.expansion
   in
   try
     {
@@ -223,17 +225,14 @@ and module_ : Env.t -> Module.t -> Module.t =
     }
   with
   | Find.Find_failure (sg, name, ty) as e ->
-      let bt = Printexc.get_backtrace () in
-      Format.fprintf Format.err_formatter
-        "Find failure: Failed to find %s %s in %a\n" ty name
-        Component.Fmt.signature sg;
-      Printf.fprintf stderr "Backtrace: %s\n%!" bt;
-      raise e
+      Lookup_failures.report_important e "Find failure: Failed to find %s %s in %a" 
+        ty name Component.Fmt.signature sg;
+      m
   | e ->
-      Printf.fprintf stderr "Failed to resolve module: %s\n%s\n%!"
-        (Printexc.to_string e)
-        (Printexc.get_backtrace ());
-      raise e
+      Lookup_failures.report_important e "Failed to resolve module id %a"
+        Component.Fmt.model_identifier
+        (m.id :> Odoc_model.Paths.Identifier.t);
+      m
 
 and module_decl :
     Env.t -> Paths.Identifier.Signature.t -> Module.decl -> Module.decl =
@@ -265,15 +264,11 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
             with
             | Tools.OpaqueModule -> (env, None)
             | e ->
-                ( match m'.expr with
-                | Some (Component.ModuleType.Signature sg) ->
-                    Format.fprintf Format.err_formatter
-                      "Failed to expand module_type: %a\n%!sig:\n%!%a\n%!"
-                      Component.Fmt.model_identifier
-                      (m.id :> Paths.Identifier.t)
-                      Component.Fmt.signature sg
-                | _ -> () );
-                raise e
+                Lookup_failures.report_important e
+                  "Failed to expand module_type %a"
+                  Component.Fmt.model_identifier
+                  (m.id :> Paths.Identifier.t);
+                (env, None)
           in
           ( expansion,
             Some
@@ -282,12 +277,11 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
     in
     { m with expr = expr'; expansion }
   with e ->
-    Format.fprintf Format.err_formatter
-      "Failed to resolve module_type (%a): %s\n%!"
+    Lookup_failures.report_important e
+      "Failed to resolve module_type %a"
       Component.Fmt.model_identifier
-      (m.id :> Paths.Identifier.t)
-      (Printexc.to_string e);
-    raise e
+      (m.id :> Paths.Identifier.t);
+    m
 
 and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
@@ -315,19 +309,12 @@ and include_ : Env.t -> Include.t -> Include.t =
     in
     { i with decl = module_decl env i.parent i.decl; expansion }
   with e ->
-    let bt = Printexc.get_backtrace () in
     let i' = Component.Of_Lang.(module_decl empty i.decl) in
-    Format.fprintf Format.err_formatter
-      "Failed to resolve include: %a\n\
-       Got exception %s (parent=%a)\n\
-       backtrace:\n\
-       %s\n\
-       %!"
-      Component.Fmt.module_decl i' (Printexc.to_string e)
-      Component.Fmt.model_identifier
-      (i.parent :> Paths.Identifier.t)
-      bt;
-    raise e
+    Lookup_failures.report_important e
+      "Failed to resolve include %a (parent: %a)"
+      Component.Fmt.module_decl i'
+      Component.Fmt.model_identifier (i.parent :> Paths.Identifier.t);
+    i
 
 and expansion : Env.t -> Module.expansion -> Module.expansion =
   let open Module in
@@ -390,11 +377,6 @@ and module_type_expr :
           List.fold_left
             (fun (sg, subs) sub ->
               try
-                (* Format.fprintf Format.err_formatter "Signature is: %a\n%!"
-                     Component.Fmt.signature sg;
-                   Format.fprintf Format.err_formatter "Handling sub: %a\n%!"
-                     Component.Fmt.substitution
-                     Component.Of_Lang.(module_type_substitution empty sub); *)
                 match sub with
                 | ModuleEq (frag, decl) ->
                     let frag' =
@@ -445,11 +427,11 @@ and module_type_expr :
                       TypeSubst (`Resolved frag', type_decl_equation env eqn)
                       :: subs )
               with e ->
-                let bt = Printexc.get_backtrace () in
-                Printf.fprintf stderr
-                  "Exception caught while resolving fragments: %s\n%s\n%!"
-                  (Printexc.to_string e) bt;
-                raise e)
+                Lookup_failures.report_important e
+                  "Exception caught while resolving fragments %a"
+                  Component.Fmt.substitution
+                  Component.Of_Lang.(module_type_substitution empty sub);
+                ( sg, sub :: subs ))
             (sg, []) subs
           |> snd |> List.rev )
   | Functor (arg, res) ->
@@ -467,11 +449,10 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
     let equation = type_decl_equation env t.equation in
     { t with equation }
   with e ->
-    Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"
+    Lookup_failures.report_important e "Failed to resolve type %a"
       Component.Fmt.model_identifier
-      (t.id :> Paths.Identifier.t)
-      (Printexc.to_string e);
-    raise e
+      (t.id :> Paths.Identifier.t);
+    t
 
 and type_decl_equation env t =
   let open TypeDecl.Equation in
@@ -553,8 +534,10 @@ and type_expression : Env.t -> _ -> _ =
       | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
       | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts)
       | exception e ->
-        Format.fprintf Format.err_formatter "Exception handling type expression: %a\n%!" Component.Fmt.type_expr (Component.Of_Lang.(type_expression empty texpr));
-        raise e)
+        Lookup_failures.report_important e "Exception handling type expression %a"
+          Component.Fmt.type_expr
+          (Component.Of_Lang.(type_expression empty texpr));
+        texpr)
   | Polymorphic_variant v -> Polymorphic_variant (type_expression_polyvar env v)
   | Object o -> Object (type_expression_object env o)
   | Class (path, ts) -> Class (path, List.map (type_expression env) ts)
@@ -575,8 +558,16 @@ let build_resolver :
   { Env.lookup_unit; resolve_unit; lookup_page; resolve_page; open_units }
 
 let compile x y =
-  let before = y in
-  let after = unit x before in
+  let after, failures = Lookup_failures.catch_failures (fun () -> unit x y) in
+  ( match failures with
+    | [] -> ()
+    | _ :: _ ->
+      let pp_failures ppf fs =
+        List.iter (Format.fprintf ppf "%a@\n" Lookup_failures.pp) fs
+      in
+      Format.fprintf Format.err_formatter
+        "The following lookup failures occurred:@\n%a%!" pp_failures failures
+  );
   after
 
 let resolve_page _resolver y = y
