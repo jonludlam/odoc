@@ -366,12 +366,12 @@ end
 module Fragment = struct
 
   let rec read_module : Longident.t -> Paths.Fragment.Module.t = function
-    | Longident.Lident s -> `Dot(`Resolved `Root, s)
+    | Longident.Lident s -> `Dot(`Root, s)
     | Longident.Ldot(p, s) -> `Dot((read_module p :> Paths.Fragment.Signature.t), s)
     | Longident.Lapply _ -> assert false
 
   let read_type = function
-    | Longident.Lident s -> `Dot(`Resolved `Root, s)
+    | Longident.Lident s -> `Dot(`Root, s)
     | Longident.Ldot(p, s) -> `Dot((read_module p :> Paths.Fragment.Signature.t), s)
     | Longident.Lapply _ -> assert false
 

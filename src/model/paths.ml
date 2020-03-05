@@ -1133,6 +1133,8 @@ module Fragment = struct
 
     type t = Paths_types.Resolved_fragment.any
 
+    type root = Paths_types.Resolved_fragment.root
+
     let t_of_module m = (m : Paths_types.Resolved_fragment.module_ :> t)
     let t_of_signature s = (s : Paths_types.Resolved_fragment.signature :> t)
 
@@ -1140,7 +1142,8 @@ module Fragment = struct
       let rec loop : t -> t -> bool =
         fun p1 p2 ->
           match p1, p2 with
-          | `Root, `Root -> true
+          | `Root (`ModuleType i1), `Root (`ModuleType i2) -> Path.Resolved.ModuleType.equal i1 i2
+          | `Root (`Module i1), `Root (`Module i2) -> Path.Resolved.Module.equal i1 i2
           | `Subst(sub1, p1), `Subst(sub2, p2) ->
             Path.Resolved.ModuleType.equal sub1 sub2
             && loop (t_of_module p1) (t_of_module p2)
@@ -1163,7 +1166,8 @@ module Fragment = struct
       let rec loop : t -> int =
         fun p ->
           match p with
-          | `Root -> Hashtbl.hash 32
+          | `Root (`ModuleType i) -> Hashtbl.hash (32, Path.Resolved.ModuleType.hash i)
+          | `Root (`Module i) -> Hashtbl.hash (33, Path.Resolved.Module.hash i)
           | `Subst(sub, p) ->
             Hashtbl.hash (34, Path.Resolved.ModuleType.hash sub, loop (t_of_module p))
           | `SubstAlias(sub, p) ->
@@ -1184,16 +1188,16 @@ module Fragment = struct
       (m : module_ :> signature)
 
     type base_name =
-      | Base
+      | Base of root
       | Branch of ModuleName.t * Paths_types.Resolved_fragment.signature
 
     let rec split_parent : Paths_types.Resolved_fragment.signature -> base_name = function
-      | `Root -> Base
+      | `Root i -> Base i
       | `Subst(_, p) -> split_parent (sig_of_mod p)
       | `SubstAlias(_, p) -> split_parent (sig_of_mod p)
       | `Module(p, name) ->
         match split_parent p with
-        | Base -> Branch(name, `Root)
+        | Base i -> Branch(name, `Root i)
         | Branch(base, m) -> Branch(base, `Module(m, name))
 
 
@@ -1208,21 +1212,22 @@ module Fragment = struct
         hash (s : t :> Paths_types.Resolved_fragment.any)
 
       let rec split : t -> string * t option = function
-        | `Root -> "", None
+        | `Root _ -> "", None
         | `Subst(_,p) -> split (sig_of_mod p)
         | `SubstAlias(_,p) -> split (sig_of_mod p)
         | `Module (m, name) -> begin
             match split_parent m with
-            | Base -> (ModuleName.to_string name, None)
+            | Base _ -> (ModuleName.to_string name, None)
             | Branch(base,m) -> ModuleName.to_string base, Some (`Module(m,name))
           end
 
-      let rec identifier : Identifier.Signature.t -> t -> Identifier.Signature.t =
-        fun root -> function
-          | `Root -> root
+      let rec identifier : t -> Identifier.Signature.t =
+        function
+          | `Root (`ModuleType i) -> (Path.Resolved.ModuleType.identifier i :> Identifier.Signature.t)
+          | `Root (`Module i) -> (Path.Resolved.Module.identifier i :> Identifier.Signature.t)
           | `Subst(s, _) -> (Path.Resolved.ModuleType.identifier s :> Identifier.Signature.t)
-          | `SubstAlias(_, p) -> identifier root (sig_of_mod p)
-          | `Module(m, n) -> `Module (identifier root m, n)
+          | `SubstAlias(_, p) -> identifier (sig_of_mod p)
+          | `Module(m, n) -> `Module (identifier m, n)
 
     end
 
@@ -1241,15 +1246,15 @@ module Fragment = struct
         | `SubstAlias(_,p) -> split p
         | `Module (m, name) -> begin
             match split_parent m with
-            | Base -> (ModuleName.to_string name, None)
+            | Base _ -> (ModuleName.to_string name, None)
             | Branch(base,m) -> ModuleName.to_string base, Some (`Module(m,name))
           end
 
-      let rec identifier : Identifier.Signature.t -> t -> Identifier.Path.Module.t =
-        fun root -> function
-          | `Subst(_, p) -> identifier root p
-          | `SubstAlias(_, p) -> identifier root p
-          | `Module(m, n) -> `Module (Signature.identifier root m, n)
+      let rec identifier : t -> Identifier.Path.Module.t =
+        function
+          | `Subst(_, p) -> identifier p
+          | `SubstAlias(_, p) -> identifier p
+          | `Module(m, n) -> `Module (Signature.identifier m, n)
 
     end
 
@@ -1267,25 +1272,25 @@ module Fragment = struct
         function
         | `Type (m,name) -> begin
             match split_parent m with
-            | Base -> TypeName.to_string name, None
+            | Base _ -> TypeName.to_string name, None
             | Branch(base, m) -> ModuleName.to_string base, Some (`Type(m, name))
           end
         | `Class(m, name) -> begin
             match split_parent m with
-            | Base -> ClassName.to_string name, None
+            | Base _ -> ClassName.to_string name, None
             | Branch(base, m) -> ModuleName.to_string base, Some (`Class(m, name))
           end
         | `ClassType(m, name) -> begin
             match split_parent m with
-            | Base -> ClassTypeName.to_string name, None
+            | Base _ -> ClassTypeName.to_string name, None
             | Branch(base, m) -> ModuleName.to_string base, Some (`ClassType(m, name))
           end
 
-      let identifier : Identifier.Signature.t -> t -> Identifier.Path.Type.t =
-        fun root -> function
-          | `Type(m, n) -> `Type(Signature.identifier root m, n)
-          | `Class(m, n) -> `Class(Signature.identifier root m, n)
-          | `ClassType(m, n) -> `ClassType(Signature.identifier root m, n)
+      let identifier : t -> Identifier.Path.Type.t =
+        function
+          | `Type(m, n) -> `Type(Signature.identifier m, n)
+          | `Class(m, n) -> `Class(Signature.identifier m, n)
+          | `ClassType(m, n) -> `ClassType(Signature.identifier m, n)
 
     end
 
@@ -1301,17 +1306,18 @@ module Fragment = struct
       | #Type.t as x -> x
       | _ -> assert false
 
-    let rec identifier : Identifier.Signature.t -> t -> Identifier.t =
-      fun root -> function
-        | `Root -> (root :> Identifier.t)
+    let rec identifier : t -> Identifier.t =
+       function
+        | `Root (`ModuleType r) -> (Path.Resolved.ModuleType.identifier r :> Identifier.t)
+        | `Root (`Module r) -> (Path.Resolved.Module.identifier r :> Identifier.t)
         | `Subst(s, _) ->
           Format.fprintf Format.err_formatter "Got a subst!\n%!";
           Path.Resolved.identifier (s :> Path.Resolved.t)
-        | `SubstAlias(_, p) -> identifier root (p :> t)
-        | `Module(m, n) -> `Module (Signature.identifier root m, n)
-        | `Type(m, n) -> `Type(Signature.identifier root m, n)
-        | `Class(m, n) -> `Class(Signature.identifier root m, n)
-        | `ClassType(m, n) -> `ClassType(Signature.identifier root m, n)
+        | `SubstAlias(_, p) -> identifier (p :> t)
+        | `Module(m, n) -> `Module (Signature.identifier m, n)
+        | `Type(m, n) -> `Type(Signature.identifier m, n)
+        | `Class(m, n) -> `Class(Signature.identifier m, n)
+        | `ClassType(m, n) -> `ClassType(Signature.identifier m, n)
 
 
   end
@@ -1319,19 +1325,21 @@ module Fragment = struct
   type t = Paths_types.Fragment.any
 
   type base_name =
-    | Base
+    | Base of Resolved.root option
     | Branch of ModuleName.t * Paths_types.Fragment.signature
 
   let rec split_parent : Paths_types.Fragment.signature -> base_name =
     function
+    | `Root -> Base None
     | `Resolved r -> begin
         match Resolved.split_parent r with
-        | Resolved.Base -> Base
+        | Resolved.Base i -> Base (Some i)
         | Resolved.Branch(base, m) -> Branch(base, `Resolved m)
       end
     | `Dot(m,name) -> begin
         match split_parent m with
-        | Base -> Branch(ModuleName.of_string name,`Resolved `Root)
+        | Base None -> Branch(ModuleName.of_string name,`Root)
+        | Base (Some i) -> Branch(ModuleName.of_string name, `Resolved (`Root i))
         | Branch(base,m) -> Branch(base, `Dot(m,name))
       end
 
@@ -1354,6 +1362,8 @@ module Fragment = struct
         | `Resolved p -> Resolved.hash p
         | `Dot(p, s) ->
           Hashtbl.hash (40, loop (p : Paths_types.Fragment.signature :> t), s)
+        | `Root ->
+          Hashtbl.hash (41)
     in
     loop p
 
@@ -1367,6 +1377,7 @@ module Fragment = struct
       hash (t : t :> Paths_types.Fragment.any)
 
     let split : t -> string * t option = function
+      | `Root -> "", None
       | `Resolved r ->
         let base, m = Resolved.Signature.split r in
         let m =
@@ -1377,9 +1388,9 @@ module Fragment = struct
         base, m
       | `Dot(m, name) ->
         match split_parent m with
-        | Base -> name, None
+        | Base _ -> name, None
         | Branch(base, m) -> ModuleName.to_string base, Some(`Dot(m, name))
-
+      
   end
 
   module Module = struct
@@ -1402,7 +1413,7 @@ module Fragment = struct
         base, m
       | `Dot(m, name) ->
         match split_parent m with
-        | Base -> name, None
+        | Base _ -> name, None
         | Branch(base, m) -> ModuleName.to_string base, Some(`Dot(m, name))
 
   end
@@ -1427,7 +1438,7 @@ module Fragment = struct
         base, m
       | `Dot(m, name) ->
         match split_parent m with
-        | Base -> name, None
+        | Base _ -> name, None
         | Branch(base, m) -> ModuleName.to_string base, Some(`Dot(m, name))
 
   end

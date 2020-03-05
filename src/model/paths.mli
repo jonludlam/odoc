@@ -434,7 +434,7 @@ module Fragment : sig
     module Signature : sig
       type t = Paths_types.Resolved_fragment.signature
 
-      val identifier : Identifier.Signature.t -> t -> Identifier.Signature.t
+      val identifier : t -> Identifier.Signature.t
 
       val equal : t -> t -> bool
 
@@ -446,7 +446,7 @@ module Fragment : sig
     module Module : sig
       type t = Paths_types.Resolved_fragment.module_
 
-      val identifier : Identifier.Signature.t -> t -> Identifier.Path.Module.t
+      val identifier : t -> Identifier.Path.Module.t
 
       val equal : t -> t -> bool
 
@@ -458,7 +458,7 @@ module Fragment : sig
     module Type : sig
       type t = Paths_types.Resolved_fragment.type_
 
-      val identifier : Identifier.Signature.t -> t -> Identifier.Path.Type.t
+      val identifier : t -> Identifier.Path.Type.t
 
       val equal : t -> t -> bool
 
@@ -472,7 +472,7 @@ module Fragment : sig
 
     type t = Paths_types.Resolved_fragment.any
 
-    val identifier : Identifier.Signature.t -> t -> Identifier.t
+    val identifier : t -> Identifier.t
 
     val signature_of_t : t -> Signature.t
 

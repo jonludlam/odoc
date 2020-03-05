@@ -325,7 +325,8 @@ and reference : t -> Cref.any -> Cref.any =
 let rec resolved_signature_fragment : t -> Cfrag.resolved_signature -> Cfrag.resolved_signature =
   fun t r ->
   match r with
-  | `Root -> `Root
+  | `Root (`ModuleType p) -> `Root (`ModuleType (resolved_module_type_path t p))
+  | `Root (`Module p) -> `Root (`Module (resolved_module_path t p))
   | `Subst _
   | `SubstAlias _
   | `Module _ as x -> (resolved_module_fragment t x :> Cfrag.resolved_signature)
@@ -349,6 +350,7 @@ let rec signature_fragment : t -> Cfrag.signature -> Cfrag.signature =
   match r with
   | `Resolved f -> `Resolved (resolved_signature_fragment t f)
   | `Dot (sg, n) -> `Dot (signature_fragment t sg, n)
+  | `Root -> `Root
 
 let module_fragment : t -> Cfrag.module_ -> Cfrag.module_ =
   fun t r ->
@@ -413,7 +415,7 @@ and type_object s o =
 
 and type_package s p =
   let open Component.TypeExpr.Package in
-  let sub (x, y) = (x, type_expr s y) in
+  let sub (x, y) = (type_fragment s x, type_expr s y) in
   {
     path = module_type_path s p.path;
     substitutions = List.map sub p.substitutions;

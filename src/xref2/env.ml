@@ -32,6 +32,7 @@ type lookup_type =
   | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
   | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
   | ModuleByName of string * Odoc_model.Paths_types.Identifier.reference_module option
+  | FragmentRoot of int
 
 let pp_lookup_type fmt =
   let fmtrm fmt = function
@@ -49,6 +50,7 @@ let pp_lookup_type fmt =
   | RootModule (str, res) ->
     Format.fprintf fmt "RootModule %s %a" str fmtrm res
   | ModuleByName (n, r) -> Format.fprintf fmt "ModuleByName %s, %a" n id_opt r
+  | FragmentRoot i -> Format.fprintf fmt "FragmentRoot %d" i
 
 let pp_lookup_type_list fmt ls =
   let rec inner fmt =
@@ -86,7 +88,7 @@ type t = {
 
   recorder : recorder option;
 
-  fragmentroot : Component.Signature.t option
+  fragmentroot : (int * Component.Signature.t) option
 }
 
 let set_resolver t resolver = { t with resolver = Some resolver }
@@ -187,7 +189,9 @@ let empty =
   }
 
 let add_fragment_root sg env =
-  { env with fragmentroot = Some sg }
+  let id = ( incr unique_id;
+  !unique_id ) in
+  { env with fragmentroot = Some (id, sg) }
 
 let add_module identifier m env =
   (*  Format.fprintf Format.err_formatter "Adding module: %a\n%!" Component.Fmt.model_identifier (identifier : Odoc_model.Paths.Identifier.Module.t :> Odoc_model.Paths.Identifier.t);*)
@@ -325,8 +329,14 @@ let len = ref 0
 let n = ref 0
 
 let lookup_fragment_root env =
+  let maybe_record_result res =
+    match env.recorder with
+    | Some r -> 
+      r.lookups <- res :: r.lookups
+    | None -> ()
+  in
   match env.fragmentroot with
-  | Some sg -> sg
+  | Some (i,sg) -> maybe_record_result (FragmentRoot i); (i, sg)
   | None -> failwith "Looking up fragment root"
 
 let lookup_type identifier env =

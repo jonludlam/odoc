@@ -175,12 +175,13 @@ module Relative_link = struct
         match fragment with
         | `Resolved rr -> render_resolved rr
         | `Dot (prefix, suffix) -> dot (render_raw (prefix :> Fragment.t)) suffix
+        | `Root -> ""
 
     and render_resolved : Fragment.Resolved.t -> string =
       let open Fragment.Resolved in
       fun fragment ->
         match fragment with
-        | `Root -> ""
+        | `Root _ -> ""
         | `Subst (_, rr) -> render_resolved (rr :> t)
         | `SubstAlias (_, rr) -> render_resolved (rr :> t)
         | `Module (rr, s) -> dot (render_resolved (rr :> t)) (ModuleName.to_string s)
@@ -191,7 +192,7 @@ module Relative_link = struct
     let rec pp_resolved_frag ppf (f : Fragment.Resolved.t) =
       let open Fragment.Resolved in
       match f with
-      | `Root -> Format.fprintf ppf "root"
+      | `Root _ -> Format.fprintf ppf "root"
       | `Subst (_x,y) -> Format.fprintf ppf "subst(...,%a)" pp_resolved_frag (y :> t)
       | `SubstAlias (_,y) -> Format.fprintf ppf "substalias(...,%a)" pp_resolved_frag (y :> t)
       | `Module (p,n)
@@ -272,7 +273,8 @@ module Relative_link = struct
       fun ~stop_before id fragment ->
         let open Fragment in
         match fragment with
-        | `Resolved `Root ->
+        | `Resolved (`Root _)
+        | `Root ->
           begin match Id.href ~stop_before:true (id :> Identifier.t) with
           | href ->
             [Html.a ~a:[Html.a_href href] [Html.txt (Identifier.name id)]]
@@ -282,7 +284,7 @@ module Relative_link = struct
             [ Html.txt (Identifier.name id) ]
           end
         | `Resolved rr ->
-          let id = Resolved.identifier id (rr :> Resolved.t) in
+          let id = Resolved.identifier (rr :> Resolved.t) in
           let txt = render_resolved rr in
 
           Format.fprintf Format.err_formatter "Formatting resolved fragment: %s %a %a\n%!" txt pp_resolved_frag (rr :> Resolved.t) model_identifier id;

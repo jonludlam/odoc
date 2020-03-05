@@ -1690,25 +1690,13 @@ struct
       [Html.txt ")"; Html.txt " "] @ Syntax.Type.arrow :: Html.txt " " ::
       mty base expr
     | With (expr, substitutions) ->
-      let rec get_base_sig e =
-        match e with
-        | Odoc_model.Lang.ModuleType.Path (`Resolved r) -> Some (Paths.Path.Resolved.ModuleType.identifier r :> Paths.Identifier.Signature.t)
-        | Path _ -> None
-        | Signature _ -> None
-        | With (e, _) -> get_base_sig e
-        | TypeOf (Alias (`Resolved r)) -> Some (Paths.Path.Resolved.Module.identifier r :> Paths.Identifier.Signature.t)
-        | TypeOf (Alias _) -> None
-        | TypeOf (ModuleType m) -> get_base_sig m
-        | Functor _ -> None
-      in
-      let base_sig = get_base_sig expr in
       mty base expr @
       Html.txt " " ::
       keyword "with" ::
       Html.txt " " ::
       list_concat_map_list_sep
         ~sep:[Html.txt " "; keyword "and"; Html.txt " "]
-        ~f:(match base_sig with | Some b -> substitution base b | None -> failwith "foo")
+        ~f:(substitution base)
         substitutions
     | TypeOf md ->
       keyword "module" ::
@@ -1720,13 +1708,13 @@ struct
       module_decl' base md
 
   and substitution
-    : Paths.Identifier.Signature.t -> Paths.Identifier.Signature.t -> Odoc_model.Lang.ModuleType.substitution
+    : Paths.Identifier.Signature.t -> Odoc_model.Lang.ModuleType.substitution
     -> text
-  = fun base base_sig -> function
+  = fun base -> function
     | ModuleEq (frag_mod, md) ->
       keyword "module" ::
       Html.txt " " ::
-      Tree.Relative_link.of_fragment ~base:base_sig (frag_mod :> Paths.Fragment.t)
+      Tree.Relative_link.of_fragment ~base (frag_mod :> Paths.Fragment.t)
       @ Html.txt " = " ::
       module_decl' base md
     | TypeEq (frag_typ, td) ->
@@ -1734,7 +1722,7 @@ struct
       Html.txt " " ::
       (Syntax.Type.handle_substitution_params
         (Tree.Relative_link.of_fragment
-          ~base:base_sig (frag_typ :> Paths.Fragment.t))
+          ~base (frag_typ :> Paths.Fragment.t))
         [format_params td.Lang.TypeDecl.Equation.params]
       ) @
       fst (format_manifest td) @
@@ -1743,7 +1731,7 @@ struct
       keyword "module" ::
       Html.txt " " ::
       Tree.Relative_link.of_fragment
-        ~base:base_sig (frag_mod :> Paths.Fragment.t) @
+        ~base (frag_mod :> Paths.Fragment.t) @
       Html.txt " := " ::
       Tree.Relative_link.of_path ~stop_before:true (mod_path :> Paths.Path.t)
     | TypeSubst (frag_typ, td) ->
@@ -1751,7 +1739,7 @@ struct
       Html.txt " " ::
       (Syntax.Type.handle_substitution_params
         (Tree.Relative_link.of_fragment
-          ~base:base_sig (frag_typ :> Paths.Fragment.t))
+          ~base (frag_typ :> Paths.Fragment.t))
         [format_params td.Lang.TypeDecl.Equation.params]
       ) @
       Html.txt " := " ::

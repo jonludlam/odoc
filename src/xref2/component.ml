@@ -872,11 +872,13 @@ module Fmt = struct
         Format.fprintf ppf "*%a.%s" model_fragment
           (sg :> Odoc_model.Paths.Fragment.t)
           d
+    | `Root -> ()
 
   and model_resolved_fragment ppf (f : Odoc_model.Paths.Fragment.Resolved.t) =
     let open Odoc_model.Paths.Fragment.Resolved in
     match f with
-    | `Root -> ()
+    | `Root (`ModuleType p) -> Format.fprintf ppf "root(%a)" model_resolved_path (p :> Odoc_model.Paths.Path.Resolved.t)
+    | `Root (`Module p) -> Format.fprintf ppf "root(%a)" model_resolved_path (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Module (sg, m) ->
         Format.fprintf ppf "%a.%s" model_resolved_fragment
           (sg :> t)
@@ -902,7 +904,8 @@ module Fmt = struct
 
   and resolved_signature_fragment ppf (f : Cfrag.resolved_signature) =
     match f with
-    | `Root -> Format.fprintf ppf "root"
+    | `Root (`ModuleType p) -> Format.fprintf ppf "root(%a)" resolved_module_type_path p
+    | `Root (`Module p) -> Format.fprintf ppf "root(%a)" resolved_module_path p
     | `Subst _ | `SubstAlias _ | `Module _ as x -> resolved_module_fragment ppf x
   
   and resolved_module_fragment ppf (f : Cfrag.resolved_module) =
@@ -921,6 +924,7 @@ module Fmt = struct
     match f with
     | `Resolved r -> Format.fprintf ppf "resolved(%a)" resolved_signature_fragment r
     | `Dot (s, n) -> Format.fprintf ppf "%a.%s" signature_fragment s n
+    | `Root -> Format.fprintf ppf "root"
 
     and module_fragment ppf (f : Cfrag.module_) =
     match f with
@@ -1712,10 +1716,11 @@ module Of_Lang = struct
         `Method (resolved_class_signature_reference ident_map p, n)
     | `Label (p, n) -> `Label (resolved_label_parent_reference ident_map p, n)
 
-  let rec resolved_signature_fragment : _ -> Odoc_model.Paths.Fragment.Resolved.Signature.t -> Cfrag.resolved_signature =
+  let rec resolved_signature_fragment : map -> Odoc_model.Paths.Fragment.Resolved.Signature.t -> Cfrag.resolved_signature =
     fun ident_map ty ->
       match ty with
-      | `Root -> `Root
+      | `Root (`ModuleType path) -> `Root (`ModuleType (resolved_module_type_path ident_map path))
+      | `Root (`Module path) -> `Root (`Module (resolved_module_path ident_map path))
       | `SubstAlias _ | `Subst _ | `Module _ as x -> (resolved_module_fragment ident_map x :> Cfrag.resolved_signature)
 
   and resolved_module_fragment : _ -> Odoc_model.Paths.Fragment.Resolved.Module.t -> Cfrag.resolved_module =
@@ -1737,6 +1742,7 @@ module Of_Lang = struct
       match ty with
       | `Resolved r -> `Resolved (resolved_signature_fragment ident_map r)
       | `Dot (p, n) -> `Dot (signature_fragment ident_map p, n)
+      | `Root -> `Root
   
   let module_fragment : _ -> Odoc_model.Paths.Fragment.Module.t -> Cfrag.module_ =
     fun ident_map ty ->

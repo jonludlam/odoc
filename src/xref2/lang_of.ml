@@ -317,6 +317,7 @@ module Path = struct
         match f with
        | `Resolved r -> `Resolved (resolved_signature_fragment map r)
        | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
+       | `Root -> `Root
 
 and type_fragment : maps -> Cfrag.type_ -> Odoc_model.Paths.Fragment.Type.t =
     fun map f ->
@@ -334,7 +335,8 @@ and resolved_module_fragment : maps -> Cfrag.resolved_module -> Odoc_model.Paths
 and resolved_signature_fragment : maps -> Cfrag.resolved_signature -> Odoc_model.Paths.Fragment.Resolved.Signature.t =
       fun map f ->
       match f with
-  | `Root -> `Root
+  | `Root (`ModuleType p) -> `Root (`ModuleType (resolved_module_type map p))
+  | `Root (`Module p) -> `Root (`Module (resolved_module map p))
   | `Subst _ | `SubstAlias _ | `Module _ as x -> (resolved_module_fragment map x :> Odoc_model.Paths.Fragment.Resolved.Signature.t)
 
 and resolved_type_fragment : maps -> Cfrag.resolved_type -> Odoc_model.Paths.Fragment.Resolved.Type.t = 

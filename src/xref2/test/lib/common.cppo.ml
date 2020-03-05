@@ -460,12 +460,14 @@ module LangUtils = struct
 
         and model_fragment ppf (f : Odoc_model.Paths.Fragment.t) =
             match f with
+            | `Root -> ()
             | `Resolved rf -> model_resolved_fragment ppf rf
             | `Dot (sg, d) -> Format.fprintf ppf "*%a.%s" model_fragment (sg :> Odoc_model.Paths.Fragment.t) d
 
         and model_resolved_fragment ppf (f : Odoc_model.Paths.Fragment.Resolved.t) =
             match f with
-            | `Root -> ()
+            | `Root (`Module p) -> Format.fprintf ppf "root_module(%a)" resolved_path (p :> Odoc_model.Paths.Path.Resolved.t) 
+            | `Root (`ModuleType p) -> Format.fprintf ppf "root_module_type(%a)" resolved_path (p :> Odoc_model.Paths.Path.Resolved.t) 
             | `Module (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.ModuleName.to_string m)
             | `Type (sg, m) -> Format.fprintf ppf "%a.%s" model_resolved_fragment (sg :> Odoc_model.Paths.Fragment.Resolved.t) (Odoc_model.Names.TypeName.to_string m)
             | _ -> Format.fprintf ppf "UNIMPLEMENTED model_resolved_fragment"

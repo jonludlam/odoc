@@ -24,6 +24,7 @@ type lookup_type =
   | ModuleType of Odoc_model.Paths_types.Identifier.module_type * bool
   | RootModule of string * [`Forward | `Resolved of Odoc_model.Paths.Identifier.Module.t] option
   | ModuleByName of string * Odoc_model.Paths_types.Identifier.reference_module option
+  | FragmentRoot of int
 
 val pp_lookup_type_list : Format.formatter -> lookup_type list -> unit
 
@@ -124,7 +125,7 @@ val add_method :
 
 val add_root : string -> root -> t -> t
 
-val lookup_fragment_root : t -> Component.Signature.t
+val lookup_fragment_root : t -> int * Component.Signature.t
 
 val lookup_module :
   Odoc_model.Paths_types.Identifier.reference_module -> t -> Component.Module.t
