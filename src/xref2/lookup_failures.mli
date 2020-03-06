@@ -14,6 +14,5 @@ val report_important : exn -> ('fmt, Format.formatter, unit, unit) format4 -> 'f
 
 val pp : Format.formatter -> t -> unit
 
-(** [catch_failures f |> shed_failures] will write the failures to stderr and
-    return [f ()] *)
-val shed_failures : 'a * t list -> 'a
+(** Convert the failures to a warning. *)
+val to_warning : filename:string -> 'a * t list -> 'a Odoc_model.Error.with_warnings
