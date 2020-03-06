@@ -71,8 +71,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
     | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
     | Unresolved p -> Cpath.type_path_of_cpath p
     | exception _ ->
-        Lookup_failures.report
-          "Failed to lookup type path %a"
+        Lookup_failures.report "Failed to lookup type path %a"
           Component.Fmt.model_path
           (p :> Paths.Path.t);
         p
@@ -93,8 +92,7 @@ and module_type_path :
         `Resolved (Cpath.resolved_module_type_path_of_cpath p')
     | Unresolved _p -> failwith "Unresolved module type path"
     | exception _ ->
-        Lookup_failures.report
-          "Failed to lookup module_type path %a"
+        Lookup_failures.report "Failed to lookup module_type path %a"
           Component.Fmt.model_path
           (p :> Paths.Path.t);
         p
@@ -111,20 +109,20 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Unresolved _ ->
-      if is_forward p
-      then begin
-        Format.fprintf Format.err_formatter "Skipping resolution of forward path %a\n%!" Component.Fmt.model_path (p :> Odoc_model.Paths.Path.t);
-        p
-      end else begin
-        Lookup_failures.report_important (Failure "Failed to resolve module path")
-          "Failed to lookup module path %a" 
-          Component.Fmt.model_path
-          (p :> Paths.Path.t);
-        p
-      end
+        if is_forward p then (
+          Format.fprintf Format.err_formatter
+            "Skipping resolution of forward path %a\n%!"
+            Component.Fmt.model_path
+            (p :> Odoc_model.Paths.Path.t);
+          p )
+        else (
+          Lookup_failures.report_important
+            (Failure "Failed to resolve module path")
+            "Failed to lookup module path %a" Component.Fmt.model_path
+            (p :> Paths.Path.t);
+          p )
     | exception e ->
-        Lookup_failures.report_important e
-          "Failed to lookup module path %a"
+        Lookup_failures.report_important e "Failed to lookup module path %a"
           Component.Fmt.model_path
           (p :> Paths.Path.t);
         p
@@ -176,8 +174,7 @@ and comment_inline_element :
           (* Format.fprintf Format.err_formatter "XXXXXXXXXX FAILED to resolve reference: %a\n%!" (Component.Fmt.model_reference) r; *)
           `Reference (r, [])
       | exception _ ->
-          Lookup_failures.report
-            "Caught exception while resolving reference %a"
+          Lookup_failures.report "Caught exception while resolving reference %a"
             Component.Fmt.model_reference r;
           `Reference (r, []) )
   | `Reference (r, content) as orig -> (
@@ -492,12 +489,11 @@ and module_ : Env.t -> Module.t -> Module.t =
         Lookup_failures.report_important e
           "Failed to expand module: looking up identifier %a while expanding \
            module %a"
-          Component.Fmt.model_identifier x
-          Component.Fmt.model_identifier (m.id :> Paths.Identifier.t);
+          Component.Fmt.model_identifier x Component.Fmt.model_identifier
+          (m.id :> Paths.Identifier.t);
         m
     | e ->
-        Lookup_failures.report_important e
-          "Failed to resolve module: %a"
+        Lookup_failures.report_important e "Failed to resolve module: %a"
           Component.Fmt.model_identifier
           (m.id :> Paths.Identifier.t);
         m
@@ -546,8 +542,7 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
       doc;
     }
   with e ->
-    Lookup_failures.report_important e
-      "Failed to resolve module_type %a"
+    Lookup_failures.report_important e "Failed to resolve module_type %a"
       Component.Fmt.model_identifier
       (m.id :> Paths.Identifier.t);
     m
@@ -564,8 +559,7 @@ and include_ : Env.t -> Include.t -> Include.t =
       doc = comment_docs env i.doc;
     }
   with Env.MyFailure (id, _env) as e ->
-    Lookup_failures.report_important e
-      "Failed to find module %a"
+    Lookup_failures.report_important e "Failed to find module %a"
       Component.Fmt.model_identifier
       (id :> Odoc_model.Paths.Identifier.t);
     i
@@ -675,7 +669,7 @@ and module_type_expr :
                   "Exception caught while resolving fragments %a"
                   Component.Fmt.substitution
                   Component.Of_Lang.(module_type_substitution empty sub);
-                ( sg, sub :: subs ))
+                (sg, sub :: subs))
             (sg, []) subs
           |> snd |> List.rev )
   | Functor (arg, res) ->
@@ -736,8 +730,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
         | _ -> default )
     | None -> default
   with e ->
-    Lookup_failures.report_important e
-      "Failed to resolve type %a"
+    Lookup_failures.report_important e "Failed to resolve type %a"
       Component.Fmt.model_identifier
       (t.id :> Paths.Identifier.t);
     t

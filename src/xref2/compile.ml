@@ -17,8 +17,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
   | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
   | Unresolved p -> Cpath.type_path_of_cpath p
   | exception _ ->
-      Lookup_failures.report
-        "Failed to lookup type path %a"
+      Lookup_failures.report "Failed to lookup type path %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -31,8 +30,7 @@ and module_type_path :
   | Resolved (p', _) -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
   | Unresolved p -> Cpath.module_type_path_of_cpath p
   | exception _ ->
-      Lookup_failures.report
-        "Failed to lookup module_type path %a"
+      Lookup_failures.report "Failed to lookup module_type path %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -44,8 +42,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
   | Unresolved p -> Cpath.module_path_of_cpath p
   | exception _ ->
-      Lookup_failures.report
-        "Failed to lookup module path %a"
+      Lookup_failures.report "Failed to lookup module path %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -65,8 +62,7 @@ and value_ env t =
   let open Value in
   try { t with type_ = type_expression env t.type_ }
   with e ->
-    Lookup_failures.report_important e "%a"
-      Component.Fmt.model_identifier
+    Lookup_failures.report_important e "%a" Component.Fmt.model_identifier
       (t.id :> Paths.Identifier.t);
     t
 
@@ -212,10 +208,10 @@ and module_ : Env.t -> Module.t -> Module.t =
       | Tools.OpaqueModule -> None
       | Tools.UnresolvedForwardPath -> None
       | e ->
-        Lookup_failures.report_important e "Failed to expand module id %a"
-          Component.Fmt.model_identifier
-          (m.id :> Odoc_model.Paths.Identifier.t);
-        m.expansion
+          Lookup_failures.report_important e "Failed to expand module id %a"
+            Component.Fmt.model_identifier
+            (m.id :> Odoc_model.Paths.Identifier.t);
+          m.expansion
   in
   try
     {
@@ -225,8 +221,9 @@ and module_ : Env.t -> Module.t -> Module.t =
     }
   with
   | Find.Find_failure (sg, name, ty) as e ->
-      Lookup_failures.report_important e "Find failure: Failed to find %s %s in %a" 
-        ty name Component.Fmt.signature sg;
+      Lookup_failures.report_important e
+        "Find failure: Failed to find %s %s in %a" ty name
+        Component.Fmt.signature sg;
       m
   | e ->
       Lookup_failures.report_important e "Failed to resolve module id %a"
@@ -277,8 +274,7 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
     in
     { m with expr = expr'; expansion }
   with e ->
-    Lookup_failures.report_important e
-      "Failed to resolve module_type %a"
+    Lookup_failures.report_important e "Failed to resolve module_type %a"
       Component.Fmt.model_identifier
       (m.id :> Paths.Identifier.t);
     m
@@ -311,9 +307,9 @@ and include_ : Env.t -> Include.t -> Include.t =
   with e ->
     let i' = Component.Of_Lang.(module_decl empty i.decl) in
     Lookup_failures.report_important e
-      "Failed to resolve include %a (parent: %a)"
-      Component.Fmt.module_decl i'
-      Component.Fmt.model_identifier (i.parent :> Paths.Identifier.t);
+      "Failed to resolve include %a (parent: %a)" Component.Fmt.module_decl i'
+      Component.Fmt.model_identifier
+      (i.parent :> Paths.Identifier.t);
     i
 
 and expansion : Env.t -> Module.expansion -> Module.expansion =
@@ -534,10 +530,10 @@ and type_expression : Env.t -> _ -> _ =
       | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
       | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts)
       | exception e ->
-        Lookup_failures.report_important e "Exception handling type expression %a"
-          Component.Fmt.type_expr
-          (Component.Of_Lang.(type_expression empty texpr));
-        texpr)
+          Lookup_failures.report_important e
+            "Exception handling type expression %a" Component.Fmt.type_expr
+            Component.Of_Lang.(type_expression empty texpr);
+          texpr )
   | Polymorphic_variant v -> Polymorphic_variant (type_expression_polyvar env v)
   | Object o -> Object (type_expression_object env o)
   | Class (path, ts) -> Class (path, List.map (type_expression env) ts)
@@ -557,8 +553,6 @@ let build_resolver :
      resolve_page ->
   { Env.lookup_unit; resolve_unit; lookup_page; resolve_page; open_units }
 
-let compile x y =
-  Lookup_failures.catch_failures (fun () -> unit x y)
-  |> Lookup_failures.shed_failures
+let compile x y = Lookup_failures.catch_failures (fun () -> unit x y)
 
 let resolve_page _resolver y = y
