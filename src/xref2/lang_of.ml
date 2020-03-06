@@ -508,10 +508,9 @@ let rec signature_items id map items =
       | Type (id, r, t) -> (
           try Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
           with e ->
-            let bt = Printexc.get_backtrace () in
-            Format.fprintf Format.err_formatter
-              "Failed (%s) during type lookup: %a\nbt:\n%s\n%!"
-              (Printexc.to_string e) Ident.fmt id bt;
+            Lookup_failures.report_important e
+              "Failed during type lookup %a"
+              Ident.fmt id;
             raise e )
       | Exception (id', e) ->
           Odoc_model.Lang.Signature.Exception
@@ -525,8 +524,8 @@ let rec signature_items id map items =
       | Include i -> (
           try Odoc_model.Lang.Signature.Include (include_ id map i) :: acc
           with e ->
-            Format.fprintf Format.err_formatter
-              "Caught exception %s with include: %a" (Printexc.to_string e)
+            Lookup_failures.report
+              "Caught exception with include: %a"
               Component.Fmt.include_ i;
             raise e )
       | External (id, e) ->
@@ -749,9 +748,8 @@ and module_ map id m =
       expansion;
     }
   with e ->
-    let bt = Printexc.get_backtrace () in
-    Format.fprintf Format.err_formatter
-      "Exception handling module: %a\nbacktrace:\n%s\n%!" Ident.fmt id bt;
+    Lookup_failures.report
+      "Exception handling module: %a" Ident.fmt id;
     raise e
 
 and module_substitution map id m =
@@ -921,10 +919,9 @@ and type_expr map (t : Component.TypeExpr.t) : Odoc_model.Lang.TypeExpr.t =
     | Poly (strs, t) -> Poly (strs, type_expr map t)
     | Package p -> Package (type_expr_package map p)
   with e ->
-    let bt = Printexc.get_backtrace () in
-    Format.fprintf Format.err_formatter
-      "Exception %s handling type_expr: %a\nbacktrace:\n%s\n%!"
-      (Printexc.to_string e) Component.Fmt.type_expr t bt;
+    Lookup_failures.report
+      "Exception handling type_expr: %a"
+      Component.Fmt.type_expr t;
     raise e
 
 and type_expr_polyvar map v =
@@ -1056,8 +1053,7 @@ and block_element map (d : Component.CComment.block_element) :
   | `Heading (l, id, content) -> (
       try `Heading (l, List.assoc id map.labels, content)
       with Not_found ->
-        Format.fprintf Format.err_formatter "Failed to find id: %a\n" Ident.fmt
-          id;
+        Lookup_failures.report "Failed to find id: %a" Ident.fmt id;
         raise Not_found )
   | `Tag t -> `Tag (tag map t)
   | #Component.CComment.nestable_block_element as n ->
