@@ -17,18 +17,20 @@ type t = [
   | `With_filename_only of filename_only_payload
 ]
 
-let full message location =
-  `With_full_location {location; message}
-
-let filename_only message file =
-  `With_filename_only {file; message}
+let kmessage k ?suggestion format =
+  format |>
+  Format.kasprintf (fun message ->
+    match suggestion with
+    | None -> k message
+    | Some suggestion -> k (message ^ "\nSuggestion: " ^ suggestion))
 
 let make ?suggestion format =
-  format |>
-  Printf.ksprintf (fun message ->
-    match suggestion with
-    | None -> full message
-    | Some suggestion -> full (message ^ "\nSuggestion: " ^ suggestion))
+  let k message location = `With_full_location {location; message} in
+  kmessage k ?suggestion format
+
+let filename_only ?suggestion format =
+  let k message file = `With_filename_only {file; message} in
+  kmessage k ?suggestion format
 
 let to_string = function
   | `With_full_location {location; message} ->
