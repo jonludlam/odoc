@@ -720,7 +720,8 @@ and resolve_module env cpath =
   | ResultMonad.Resolved (p, m) -> begin
       try
         let (p', _) = signature_of_module env (p, m) in
-        ResultMonad.Resolved p'
+        Format.fprintf Format.err_formatter "Module was %a, now %a\n%!" Component.Fmt.resolved_module_path p Component.Fmt.resolved_module_path p';
+        ResultMonad.Resolved p
       with
       | OpaqueModule -> Resolved p
       | UnresolvedForwardPath -> Resolved p

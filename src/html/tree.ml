@@ -189,7 +189,7 @@ module Relative_link = struct
         | `Class (rr, s) -> dot (render_resolved ( rr :> t)) (ClassName.to_string s)
         | `ClassType (rr, s) -> dot (render_resolved (rr :> t)) (ClassTypeName.to_string s)
 
-    let rec pp_resolved_frag ppf (f : Fragment.Resolved.t) =
+    (* let rec pp_resolved_frag ppf (f : Fragment.Resolved.t) =
       let open Fragment.Resolved in
       match f with
       | `Root _ -> Format.fprintf ppf "root"
@@ -267,7 +267,7 @@ module Relative_link = struct
             (p :> Odoc_model.Paths.Identifier.t)
             name
       | `Page (_, name) -> Format.fprintf ppf "%s" name
-  
+   *)
     let rec to_html : stop_before:bool ->
       Identifier.Signature.t -> Fragment.t -> _ =
       fun ~stop_before id fragment ->
@@ -287,7 +287,7 @@ module Relative_link = struct
           let id = Resolved.identifier (rr :> Resolved.t) in
           let txt = render_resolved rr in
 
-          Format.fprintf Format.err_formatter "Formatting resolved fragment: %s %a %a\n%!" txt pp_resolved_frag (rr :> Resolved.t) model_identifier id;
+          (* Format.fprintf Format.err_formatter "Formatting resolved fragment: %s %a %a\n%!" txt pp_resolved_frag (rr :> Resolved.t) model_identifier id; *)
           begin match Id.href ~stop_before id with
           | href ->
             [ Html.a ~a:[ Html.a_href href ] [ Html.txt txt ] ]

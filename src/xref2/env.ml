@@ -442,13 +442,13 @@ let lookup_module_internal identifier env =
       (match lookup_root_module name env with
       | Some (Resolved (_, m)) -> m
       | Some (Forward) ->
-        Format.fprintf Format.err_formatter "Forward!\n%!";
+        (* Format.fprintf Format.err_formatter "Forward!\n%!"; *)
         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
       | None ->
-        Format.fprintf Format.err_formatter "None\n%!";
+        (* Format.fprintf Format.err_formatter "None\n%!"; *)
         raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env)))
     | _ -> 
-      Format.fprintf Format.err_formatter "Non root: %a\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+      (* Format.fprintf Format.err_formatter "Non root: %a\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t); *)
       raise (MyFailure ((identifier :> Odoc_model.Paths.Identifier.t), env))
 
 let lookup_module identifier env =
