@@ -23,3 +23,15 @@ let report_important exn fmt =
   else Format.kasprintf add fmt
 
 let pp = Format.pp_print_string
+
+let pp_failures ppf fs =
+  List.iter (Format.fprintf ppf "%a@\n" pp) fs
+
+let shed_failures (r, failures) =
+  ( match failures with
+    | [] -> ()
+    | _ :: _ ->
+      Format.fprintf Format.err_formatter
+        "The following lookup failures occurred:@\n%a%!" pp_failures failures
+  );
+  r

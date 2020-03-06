@@ -13,3 +13,7 @@ val report : ('fmt, Format.formatter, unit, unit) format4 -> 'fmt
 val report_important : exn -> ('fmt, Format.formatter, unit, unit) format4 -> 'fmt
 
 val pp : Format.formatter -> t -> unit
+
+(** [catch_failures f |> shed_failures] will write the failures to stderr and
+    return [f ()] *)
+val shed_failures : 'a * t list -> 'a

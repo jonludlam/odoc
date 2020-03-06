@@ -32,7 +32,7 @@ and module_type_path :
   | Unresolved p -> Cpath.module_type_path_of_cpath p
   | exception _ ->
       Lookup_failures.report
-        "Failed to lookup module_type path: %a"
+        "Failed to lookup module_type path %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -45,7 +45,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   | Unresolved p -> Cpath.module_path_of_cpath p
   | exception _ ->
       Lookup_failures.report
-        "Failed to lookup module path: %a"
+        "Failed to lookup module path %a"
         Component.Fmt.model_path
         (p :> Paths.Path.t);
       p
@@ -558,16 +558,7 @@ let build_resolver :
   { Env.lookup_unit; resolve_unit; lookup_page; resolve_page; open_units }
 
 let compile x y =
-  let after, failures = Lookup_failures.catch_failures (fun () -> unit x y) in
-  ( match failures with
-    | [] -> ()
-    | _ :: _ ->
-      let pp_failures ppf fs =
-        List.iter (Format.fprintf ppf "%a@\n" Lookup_failures.pp) fs
-      in
-      Format.fprintf Format.err_formatter
-        "The following lookup failures occurred:@\n%a%!" pp_failures failures
-  );
-  after
+  Lookup_failures.catch_failures (fun () -> unit x y)
+  |> Lookup_failures.shed_failures
 
 let resolve_page _resolver y = y
