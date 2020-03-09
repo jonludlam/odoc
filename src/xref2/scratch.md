@@ -76,7 +76,7 @@ let sg = Common.signature_of_mli_string test_data;;
             (`Resolved
                (`Identifier
                   (`ModuleType (`Root (Common.root, "Root"), "RESULT")))),
-          [Odoc_model.Lang.ModuleType.TypeSubst (`Dot (`Resolved `Root, "u"),
+          [Odoc_model.Lang.ModuleType.TypeSubst (`Dot (`Root, "u"),
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest =
               Some
@@ -87,7 +87,7 @@ let sg = Common.signature_of_mli_string test_data;;
                        "t"),
                     []));
               constraints = []})]),
-          [Odoc_model.Lang.ModuleType.TypeEq (`Dot (`Resolved `Root, "v"),
+          [Odoc_model.Lang.ModuleType.TypeEq (`Dot (`Root, "v"),
             {Odoc_model.Lang.TypeDecl.Equation.params = []; private_ = false;
              manifest =
               Some

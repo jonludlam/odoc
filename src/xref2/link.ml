@@ -61,12 +61,15 @@ let add_module_docs m expn =
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
-  if not (should_resolve (p :> Paths.Path.t)) then
-    (* Format.fprintf Format.err_formatter "Not reresolving\n%!"; *)
-    p
+  if not (should_resolve (p :> Paths.Path.t)) then (
+    Format.fprintf Format.err_formatter "Not reresolving\n%!";
+    p)
   else
-    (* Format.fprintf Format.err_formatter "Reresolving...\n%!"; *)
+    (Format.fprintf Format.err_formatter "Reresolving...\n%!";
     let cp = Component.Of_Lang.(type_path empty p) in
+    match cp with
+    | `Resolved p -> `Resolved (Tools.reresolve_type env p |> Cpath.resolved_type_path_of_cpath)
+    | _ ->
     match Tools.lookup_type_from_path env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
     | Unresolved p -> Cpath.type_path_of_cpath p
@@ -75,7 +78,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
           "Failed to lookup type path (%s): %a\n%!" (Printexc.to_string e)
           Component.Fmt.model_path
           (p :> Paths.Path.t);
-        p
+        p)
 
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
@@ -86,13 +89,17 @@ and module_type_path :
     (* Format.fprintf Format.err_formatter
        "Link.module_type_path: resolving %a\n%!" Component.Fmt.module_type_path
        cp; *)
-    match Tools.lookup_and_resolve_module_type_from_path true env cp with
-    | Resolved (p', _) ->
+    match cp with
+    | `Resolved p ->
+      `Resolved (Tools.reresolve_module_type env p |> Cpath.resolved_module_type_path_of_cpath)   
+    | _ ->
+      match Tools.lookup_and_resolve_module_type_from_path true env cp with
+      | Resolved (p', _) ->
         (* Format.fprintf Format.err_formatter "It became: %a\n%!"
            Component.Fmt.resolved_module_type_path p'; *)
         `Resolved (Cpath.resolved_module_type_path_of_cpath p')
-    | Unresolved _p -> failwith "Unresolved module type path"
-    | exception e ->
+      | Unresolved _p -> failwith "Unresolved module type path"
+      | exception e ->
         Format.fprintf Format.err_formatter
           "Failed to lookup module_type path (%s): %a\n%!"
           (Printexc.to_string e) Component.Fmt.model_path
@@ -108,6 +115,9 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   else
     (* Format.fprintf Format.err_formatter "Reresolving...\n%!"; *)
     let cp = Component.Of_Lang.(module_path empty p) in
+    match cp with
+    | `Resolved p -> `Resolved (Tools.reresolve_module env p |> Cpath.resolved_module_path_of_cpath)
+    | _ ->
     match Tools.lookup_and_resolve_module_from_path true true env cp with
     | Resolved (p', _) -> `Resolved (Cpath.resolved_module_path_of_cpath p')
     | Unresolved _ ->
@@ -856,6 +866,7 @@ and type_expression : Env.t -> _ -> _ =
           (lbl, type_expression env visited t1, type_expression env visited t2)
     | Tuple ts -> Tuple (List.map (type_expression env visited) ts)
     | Constr (path, ts) -> (
+        let path = type_path env path in
         let cp = Component.Of_Lang.(type_path empty path) in
         let ts = List.map (type_expression env visited) ts in
         match Tools.lookup_type_from_path env cp with

@@ -65,8 +65,8 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       (* Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times; *)
       linked
     in
-    let stats = Odoc_xref2.Tools.(Memos1.stats memo) in
-    Format.fprintf Format.err_formatter "Hashtbl memo1: n=%d nb=%d maxb=%d\n%!" stats.num_bindings stats.num_buckets stats.max_bucket_length;
+    (* let stats = Odoc_xref2.Tools.(Memos1.stats memo) in
+    Format.fprintf Format.err_formatter "Hashtbl memo1: n=%d nb=%d maxb=%d\n%!" stats.num_bindings stats.num_buckets stats.max_bucket_length; *)
     let stats = Odoc_xref2.Tools.(Memos2.stats memo2) in
     Format.fprintf Format.err_formatter "Hashtbl memo2: n=%d nb=%d maxb=%d\n%!" stats.num_bindings stats.num_buckets stats.max_bucket_length;
     Format.fprintf Format.err_formatter "time wasted: %f\n%!" (!Odoc_xref2.Tools.time_wasted);

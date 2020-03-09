@@ -223,8 +223,8 @@ module (root Root).B : sig
     type (root Root).B.S.t
     end
   end
-module (root Root).C : resolved[global((root Root).A)] with [.M = = resolved[global((root Root).B)]]
-type (root Root).t = resolved[global((root Root).C).N.t]
+module (root Root).C : resolved[global((root Root).A)] with [root_module_type(global((root Root).A)).M = = resolved[global((root Root).B)]]
+type (root Root).t = resolved[((global((root Root).B) -> global((root Root).C).M).S subst-> global((root Root).C).N).t]
 
 Module substitution2
 Ensure a destructive substitution is taken into account during resolution
@@ -271,7 +271,7 @@ module (root Root).B : sig
     type (root Root).B.S.t
     end
   end
-module (root Root).C : resolved[global((root Root).A)] with [.M := resolved[global((root Root).B)]]
+module (root Root).C : resolved[global((root Root).A)] with [root_module_type(global((root Root).A)).M := resolved[global((root Root).B)]]
 type (root Root).t = resolved[global((root Root).C).N.t]
 
 Module alias
@@ -435,7 +435,7 @@ module type (root Root).S = sig
   end
 module type (root Root).S1 = ((param (root Root).S1 _) : resolved[global((root Root).S)]) -> resolved[global((root Root).S)]
 module (root Root).F1 : ((param (root Root).F1 Arg) : resolved[global((root Root).S)]) -> resolved[global((root Root).S)]
-module (root Root).F2 : ((param (root Root).F2 Arg) : resolved[global((root Root).S)]) -> resolved[global((root Root).S)] with [.t = resolved[global((param (root Root).F2 Arg)).t]]
+module (root Root).F2 : ((param (root Root).F2 Arg) : resolved[global((root Root).S)]) -> resolved[global((root Root).S)] with [root_module_type(global((root Root).S)).t = resolved[global((param (root Root).F2 Arg)).t]]
 module (root Root).F3 : ((param (root Root).F3 Arg) : resolved[global((root Root).S)]) -> sig
   type (root Root).F3.result.t = resolved[global((param (root Root).F3 Arg)).t]
   end
