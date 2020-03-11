@@ -865,15 +865,19 @@ and type_expression : Env.t -> _ -> _ =
         Arrow
           (lbl, type_expression env visited t1, type_expression env visited t2)
     | Tuple ts -> Tuple (List.map (type_expression env visited) ts)
-    | Constr (path, ts) -> (
-        let path = type_path env path in
+    | Constr (path', ts) -> (
+        let path = type_path env path' in
         let cp = Component.Of_Lang.(type_path empty path) in
+        let cp_before = Component.Of_Lang.(type_path empty path') in
+        Format.fprintf Format.err_formatter "type_expression: path\n%!before = %a\n%!after = %a\n%!" Component.Fmt.type_path cp_before Component.Fmt.type_path cp;
         let ts = List.map (type_expression env visited) ts in
         match Tools.lookup_type_from_path env cp with
         | Resolved (cp', Found (`T t)) ->
+            Format.fprintf Format.err_formatter "after lookup = %a\n%!" Component.Fmt.resolved_type_path cp';
+
             let p = Cpath.resolved_type_path_of_cpath cp' in
             if List.mem p visited then raise Loop
-            else if Cpath.is_resolved_type_hidden cp' then
+            else if (*Cpath.is_resolved_type_hidden cp'*) false then
               match t.Component.TypeDecl.equation with
               | { manifest = Some expr; params; _ } -> (
                   let map =

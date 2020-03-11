@@ -407,10 +407,9 @@ and module_type_expr :
         | None -> With (expr, subs)
         | Some parent ->
           (* Tools.without_memoizing (fun () -> *)
-          let (fragment_root', sg) = Tools.signature_of_module_type_expr env ((parent :> Cpath.Resolved.parent), cexpr) in
-          let fragment_root = match fragment_root' with
+          let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
+          let fragment_root = match parent with
             | `ModuleType _ | `Module _ as x -> x
-            | _ -> failwith "Found a FragmentRoot when I was expecting a Cfrag.root!"
           in
           (* Format.fprintf Format.err_formatter "Before: sig=%a fragment=%a\n%!" Component.Fmt.signature sg Component.Fmt.resolved_parent_path fragment_root; *)
 

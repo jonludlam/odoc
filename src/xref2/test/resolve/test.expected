@@ -224,7 +224,7 @@ module (root Root).B : sig
     end
   end
 module (root Root).C : resolved[global((root Root).A)] with [root_module_type(global((root Root).A)).M = = resolved[global((root Root).B)]]
-type (root Root).t = resolved[((global((root Root).B) -> global((root Root).C).M).S subst-> global((root Root).C).N).t]
+type (root Root).t = resolved[global((root Root).C).N.t]
 
 Module substitution2
 Ensure a destructive substitution is taken into account during resolution
@@ -299,7 +299,7 @@ module (root Root).A : sig
   type (root Root).A.t
   end
 module (root Root).B = resolved[global((root Root).A)]
-type (root Root).t = resolved[(global((root Root).A) -> global((root Root).B)).t]
+type (root Root).t = resolved[global((root Root).B).t]
 
 Module alias
 Resolve a module alias
@@ -329,7 +329,7 @@ module (root Root).A : sig
   end
 module (root Root).B = resolved[global((root Root).A)]
 module (root Root).C = resolved[global((root Root).B)]
-type (root Root).t = resolved[(global((root Root).A) -> global((root Root).C)).t]
+type (root Root).t = resolved[global((root Root).C).t]
 
 Functor
 Resolve a functor
@@ -563,5 +563,5 @@ module (root Root).FooBarInt : sig
     type (root Root).FooBarInt.Foo.bar = resolved[global(int)]
     end
   end
-type (root Root).t = resolved[(global((root Root).Bar).T subst-> (global((root Root).Foo)(resolved[global((root Root).Bar)]).T subst-> global((root Root).App)(resolved[global((root Root).Bar)])(resolved[global((root Root).Foo)])(resolved[global((root Root).FooBarInt)])).Foo).bar]
+type (root Root).t = resolved[(global((root Root).Bar).T subst-> global((root Root).App)(resolved[global((root Root).Bar)])(resolved[global((root Root).Foo)])(resolved[global((root Root).FooBarInt)]).Foo).bar]
 

@@ -190,6 +190,23 @@ module LangUtils = struct
                 in
                 { get; set }
 
+            let value : string -> (t, Lang.Value.t) lens = fun name ->
+                let module V = Lang.Value in
+                let rec get = function
+                    | [] -> raise Not_found
+                    | (Value v) ::_xs when name_of_id v.V.id = name ->
+                        v
+                    | _::xs -> get xs
+                in
+                let set v =
+                    let rec inner = function
+                        | [] -> raise Not_found
+                        | (Value v') :: xs when name_of_id v'.V.id = name ->
+                            (Value v)::xs
+                        | x::xs -> x :: inner xs
+                    in inner
+                in
+                { get; set }
             end
 
             module Module = struct
