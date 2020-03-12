@@ -62,10 +62,10 @@ let add_module_docs m expn =
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
   if not (should_resolve (p :> Paths.Path.t)) then (
-    Format.fprintf Format.err_formatter "Not reresolving\n%!";
+    (* Format.fprintf Format.err_formatter "Not reresolving\n%!"; *)
     p)
-  else
-    (Format.fprintf Format.err_formatter "Reresolving...\n%!";
+  else (
+    (* Format.fprintf Format.err_formatter "Reresolving...\n%!"; *)
     let cp = Component.Of_Lang.(type_path empty p) in
     match cp with
     | `Resolved p -> `Resolved (Tools.reresolve_type env p |> Cpath.resolved_type_path_of_cpath)
@@ -738,7 +738,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
   try
     let equation = type_decl_equation env t.equation in
     let doc = comment_docs env t.doc in
-    let hidden_path =
+    let _hidden_path =
       match equation.Equation.manifest with
       | Some (Constr (`Resolved path, params))
         when Paths.Path.Resolved.Type.is_hidden path ->
@@ -749,8 +749,8 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
       Opt.map (type_decl_representation env) t.representation
     in
     let default = { t with equation; doc; representation } in
-
-    match hidden_path with
+    default
+(*    match hidden_path with
     | Some (p, params) -> (
         let p' =
           Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p
@@ -773,7 +773,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
                 (t.id :> Paths.Identifier.t);
               raise e )
         | _ -> default )
-    | None -> default
+    | None -> default*)
   with e ->
     Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"
       Component.Fmt.model_identifier
@@ -866,18 +866,15 @@ and type_expression : Env.t -> _ -> _ =
           (lbl, type_expression env visited t1, type_expression env visited t2)
     | Tuple ts -> Tuple (List.map (type_expression env visited) ts)
     | Constr (path', ts) -> (
-        let path = type_path env path' in
-        let cp = Component.Of_Lang.(type_path empty path) in
-        let cp_before = Component.Of_Lang.(type_path empty path') in
-        Format.fprintf Format.err_formatter "type_expression: path\n%!before = %a\n%!after = %a\n%!" Component.Fmt.type_path cp_before Component.Fmt.type_path cp;
+        let path = type_path env path' in 
+        Constr (path, List.map (type_expression env visited) ts) )
+(*        let cp = Component.Of_Lang.(type_path empty path) in
         let ts = List.map (type_expression env visited) ts in
         match Tools.lookup_type_from_path env cp with
         | Resolved (cp', Found (`T t)) ->
-            Format.fprintf Format.err_formatter "after lookup = %a\n%!" Component.Fmt.resolved_type_path cp';
-
             let p = Cpath.resolved_type_path_of_cpath cp' in
             if List.mem p visited then raise Loop
-            else if (*Cpath.is_resolved_type_hidden cp'*) false then
+            else if Cpath.is_resolved_type_hidden cp' then
               match t.Component.TypeDecl.equation with
               | { manifest = Some expr; params; _ } -> (
                   let map =
@@ -907,7 +904,7 @@ and type_expression : Env.t -> _ -> _ =
             let p = Cpath.resolved_type_path_of_cpath cp' in
             Constr (`Resolved p, ts)
         | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
-        | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) )
+        | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) ) *)
     | Polymorphic_variant v ->
         Polymorphic_variant (type_expression_polyvar env visited v)
     | Object o -> Object (type_expression_object env visited o)

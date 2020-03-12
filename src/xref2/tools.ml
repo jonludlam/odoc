@@ -410,7 +410,7 @@ let without_memoizing f =
   result
 
 let rec handle_apply is_resolve env func_path arg_path m =
-  let func_path', mty' = module_type_expr_of_module env (func_path, m) in
+  let mty' = module_type_expr_of_module_nopath env m in
   let rec find_functor mty =
     match mty with
     | Component.ModuleType.Functor (Some arg, expr) ->
@@ -428,7 +428,7 @@ let rec handle_apply is_resolve env func_path arg_path m =
   in
   let arg_id, result = find_functor mty' in
   let new_module = { m with Component.Module.type_ = ModuleType result } in
-  let path = `Apply (func_path', (`Resolved (`Substituted arg_path))) in
+  let path = `Apply (func_path, (`Resolved (`Substituted arg_path))) in
   let substitution = if is_resolve then `Substituted arg_path else arg_path in
   let ref_subst = Cref.resolved_module_reference_of_resolved_module_path arg_path in
   ( path,
@@ -492,7 +492,9 @@ and handle_module_lookup env add_canonical id p m =
         (* Format.fprintf Format.err_formatter "Handling alias: %a\n%!" Component.Fmt.module_path alias_path; *)
                   match lookup_and_resolve_module_from_path true add_canonical env alias_path with
                   | Resolved (resolved_alias_path, _) ->
-                      `Alias (resolved_alias_path, p'')
+                      if Cpath.is_resolved_module_substituted resolved_alias_path
+                      then `SubstAlias (resolved_alias_path, p'')
+                      else `Alias (resolved_alias_path, p'')
                   | Unresolved _ -> p''
              end
               | Component.Module.ModuleType expr ->
@@ -598,17 +600,16 @@ fun env path ->
   | `Hidden p -> `Hidden (reresolve_module env p)
   | `Canonical (p, `Resolved p2) -> `Canonical (reresolve_module env p, `Resolved (reresolve_module env p2))
   | `Canonical (p, p2) -> begin
-    Format.fprintf Format.err_formatter "Reresolving module: module path=%a" Component.Fmt.resolved_module_path p;
     match lookup_and_resolve_module_from_path true false env p2 with
     | Resolved (`Alias (_, p2'),_) ->
-      Format.fprintf Format.err_formatter "It resolved! %a\n%!" Component.Fmt.resolved_module_path p2';
       `Canonical (reresolve_module env p, `Resolved (simplify_resolved_module_path env p2'))
-    | Resolved (_, _) ->
-      Format.fprintf Format.err_formatter "Canonical module is not an alias";
-      `Canonical (reresolve_module env p, p2)
-    | Unresolved p2' ->
-      Format.fprintf Format.err_formatter "Unresolved :-(\n%!";
-      `Canonical (reresolve_module env p, p2')
+    | Resolved (p2', _) ->
+      (* See, e.g. Base.Sexp for an example of where the canonical path might not be
+        a simple alias *)
+      `Canonical (reresolve_module env p, `Resolved (simplify_resolved_module_path env p2'))
+    | Unresolved _
+    | exception _ ->
+      p
     end
   | `Apply (p, p2) -> begin
     match lookup_and_resolve_module_from_path true false env p2 with
@@ -1025,17 +1026,16 @@ and lookup_signature_from_fragment :
 
 and module_type_expr_of_module_decl :
     Env.t ->
-    Cpath.Resolved.module_ * Component.Module.decl ->
-    Cpath.Resolved.module_ * Component.ModuleType.expr =
- fun env (p, decl) ->
+    Component.Module.decl ->
+    Component.ModuleType.expr =
+ fun env decl ->
   match decl with
+  | Component.Module.Alias (`Resolved r) ->
+      let m = lookup_module env r in
+      module_type_expr_of_module_decl env m.type_
   | Component.Module.Alias path -> (
       match lookup_and_resolve_module_from_path false true env path with
-      | Resolved (x, y) ->
-          let x', y' = module_type_expr_of_module env (x, y) in
-          if Cpath.is_resolved_module_substituted x' then
-            (`SubstAlias (p, x'), y')
-          else (p, y')
+      | Resolved (_, y) -> module_type_expr_of_module_nopath env y
       | Unresolved p when Cpath.is_module_forward p ->
           raise UnresolvedForwardPath
       | Unresolved p' ->
@@ -1044,13 +1044,13 @@ and module_type_expr_of_module_decl :
               Component.Fmt.module_path path Component.Fmt.module_path p'
           in
           failwith err )
-  | Component.Module.ModuleType expr -> (p, expr)
+  | Component.Module.ModuleType expr -> expr
 
-and module_type_expr_of_module :
+and module_type_expr_of_module_nopath :
     Env.t ->
-    Cpath.Resolved.module_ * Component.Module.t ->
-    Cpath.Resolved.module_ * Component.ModuleType.expr =
- fun env (p, m) -> module_type_expr_of_module_decl env (p, m.type_)
+    Component.Module.t ->
+    Component.ModuleType.expr =
+ fun env m -> module_type_expr_of_module_decl env m.type_
 
 (*and signature_of_module_alias_path :
     Env.t ->

@@ -42,7 +42,7 @@ let root =
     root_of_compilation_unit
         ~package:"nopackage"
         ~hidden:false
-        ~module_name:"Test"
+        ~module_name:"Root"
         ~digest:"nodigest"
 
 let root_identifier = `Identifier (`Root (root, Odoc_model.Names.UnitName.of_string "Root"))

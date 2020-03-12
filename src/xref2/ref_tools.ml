@@ -323,8 +323,9 @@ and resolve_module_reference :
   let open Tools.OptionMonad in
   fun env r ~add_canonical ->
     match r with
-    | `Resolved r ->
-        Some (resolve_resolved_module_reference env r ~add_canonical)
+    | `Resolved _r ->
+        failwith "What's going on!?"
+(*        Some (resolve_resolved_module_reference env r ~add_canonical)*)
     | `Dot (parent, name) ->
         resolve_label_parent_reference env parent ~add_canonical
         >>= signature_lookup_result_of_label_parent
@@ -374,7 +375,9 @@ and resolve_module_type_reference :
   let open Tools.OptionMonad in
   fun env r ~add_canonical ->
     match r with
-    | `Resolved r -> Some (resolve_resolved_module_type_reference env r)
+    | `Resolved _r ->
+                failwith "What's going oN!?"
+      (*Some (resolve_resolved_module_type_reference env r)*)
     | `Dot (parent, name) ->
         resolve_label_parent_reference env parent ~add_canonical
         >>= signature_lookup_result_of_label_parent
@@ -467,8 +470,9 @@ and resolve_signature_reference :
     let resolve () =
       (* Format.fprintf Format.err_formatter "B"; *)
       match r with
-      | `Resolved r ->
-          Some (resolve_resolved_signature_reference env r ~add_canonical)
+      | `Resolved _r ->
+        failwith "What's going on here then?"
+          (* Some (resolve_resolved_signature_reference env r ~add_canonical) *)
       | `Root (name, _) ->
           choose
             [
