@@ -103,10 +103,7 @@ and class_type_expr env =
 and class_type env c =
   let open ClassType in
   let c' = Env.lookup_class_type c.id env in
-  let _p, sg =
-    Tools.class_signature_of_class_type env
-      (`Identifier (c.id :> Paths_types.Identifier.path_class_type), c')
-  in
+  let sg = Tools.class_signature_of_class_type env c' in
   let expansion =
     Some
       (Lang_of.class_signature Lang_of.empty
@@ -143,10 +140,7 @@ and instance_variable env i =
 and class_ env c =
   let open Class in
   let c' = Env.lookup_class c.id env in
-  let _p, sg =
-    Tools.class_signature_of_class env
-      (`Identifier (c.id :> Paths_types.Identifier.path_class_type), c')
-  in
+  let sg = Tools.class_signature_of_class env c' in
   let expansion =
     Some
       (Lang_of.class_signature Lang_of.empty
@@ -407,7 +401,7 @@ and module_type_expr :
         | None -> With (expr, subs)
         | Some parent ->
           (* Tools.without_memoizing (fun () -> *)
-          let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
+          let sg = Tools.signature_of_module_type_expr env cexpr in
           let fragment_root = match parent with
             | `ModuleType _ | `Module _ as x -> x
           in
@@ -549,7 +543,7 @@ and type_expression_package env p =
   let cp = Component.Of_Lang.(module_type_path empty p.path) in
   match Tools.lookup_and_resolve_module_type_from_path true env cp with
   | Resolved (path, mt) ->
-      let sg = Tools.signature_of_module_type_nopath env mt in
+      let sg = Tools.signature_of_module_type env mt in
       let substitution (frag, t) =
         let cfrag = Component.Of_Lang.(type_fragment empty frag) in
         let frag' = Tools.resolve_mt_type_fragment env (`ModuleType path, sg) cfrag |>

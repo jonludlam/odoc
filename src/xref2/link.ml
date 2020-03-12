@@ -630,7 +630,7 @@ and module_type_expr :
   | With (expr, subs) ->
       let cexpr = Component.Of_Lang.(module_type_expr empty expr) in
       let csubs = List.map Component.Of_Lang.(module_type_substitution empty) subs in
-      let sg = Tools.signature_of_module_type_expr_nopath env cexpr in
+      let sg = Tools.signature_of_module_type_expr env cexpr in
       (* Format.fprintf Format.err_formatter
          "Handling `With` expression for %a (expr=%a) [%a]\n%!"
          Component.Fmt.model_identifier
@@ -841,7 +841,7 @@ and type_expression_package env visited p =
   let cp = Component.Of_Lang.(module_type_path empty p.path) in
   match Tools.lookup_and_resolve_module_type_from_path true env cp with
   | Resolved (path, mt) ->
-      let sg = Tools.signature_of_module_type_nopath env mt in
+      let sg = Tools.signature_of_module_type env mt in
       let substitution (frag, t) =
         let cfrag = Component.Of_Lang.(type_fragment empty frag) in
         let frag' = Tools.resolve_mt_type_fragment env (`ModuleType path, sg) cfrag |>

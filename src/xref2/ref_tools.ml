@@ -262,10 +262,10 @@ and resolve_resolved_signature_reference :
         let sg =
           match i with
           | (`Module _ | `Parameter _ | `Result _ | `Root _) as i' ->
-              Tools.signature_of_module_nopath env (Env.lookup_module i' env)
+              Tools.signature_of_module env (Env.lookup_module i' env)
               |> prefix_signature (`Identifier i')
           | `ModuleType _ as i' ->
-              Tools.signature_of_module_type_nopath env
+              Tools.signature_of_module_type env
                 (Env.lookup_module_type i' env)
               |> prefix_signature (`Identifier i')
         in
@@ -275,12 +275,12 @@ and resolve_resolved_signature_reference :
         (r, env, sg)
     | (`Module (_, _) | `Canonical _ | `SubstAlias (_, _)) as r' ->
         let _, m = resolve_resolved_module_reference env r' ~add_canonical in
-        (r, env, Tools.signature_of_module_nopath env m |> prefix_signature r)
+        (r, env, Tools.signature_of_module env m |> prefix_signature r)
     | `ModuleType (_, _) as r' ->
         let _, m = resolve_resolved_module_type_reference env r' in
         ( r,
           env,
-          Tools.signature_of_module_type_nopath env m |> prefix_signature r' )
+          Tools.signature_of_module_type env m |> prefix_signature r' )
   in
   (*        Memos1.add memo id result;*)
   result
@@ -426,7 +426,7 @@ and resolve_label_parent_reference :
                 else `Module (parent', name)
               in
               let sg =
-                Tools.signature_of_module_nopath env m
+                Tools.signature_of_module env m
                 |> prefix_signature (r' :> Resolved.Signature.t)
               in
               let env =
@@ -439,7 +439,7 @@ and resolve_label_parent_reference :
               Find.opt_module_type_in_sig sg name >>= fun m ->
               let r' = `ModuleType (parent', name) in
               let sg =
-                Tools.signature_of_module_type_nopath env m
+                Tools.signature_of_module_type env m
                 |> prefix_signature r'
               in
               let env =
@@ -479,7 +479,7 @@ and resolve_signature_reference :
               (fun () ->
                 Env.lookup_module_by_name name env >>= fun (`Module (id, m)) ->
                 let sg =
-                  Tools.signature_of_module_nopath env m
+                  Tools.signature_of_module env m
                   |> prefix_signature
                        (`Identifier (id :> Identifier.Signature.t))
                 in
@@ -496,7 +496,7 @@ and resolve_signature_reference :
                       `Identifier (id :> Identifier.Signature.t)
                     in
                     let sg =
-                      Tools.signature_of_module_nopath env m
+                      Tools.signature_of_module env m
                       |> prefix_signature identifier
                     in
                     let env =
@@ -511,7 +511,7 @@ and resolve_signature_reference :
                 >>= fun (`ModuleType (id, m)) ->
                 let identifier = `Identifier (id :> Identifier.Signature.t) in
                 let sg =
-                  Tools.signature_of_module_type_nopath env m
+                  Tools.signature_of_module_type env m
                   |> prefix_signature identifier
                 in
                 let env =
@@ -528,7 +528,7 @@ and resolve_signature_reference :
           Find.opt_module_in_sig sg name >>= fun m ->
           let r' = `Module (parent', name) in
           let sg =
-            Tools.signature_of_module_nopath env m |> prefix_signature r'
+            Tools.signature_of_module env m |> prefix_signature r'
           in
           let env =
             Env.open_component_signature
@@ -542,7 +542,7 @@ and resolve_signature_reference :
           Find.opt_module_in_sig sg name >>= fun m ->
           let r' = `Module (parent', name) in
           let sg =
-            Tools.signature_of_module_nopath env m |> prefix_signature r'
+            Tools.signature_of_module env m |> prefix_signature r'
           in
           let env =
             Env.open_component_signature
@@ -556,7 +556,7 @@ and resolve_signature_reference :
           Find.opt_module_type_in_sig sg name >>= fun m ->
           let r' = `ModuleType (parent', name) in
           let sg =
-            Tools.signature_of_module_type_nopath env m |> prefix_signature r'
+            Tools.signature_of_module_type env m |> prefix_signature r'
           in
           let env =
             Env.open_component_signature
