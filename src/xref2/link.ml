@@ -212,7 +212,7 @@ and comment_nestable_block_element env (x : Comment.nestable_block_element) =
   | `Modules refs ->
     let refs = List.map (fun r ->
       match Ref_tools.resolve_module_reference env ~add_canonical:false r with
-      | Some (r, _) -> `Resolved r
+      | Some (r, _, _) -> `Resolved r
       | None -> r
       | exception _e ->
         Format.fprintf Format.err_formatter "Error resolving reference: %a\n%!" Component.Fmt.model_reference (r :> Odoc_model.Paths.Reference.t);
