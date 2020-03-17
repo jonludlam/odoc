@@ -2373,7 +2373,7 @@ module Reference = struct
 
     let rec identifier : t -> Identifier.t = function
       | `Identifier id -> id
-      | `SubstAlias(_, p) -> identifier (p :> t)
+      | `SubstAlias(p, _) -> Path.Resolved.identifier (p :> Path.Resolved.t)
       | `Module(s, n) -> `Module(parent_signature_identifier s, n)
       | `Canonical(_, `Resolved p) -> identifier (p :> t)
       | `Canonical(p, _) -> identifier (p :> t)

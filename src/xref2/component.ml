@@ -990,7 +990,7 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
     | `InstanceVariable (parent, str) ->
         Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
-    | `SubstAlias (_, _) -> Format.fprintf ppf "substalias"
+    | `SubstAlias (x, y) -> Format.fprintf ppf "substalias(%a,%a)" model_resolved_path (x :> Odoc_model.Paths.Path.Resolved.t) model_resolved_reference (y :> Odoc_model.Paths.Reference.Resolved.t);
     | `Canonical (_, _) -> Format.fprintf ppf "canonical"
     | `Label (parent, str) ->
         Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
