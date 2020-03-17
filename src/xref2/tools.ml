@@ -305,7 +305,7 @@ module Memos2 = Hashtbl.Make (Hashable2)
 
 let memo2 : ((module_lookup_result, Cpath.module_) ResultMonad.t * int * Env.lookup_type list) Memos2.t = Memos2.create 10000
 
-let reset_cache () = (*Memos1.clear memo; *)Memos2.clear memo2
+let reset_cache () = Memos1.clear memo; Memos2.clear memo2
 
 
 let rec handle_apply is_resolve env func_path arg_path m =
@@ -364,51 +364,50 @@ and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -
 
 and add_hidden m p = if m.Component.Module.hidden then `Hidden p else p
 
+and process_module env add_canonical m p =
+  let open Component.Module in
+  let p' =
+  match m.type_ with
+  | Alias alias_path -> begin
+      match lookup_and_resolve_module_from_path true add_canonical env alias_path with
+      | Resolved (resolved_alias_path, _) ->
+          if Cpath.is_resolved_module_substituted resolved_alias_path
+          then `SubstAlias (resolved_alias_path, p)
+          else `Alias (resolved_alias_path, p)
+      | Unresolved _ -> p
+    end
+  | ModuleType expr ->
+    let rec subst_path =
+      let open Component.ModuleType in
+      function
+      | Path p ->
+        if Cpath.is_module_type_substituted p
+        then Some p
+        else None
+      | Signature _ -> None
+      | With (e, _) -> subst_path e
+      | Functor _ -> None
+      | TypeOf _ -> None
+    in
+    match subst_path expr with
+    | Some mty_path -> begin
+      (* Format.fprintf Format.err_formatter "Looking up module_type\n%!"; *)
+      match lookup_and_resolve_module_type_from_path false env mty_path with
+      | Resolved (p', _) -> `Subst (p', p)
+      | Unresolved _ -> p
+    end
+    | None ->
+      p
+  in
+  let p' = if add_canonical then add_canonical_path env m p' else p' in
+  (p',m)
+
 and handle_module_lookup env add_canonical id parent sg =
   match Find.careful_module_in_sig sg id with
-  | Find.Found m' -> begin
+  | Find.Found m' ->
       let p' = `Module (parent, Odoc_model.Names.ModuleName.of_string id) in
-      let p'' = p' in
-      let p''' =
-        match m'.type_ with
-        | Component.Module.Alias alias_path -> begin
-        (* Format.fprintf Format.err_formatter "Handling alias: %a\n%!" Component.Fmt.module_path alias_path; *)
-                  match lookup_and_resolve_module_from_path true add_canonical env alias_path with
-                  | Resolved (resolved_alias_path, _) ->
-                      if Cpath.is_resolved_module_substituted resolved_alias_path
-                      then `SubstAlias (resolved_alias_path, p'')
-                      else `Alias (resolved_alias_path, p'')
-                  | Unresolved _ -> p''
-             end
-              | Component.Module.ModuleType expr ->
-                (* Format.fprintf Format.err_formatter "Handling moduletype: %a\n%!" Component.Fmt.module_type_expr expr; *)
-                let rec subst_path =
-                  let open Component.ModuleType in
-                  function
-                  | Path p ->
-                    if Cpath.is_module_type_substituted p
-                    then Some p
-                    else None
-                  | Signature _ -> None
-                  | With (e, _) -> subst_path e
-                  | Functor _ -> None
-                  | TypeOf _ -> None
-                in
-                match subst_path expr with
-                | Some mty_path -> begin
-                  (* Format.fprintf Format.err_formatter "Looking up module_type\n%!"; *)
-                  match lookup_and_resolve_module_type_from_path false env mty_path with
-                  | Resolved (p, _) -> `Subst (p, p'')
-                  | Unresolved _ -> p''
-                end
-                | None ->
-                  (* Format.fprintf Format.err_formatter "Not substituted\n%!"; *)
-                  p''
-                  in
-                  let p'''' = if add_canonical then add_canonical_path env m' p''' else p''' in
-                  (p'''',m')
-                end
-      | Replaced p -> (p, lookup_module env p)
+      process_module env add_canonical m' p'
+  | Replaced p -> (p, lookup_module env p)
 
 and handle_module_type_lookup id p sg =
   let mt = Find.module_type_in_sig sg id in

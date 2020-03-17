@@ -233,17 +233,19 @@ and resolve_module_reference :
     | `Module (parent, name) -> find_module env (parent :> LabelParent.t) (Odoc_model.Names.ModuleName.to_string name) ~add_canonical
     | `Root (name, _) -> (
         match Env.lookup_module_by_name name env with
-        | Some (`Module (id, m)) ->
-            let path = if add_canonical then Tools.add_canonical_path env m (`Identifier id) else (`Identifier id) in
-            let ref = if add_canonical then add_canonical_path env m (`Identifier id) else (`Identifier id) in
-            return (ref, path, m)
+        | Some (`Module (id, m)) -> (
+            (try Some (Tools.process_module env add_canonical m (`Identifier id)) with _ -> None)
+            >>= fun (cp', m) ->
+            let resolved_ref = gen_resolved_module_reference_of_cpath cp' in
+            return (resolved_ref, cp', m))
         | None -> (
             let x = Env.lookup_root_module name env in
             match x with
-            | Some (Env.Resolved (id, m)) ->
-                let path = Tools.add_canonical_path env m (`Identifier id) in
-                let ref = if add_canonical then add_canonical_path env m (`Identifier id) else `Identifier id in
-                return (ref,path, m)
+            | Some (Env.Resolved (id, m)) -> (
+              (try Some (Tools.process_module env add_canonical m (`Identifier id)) with _ -> None)
+              >>= fun (cp', m) ->
+              let resolved_ref = gen_resolved_module_reference_of_cpath cp' in
+              return (resolved_ref, cp', m))
             | _ -> None ) )
 
 and resolve_module_type_reference :
