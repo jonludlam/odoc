@@ -245,7 +245,7 @@ and resolve_module_reference :
     | `Root (name, _) -> (
         match Env.lookup_module_by_name name env with
         | Some (`Module (id, m)) ->
-            let path = Tools.add_canonical_path env m (`Identifier id) in
+            let path = if add_canonical then Tools.add_canonical_path env m (`Identifier id) else (`Identifier id) in
             let ref = if add_canonical then add_canonical_path env m (`Identifier id) else (`Identifier id) in
             return (ref, path, m)
         | None -> (
@@ -421,10 +421,15 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
     match r with
     | `Root (name, `TUnknown) -> (
         Env.lookup_any_by_name name env >>= function
-        | `Module (id, _) ->
-            return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
-        | `ModuleType (id, _) ->
-            return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
+        | `Module (_, _) -> begin
+            (* Make sure we handle aliases correctly *)
+            resolve_module_reference env ~add_canonical:true (`Root (name, `TModule))
+            >>= fun (r, _, _) -> Some (r :> Resolved.t)
+          end
+        | `ModuleType (_, _) -> begin
+            resolve_module_type_reference env ~add_canonical:true (`Root (name, `TModuleType))
+            >>= fun (r, _, _) -> Some (r :> Resolved.t)
+          end
         | `Value (id, _) ->
             return (`Identifier (id :> Odoc_model.Paths.Identifier.t))
         | `Type (id, _) ->

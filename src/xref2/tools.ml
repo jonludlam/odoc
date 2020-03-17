@@ -280,17 +280,16 @@ exception MyFailure of Component.Module.t * Component.Module.t
 exception Couldnt_find_functor_argument
 
 module Hashable = struct
-  type t = bool * bool * Cpath.Resolved.module_
+  type t = Cpath.Resolved.module_
 
-  let equal = Stdlib.( = )
+  let equal = ( = )
 
-  let hash (b1, b2, m) =
-    Hashtbl.hash (1001, b1, b2, Cpath.resolved_module_hash m)
+  let hash m = Cpath.resolved_module_hash m
 end
 
 module Memos1 = Hashtbl.Make (Hashable)
 
-(* let memo = Memos1.create 10000 *)
+let memo = Memos1.create 10000
 
 
 module Hashable2 = struct
@@ -308,13 +307,6 @@ let memo2 : ((module_lookup_result, Cpath.module_) ResultMonad.t * int * Env.loo
 
 let reset_cache () = (*Memos1.clear memo; *)Memos2.clear memo2
 
-let without_memoizing_count = ref 0
-
-let without_memoizing f =
-  incr without_memoizing_count;
-  let result = f () in
-  decr without_memoizing_count;
-  result
 
 let rec handle_apply is_resolve env func_path arg_path m =
   let mty' = module_type_expr_of_module env m in
@@ -354,19 +346,9 @@ and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -
           else
             (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
             match !resolve_module_ref env cr with
-            | Some (_, resolved_path, _) -> (
-                try
+            | Some (_, resolved_path, _) ->
                   `Canonical ( p, `Resolved resolved_path )
-                with e ->
-                  let callstack = Printexc.get_callstack 20 in
-
-                  Format.fprintf Format.err_formatter
-                    "Argh: %a\nBacktrace:\n%s\n%!"
-                    Component.Fmt.resolved_module_path
-                    resolved_path
-                    (Printexc.raw_backtrace_to_string callstack);
-                  raise e )
-            | _ ->
+            | None ->
                 (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
                 `Canonical (p, cp)
             | exception _e ->
@@ -450,7 +432,9 @@ and handle_class_type_lookup env id p m =
   (`ClassType (p, Odoc_model.Names.TypeName.of_string id), c)
 
 and lookup_module : Env.t -> Cpath.Resolved.module_ -> Component.Module.t =
-  fun env path ->
+  fun env' path ->
+  let id = path in
+  let env_id = Env.id env' in
   let lookup env =
     match path with
     | `Local _ -> raise (Module_lookup_failure (env, path))
@@ -481,7 +465,26 @@ and lookup_module : Env.t -> Cpath.Resolved.module_ -> Component.Module.t =
     | `Hidden p -> lookup_module env p
     | `Canonical (p, _) -> lookup_module env p
     | `Apply (_, _) -> failwith "Unresolved argument to apply"
-  in lookup env
+  in
+  match Memos1.find_all memo id with
+  | [] ->
+      let lookups, resolved = Env.with_recorded_lookups env' lookup in
+      Memos1.add memo id (resolved, env_id, lookups);
+      resolved
+  | xs ->
+      let rec find_fast = function
+        | (result, id, _lookups) :: _ when id = env_id -> result
+        | _ :: ys -> find_fast ys
+        | [] -> find xs
+      and find = function
+        | (m, _, lookups) :: xs ->
+            if verify_lookups env' lookups then m else find xs
+        | [] ->
+            let lookups, m = Env.with_recorded_lookups env' lookup in
+            Memos1.add memo id (m, env_id, lookups);
+            m
+      in
+      find_fast xs
 
 
 and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
@@ -532,14 +535,19 @@ and reresolve_module_type : Env.t -> Cpath.Resolved.module_type -> Cpath.Resolve
 
 and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
     fun env path ->
-      match path with
-      | `Identifier _
-      | `Local _ -> path
-      | `Substituted s -> `Substituted (reresolve_type env s)
-      | `Type (p, n) -> `Type (reresolve_parent env p, n)
-      | `Class (p, n) -> `Class (reresolve_parent env p, n)
-      | `ClassType (p, n) -> `ClassType (reresolve_parent env p, n)
-
+      let result =
+        match path with
+        | `Identifier _
+        | `Local _ -> path
+        | `Substituted s -> `Substituted (reresolve_type env s)
+        | `Type (p, n) -> `Type (reresolve_parent env p, n)
+        | `Class (p, n) -> `Class (reresolve_parent env p, n)
+        | `ClassType (p, n) -> `ClassType (reresolve_parent env p, n)
+      in
+      if !verbose then
+        Format.fprintf Format.err_formatter "reresolve_type: before=%a after=%a\n%!" Component.Fmt.resolved_type_path path
+          Component.Fmt.resolved_type_path result;
+      result
 and lookup_module_type : Env.t -> Cpath.Resolved.module_type -> Component.ModuleType.t =
   fun env path ->
     let lookup env =
@@ -564,32 +572,7 @@ and lookup_module_type : Env.t -> Cpath.Resolved.module_type -> Component.Module
         end
     in lookup env
 
-(*  match Memos1.find_all memo id with
-  | [] ->
-      let lookups, resolved = Env.with_recorded_lookups env' resolve in
-      if !without_memoizing_count = 0 then
-        Memos1.add memo id (resolved, env_id, lookups);
-      resolved
-  | xs ->
-      let rec find_fast = function
-        | (result, id, _lookups) :: _ when id = env_id -> result
-        | _ :: ys -> find_fast ys
-        | [] -> find xs
-      and find = function
-        | ((p, m), _, lookups) :: xs ->
-            if verify_lookups env' lookups then
-              ((*Format.fprintf Format.err_formatter "x";*) p, m)
-            else find xs
-        | [] ->
-            let time_measure_in_progress = !time_wasted_start <> 0.0 in
-            if not time_measure_in_progress then
-              time_wasted_start := Unix.gettimeofday ();
-            let lookups, (p, m) = Env.with_recorded_lookups env' resolve in
-            if !without_memoizing_count = 0 then
-              Memos1.add memo id ((p, m), env_id, lookups);
-            (p, m)
-      in
-      find_fast xs*)
+(* *)
 
 and verify_lookups env lookups =
   let bad_lookup = function
@@ -696,8 +679,7 @@ and lookup_and_resolve_module_from_path :
   match Memos2.find_all memo2 id with
   | [] ->
       let lookups, resolved = Env.with_recorded_lookups env' resolve in
-      if !without_memoizing_count = 0 then
-        Memos2.add memo2 id (resolved, env_id, lookups);
+      Memos2.add memo2 id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
@@ -709,8 +691,7 @@ and lookup_and_resolve_module_from_path :
             if verify_lookups env' lookups then r else find xs
         | [] ->
             let lookups, result = Env.with_recorded_lookups env' resolve in
-            if !without_memoizing_count = 0 then
-              Memos2.add memo2 id (result, env_id, lookups);
+            Memos2.add memo2 id (result, env_id, lookups);
             result
       in
       find_fast xs

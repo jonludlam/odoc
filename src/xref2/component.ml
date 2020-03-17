@@ -596,6 +596,31 @@ module Fmt = struct
 
   and type_package ppf _p = Format.fprintf ppf "(package)"
 
+  and type_expr_polymorphic_variant ppf p =
+    let kind ppf k =
+      let open Odoc_model.Lang.TypeExpr.Polymorphic_variant in
+      match k with
+      | Fixed -> Format.fprintf ppf "Fixed"
+      | Closed xs -> Format.fprintf ppf "Closed [%s]" (String.concat ";" xs)
+      | Open -> Format.fprintf ppf "Open"
+    in
+    let open TypeExpr.Polymorphic_variant in
+    let constructor ppf c =
+      Format.fprintf ppf "name=%s" c.Constructor.name
+    in
+    let element ppf k =
+      match k with
+      | Type t -> Format.fprintf ppf "Type (%a)" type_expr t
+      | Constructor c -> Format.fprintf ppf "Constructor (%a)" constructor c
+    in
+    let rec elements ppf k =
+      match k with
+      | [] -> ()
+      | [x] -> Format.fprintf ppf "%a" element x
+      | x::xs -> Format.fprintf ppf "%a; %a" element x elements xs
+    in
+    Format.fprintf ppf "{ kind=%a; elements=[%a] }"
+      kind p.kind elements p.elements
   and type_expr ppf e =
     let open TypeExpr in
     match e with
@@ -606,7 +631,8 @@ module Fmt = struct
         Format.fprintf ppf "%a -> %a" type_expr t1 type_expr t2
     | Tuple ts -> Format.fprintf ppf "(%a)" type_expr_list ts
     | Constr (p, _args) -> type_path ppf p
-    | Polymorphic_variant _poly -> Format.fprintf ppf "(poly_var)"
+    | Polymorphic_variant poly ->
+      Format.fprintf ppf "(poly_var %a)" type_expr_polymorphic_variant poly
     | Object x -> type_object ppf x
     | Class (x, y) -> type_class ppf (x, y)
     | Poly (_ss, _t) -> Format.fprintf ppf "(poly)"
@@ -627,17 +653,17 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" resolved_parent_path p
           (Odoc_model.Names.ModuleName.to_string m)
     | `Alias (p1, p2) ->
-        Format.fprintf ppf "(alias %a -> %a)" resolved_module_path p1
+        Format.fprintf ppf "alias(%a,%a)" resolved_module_path p1
           resolved_module_path p2
     | `Subst (p1, p2) ->
-        Format.fprintf ppf "(subst %a -> %a)" resolved_module_type_path p1
+        Format.fprintf ppf "subst(%a,%a)" resolved_module_type_path p1
           resolved_module_path p2
     | `SubstAlias (p1, p2) ->
-        Format.fprintf ppf "(substalias %a -> %a)" resolved_module_path p1
+        Format.fprintf ppf "substalias(%a,%a)" resolved_module_path p1
           resolved_module_path p2
-    | `Hidden p1 -> Format.fprintf ppf "(hidden %a)" resolved_module_path p1
+    | `Hidden p1 -> Format.fprintf ppf "hidden(%a)" resolved_module_path p1
     | `Canonical (p1, p2) ->
-        Format.fprintf ppf "(canonical %a -> %a)" resolved_module_path p1
+        Format.fprintf ppf "canonical(%a,%a)" resolved_module_path p1
           module_path p2
 
   and module_path : Format.formatter -> Cpath.module_ -> unit =

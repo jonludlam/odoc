@@ -631,7 +631,7 @@ module Path = struct
     | `Canonical (_, `Resolved _) -> false
     | `Canonical (x, _) -> is_resolved_hidden (x : module_ :> any)
     | `Hidden _ -> true
-    | `Subst(p1, p2) -> is_resolved_hidden (p1 : module_type :> any) || is_resolved_hidden (p2 : module_ :> any)
+    | `Subst(p1, _p2) -> is_resolved_hidden (p1 : module_type :> any)
     | `SubstAlias(p1, p2) -> is_resolved_hidden (p1 : module_ :> any) || is_resolved_hidden (p2 : module_ :> any)
     | `Module (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `Apply (p, _) -> is_resolved_hidden (p : module_ :> any)
@@ -639,7 +639,7 @@ module Path = struct
     | `Type (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `Class (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `ClassType (p, _) -> is_resolved_hidden (p : module_ :> any)
-    | `Alias (p1, _p2) -> is_resolved_hidden (p1 : module_ :> any) (*|| is_resolved_hidden (p2 : module_ :> any)*)
+    | `Alias (p1, p2) -> is_resolved_hidden (p1 : module_ :> any) && (is_resolved_hidden (p2 : module_ :> any))
 
   and is_path_hidden : Paths_types.Path.any -> bool =
     let open Paths_types.Path in
@@ -668,7 +668,10 @@ module Path = struct
       | `Canonical(_, `Resolved p) -> parent_module_identifier p
       | `Canonical(p, _) -> parent_module_identifier p
       | `Apply(m, _) -> parent_module_identifier m
-      | `Alias(sub, _) -> parent_module_identifier sub
+      | `Alias(sub, orig) ->
+        if is_path_hidden (`Resolved (sub :> t))
+        then parent_module_identifier orig
+        else parent_module_identifier sub
 
     let equal p1 p2 = equal_resolved_path p1 p2
 
@@ -758,8 +761,11 @@ module Path = struct
         | `Canonical(_, `Resolved p) -> identifier p
         | `Canonical(p, _) -> identifier p
         | `Apply(m, _) -> identifier m
-        | `Alias(_,p) -> identifier p
-
+        | `Alias(sub,orig) ->
+          if is_path_hidden (`Resolved (sub :> Paths_types.Resolved_path.any))
+          then identifier orig
+          else identifier sub
+          
       let rec canonical_ident = function
         | `Identifier _id -> None
         | `Subst(_,_) -> None
@@ -1004,7 +1010,10 @@ module Path = struct
       | `ModuleType(m, n) -> `ModuleType(parent_module_identifier m, n)
       | `Class(m, n) -> `Class(parent_module_identifier m, n)
       | `ClassType(m, n) -> `ClassType(parent_module_identifier m, n)
-      | `Alias(_, p) -> identifier (p :> t)
+      | `Alias(sub, orig) ->
+        if is_path_hidden (`Resolved (sub :> t))
+        then identifier (orig :> t)
+        else identifier (sub :> t)
 
   end
 

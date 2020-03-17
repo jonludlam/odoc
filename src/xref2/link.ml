@@ -433,14 +433,8 @@ and module_ : Env.t -> Module.t -> Module.t =
             | None -> false )
         | _ -> false
       in
-      let moduletype_expansion =
-        match type_ with
-        | Alias _ -> false
-        | ModuleType (Signature _) -> false
-        | _ -> true
-      in
       let expansion_needed =
-        moduletype_expansion || self_canonical || hidden_alias
+        self_canonical || hidden_alias
       in
       (* Format.fprintf Format.err_formatter "moduletype_expansion=%b self_canonical=%b hidden_alias=%b expansion_needed=%b\n%!" moduletype_expansion self_canonical hidden_alias expansion_needed; *)
       let env, expansion =
@@ -822,7 +816,10 @@ and type_expression_polyvar env visited v =
     }
   in
   let element = function
-    | Type t -> Type (type_expression env visited t)
+    | Type t -> Type (
+      match type_expression env visited t with
+      | Constr _ as x -> x
+      | _ -> t) (* These have to remain Constrs *)
     | Constructor c -> Constructor (constructor c)
   in
   { v with elements = List.map element v.elements }
@@ -865,46 +862,48 @@ and type_expression : Env.t -> _ -> _ =
         Arrow
           (lbl, type_expression env visited t1, type_expression env visited t2)
     | Tuple ts -> Tuple (List.map (type_expression env visited) ts)
-    | Constr (path', ts) -> (
-        let path = type_path env path' in 
-        Constr (path, List.map (type_expression env visited) ts) )
-(*        let cp = Component.Of_Lang.(type_path empty path) in
-        let ts = List.map (type_expression env visited) ts in
-        match Tools.lookup_type_from_path env cp with
-        | Resolved (cp', Found (`T t)) ->
-            let p = Cpath.resolved_type_path_of_cpath cp' in
-            if List.mem p visited then raise Loop
-            else if Cpath.is_resolved_type_hidden cp' then
-              match t.Component.TypeDecl.equation with
-              | { manifest = Some expr; params; _ } -> (
-                  let map =
-                    List.fold_left2
-                      (fun acc param sub ->
-                        match param with
-                        | Odoc_model.Lang.TypeDecl.Var x, _ -> (x, sub) :: acc
-                        | Any, _ -> acc)
-                      [] params ts
-                  in
-
-                  (* Format.fprintf Format.err_formatter "Here we go...%a \n" Component.Fmt.type_path cp; *)
-                  (* Format.fprintf Format.err_formatter "here we are... %d before=%a (path=%a)\n%!" (List.length visited) Component.Fmt.type_decl t Component.Fmt.type_path cp; *)
-                  try
-                    let t' =
-                      Expand_tools.type_expr map Lang_of.(type_expr empty expr)
+    | Constr (path', ts') -> (
+        let path = type_path env path' in
+        let ts = List.map (type_expression env visited) ts' in
+        if not (Odoc_model.Paths.Path.is_hidden (path :> Odoc_model.Paths.Path.t))
+        then Constr (path, ts)
+        else 
+          let cp = Component.Of_Lang.(type_path empty path') in
+          match Tools.lookup_type_from_path env cp with
+          | Resolved (cp', Found (`T t)) ->
+              let p = Cpath.resolved_type_path_of_cpath cp' in
+              if List.mem p visited then raise Loop
+              else if Cpath.is_resolved_type_hidden cp' then
+                match t.Component.TypeDecl.equation with
+                | { manifest = Some expr; params; _ } -> (
+                    let map =
+                      List.fold_left2
+                        (fun acc param sub ->
+                          match param with
+                          | Odoc_model.Lang.TypeDecl.Var x, _ -> (x, sub) :: acc
+                          | Any, _ -> acc)
+                        [] params ts
                     in
-                    type_expression env (p :: visited) t'
-                  with
-                  | Loop ->
-                      Format.fprintf Format.err_formatter "Loop detected\n%!";
-                      Constr (`Resolved p, ts)
-                  | _ -> Constr (`Resolved p, ts) )
-              | _ -> Constr (`Resolved p, ts)
-            else Constr (`Resolved p, ts)
-        | Resolved (cp', Found _) ->
-            let p = Cpath.resolved_type_path_of_cpath cp' in
-            Constr (`Resolved p, ts)
-        | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
-        | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) ) *)
+
+                    (* Format.fprintf Format.err_formatter "Here we go...%a \n" Component.Fmt.type_path cp; *)
+                    (* Format.fprintf Format.err_formatter "here we are... %d before=%a (path=%a)\n%!" (List.length visited) Component.Fmt.type_decl t Component.Fmt.type_path cp;*)
+                    try
+                      let t' =
+                        Expand_tools.type_expr map Lang_of.(type_expr empty expr)
+                      in
+                      type_expression env (p :: visited) t'
+                    with
+                    | Loop ->
+                        Format.fprintf Format.err_formatter "Loop detected\n%!";
+                        Constr (`Resolved p, ts)
+                    | _ -> Constr (`Resolved p, ts) )
+                | _ -> Constr (`Resolved p, ts)
+              else Constr (`Resolved p, ts)
+          | Resolved (cp', Found _) ->
+              let p = Cpath.resolved_type_path_of_cpath cp' in
+              Constr (`Resolved p, ts)
+          | Resolved (_cp, Replaced x) -> Lang_of.(type_expr empty x)
+          | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) )
     | Polymorphic_variant v ->
         Polymorphic_variant (type_expression_polyvar env visited v)
     | Object o -> Object (type_expression_object env visited o)

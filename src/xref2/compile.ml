@@ -192,7 +192,7 @@ and module_ : Env.t -> Module.t -> Module.t =
     match m.type_ with
     | ModuleType (Signature _) -> false (* AlreadyASig *)
     | ModuleType _ -> true
-    | Alias _ -> false
+    | Alias _ -> false (* Aliases are expanded if necessary during link *)
   in
   let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
   let expansion =
@@ -566,8 +566,9 @@ and type_expression : Env.t -> _ -> _ =
   | Arrow (lbl, t1, t2) ->
       Arrow (lbl, type_expression env t1, type_expression env t2)
   | Tuple ts -> Tuple (List.map (type_expression env) ts)
-  | Constr (path, ts) -> (
+  | Constr (path, ts') -> (
       let cp = Component.Of_Lang.(type_path empty path) in
+      let ts = List.map (type_expression env) ts' in
       match Tools.lookup_type_from_path env cp with
       | Resolved (cp, Found _t) ->
           let p = Cpath.resolved_type_path_of_cpath cp in
