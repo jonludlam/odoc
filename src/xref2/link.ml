@@ -732,7 +732,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
   try
     let equation = type_decl_equation env t.equation in
     let doc = comment_docs env t.doc in
-    let _hidden_path =
+    let hidden_path =
       match equation.Equation.manifest with
       | Some (Constr (`Resolved path, params))
         when Paths.Path.Resolved.Type.is_hidden path ->
@@ -743,8 +743,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
       Opt.map (type_decl_representation env) t.representation
     in
     let default = { t with equation; doc; representation } in
-    default
-(*    match hidden_path with
+    match hidden_path with
     | Some (p, params) -> (
         let p' =
           Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p
@@ -767,7 +766,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
                 (t.id :> Paths.Identifier.t);
               raise e )
         | _ -> default )
-    | None -> default*)
+    | None -> default
   with e ->
     Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"
       Component.Fmt.model_identifier

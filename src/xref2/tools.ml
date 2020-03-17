@@ -544,9 +544,6 @@ and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
         | `Class (p, n) -> `Class (reresolve_parent env p, n)
         | `ClassType (p, n) -> `ClassType (reresolve_parent env p, n)
       in
-      if !verbose then
-        Format.fprintf Format.err_formatter "reresolve_type: before=%a after=%a\n%!" Component.Fmt.resolved_type_path path
-          Component.Fmt.resolved_type_path result;
       result
 and lookup_module_type : Env.t -> Cpath.Resolved.module_type -> Component.ModuleType.t =
   fun env path ->

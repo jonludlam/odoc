@@ -197,14 +197,9 @@ and resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
         | `T _ as c -> return (`Type (parent', name), c)
         | _ -> None )
  
-and entry_count = ref 0
-
 and find_module : Env.t -> LabelParent.t -> string -> add_canonical:bool -> module_lookup_result option =
   fun env parent name ~add_canonical ->
   let open Tools.OptionMonad in
-  incr entry_count;
-  let my_entry_count = !entry_count in
-  Format.fprintf Format.err_formatter "Entering find_module: entry_count=%d\n%!" my_entry_count;
   resolve_label_parent_reference env parent ~add_canonical
   >>= signature_lookup_result_of_label_parent
   >>= fun (parent', cp, sg) ->
@@ -212,12 +207,6 @@ and find_module : Env.t -> LabelParent.t -> string -> add_canonical:bool -> modu
   (try Some (Tools.handle_module_lookup env add_canonical name cp sg) with _ -> None)
   >>= fun (cp', m) ->
   let resolved_ref = resolved_module_reference_of_cpath parent' cp cp' in
-  Format.fprintf Format.err_formatter "find_module: parent'=%a cp=%a cp'=%a resolved_ref=%a\n%!"
-    Component.Fmt.model_resolved_reference (parent' :> Resolved.t)
-    Component.Fmt.resolved_parent_path cp 
-    Component.Fmt.resolved_module_path cp'
-    Component.Fmt.model_resolved_reference (resolved_ref :> Resolved.t);
-  Format.fprintf Format.err_formatter "Leaving find_module: entry_count was %d\n%!" my_entry_count;
   return (resolved_ref, cp', m)
 
 and find_module_type : Env.t -> LabelParent.t -> string -> add_canonical:bool -> module_type_lookup_result option =
