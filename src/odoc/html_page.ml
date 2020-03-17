@@ -50,6 +50,8 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       close_out oc
     );
     (* Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times *)
+  | Compilation_unit {hidden = true; _} ->
+    ()
   | Compilation_unit {hidden = _; _} ->
     (* If hidden, we should not generate HTML. See
          https://github.com/ocaml/odoc/issues/99. *)
