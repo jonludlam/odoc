@@ -165,7 +165,7 @@ val lookup_any_by_name : string -> t -> Component.Element.any option
 
 val lookup_signature_by_name : string -> t -> Component.Element.signature option
 
-val lookup_module_by_name : string -> t -> Component.Element.module_ option
+val lookup_module_by_name : string -> t -> root option
 
 val lookup_module_type_by_name :
   string -> t -> Component.Element.module_type option

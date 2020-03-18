@@ -229,24 +229,26 @@ and resolve_module_reference :
     | `Resolved _r ->
         failwith "What's going on!?"
 (*        Some (resolve_resolved_module_reference env r ~add_canonical)*)
-    | `Dot (parent, name) -> find_module env parent name ~add_canonical
+    | `Dot (parent, name) ->
+      let result = find_module env parent name ~add_canonical in
+      let opt ppf o =
+        match o with
+        | None -> Format.fprintf ppf "None"
+        | Some (x,_,_) -> Format.fprintf ppf "Some(%a)" Component.Fmt.model_resolved_reference (x :> Odoc_model.Paths.Reference.Resolved.t)
+      in
+      Format.fprintf Format.err_formatter "resolve_module_reference: before:\n%!%a\n%!after:\n%!%a\n%!"
+        Component.Fmt.model_reference (r :> Odoc_model.Paths.Reference.t) opt result;
+      result
     | `Module (parent, name) -> find_module env (parent :> LabelParent.t) (Odoc_model.Names.ModuleName.to_string name) ~add_canonical
     | `Root (name, _) -> (
         match Env.lookup_module_by_name name env with
-        | Some (`Module (id, m)) -> (
+        | Some (Resolved (id, m)) -> (
             (try Some (Tools.process_module env add_canonical m (`Identifier id)) with _ -> None)
             >>= fun (cp', m) ->
             let resolved_ref = gen_resolved_module_reference_of_cpath cp' in
+            Format.fprintf Format.err_formatter "resolve_module_reference 1: %s became %a\n%!" name Component.Fmt.model_resolved_reference (resolved_ref :> Odoc_model.Paths.Reference.Resolved.t);
             return (resolved_ref, cp', m))
-        | None -> (
-            let x = Env.lookup_root_module name env in
-            match x with
-            | Some (Env.Resolved (id, m)) -> (
-              (try Some (Tools.process_module env add_canonical m (`Identifier id)) with _ -> None)
-              >>= fun (cp', m) ->
-              let resolved_ref = gen_resolved_module_reference_of_cpath cp' in
-              return (resolved_ref, cp', m))
-            | _ -> None ) )
+        | _ -> None )
 
 and resolve_module_type_reference :
     Env.t ->

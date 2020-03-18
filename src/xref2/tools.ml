@@ -188,55 +188,20 @@ let flatten_module_alias : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
   (*  | `Alias (`Canonical (`Alias(z, _), c), x) -> `Canonical (`Alias (z, x), c)*)
   | x -> x
 
-let rec simplify_resolved_module_path :
+let simplify_resolved_module_path :
     Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun env cpath ->
-  match cpath with
-  | `Module (`Module parent, name) -> (
-      match simplify_resolved_module_path env parent with
-      | `Identifier (#Identifier.Module.t as id) as parent' -> (
-          (* Let's see if we can be an identifier too *)
-          let id' = `Module (id, name) in
-          try
-            ignore (Env.lookup_module id' env);
-            `Identifier id'
-          with _ -> `Module (`Module parent', name) )
-      | parent' -> `Module (`Module parent', name) )
-  | `Module _
-  | `Local _ | `Identifier _ | `Substituted _ | `SubstAlias _ | `Canonical _
-  | `Apply _ | `Subst _ | `Hidden _ | `Alias _ ->
-      cpath
-
-let unsimplify_resolved_module_path :
-    Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
- fun env cpath ->
-  let rec fix_module_ident id =
-    try
-      ignore (Env.lookup_module id env);
-      `Identifier id
-    with _ -> (
+  let path = Lang_of.(Path.resolved_module empty cpath) in
+  let id = Odoc_model.Paths.Path.Resolved.Module.identifier path in
+  let rec check_ident id =
+    try ignore (Env.lookup_module id env); `Identifier id
+    with _ ->
       match id with
-      | `Module ((#Identifier.Module.t as parent), id) ->
-          `Module (`Module (fix_module_ident parent), id)
-      | `Root _r -> failwith "Hit root during unsimplify"
-      | `Parameter _ -> failwith "Hit paremeter during unsimplify"
-      | `Result _ -> failwith "Hit result during unsimplify"
-      | `Module _ -> failwith "Hit unusual module parent during unsimplify" )
+      | `Module (#Odoc_model.Paths_types.Identifier.module_ as parent, name) ->
+        `Module (`Module (check_ident parent), name)
+      | _ -> failwith "Bad canonical path"
   in
-  let rec inner = function
-    | `Identifier id -> fix_module_ident id
-    | `Module (`Module parent, name) -> `Module (`Module (inner parent), name)
-    | `Module _ as x -> x
-    | `Hidden parent -> `Hidden (inner parent)
-    | `Local _ as x -> x (* This is an error though *)
-    | `Substituted x -> `Substituted (inner x)
-    | `SubstAlias _ as x -> x
-    | `Canonical _ as x -> x
-    | `Apply _ as x -> x
-    | `Subst _ as x -> x
-    | `Alias _ as x -> x
-  in
-  inner cpath
+  check_ident id
 
 let rec get_canonical_path :
     Cpath.Resolved.module_ -> Cpath.Resolved.module_ option =
@@ -341,16 +306,18 @@ and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -
   | `Canonical _ -> p
   | _ -> (
       match m.Component.Module.canonical with
-      | Some (cp, cr) -> (
+      | Some (cp, _cr) -> (
           if !is_compile then `Canonical (p, cp)
           else
             (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
-            match !resolve_module_ref env cr with
-            | Some (_, resolved_path, _) ->
-                  `Canonical ( p, `Resolved resolved_path )
-            | None ->
+            match lookup_and_resolve_module_from_path true false env cp with
+            | Resolved (`Alias (_, p2'), _) ->
+                  `Canonical ( p, `Resolved (simplify_resolved_module_path env p2'))
+            | Resolved (p2', _) ->
+                  `Canonical ( p, `Resolved (simplify_resolved_module_path env p2'))
+            | Unresolved p' ->
                 (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
-                `Canonical (p, cp)
+                `Canonical (p, p')
             | exception _e ->
                 Format.fprintf Format.err_formatter
                   "Tools.add_canonical_path: Warning: Failed to look up \
@@ -362,10 +329,9 @@ and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -
                 p )
       | None -> p )
 
-and add_hidden m p = if m.Component.Module.hidden then `Hidden p else p
-
 and process_module env add_canonical m p =
   let open Component.Module in
+  let p = if m.Component.Module.hidden then `Hidden p else p in
   let p' =
   match m.type_ with
   | Alias alias_path -> begin
@@ -497,7 +463,11 @@ fun env path ->
   | `Alias (p1, p2) -> `Alias (reresolve_module env p1, reresolve_module env p2)
   | `Subst (p1, p2) -> `Subst (reresolve_module_type env p1, reresolve_module env p2)
   | `SubstAlias (p1, p2) -> `SubstAlias (reresolve_module env p1, reresolve_module env p2)
-  | `Hidden p -> `Hidden (reresolve_module env p)
+  | `Hidden p ->
+    let p' = reresolve_module env p in
+    if Cpath.is_resolved_module_hidden p'
+    then `Hidden p'
+    else p'
   | `Canonical (p, `Resolved p2) -> `Canonical (reresolve_module env p, `Resolved (reresolve_module env p2))
   | `Canonical (p, p2) -> begin
     match lookup_and_resolve_module_from_path true false env p2 with
@@ -599,7 +569,8 @@ and verify_lookups env lookups =
         let actually_found = Env.lookup_module_by_name name env in
         match result, actually_found with
         | None, None -> false
-        | Some id, Some (`Module (id', _)) -> id <> id'
+        | Some id, Some (Resolved (id', _)) -> id <> id'
+        | None, Some Forward -> false
         | _ -> true
     end
     | Env.FragmentRoot i -> begin
@@ -654,8 +625,7 @@ and lookup_and_resolve_module_from_path :
     )
     | `Resolved (`Identifier i as resolved_path) ->
         let m = Env.lookup_module i env in
-        let p = if add_canonical then add_canonical_path env m resolved_path else resolved_path in
-        return (p, m)
+        return (process_module env add_canonical m resolved_path)
     | `Resolved r ->
         return (r, lookup_module env r)
     | `Substituted s ->
@@ -663,8 +633,8 @@ and lookup_and_resolve_module_from_path :
         |> map_unresolved (fun p -> `Substituted p)
         >>= fun (p, m) -> return (`Substituted p, m)
     | `Root r -> (
-        match Env.lookup_root_module r env with
-        | Some (Env.Resolved (p, m)) -> return (add_hidden m (`Identifier p), m)
+        match Env.lookup_module_by_name r env with
+        | Some (Env.Resolved (p, m)) -> return (process_module env add_canonical m (`Identifier p))
         | Some Env.Forward -> Unresolved (`Forward r)
         | None -> Unresolved p )
     | `Forward f ->

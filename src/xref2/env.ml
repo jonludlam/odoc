@@ -509,14 +509,20 @@ let lookup_module_by_name_internal name env =
     | n, (#Component.Element.module_ as item) when n = name -> Some item
     | _ -> None
   in
-  find_map filter_fn env.elts
+  match find_map filter_fn env.elts with
+  | None ->
+     (match lookup_root_module name env with
+      | Some (Resolved (id, m)) -> Some (Resolved (id, m))
+      | Some Forward -> Some Forward
+      | _ -> None)
+  | Some (`Module (id,m)) -> Some (Resolved (id,m))
 
 let lookup_module_by_name name env =
   let maybe_record_result res =
     match res, env.recorder with
-    | Some (`Module (id, _)), Some r ->
+    | Some (Resolved (id, _)), Some r ->
       r.lookups <- (ModuleByName (name, Some id)) :: r.lookups
-    | None, Some r -> 
+    | (None | Some Forward), Some r -> 
       r.lookups <- (ModuleByName (name, None)) :: r.lookups
     | _ -> ()
   in

@@ -65,20 +65,25 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
     (* Format.fprintf Format.err_formatter "Not reresolving\n%!"; *)
     p)
   else (
-    (* Format.fprintf Format.err_formatter "Reresolving...\n%!"; *)
     let cp = Component.Of_Lang.(type_path empty p) in
+    Format.fprintf Format.err_formatter "Reresolving %a\n%!" Component.Fmt.type_path cp;
     match cp with
-    | `Resolved p -> `Resolved (Tools.reresolve_type env p |> Cpath.resolved_type_path_of_cpath)
+    | `Resolved p ->
+      let result = Tools.reresolve_type env p in
+      Format.fprintf Format.err_formatter "result 1: %a\n%!" Component.Fmt.resolved_type_path result;
+      `Resolved (result |> Cpath.resolved_type_path_of_cpath)
     | _ ->
-    match Tools.lookup_type_from_path env cp with
-    | Resolved (p', _) -> `Resolved (Cpath.resolved_type_path_of_cpath p')
-    | Unresolved p -> Cpath.type_path_of_cpath p
-    | exception e ->
-        Format.fprintf Format.err_formatter
-          "Failed to lookup type path (%s): %a\n%!" (Printexc.to_string e)
-          Component.Fmt.model_path
-          (p :> Paths.Path.t);
-        p)
+      match Tools.lookup_type_from_path env cp with
+      | Resolved (p', _) ->
+        Format.fprintf Format.err_formatter "result 2: %a\n%!" Component.Fmt.resolved_type_path p';
+        `Resolved (Cpath.resolved_type_path_of_cpath p')
+      | Unresolved p -> Cpath.type_path_of_cpath p
+      | exception e ->
+          Format.fprintf Format.err_formatter
+            "Failed to lookup type path (%s): %a\n%!" (Printexc.to_string e)
+            Component.Fmt.model_path
+            (p :> Paths.Path.t);
+          p)
 
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
@@ -743,7 +748,7 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
       Opt.map (type_decl_representation env) t.representation
     in
     let default = { t with equation; doc; representation } in
-    match hidden_path with
+    let result = match hidden_path with
     | Some (p, params) -> (
         let p' =
           Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p
@@ -766,7 +771,10 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
                 (t.id :> Paths.Identifier.t);
               raise e )
         | _ -> default )
-    | None -> default
+    | None -> default in
+    Format.fprintf Format.err_formatter "type_decl result: %a\n%!"
+          Component.Fmt.type_decl (Component.Of_Lang.(type_decl empty result));
+    result
   with e ->
     Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"
       Component.Fmt.model_identifier

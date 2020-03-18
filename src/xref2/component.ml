@@ -645,7 +645,7 @@ module Fmt = struct
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" resolved_module_path p1 module_path p2
     | `Identifier p ->
-        Format.fprintf ppf "global(%a)" model_identifier
+        Format.fprintf ppf "identifier(%a)" model_identifier
           (p :> Odoc_model.Paths.Identifier.t)
     | `Substituted p ->
         Format.fprintf ppf "substituted(%a)" resolved_module_path p
@@ -991,7 +991,7 @@ module Fmt = struct
     | `InstanceVariable (parent, str) ->
         Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
     | `SubstAlias (x, y) -> Format.fprintf ppf "substalias(%a,%a)" model_resolved_path (x :> Odoc_model.Paths.Path.Resolved.t) model_resolved_reference (y :> Odoc_model.Paths.Reference.Resolved.t);
-    | `Canonical (_, _) -> Format.fprintf ppf "canonical"
+    | `Canonical (x, y) -> Format.fprintf ppf "canonical(%a,%a)" model_resolved_reference (x :> t) model_reference (y :> Odoc_model.Paths.Reference.t)
     | `Label (parent, str) ->
         Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
 
