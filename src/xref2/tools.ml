@@ -13,12 +13,6 @@ let time_wasted_start = ref 0.0
 
 let time_wasted = ref 0.0
 
-let resolve_module_ref :
-    (Env.t ->
-    Reference.Module.t ->
-    (Reference.Resolved.Module.t * Cpath.Resolved.module_ * Component.Module.t) option)
-    ref =
-  ref (fun _env _r -> failwith "unset")
 
 type ('a, 'b) either = Left of 'a | Right of 'b
 

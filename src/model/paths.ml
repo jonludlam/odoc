@@ -16,23 +16,6 @@
 
 open Names
 
-module Reversed = struct
-  type elt =
-    | Root of UnitName.t
-    | Module of ModuleName.t
-    | ModuleType of ModuleTypeName.t
-    | Parameter of ParameterName.t
-    | Result
-
-  type t = elt list
-
-  let rec remove_prefix prefix ~of_ =
-    match prefix, of_ with
-    | x1 :: xs1, x2 :: xs2 when x1 = x2 ->
-      remove_prefix xs1 ~of_:xs2
-    | _, _ -> of_
-end
-
 module Identifier = struct
 
   type t = Paths_types.Identifier.any
@@ -437,91 +420,7 @@ module Identifier = struct
     type t = Paths_types.Identifier.path_any
   end
 
-  let to_reversed i =
-    let rec loop acc : Signature.t -> Reversed.t = function
-      | `Root (_, s) -> Reversed.Root s :: acc
-      | `Module (i, s) -> loop (Reversed.Module s :: acc) i
-      | `ModuleType (i, s) -> loop (Reversed.ModuleType s :: acc) i
-      | `Parameter (i, s) -> loop (Reversed.Parameter s :: acc) i
-      | `Result i -> loop (Reversed.Result :: acc) i
-    in
-    loop [] i
 
-  let signature_of_module m = (m : Module.t :> Signature.t)
-
-  (* It would be much nicer not to have to have these functions *)
-
-  let page_of_t : t -> Page.t = function
-    | #Page.t as result -> result
-    | _ -> assert false
-
-  let signature_of_t : t -> Signature.t = function
-      | #Signature.t as result -> result
-      | _ -> assert false
-
-  let class_signature_of_t : t -> ClassSignature.t = function
-      | #ClassSignature.t as result -> result
-      | _ -> assert false
-
-  let datatype_of_t : t -> DataType.t = function
-      | #DataType.t as result -> result
-      | _ -> assert false
-
-  let module_of_t : t -> Module.t = function
-      | #Module.t as result -> result
-      | _ -> assert false
-
-  let module_type_of_t : t -> ModuleType.t = function
-      | #ModuleType.t as result -> result
-      | _ -> assert false
-
-  let type_of_t : t -> Type.t = function
-      | #Type.t as result -> result
-      | _ -> assert false
-
-  let constructor_of_t : t -> Constructor.t = function
-      | #Constructor.t as result -> result
-      | _ -> assert false
-
-  let field_of_t : t -> Field.t = function
-      | #Field.t as result -> result
-      | _ -> assert false
-
-  let extension_of_t : t -> Extension.t = function
-      | #Extension.t as result -> result
-      | _ -> assert false
-
-  let exception_of_t : t -> Exception.t = function
-      | #Exception.t as result -> result
-      | _ -> assert false
-
-  let value_of_t : t -> Value.t = function
-      | #Value.t as result -> result
-      | _ -> assert false
-
-  let class_of_t : t -> Class.t = function
-      | #Class.t as result -> result
-      | _ -> assert false
-
-  let class_type_of_t : t -> ClassType.t = function
-      | #ClassType.t as result -> result
-      | _ -> assert false
-
-  let method_of_t : t -> Method.t = function
-      | #Method.t as result -> result
-      | _ -> assert false
-
-  let instance_variable_of_t : t -> InstanceVariable.t = function
-      | #InstanceVariable.t as result -> result
-      | _ -> assert false
-
-  let label_of_t : t -> Label.t = function
-      | #Label.t as result -> result
-      | _ -> assert false
-
-  let parent_of_t : t -> Parent.t = function
-      | #Parent.t as result -> result
-      | _ -> assert false
 
 end
 
@@ -677,52 +576,6 @@ module Path = struct
 
     let hash p = hash_resolved_path p
 
-    type rebase_result =
-      | Stop of Paths_types.Resolved_path.module_
-      | Continue of Paths_types.Identifier.path_module * Reversed.t
-
-    let rec rebase_module_path : Reversed.t -> Paths_types.Resolved_path.module_ -> rebase_result =
-      fun new_base t ->
-      match t with
-      | `Identifier id ->
-        let rev = Identifier.(to_reversed @@ signature_of_module id) in
-        let new_base' = Reversed.remove_prefix rev ~of_:new_base in
-        if new_base == new_base' then
-          Stop t
-        else
-          Continue (id, new_base')
-      | `Subst (_, p)
-      | `SubstAlias (_, p)
-      | `Hidden p -> begin
-          match rebase_module_path new_base p with
-          | Stop p' when p == p' -> Stop t
-          | otherwise -> otherwise
-        end
-      | `Module (m, s) ->
-        begin match rebase_module_path new_base m with
-          | Stop m' -> if m == m' then Stop t else Stop (`Module (m', s))
-          | Continue (id, new_base) ->
-            let id = `Module (Identifier.signature_of_module id, s) in
-            match new_base with
-            | Reversed.Module s' :: rest when s = s' ->
-              Continue (id, rest)
-            | _ ->
-              Stop (`Identifier id)
-        end
-      | `Canonical (_, `Resolved p) ->
-        (* We only care about printing at this point, so let's drop the lhs. *)
-        rebase_module_path new_base p
-      | `Canonical (rp, p) ->
-        begin match rebase_module_path new_base rp with
-          | Stop rp' -> Stop (`Canonical (rp', p))
-          | _ ->
-            (* We might come back at some point with a resolved rhs? So we don't want to
-               drop it. *)
-            Stop t
-        end
-      | `Apply _ -> Stop t
-      | `Alias _ -> failwith "Alias"
-    (* TODO: rewrite which side? *)
 
     let rec equal_identifier :
       Identifier.t -> t -> bool =
@@ -779,50 +632,6 @@ module Path = struct
         | `Apply(_,_) -> None
         | `Alias(_,_) -> None
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Subst _ -> t (* TODO: rewrite which side? *)
-        | `SubstAlias _ -> t (* TODO: rewrite which side? *)
-        | `Hidden p  -> begin
-            match rebase_module_path new_base p with
-            | Stop p' ->
-              if p == p' then t else p'
-            | Continue (id, _) -> `Identifier id
-          end
-        | `Module (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`Module (Identifier.signature_of_module id, s))
-            | Stop mp' -> `Module (mp', s)
-          end
-        | `Canonical (p, `Resolved rp) ->
-          begin match rebase_module_path new_base rp with
-            | Continue (id, _) -> `Identifier id
-            | Stop rp ->
-              (* Easier to reexport a canonical than get the type for rp right... *)
-              `Canonical (p, `Resolved rp)
-          end
-        | `Canonical (rp, p) ->
-          begin match rebase_module_path new_base rp with
-            | Stop rp' -> `Canonical (rp', p)
-            | _ ->
-              (* We might come back at some point with a resolved rhs? So we don't want to
-                 drop it. *)
-              t
-          end
-        | `Apply (mp, arg) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) -> `Apply (`Identifier id, arg)
-            | Stop mp' -> `Apply (mp', arg)
-          end
-        | `Alias _ -> failwith "Alias"
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
-
       let equal_identifier :
         Identifier.Path.Module.t -> t -> bool =
         fun id t ->
@@ -853,20 +662,6 @@ module Path = struct
             match Module.canonical_ident p with | Some x -> Some (`ModuleType((x :>Identifier.Signature.t), n)) | None -> None
         end 
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `ModuleType (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`ModuleType (Identifier.signature_of_module id, s))
-            | Stop mp' -> `ModuleType (mp', s)
-          end
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
 
       let equal_identifier :
         Identifier.Path.ModuleType.t -> t -> bool =
@@ -894,33 +689,6 @@ module Path = struct
         | `Class(m, n) -> `Class(parent_module_identifier m, n)
         | `ClassType(m, n) -> `ClassType(parent_module_identifier m, n)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Type (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`Type (Identifier.signature_of_module id, s))
-            | Stop mp' -> `Type (mp', s)
-          end
-        | `Class (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`Class (Identifier.signature_of_module id, s))
-            | Stop mp' -> `Class (mp', s)
-          end
-        | `ClassType (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`ClassType (Identifier.signature_of_module id, s))
-            | Stop mp' -> `ClassType (mp', s)
-          end
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
-
       let equal_identifier :
         Identifier.Path.Type.t -> t -> bool =
         fun id t ->
@@ -946,27 +714,6 @@ module Path = struct
         | `Identifier id -> id
         | `Class(m, n) -> `Class(parent_module_identifier m, n)
         | `ClassType(m, n) -> `ClassType(parent_module_identifier m, n)
-
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Class (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`Class (Identifier.signature_of_module id, s))
-            | Stop mp' -> `Class (mp', s)
-          end
-        | `ClassType (mp, s) ->
-          begin match rebase_module_path new_base mp with
-            | Continue (id, _) ->
-              `Identifier (`ClassType (Identifier.signature_of_module id, s))
-            | Stop mp' -> `ClassType (mp', s)
-          end
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
 
       let equal_identifier :
         Identifier.Path.ClassType.t -> t -> bool =
@@ -1508,7 +1255,9 @@ module Reference = struct
         Hashtbl.hash (54, hash_resolved (p : class_signature :> any), s)
       | `Label(p, s) ->
         Hashtbl.hash (55, hash_resolved (p : label_parent :> any), s)
-
+      | `Hidden p ->
+        Hashtbl.hash (1002, hash_resolved (p :> any))
+  
   and hash_reference : Paths_types.Reference.any -> int =
     fun p ->
       let open Paths_types.Reference in
@@ -1613,9 +1362,10 @@ module Reference = struct
   module Resolved = struct
     open Paths_types.Resolved_reference
 
-    let rec parent_signature_identifier : Paths_types.Resolved_reference.signature -> Identifier.Signature.t =
+    let rec parent_signature_identifier : signature -> Identifier.Signature.t =
       function
       | `Identifier id -> id
+      | `Hidden s -> parent_signature_identifier (s :> signature)
       | `SubstAlias(sub, _) -> Path.Resolved.parent_module_identifier sub
       | `Module(m, n) -> `Module(parent_signature_identifier m, n)
       | `Canonical(_, `Resolved r) ->
@@ -1638,6 +1388,7 @@ module Reference = struct
     let rec parent_identifier : parent -> Identifier.Parent.t =
       function
       | `Identifier id -> id
+      | `Hidden m -> parent_identifier (m :> parent)
       | `SubstAlias(sub, _) ->
         let id = Path.Resolved.parent_module_identifier sub in
         (id : Identifier.Signature.t :> Identifier.Parent.t)
@@ -1653,6 +1404,7 @@ module Reference = struct
     let rec label_parent_identifier : label_parent -> Identifier.LabelParent.t =
       function
       | `Identifier id -> id
+      | `Hidden s -> label_parent_identifier (s :> label_parent)
       | `SubstAlias(sub, _) ->
         let id = Path.Resolved.parent_module_identifier sub in
         (id : Identifier.Signature.t :> Identifier.LabelParent.t)
@@ -1666,177 +1418,6 @@ module Reference = struct
       | `ClassType(sg, s) -> `ClassType(parent_signature_identifier sg, s)
 
 
-    type mod_rebase_result =
-      | MStop of Paths_types.Resolved_reference.module_
-      | MContinue of Identifier.Module.t * Reversed.t
-
-    type sig_rebase_result =
-      | SStop of Paths_types.Resolved_reference.signature
-      | SContinue of Identifier.Signature.t * Reversed.t
-
-    let rec rebase_module_reference :
-      Reversed.t -> Paths_types.Resolved_reference.module_ -> mod_rebase_result =
-      fun new_base t ->
-      match t with
-      | `Identifier id ->
-        let rev = Identifier.(to_reversed @@ signature_of_module id) in
-        let new_base = Reversed.remove_prefix rev ~of_:new_base in
-        MContinue (id, new_base)
-      | `SubstAlias _ -> MStop t (* FIXME? *)
-      | `Module (m, s) ->
-        begin match rebase_signature_reference new_base m with
-          | SStop m' -> if m == m' then MStop t else MStop (`Module (m', s))
-          | SContinue (id, new_base) ->
-            let id = `Module(id, s) in
-            match new_base with
-            | Reversed.Module s' :: rest when s = s' ->
-              MContinue (id, rest)
-            | _ ->
-              MStop (`Identifier id)
-        end
-      | `Canonical (_, `Resolved p) ->
-        (* We only care about printing at this point, so let's drop the lhs. *)
-        rebase_module_reference new_base p
-      | `Canonical (rp, p) ->
-        begin match rebase_module_reference new_base (rp) with
-          | MStop rp' -> MStop (`Canonical (rp', p))
-          | _ ->
-            (* We might come back at some point with a resolved rhs? So we don't want to
-               drop it. *)
-            MStop t
-        end
-
-    and rebase_signature_reference :
-      Reversed.t -> Paths_types.Resolved_reference.signature -> sig_rebase_result =
-      fun new_base t ->
-      match t with
-      | `Identifier id ->
-        let rev = Identifier.(to_reversed id) in
-        let new_base = Reversed.remove_prefix rev ~of_:new_base in
-        SContinue (id, new_base)
-      | `ModuleType (m, s) ->
-        begin match rebase_signature_reference new_base m with
-          | SStop m' -> if m == m' then SStop t else SStop (`ModuleType(m', s))
-          | SContinue (id, new_base) ->
-            let id = `ModuleType(id, s) in
-            match new_base with
-            | Reversed.ModuleType s' :: rest when s = s' ->
-              SContinue (id, rest)
-            | _ ->
-              SStop (`Identifier id)
-        end
-      | `Module _ | `Canonical _ as x ->
-        begin match rebase_module_reference new_base x with
-          | MStop rp -> SStop (rp : module_ :> signature)
-          | MContinue (id, rev) ->
-            SContinue (Identifier.signature_of_module id, rev)
-        end
-      | `SubstAlias _ -> SStop t (* FIXME? *)
-
-    let rebase_single_module = fun
-      new_base t ->
-      match t with
-      | `Module (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-          | SContinue (id, _) ->
-            `Identifier (`Module(id, s))
-          | SStop mp' -> `Module (mp', s)
-        end
-
-    type module_id = [  
-      | `Identifier of Identifier.Module.t
-    ]
-
-    let rebase_single_canonical : Reversed.t -> s_canonical -> [ s_canonical | module_id ] = fun
-      new_base t ->
-      match t with
-      | `Canonical (p, `Resolved rp) ->
-        begin match rebase_module_reference new_base rp with
-          | MContinue (id, _) -> `Identifier id
-          | MStop rp ->
-            (* Easier to reexport a canonical than get the type for rp right... *)
-            `Canonical (p, `Resolved rp)
-        end
-      | `Canonical (rp, p) ->
-        begin match rebase_module_reference new_base rp with
-          | MStop rp' -> `Canonical (rp', p)
-          | _ ->
-            (* We might come back at some point with a resolved rhs? So we don't want to
-               drop it. *)
-            (t :> [s_canonical | module_id ])
-        end
-
-    let rebase_single_module_type : Reversed.t -> s_module_type -> module_type = fun
-      new_base t ->
-      match t with
-      | `ModuleType (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-          | SContinue (id, _) ->
-            `Identifier (`ModuleType (id, s))
-          | SStop mp' -> `ModuleType (mp', s)
-        end
-
-    let rebase_single_module : Reversed.t -> s_module -> [ s_module | `Identifier of Identifier.Module.t ] = fun
-      new_base t ->
-      match t with
-      | `Module (x,y) -> (rebase_single_module new_base (`Module (x,y)))
-
-    let rebase_single_class : Reversed.t -> s_class -> class_ = fun
-      new_base t ->
-      match t with
-      | `Class (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-          | SContinue (id, _) -> `Identifier (`Class (id, s))
-          | SStop mp' -> `Class (mp', s)
-        end
-
-    let rebase_single_value : Reversed.t -> s_value -> [s_value | `Identifier of Identifier.Value.t] = fun
-      new_base t ->
-      match t with
-      | `Value (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-          | SContinue (id, _) -> `Identifier (`Value (id, s))
-          | SStop mp' -> `Value (mp', s)
-        end
-
-    let rebase_single_class_type : Reversed.t -> s_class_type -> class_type = fun
-      new_base t ->
-      match t with
-      | `ClassType (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-          | SContinue (id, _) -> `Identifier (`ClassType (id, s))
-          | SStop mp' -> `ClassType (mp', s)
-        end
-
-    let rebase_single_type : Reversed.t -> s_type -> [s_type | `Identifier of Paths_types.Identifier.type_] = fun
-      new_base t ->
-      match t with
-      | `Type (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-          | SContinue (id, _) -> `Identifier (`Type (id, s))
-          | SStop mp' -> `Type (mp', s)
-        end
-
-    let rebase_single_extension : Reversed.t -> s_extension -> [s_extension | `Identifier of Paths_types.Identifier.reference_extension] = fun
-      new_base t ->
-      match t with 
-      | `Extension (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-        | SContinue (id, _) ->
-          `Identifier (`Extension (id, s))
-        | SStop mp' -> `Extension (mp', s)
-        end
-
-    let rebase_single_exception : Reversed.t -> s_exception -> exception_ = fun
-      new_base t ->
-      match t with
-      | `Exception (mp, s) ->
-        begin match rebase_signature_reference new_base mp with
-        | SContinue (id, _) ->
-          `Identifier (`Exception (id, s))
-        | SStop mp' -> `Exception (mp', s)
-        end
-
 
     module Signature =
     struct
@@ -1849,24 +1430,13 @@ module Reference = struct
 
       let rec identifier : t -> Identifier.Signature.t = function
         | `Identifier id -> id
+        | `Hidden s -> identifier (s :> t)
         | `SubstAlias(_, p) -> identifier (p : module_ :> signature)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> signature)
         | `Canonical(p, _) -> identifier (p : module_ :> signature)
         | `ModuleType(s, n) -> `ModuleType(parent_signature_identifier s, n)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `SubstAlias _ -> t (* TODO: rewrite necessary? *)
-        | `Canonical (x, y) -> (rebase_single_canonical new_base (`Canonical (x,y)) :> t)
-        | `Module (x,y) -> (rebase_single_module new_base (`Module (x,y)) :> t)
-        | `ModuleType (x,y) -> (rebase_single_module_type new_base (`ModuleType (x,y)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module ClassSignature =
@@ -1883,17 +1453,6 @@ module Reference = struct
         | `Class(s, n) -> `Class(parent_signature_identifier s, n)
         | `ClassType(s, n) -> `ClassType(parent_signature_identifier s, n)
 
-      let rebase' : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Class (mp, s) -> (rebase_single_class new_base (`Class (mp, s)) :> t)
-        | `ClassType (x, y) -> (rebase_single_class_type new_base (`ClassType (x, y)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase' rev t
-
     end
 
 
@@ -1909,23 +1468,8 @@ module Reference = struct
       let identifier : t -> Identifier.DataType.t = function 
         | `Identifier id -> id
         | `Type(s, n) -> `Type(parent_signature_identifier s, n)
-
-      let rebase' : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Type (s, n) -> (rebase_single_type new_base (`Type (s, n)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase' rev t
     end
 
-    let rebase_single_constructor : Reversed.t -> s_constructor -> s_constructor = fun
-      new_base t ->
-      match t with
-      | `Constructor (parent, s) ->
-          `Constructor(DataType.rebase' new_base parent, s)
 
     module Parent =
     struct
@@ -1938,6 +1482,7 @@ module Reference = struct
 
       let rec identifier : t -> Identifier.Parent.t = function
         | `Identifier id -> id
+        | `Hidden p -> identifier (p :> t)
         | `SubstAlias(_, p) -> identifier (p : module_ :> t)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> t)
@@ -1947,28 +1492,8 @@ module Reference = struct
         | `ClassType(s, n) -> `ClassType(parent_signature_identifier s, n)
         | `Type(s, n) -> `Type(parent_signature_identifier s, n)
 
-      let rebase' : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `SubstAlias _ -> t (* TODO: rewrite necessary? *)
-        | `Canonical (x, y) -> (rebase_single_canonical new_base (`Canonical (x,y)) :> t)
-        | `Module (x,y) -> (rebase_single_module new_base (`Module (x,y)) :> t)
-        | `ModuleType (x,y) -> (rebase_single_module_type new_base (`ModuleType (x,y)) :> t)
-        | `Type (mp, s) -> (rebase_single_type new_base (`Type (mp, s)) :> t)
-        | `Class (mp, s) -> (rebase_single_class new_base (`Class (mp, s)) :> t)
-        | `ClassType (x, y) -> (rebase_single_class_type new_base (`ClassType (x, y)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase' rev t
     end
 
-    let rebase_single_field : Reversed.t -> s_field -> s_field = fun
-      new_base t ->
-      match t with
-      | `Field (parent, s) ->
-          `Field(Parent.rebase' new_base parent, s)
 
     module LabelParent =
     struct
@@ -1981,6 +1506,7 @@ module Reference = struct
 
       let rec identifier : t -> Identifier.LabelParent.t = function
         | `Identifier id -> id
+        | `Hidden p -> identifier (p :> t)
         | `SubstAlias(_, p) -> identifier (p : module_ :> t)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> t)
@@ -1990,21 +1516,6 @@ module Reference = struct
         | `ClassType(s, n) -> `ClassType(parent_signature_identifier s, n)
         | `Type(s, n) -> `Type(parent_signature_identifier s, n)
 
-      let rebase' : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `SubstAlias _ -> t (* TODO: rewrite necessary? *)
-        | `Canonical (x, y) -> (rebase_single_canonical new_base (`Canonical (x,y)) :> t)
-        | `Module (x,y) -> (rebase_single_module new_base (`Module (x,y)) :> t)
-        | `ModuleType (x,y) -> (rebase_single_module_type new_base (`ModuleType (x,y)) :> t)
-        | `Type (mp, s) -> (rebase_single_type new_base (`Type (mp, s)) :> t)
-        | `Class (mp, s) -> (rebase_single_class new_base (`Class (mp, s)) :> t)
-        | `ClassType (x, y) -> (rebase_single_class_type new_base (`ClassType (x, y)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase' rev t
     end
 
     module Module =
@@ -2018,22 +1529,12 @@ module Reference = struct
 
       let rec identifier : t -> Identifier.Module.t = function
         | `Identifier id -> id
+        | `Hidden p -> identifier (p :> t)
         | `SubstAlias(_, p) -> identifier (p : module_ :> t)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> t)
         | `Canonical(p, _) -> identifier (p : module_ :> t)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `SubstAlias _ -> t (* TODO: rewrite necessary? *)
-        | `Canonical (x, y) -> (rebase_single_canonical new_base (`Canonical (x,y)) :> t)
-        | `Module (x,y) -> (rebase_single_module new_base (`Module (x,y)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
   module ModuleType =
@@ -2049,15 +1550,6 @@ module Reference = struct
         | `Identifier id -> id
         | `ModuleType(s, n) -> `ModuleType(parent_signature_identifier s, n)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `ModuleType (x,y) -> (rebase_single_module_type new_base (`ModuleType (x,y)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Type =
@@ -2075,17 +1567,6 @@ module Reference = struct
         | `Class(s,n) -> `Class(parent_signature_identifier s, n)
         | `ClassType(s,n) -> `ClassType(parent_signature_identifier s, n)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Type (mp, s) -> (rebase_single_type new_base (`Type (mp, s)) :> t)
-        | `Class (s, n) -> (rebase_single_class new_base (`Class (s, n)) :> t)
-        | `ClassType (s, n) -> (rebase_single_class_type new_base (`ClassType (s, n)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Constructor =
@@ -2102,18 +1583,6 @@ module Reference = struct
         | `Constructor(s, n) -> `Constructor(parent_type_identifier s, n)
         | `Extension(s, n) -> `Extension(parent_signature_identifier s, n)
         | `Exception(s, n) -> `Exception(parent_signature_identifier s, n)
-
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-        match t with
-        | `Identifier _ -> t
-        | `Constructor (p,q) -> (rebase_single_constructor new_base (`Constructor (p,q)) :> t)
-        | `Extension (p,q) -> (rebase_single_extension new_base (`Extension (p,q)) :> t)
-        | `Exception (p,q) -> (rebase_single_exception new_base (`Exception (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Field =
@@ -2129,15 +1598,6 @@ module Reference = struct
         | `Identifier id -> id
         | `Field(p, n) -> `Field(parent_identifier p, n)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Field (p,q) -> (rebase_single_field new_base (`Field (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Extension =
@@ -2154,16 +1614,6 @@ module Reference = struct
         | `Extension(p,q) -> `Extension(parent_signature_identifier p, q)
         | `Exception(p,q) -> `Exception(parent_signature_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Extension(p,q) -> (rebase_single_extension new_base (`Extension (p,q)) :> t)
-          | `Exception(p,q) -> (rebase_single_exception new_base (`Exception (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Exception =
@@ -2178,16 +1628,6 @@ module Reference = struct
       let identifier : t -> Paths_types.Identifier.reference_exception  = function
         | `Identifier id -> id
         | `Exception(p,q) -> `Exception(parent_signature_identifier p, q)
-
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Exception(p,q) -> (rebase_single_exception new_base (`Exception (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Value =
@@ -2203,15 +1643,6 @@ module Reference = struct
         | `Identifier id -> id
         | `Value(p,q) -> `Value(parent_signature_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Value(p,q) -> (rebase_single_value new_base (`Value (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Class =
@@ -2227,15 +1658,6 @@ module Reference = struct
         | `Identifier id -> id
         | `Class(p,q) -> `Class(parent_signature_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Class(p,q) -> (rebase_single_class new_base (`Class (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module ClassType =
@@ -2252,29 +1674,8 @@ module Reference = struct
         | `Class(p,q) -> `Class(parent_signature_identifier p, q)
         | `ClassType(p,q) -> `ClassType(parent_signature_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Class(p,q) -> (rebase_single_class new_base (`Class (p,q)) :> t)
-          | `ClassType(p,q) -> (rebase_single_class_type new_base (`ClassType(p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
-    let rebase_single_method : Reversed.t -> s_method -> s_method = fun
-      new_base t ->
-      match t with
-      | `Method (parent, s) ->
-          `Method(ClassSignature.rebase' new_base parent, s)
-
-    let rebase_single_instance_variable : Reversed.t -> s_instance_variable -> s_instance_variable = fun
-      new_base t ->
-      match t with
-      | `InstanceVariable (parent, s) ->
-          `InstanceVariable(ClassSignature.rebase' new_base parent, s)
 
     module Method =
     struct
@@ -2289,15 +1690,6 @@ module Reference = struct
         | `Identifier id -> id
         | `Method(p,q) -> `Method(parent_class_signature_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Method(p,q) -> (rebase_single_method new_base (`Method (p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module InstanceVariable =
@@ -2313,22 +1705,7 @@ module Reference = struct
         | `Identifier id -> id
         | `InstanceVariable(p,q) -> `InstanceVariable(parent_class_signature_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `InstanceVariable(p,q) -> (rebase_single_instance_variable new_base (`InstanceVariable(p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
-
-    let rebase_single_label : Reversed.t -> s_label -> s_label = fun
-      new_base t ->
-      match t with
-      | `Label (parent, s) ->
-          `Label(LabelParent.rebase' new_base parent, s)
 
     module Label =
     struct
@@ -2343,15 +1720,6 @@ module Reference = struct
         | `Identifier id -> id
         | `Label(p,q) -> `Label(label_parent_identifier p, q)
 
-      let rebase : Reversed.t -> t -> t =
-        fun new_base t ->
-          match t with
-          | `Identifier _ -> t
-          | `Label(p,q) -> (rebase_single_label new_base (`Label(p,q)) :> t)
-
-      let rebase id t =
-        let rev = Identifier.to_reversed id in
-        rebase rev t
     end
 
     module Page =
@@ -2366,7 +1734,6 @@ module Reference = struct
       let identifier : t -> Paths_types.Identifier.reference_page  = function
         | `Identifier id -> id
 
-      let rebase _id t = t
     end
 
     type t = Paths_types.Resolved_reference.any
@@ -2376,6 +1743,7 @@ module Reference = struct
       | `SubstAlias(p, _) -> Path.Resolved.identifier (p :> Path.Resolved.t)
       | `Module(s, n) -> `Module(parent_signature_identifier s, n)
       | `Canonical(_, `Resolved p) -> identifier (p :> t)
+      | `Hidden p -> identifier (p :> t)
       | `Canonical(p, _) -> identifier (p :> t)
       | `ModuleType(s, n) -> `ModuleType(parent_signature_identifier s, n)
       | `Field(p, n) -> `Field(parent_identifier p, n)
@@ -2390,98 +1758,6 @@ module Reference = struct
       | `InstanceVariable(p,q) -> `InstanceVariable(parent_class_signature_identifier p, q)
       | `Label(p,q) -> `Label(label_parent_identifier p, q)
 
-    let module_of_t : t -> Module.t = function
-      | `Identifier (#Identifier.Module.t)
-      | #Paths_types.Resolved_reference.module_no_id as x -> x
-      | _ -> assert false
-
-    let module_type_of_t : t -> ModuleType.t = function
-      | `Identifier (#Identifier.ModuleType.t)
-      | #Paths_types.Resolved_reference.s_module_type as x -> x
-      | _ -> assert false
-
-    let signature_of_t : t -> Signature.t = function
-      | `Identifier (#Identifier.Signature.t)
-      | #Paths_types.Resolved_reference.signature_no_id as x -> x
-      | _ -> assert false
-
-    let class_signature_of_t : t -> ClassSignature.t = function
-      | `Identifier (#Identifier.ClassSignature.t)
-      | #Paths_types.Resolved_reference.class_signature_no_id as x -> x
-      | _ -> assert false
-
-    let parent_of_t : t -> Parent.t = function
-      | `Identifier (#Identifier.Parent.t)
-      | #Paths_types.Resolved_reference.parent_no_id as x -> x
-      | _ -> assert false
-
-    let label_parent_of_t : t -> LabelParent.t = function
-      | `Identifier (#Identifier.LabelParent.t)
-      | #Paths_types.Resolved_reference.parent_no_id as x -> x
-      | _ -> assert false
-
-    let type_of_t : t -> Type.t = function
-      | `Identifier (#Identifier.Type.t)
-      | #Paths_types.Resolved_reference.s_type as x -> x
-      | _ -> assert false
-
-    let datatype_of_t : t -> DataType.t = function
-      | `Identifier (#Identifier.DataType.t)
-      | #Paths_types.Resolved_reference.s_type as x -> x
-      | _ -> assert false
-
-    let constructor_of_t : t -> Constructor.t = function
-      | `Identifier (#Identifier.Constructor.t)
-      | #Paths_types.Resolved_reference.s_constructor
-      | #Paths_types.Resolved_reference.s_extension
-      | #Paths_types.Resolved_reference.s_exception as x -> x
-      | _ -> assert false
-
-    let field_of_t : t -> Field.t = function
-      | `Identifier (#Identifier.Field.t)
-      | #Paths_types.Resolved_reference.s_field as x -> x
-      | _ -> assert false
-
-    let extension_of_t : t -> Extension.t = function
-      | `Identifier (#Paths_types.Identifier.reference_extension)
-      | #Paths_types.Resolved_reference.s_extension
-      | #Paths_types.Resolved_reference.s_exception as x -> x
-      | _ -> assert false
-
-    let exception_of_t : t -> Exception.t = function
-      | `Identifier (#Paths_types.Identifier.reference_exception)
-      | #Paths_types.Resolved_reference.s_exception as x -> x
-      | _ -> assert false
-
-    let value_of_t : t -> Value.t = function
-      | `Identifier (#Paths_types.Identifier.reference_value)
-      | #Paths_types.Resolved_reference.s_value as x -> x
-      | _ -> assert false
-
-    let class_of_t : t -> Class.t = function
-      | `Identifier (#Paths_types.Identifier.reference_class)
-      | #Paths_types.Resolved_reference.s_class as x -> x
-      | _ -> assert false
-
-    let class_type_of_t : t -> ClassType.t = function
-      | `Identifier (#Paths_types.Identifier.reference_class_type)
-      | #Paths_types.Resolved_reference.s_class_type as x -> x
-      | _ -> assert false
-
-    let method_of_t : t -> Method.t = function
-      | `Identifier (#Paths_types.Identifier.reference_method)
-      | #Paths_types.Resolved_reference.s_method as x -> x
-      | _ -> assert false
-
-    let instance_variable_of_t : t -> InstanceVariable.t = function
-      | `Identifier (#Paths_types.Identifier.reference_instance_variable)
-      | #Paths_types.Resolved_reference.s_instance_variable as x -> x
-      | _ -> assert false
-
-    let label_of_t : t -> Label.t = function
-      | `Identifier (#Paths_types.Identifier.reference_label)
-      | #Paths_types.Resolved_reference.s_label as x -> x
-      | _ -> assert false
 
   end
   type t = Paths_types.Reference.any
@@ -2623,153 +1899,4 @@ module Reference = struct
     let hash : t -> int = fun t -> hash (t :> Paths_types.Reference.any)
   end
 
-let module_type_of_t : t -> ModuleType.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.module_type))
-  | `Resolved (#Paths_types.Resolved_reference.s_module_type)
-  | `Root (_,#Paths_types.Reference.tag_module_type)
-  | `Dot (_,_)
-  | `ModuleType (_, _) as x -> x
-  | _ -> assert false
-
-let signature_of_t : t -> Signature.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.signature))
-  | `Resolved (#Paths_types.Resolved_reference.signature_no_id)
-  | `Root (_,#Paths_types.Reference.tag_signature)
-  | `Dot (_,_)
-  | `ModuleType (_,_)
-  | `Module (_, _) as x -> x
-  | _ -> assert false
-
-let class_signature_of_t : t -> ClassSignature.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.class_signature))
-  | `Resolved (#Paths_types.Resolved_reference.class_signature_no_id)
-  | `Root (_,#Paths_types.Reference.tag_class_signature)
-  | `Dot (_,_)
-  | `ClassType (_,_)
-  | `Class (_, _) as x -> x
-  | _ -> assert false
-
-let parent_of_t : t -> Parent.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.parent))
-  | `Resolved (#Paths_types.Resolved_reference.parent_no_id)
-  | `Root (_,#Paths_types.Reference.tag_parent)
-  | `Dot (_,_)
-  | `ClassType (_,_)
-  | `ModuleType (_,_)
-  | `Module (_, _)
-  | `Type (_,_)
-  | `Class (_, _) as x -> x
-  | _ -> assert false
-
-let label_parent_of_t : t -> LabelParent.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.label_parent))
-  | `Resolved (#Paths_types.Resolved_reference.parent_no_id) (* Nb, parent_no_id would be equal to label_parent_no_id if it existed! *)
-  | `Root (_,#Paths_types.Reference.tag_label_parent)
-  | `Dot (_,_)
-  | `ClassType (_,_)
-  | `ModuleType (_,_)
-  | `Module (_, _)
-  | `Type (_,_)
-  | `Class (_, _) as x -> x
-  | _ -> assert false
-
-let type_of_t : t -> Type.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.type_))
-  | `Resolved (#Paths_types.Resolved_reference.s_type)
-  | `Root (_,#Paths_types.Reference.tag_type)
-  | `Dot (_,_)
-  | `Type (_,_) as x -> x
-  | _ -> assert false
-
-let datatype_of_t : t -> DataType.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.datatype))
-  | `Resolved (#Paths_types.Resolved_reference.s_type)
-  | `Root (_,#Paths_types.Reference.tag_datatype)
-  | `Dot (_,_)
-  | `Type (_,_) as x -> x
-  | _ -> assert false
-
-let constructor_of_t : t -> Constructor.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_constructor))
-  | `Resolved (#Paths_types.Resolved_reference.constructor_no_id)
-  | `Root (_,#Paths_types.Reference.tag_constructor)
-  | `Dot (_,_)
-  | `Constructor (_,_)
-  | `Extension (_,_)
-  | `Exception (_,_) as x -> x
-  | _ -> assert false
-
-let field_of_t : t -> Field.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_field))
-  | `Resolved (#Paths_types.Resolved_reference.s_field)
-  | `Root (_,#Paths_types.Reference.tag_field)
-  | `Dot (_,_)
-  | `Field (_,_) as x -> x
-  | _ -> assert false
-
-let extension_of_t : t -> Extension.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_extension))
-  | `Resolved (#Paths_types.Resolved_reference.extension_no_id)
-  | `Root (_,#Paths_types.Reference.tag_extension)
-  | `Dot (_,_)
-  | `Extension (_,_)
-  | `Exception (_,_) as x -> x
-  | _ -> assert false
-
-let exception_of_t : t -> Exception.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_exception))
-  | `Resolved (#Paths_types.Resolved_reference.s_exception)
-  | `Root (_,#Paths_types.Reference.tag_exception)
-  | `Dot (_,_)
-  | `Exception (_,_) as x -> x
-  | _ -> assert false
-
-let value_of_t : t -> Value.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_value))
-  | `Resolved (#Paths_types.Resolved_reference.s_value)
-  | `Root (_,#Paths_types.Reference.tag_value)
-  | `Dot (_,_)
-  | `Value (_,_) as x -> x
-  | _ -> assert false
-
-let class_of_t : t -> Class.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_class))
-  | `Resolved (#Paths_types.Resolved_reference.s_class)
-  | `Root (_,#Paths_types.Reference.tag_class)
-  | `Dot (_,_)
-  | `Class (_,_) as x -> x
-  | _ -> assert false
-
-let class_type_of_t : t -> ClassType.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_class_type))
-  | `Resolved (#Paths_types.Resolved_reference.class_type_no_id)
-  | `Root (_,#Paths_types.Reference.tag_class_type)
-  | `Dot (_,_)
-  | `Class (_,_) 
-  | `ClassType (_,_) as x -> x 
-  | _ -> assert false
-
-let method_of_t : t -> Method.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_method))
-  | `Resolved (#Paths_types.Resolved_reference.s_method)
-  | `Root (_,#Paths_types.Reference.tag_method)
-  | `Dot (_,_)
-  | `Method (_,_) as x -> x 
-  | _ -> assert false
-
-let instance_variable_of_t : t -> InstanceVariable.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_instance_variable))
-  | `Resolved (#Paths_types.Resolved_reference.s_instance_variable)
-  | `Root (_,#Paths_types.Reference.tag_instance_variable)
-  | `Dot (_,_)
-  | `InstanceVariable (_,_) as x -> x 
-  | _ -> assert false
-
-let label_of_t : t -> Label.t = function
-  | `Resolved (`Identifier (#Paths_types.Identifier.reference_label))
-  | `Resolved (#Paths_types.Resolved_reference.s_label)
-  | `Root (_,#Paths_types.Reference.tag_label)
-  | `Dot (_,_)
-  | `Label (_,_) as x -> x 
-  | _ -> assert false
 end

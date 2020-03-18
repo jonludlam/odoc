@@ -198,6 +198,7 @@ and resolved_module_reference :
       | Some x -> x
       | None -> r )
   | `Identifier _ -> r
+  | `Hidden x -> `Hidden (resolved_module_reference t x)
   | `SubstAlias (p1, p2) ->
       `SubstAlias (resolved_module_path t p1, resolved_module_reference t p2)
   | `Module (p, n) -> `Module (resolved_signature_reference t p, n)

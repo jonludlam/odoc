@@ -140,6 +140,7 @@ module Path = struct
   and resolved_label_parent_reference map (p : Cref.Resolved.label_parent) =
     match p with
     | `Identifier s -> `Identifier s
+    | `Hidden x -> `Hidden (resolved_module_reference map x)
     | `Local id -> `Identifier (List.assoc id map.label_parents)
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
@@ -171,6 +172,7 @@ module Path = struct
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+    | `Hidden p -> `Hidden (resolved_module_reference map p)
     | `Canonical (m1, m2) ->
         `Canonical (resolved_module_reference map m1, module_reference map m2)
     | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
@@ -194,6 +196,7 @@ module Path = struct
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+    | `Hidden p -> `Hidden (resolved_module_reference map p)
     | `Canonical (m1, m2) ->
         `Canonical (resolved_module_reference map m1, module_reference map m2)
     | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
@@ -219,6 +222,7 @@ module Path = struct
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, n) -> `Module (resolved_signature_reference map p, n)
+    | `Hidden p -> `Hidden (resolved_module_reference map p)
     | `Canonical (m1, m2) ->
         `Canonical (resolved_module_reference map m1, module_reference map m2)
     | `ModuleType (p, n) -> `ModuleType (resolved_signature_reference map p, n)
@@ -230,6 +234,7 @@ module Path = struct
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module_reference map m2)
     | `Module (p, m) -> `Module (resolved_signature_reference map p, m)
+    | `Hidden p -> `Hidden (resolved_module_reference map p)
     | `Canonical (m1, m2) ->
         `Canonical (resolved_module_reference map m1, module_reference map m2)
 

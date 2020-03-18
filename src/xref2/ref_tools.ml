@@ -477,7 +477,3 @@ and resolve_reference : Env.t -> t -> Resolved.t option =
               return (x :> Resolved.t));
           ]
     | _ -> None
-
-
-let _ =
-  Tools.resolve_module_ref := resolve_module_reference ~add_canonical:false

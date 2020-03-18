@@ -966,6 +966,7 @@ module Fmt = struct
     let open Odoc_model.Paths.Reference.Resolved in
     match r with
     | `Identifier id -> Format.fprintf ppf "identifier(%a)" model_identifier id
+    | `Hidden p -> Format.fprintf ppf "hidden(%a)" model_resolved_reference (p :> t)
     | `Module (parent, str) ->
         Format.fprintf ppf "%a.%s" model_resolved_reference (parent :> t) str
     | `ModuleType (parent, str) ->
@@ -1598,6 +1599,7 @@ module Of_Lang = struct
    fun ident_map p ->
     match p with
     | `Identifier id -> identifier ident_map.signatures id
+    | `Hidden s -> `Hidden (resolved_module_reference ident_map s)
     | `SubstAlias (m1, m2) ->
         `SubstAlias
           ( resolved_module_path ident_map m1,
@@ -1620,6 +1622,7 @@ module Of_Lang = struct
           ( resolved_module_path ident_map m1,
             resolved_module_reference ident_map m2 )
     | `Module (p, n) -> `Module (resolved_signature_reference ident_map p, n)
+    | `Hidden p -> `Hidden (resolved_module_reference ident_map p)
     | `Canonical (p, r) ->
         `Canonical
           (resolved_module_reference ident_map p, module_reference ident_map r)
@@ -1636,6 +1639,7 @@ module Of_Lang = struct
           ( resolved_module_path ident_map m1,
             resolved_module_reference ident_map m2 )
     | `Module (p, n) -> `Module (resolved_signature_reference ident_map p, n)
+    | `Hidden p -> `Hidden (resolved_module_reference ident_map p)
     | `ModuleType (p, n) ->
         `ModuleType (resolved_signature_reference ident_map p, n)
     | `Canonical (p, r) ->
@@ -1657,6 +1661,7 @@ module Of_Lang = struct
           ( resolved_module_path ident_map m1,
             resolved_module_reference ident_map m2 )
     | `Module (p, n) -> `Module (resolved_signature_reference ident_map p, n)
+    | `Hidden p -> `Hidden (resolved_module_reference ident_map p)
     | `ModuleType (p, n) ->
         `ModuleType (resolved_signature_reference ident_map p, n)
     | `Canonical (p, r) ->
@@ -1719,6 +1724,7 @@ module Of_Lang = struct
           ( resolved_module_path ident_map m1,
             resolved_module_reference ident_map m2 )
     | `Module (p, n) -> `Module (resolved_signature_reference ident_map p, n)
+    | `Hidden s -> `Hidden (resolved_module_reference ident_map s)
     | `Canonical (m1, m2) ->
         `Canonical
           (resolved_module_reference ident_map m1, module_reference ident_map m2)

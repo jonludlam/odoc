@@ -16,6 +16,7 @@ module rec Resolved : sig
   and module_ =
     [ `Identifier of Identifier.module_
     | `Local of Ident.module_
+    | `Hidden of module_
     | `SubstAlias of Cpath.Resolved.module_ * module_
     | `Module of signature * ModuleName.t
     | `Canonical of module_ * Reference.module_ ]
@@ -26,6 +27,7 @@ module rec Resolved : sig
     | `Local of Ident.signature
     | `SubstAlias of Cpath.Resolved.module_ * module_
     | `Module of signature * ModuleName.t
+    | `Hidden of module_
     | `Canonical of module_ * Reference.module_
     | `ModuleType of signature * ModuleTypeName.t ]
 
@@ -38,6 +40,7 @@ module rec Resolved : sig
   type parent_no_id =
     [ `SubstAlias of Cpath.Resolved.module_ * module_
     | `Module of signature * ModuleName.t
+    | `Hidden of module_
     | `Canonical of module_ * Reference.module_
     | `ModuleType of signature * ModuleTypeName.t
     | `Class of signature * ClassName.t
@@ -59,6 +62,8 @@ module rec Resolved : sig
 
   type s_module = [ `Module of signature * ModuleName.t ]
 
+  type s_hidden = [ `Hidden of module_ 
+  ]
   type s_canonical = [ `Canonical of module_ * Reference.module_ ]
 
   type s_module_type = [ `ModuleType of signature * ModuleTypeName.t ]
@@ -86,7 +91,7 @@ module rec Resolved : sig
 
   type s_label = [ `Label of label_parent * LabelName.t ]
 
-  type module_no_id = [ s_substalias | s_module | s_canonical ]
+  type module_no_id = [ s_substalias | s_module | s_canonical | s_hidden ]
 
   type signature_no_id = [ module_no_id | s_module_type ]
 
@@ -173,6 +178,7 @@ module rec Resolved : sig
     | `Local of Ident.any
     | s_substalias
     | s_module
+    | s_hidden
     | s_canonical
     | s_module_type
     | s_type
@@ -379,6 +385,7 @@ and resolved_signature_reference_of_resolved_parent_path : Cpath.Resolved.parent
 let rec signature_identifier_of_resolved_reference (r : Resolved.signature) =
   match r with
   | `Local _ -> failwith "broken"
+  | `Hidden x -> signature_identifier_of_resolved_reference (x :> Resolved.signature)
   | `Identifier id -> id
   | `Module (parent, name) ->
       `Module (signature_identifier_of_resolved_reference parent, name)
