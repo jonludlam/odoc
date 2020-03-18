@@ -110,7 +110,7 @@ let rec gen_resolved_module_reference_of_cpath : Cpath.Resolved.module_ -> Resol
 let rec resolved_module_reference_of_cpath : Odoc_model.Paths.Reference.Resolved.Signature.t -> Cpath.Resolved.parent -> Cpath.Resolved.module_ -> Odoc_model.Paths.Reference.Resolved.Module.t = 
   fun ref_parent path_parent path ->
     match path with
-    | `Module (parent, name) when parent == path_parent -> `Module (ref_parent, name )
+    | `Module (parent, name) when parent = path_parent -> `Module (ref_parent, name )
     | `Subst (_, p) -> resolved_module_reference_of_cpath ref_parent path_parent p
     | `SubstAlias (p1, p2) -> `SubstAlias (Lang_of.(Path.resolved_module empty p1), resolved_module_reference_of_cpath ref_parent path_parent p2)
     | `Alias (p1, p2) -> `SubstAlias (Lang_of.(Path.resolved_module empty p1), resolved_module_reference_of_cpath ref_parent path_parent p2)
@@ -200,14 +200,21 @@ and resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
 and find_module : Env.t -> LabelParent.t -> string -> add_canonical:bool -> module_lookup_result option =
   fun env parent name ~add_canonical ->
   let open Tools.OptionMonad in
+  Format.fprintf Format.err_formatter "resolve_module_reference: (add_canonical=%b) before:\n%!%a\n%!" add_canonical
+    Component.Fmt.model_reference (`Dot (parent, name));
   resolve_label_parent_reference env parent ~add_canonical
   >>= signature_lookup_result_of_label_parent
-  >>= fun (parent', cp, sg) ->
-  let _, sg = Tools.prefix_signature (cp, sg) in
-  (try Some (Tools.handle_module_lookup env add_canonical name cp sg) with _ -> None)
-  >>= fun (cp', m) ->
-  let resolved_ref = resolved_module_reference_of_cpath parent' cp cp' in
-  return (resolved_ref, cp', m)
+  >>= fun (parent', cp_unresolved, sg) ->
+  let cp_reresolved = Tools.reresolve_parent env cp_unresolved in
+  let _, sg = Tools.prefix_signature (cp_reresolved, sg) in
+  (try Some (Tools.handle_module_lookup env add_canonical name cp_reresolved sg) with _ -> None)
+  >>= fun (cp'_unresolved, m) ->
+  let cp'_reresolved = Tools.reresolve_module env cp'_unresolved in
+  let resolved_ref = resolved_module_reference_of_cpath parent' cp_reresolved cp'_reresolved in
+  Format.fprintf Format.err_formatter "resolve_module_reference: before:\n%!%a\n%!after:\n%!%a\n%!"
+    Component.Fmt.model_reference ((`Dot (parent, name)) :> Odoc_model.Paths.Reference.t)
+    Component.Fmt.model_resolved_reference (resolved_ref :> Odoc_model.Paths.Reference.Resolved.t);
+  return (resolved_ref, cp'_reresolved, m)
 
 and find_module_type : Env.t -> LabelParent.t -> string -> add_canonical:bool -> module_type_lookup_result option =
   fun env parent name ~add_canonical ->
@@ -231,13 +238,6 @@ and resolve_module_reference :
 (*        Some (resolve_resolved_module_reference env r ~add_canonical)*)
     | `Dot (parent, name) ->
       let result = find_module env parent name ~add_canonical in
-      let opt ppf o =
-        match o with
-        | None -> Format.fprintf ppf "None"
-        | Some (x,_,_) -> Format.fprintf ppf "Some(%a)" Component.Fmt.model_resolved_reference (x :> Odoc_model.Paths.Reference.Resolved.t)
-      in
-      Format.fprintf Format.err_formatter "resolve_module_reference: before:\n%!%a\n%!after:\n%!%a\n%!"
-        Component.Fmt.model_reference (r :> Odoc_model.Paths.Reference.t) opt result;
       result
     | `Module (parent, name) -> find_module env (parent :> LabelParent.t) (Odoc_model.Names.ModuleName.to_string name) ~add_canonical
     | `Root (name, _) -> (

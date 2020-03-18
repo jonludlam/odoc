@@ -301,16 +301,20 @@ and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -
   | _ -> (
       match m.Component.Module.canonical with
       | Some (cp, _cr) -> (
-          if !is_compile then `Canonical (p, cp)
-          else
-            (*Format.fprintf Format.err_formatter "Handling canonical path for %a (cr=%a)\n%!" (Component.Fmt.resolved_module_path) p Component.Fmt.model_reference (cr :> Reference.t);*)
+          if !is_compile
+          then (
+            Format.fprintf Format.err_formatter "XXX skipping canonical resolution\n%!";
+            `Canonical (p, cp)
+          )
+          else (
+            Format.fprintf Format.err_formatter "XXX Handling canonical path for %a\n%!" (Component.Fmt.resolved_module_path) p;
             match lookup_and_resolve_module_from_path true false env cp with
             | Resolved (`Alias (_, p2'), _) ->
                   `Canonical ( p, `Resolved (simplify_resolved_module_path env p2'))
             | Resolved (p2', _) ->
                   `Canonical ( p, `Resolved (simplify_resolved_module_path env p2'))
             | Unresolved p' ->
-                (*Format.fprintf Format.err_formatter "No idea :/\n%!";*)
+                Format.fprintf Format.err_formatter "XXX No idea :/\n%!";
                 `Canonical (p, p')
             | exception _e ->
                 Format.fprintf Format.err_formatter
@@ -320,7 +324,7 @@ and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -
                    %!"
                   Component.Fmt.resolved_module_path p
                   (Printexc.get_backtrace ());
-                p )
+                p ))
       | None -> p )
 
 and process_module env add_canonical m p =
@@ -427,8 +431,8 @@ and lookup_module : Env.t -> Cpath.Resolved.module_ -> Component.Module.t =
   in
   match Memos1.find_all memo id with
   | [] ->
-      let lookups, resolved = Env.with_recorded_lookups env' lookup in
-      Memos1.add memo id (resolved, env_id, lookups);
+      let _lookups, resolved = Env.with_recorded_lookups env' lookup in
+      (* Memos1.add memo id (resolved, env_id, lookups); *)
       resolved
   | xs ->
       let rec find_fast = function
@@ -627,10 +631,17 @@ and lookup_and_resolve_module_from_path :
         |> map_unresolved (fun p -> `Substituted p)
         >>= fun (p, m) -> return (`Substituted p, m)
     | `Root r -> (
+          Format.fprintf Format.err_formatter "Looking up module %s by name...%!" r;
         match Env.lookup_module_by_name r env with
-        | Some (Env.Resolved (p, m)) -> return (process_module env add_canonical m (`Identifier p))
-        | Some Env.Forward -> Unresolved (`Forward r)
-        | None -> Unresolved p )
+        | Some (Env.Resolved (p, m)) ->
+          Format.fprintf Format.err_formatter "Got it!\n%!";
+          return (process_module env add_canonical m (`Identifier p))
+        | Some Env.Forward ->
+          Format.fprintf Format.err_formatter "Forward :-(!\n%!";
+          Unresolved (`Forward r)
+        | None ->
+          Format.fprintf Format.err_formatter "Unresolved!\n%!";
+          Unresolved p )
     | `Forward f ->
         lookup_and_resolve_module_from_path is_resolve add_canonical env
           (`Root f)
@@ -638,8 +649,8 @@ and lookup_and_resolve_module_from_path :
   in
   match Memos2.find_all memo2 id with
   | [] ->
-      let lookups, resolved = Env.with_recorded_lookups env' resolve in
-      Memos2.add memo2 id (resolved, env_id, lookups);
+      let _lookups, resolved = Env.with_recorded_lookups env' resolve in
+      (* Memos2.add memo2 id (resolved, env_id, lookups); *)
       resolved
   | xs ->
       let rec find_fast = function

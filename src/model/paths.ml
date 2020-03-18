@@ -1362,11 +1362,28 @@ module Reference = struct
   module Resolved = struct
     open Paths_types.Resolved_reference
 
+  (*  let rec is_hidden : label_parent -> bool =
+        function
+        | `Identifier _ -> false
+        | `Hidden _ -> true
+        | `SubstAlias (sub, orig) ->
+          Path.Resolved.Module.is_hidden sub && is_hidden (orig :> label_parent)
+        | `Type (p, _)
+        | `Class (p, _)
+        | `ClassType (p, _)
+        | `Module (p, _)
+        | `ModuleType (p, _) -> is_hidden (p :> label_parent)
+        | `Canonical (_, `Resolved _) -> false
+        | `Canonical (p, _) -> is_hidden (p :> label_parent)*)
+
     let rec parent_signature_identifier : signature -> Identifier.Signature.t =
       function
       | `Identifier id -> id
       | `Hidden s -> parent_signature_identifier (s :> signature)
-      | `SubstAlias(sub, _) -> Path.Resolved.parent_module_identifier sub
+      | `SubstAlias(sub, orig) -> 
+        if Path.Resolved.Module.is_hidden sub
+        then parent_signature_identifier (orig :> signature)
+        else (Path.Resolved.Module.identifier sub :> Identifier.Signature.t)
       | `Module(m, n) -> `Module(parent_signature_identifier m, n)
       | `Canonical(_, `Resolved r) ->
         parent_signature_identifier (r : module_ :> signature)
@@ -1405,9 +1422,10 @@ module Reference = struct
       function
       | `Identifier id -> id
       | `Hidden s -> label_parent_identifier (s :> label_parent)
-      | `SubstAlias(sub, _) ->
-        let id = Path.Resolved.parent_module_identifier sub in
-        (id : Identifier.Signature.t :> Identifier.LabelParent.t)
+      | `SubstAlias(sub, orig) -> 
+        if Path.Resolved.Module.is_hidden sub
+        then (parent_signature_identifier (orig :> signature) :> Identifier.LabelParent.t)
+        else (Path.Resolved.Module.identifier sub :> Identifier.LabelParent.t)
       | `Module(m, n) -> `Module(parent_signature_identifier m, n)
       | `Canonical(_, `Resolved r) ->
         label_parent_identifier (r : module_ :> label_parent)
@@ -1431,7 +1449,10 @@ module Reference = struct
       let rec identifier : t -> Identifier.Signature.t = function
         | `Identifier id -> id
         | `Hidden s -> identifier (s :> t)
-        | `SubstAlias(_, p) -> identifier (p : module_ :> signature)
+        | `SubstAlias(sub, orig) -> 
+          if Path.Resolved.Module.is_hidden sub
+          then parent_signature_identifier (orig :> signature)
+          else (Path.Resolved.Module.identifier sub :> Identifier.Signature.t)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> signature)
         | `Canonical(p, _) -> identifier (p : module_ :> signature)
@@ -1483,7 +1504,10 @@ module Reference = struct
       let rec identifier : t -> Identifier.Parent.t = function
         | `Identifier id -> id
         | `Hidden p -> identifier (p :> t)
-        | `SubstAlias(_, p) -> identifier (p : module_ :> t)
+        | `SubstAlias(sub, orig) -> 
+          if Path.Resolved.Module.is_hidden sub
+          then (parent_signature_identifier (orig :> signature) :> Identifier.Parent.t)
+          else (Path.Resolved.Module.identifier sub :> Identifier.Parent.t)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> t)
         | `Canonical(p, _) -> identifier (p : module_ :> t)
@@ -1507,7 +1531,10 @@ module Reference = struct
       let rec identifier : t -> Identifier.LabelParent.t = function
         | `Identifier id -> id
         | `Hidden p -> identifier (p :> t)
-        | `SubstAlias(_, p) -> identifier (p : module_ :> t)
+        | `SubstAlias(sub, orig) -> 
+        if Path.Resolved.Module.is_hidden sub
+        then (parent_signature_identifier (orig :> signature) :> Identifier.LabelParent.t)
+        else (Path.Resolved.Module.identifier sub :> Identifier.LabelParent.t)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> t)
         | `Canonical(p, _) -> identifier (p : module_ :> t)
@@ -1530,7 +1557,10 @@ module Reference = struct
       let rec identifier : t -> Identifier.Module.t = function
         | `Identifier id -> id
         | `Hidden p -> identifier (p :> t)
-        | `SubstAlias(_, p) -> identifier (p : module_ :> t)
+        | `SubstAlias(sub, orig) -> 
+        if Path.Resolved.Module.is_hidden sub
+        then identifier orig
+        else (Path.Resolved.Module.identifier sub)
         | `Module(s, n) -> `Module(parent_signature_identifier s, n)
         | `Canonical(_, `Resolved p) -> identifier (p : module_ :> t)
         | `Canonical(p, _) -> identifier (p : module_ :> t)
@@ -1740,7 +1770,10 @@ module Reference = struct
 
     let rec identifier : t -> Identifier.t = function
       | `Identifier id -> id
-      | `SubstAlias(p, _) -> Path.Resolved.identifier (p :> Path.Resolved.t)
+      | `SubstAlias(sub, orig) -> 
+        if Path.Resolved.Module.is_hidden sub
+        then (parent_signature_identifier (orig :> signature) :> Identifier.t)
+        else (Path.Resolved.Module.identifier sub :> Identifier.t)
       | `Module(s, n) -> `Module(parent_signature_identifier s, n)
       | `Canonical(_, `Resolved p) -> identifier (p :> t)
       | `Hidden p -> identifier (p :> t)
