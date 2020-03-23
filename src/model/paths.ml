@@ -1014,12 +1014,6 @@ module Fragment = struct
             | Branch(base,m) -> ModuleName.to_string base, Some (`Module(m,name))
           end
 
-      let rec identifier : t -> Identifier.Path.Module.t =
-        function
-          | `Subst(_, p) -> identifier p
-          | `SubstAlias(_, p) -> identifier p
-          | `Module(m, n) -> `Module (Signature.identifier m, n)
-
     end
 
     module Type =
@@ -1050,11 +1044,6 @@ module Fragment = struct
             | Branch(base, m) -> ModuleName.to_string base, Some (`ClassType(m, name))
           end
 
-      let identifier : t -> Identifier.Path.Type.t =
-        function
-          | `Type(m, n) -> `Type(Signature.identifier m, n)
-          | `Class(m, n) -> `Class(Signature.identifier m, n)
-          | `ClassType(m, n) -> `ClassType(Signature.identifier m, n)
 
     end
 
