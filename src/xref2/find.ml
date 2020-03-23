@@ -40,7 +40,7 @@ let careful_type_in_sig s name =
   in
   let rec inner = function
     | Signature.Type (id, _, m) :: _ when Ident.Name.type_ id = name ->
-        Found (`T m)
+        Found (`T (Component.Delayed.get m))
     | Signature.Class (id, _, c) :: _ when Ident.Name.class_ id = name ->
         Found (`C c)
     | Signature.ClassType (id, _, c) :: _ when Ident.Name.class_type id = name

@@ -619,7 +619,7 @@ let rec open_component_signature :
         match orig with
         | Signature.Type (tid, _, t) ->
             let new_id = `Type (id, Ident.Name.type_ tid) in
-            add_type new_id t env
+            add_type new_id (Delayed.get t) env
         | Signature.Module (mid, _, m) ->
             let new_id = `Module (id, Ident.Name.module_ mid) in
             add_module new_id (Delayed.get m) env

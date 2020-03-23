@@ -289,7 +289,7 @@ and Signature : sig
     | Module of Ident.module_ * recursive * Module.t Delayed.t
     | ModuleSubstitution of Ident.module_ * ModuleSubstitution.t
     | ModuleType of Ident.module_type * ModuleType.t Delayed.t
-    | Type of Ident.type_ * recursive * TypeDecl.t
+    | Type of Ident.type_ * recursive * TypeDecl.t Delayed.t
     | TypeSubstitution of Ident.type_ * TypeDecl.t
     | Exception of Ident.exception_ * Exception.t
     | TypExt of Extension.t
@@ -457,7 +457,8 @@ module Fmt = struct
             Format.fprintf ppf "@[<v 2>module type %a %a@]@," Ident.fmt id
               module_type (Delayed.get mt)
         | Type (id, _, t) ->
-            Format.fprintf ppf "@[<v 2>type %a %a@]@," Ident.fmt id type_decl t
+            Format.fprintf ppf "@[<v 2>type %a %a@]@," Ident.fmt id type_decl
+              (Delayed.get t)
         | TypeSubstitution (id, t) ->
             Format.fprintf ppf "@[<v 2>type %a := %a@]@," Ident.fmt id type_decl
               t
@@ -707,7 +708,7 @@ module Fmt = struct
     match p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
     | `Identifier id ->
-        Format.fprintf ppf "global(%a)" model_identifier
+        Format.fprintf ppf "identifier(%a)" model_identifier
           (id :> Odoc_model.Paths.Identifier.t)
     | `Substituted x ->
         Format.fprintf ppf "substituted(%a)" resolved_type_path x
@@ -731,7 +732,7 @@ module Fmt = struct
   and type_path : Format.formatter -> Cpath.type_ -> unit =
    fun ppf p ->
     match p with
-    | `Resolved r -> Format.fprintf ppf "%a" resolved_type_path r
+    | `Resolved r -> Format.fprintf ppf "resolved(%a)" resolved_type_path r
     | `Substituted s -> Format.fprintf ppf "substituted(%a)" type_path s
     | `Dot (m, s) -> Format.fprintf ppf "%a.%s" module_path m s
 
@@ -2296,7 +2297,7 @@ module Of_Lang = struct
         function
         | Type (r, t) ->
             let id = List.assoc t.id ident_map.types in
-            let t' = type_decl ident_map t in
+            let t' = Delayed.put (fun () -> type_decl ident_map t) in
             Signature.Type (id, r, t')
         | TypeSubstitution t ->
             let id = List.assoc t.id ident_map.types in

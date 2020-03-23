@@ -536,7 +536,7 @@ module ExtractIDs = struct
         | ModuleSubstitution (id, m) -> docs lpp (module_ parent map id) m.doc
         | ModuleType (id, mt) ->
             docs lpp (module_type parent map id) (Delayed.get mt).doc
-        | Type (id, _, t) -> docs lpp (type_decl parent map id) t.doc
+        | Type (id, _, t) -> docs lpp (type_decl parent map id) (Delayed.get t).doc
         | TypeSubstitution (id, t) -> docs lpp (type_decl parent map id) t.doc
         | Exception (id, e) -> docs lpp (exception_ parent map id) e.doc
         | Value (id, v) -> docs lpp (value_ parent map id) v.doc
@@ -566,6 +566,7 @@ let rec signature_items id map items =
       | ModuleType (id, m) ->
           Odoc_model.Lang.Signature.ModuleType (module_type map id m) :: acc
       | Type (id, r, t) -> (
+          let t = Component.Delayed.get t in
           try Odoc_model.Lang.Signature.Type (r, type_decl map id t) :: acc
           with e ->
             let bt = Printexc.get_backtrace () in

@@ -40,6 +40,7 @@ module rec Resolved : sig
   | `Identifier of Odoc_model.Paths_types.Identifier.path_class_type
   | `Class of parent * ClassName.t
   | `ClassType of parent * ClassTypeName.t ]
+
 end = Resolved
 
 and Cpath : sig 

@@ -152,7 +152,8 @@ let prefix_signature (path, s) =
               ( Ident.Rename.module_type id,
                 Component.Delayed.put (fun () ->
                     Subst.module_type sub (Component.Delayed.get mt)) )
-        | Type (id, r, t) -> Type (Ident.Rename.type_ id, r, Subst.type_ sub t)
+        | Type (id, r, t) -> Type (Ident.Rename.type_ id, r,
+          Component.Delayed.put (fun () -> Subst.type_ sub (Component.Delayed.get t)))
         | TypeSubstitution (id, t) ->
             TypeSubstitution (Ident.Rename.type_ id, Subst.type_ sub t)
         | ModuleSubstitution (id, m) ->
@@ -256,7 +257,21 @@ end
 
 module Memos2 = Hashtbl.Make (Hashable2)
 
+
 let memo2 : ((module_lookup_result, Cpath.module_) ResultMonad.t * int * Env.lookup_type list) Memos2.t = Memos2.create 10000
+
+
+
+module Hashable3 = struct
+  type t = bool * bool * Cpath.type_
+
+  let equal = Stdlib.( = )
+
+  let hash = Hashtbl.hash
+end
+
+
+module Memos3 = Hashtbl.Make (Hashable3)
 
 let reset_cache () = Memos1.clear memo; Memos2.clear memo2
 
@@ -445,8 +460,8 @@ and lookup_module : Env.t -> Cpath.Resolved.module_ -> Component.Module.t =
   in
   match Memos1.find_all memo id with
   | [] ->
-      let _lookups, resolved = Env.with_recorded_lookups env' lookup in
-      (* Memos1.add memo id (resolved, env_id, lookups); *)
+      let lookups, resolved = Env.with_recorded_lookups env' lookup in
+      Memos1.add memo id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
@@ -491,7 +506,7 @@ fun env path ->
       `Canonical (reresolve_module env p, `Resolved (simplify_resolved_module_path env p2'))
     | Unresolved _
     | exception _ ->
-      p
+      `Canonical (reresolve_module env p, p2)
     end
   | `Apply (p, p2) -> begin
     match lookup_and_resolve_module_from_path true false env p2 with
@@ -667,17 +682,21 @@ and lookup_and_resolve_module_from_path :
   match Memos2.find_all memo2 id with
   | [] ->
       (* Format.fprintf Format.err_formatter "Looking up path %a\n%!" Component.Fmt.module_path p; *)
-      let _lookups, resolved = Env.with_recorded_lookups env' resolve in
-      (* Memos2.add memo2 id (resolved, env_id, lookups); *)
+      Format.fprintf Format.err_formatter "Uncached\n%!";
+      let lookups, resolved = Env.with_recorded_lookups env' resolve in
+      Memos2.add memo2 id (resolved, env_id, lookups);
       resolved
   | xs ->
       let rec find_fast = function
-        | (result, id, _lookups) :: _ when id = env_id -> result
+        | (result, id, _lookups) :: _ when id = env_id ->
+          Format.fprintf Format.err_formatter "cached\n%!"; result
         | _ :: ys -> find_fast ys
         | [] -> find xs
       and find = function
         | (r, _, lookups) :: xs ->
-            if verify_lookups env' lookups then r else find xs
+            if verify_lookups env' lookups
+            then (Format.fprintf Format.err_formatter "cached\n%!"; r) 
+            else find xs
         | [] ->
             let lookups, result = Env.with_recorded_lookups env' resolve in
             Memos2.add memo2 id (result, env_id, lookups);
@@ -770,11 +789,16 @@ and lookup_type_from_path :
   fun env p ->
     match p with
     | `Dot (parent, id) ->
+        let start_time = Unix.gettimeofday () in
         lookup_and_resolve_module_from_path true true env parent
         |> map_unresolved (fun p' -> `Dot (p', id))
         >>= fun (p, m) ->
+        let time1 = Unix.gettimeofday () in
         let _, sg = prefix_module_signature (p, signature_of_module env m) in
+        let time2 = Unix.gettimeofday () in
         let p', t = handle_type_lookup id (`Module p) sg in
+        let time3 = Unix.gettimeofday () in
+        Format.fprintf Format.err_formatter "%f vs %f vs %f\n%!" (time1 -. start_time) (time2 -. time1) (time3 -. time2);
         return (p', t)
     | `Resolved r -> return (lookup_type_from_resolved_path env r)
     | `Substituted s ->
@@ -1157,9 +1181,9 @@ and fragmap_type :
             match item with
             | Component.Signature.Type (id, r, t)
               when Ident.Name.type_ id = name -> (
-                match mapfn t with
+                match mapfn (Component.Delayed.get t) with
                 | Left x ->
-                    (Component.Signature.Type (id, r, x) :: items, true, removed)
+                    (Component.Signature.Type (id, r, (Component.Delayed.put (fun () -> x))) :: items, true, removed)
                 | Right y ->
                     (items, true, Component.Signature.RType (id, y) :: removed)
                 )

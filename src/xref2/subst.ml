@@ -793,7 +793,10 @@ and apply_sig_map s items removed =
               ( id,
                 Component.Delayed.put (fun () ->
                     module_type s (Component.Delayed.get mt)) )
-        | Type (id, r, t) -> Type (id, r, type_ s t)
+        | Type (id, r, t) ->
+            Type (id,
+                  r,
+                  Component.Delayed.put (fun () -> type_ s (Component.Delayed.get t)))
         | TypeSubstitution (id, t) -> TypeSubstitution (id, type_ s t)
         | Exception (id, e) -> Exception (id, exception_ s e)
         | TypExt e -> TypExt (extension s e)
