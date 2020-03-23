@@ -683,19 +683,21 @@ module Fmt = struct
     match p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
     | `Identifier id ->
-        Format.fprintf ppf "global(%a)" model_identifier
+        Format.fprintf ppf "identifier(%a)" model_identifier
           (id :> Odoc_model.Paths.Identifier.t)
     | `Substituted x ->
         Format.fprintf ppf "substituted(%a)" resolved_module_type_path x
     | `ModuleType (p, m) ->
         Format.fprintf ppf "%a.%s" resolved_parent_path p
           (ModuleTypeName.to_string m)
+    | `SubstT (m1, m2) ->
+        Format.fprintf ppf "substt(%a,%a)" resolved_module_type_path m1 resolved_module_type_path m2
     
     
   and module_type_path : Format.formatter -> Cpath.module_type -> unit =
    fun ppf m ->
     match m with
-    | `Resolved p -> Format.fprintf ppf "%a" resolved_module_type_path p
+    | `Resolved p -> Format.fprintf ppf "resolved(%a)" resolved_module_type_path p
     | `Substituted s -> Format.fprintf ppf "substituted(%a)" module_type_path s
     | `Dot (m, s) ->
         Format.fprintf ppf "%a.%s" module_path m (ModuleTypeName.to_string s)
@@ -801,6 +803,11 @@ module Fmt = struct
           (modty :> t)
           model_resolved_path
           (m :> t)
+    | `SubstT (t1, t2) ->
+        Format.fprintf ppf "substt(%a,%a)" model_resolved_path
+          (t1 :> t)
+          model_resolved_path
+          (t2 :> t)
     | `Apply (funct, arg) ->
         Format.fprintf ppf "%a(%a)" model_resolved_path
           (funct :> t)
@@ -1474,6 +1481,8 @@ module Of_Lang = struct
     | `Identifier i -> identifier ident_map.module_types i
     | `ModuleType (p, name) ->
         `ModuleType (`Module (resolved_module_path ident_map p), name)
+    | `SubstT (p1, p2) ->
+        `SubstT (resolved_module_type_path ident_map p1, resolved_module_type_path ident_map p2)
 
   and resolved_type_path :
       _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =

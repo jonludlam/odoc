@@ -21,6 +21,7 @@ type maps = {
   path_class_type :
     (Ident.path_class_type * Odoc_model.Paths_types.Identifier.path_class_type)
     list;
+  fragment_root : Cfrag.root option;
   any : (Ident.any * Identifier.t) list;
 }
 
@@ -46,8 +47,11 @@ let empty =
     label_parents = [];
     parents = [];
     path_class_type = [];
+    fragment_root = None;
     any = [];
   }
+
+let with_fragment_root r = {empty with fragment_root = Some r}
 
 module Opt = Component.Opt
 
@@ -104,8 +108,10 @@ module Path = struct
   and resolved_parent map (p : Cpath.Resolved.parent) =
     match p with
     | `Module m -> resolved_module map m
-    | `ModuleType _ 
-    | `FragmentRoot -> failwith "Invalid"
+    | `ModuleType _ -> failwith "Invalid"
+    | `FragmentRoot ->
+      Format.fprintf Format.err_formatter "dereferencing fragmentroot...\n%!";
+      match map.fragment_root with Some r -> resolved_parent map (r :> Cpath.Resolved.parent) | None -> failwith "Invalid"
 
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
@@ -115,6 +121,7 @@ module Path = struct
     | `Local id -> `Identifier (List.assoc id map.module_type)
     | `ModuleType (p, name) -> `ModuleType (resolved_parent map p, name)
     | `Substituted s -> resolved_module_type map s
+    | `SubstT (p1, p2) -> `SubstT (resolved_module_type map p1, resolved_module_type map p2)
 
   and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =

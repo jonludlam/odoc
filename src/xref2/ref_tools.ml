@@ -130,8 +130,9 @@ let rec resolved_module_reference_of_cpath : Odoc_model.Paths.Reference.Resolved
 let rec resolved_module_type_reference_of_cpath : Odoc_model.Paths.Reference.Resolved.Signature.t -> Cpath.Resolved.parent -> Cpath.Resolved.module_type -> Odoc_model.Paths.Reference.Resolved.ModuleType.t =
   fun ref_parent path_parent path ->
     match path with
-    | `ModuleType (parent, name) when parent == path_parent -> `ModuleType (ref_parent, name)
+    | `ModuleType (parent, name) when parent = path_parent -> `ModuleType (ref_parent, name)
     | `Substituted s -> resolved_module_type_reference_of_cpath ref_parent path_parent s
+    | `SubstT _
     | `Local _
     | `Identifier _ 
     | `ModuleType _ -> failwith "Unexpected failure in Ref_tools.resolved_module_type_reference_of_cpath"
@@ -223,7 +224,7 @@ and find_module_type : Env.t -> LabelParent.t -> string -> add_canonical:bool ->
   >>= signature_lookup_result_of_label_parent
   >>= fun (parent', cp, sg) ->
   let _, sg = Tools.prefix_signature (cp, sg) in
-  (try Some (Tools.handle_module_type_lookup name cp sg) with _ -> None)
+  (try Some (Tools.handle_module_type_lookup env name cp sg) with _ -> None)
   >>= fun (cp', m) ->
   let resolved_ref = resolved_module_type_reference_of_cpath parent' cp cp' in
   return (resolved_ref, cp', m)
@@ -243,12 +244,22 @@ and resolve_module_reference :
     | `Root (name, _) -> (
         match Env.lookup_module_by_name name env with
         | Some (Resolved (id, m)) -> (
-            (try Some (Tools.process_module env add_canonical m (`Identifier id)) with _ -> None)
-            >>= fun (cp', m) ->
+            (try Some (Tools.process_module_path env add_canonical m (`Identifier id)) with _ -> None)
+            >>= fun cp' ->
             let resolved_ref = gen_resolved_module_reference_of_cpath cp' in
             Format.fprintf Format.err_formatter "resolve_module_reference 1: %s became %a\n%!" name Component.Fmt.model_resolved_reference (resolved_ref :> Odoc_model.Paths.Reference.Resolved.t);
             return (resolved_ref, cp', m))
-        | _ -> None )
+        | Some (Forward) -> None
+        | None -> (
+            let x = Env.lookup_root_module name env in
+            match x with
+            | Some (Env.Resolved (id, m)) -> (
+              (try Some (Tools.process_module_path env add_canonical m (`Identifier id)) with _ -> None)
+              >>= fun cp' ->
+              let resolved_ref = gen_resolved_module_reference_of_cpath cp' in
+              Format.fprintf Format.err_formatter "resolve_module_reference 1: %s became %a\n%!" name Component.Fmt.model_resolved_reference (resolved_ref :> Odoc_model.Paths.Reference.Resolved.t);
+              return (resolved_ref, cp', m))
+            | _ -> None))
 
 and resolve_module_type_reference :
     Env.t ->

@@ -510,11 +510,11 @@ let lookup_module_by_name_internal name env =
     | _ -> None
   in
   match find_map filter_fn env.elts with
-  | None ->
-     (match lookup_root_module name env with
+  | None -> None
+     (* (match lookup_root_module name env with
       | Some (Resolved (id, m)) -> Some (Resolved (id, m))
       | Some Forward -> Some Forward
-      | _ -> None)
+      | _ -> None) *)
   | Some (`Module (id,m)) -> Some (Resolved (id,m))
 
 let lookup_module_by_name name env =

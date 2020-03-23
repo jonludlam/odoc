@@ -500,6 +500,8 @@ module Path = struct
                     hash_path (arg : Paths_types.Path.module_ :> Paths_types.Path.any))
     | `ModuleType(p, s) ->
       Hashtbl.hash (25, hash_resolved_path (p : module_ :> any), s)
+    | `SubstT(p, s) ->
+      Hashtbl.hash (1006, hash_resolved_path (p :> any), hash_resolved_path (s :> any))
     | `Type(p, s) ->
       Hashtbl.hash (26, hash_resolved_path (p : module_ :> any), s)
     | `Class(p, s) ->
@@ -530,7 +532,7 @@ module Path = struct
     | `Canonical (_, `Resolved _) -> false
     | `Canonical (x, _) -> is_resolved_hidden (x : module_ :> any)
     | `Hidden _ -> true
-    | `Subst(p1, _p2) -> is_resolved_hidden (p1 : module_type :> any)
+    | `Subst(p1, p2) -> is_resolved_hidden (p1 : module_type :> any) || is_resolved_hidden (p2 : module_ :> any)
     | `SubstAlias(p1, p2) -> is_resolved_hidden (p1 : module_ :> any) || is_resolved_hidden (p2 : module_ :> any)
     | `Module (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `Apply (p, _) -> is_resolved_hidden (p : module_ :> any)
@@ -539,6 +541,7 @@ module Path = struct
     | `Class (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `ClassType (p, _) -> is_resolved_hidden (p : module_ :> any)
     | `Alias (p1, p2) -> is_resolved_hidden (p1 : module_ :> any) && (is_resolved_hidden (p2 : module_ :> any))
+    | `SubstT (p1, p2) -> is_resolved_hidden (p1 :> any) || is_resolved_hidden (p2 :> any)
 
   and is_path_hidden : Paths_types.Path.any -> bool =
     let open Paths_types.Path in
@@ -557,6 +560,7 @@ module Path = struct
     let rec parent_module_type_identifier : Paths_types.Resolved_path.module_type -> Identifier.Signature.t = function
       | `Identifier id -> (id : Identifier.ModuleType.t :> Identifier.Signature.t) 
       | `ModuleType(m, n) -> `ModuleType(parent_module_identifier m, n)
+      | `SubstT(m, _n) -> parent_module_type_identifier m
 
     and parent_module_identifier : Paths_types.Resolved_path.module_ -> Identifier.Signature.t = function
       | `Identifier id -> (id : Identifier.Module.t :> Identifier.Signature.t)
@@ -652,15 +656,17 @@ module Path = struct
 
       let is_hidden m = is_resolved_hidden (m : t :> Paths_types.Resolved_path.any)
 
-      let identifier = function
+      let rec identifier = function
         | `Identifier id -> id
         | `ModuleType(m, n) -> `ModuleType(parent_module_identifier m, n)
+        | `SubstT(s,_) -> identifier s
 
       let canonical_ident : t -> Identifier.ModuleType.t option = function
         | `Identifier _id -> None
         | `ModuleType (p, n) -> begin
             match Module.canonical_ident p with | Some x -> Some (`ModuleType((x :>Identifier.Signature.t), n)) | None -> None
         end 
+        | `SubstT (_, _) -> None
 
 
       let equal_identifier :
@@ -761,6 +767,7 @@ module Path = struct
         if is_path_hidden (`Resolved (sub :> t))
         then identifier (orig :> t)
         else identifier (sub :> t)
+      | `SubstT(p, _) -> identifier (p :> t)
 
   end
 
@@ -917,6 +924,7 @@ module Fragment = struct
           | _, _ -> false
       in
       loop p1 p2
+
 
     let hash p =
       let rec loop : t -> int =

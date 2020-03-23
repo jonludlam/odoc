@@ -40,6 +40,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
       should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
   | `Apply (x, y) ->
       should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
+  | `SubstT (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
   | `Alias (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
   | `Type (p, _)
   | `Class (p, _)
@@ -66,16 +67,16 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
     p)
   else (
     let cp = Component.Of_Lang.(type_path empty p) in
-    Format.fprintf Format.err_formatter "Reresolving %a\n%!" Component.Fmt.type_path cp;
+    (* Format.fprintf Format.err_formatter "Reresolving %a\n%!" Component.Fmt.type_path cp; *)
     match cp with
     | `Resolved p ->
       let result = Tools.reresolve_type env p in
-      Format.fprintf Format.err_formatter "result 1: %a\n%!" Component.Fmt.resolved_type_path result;
+      (* Format.fprintf Format.err_formatter "result 1: %a\n%!" Component.Fmt.resolved_type_path result; *)
       `Resolved (result |> Cpath.resolved_type_path_of_cpath)
     | _ ->
       match Tools.lookup_type_from_path env cp with
       | Resolved (p', _) ->
-        Format.fprintf Format.err_formatter "result 2: %a\n%!" Component.Fmt.resolved_type_path p';
+        (* Format.fprintf Format.err_formatter "result 2: %a\n%!" Component.Fmt.resolved_type_path p'; *)
         `Resolved (Cpath.resolved_type_path_of_cpath p')
       | Unresolved p -> Cpath.type_path_of_cpath p
       | exception e ->
@@ -128,7 +129,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
     | Unresolved _ ->
       if is_forward p
       then begin
-        Format.fprintf Format.err_formatter "Skipping resolution of forward path %a\n%!" Component.Fmt.model_path (p :> Odoc_model.Paths.Path.t);
+        (* Format.fprintf Format.err_formatter "Skipping resolution of forward path %a\n%!" Component.Fmt.model_path (p :> Odoc_model.Paths.Path.t); *)
         p
       end else begin
         Format.fprintf Format.err_formatter
@@ -398,9 +399,9 @@ and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
   let start_time = Unix.gettimeofday () in
-  Format.fprintf Format.err_formatter "Processing Module %a\n%!"
+  (* Format.fprintf Format.err_formatter "Processing Module %a\n%!"
     Component.Fmt.model_identifier
-    (m.id :> Paths.Identifier.t);
+    (m.id :> Paths.Identifier.t); *)
   if (*skip m.id*) false then m
   else
     try
@@ -772,8 +773,8 @@ and type_decl : Env.t -> TypeDecl.t -> TypeDecl.t =
               raise e )
         | _ -> default )
     | None -> default in
-    Format.fprintf Format.err_formatter "type_decl result: %a\n%!"
-          Component.Fmt.type_decl (Component.Of_Lang.(type_decl empty result));
+    (* Format.fprintf Format.err_formatter "type_decl result: %a\n%!"
+          Component.Fmt.type_decl (Component.Of_Lang.(type_decl empty result)); *)
     result
   with e ->
     Format.fprintf Format.err_formatter "Failed to resolve type (%a): %s"

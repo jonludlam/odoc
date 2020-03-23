@@ -131,6 +131,7 @@ and resolved_module_type_path :
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (resolved_module_type_path s p)
   | `ModuleType (p, n) -> `ModuleType (resolved_parent_path s p, n)
+  | `SubstT (m1, m2) -> `SubstT (resolved_module_type_path s m1, resolved_module_type_path s m2)
 
 and module_type_path : t -> Cpath.module_type -> Cpath.module_type =
  fun s p ->

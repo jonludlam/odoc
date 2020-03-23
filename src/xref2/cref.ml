@@ -375,6 +375,7 @@ and resolved_module_type_reference_of_resolved_module_type_path : Cpath.Resolved
   | `Identifier id -> `Identifier id
   | `Substituted s -> resolved_module_type_reference_of_resolved_module_type_path s
   | `ModuleType (p, m) -> `ModuleType (resolved_signature_reference_of_resolved_parent_path p, m)
+  | `SubstT (p1, _p2) -> resolved_module_type_reference_of_resolved_module_type_path p1
 
 and resolved_signature_reference_of_resolved_parent_path : Cpath.Resolved.parent -> Resolved.signature =
   function

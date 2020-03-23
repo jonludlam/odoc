@@ -213,6 +213,7 @@ sig
 
   and module_type = [
     | `Identifier of Identifier.path_module_type
+    | `SubstT of module_type * module_type
     | `ModuleType of module_ * ModuleTypeName.t
   ]
 
@@ -228,6 +229,7 @@ sig
 
   type module_type_no_id = [
     | `ModuleType of module_ * ModuleTypeName.t
+    | `SubstT of module_type * module_type
   ]
 
   type type_no_id = [
