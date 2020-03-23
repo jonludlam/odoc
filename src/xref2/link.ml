@@ -411,20 +411,7 @@ and module_ : Env.t -> Module.t -> Module.t =
       let t1 = Unix.gettimeofday () in
       let m' = Env.lookup_module m.id env in
       let t2 = Unix.gettimeofday () in
-      let type_ =
-        match
-          module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_
-        with
-        | Alias (`Resolved p) ->
-            let p' =
-              Component.Of_Lang.resolved_module_path Component.Of_Lang.empty p
-            in
-            Alias
-              (`Resolved
-                (Lang_of.Path.resolved_module Lang_of.empty
-                   (Tools.add_canonical_path env m' p')))
-        | t -> t
-      in
+      let type_ = module_decl env (m.id :> Paths.Identifier.Signature.t) m.type_ in
       let t3 = Unix.gettimeofday () in
       let hidden_alias =
         match type_ with
@@ -468,7 +455,7 @@ and module_ : Env.t -> Module.t -> Module.t =
             | _ -> ([], expansion) )
       in
       let override_display_type =
-        self_canonical || should_hide_module_decl m.type_
+        self_canonical || should_hide_module_decl type_
       in
       let display_type =
         match (override_display_type, expansion) with
