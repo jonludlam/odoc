@@ -194,7 +194,7 @@ and module_ : Env.t -> Module.t -> Module.t =
     | ModuleType _ -> true
     | Alias _ -> false (* Aliases are expanded if necessary during link *)
   in
-  Format.fprintf Format.err_formatter "Handling module: %a\n" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t);
+  (* Format.fprintf Format.err_formatter "Handling module: %a\n" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t); *)
   let env' = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
   let expansion =
     if not extra_expansion_needed then m.expansion
@@ -246,7 +246,7 @@ and module_decl :
 and module_type : Env.t -> ModuleType.t -> ModuleType.t =
  fun env m ->
   let open ModuleType in
-  Format.fprintf Format.err_formatter "Handling module type: %a\n" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t);
+  (* Format.fprintf Format.err_formatter "Handling module type: %a\n" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t); *)
   try
     let env = Env.add_functor_args (m.id :> Paths.Identifier.Signature.t) env in
     let expansion', expr' =

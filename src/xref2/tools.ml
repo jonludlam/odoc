@@ -65,7 +65,7 @@ let core_types =
       (Identifier.name decl.id, Component.Of_Lang.(type_decl empty decl)))
     Odoc_model.Predefined.core_types
 
-let prefix_signature (path, s) =
+let prefix_substitution path sg =
   let open Component.Signature in
   let rpath = (Cref.resolved_signature_reference_of_resolved_parent_path path) in
   let rec get_sub sub' is =
@@ -137,7 +137,11 @@ let prefix_signature (path, s) =
               map)
       removed sub
   in
-  let sub = get_sub Subst.identity s.items |> extend_sub_removed s.removed in
+  get_sub Subst.identity sg.items |> extend_sub_removed sg.removed
+
+let prefix_signature (path, sg) =
+  let open Component.Signature in
+  let sub = prefix_substitution path sg in
   let items =
     List.map
       (function
@@ -169,13 +173,10 @@ let prefix_signature (path, s) =
             ClassType (Ident.Rename.class_type id, r, Subst.class_type sub c)
         | Include i -> Include (Subst.include_ sub i)
         | Comment c -> Comment c)
-      s.items
+      sg.items
   in
-  let after = { items; removed = s.removed } in
+  let after = { items; removed = sg.removed } in
   (path, after)
-
-let prefix_module_signature (m,s) =
-  prefix_signature (`Module m, s)
 
 let simplify_resolved_module_path :
     Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
@@ -419,9 +420,9 @@ and handle_type_lookup id p sg : type_lookup_result =
     raise e
 
 and handle_class_type_lookup env id p m =
-  let p, sg = (p, signature_of_module env m) |> prefix_module_signature in
+  let _, sg = prefix_signature (`Module p, signature_of_module env m) in
   let c = Find.class_type_in_sig sg id in
-  (`ClassType (p, Odoc_model.Names.TypeName.of_string id), c)
+  (`ClassType (`Module p, Odoc_model.Names.TypeName.of_string id), c)
 
 and lookup_module : Env.t -> Cpath.Resolved.module_ -> Component.Module.t =
   fun env' path ->
@@ -630,7 +631,7 @@ and lookup_and_resolve_module_from_path :
         lookup_and_resolve_module_from_path is_resolve add_canonical env parent
         |> map_unresolved (fun p' -> `Dot (p', id))
         >>= fun (p, m) ->
-        let (_, sg) = prefix_module_signature (p, signature_of_module env m) in
+        let (_, sg) = prefix_signature (`Module p, signature_of_module env m) in
         let p', m' = handle_module_lookup env add_canonical id (`Module p) sg in
         return (p', m')
     | `Apply (m1, m2) -> (
@@ -722,7 +723,7 @@ and lookup_and_resolve_module_type_from_path :
         lookup_and_resolve_module_from_path is_resolve true env parent
         |> map_unresolved (fun p' -> `Dot (p', id))
         >>= fun (p, m) ->
-        let _, sg = prefix_module_signature (p, signature_of_module env m) in
+        let _, sg = prefix_signature (`Module p, signature_of_module env m) in
         let p', mt = handle_module_type_lookup env id (`Module p) sg in
         return (p', mt)
     | `Resolved r ->
@@ -757,7 +758,7 @@ and lookup_type_from_resolved_path :
   | `Type (`Module p, id) -> (
       try
         let m = lookup_module env p in
-        let _, sg = prefix_module_signature (p, signature_of_module env m) in
+        let _, sg = prefix_signature (`Module p, signature_of_module env m) in
         handle_type_lookup id (`Module p) sg
       with e ->
         Format.fprintf Format.err_formatter "Here...\n%s\n%!"
@@ -769,11 +770,11 @@ and lookup_type_from_resolved_path :
         raise e )
   | `Class (`Module p, id) ->
       let m = lookup_module env p in
-      let _, sg = prefix_module_signature (p, signature_of_module env m) in
+      let _, sg = prefix_signature (`Module p, signature_of_module env m) in
       handle_type_lookup id (`Module p) sg
   | `ClassType (`Module p, id) ->
       let m = lookup_module env p in
-      let _, sg = prefix_module_signature (p, signature_of_module env m) in
+      let _, sg = prefix_signature (`Module p, signature_of_module env m) in
       handle_type_lookup id (`Module p) sg
   | `Type (`ModuleType _, _) -> failwith "Unhandled 3"
   | `ClassType (`ModuleType _, _) -> failwith "Unhandled 4"
@@ -794,7 +795,7 @@ and lookup_type_from_path :
         |> map_unresolved (fun p' -> `Dot (p', id))
         >>= fun (p, m) ->
         let time1 = Unix.gettimeofday () in
-        let _, sg = prefix_module_signature (p, signature_of_module env m) in
+        let _, sg = prefix_signature (`Module p, signature_of_module env m) in
         let time2 = Unix.gettimeofday () in
         let p', t = handle_type_lookup id (`Module p) sg in
         let time3 = Unix.gettimeofday () in
@@ -1418,7 +1419,7 @@ and resolve_mt_signature_fragment :
           (* Format.fprintf Format.err_formatter "SubstMT for frag %a\n%!" Component.Fmt.resolved_signature_fragment new_frag; *)
           (`Subst (p', new_path), `Subst (p', new_frag))
       in
-      let _, sg = (cp', signature_of_module env m') |> prefix_module_signature in
+      let _, sg = prefix_signature (`Module cp', signature_of_module env m') in
       (f', `Module cp', sg)
 
 and resolve_mt_module_fragment :
