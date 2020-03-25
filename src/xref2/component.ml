@@ -676,7 +676,7 @@ module Fmt = struct
         Format.fprintf ppf "%a(%a)" module_path p1 module_path p2
     | `Substituted p -> Format.fprintf ppf "substituted(%a)" module_path p
     | `Forward s -> Format.fprintf ppf "forward(%s)" s
-    | `Root r -> Format.fprintf ppf "root(%s)" r
+    | `Root r -> Format.fprintf ppf "unresolvedroot(%s)" r
 
   and resolved_module_type_path :
       Format.formatter -> Cpath.Resolved.module_type -> unit =
@@ -780,7 +780,7 @@ module Fmt = struct
     let open Odoc_model.Paths.Path.Resolved in
     match p with
     | `Identifier id ->
-        Format.fprintf ppf "(%a)" model_identifier
+        Format.fprintf ppf "identifier(%a)" model_identifier
           (id :> Odoc_model.Paths.Identifier.t)
     | `Module (parent, name) ->
         Format.fprintf ppf "%a.%s" model_resolved_path
@@ -1009,7 +1009,7 @@ module Fmt = struct
     match r with
     | `Resolved r' ->
         Format.fprintf ppf "resolved(%a)" model_resolved_reference r'
-    | `Root (name, _) -> Format.fprintf ppf "root(%s)" name
+    | `Root (name, _) -> Format.fprintf ppf "unresolvedroot(%s)" name
     | `Dot (parent, str) ->
         Format.fprintf ppf "%a.%s" model_reference (parent :> t) str
     | `Module (parent, str) ->

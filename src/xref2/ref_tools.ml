@@ -133,7 +133,7 @@ and resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
         resolve_label_parent_reference env parent ~add_canonical:true
         >>= signature_lookup_result_of_label_parent
         >>= fun (parent', cp, sg) ->
-        let _, sg = Tools.prefix_signature (cp, sg) in
+        let sg = Tools.prefix_signature (cp, sg) in
         Find.opt_type_in_sig sg name >>= fun t ->
         return (`Type (parent', name), t)
     | `Class (parent, name) -> (
@@ -145,14 +145,14 @@ and resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
     | `ClassType (parent, name) -> (
         resolve_signature_reference env parent ~add_canonical:true
         >>= fun (parent', cp, sg) ->
-        let _, sg = Tools.prefix_signature (cp, sg) in
+        let sg = Tools.prefix_signature (cp, sg) in
         Find.opt_type_in_sig sg name >>= function
         | `CT _ as c -> return (`ClassType (parent', name), c)
         | _ -> None )
     | `Type (parent, name) -> (
         resolve_signature_reference env parent ~add_canonical:true
         >>= fun (parent', cp, sg) ->
-        let _, sg = Tools.prefix_signature (cp, sg) in
+        let sg = Tools.prefix_signature (cp, sg) in
         Find.opt_type_in_sig sg name >>= function
         | `T _ as c -> return (`Type (parent', name), c)
         | _ -> None )
@@ -160,14 +160,14 @@ and resolve_type_reference : Env.t -> Type.t -> type_lookup_result option =
 and find_module : Env.t -> LabelParent.t -> string -> add_canonical:bool -> module_lookup_result option =
   fun env parent name ~add_canonical ->
   let open Tools.OptionMonad in
-  Format.fprintf Format.err_formatter "resolve_module_reference: (add_canonical=%b) before:\n%!%a\n%!" add_canonical
-    Component.Fmt.model_reference (`Dot (parent, name));
+  (* Format.fprintf Format.err_formatter "resolve_module_reference: (add_canonical=%b) before:\n%!%a\n%!" add_canonical
+    Component.Fmt.model_reference (`Dot (parent, name)); *)
   resolve_label_parent_reference env parent ~add_canonical
   >>= signature_lookup_result_of_label_parent
   >>= fun (parent', cp_unresolved, sg) ->
-  Format.fprintf Format.err_formatter "2\n%!";
+  (* Format.fprintf Format.err_formatter "2\n%!"; *)
   let cp_reresolved = Tools.reresolve_parent env cp_unresolved in
-  let _, sg = Tools.prefix_signature (cp_reresolved, sg) in
+  let sg = Tools.prefix_signature (cp_reresolved, sg) in
   handle_module_lookup env add_canonical name cp_reresolved parent' sg
 
 and find_module_type : Env.t -> LabelParent.t -> string -> add_canonical:bool -> module_type_lookup_result option =
@@ -176,7 +176,7 @@ and find_module_type : Env.t -> LabelParent.t -> string -> add_canonical:bool ->
   resolve_label_parent_reference env parent ~add_canonical
   >>= signature_lookup_result_of_label_parent
   >>= fun (parent', cp, sg) ->
-  let _, sg = Tools.prefix_signature (cp, sg) in
+  let sg = Tools.prefix_signature (cp, sg) in
   (try Some (Tools.handle_module_type_lookup env name cp sg) with _ -> None)
   >>= fun (cp', m) ->
   let resolved_ref = 
@@ -314,7 +314,7 @@ and resolve_signature_reference :
             Memos2.add memo2 id (resolved, lookups);
             resolved
           | (resolved, lookups) :: xs ->
-              if Tools.verify_lookups env' lookups then
+              if Env.verify_lookups env' lookups then
                 (*Format.fprintf Format.err_formatter "G";*) resolved
               else find xs
         in

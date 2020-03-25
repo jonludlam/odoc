@@ -198,3 +198,5 @@ val modules_of :
 val len : int ref
 
 val n : int ref
+
+val verify_lookups : t -> lookup_type list -> bool

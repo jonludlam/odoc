@@ -741,3 +741,53 @@ let initial_env : Odoc_model.Lang.Compilation_unit.t -> resolver -> Odoc_model.L
       t.imports ([], initial_env)
 
 let modules_of env = ModuleMap.bindings env.modules
+
+let verify_lookups env lookups =
+  let bad_lookup = function
+    | Module (id, found) ->
+        let actually_found =
+          try
+            ignore (lookup_module id env);
+            true
+          with _ -> false
+        in
+        found <> actually_found
+    | RootModule (name, res) -> (
+        let actual_result = lookup_root_module name env in
+        match (res, actual_result) with
+        | None, None -> false
+        | Some `Forward, Some Forward -> false
+        | Some (`Resolved id1), Some (Resolved (id2, _)) -> id1 <> id2
+        | _ -> true )
+    | ModuleType (id, found) ->
+        let actually_found =
+          try
+            ignore (lookup_module_type id env);
+            true
+          with _ -> false
+        in
+        found <> actually_found
+    | ModuleByName (name, result) -> begin
+        let actually_found = lookup_module_by_name name env in
+        match result, actually_found with
+        | None, None -> false
+        | Some id, Some (Resolved (id', _)) -> id <> id'
+        | None, Some Forward -> false
+        | _ -> true
+    end
+    | FragmentRoot _i -> true (* begin
+        try
+          let (i', _) = Env.lookup_fragment_root env in
+          i' <> i
+        with _ ->
+          true
+      end*)
+  in
+  let result = not (List.exists bad_lookup lookups) in
+  (* If we're recording lookups, make sure it looks like we
+      looked all this stuff up *)
+  (match result, env.recorder with
+  | true, Some r ->
+      r.lookups <- r.lookups @ lookups;
+  | _ -> ());
+  result
