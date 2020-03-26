@@ -610,26 +610,6 @@ let add_functor_args : Odoc_model.Paths.Identifier.Signature.t -> t -> t =
         | None -> env )
     | `Root _ -> env
 
-let rec open_component_signature :
-    Odoc_model.Paths.Identifier.Signature.t -> Component.Signature.t -> t -> t =
-  let open Component in
-  fun id s env ->
-    List.fold_left
-      (fun env orig ->
-        match orig with
-        | Signature.Type (tid, _, t) ->
-            let new_id = `Type (id, Ident.Name.type_ tid) in
-            add_type new_id (Delayed.get t) env
-        | Signature.Module (mid, _, m) ->
-            let new_id = `Module (id, Ident.Name.module_ mid) in
-            add_module new_id (Delayed.get m) env
-        | Signature.ModuleType (mid, m) ->
-            let new_id = `ModuleType (id, Ident.Name.module_type mid) in
-            add_module_type new_id (Delayed.get m) env
-        | Signature.Include i -> open_component_signature id i.expansion_ env
-        | _ -> env)
-      env s.items
-
 let open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t =
   let open Component in
   let open Of_Lang in

@@ -181,8 +181,8 @@ val lookup_value_by_name :
 
 val add_functor_args : Odoc_model.Paths_types.Identifier.signature -> t -> t
 
-val open_component_signature :
-  Odoc_model.Paths_types.Identifier.signature -> Component.Signature.t -> t -> t
+(* val open_component_signature :
+  Odoc_model.Paths_types.Identifier.signature -> Component.Signature.t -> t -> t *)
 
 val open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t
 
