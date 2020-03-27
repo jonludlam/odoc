@@ -1752,11 +1752,7 @@ struct
     let docs = Comment.to_html t.doc in
     let docs = (docs :> (Html_types.div_content Html.elt) list) in
     let included_html, _, tree = signature ?theme_uri t.expansion.content in
-    let should_be_inlined =
-      let is_inline_tag element =
-        element.Odoc_model.Location_.value = `Tag `Inline in
-      List.exists is_inline_tag t.doc
-    in
+    let should_be_inlined = t.inline in
     let should_be_open =
       let is_open_tag element = element.Odoc_model.Location_.value = `Tag `Open in
       let is_closed_tag element =
