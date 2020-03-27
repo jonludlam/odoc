@@ -125,8 +125,8 @@ let opt_label_in_sig s name =
         let rec inner' xs =
           match xs with
           | elt :: rest -> (
-              match elt with
-              | `Heading (_, label, _) when Ident.Name.label label = name ->
+              match elt.Odoc_model.Location_.value with
+              | `Heading (_, label, _) when Odoc_model.Paths.Identifier.name label = name ->
                   Some label
               | _ -> inner' rest )
           | _ -> None

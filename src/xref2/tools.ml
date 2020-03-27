@@ -67,7 +67,6 @@ let core_types =
 
 let prefix_substitution path sg =
   let open Component.Signature in
-  let rpath = (Cref.resolved_signature_reference_of_resolved_parent_path path) in
   let rec get_sub sub' is =
     List.fold_right
       (fun item map ->
@@ -76,31 +75,26 @@ let prefix_substitution path sg =
             let name = TypeName.of_string (Ident.Name.type_ id) in
             Subst.add_type id
               (`Type (path,name))
-              (`Type (rpath,name))
               map
         | Module (id, _, _) ->
             let name = ModuleName.of_string (Ident.Name.module_ id) in
             Subst.add_module id
               (`Module (path, name))
-              (`Module (rpath, name))
               map
         | ModuleType (id, _) ->
             let name = ModuleTypeName.of_string (Ident.Name.module_type id) in
             Subst.add_module_type id
               (`ModuleType (path, name))
-              (`ModuleType (rpath, name))
               map
         | ModuleSubstitution (id, _) ->
             let name = ModuleName.of_string (Ident.Name.module_ id) in
             Subst.add_module id
             (`Module (path, name))
-              (`Module (rpath, name))
               map
         | TypeSubstitution (id, _) ->
             let name = TypeName.of_string (Ident.Name.type_ id) in
             Subst.add_type id
               (`Type (path, name))
-              (`Type (rpath, name))
               map
         | Exception _ | TypExt _ | Value (_, _) | External (_, _) | Comment _ ->
             map
@@ -108,13 +102,11 @@ let prefix_substitution path sg =
             let name = ClassName.of_string (Ident.Name.class_ id) in
             Subst.add_class id
               (`Class (path, name))
-              (`Class (rpath, name))
               map
         | ClassType (id, _, _) ->
             let name = ClassTypeName.of_string (Ident.Name.class_type id) in
             Subst.add_class_type id
               (`ClassType (path, name))
-              (`ClassType (rpath, name))
               map
         | Include i -> get_sub map i.expansion_.items)
       is sub'
@@ -127,13 +119,11 @@ let prefix_substitution path sg =
             let name = ModuleName.of_string (Ident.Name.module_ id) in
             Subst.add_module id
               (`Module (path, name))
-              (`Module (rpath, name))
               map
         | Component.Signature.RType (id, _) ->
             let name = TypeName.of_string (Ident.Name.type_ id) in
             Subst.add_type id
               (`Type (path,name))
-              (`Type (rpath, name))
               map)
       removed sub
   in
@@ -296,10 +286,9 @@ let rec handle_apply is_resolve env func_path arg_path m =
   let new_module = { m with Component.Module.type_ = ModuleType result } in
   let path = `Apply (func_path, (`Resolved (`Substituted arg_path))) in
   let substitution = if is_resolve then `Substituted arg_path else arg_path in
-  let ref_subst = Cref.resolved_module_reference_of_resolved_module_path arg_path in
   ( path,
     Subst.module_
-      (Subst.add_module arg_id substitution ref_subst Subst.identity)
+      (Subst.add_module arg_id substitution Subst.identity)
       new_module )
 
 and add_canonical_path : Env.t -> Component.Module.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
@@ -1188,7 +1177,7 @@ and fragmap_module :
 
   let sub_of_removed removed sub =
     match removed with
-    | Component.Signature.RModule (id, p) -> Subst.add_module id p (Cref.resolved_module_reference_of_resolved_module_path p) sub
+    | Component.Signature.RModule (id, p) -> Subst.add_module id p sub
     | _ -> sub
   in
   let sub = List.fold_right sub_of_removed removed Subst.identity in
