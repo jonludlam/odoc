@@ -1213,19 +1213,20 @@ struct
     = fun arg ->
       let open Odoc_model.Lang.FunctorParameter in
       let name = Paths.Identifier.name arg.id in
+      let render_ty = match arg.display_expr with | Some e -> e | None -> arg.expr in
       let def_div, subtree =
         match arg.expansion with
         | None ->
           (
             O.txt (Paths.Identifier.name arg.id) ++
               O.txt Syntax.Type.annotation_separator ++
-              mty (arg.id :> Paths.Identifier.Signature.t) arg.expr
+              mty (arg.id :> Paths.Identifier.Signature.t) render_ty
           ), []
         | Some expansion ->
           let expansion =
             match expansion with
             | AlreadyASig ->
-              begin match arg.expr with
+              begin match render_ty with
               | Signature sg -> Odoc_model.Lang.Module.Signature sg
               | _ -> assert false
               end
@@ -1244,7 +1245,7 @@ struct
           (
             link ++
               O.txt Syntax.Type.annotation_separator ++
-              mty (arg.id :> Paths.Identifier.Signature.t) arg.expr
+              mty (arg.id :> Paths.Identifier.Signature.t) render_ty
           ), [page]
       in
       let region = O.code def_div in
