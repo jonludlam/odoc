@@ -1303,7 +1303,7 @@ and fragmap_type :
             match item with
             | Component.Signature.Module (id, r, m)
               when Ident.Name.module_ id = ModuleName.to_string name ->
-                let m = Subst.Delayed.get_module m in (* TODO: Do we need to apply subst ? *)
+                let m = Subst.Delayed.get_module m in
                 let item =
                   Component.Signature.Module
                     (id, r, Component.Substitution.NoSubst (mapfn m))
