@@ -1195,6 +1195,7 @@ struct
         | Value v     -> continue_no_pages @@ value v
         | External e  -> continue_no_pages @@ external_ e
 
+        | Open _ -> loop ?level_shift rest (acc_items, acc_pages)
         | Comment `Stop ->
           let rest = Utils.skip_until rest ~p:(function
             | Lang.Signature.Comment `Stop -> true
