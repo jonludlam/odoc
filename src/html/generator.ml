@@ -1437,6 +1437,7 @@ struct
     | ClassType (_, {id; _}) -> path_to_id (id :> Paths.Identifier.t)
     | TypExt _
     | Include _
+    | Open _
     | Comment _ -> None
 
   let signature_item_to_spec : Lang.Signature.item -> _ = function
@@ -1452,25 +1453,27 @@ struct
     | ClassType _ -> Some "class-type"
     | TypExt _ -> Some "extension"
     | Include _
+    | Open _
     | Comment _ -> None
 
   let tag_signature_item : Lang.Signature.item -> _ = fun item ->
     match item with
-    | Type _ -> `Leaf_item (`Type, item)
-    | TypeSubstitution _ -> `Leaf_item (`TypeSubstitution, item)
-    | TypExt _ -> `Leaf_item (`Extension, item)
-    | Exception _ -> `Leaf_item (`Exception, item)
-    | Value _ -> `Leaf_item (`Value, item)
-    | External _ -> `Leaf_item (`External, item)
-    | ModuleSubstitution _ -> `Leaf_item (`ModuleSubstitution, item)
+    | Type _ -> Some (`Leaf_item (`Type, item))
+    | TypeSubstitution _ -> Some (`Leaf_item (`TypeSubstitution, item))
+    | TypExt _ -> Some (`Leaf_item (`Extension, item))
+    | Exception _ -> Some (`Leaf_item (`Exception, item))
+    | Value _ -> Some (`Leaf_item (`Value, item))
+    | External _ -> Some (`Leaf_item (`External, item))
+    | ModuleSubstitution _ -> Some (`Leaf_item (`ModuleSubstitution, item))
 
     | Module _
     | ModuleType _
     | Include _
     | Class _
-    | ClassType _ -> `Nested_article item
+    | ClassType _ -> Some (`Nested_article item)
 
-    | Comment comment -> `Comment comment
+    | Comment comment -> Some (`Comment comment)
+    | Open _ -> None
 
   let rec render_leaf_signature_item : Lang.Signature.item -> _ = function
     | Type (r, t) -> type_decl (r, t)
@@ -1495,7 +1498,13 @@ struct
     | _ -> assert false
 
   and signature ?heading_level_shift ?theme_uri s =
-    let tagged_items = List.map tag_signature_item s in
+    let tagged_items =
+      List.fold_right
+        (fun item acc ->
+          match tag_signature_item item with
+          | Some x -> x :: acc
+          | None -> acc) s []
+    in
     Top_level_markup.lay_out
       heading_level_shift
       ~item_to_id:signature_item_to_id
