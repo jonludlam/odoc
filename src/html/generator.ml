@@ -1458,7 +1458,11 @@ struct
 
   let tag_signature_item : Lang.Signature.item -> _ = fun item ->
     match item with
-    | Type _ -> Some (`Leaf_item (`Type, item))
+    | Type (_, t) -> (
+        match t.id with
+        | `Type (_, name) when Odoc_model.Names.TypeName.is_internal name ->
+            None
+        | _ -> Some (`Leaf_item (`Type, item)) )
     | TypeSubstitution _ -> Some (`Leaf_item (`TypeSubstitution, item))
     | TypExt _ -> Some (`Leaf_item (`Extension, item))
     | Exception _ -> Some (`Leaf_item (`Exception, item))
@@ -1466,7 +1470,12 @@ struct
     | External _ -> Some (`Leaf_item (`External, item))
     | ModuleSubstitution _ -> Some (`Leaf_item (`ModuleSubstitution, item))
 
-    | Module _
+    | Module (_, m) ->  (
+        match m.id with
+        | `Module (_, name) when Odoc_model.Names.ModuleName.is_internal name
+          ->
+            None
+        | _ -> Some (`Nested_article item) )
     | ModuleType _
     | Include _
     | Class _
