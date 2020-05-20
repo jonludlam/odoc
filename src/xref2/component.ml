@@ -496,6 +496,12 @@ module Fmt = struct
 
   and module_ ppf m = Format.fprintf ppf "%a" module_decl m.type_
 
+  and module_expansion ppf m =
+    match m with
+    | Module.AlreadyASig -> Format.fprintf ppf "AlreadyASig"
+    | Signature sg -> Format.fprintf ppf "sig: %a" signature sg
+    | Functor (_args, sg) -> Format.fprintf ppf "functor: (...) -> %a" signature sg
+
   and module_type ppf mt =
     match mt.expr with
     | Some x -> Format.fprintf ppf "= %a" module_type_expr x

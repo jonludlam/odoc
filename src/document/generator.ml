@@ -1191,6 +1191,12 @@ struct
     | `Type (_, name) when TypeName.is_internal name -> true
     | _ -> false
 
+  let internal_module_type t =
+    let open Lang.ModuleType in
+    match t.id with
+    | `ModuleType (_, name) when ModuleTypeName.is_internal name -> true
+    | _ -> false
+
   let rec signature ?level_shift:level_shift0 s =
     let rec loop ?level_shift l (acc_items, acc_pages) =
       match l with
@@ -1204,6 +1210,8 @@ struct
         | Module (_, m) when internal_module m ->
           loop ?level_shift rest (acc_items, acc_pages)
         | Type (_, t) when internal_type t ->
+          loop ?level_shift rest (acc_items, acc_pages)
+        | ModuleType m when internal_module_type m ->
           loop ?level_shift rest (acc_items, acc_pages)
         
         | Module (recursive, m)    -> continue @@ module_ recursive m
@@ -1353,7 +1361,9 @@ struct
               begin match t.type_ with
               | ModuleType (Odoc_model.Lang.ModuleType.Signature sg) ->
                 Odoc_model.Lang.Module.Signature sg
-              | _ -> assert false
+              | _ ->
+                Format.eprintf "Inconsistent expansion: %s\n%!" modname;
+                assert false
               end
             | e -> e
           in

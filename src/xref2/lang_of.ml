@@ -206,8 +206,9 @@ module ExtractIDs = struct
   and module_ parent map id =
     let name = Ident.Name.module_ id in
     let identifier =
-      if List.mem name map.s_modules then
-        `Module (parent, ModuleName.internal_of_string name)
+      if List.mem name map.s_modules then (
+        (* Format.eprintf "shadowed module: %s\n%!" name; *)
+        `Module (parent, ModuleName.internal_of_string name))
       else `Module (parent, Ident.Name.typed_module id)
     in
     { map with module_ = (id, identifier) :: map.module_ }
@@ -215,8 +216,9 @@ module ExtractIDs = struct
   and module_type parent map id =
     let name = Ident.Name.module_type id in
     let identifier =
-      if List.mem name map.s_module_types then
-        `ModuleType (parent, ModuleTypeName.internal_of_string name)
+      if List.mem name map.s_module_types then (
+        (* Format.eprintf "shadowed module type: %s\n%!" name; *)
+        `ModuleType (parent, ModuleTypeName.internal_of_string name))
       else `ModuleType (parent, Ident.Name.typed_module_type id)
     in
     { map with module_type = (id, identifier) :: map.module_type }
@@ -242,9 +244,7 @@ module ExtractIDs = struct
     }
 
   and include_ parent map i =
-    (* Shadowed items don't apply to nested includes *)
-    let new_map = { map with s_modules = [] } in
-    signature parent new_map i.Include.expansion_
+    signature parent map i.Include.expansion_
 
   and open_ parent map o = signature parent map o.Open.expansion
 
@@ -287,9 +287,9 @@ let rec signature_items id map items =
     | [] -> List.rev acc
     | Module (id, r, m) :: rest ->
         let m = Component.Delayed.get m in
-        inner rest (Module (r, module_ map parent id m) :: acc)
+        inner rest (Odoc_model.Lang.Signature.Module (r, module_ map parent id m) :: acc)
     | ModuleType (id, m) :: rest ->
-        inner rest (ModuleType (module_type map parent id m) :: acc)
+        inner rest (Odoc_model.Lang.Signature.ModuleType (module_type map parent id m) :: acc)
     | Type (id, r, t) :: rest ->
         let t = Component.Delayed.get t in
         inner rest (Type (r, type_decl map parent id t) :: acc)
@@ -302,7 +302,7 @@ let rec signature_items id map items =
           :: acc )
     | TypExt t :: rest -> inner rest (TypExt (typ_ext map id t) :: acc)
     | Value (id, v) :: rest -> inner rest (Value (value_ map parent id v) :: acc)
-    | Include i :: rest -> inner rest (Include (include_ id map i) :: acc)
+    | Include i :: rest -> inner rest (Include (include_ id map rest i) :: acc)
     | Open o :: rest -> inner rest (Open (open_ id map o) :: acc)
     | External (id, e) :: rest ->
         inner rest (External (external_ map parent id e) :: acc)
@@ -472,7 +472,27 @@ and module_expansion :
       in
       Functor (List.rev rev_args, signature identifier map sg)
 
-and include_ parent map i =
+and find_shadowed map =
+  let open Component.Signature in
+  function
+  | Module (id, _, _) :: rest ->
+    let name = Ident.Name.module_ id in
+    (* Format.eprintf "LO: possibly shadowed module: %s\n%!" name; *)
+    find_shadowed { map with s_modules = name :: map.s_modules } rest
+  | ModuleType (id, _) :: rest ->
+    let name = Ident.Name.module_type id in
+    (* Format.eprintf "LO: possibly shadowed module type: %s\n%!" name; *)
+    find_shadowed { map with s_module_types = name :: map.s_module_types } rest
+  | Type (id, _, _) :: rest ->
+    let name = Ident.Name.type_ id in
+    find_shadowed { map with s_types = name :: map.s_types } rest
+  | Include i :: rest ->
+    find_shadowed (find_shadowed map i.expansion_.items) rest
+  | _ :: rest -> find_shadowed map rest
+  | [] -> map
+
+and include_ parent map' rest i =
+  let map = find_shadowed map' rest in
   let open Component.Include in
   {
     Odoc_model.Lang.Include.parent;

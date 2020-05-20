@@ -258,7 +258,7 @@ module rec Path : sig
 
       val of_ident : Identifier.Path.Module.t -> t
 
-      val is_hidden : t -> bool
+      val is_hidden : weak_canonical_test:bool -> t -> bool
 
       val identifier : t -> Identifier.Path.Module.t
 

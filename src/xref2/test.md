@@ -627,7 +627,7 @@ Some
       (`Type
          (`Subst
             (`ModuleType
-               (`SubstAlias
+               (`Alias
                   (`Identifier (`Module (`Root (Common.root, Root), B)),
                    `Module
                      (`Identifier (`Module (`Root (Common.root, Root), C)),
@@ -1074,7 +1074,7 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`SubstAlias
+         (`Alias
             (`Subst
                (`ModuleType
                   (`Identifier (`Module (`Root (Common.root, Root), Dep1)),
@@ -1156,7 +1156,7 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`SubstAlias
+         (`Alias
             (`Identifier (`Module (`Root (Common.root, Root), Dep3)),
              `Module
                (`Module

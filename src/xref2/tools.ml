@@ -367,9 +367,7 @@ and get_module_path_modifiers : Env.t -> bool -> Component.Module.t -> _ option
         lookup_and_resolve_module_from_path true add_canonical env alias_path
       with
       | Resolved (resolved_alias_path, _) ->
-          if Cpath.is_resolved_module_substituted resolved_alias_path then
-            Some (`SubstAliased resolved_alias_path)
-          else Some (`Aliased resolved_alias_path)
+          Some (`Aliased resolved_alias_path)
       | Unresolved _ -> None )
   | ModuleType t -> (
       match get_substituted_module_type env t with
@@ -1038,9 +1036,8 @@ and signature_of_module_alias :
   match lookup_and_resolve_module_from_path false true env path with
   | Resolved (p', m) ->
       (* p' is the path to the aliased module *)
-      signature_of_module_cached env p' false m >>= fun m' ->
-      let m'' = Strengthen.signature (`Resolved p') m' in
-      Ok m''
+      signature_of_module_cached env p' false m >>= fun sg ->
+      Ok (Strengthen.signature (`Resolved p') sg)
   | Unresolved p when Cpath.is_module_forward p -> Error `UnresolvedForwardPath
   | Unresolved p' -> Error (`UnresolvedPath (`Module p'))
 
@@ -1564,6 +1561,7 @@ and resolve_mt_signature_fragment :
       in
       (* Don't use the cached one - `FragmentRoot` is not unique *)
       of_result (signature_of_module env m') >>= fun parent_sg ->
+      (* Format.eprintf "Dot (%s): sig: %a\n%!" name Component.Fmt.signature sg; *)
       let sg = prefix_signature (`Module cp', parent_sg) in
       Some (f', `Module cp', sg)
 

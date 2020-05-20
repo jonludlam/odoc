@@ -20,22 +20,22 @@ open Names
 module Id = Paths.Identifier
 module Rp = Paths.Path.Resolved
 
-type type_ident = Paths_types.Identifier.path_type
-
-type class_type_ident = Paths_types.Identifier.path_class_type
+type type_ident = Paths.Identifier.Path.Type.t
 
 type t =
   { modules : Rp.Module.t Ident.tbl;
     module_ids : Id.Module.t Ident.tbl;
     module_types : Id.ModuleType.t Ident.tbl;
-    types : type_ident Ident.tbl;
-    class_types : class_type_ident Ident.tbl; }
+    types : Id.DataType.t Ident.tbl;
+    classes : Id.Class.t Ident.tbl;
+    class_types : Id.ClassType.t Ident.tbl; }
 
 let empty =
   { modules = Ident.empty;
     module_ids = Ident.empty;
     module_types = Ident.empty;
     types = Ident.empty;
+    classes = Ident.empty;
     class_types = Ident.empty; }
 
 let builtin_idents = List.map snd Predef.builtin_idents
@@ -43,14 +43,10 @@ let builtin_idents = List.map snd Predef.builtin_idents
 let is_shadowing map name ident =
 #if OCAML_MAJOR = 4 && OCAML_MINOR >= 08
   let all = Ident.find_all name map in
-  let shadowing = List.filter (fun (_, ident') -> ident' = ident) all in
-  match shadowing with
-  | [] -> None
-  | [(id', _)] -> Some id'
-  | _ -> failwith "Multiple bindings found"
+  List.filter (fun (_, ident') -> ident' = ident) all |> List.map fst
 #else
   ignore(map, name, ident);
-  None
+  []
 #endif
 
 let rebind id new_binding map =
@@ -64,16 +60,19 @@ let add_module parent id name env =
   let identifier = `Module(parent, name) in
   let path = if ModuleName.is_hidden name then `Hidden (`Identifier identifier) else `Identifier identifier in
   match is_shadowing env.module_ids (ModuleName.to_string name) identifier with
-  | None ->
+  | [] ->
     let modules = Ident.add id path env.modules in
     let module_ids = Ident.add id identifier env.module_ids in
     { env with modules; module_ids }
-  | Some id' ->
+  | [id'] ->
+    Format.eprintf "Shadowing module: %a\n%!" Ident.print_with_scope id;
     let new_ident = `Module (parent, ModuleName.internal_of_string (ModuleName.to_string name)) in
     let module_ids = rebind id' new_ident env.module_ids |> Ident.add id identifier in
     let new_path = `Hidden (`Identifier new_ident) in
     let modules = rebind id' new_path env.modules |> Ident.add id path in
     { env with modules; module_ids }
+  | _ ->
+    failwith "Unexpected extra shadowing"
 
 let add_parameter parent id name env =
   let ident = `Identifier (`Parameter(parent, name)) in
@@ -84,48 +83,55 @@ let add_parameter parent id name env =
 let add_module_type parent id name env =
   let identifier = `ModuleType(parent, name) in
   match is_shadowing env.module_types (ModuleTypeName.to_string name) identifier with
-  | None ->
+  | [] ->
     let module_types = Ident.add id identifier env.module_types in
     { env with module_types }
-  | Some id' ->
+  | [id'] ->
+    Format.eprintf "Shadowing module type: %a\n%!" Ident.print_with_scope id;
     let new_ident = `ModuleType (parent, ModuleTypeName.internal_of_string (ModuleTypeName.to_string name)) in
     let module_types = rebind id' new_ident env.module_types |> Ident.add id identifier in
     { env with module_types }
+  | _ -> failwith "Unexpected extra module type shadowing"
 
 let add_type parent id name env =
   let identifier = `Type(parent, name) in
   match is_shadowing env.types (TypeName.to_string name) identifier with
-  | None ->
+  | [] ->
     let types = Ident.add id identifier env.types in
     { env with types }
-  | Some id' ->
+  | [id'] ->
     let new_ident = `Type (parent, TypeName.internal_of_string (TypeName.to_string name)) in
     let types = rebind id' new_ident env.types |> Ident.add id identifier in
     { env with types }
+  | _ ->
+    failwith "Unexpected extra shadowing"
 
-let add_class parent id ty_id obj_id cl_id name env =
+let add_class parent ids name env =
   let identifier = `Class(parent, name) in
-  let add_idents tbl =
-    Ident.add id identifier
-      (Ident.add ty_id identifier
-         (Ident.add obj_id identifier
-            (Ident.add cl_id identifier tbl)))
-  in
-  let types = add_idents env.types in
-  let class_types = add_idents env.class_types in
-    { env with types; class_types }
+  match is_shadowing env.classes (ClassName.to_string name) identifier with
+  | [] ->
+    let classes =
+      List.fold_right (fun id -> Ident.add id identifier) ids env.classes in
+    { env with classes }
+  | ids' ->
+    let new_ident = `Class (parent, ClassName.internal_of_string (ClassName.to_string name)) in
+    let classes = List.fold_right (fun id' classes -> rebind id' new_ident classes) ids' env.classes in
+    let classes = List.fold_right (fun id classes -> Ident.add id identifier classes) ids classes in
+    { env with classes }
 
-let add_class_type parent id obj_id cl_id name env =
+let add_class_type parent ids name env =
   let identifier = `ClassType(parent, name) in
-  let add_idents tbl =
-    Ident.add id identifier
-         (Ident.add obj_id identifier
-            (Ident.add cl_id identifier tbl))
-  in
-  let types = add_idents env.types in
-  let class_types = add_idents env.class_types in
-    { env with types; class_types }
-
+  match is_shadowing env.class_types (ClassTypeName.to_string name) identifier with
+  | [] ->
+    let class_types =
+        List.fold_right (fun id -> Ident.add id identifier) ids env.class_types in
+    { env with class_types }
+  | ids' ->
+    let new_ident = `ClassType (parent, ClassTypeName.internal_of_string (ClassTypeName.to_string name)) in
+    let class_types =
+        List.fold_right (fun id' class_types -> rebind id' new_ident class_types) ids' env.class_types |>
+          List.fold_right (fun id class_types -> Ident.add id identifier class_types) ids in
+    { env with class_types }
 
 let rec add_signature_type_items parent items env =
   let open Compat in
@@ -143,12 +149,14 @@ let rec add_signature_type_items parent items env =
     | Sig_class(id, _, _, Exported) :: Sig_class_type(ty_id, _, _, _)
         :: Sig_type(obj_id, _, _, _) :: Sig_type(cl_id, _, _, _) :: rest ->
         let env = add_signature_type_items parent rest env in
-          add_class parent id ty_id obj_id cl_id (ClassName.of_ident id) env
+        let name = ClassName.of_ident id in
+        add_class parent [id; ty_id; obj_id; cl_id] name env
     | Sig_class_type(id, _, _, Exported) :: Sig_type(obj_id, _, _, _)
       :: Sig_type(cl_id, _, _, _) :: rest ->
         let env = add_signature_type_items parent rest env in
-          add_class_type parent id obj_id cl_id (ClassTypeName.of_ident id) env
-    | (Sig_value _ | Sig_typext _) :: rest ->
+        let name = ClassTypeName.of_ident id in
+          add_class_type parent [id; obj_id; cl_id] name env
+    | (Sig_value _ | Sig_typext _) :: rest -> 
         add_signature_type_items parent rest env
 
     | Sig_class_type(_, _, _, Hidden) :: Sig_type(_, _, _, _)
@@ -188,11 +196,15 @@ let rec add_extended_open_items parent items env =
     | Sig_class(id, _, _, _) :: Sig_class_type(ty_id, _, _, _)
         :: Sig_type(obj_id, _, _, _) :: Sig_type(cl_id, _, _, _) :: rest ->
         let env = add_extended_open_items parent rest env in
-          add_class parent id ty_id obj_id cl_id (ClassName.internal_of_ident id) env
+        let name = ClassName.internal_of_ident id in
+        add_class parent [id; ty_id; obj_id; cl_id] name env
+
     | Sig_class_type(id, _, _, _) :: Sig_type(obj_id, _, _, _)
       :: Sig_type(cl_id, _, _, _) :: rest ->
         let env = add_extended_open_items parent rest env in
-          add_class_type parent id obj_id cl_id (ClassTypeName.internal_of_ident id) env
+      let name = ClassTypeName.internal_of_ident id in
+      add_class_type parent [id; obj_id; cl_id] name env
+
     | (Sig_value _ | Sig_typext _) :: rest ->
         add_extended_open_items parent rest env
 
@@ -249,26 +261,30 @@ let add_signature_tree_item parent item env =
     | Tsig_class cls ->
         List.fold_right
           (fun cld env ->
-             add_class parent cld.ci_id_class
-               cld.ci_id_class_type cld.ci_id_object
+             let typehash =
 #if OCAML_MAJOR = 4 && OCAML_MINOR < 04
-               cld.ci_id_typesharp
+              cld.ci_id_typesharp
 #else
-               cld.ci_id_typehash
+              cld.ci_id_typehash
 #endif
-               (ClassName.of_ident cld.ci_id_class)
-               env)
-          cls env
+            in
+            let name = ClassName.of_ident cld.ci_id_class in
+            add_class parent [cld.ci_id_class; cld.ci_id_class_type; cld.ci_id_object; typehash] name env)
+            cls env
     | Tsig_class_type cltyps ->
         List.fold_right
           (fun clty env ->
-             add_class_type parent clty.ci_id_class_type
-               clty.ci_id_object
+            let typehash =
 #if OCAML_MAJOR = 4 && OCAML_MINOR < 04
-               clty.ci_id_typesharp
+              clty.ci_id_typesharp
 #else
-               clty.ci_id_typehash
+              clty.ci_id_typehash
 #endif
+            in
+            
+            add_class_type parent [clty.ci_id_class_type;
+               clty.ci_id_object;
+               typehash ]
                (ClassTypeName.of_ident clty.ci_id_class_type)
                env)
           cltyps env
@@ -332,26 +348,28 @@ let add_structure_tree_item parent item env =
 #else
           (fun (cld, _) env ->
 #endif
-             add_class parent cld.ci_id_class
-               cld.ci_id_class_type cld.ci_id_object
+             add_class parent [cld.ci_id_class;
+               cld.ci_id_class_type; cld.ci_id_object;
 #if OCAML_MAJOR = 4 && OCAML_MINOR < 04
                cld.ci_id_typesharp
 #else
                cld.ci_id_typehash
 #endif
+             ]
                (ClassName.of_ident cld.ci_id_class)
                env)
           cls env
     | Tstr_class_type cltyps ->
         List.fold_right
           (fun (_, _, clty) env ->
-             add_class_type parent clty.ci_id_class_type
-               clty.ci_id_object
+             add_class_type parent [clty.ci_id_class_type;
+               clty.ci_id_object;
 #if OCAML_MAJOR = 4 && OCAML_MINOR < 04
                clty.ci_id_typesharp
 #else
                clty.ci_id_typehash
 #endif
+             ]
                (ClassTypeName.of_ident clty.ci_id_class_type)
                env)
           cltyps env
@@ -383,17 +401,35 @@ let find_module_identifier env id =
 let find_module_type env id =
   Ident.find_same id env.module_types
 
+let find_type_identifier env id =
+  Ident.find_same id env.types
+
 let find_type env id =
   try
-    Ident.find_same id env.types
+    (Ident.find_same id env.types :> Id.Path.Type.t)
   with Not_found ->
-    if List.mem id builtin_idents then
-        match core_type_identifier (Ident.name id) with
-        | Some id -> (id :> type_ident)
-        | None -> raise Not_found
-    else raise Not_found
-
+    try
+      (Ident.find_same id env.classes :> Id.Path.Type.t)
+    with Not_found ->
+      try
+        (Ident.find_same id env.class_types :> Id.Path.Type.t)
+      with Not_found ->
+        if List.mem id builtin_idents then
+            match core_type_identifier (Ident.name id) with
+            | Some id -> (id :> type_ident)
+            | None -> raise Not_found
+        else raise Not_found
+        
 let find_class_type env id =
+  try
+    (Ident.find_same id env.classes :> Id.Path.ClassType.t)
+  with Not_found ->
+    (Ident.find_same id env.class_types :> Id.Path.ClassType.t)
+
+let find_class_identifier env id =
+  Ident.find_same id env.classes
+
+let find_class_type_identifier env id =
   Ident.find_same id env.class_types
 
 module Path = struct

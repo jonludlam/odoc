@@ -63,7 +63,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
     );
     Ok ()
   | Compilation_unit {hidden = true; _} ->
-    Compilation_unit.load input >>= fun unit ->
+(*    Compilation_unit.load input >>= fun unit ->
     let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package
     in
@@ -84,7 +84,7 @@ let from_odoc ~env ?(syntax=Odoc_html.Tree.OCaml) ?theme_uri ~output:root_dir in
       let fmt = Format.formatter_of_out_channel oc in
       Format.fprintf fmt "placeholder\n";
       close_out oc
-    );
+    );*)
     Ok ()
   | Compilation_unit {hidden = _; _} ->
     (* If hidden, we should not generate HTML. See
