@@ -21,8 +21,8 @@ val empty : t
 val add_parameter :
   Paths.Identifier.Signature.t -> Ident.t -> Names.ParameterName.t -> t -> t
 
-val add_signature_type_items :
-  Paths.Identifier.Signature.t -> Compat.signature -> t -> t
+val handle_signature_type_items :
+  [`Add | `Remove] -> Paths.Identifier.Signature.t -> Compat.signature -> t -> t
 
 val add_signature_tree_items :
   Paths.Identifier.Signature.t -> Typedtree.signature -> t -> t

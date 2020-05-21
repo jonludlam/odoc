@@ -398,8 +398,6 @@ and module_ : Env.t -> Module.t -> Module.t =
   Format.fprintf Format.err_formatter "Processing Module %a\n%!"
      Component.Fmt.model_identifier
      (m.id :> Id.t);
-  let name = Format.asprintf "%a" Component.Fmt.model_identifier (m.id :> Id.t) in
-  let verbose = name="(root Base).Container" in
   if m.hidden then m
   else
     let t1 = Unix.gettimeofday () in
@@ -433,24 +431,9 @@ and module_ : Env.t -> Module.t -> Module.t =
       | None, true ->
           let env, expansion =
             match Expand_tools.expansion_of_module env m.id ~strengthen:(not (self_canonical || hidden_alias)) m' with
-            | Ok (env, ce) ->
+            | Ok (env, recompile, ce) ->
                 let e = Lang_of.(module_expansion empty sg_id ce) in
-                if verbose then begin
-                  match e with
-                  | (Signature sg) ->
-                      Format.eprintf "YYYYY expansion:\n%!%a\n%!" Component.Fmt.signature
-                        (Component.Of_Lang.(signature empty sg));
-                  | _ -> ()
-                end;
-                let compiled_e = Compile.expansion env sg_id e in
-                if verbose then begin
-                  match compiled_e with
-                  | (Signature sg) ->
-                      Format.eprintf "ZZZZZ expansion:\n%!%a\n%!" Component.Fmt.signature
-                        (Component.Of_Lang.(signature empty sg));
-                  | _ -> ()
-                end;
-                
+                let compiled_e = if recompile then Compile.expansion env sg_id e else e in
                 (env, Some compiled_e)
             | Error `OpaqueModule -> (env, None)
             | Error _ ->
@@ -461,13 +444,6 @@ and module_ : Env.t -> Module.t -> Module.t =
           (env, expansion)
       | _ -> (env, m.expansion)
     in
-    (* if verbose then begin
-      match expansion with
-      | Some (Signature sg) ->
-          Format.eprintf "XXXX expansion:\n%!%a\n%!" Component.Fmt.signature
-            (Component.Of_Lang.(signature empty sg));
-      | _ -> ()
-    end; *)
     let t4 = Unix.gettimeofday () in
     let expansion = Opt.map (module_expansion env sg_id) expansion in
     let doc, expansion =
@@ -494,15 +470,6 @@ and module_ : Env.t -> Module.t -> Module.t =
       { m with doc = comment_docs env doc; type_; display_type; expansion }
     in
     let end_time = Unix.gettimeofday () in
-    (* let _ =
-      match expansion with
-      | Some (Signature sg) ->
-        Format.eprintf "Final expansion of module %a\n%!" Component.Fmt.model_identifier
-        (m.id :> Id.t);
-        let csg = Component.Of_Lang.(signature empty sg) in
-        Format.eprintf "%a\n%!" Component.Fmt.signature csg
-      | _ -> ()
-    in *)
     let _timing =
       Format.asprintf
         "%f seconds for module %a (t0-1=%f t1-2=%f t2-3=%f t3-4=%f t4-end=%f)\n\
@@ -601,9 +568,9 @@ and functor_parameter_parameter :
     match (a.expansion, functor_arg.type_) with
     | None, ModuleType expr -> (
         match Expand_tools.expansion_of_module_type_expr env sg_id expr with
-        | Ok (env, ce) ->
+        | Ok (env, recompile, ce) ->
             let e = Lang_of.(module_expansion empty sg_id ce) in
-            let compiled_e = Compile.expansion env sg_id e in
+            let compiled_e = if recompile then Compile.expansion env sg_id e else e in
             Ok (env, Some compiled_e)
         | Error `OpaqueModule -> Ok (env, None)
         | Error _ -> Error "expand" )

@@ -95,6 +95,10 @@ struct
         let link1 = from_path (p1 :> Path.t) in
         let link2 = from_path (p2 :> Path.t) in
         link1 ++ O.txt "(" ++ link2 ++ O.txt ")"
+      | `Resolved _ when Paths.Path.is_hidden path ->
+        let txt = Url.render_path path in
+        Format.eprintf "Warning, resolved hidden path: %s\n%!" txt;
+        unresolved [inline @@ Text txt]
       | `Resolved rp ->
         (* If the path is pointing to an opaque module or module type
            there won't be a page generated - so we stop before; at

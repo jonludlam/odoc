@@ -969,7 +969,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
     loop [] items
 
 and read_signature env parent (items : Odoc_model.Compat.signature) =
-  let env = Env.add_signature_type_items parent items env in
+  let env = Env.handle_signature_type_items `Add parent items env in
   read_signature_noenv env parent items
 
 

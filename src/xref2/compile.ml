@@ -196,29 +196,24 @@ and module_substitution env m =
 and signature_items : Env.t -> Id.Signature.t -> Signature.t -> _ =
  fun env id s ->
   let open Signature in
-  (* Format.eprintf "Signature items...\n%!"; *)
-  let rec inner items acc =
-      match items with
-      | [] -> List.rev acc
-      | Module (r, m) :: rest -> inner rest (Module (r, module_ env m) :: acc)
-      | ModuleSubstitution m :: rest -> inner rest (ModuleSubstitution (module_substitution env m) :: acc)
-      | Type (r, t) :: rest -> inner rest (Type (r, type_decl env t) :: acc)
-      | TypeSubstitution t :: rest -> inner rest (TypeSubstitution (type_decl env t) :: acc)
-      | ModuleType mt :: rest -> inner rest (ModuleType (module_type env mt) :: acc)
-      | Value v :: rest -> inner rest (Value (value_ env id v) :: acc)
-      | Comment c :: rest -> inner rest (Comment c :: acc)
-      | TypExt t :: rest -> inner rest (TypExt (extension env id t) :: acc)
-      | Exception e :: rest -> inner rest (Exception (exception_ env id e) :: acc)
-      | External e :: rest -> inner rest (External (external_ env id e) :: acc)
-      | Class (r, c) :: rest -> inner rest (Class (r, class_ env id c) :: acc)
-      | ClassType (r, c) :: rest -> inner rest (ClassType (r, class_type env id c) :: acc)
-      | Include i :: rest -> inner rest (Include (include_ env rest i) :: acc)
-      | Open o :: rest -> inner rest (Open o ::  acc)
-    in
-    let result = inner s [] in
-    (* Format.eprintf "Finished signature items...\n%!"; *)
-    result
-
+  List.map
+    (fun item ->
+      match item with
+      | Module (r, m) -> Module (r, module_ env m)
+      | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
+      | Type (r, t) -> Type (r, type_decl env t)
+      | TypeSubstitution t -> TypeSubstitution (type_decl env t)
+      | ModuleType mt -> ModuleType (module_type env mt)
+      | Value v -> Value (value_ env id v)
+      | Comment c -> Comment c
+      | TypExt t -> TypExt (extension env id t)
+      | Exception e -> Exception (exception_ env id e)
+      | External e -> External (external_ env id e)
+      | Class (r, c) -> Class (r, class_ env id c)
+      | ClassType (r, c) -> ClassType (r, class_type env id c)
+      | Include i -> Include (include_ env i)
+      | Open o -> Open o)
+    s
 
 and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
  fun env id s ->
@@ -249,7 +244,7 @@ and module_ : Env.t -> Module.t -> Module.t =
           if not extra_expansion_needed then m.expansion
           else
             match Expand_tools.expansion_of_module env m.id ~strengthen:true m' with
-            | Ok (env, ce) ->
+            | Ok (env, _, ce) ->
                 let e = Lang_of.(module_expansion empty sg_id ce) in
                 Some (expansion env sg_id e)
             | Error `OpaqueModule -> None
@@ -257,16 +252,9 @@ and module_ : Env.t -> Module.t -> Module.t =
                 lookup_failure ~what:(`Module m.id) `Expand;
                 m.expansion
         in
-        let type_ = module_decl env' (m.id :> Id.Signature.t) m.type_; in
-        let expansion =
-          match type_, expansion with
-          | ModuleType (Signature _), Some AlreadyASig -> expansion
-          | _, Some AlreadyASig -> None (* Remove inconsistent expansion *)
-          | _ -> expansion
-        in
         {
           m with
-          type_;
+          type_ = module_decl env' (m.id :> Id.Signature.t) m.type_;
           expansion;
         }
 
@@ -274,11 +262,7 @@ and module_decl : Env.t -> Id.Signature.t -> Module.decl -> Module.decl =
  fun env id decl ->
   let open Module in
   match decl with
-  | ModuleType expr ->
-    (* Format.eprintf "Handling module decl of moduletype\n%!"; *)
-    let result = ModuleType (module_type_expr env id expr) in
-    (* Format.eprintf "Handling finished\n%!"; *)
-    result
+  | ModuleType expr -> ModuleType (module_type_expr env id expr)
   | Alias p -> (
       let cp = Component.Of_Lang.(module_path empty p) in
       match Tools.resolve_module env cp with
@@ -300,7 +284,7 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
       Ok (Some (Module.Signature sg'), Some (Signature sg'))
     | Some expr ->
         ( match Expand_tools.expansion_of_module_type env m.id m' with
-        | Ok (env, ce) ->
+        | Ok (env, _, ce) ->
             let e = Lang_of.(module_expansion empty sg_id ce) in
             Ok (env, Some e)
         | Error `OpaqueModule -> Ok (env, None)
@@ -327,34 +311,48 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
       m
 
 and find_shadowed map =
-      let open Signature in
-      function
-      | Module (_, m) :: rest ->
-        let name = Id.name m.id in
-        (* Format.eprintf "possibly shadowed module: %s\n%!" name; *)
-        find_shadowed Lang_of.{ map with s_modules = name :: map.s_modules } rest
-      | ModuleType m :: rest ->
-        let name = Id.name m.id in
-        (* Format.eprintf "possibly shadowed module type: %s\n%!" name; *)
-        find_shadowed Lang_of.{ map with s_module_types = name :: map.s_module_types } rest
-      | Type (_, t) :: rest ->
-        let name = Id.name t.id in
-        find_shadowed Lang_of.{ map with s_types = name :: map.s_types } rest
-      | Include i :: rest ->
-        find_shadowed (find_shadowed map i.expansion.content) rest
-      | _ :: rest -> find_shadowed map rest
-      | [] -> map
-    
+  let open Odoc_model.Names in
+  let open Signature in
+  let hidden_name : Id.t -> string option = function
+    | `Module (_, m) when ModuleName.is_internal m ->
+        Some (ModuleName.to_string_unsafe m)
+    | `Parameter (_, m) when ParameterName.is_internal m ->
+        Some (ParameterName.to_string_unsafe m)
+    | `ModuleType (_, m) when ModuleTypeName.is_internal m ->
+        Some (ModuleTypeName.to_string_unsafe m)
+    | `Type (_, t) when TypeName.is_internal t ->
+        Some (TypeName.to_string_unsafe t)
+    | _ -> None
+  in
+  function
+  | Module (_, m) :: rest -> (
+      match hidden_name (m.id :> Id.t) with
+      | Some n ->
+          find_shadowed Lang_of.{ map with s_modules = n :: map.s_modules } rest
+      | None -> find_shadowed map rest )
+  | ModuleType m :: rest -> (
+      match hidden_name (m.id :> Id.t) with
+      | Some n ->
+          find_shadowed
+            Lang_of.{ map with s_module_types = n :: map.s_module_types }
+            rest
+      | None -> find_shadowed map rest )
+  | Type (_, t) :: rest -> (
+      match hidden_name (t.id :> Id.t) with
+      | Some n ->
+          find_shadowed Lang_of.{ map with s_types = n :: map.s_types } rest
+      | None -> find_shadowed map rest )
+  | _ :: rest -> find_shadowed map rest
+  | [] -> map
 
-and include_ : Env.t -> Signature.item list -> Include.t -> Include.t =
- fun env rest i ->
+and include_ : Env.t -> Include.t -> Include.t =
+ fun env i ->
   let open Include in
   let remove_top_doc_from_signature =
     let open Signature in
     function Comment (`Docs _) :: xs -> xs | xs -> xs
   in
   let decl = Component.Of_Lang.(module_decl empty i.decl) in
-  (* Format.eprintf "include_: expanding %a\n%!" Component.Fmt.module_decl decl; *)
   match
     let open Utils.ResultMonad in
     Expand_tools.aux_expansion_of_module_decl env ~strengthen:true decl
@@ -364,7 +362,7 @@ and include_ : Env.t -> Signature.item list -> Include.t -> Include.t =
       lookup_failure ~what:(`Include decl) `Expand;
       i
   | Ok (_, ce) ->
-      let map = find_shadowed Lang_of.empty rest in
+      let map = find_shadowed Lang_of.empty i.expansion.content in
       let e = Lang_of.(module_expansion map i.parent ce) in
       (* Format.eprintf "Intermediate expansion: %a\n%!"
         Component.Fmt.module_expansion (Component.Of_Lang.(module_expansion empty e)); *)
@@ -382,7 +380,7 @@ and include_ : Env.t -> Signature.item list -> Include.t -> Include.t =
             }
       in
       (* Format.eprintf "Final expansion: %a\n%!"
-        Component.Fmt.signature (Component.Of_Lang.(signature empty expansion_sg)); *)
+        Component.Fmt.module_expansion (Component.Of_Lang.(module_expansion empty e)); *)
 
       { i with decl = module_decl env i.parent i.decl; expansion }
 
@@ -417,7 +415,7 @@ and functor_parameter_parameter :
     let env = Env.add_module_functor_args functor_arg a.id env' in
     get_module_type_expr functor_arg.type_ >>= fun expr ->
     match Expand_tools.expansion_of_module_type_expr env sg_id expr with
-    | Ok (env, ce) ->
+    | Ok (env, _, ce) ->
         let e = Lang_of.(module_expansion empty sg_id ce) in
         Ok (env, Some e)
     | Error `OpaqueModule -> Ok (env, None)
@@ -469,7 +467,7 @@ and module_type_expr :
                   Tools.resolve_mt_type_fragment env (fragment_root, sg) frag
                 with
                 | Some cfrag ->
-                `Resolved
+                    `Resolved
                       (Lang_of.Path.resolved_type_fragment lang_of_map cfrag)
                 | None ->
                     lookup_failure ~what:(`With_type frag) `Compile;
@@ -481,7 +479,7 @@ and module_type_expr :
                   TypeEq (frag', type_decl_equation env (id :> Id.Parent.t) eqn)
                 )
           | ModuleSubst (frag, _), ModuleSubst (unresolved, mpath) ->
-          let frag' =
+              let frag' =
                 match
                   Tools.resolve_mt_module_fragment env (fragment_root, sg) frag
                 with
@@ -495,7 +493,7 @@ and module_type_expr :
               Tools.fragmap_module env frag csub sg >>= fun sg' ->
               Ok (sg', ModuleSubst (frag', module_path env mpath))
           | TypeSubst (frag, _), TypeSubst (unresolved, eqn) ->
-          let frag' =
+              let frag' =
                 match
                   Tools.resolve_mt_type_fragment env (fragment_root, sg) frag
                 with

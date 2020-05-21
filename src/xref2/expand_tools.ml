@@ -9,6 +9,29 @@ type expansion =
   | Signature of Component.Signature.t
   | Functor of Component.FunctorParameter.t * Component.ModuleType.expr
 
+let rec module_needs_recompile : Component.Module.t -> bool =
+  fun m ->
+    module_decl_needs_recompile m.type_
+
+and module_decl_needs_recompile : Component.Module.decl -> bool =
+  function
+  | Alias _ -> false
+  | ModuleType expr -> module_type_expr_needs_recompile expr
+
+and module_type_expr_needs_recompile : Component.ModuleType.expr -> bool =
+  function
+  | Path _ -> false
+  | Signature _ -> false
+  | With (_, _) -> true
+  | Functor (_, expr) -> module_type_expr_needs_recompile expr
+  | TypeOf _ -> false
+
+and module_type_needs_recompile : Component.ModuleType.t -> bool =
+  fun m ->
+    match m.expr with
+    | None -> false
+    | Some expr -> module_type_expr_needs_recompile expr
+
 let rec aux_expansion_of_module :
     Env.t -> strengthen:bool -> Component.Module.t -> (expansion, error) Result.result =
   let open Component.Module in
@@ -156,18 +179,21 @@ let expansion_of_module_type env id m =
   let open Paths.Identifier in
   aux_expansion_of_module_type env m
   >>= handle_expansion env (id : ModuleType.t :> Signature.t)
+  >>= fun (env, e) ->
+  Ok (env, module_type_needs_recompile m, e)
 
 let expansion_of_module_type_expr env id expr =
-  aux_expansion_of_module_type_expr env expr >>= handle_expansion env id
+  aux_expansion_of_module_type_expr env expr
+  >>= handle_expansion env id
+  >>= fun (env, e) ->
+  Ok (env, module_type_expr_needs_recompile expr, e)
 
 let expansion_of_module env id ~strengthen m =
   let open Paths.Identifier in
   aux_expansion_of_module env ~strengthen m
   >>= handle_expansion env (id : Module.t :> Signature.t)
   >>= fun (env, r) ->
-  (* Format.eprintf "Expand_tools: expansion:\n%!%a\n%!"
-    Component.Fmt.module_expansion r; *)
-  Ok (env, r)
+  Ok (env, module_needs_recompile m, r)
 
 exception Clash
 
