@@ -283,23 +283,20 @@ val module_ : Component.Module.t =
 The values returned are the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `signature_of_module`, which in this case is quite simple since the module contains an explicit signature:
 
 ```ocaml env=e1
-# Tools.signature_of_module env module_;;
-- : (Component.Signature.t, Odoc_xref2.Errors.signature_of_module_error)
-    result
-=
-Result.Ok
- {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
-     Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Delayed.v =
-       Some
-        {Odoc_xref2.Component.TypeDecl.doc = [];
-         equation =
-          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-           private_ = false; manifest = None; constraints = []};
-         representation = None};
-      get = None})];
-  removed = []}
+# get_ok @@ Tools.signature_of_module env module_;;
+- : Component.Signature.t =
+{Odoc_xref2.Component.Signature.items =
+  [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
+    Odoc_model.Lang.Signature.Ordinary,
+    {Odoc_xref2.Component.Delayed.v =
+      Some
+       {Odoc_xref2.Component.TypeDecl.doc = [];
+        equation =
+         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
+          private_ = false; manifest = None; constraints = []};
+        representation = None};
+     get = None})];
+ removed = []}
 ```
 
 We're now in a position to verify the existence of the type `t` we're
