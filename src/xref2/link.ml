@@ -140,7 +140,7 @@ and comment_inline_element :
  fun env x ->
   match x with
   | `Styled (s, ls) ->
-      `Styled (s, List.map (with_location comment_inline_element env) ls)
+      `Styled (s, List.rev_map (with_location comment_inline_element env) ls |> List.rev)
   | `Reference (r, []) -> (
       (* Format.fprintf Format.err_formatter "XXXXXXXXXX about to resolve reference: %a\n%!" (Component.Fmt.model_reference) r; *)
       match Ref_tools.resolve_reference env r with
@@ -166,22 +166,22 @@ and comment_inline_element :
 and comment_nestable_block_element env (x : Comment.nestable_block_element) =
   match x with
   | `Paragraph elts ->
-      `Paragraph (List.map (with_location comment_inline_element env) elts)
+      `Paragraph (List.rev_map (with_location comment_inline_element env) elts |> List.rev)
   | (`Code_block _ | `Verbatim _) as x -> x
   | `List (x, ys) ->
       `List
         ( x,
-          List.map
-            (List.map (with_location comment_nestable_block_element env))
-            ys )
+          List.rev_map
+            (fun x -> List.rev_map (with_location comment_nestable_block_element env) x |> List.rev)
+            ys |> List.rev)
   | `Modules refs ->
       let refs =
-        List.map
+        List.rev_map
           (fun r ->
             match Ref_tools.resolve_module_reference env r with
             | Some (r, _, _) -> `Resolved r
             | None -> r)
-          refs
+          refs |> List.rev
       in
       `Modules refs
 
@@ -200,7 +200,7 @@ and with_location :
     a Location_.with_location =
  fun fn env x -> { x with Location_.value = fn env x.Location_.value }
 
-and comment_docs env d = List.map (with_location comment_block_element env) d
+and comment_docs env d = List.rev_map (with_location comment_block_element env) d |> List.rev
 
 and comment env = function
   | `Stop -> `Stop
@@ -225,7 +225,7 @@ and extension env parent t =
     }
   in
   let type_path = type_path env t.type_path in
-  let constructors = List.map constructor t.constructors in
+  let constructors = List.rev_map constructor t.constructors |> List.rev in
   let doc = comment_docs env t.doc in
   { t with type_path; constructors; doc }
 
@@ -241,7 +241,7 @@ and class_type_expr env parent =
   let open ClassType in
   function
   | Constr (path, texps) ->
-      Constr (path, List.map (type_expression env parent []) texps)
+      Constr (path, List.rev_map (type_expression env parent []) texps |> List.rev)
   | Signature s -> Signature (class_signature env parent s)
 
 and class_type env parent c =
@@ -263,7 +263,7 @@ and class_signature env parent c =
   in
   {
     self = Opt.map (type_expression env parent []) c.self;
-    items = List.map map_item c.items;
+    items = List.rev_map map_item c.items |> List.rev;
   }
 
 and method_ env parent m =
@@ -299,24 +299,23 @@ and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
 and signature_items : Env.t -> Id.Signature.t -> Signature.t -> _ =
  fun env id s ->
   let open Signature in
-  List.map
-    (fun item ->
-      match item with
-      | Module (r, m) -> Module (r, module_ env m)
-      | ModuleSubstitution m -> ModuleSubstitution (module_substitution env m)
-      | Type (r, t) -> Type (r, type_decl env id t)
-      | TypeSubstitution t -> TypeSubstitution (type_decl env id t)
-      | ModuleType mt -> ModuleType (module_type env mt)
-      | Value v -> Value (value_ env id v)
-      | Comment c -> Comment (comment env c)
-      | TypExt t -> TypExt (extension env id t)
-      | Exception e -> Exception (exception_ env id e)
-      | External e -> External (external_ env id e)
-      | Class (r, c) -> Class (r, class_ env id c)
-      | ClassType (r, c) -> ClassType (r, class_type env id c)
-      | Include i -> Include (include_ env i)
-      | Open o -> Open o)
-    s
+  let rec inner acc = function
+      | Module (r, m) :: rest -> inner (Module (r, module_ env m) :: acc) rest
+      | ModuleSubstitution m :: rest -> inner (ModuleSubstitution (module_substitution env m) :: acc) rest
+      | Type (r, t) :: rest -> inner (Type (r, type_decl env id t) :: acc) rest
+      | TypeSubstitution t :: rest -> inner (TypeSubstitution (type_decl env id t) :: acc) rest
+      | ModuleType mt :: rest -> inner (ModuleType (module_type env mt) :: acc) rest
+      | Value v :: rest -> inner (Value (value_ env id v) :: acc) rest
+      | Comment c :: rest -> inner (Comment (comment env c) :: acc) rest
+      | TypExt t :: rest -> inner (TypExt (extension env id t) :: acc) rest
+      | Exception e :: rest -> inner (Exception (exception_ env id e) :: acc) rest
+      | External e :: rest -> inner (External (external_ env id e) :: acc) rest
+      | Class (r, c) :: rest -> inner (Class (r, class_ env id c) :: acc) rest
+      | ClassType (r, c) :: rest -> inner (ClassType (r, class_type env id c) :: acc) rest
+      | Include i :: rest -> inner (Include (include_ env i) :: acc) rest
+      | Open o :: rest -> inner (Open o :: acc) rest
+      | [] -> List.rev acc
+  in inner [] s
 
 and module_expansion :
     Env.t -> Id.Signature.t -> Module.expansion -> Module.expansion =
@@ -345,7 +344,7 @@ and module_expansion :
                 env')
           args env
       in
-      Functor (List.map (functor_argument env') args, signature env' id sg)
+      Functor (List.rev_map (functor_argument env') args |> List.rev, signature env' id sg)
 
 and should_hide_moduletype : ModuleType.expr -> bool = function
   | Signature _ -> false
@@ -584,7 +583,7 @@ and functor_argument env a =
 and handle_fragments env id sg subs =
   let open ModuleType in
   let csubs =
-    List.map Component.Of_Lang.(module_type_substitution empty) subs
+    List.rev_map Component.Of_Lang.(module_type_substitution empty) subs |> List.rev
   in
   (* Format.fprintf Format.err_formatter
      "Handling `With` expression for %a (expr=%a) [%a]\n%!"
@@ -697,8 +696,8 @@ and type_decl_representation :
  fun env parent r ->
   let open TypeDecl.Representation in
   match r with
-  | Variant cs -> Variant (List.map (type_decl_constructor env parent) cs)
-  | Record fs -> Record (List.map (type_decl_field env parent) fs)
+  | Variant cs -> Variant (List.rev_map (type_decl_constructor env parent) cs |> List.rev)
+  | Record fs -> Record (List.rev_map (type_decl_field env parent) fs |> List.rev)
   | Extensible -> Extensible
 
 and type_decl : Env.t -> Id.Signature.t -> TypeDecl.t -> TypeDecl.t =
@@ -749,10 +748,10 @@ and type_decl_equation env parent t =
   let open TypeDecl.Equation in
   let manifest = Opt.map (type_expression env parent []) t.manifest in
   let constraints =
-    List.map
+    List.rev_map
       (fun (tex1, tex2) ->
         (type_expression env parent [] tex1, type_expression env parent [] tex2))
-      t.constraints
+      t.constraints |> List.rev
   in
   { t with manifest; constraints }
 
@@ -764,8 +763,8 @@ and type_decl_field env parent f =
 and type_decl_constructor_argument env parent c =
   let open TypeDecl.Constructor in
   match c with
-  | Tuple ts -> Tuple (List.map (type_expression env parent []) ts)
-  | Record fs -> Record (List.map (type_decl_field env parent) fs)
+  | Tuple ts -> Tuple (List.rev_map (type_expression env parent []) ts |> List.rev)
+  | Record fs -> Record (List.rev_map (type_decl_field env parent) fs |> List.rev)
 
 and type_decl_constructor env parent c =
   let open TypeDecl.Constructor in
@@ -781,7 +780,7 @@ and type_expression_polyvar env parent visited v =
     let doc = comment_docs env c.doc in
     {
       c with
-      arguments = List.map (type_expression env parent visited) c.arguments;
+      arguments = List.rev_map (type_expression env parent visited) c.arguments |> List.rev;
       doc;
     }
   in
@@ -794,7 +793,7 @@ and type_expression_polyvar env parent visited v =
         (* These have to remain Constrs *)
     | Constructor c -> Constructor (constructor c)
   in
-  { v with elements = List.map element v.elements }
+  { v with elements = List.rev_map element v.elements |> List.rev}
 
 and type_expression_object env parent visited o =
   let open TypeExpr.Object in
@@ -805,7 +804,7 @@ and type_expression_object env parent visited o =
     | Method m -> Method (method_ m)
     | Inherit t -> Inherit (type_expression env parent visited t)
   in
-  { o with fields = List.map field o.fields }
+  { o with fields = List.rev_map field o.fields |> List.rev }
 
 and type_expression_package env parent visited p =
   let open TypeExpr.Package in
@@ -821,7 +820,7 @@ and type_expression_package env parent visited p =
   in
   {
     path = module_type_path env p.path;
-    substitutions = List.map substitution p.substitutions;
+    substitutions = List.rev_map substitution p.substitutions |> List.rev;
   }
 
 and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
@@ -835,10 +834,10 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
         ( lbl,
           type_expression env parent visited t1,
           type_expression env parent visited t2 )
-  | Tuple ts -> Tuple (List.map (type_expression env parent visited) ts)
+  | Tuple ts -> Tuple (List.rev_map (type_expression env parent visited) ts |> List.rev)
   | Constr (path', ts') -> (
       let path = type_path env path' in
-      let ts = List.map (type_expression env parent visited) ts' in
+      let ts = List.rev_map (type_expression env parent visited) ts' |> List.rev in
       if not (Paths.Path.is_hidden (path :> Paths.Path.t)) then Constr (path, ts)
       else
         let cp = Component.Of_Lang.(type_path empty path') in
@@ -881,7 +880,7 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
       Polymorphic_variant (type_expression_polyvar env parent visited v)
   | Object o -> Object (type_expression_object env parent visited o)
   | Class (path, ts) ->
-      Class (path, List.map (type_expression env parent visited) ts)
+      Class (path, List.rev_map (type_expression env parent visited) ts |> List.rev)
   | Poly (strs, t) -> Poly (strs, type_expression env parent visited t)
   | Package p -> Package (type_expression_package env parent visited p)
 
@@ -905,5 +904,5 @@ let resolve_page resolver y =
       {
         y with
         Page.content =
-          List.map (with_location comment_block_element env) y.Page.content;
+          List.rev_map (with_location comment_block_element env) y.Page.content |> List.rev;
       })

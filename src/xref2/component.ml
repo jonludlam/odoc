@@ -1602,7 +1602,7 @@ module Of_Lang = struct
     | Var s -> TypeExpr.Var s
     | Any -> Any
     | Constr (p, xs) ->
-        Constr (type_path ident_map p, List.map (type_expression ident_map) xs)
+        Constr (type_path ident_map p, List.rev_map (type_expression ident_map) xs |> List.rev)
     | Arrow (lbl, t1, t2) ->
         Arrow (lbl, type_expression ident_map t1, type_expression ident_map t2)
     | Tuple ts -> Tuple (List.map (type_expression ident_map) ts)
@@ -1903,7 +1903,7 @@ module Of_Lang = struct
 
   and apply_sig_map ident_map items =
     let items =
-      List.map
+      List.rev_map
         (let open Odoc_model.Lang.Signature in
         let open Odoc_model.Paths in
         function
@@ -1951,7 +1951,7 @@ module Of_Lang = struct
             ClassType (id, r, class_type ident_map c)
         | Open o -> Open (open_ ident_map o)
         | Include i -> Include (include_ ident_map i))
-        items
+        items |> List.rev
     in
     { items; removed = [] }
 

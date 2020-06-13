@@ -202,7 +202,7 @@ let type_fragment : t -> Cfrag.type_ -> Cfrag.type_ =
 
 let option_ conv s x = match x with Some x -> Some (conv s x) | None -> None
 
-let list conv s xs = List.map (conv s) xs
+let list conv s xs = List.rev_map (conv s) xs |> List.rev
 
 let rec type_ s t =
   let open Component.TypeDecl in
@@ -212,8 +212,8 @@ let rec type_ s t =
 and type_decl_representation s t =
   let open Component.TypeDecl.Representation in
   match t with
-  | Variant cs -> Variant (List.map (type_decl_constructor s) cs)
-  | Record fs -> Record (List.map (type_decl_field s) fs)
+  | Variant cs -> Variant (List.rev_map (type_decl_constructor s) cs |> List.rev)
+  | Record fs -> Record (List.rev_map (type_decl_field s) fs |> List.rev)
   | Extensible -> t
 
 and type_decl_constructor s t =
@@ -229,7 +229,7 @@ and type_poly_var s v =
     {
       name = c.name;
       constant = c.constant;
-      arguments = List.map (type_expr s) c.arguments;
+      arguments = List.rev_map (type_expr s) c.arguments |> List.rev;
       doc = c.doc;
     }
   in
@@ -241,7 +241,7 @@ and type_poly_var s v =
     | Constructor c -> [ Constructor (map_constr c) ]
   in
 
-  { kind = v.kind; elements = List.flatten (List.map map_element v.elements) }
+  { kind = v.kind; elements = List.flatten (List.rev_map map_element v.elements |> List.rev) }
 
 and type_object s o =
   let open Component.TypeExpr.Object in
@@ -249,14 +249,14 @@ and type_object s o =
     | Method m -> Method { m with type_ = type_expr s m.type_ }
     | Inherit t -> Inherit (type_expr s t)
   in
-  { fields = List.map map_field o.fields; open_ = o.open_ }
+  { fields = List.rev_map map_field o.fields |> List.rev; open_ = o.open_ }
 
 and type_package s p =
   let open Component.TypeExpr.Package in
   let sub (x, y) = (type_fragment s x, type_expr s y) in
   {
     path = module_type_path s p.path;
-    substitutions = List.map sub p.substitutions;
+    substitutions = List.rev_map sub p.substitutions |> List.rev;
   }
 
 and type_expr s t =
@@ -267,11 +267,11 @@ and type_expr s t =
     | Any -> Any
     | Alias (t, str) -> Alias (type_expr s t, str)
     | Arrow (lbl, t1, t2) -> Arrow (lbl, type_expr s t1, type_expr s t2)
-    | Tuple ts -> Tuple (List.map (type_expr s) ts)
-    | Constr (p, ts) -> Constr (type_path s p, List.map (type_expr s) ts)
+    | Tuple ts -> Tuple (List.rev_map (type_expr s) ts |> List.rev)
+    | Constr (p, ts) -> Constr (type_path s p, List.rev_map (type_expr s) ts |> List.rev)
     | Polymorphic_variant v -> Polymorphic_variant (type_poly_var s v)
     | Object o -> Object (type_object s o)
-    | Class (p, ts) -> Class (class_type_path s p, List.map (type_expr s) ts)
+    | Class (p, ts) -> Class (class_type_path s p, List.rev_map (type_expr s) ts |> List.rev)
     | Poly (strs, ts) -> Poly (strs, type_expr s ts)
     | Package p -> Package (type_package s p)
   with TypeReplacement y -> y
@@ -282,7 +282,7 @@ and module_expansion s t =
   | AlreadyASig -> AlreadyASig
   | Signature sg -> Signature (signature s sg)
   | Functor (arg, sg) ->
-      Functor (List.map (functor_parameter s) arg, signature s sg)
+      Functor (List.rev_map (functor_parameter s) arg |> List.rev, signature s sg)
 
 and module_type s t =
   let open Component.ModuleType in
@@ -308,7 +308,7 @@ and module_type_expr s t =
   | Functor (arg, expr) ->
       Functor (functor_parameter s arg, module_type_expr s expr)
   | With (e, args) ->
-      With (module_type_expr s e, List.map (module_type_substitution s) args)
+      With (module_type_expr s e, List.rev_map (module_type_substitution s) args |> List.rev)
   | TypeOf decl -> TypeOf (module_decl s decl)
 
 and module_type_substitution s sub =
@@ -354,7 +354,7 @@ and type_decl_equation s t =
     t with
     manifest = option_ type_expr s t.manifest;
     constraints =
-      List.map (fun (x, y) -> (type_expr s x, type_expr s y)) t.constraints;
+      List.rev_map (fun (x, y) -> (type_expr s x, type_expr s y)) t.constraints |> List.rev;
   }
 
 and exception_ s e =
@@ -376,7 +376,7 @@ and extension s e =
   {
     e with
     type_path = type_path s e.type_path;
-    constructors = List.map (extension_constructor s) e.constructors;
+    constructors = List.rev_map (extension_constructor s) e.constructors |> List.rev;
   }
 
 and external_ s e =
@@ -413,7 +413,7 @@ and class_decl s =
 and class_type_expr s =
   let open Component.ClassType in
   function
-  | Constr (p, ts) -> Constr (class_type_path s p, List.map (type_expr s) ts)
+  | Constr (p, ts) -> Constr (class_type_path s p, List.rev_map (type_expr s) ts |> List.rev)
   | Signature sg -> Signature (class_signature s sg)
 
 and class_type s c =
@@ -434,7 +434,7 @@ and class_signature s sg =
   let open Component.ClassSignature in
   {
     self = option_ type_expr s sg.self;
-    items = List.map (class_signature_item s) sg.items;
+    items = List.rev_map (class_signature_item s) sg.items |> List.rev;
   }
 
 and method_ s m =
@@ -523,12 +523,12 @@ and rename_bound_idents s sg =
 
 and removed_items s items =
   let open Component.Signature in
-  List.map
+  List.rev_map
     (function
       | RModule (id, _) when ModuleMap.mem id s.module_ ->
           RModule (id, ModuleMap.find id s.module_)
       | x -> x)
-    items
+    items |> List.rev
 
 and signature s sg =
   let s, items = rename_bound_idents s [] sg.items in

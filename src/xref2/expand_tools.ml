@@ -97,7 +97,7 @@ and unresolve_subs subs =
     | `Class (parent, name) ->
         `Dot (unresolve_signature_fragment parent, ClassName.to_string name)
   in
-  List.map
+  List.rev_map
     (function
       | Component.ModuleType.ModuleEq (`Resolved f, m) ->
           Component.ModuleType.ModuleEq (unresolve_module_fragment f, m)
@@ -106,7 +106,7 @@ and unresolve_subs subs =
       | TypeEq (`Resolved f, t) -> TypeEq (unresolve_type_fragment f, t)
       | TypeSubst (`Resolved f, t) -> TypeSubst (unresolve_type_fragment f, t)
       | x -> x)
-    subs
+    subs |> List.rev
 
 and aux_expansion_of_module_type_expr env expr :
     (expansion, error) Result.result =
