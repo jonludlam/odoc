@@ -323,8 +323,70 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
       ty
   | Pack _ -> failwith "Unsupported"
 
-let lookup_root_module name env =
-  let result =
+module Memo = struct
+  module K = struct
+    type t = string
+    let equal : t -> t -> bool = ( = )
+
+    let hash (s : t) = Hashtbl.hash s
+  end
+
+  module W = struct
+    type t = root option
+    let weight : t -> int = fun x ->
+      (* Format.eprintf "Checking size..."; *)
+      let result = Obj.reachable_words (Obj.repr x) in
+      (* Format.eprintf "...done (%d)\n%!" result; *)
+      result
+  end
+
+  module M = Lru.M.Make(K)(W)
+
+  let enabled = ref true
+  let size_param = try Sys.getenv "ODOCRMCACHESIZE" |> int_of_string with _ -> 500
+
+  let cache : M.t =
+    if size_param > 0 then begin
+      Format.eprintf "creating %s cache size: %d\n%!" "root module" size_param;
+      let m = M.create 8192 in
+      M.resize (size_param * 1024 * 1024 / 8) m;
+      m 
+    end else begin
+      Format.eprintf "caching disabled for root module cache";
+      enabled := false;
+      M.create 1;
+    end      
+
+
+  let misses = ref 0
+  let hits = ref 0
+
+  let memoize f env arg =
+    if not !enabled then begin
+      incr misses;
+      f env arg
+    end else begin
+      match M.find arg cache with
+      | None ->
+        incr misses;
+        let result = f env arg in
+        M.add arg result cache;
+        M.trim cache;
+        result
+      | Some result ->
+        incr hits;
+        M.promote arg cache; result
+    end
+  
+  let stats () =
+    Format.eprintf "Stats for 'root module'\nmisses: %d\nhits: %d\ntotalsize: %dMiB\n%!"
+      !misses !hits (M.weight cache / (1024 * 1024 / 8))
+
+end
+
+let lookup_root_module name' env' =
+  let run env name =
+    let result =
     match env.resolver with 
     | None -> None
     | Some r ->
@@ -333,7 +395,11 @@ let lookup_root_module name env =
           | Not_found -> None
           | Found u ->
               let unit = r.resolve_unit u.root in
-              Some (Resolved (u.root.digest, unit.id, module_of_unit unit))
+              (* let cur_state = !Component.Delayed.eager in
+              Component.Delayed.eager := true; *)
+              let m = module_of_unit unit in
+              (* Component.Delayed.eager := cur_state; *)
+              Some (Resolved (u.root.digest, unit.id, m))
   in
   ( match (env.recorder, result) with
   | Some r, Some Forward ->
@@ -343,6 +409,7 @@ let lookup_root_module name env =
   | Some r, None -> r.lookups <- RootModule (name, None) :: r.lookups
   | None, _ -> () );
   result
+  in Memo.memoize run env' name'
 
 type value_or_external =
   [ `External of Odoc_model.Paths_types.Identifier.value * Component.External.t
@@ -654,12 +721,7 @@ let initial_env :
   List.fold_right
     (fun import (imports, env) ->
       match import with
-      | Import.Resolved root ->
-          let unit = resolver.resolve_unit root in
-          Component.Delayed.eager := true;
-          let m = module_of_unit unit in
-          Component.Delayed.eager := false;
-          let env = add_module unit.id m env in
+      | Import.Resolved _root ->
           (import :: imports, env)
       | Import.Unresolved (str, _) -> (
           match resolver.lookup_unit str with

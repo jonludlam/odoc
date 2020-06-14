@@ -48,28 +48,6 @@ let class_type_lookup_result_of_type :
   | `CT r -> Some r
   | _ -> None
 
-module Hashable = struct
-  type t = bool * Resolved.Signature.t
-
-  let equal = ( = )
-
-  let hash = Hashtbl.hash
-end
-
-module Memos1 = Hashtbl.Make (Hashable)
-
-(*  let memo = Memos1.create 91*)
-
-module Hashable2 = struct
-  type t = bool * Signature.t
-
-  let equal = ( = )
-
-  let hash = Hashtbl.hash
-end
-
-module Memos2 = Hashtbl.Make (Hashable2)
-
 let module_lookup_to_signature_lookup :
     Env.t -> module_lookup_result -> signature_lookup_result option =
  fun env (ref, cp, m) ->

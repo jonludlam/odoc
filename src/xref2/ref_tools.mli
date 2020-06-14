@@ -43,27 +43,6 @@ val class_lookup_result_of_type :
 val class_type_lookup_result_of_type :
   type_lookup_result -> class_type_lookup_result option
 
-module Hashable : sig
-  type t = bool * Resolved.Signature.t
-
-  val equal : 'a -> 'a -> bool
-
-  val hash : 'a -> int
-end
-
-module Memos1 : Hashtbl.S with type key = Hashable.t
-
-module Hashable2 : sig
-  type t = bool * Signature.t
-
-  val equal : 'a -> 'a -> bool
-
-  val hash : 'a -> int
-end
-
-module Memos2 : Hashtbl.S with type key = Hashable2.t
-
-
 val module_lookup_to_signature_lookup :
   Env.t -> module_lookup_result -> signature_lookup_result option
 

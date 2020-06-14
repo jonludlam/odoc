@@ -160,7 +160,7 @@ let prefix_signature (path, sg) =
   in
   { items; removed = sg.removed }
 
-let simplify_resolved_module_path :
+let simplify_resolved_module_path_with_env :
     Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun env cpath ->
   let path = Lang_of.(Path.resolved_module empty cpath) in
@@ -188,68 +188,88 @@ type resolve_type_result =
 
 open Errors
 
+let size_param = try Sys.getenv "ODOCCACHESIZE" |> int_of_string with _ -> 500
+
 module type MEMO = sig
   type result
+
+  val name : string
 
   include Hashtbl.HashedType
 end
 
 
 module MakeMemo(X : MEMO) = struct
-  module M = Hashtbl.Make(X)
+  module W = struct
+    type t = X.result * int * Env.lookup_type list
+    let weight : t -> int = fun x ->
+      (* Format.eprintf "Checking size..."; *)
+      let result = Obj.reachable_words (Obj.repr x) in
+      (* Format.eprintf "...done (%d)\n%!" result; *)
+      result
+  end
 
-  let cache : (X.result * int * Env.lookup_type list) M.t = M.create 10000
-  let cache_hits : int M.t = M.create 10000
+  module M = Lru.M.Make(X)(W)
 
   let enabled = ref true
 
-  let bump_counter arg =
-    try
-      let new_val = M.find cache_hits arg + 1 in
-      M.replace cache_hits arg new_val;
-      new_val
-    with _ ->
-      M.add cache_hits arg 1;
-      1
+  let cache : M.t =
+    if size_param > 0 then begin
+      Format.eprintf "creating %s cache size: %d\n%!" X.name size_param;
+      let m = M.create 8192 in
+      M.resize (size_param * 1024 * 1024 / 8) m;
+      m
+    end else begin
+      enabled := false;
+      M.create 1;
+    end      
+
+
+  let misses = ref 0
+  let quickhits = ref 0
+  let mishits = ref 0
+  let slowhits = ref 0
 
   let memoize f env arg =
     if not !enabled then begin
+      incr misses;
       f env arg
     end else begin
       let env_id = Env.id env in
-      let n = bump_counter arg in
       let no_memo () =
         let lookups, result = Env.with_recorded_lookups env (fun env' -> f env' arg) in
-        if n>1 then
-          M.add cache arg (result, env_id, lookups);
+        M.add arg (result, env_id, lookups) cache;
+        M.trim cache;
         result
       in
-      match M.find_all cache arg with
-      | [] -> no_memo ()
-      | xs ->
-        let rec find_fast = function
-          | (result, env_id', _) :: _ when env_id' = env_id ->
-            M.replace cache_hits arg (M.find cache_hits arg + 1);
-            result
-          | _ :: ys -> find_fast ys
-          | [] -> find xs
-        and find = function
-          | (m, _, lookups) :: xs ->
-            if Env.verify_lookups env lookups
-            then m
-            else find xs
-          | [] -> no_memo ()
-        in
-        find_fast xs
+      match M.find arg cache with
+      | None -> incr misses; no_memo ()
+      | Some (result, env_id', _) when env_id' = env_id ->
+        incr quickhits; M.promote arg cache; result
+      | Some (result, _, lookups) ->
+        if Env.verify_lookups env lookups
+        then begin
+          incr slowhits;
+          M.promote arg cache; result
+        end else begin
+          incr mishits;
+          no_memo ()
+        end
     end
+  
+  let stats () =
+    Format.eprintf "Stats for '%s'\nmisses: %d\nquick_hits: %d\nmishits: %d\nslowhits: %d\ntotalsize: %dMiB\n%!"
+      X.name !misses !quickhits !mishits !slowhits (M.weight cache / (1024 * 1024 / 8))
     
   let clear () =
-    M.clear cache;
-    M.clear cache_hits
+    stats ()
+
 end
 
 module LookupModuleMemo = MakeMemo (struct
   type t = bool * Cpath.Resolved.module_
+
+  let name = "lookup module"
 
   type result = (Component.Module.t, [simple_module_lookup_error | parent_lookup_error]) Result.result
   let equal = ( = )
@@ -259,11 +279,14 @@ end)
 module LookupParentMemo = MakeMemo (struct
   type t = bool * Cpath.Resolved.parent
 
+  let name = "lookup parent"
+
   type result = (Component.Signature.t * Component.Substitution.t, parent_lookup_error) Result.result
 
   let equal = ( = )
 
   let hash (b,p) = Hashtbl.hash (b, Cpath.resolved_parent_hash p)
+
 end
 )
 
@@ -272,18 +295,24 @@ module LookupAndResolveMemo = MakeMemo (struct
 
   type result = resolve_module_result
 
+  let name = "lookup and resolve"
+
   let equal = ( = )
 
   let hash (b1, b2, p) = Hashtbl.hash (b1, b2, Cpath.module_hash p)
+
 end)
 
 module SignatureOfModuleMemo = MakeMemo (struct
   type t = Cpath.Resolved.module_
 
+  let name = "signature of module"
+
   type result = (Component.Signature.t, signature_of_module_error) Result.result
   let equal = ( = )
 
   let hash p = Cpath.resolved_module_hash p
+
 end)
 
 let disable_all_caches () =
@@ -296,7 +325,8 @@ let reset_caches () =
   LookupModuleMemo.clear ();
   LookupAndResolveMemo.clear ();
   SignatureOfModuleMemo.clear ();
-  LookupParentMemo.clear ()
+  LookupParentMemo.clear ();
+  Env.Memo.stats ()
 
 let rec handle_apply ~mark_substituted env func_path arg_path m =
   let rec find_functor mty =
@@ -415,45 +445,88 @@ and handle_type_lookup id p sg =
   | Some mt -> Ok (`Type (p, Odoc_model.Names.TypeName.of_string id), mt)
   | None -> Error `Find_failure
 
+(* and simplify_resolved_module_path : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
+    function
+    | `Local _ 
+    | `Identifier _ as x -> x
+    | `Substituted x -> simplify_resolved_module_path x
+    | `Apply (p1, p2) -> `Apply (simplify_resolved_module_path p1, simplify_module_path p2)
+    | `Module (`Module p1, n) -> `Module (`Module (simplify_resolved_module_path p1), n)
+    | `Module (_, _) as x -> x
+    | `Alias (_, p) -> simplify_resolved_module_path p
+    | `Subst (_, p) -> simplify_resolved_module_path p
+    | `SubstAlias (_, p) -> simplify_resolved_module_path p
+    | `Hidden x -> simplify_resolved_module_path x
+    | `Canonical (p, _) -> simplify_resolved_module_path p
+    | `OpaqueModule m -> simplify_resolved_module_path m
+
+and simplify_module_path : Cpath.module_ -> Cpath.module_ =
+    function
+    | `Resolved r -> `Resolved (simplify_resolved_module_path r)
+    | `Substituted x -> simplify_module_path x
+    | `Root _ as x -> x
+    | `Forward _ as x -> x
+    | `Dot (p, s) -> `Dot (simplify_module_path p, s)
+    | `Apply (p1, p2) -> `Apply (simplify_module_path p1, simplify_module_path p2) *)
+
 and lookup_module :
     mark_substituted:bool ->
     Env.t ->
     Cpath.Resolved.module_ ->
     (Component.Module.t, [simple_module_lookup_error | parent_lookup_error]) Result.result =
     fun ~mark_substituted:m env' path' ->
-    let lookup env (mark_substituted, path) =
-      match path with
-      | `Local lpath -> Error (`Local (env, lpath))
-      | `Identifier i ->
-          of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
+    (* let path' = simplify_resolved_module_path path'' in *)
+    (* match path' with
+    | `Identifier i ->
+      of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env')
+      >>= fun (`Module (_, m)) -> Ok m
+    | _ -> *)
+      let lookup env (mark_substituted, path) =
+        match path with
+        | `Local lpath -> Error (`Local (env, lpath))
+        | `Identifier i ->
+          of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env')
           >>= fun (`Module (_, m)) -> Ok m
-      | `Substituted x -> lookup_module ~mark_substituted env x
-      | `Apply (functor_path, `Resolved argument_path) -> (
-          match lookup_module ~mark_substituted env functor_path with
-          | Ok functor_module ->
-              handle_apply ~mark_substituted:false env functor_path argument_path functor_module
-              |> map_error (function | #simple_module_type_expr_of_module_error as e-> `Parent_expr e | #parent_lookup_error as x -> x)
-              >>= fun (_, m) -> Ok m
-          | Error _ as e -> e )
-      | `Module (parent, name) -> (
-          let find_in_sg sg sub =
-            match Find.careful_module_in_sig sg (ModuleName.to_string name) with
-            | None -> Error `Find_failure
-            | Some (Find.Found m) -> Ok (Subst.module_ sub m)
-            | Some (Replaced p) -> lookup_module ~mark_substituted env p
-          in
-          lookup_parent ~mark_substituted env parent
-          |> map_error (fun e -> (e :> [ simple_module_lookup_error | parent_lookup_error]))
-          >>= fun (sg, sub) -> find_in_sg sg sub)
-      | `Alias (_, p) -> lookup_module ~mark_substituted env p
-      | `Subst (_, p) -> lookup_module ~mark_substituted env p
-      | `SubstAlias (_, p) -> lookup_module ~mark_substituted env p
-      | `Hidden p -> lookup_module ~mark_substituted env p
-      | `Canonical (p, _) -> lookup_module ~mark_substituted env p
-      | `Apply (_, _) -> Error `Unresolved_apply
-      | `OpaqueModule m -> lookup_module ~mark_substituted env m
-    in
-    LookupModuleMemo.memoize lookup env' (m, path')
+        | `Substituted x -> lookup_module ~mark_substituted env x
+        | `Apply (functor_path, `Resolved argument_path) -> (
+            match lookup_module ~mark_substituted env functor_path with
+            | Ok functor_module ->
+                handle_apply ~mark_substituted:false env functor_path argument_path functor_module
+                |> map_error (function | #simple_module_type_expr_of_module_error as e-> `Parent_expr e | #parent_lookup_error as x -> x)
+                >>= fun (_, m) -> Ok m
+            | Error _ as e -> e )
+        | `Module (parent, name) -> (
+            let find_in_sg sg sub =
+              match Find.careful_module_in_sig sg (ModuleName.to_string name) with
+              | None -> Error `Find_failure
+              | Some (Find.Found m) -> Ok (Subst.module_ sub m)
+              | Some (Replaced p) -> lookup_module ~mark_substituted env p
+            in
+            lookup_parent ~mark_substituted env parent
+            |> map_error (fun e -> (e :> [ simple_module_lookup_error | parent_lookup_error]))
+            >>= fun (sg, sub) -> find_in_sg sg sub)
+        | `Alias (_, p) -> lookup_module ~mark_substituted env p
+        | `Subst (_, p) -> lookup_module ~mark_substituted env p
+        | `SubstAlias (_, p) -> lookup_module ~mark_substituted env p
+        | `Hidden p -> lookup_module ~mark_substituted env p
+        | `Canonical (p, _) -> lookup_module ~mark_substituted env p
+        | `Apply (_, _) -> Error `Unresolved_apply
+        | `OpaqueModule m -> lookup_module ~mark_substituted env m
+      in
+      let open LookupModuleMemo in
+      if not !enabled
+      then lookup env' (m, path')
+      else
+        match M.find (m, path') cache with
+        | None ->
+          incr misses;
+          let env_id = Env.id env' in
+          let id = (m, path') in
+          let lookups, result = Env.with_recorded_lookups env' (fun env -> lookup env id) in
+          M.add id (result, env_id, lookups) cache;
+          M.trim cache;
+          result
+        | Some (result, _, _) -> incr quickhits; result
 
 and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
     =
@@ -481,13 +554,13 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       | Resolved (`Alias (_, p2'), _) ->
           `Canonical
             ( reresolve_module env p,
-              `Resolved (simplify_resolved_module_path env p2') )
+              `Resolved (simplify_resolved_module_path_with_env env p2') )
       | Resolved (p2', _) ->
           (* See, e.g. Base.Sexp for an example of where the canonical path might not be
              a simple alias *)
           `Canonical
             ( reresolve_module env p,
-              `Resolved (simplify_resolved_module_path env p2') )
+              `Resolved (simplify_resolved_module_path_with_env env p2') )
       | Unresolved _ -> `Canonical (reresolve_module env p, p2)
       | exception _ -> `Canonical (reresolve_module env p, p2) )
   | `Apply (p, p2) -> (
@@ -625,7 +698,26 @@ and resolve_module :
           (`Root f)
         |> map_unresolved (fun _ -> `Forward f)
   in
-  LookupAndResolveMemo.memoize resolve env' id
+  let open LookupAndResolveMemo in
+  if not !enabled
+  then resolve env' id
+  else
+    match M.find id cache with
+    | None ->
+        incr misses;
+        let env_id = Env.id env' in
+        let lookups, result = Env.with_recorded_lookups env' (fun env -> resolve env id) in
+        M.add id (result, env_id, lookups) cache;
+        M.trim cache;
+        let open LookupModuleMemo in
+        (match result with
+        | Resolved (p, m) ->
+            (* let p' = simplify_resolved_module_path p in *)
+            M.add (mark_substituted, p) (Ok m, env_id, lookups) cache;
+            M.trim cache;
+        | _ -> ());
+        result
+    | Some (result, _, _) -> incr quickhits; result
 
 
 

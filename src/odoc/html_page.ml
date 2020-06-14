@@ -38,6 +38,8 @@ let to_html_tree_compilation_unit ?theme_uri ~syntax v =
 
 let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
   Root.read input >>= fun root ->
+  Format.eprintf "After read\n%!";
+  Gc.print_stat stderr;
   let input_s = Fs.File.to_string input in
   match root.file with
   | Page page_name ->
@@ -67,6 +69,8 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     (* If hidden, we should not generate HTML. See
          https://github.com/ocaml/odoc/issues/99. *)
     Compilation_unit.load input >>= fun unit ->
+    Format.eprintf "After load\n%!";
+    Gc.print_stat stderr;  
     let unit =
       if hidden
       then {unit with content = Odoc_model.Lang.Compilation_unit.Module []; expansion=None }
@@ -75,6 +79,9 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       let env = Env.build env (`Unit unit) in
+      Format.eprintf "After Env.build\n%!";
+      Gc.print_stat stderr;
+    
       (* let startlink = Unix.gettimeofday () in *)
       (* Format.fprintf Format.err_formatter "**** Link...\n%!"; *)
       let linked = Odoc_xref2.Link.link env unit in
@@ -85,13 +92,12 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
       |> Odoc_xref2.Lookup_failures.to_warning ~filename:input_s
       |> Odoc_model.Error.shed_warnings
     in
-    
+
+    Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
+
     Odoc_xref2.Tools.reset_caches ();
     Hashtbl.clear Compilation_unit.units_cache;
     Gc.full_major ();
- 
-
-   Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
 
    let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package

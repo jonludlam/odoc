@@ -11,7 +11,7 @@
   odoc_model
   odoc_xref2
   tyxml
-  ;statmemprof-emacs
+;  statmemprof-emacs
   unix))
 
 (documentation)

@@ -43,7 +43,7 @@ let load =
         let _root = Root.load file ic in
         let res = Marshal.from_channel ic in
         close_in ic;
-        Hashtbl.add units_cache file res;
+        (* Hashtbl.add units_cache file res; *)
         Ok res
       with exn ->
         let msg =

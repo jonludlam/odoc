@@ -32,7 +32,12 @@ module IdentMap = Map.Make (struct
 end)
 
 module Delayed = struct
-  let eager = ref false
+  let eager = ref (
+    try 
+      let eager = Sys.getenv "ODOCEAGER" = "true" in
+      if eager then Format.eprintf "Eager evaluation\n%!";
+      eager
+    with _ -> false)
 
   type 'a t = { mutable v : 'a option; mutable get : (unit -> 'a) option }
 

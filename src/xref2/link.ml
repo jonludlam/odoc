@@ -107,8 +107,10 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
+  Gc.print_stat stderr;
   let imports, env = Env.initial_env t resolver in
   Format.eprintf "Starting link\n%!";
+  Gc.print_stat stderr;  
   {
     t with
     content = content env t.id t.content;
@@ -373,9 +375,16 @@ and module_ : Env.t -> Module.t -> Module.t =
   let open Module in
   let sg_id = (m.id :> Id.Signature.t) in
   let start_time = Unix.gettimeofday () in
-  (* Format.fprintf Format.err_formatter "Processing Module %a\n%!"
-     Component.Fmt.model_identifier
-     (m.id :> Id.t); *)
+  begin
+    match m.id with
+    | `Module(`Root _, _name) ->
+      Format.fprintf Format.err_formatter "Processing Module %a\n%!"
+        Component.Fmt.model_identifier
+        (m.id :> Id.t);
+      (* Gc.full_major ();
+      Gc.print_stat stderr *)
+    | _ -> ()
+  end;
   if m.hidden then m
   else
     let t1 = Unix.gettimeofday () in
