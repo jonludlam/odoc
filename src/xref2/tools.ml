@@ -188,8 +188,6 @@ type resolve_type_result =
 
 open Errors
 
-let size_param = try Sys.getenv "ODOCCACHESIZE" |> int_of_string with _ -> 500
-
 module type MEMO = sig
   type result
 
@@ -198,16 +196,22 @@ module type MEMO = sig
   include Hashtbl.HashedType
 end
 
+let share_lookup_and_resolve_memos = try Sys.getenv "ODOC_SHARE_MEMOS" = "true" with _ -> false 
 
 module MakeMemo(X : MEMO) = struct
   module W = struct
     type t = X.result * int * Env.lookup_type list
-    let weight : t -> int = fun x ->
+    let weight : t -> int = fun _x ->
       (* Format.eprintf "Checking size..."; *)
-      let result = Obj.reachable_words (Obj.repr x) in
+      (* let result = Obj.reachable_words (Obj.repr x) in *)
+      let result = 1 in
       (* Format.eprintf "...done (%d)\n%!" result; *)
       result
   end
+
+  let env_param = Printf.sprintf "ODOC_CACHE_SIZE_%s" X.name
+  let default_size = 100
+  let size_param = try Sys.getenv env_param |> int_of_string with _ -> 100
 
   module M = Lru.M.Make(X)(W)
 
@@ -215,9 +219,9 @@ module MakeMemo(X : MEMO) = struct
 
   let cache : M.t =
     if size_param > 0 then begin
-      Format.eprintf "creating %s cache size: %d\n%!" X.name size_param;
+      Format.eprintf "creating %s cache size: %d (controlled by env param %s, default %d)\n%!" X.name size_param env_param default_size;
       let m = M.create 8192 in
-      M.resize (size_param * 1024 * 1024 / 8) m;
+      M.resize (size_param) m;
       m
     end else begin
       enabled := false;
@@ -269,7 +273,7 @@ end
 module LookupModuleMemo = MakeMemo (struct
   type t = bool * Cpath.Resolved.module_
 
-  let name = "lookup module"
+  let name = "lookup_module"
 
   type result = (Component.Module.t, [simple_module_lookup_error | parent_lookup_error]) Result.result
   let equal = ( = )
@@ -279,7 +283,7 @@ end)
 module LookupParentMemo = MakeMemo (struct
   type t = bool * Cpath.Resolved.parent
 
-  let name = "lookup parent"
+  let name = "lookup_parent"
 
   type result = (Component.Signature.t * Component.Substitution.t, parent_lookup_error) Result.result
 
@@ -295,7 +299,7 @@ module LookupAndResolveMemo = MakeMemo (struct
 
   type result = resolve_module_result
 
-  let name = "lookup and resolve"
+  let name = "resolve_module"
 
   let equal = ( = )
 
@@ -306,7 +310,7 @@ end)
 module SignatureOfModuleMemo = MakeMemo (struct
   type t = Cpath.Resolved.module_
 
-  let name = "signature of module"
+  let name = "signature_of_module"
 
   type result = (Component.Signature.t, signature_of_module_error) Result.result
   let equal = ( = )
@@ -326,7 +330,27 @@ let reset_caches () =
   LookupAndResolveMemo.clear ();
   SignatureOfModuleMemo.clear ();
   LookupParentMemo.clear ();
-  Env.Memo.stats ()
+  Env.Memo.stats ();
+  if share_lookup_and_resolve_memos then begin
+    let cache1 = LookupAndResolveMemo.cache in
+    let cache2 = LookupModuleMemo.cache in
+    let both = (cache1, cache2) in
+    let report name o =
+        let sz = Obj.reachable_words (Obj.repr o) in
+        Format.eprintf "sharing report: %s: %d\n%!" name sz
+    in
+    report "lookup_and_resolve_cache" cache1;
+    report "lookup_cache" cache2;
+    report "both" both
+  end
+
+let sizes () =
+  [ "lookup_module", LookupModuleMemo.size_param;
+    "resolve_module", LookupAndResolveMemo.size_param;
+    "signature_of_module", SignatureOfModuleMemo.size_param;
+    "lookup_parent", LookupParentMemo.size_param;
+    "root_module", Env.Memo.size_param;
+  ]
 
 let rec handle_apply ~mark_substituted env func_path arg_path m =
   let rec find_functor mty =
@@ -445,48 +469,53 @@ and handle_type_lookup id p sg =
   | Some mt -> Ok (`Type (p, Odoc_model.Names.TypeName.of_string id), mt)
   | None -> Error `Find_failure
 
-(* and simplify_resolved_module_path : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
-    function
-    | `Local _ 
-    | `Identifier _ as x -> x
-    | `Substituted x -> simplify_resolved_module_path x
-    | `Apply (p1, p2) -> `Apply (simplify_resolved_module_path p1, simplify_module_path p2)
-    | `Module (`Module p1, n) -> `Module (`Module (simplify_resolved_module_path p1), n)
-    | `Module (_, _) as x -> x
-    | `Alias (_, p) -> simplify_resolved_module_path p
-    | `Subst (_, p) -> simplify_resolved_module_path p
-    | `SubstAlias (_, p) -> simplify_resolved_module_path p
-    | `Hidden x -> simplify_resolved_module_path x
-    | `Canonical (p, _) -> simplify_resolved_module_path p
-    | `OpaqueModule m -> simplify_resolved_module_path m
+and do_simpl = (try Sys.getenv "ODOCSIMPL" = "true" with _ -> false)
+
+and simplify_resolved_module_path : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
+    fun x ->
+      if not do_simpl then x else
+      match x with
+      | `Local _ 
+      | `Identifier _ as x -> x
+      | `Substituted x -> simplify_resolved_module_path x
+      | `Apply (p1, p2) -> `Apply (simplify_resolved_module_path p1, simplify_module_path p2)
+      | `Module (`Module p1, n) -> `Module (`Module (simplify_resolved_module_path p1), n)
+      | `Module (_, _) as x -> x
+      | `Alias (_, p) -> simplify_resolved_module_path p
+      | `Subst (_, p) -> simplify_resolved_module_path p
+      | `SubstAlias (_, p) -> simplify_resolved_module_path p
+      | `Hidden x -> simplify_resolved_module_path x
+      | `Canonical (p, _) -> simplify_resolved_module_path p
+      | `OpaqueModule m -> simplify_resolved_module_path m
 
 and simplify_module_path : Cpath.module_ -> Cpath.module_ =
-    function
+    fun x ->
+    if not do_simpl then x else
+    match x with
     | `Resolved r -> `Resolved (simplify_resolved_module_path r)
     | `Substituted x -> simplify_module_path x
     | `Root _ as x -> x
     | `Forward _ as x -> x
     | `Dot (p, s) -> `Dot (simplify_module_path p, s)
-    | `Apply (p1, p2) -> `Apply (simplify_module_path p1, simplify_module_path p2) *)
+    | `Apply (p1, p2) -> `Apply (simplify_module_path p1, simplify_module_path p2)
 
 and lookup_module :
     mark_substituted:bool ->
     Env.t ->
     Cpath.Resolved.module_ ->
     (Component.Module.t, [simple_module_lookup_error | parent_lookup_error]) Result.result =
-    fun ~mark_substituted:m env' path' ->
-    (* let path' = simplify_resolved_module_path path'' in *)
-    (* match path' with
+    fun ~mark_substituted:m env' path'' ->
+    let path' = simplify_resolved_module_path path'' in
+    match path' with
     | `Identifier i ->
+      incr LookupModuleMemo.mishits;
       of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env')
       >>= fun (`Module (_, m)) -> Ok m
-    | _ -> *)
+    | _ ->
       let lookup env (mark_substituted, path) =
         match path with
         | `Local lpath -> Error (`Local (env, lpath))
-        | `Identifier i ->
-          of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env')
-          >>= fun (`Module (_, m)) -> Ok m
+        | `Identifier _i -> failwith "bah"
         | `Substituted x -> lookup_module ~mark_substituted env x
         | `Apply (functor_path, `Resolved argument_path) -> (
             match lookup_module ~mark_substituted env functor_path with
@@ -712,9 +741,11 @@ and resolve_module :
         let open LookupModuleMemo in
         (match result with
         | Resolved (p, m) ->
-            (* let p' = simplify_resolved_module_path p in *)
-            M.add (mark_substituted, p) (Ok m, env_id, lookups) cache;
-            M.trim cache;
+            if !enabled && share_lookup_and_resolve_memos then begin
+              let p' = simplify_resolved_module_path p in
+              M.add (mark_substituted, p') (Ok m, env_id, lookups) cache;
+              M.trim cache
+            end
         | _ -> ());
         result
     | Some (result, _, _) -> incr quickhits; result

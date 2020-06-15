@@ -1,5 +1,8 @@
 (* Link *)
 
+val sizes : int list ref
+val largest_path : Odoc_model.Paths.Path.Type.t option ref
+
 val signature :
   Env.t ->
   Odoc_model.Paths.Identifier.Signature.t ->

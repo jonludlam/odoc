@@ -294,6 +294,7 @@ val reset_caches : unit -> unit
 val disable_all_caches : unit -> unit
 (** Disable the caches completely *)
 
+val sizes : unit -> (string * int) list
 
 module Fmt : sig
     (** Format function for errors declared in the {!module:Errors} module *)

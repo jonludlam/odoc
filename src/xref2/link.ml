@@ -46,24 +46,34 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true
 
+let sizes = ref []
+let largest_path = ref None
+(* let largest_size = ref 0 *)
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
-  if not (should_resolve (p :> Paths.Path.t)) then p
-  else
-    let cp = Component.Of_Lang.(type_path empty p) in
-    match cp with
-    | `Resolved p ->
-        let result = Tools.reresolve_type env p in
-        `Resolved (result |> Cpath.resolved_type_path_of_cpath)
-    | _ -> (
-        match Tools.resolve_type_path env cp with
-        | Resolved p' -> `Resolved (Cpath.resolved_type_path_of_cpath p')
-        | Unresolved unresolved ->
-            Lookup_failures.report "Failed to lookup type %a"
-              Component.Fmt.model_path
-              (p :> Paths.Path.t);
-            Cpath.type_path_of_cpath unresolved )
+  let result =
+    if not (should_resolve (p :> Paths.Path.t)) then p
+    else
+      let cp = Component.Of_Lang.(type_path empty p) in
+      match cp with
+      | `Resolved p ->
+          let result = Tools.reresolve_type env p in
+          `Resolved (result |> Cpath.resolved_type_path_of_cpath)
+      | _ -> (
+          match Tools.resolve_type_path env cp with
+          | Resolved p' -> `Resolved (Cpath.resolved_type_path_of_cpath p')
+          | Unresolved unresolved ->
+              Lookup_failures.report "Failed to lookup type %a"
+                Component.Fmt.model_path
+                (p :> Paths.Path.t);
+              Cpath.type_path_of_cpath unresolved )
+  in
+  (* let size = Obj.reachable_words (Obj.repr result) in
+  sizes := size :: !sizes;
+  if !largest_size < size then
+    largest_path := Some result; *)
+  result
 
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
@@ -107,16 +117,16 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
 
 let rec unit (resolver : Env.resolver) t =
   let open Compilation_unit in
-  Gc.print_stat stderr;
   let imports, env = Env.initial_env t resolver in
-  Format.eprintf "Starting link\n%!";
-  Gc.print_stat stderr;  
-  {
-    t with
-    content = content env t.id t.content;
-    doc = comment_docs env t.doc;
-    imports;
-  }
+  let id = t.id in
+  let digest = t.digest in
+  let source = t.source in
+  let interface = t.interface in
+  let hidden = t.hidden in
+  let content = content env t.id t.content in
+  let doc = comment_docs env t.doc in
+  let expansion = None in
+  { id; doc; digest; imports; source; interface; hidden; content; expansion }
 
 and content env id =
   let open Compilation_unit in
@@ -375,16 +385,16 @@ and module_ : Env.t -> Module.t -> Module.t =
   let open Module in
   let sg_id = (m.id :> Id.Signature.t) in
   let start_time = Unix.gettimeofday () in
-  begin
+  (* begin
     match m.id with
     | `Module(`Root _, _name) ->
       Format.fprintf Format.err_formatter "Processing Module %a\n%!"
         Component.Fmt.model_identifier
         (m.id :> Id.t);
-      (* Gc.full_major ();
-      Gc.print_stat stderr *)
+      Gc.full_major ();
+      Gc.print_stat stderr
     | _ -> ()
-  end;
+  end; *)
   if m.hidden then m
   else
     let t1 = Unix.gettimeofday () in

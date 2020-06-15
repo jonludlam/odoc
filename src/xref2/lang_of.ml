@@ -84,7 +84,7 @@ module Path = struct
     | `Substituted x -> resolved_module map x
     | `Identifier (#Odoc_model.Paths.Identifier.Module.t as y) -> `Identifier y
     | `Subst (mty, m) ->
-        `Subst (resolved_module_type map mty, resolved_module map m)
+        `Subst (resolved_module_type map mty , resolved_module map m)
     | `SubstAlias (m1, m2) ->
         `SubstAlias (resolved_module map m1, resolved_module map m2)
     | `Hidden h -> `Hidden (resolved_module map h)

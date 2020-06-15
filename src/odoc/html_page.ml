@@ -38,8 +38,6 @@ let to_html_tree_compilation_unit ?theme_uri ~syntax v =
 
 let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
   Root.read input >>= fun root ->
-  Format.eprintf "After read\n%!";
-  Gc.print_stat stderr;
   let input_s = Fs.File.to_string input in
   match root.file with
   | Page page_name ->
@@ -69,18 +67,16 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     (* If hidden, we should not generate HTML. See
          https://github.com/ocaml/odoc/issues/99. *)
     Compilation_unit.load input >>= fun unit ->
-    Format.eprintf "After load\n%!";
-    Gc.print_stat stderr;  
     let unit =
       if hidden
       then {unit with content = Odoc_model.Lang.Compilation_unit.Module []; expansion=None }
       else unit
     in
+    let startlink = Unix.gettimeofday () in
+
 (*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       let env = Env.build env (`Unit unit) in
-      Format.eprintf "After Env.build\n%!";
-      Gc.print_stat stderr;
     
       (* let startlink = Unix.gettimeofday () in *)
       (* Format.fprintf Format.err_formatter "**** Link...\n%!"; *)
@@ -93,11 +89,28 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
       |> Odoc_model.Error.shed_warnings
     in
 
+    let finishlink = Unix.gettimeofday () in
+
     Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
 
     Odoc_xref2.Tools.reset_caches ();
     Hashtbl.clear Compilation_unit.units_cache;
     Gc.full_major ();
+
+    let stats = Gc.stat () in
+    let oc = open_out_gen [Open_append; Open_creat] 0o644 "stats.dat" in 
+    let sizes = Odoc_xref2.Tools.sizes () in
+    let sz x = List.assoc x sizes in
+    Printf.fprintf
+      oc "%d %d %d %d %d %d %f\n"
+      (sz "lookup_module")
+      (sz "resolve_module")
+      (sz "signature_of_module")
+      (sz "lookup_parent")
+      (sz "root_module")
+      stats.Gc.top_heap_words
+      (finishlink -. startlink);
+    close_out oc;
 
    let pkg_dir =
       Fs.Directory.reach_from ~dir:root_dir root.package
@@ -125,6 +138,11 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     Hashtbl.clear Compilation_unit.units_cache;
     Gc.full_major ();
 
+    let sizes = List.sort compare !Odoc_xref2.Link.sizes in
+    List.iter (fun size -> Format.eprintf "%d\n%!" size) sizes;
+    (match !Odoc_xref2.Link.largest_path with
+    | Some p -> Format.eprintf "largest path: %a\n%!" Odoc_xref2.Component.Fmt.model_path (p :> Odoc_model.Paths.Path.t)
+    | None -> ());
     (* let rec loop_forever () =
       Thread.delay 1.0;
       loop_forever ()

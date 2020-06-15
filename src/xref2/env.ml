@@ -333,9 +333,10 @@ module Memo = struct
 
   module W = struct
     type t = root option
-    let weight : t -> int = fun x ->
+    let weight : t -> int = fun _x ->
       (* Format.eprintf "Checking size..."; *)
-      let result = Obj.reachable_words (Obj.repr x) in
+      (* let result = Obj.reachable_words (Obj.repr x) in *)
+      let result = 1 in
       (* Format.eprintf "...done (%d)\n%!" result; *)
       result
   end
@@ -343,13 +344,16 @@ module Memo = struct
   module M = Lru.M.Make(K)(W)
 
   let enabled = ref true
-  let size_param = try Sys.getenv "ODOCRMCACHESIZE" |> int_of_string with _ -> 500
+  let env_param = "ODOC_CACHE_SIZE_root_module"
+  let default_size = 100
+  let size_param = try Sys.getenv env_param |> int_of_string with _ -> default_size
 
   let cache : M.t =
     if size_param > 0 then begin
-      Format.eprintf "creating %s cache size: %d\n%!" "root module" size_param;
+      Format.eprintf "creating %s cache size: %d (controlled by env param %s, default %d)\n%!" "root module" size_param env_param default_size;
+
       let m = M.create 8192 in
-      M.resize (size_param * 1024 * 1024 / 8) m;
+      M.resize (size_param) m;
       m 
     end else begin
       Format.eprintf "caching disabled for root module cache";
@@ -721,7 +725,10 @@ let initial_env :
   List.fold_right
     (fun import (imports, env) ->
       match import with
-      | Import.Resolved _root ->
+      | Import.Resolved root ->
+          let unit = resolver.resolve_unit root in
+          let m = module_of_unit unit in
+          let env = add_module unit.id m env in
           (import :: imports, env)
       | Import.Unresolved (str, _) -> (
           match resolver.lookup_unit str with
