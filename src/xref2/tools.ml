@@ -266,7 +266,9 @@ module MakeMemo(X : MEMO) = struct
       X.name !misses !quickhits !mishits !slowhits (M.weight cache / (1024 * 1024 / 8))
     
   let clear () =
-    stats ()
+    stats ();
+    M.resize 1 cache;
+    M.trim cache
 
 end
 
@@ -326,11 +328,6 @@ let disable_all_caches () =
     LookupParentMemo.enabled := false
 
 let reset_caches () =
-  LookupModuleMemo.clear ();
-  LookupAndResolveMemo.clear ();
-  SignatureOfModuleMemo.clear ();
-  LookupParentMemo.clear ();
-  Env.Memo.stats ();
   if share_lookup_and_resolve_memos then begin
     let cache1 = LookupAndResolveMemo.cache in
     let cache2 = LookupModuleMemo.cache in
@@ -342,7 +339,13 @@ let reset_caches () =
     report "lookup_and_resolve_cache" cache1;
     report "lookup_cache" cache2;
     report "both" both
-  end
+  end;
+  LookupModuleMemo.clear ();
+  LookupAndResolveMemo.clear ();
+  SignatureOfModuleMemo.clear ();
+  LookupParentMemo.clear ();
+  Env.Memo.clear ()
+  
 
 let sizes () =
   [ "lookup_module", LookupModuleMemo.size_param;

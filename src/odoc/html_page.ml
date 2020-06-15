@@ -95,7 +95,12 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
 
     Odoc_xref2.Tools.reset_caches ();
     Hashtbl.clear Compilation_unit.units_cache;
-    Gc.full_major ();
+
+    Format.eprintf "XXXX Linked everything\n%!";
+    Gc.compact ();
+    Gc.print_stat stderr;
+  
+
 
     let stats = Gc.stat () in
     let oc = open_out_gen [Open_append; Open_creat] 0o644 "stats.dat" in 

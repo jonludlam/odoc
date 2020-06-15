@@ -1,6 +1,7 @@
 (* Env.mli *)
 module Memo : sig
   val stats : unit -> unit
+  val clear : unit -> unit
   val size_param : int
 end
 type lookup_result_found = { root : Odoc_model.Root.t; hidden : bool }

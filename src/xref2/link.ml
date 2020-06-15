@@ -123,10 +123,14 @@ let rec unit (resolver : Env.resolver) t =
   let source = t.source in
   let interface = t.interface in
   let hidden = t.hidden in
+  Format.eprintf "XXXX Loaded everything\n%!";
+  Gc.compact ();
+  Gc.print_stat stderr;
   let content = content env t.id t.content in
   let doc = comment_docs env t.doc in
   let expansion = None in
-  { id; doc; digest; imports; source; interface; hidden; content; expansion }
+  let result = { id; doc; digest; imports; source; interface; hidden; content; expansion } in
+  result
 
 and content env id =
   let open Compilation_unit in

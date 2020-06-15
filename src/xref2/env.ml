@@ -386,6 +386,11 @@ module Memo = struct
     Format.eprintf "Stats for 'root module'\nmisses: %d\nhits: %d\ntotalsize: %dMiB\n%!"
       !misses !hits (M.weight cache / (1024 * 1024 / 8))
 
+  let clear () =
+    stats ();
+    M.resize 1 cache;
+    M.trim cache
+
 end
 
 let lookup_root_module name' env' =
@@ -726,9 +731,14 @@ let initial_env :
     (fun import (imports, env) ->
       match import with
       | Import.Resolved root ->
-          let unit = resolver.resolve_unit root in
-          let m = module_of_unit unit in
-          let env = add_module unit.id m env in
+          let _file =
+            match root.Odoc_model.Root.file with
+            | Compilation_unit { name; _ } ->
+              ignore(lookup_root_module name initial_env);
+            | _ -> ()
+          in
+          (* let unit = resolver.resolve_unit root in *)
+(*          let env = add_module unit.id m env in *)
           (import :: imports, env)
       | Import.Unresolved (str, _) -> (
           match resolver.lookup_unit str with
