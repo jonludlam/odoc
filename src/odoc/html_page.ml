@@ -99,7 +99,7 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     Format.eprintf "XXXX Linked everything\n%!";
     Gc.compact ();
     Gc.print_stat stderr;
-  
+    ignore (exit 0);
 
 
     let stats = Gc.stat () in

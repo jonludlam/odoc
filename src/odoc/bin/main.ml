@@ -216,11 +216,7 @@ end = struct
         syntax theme_uri input_file warn_error =
     Odoc_html.Link.semantic_uris := semantic_uris;
     Odoc_html.Tree.open_details := not closed_details;
-    Format.eprintf "Before env.create\n%!";
-    Gc.print_stat stderr;
     let env = Env.create ~important_digests:false ~directories ~open_modules:[] in
-    Format.eprintf "After env.create\n%!";
-    Gc.print_stat stderr;
     let file = Fs.File.of_string input_file in
     match index_for with
     | None ->
@@ -449,7 +445,7 @@ module Targets = struct
 end
 
 let () =
-  (* Gc.set { (Gc.get()) with Gc.allocation_policy = 2 }; *)
+  Gc.set { (Gc.get()) with Gc.allocation_policy = 2; max_overhead=20; };
   (* Statmemprof_emacs.start 1E-4 30 5; *)
   Printexc.record_backtrace true;
 

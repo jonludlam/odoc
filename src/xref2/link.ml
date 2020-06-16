@@ -124,9 +124,10 @@ let rec unit (resolver : Env.resolver) t =
   let interface = t.interface in
   let hidden = t.hidden in
   Format.eprintf "XXXX Loaded everything\n%!";
+  Env.Memo.stats ();
+  let content = content env t.id t.content in
   Gc.compact ();
   Gc.print_stat stderr;
-  let content = content env t.id t.content in
   let doc = comment_docs env t.doc in
   let expansion = None in
   let result = { id; doc; digest; imports; source; interface; hidden; content; expansion } in
@@ -216,7 +217,8 @@ and with_location :
     a Location_.with_location =
  fun fn env x -> { x with Location_.value = fn env x.Location_.value }
 
-and comment_docs env d = List.rev_map (with_location comment_block_element env) d |> List.rev
+and comment_docs env d =
+  List.rev_map (with_location comment_block_element env) d |> List.rev
 
 and comment env = function
   | `Stop -> `Stop
@@ -389,16 +391,16 @@ and module_ : Env.t -> Module.t -> Module.t =
   let open Module in
   let sg_id = (m.id :> Id.Signature.t) in
   let start_time = Unix.gettimeofday () in
-  (* begin
+  begin
     match m.id with
     | `Module(`Root _, _name) ->
       Format.fprintf Format.err_formatter "Processing Module %a\n%!"
         Component.Fmt.model_identifier
         (m.id :> Id.t);
-      Gc.full_major ();
-      Gc.print_stat stderr
+      (* Gc.compact ();
+      Gc.print_stat stderr *)
     | _ -> ()
-  end; *)
+  end;
   if m.hidden then m
   else
     let t1 = Unix.gettimeofday () in
