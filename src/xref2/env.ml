@@ -388,8 +388,11 @@ module Memo = struct
 
   let clear () =
     stats ();
-    M.resize 1 cache;
-    M.trim cache
+    misses := 0;
+    hits := 0;
+    while (M.size cache > 0) do
+      M.drop_lru cache
+    done
 
 end
 
@@ -403,6 +406,7 @@ let lookup_root_module name' env' =
           | Forward_reference -> Some Forward
           | Not_found -> None
           | Found u ->
+              Format.eprintf "Loading module %s\n%!" name;
               let unit = r.resolve_unit u.root in
               (* let cur_state = !Component.Delayed.eager in
               Component.Delayed.eager := true; *)

@@ -396,7 +396,8 @@ and module_ : Env.t -> Module.t -> Module.t =
     | `Module(`Root _, _name) ->
       Format.fprintf Format.err_formatter "Processing Module %a\n%!"
         Component.Fmt.model_identifier
-        (m.id :> Id.t);
+        (m.id :> Id.t);    
+        (* Env.Memo.clear () *)
       (* Gc.compact ();
       Gc.print_stat stderr *)
     | _ -> ()
@@ -439,10 +440,17 @@ and module_ : Env.t -> Module.t -> Module.t =
                 let compiled_e = if recompile then Compile.expansion env sg_id e else e in
                 (env, Some compiled_e)
             | Error `OpaqueModule -> (env, None)
-            | Error _ ->
+            | Error (`Unresolved_module cp) ->
+                Format.eprintf "Failed to resolve module %a\n%!" Component.Fmt.module_path cp;
                 kasprintf failwith "Failed to expand module %a"
                   Component.Fmt.model_identifier
                   (m.id :> Id.t)
+                  | Error (`Unresolved_module_type cp) ->
+                  Format.eprintf "Failed to resolve module %a\n%!" Component.Fmt.module_type_path cp;
+                  kasprintf failwith "Failed to expand module %a"
+                    Component.Fmt.model_identifier
+                    (m.id :> Id.t)
+  
           in
           (env, expansion)
       | _ -> (env, m.expansion)

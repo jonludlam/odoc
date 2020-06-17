@@ -74,17 +74,9 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     in
     let startlink = Unix.gettimeofday () in
 
-(*    let unit = Odoc_xref.Lookup.lookup unit in *)
     let odoctree =
       let env = Env.build env (`Unit unit) in
-    
-      (* let startlink = Unix.gettimeofday () in *)
-      (* Format.fprintf Format.err_formatter "**** Link...\n%!"; *)
-      let linked = Odoc_xref2.Link.link env unit in
-      (* let finishlink = Unix.gettimeofday () in *)
-      (* Format.fprintf Format.err_formatter "**** Finished: Link=%f\n%!" (finishlink -. startlink); *)
-      (* Printf.fprintf stderr "num_times: %d\n%!" !Odoc_xref2.Tools.num_times; *)
-      linked
+      Odoc_xref2.Link.link env unit
       |> Odoc_xref2.Lookup_failures.to_warning ~filename:input_s
       |> Odoc_model.Error.shed_warnings
     in
@@ -99,7 +91,7 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     Format.eprintf "XXXX Linked everything\n%!";
     Gc.compact ();
     Gc.print_stat stderr;
-    ignore (exit 0);
+    (* ignore (exit 0); *)
 
 
     let stats = Gc.stat () in

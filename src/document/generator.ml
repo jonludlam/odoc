@@ -1186,7 +1186,7 @@ struct
         | Class (recursive, c)     -> continue @@ class_ recursive c
         | ClassType (recursive, c) -> continue @@ class_type recursive c
         | Include m                -> continue @@ include_ m
-        | ModuleSubstitution m     -> continue @@ module_substitution m
+        | ModuleSubstitution m    -> continue @@ module_substitution m
 
         | TypeSubstitution t ->
           continue @@ type_decl ~is_substitution:true (Ordinary, t)
