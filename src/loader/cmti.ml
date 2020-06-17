@@ -692,8 +692,8 @@ and read_include env parent incl =
 
 #if OCAML_MAJOR = 4 && OCAML_MINOR >= 08
 and read_open env parent o =
-  let expansion, _ = Cmi.read_signature_noenv env parent (Odoc_model.Compat.signature o.open_bound_items) in
-  { expansion }
+  let expansion, shadowed = Cmi.read_signature_noenv env parent (Odoc_model.Compat.signature o.open_bound_items) in
+  { expansion; shadowed }
 #endif
 
 and read_signature env parent sg =

@@ -278,7 +278,7 @@ end =
   Signature
 
 and Open : sig
-  type t = { expansion : Signature.t }
+  type t = { expansion : Signature.t; shadowed : (string * Odoc_model.Paths.Identifier.t) list }
 end =
   Open
 
@@ -1904,7 +1904,8 @@ module Of_Lang = struct
 
   and open_ ident_map o =
     Open.
-      { expansion = apply_sig_map ident_map o.Odoc_model.Lang.Open.expansion }
+      { expansion = apply_sig_map ident_map o.Odoc_model.Lang.Open.expansion
+      ; shadowed = o.Odoc_model.Lang.Open.shadowed }
 
   and apply_sig_map ident_map items =
     let items =

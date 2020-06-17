@@ -261,7 +261,7 @@ and Signature : sig
 end
 
 and Open : sig
-  type t = { expansion : Signature.t }
+  type t = { expansion : Signature.t; shadowed : (string * Odoc_model.Paths.Identifier.t) list }
 end
 
 and Include : sig

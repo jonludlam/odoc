@@ -501,7 +501,7 @@ and include_ parent map i =
 
 and open_ parent map o =
   let open Component.Open in
-  { Odoc_model.Lang.Open.expansion = signature parent map o.expansion }
+  { Odoc_model.Lang.Open.expansion = signature parent map o.expansion; shadowed = o.shadowed }
 
 and value_ map parent id v =
   let open Component.Value in

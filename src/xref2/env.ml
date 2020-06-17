@@ -709,7 +709,10 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             add_class_type c.id ty env
         | Odoc_model.Lang.Signature.Include i ->
             open_signature i.expansion.content env
-        | Odoc_model.Lang.Signature.Open o -> open_signature o.expansion env)
+        | Odoc_model.Lang.Signature.Open o ->
+            let sg = Component.Of_Lang.(signature empty o.expansion) in
+              Format.eprintf "Opening signature:\n%!%a\n%!" Component.Fmt.signature sg;
+          open_signature o.expansion env)
       e s
 
 let open_unit : Odoc_model.Lang.Compilation_unit.t -> t -> t =

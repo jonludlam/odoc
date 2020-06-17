@@ -393,7 +393,7 @@ and include_ s i =
 
 and open_ s o =
   let open Component.Open in
-  { expansion = apply_sig_map s o.expansion.items o.expansion.removed }
+  { o with expansion = apply_sig_map s o.expansion.items o.expansion.removed;  }
 
 and value s v =
   let open Component.Value in
@@ -517,7 +517,7 @@ and rename_bound_idents s sg =
         rename_bound_idents s [] o.Component.Open.expansion.items
       in
       rename_bound_idents s
-        (Open { Component.Open.expansion = { items; removed = [] } } :: sg)
+        (Open { o with Component.Open.expansion = { items; removed = [] } } :: sg)
         rest
   | (Comment _ as item) :: rest -> rename_bound_idents s (item :: sg) rest
 

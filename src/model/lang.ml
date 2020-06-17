@@ -116,7 +116,7 @@ end =
   Signature
 
 and Open : sig
-  type t = { expansion : Signature.t }
+  type t = { expansion : Signature.t; shadowed : (string * Identifier.t) list }
 end =
   Open
 
