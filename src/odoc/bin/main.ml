@@ -513,7 +513,7 @@ module Targets = struct
 end
 
 let () =
-  Gc.set { (Gc.get()) with Gc.allocation_policy = 2; (*max_overhead=30;*) (*space_overhead=20;*) };
+  Gc.set { (Gc.get()) with Gc.allocation_policy = 2; max_overhead=30; space_overhead=20; };
   (* Statmemprof_emacs.start 1E-4 30 5; *)
   Printexc.record_backtrace true;
 

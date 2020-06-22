@@ -130,12 +130,13 @@ let rec unit (resolver : Env.resolver) t =
   let source = t.source in
   let interface = t.interface in
   let hidden = t.hidden in
+  let doc = t.doc in
   Format.eprintf "XXXX Loaded everything\n%!";
   Env.Memo.stats ();
   let content = content env t.id t.content in
   Gc.compact ();
   Gc.print_stat stderr;
-  let doc = comment_docs env t.doc in
+  let doc = comment_docs env doc in
   let expansion = None in
   let result = { id; doc; digest; imports; source; interface; hidden; content; expansion } in
   result
@@ -403,11 +404,11 @@ and module_ : Env.t -> Module.t -> Module.t =
     | `Module(`Root _, _name) ->
       Format.fprintf Format.err_formatter "Processing Module %a\n%!"
         Component.Fmt.model_identifier
-        (m.id :> Id.t);    
-        (* Env.Memo.clear () *)
-      (* Gc.compact ();
-      Gc.print_stat stderr *)
-    | _ -> ()
+        (m.id :> Id.t);
+        (* Env.Memo.clear (); *)
+      (* Gc.compact (); *)
+      (* Gc.print_stat stderr *)
+    | _ -> () 
   end;
   if m.hidden then m
   else
@@ -878,8 +879,10 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
   | Constr (path', ts') -> (
       let path = type_path env path' in
       let ts = List.rev_map (type_expression env parent visited) ts' |> List.rev in
-      if not (Paths.Path.is_hidden (path :> Paths.Path.t)) then Constr (path, ts)
-      else
+      if not (Paths.Path.is_hidden (path :> Paths.Path.t))
+      then Constr (path, ts)
+      else begin
+        (* Format.eprintf "paths is hidden: %a\n%!" Component.Fmt.model_path (path :> Paths.Path.t); *)
         let cp = Component.Of_Lang.(type_path empty path') in
         match Tools.resolve_type env cp with
         | Resolved (cp', Found (`T t)) ->
@@ -905,17 +908,22 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
                   with
                   | Loop -> Constr (`Resolved p, ts)
                   | e ->
-                    Format.eprintf "Caught unexpected exception when expanding type declaration (%s)\n%!"
-                      (Printexc.to_string e);
+                    let te = Component.Of_Lang.(type_expression empty texpr) in
+                    Format.eprintf "Caught unexpected exception when expanding type declaration %a (%s)\n%!"
+                    Component.Fmt.type_expr
+                      te
+                    (Printexc.to_string e);
                     Constr (`Resolved p, ts) )
               | _ -> Constr (`Resolved p, ts)
             else Constr (`Resolved p, ts)
+                  
         | Resolved (cp', Found _) ->
             let p = Cpath.resolved_type_path_of_cpath cp' in
             Constr (`Resolved p, ts)
         | Resolved (_cp, Replaced x) ->
             Lang_of.(type_expr empty (parent :> Id.Parent.t) x)
-        | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) )
+        | Unresolved p -> Constr (Cpath.type_path_of_cpath p, ts) 
+      end)
   | Polymorphic_variant v ->
       Polymorphic_variant (type_expression_polyvar env parent visited v)
   | Object o -> Object (type_expression_object env parent visited o)

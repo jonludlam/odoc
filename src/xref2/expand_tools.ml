@@ -200,7 +200,7 @@ exception Clash
 let rec type_expr map t =
   let open Lang.TypeExpr in
   match t with
-  | Var v -> (try List.assoc v map with _ -> Format.eprintf "Failed to list assoc %s\n%!" v; failwith "bah")
+  | Var v -> (try List.assoc v map with _ -> Format.eprintf "Failed to list assoc %s (bindings=[%s])\n%!" v (String.concat ";" (List.map fst map)); failwith "bah")
   | Any -> Any
   | Alias (t, s) ->
       if List.mem_assoc s map then raise Clash else Alias (type_expr map t, s)

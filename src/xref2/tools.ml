@@ -220,7 +220,7 @@ module MakeMemo(X : MEMO) = struct
   let cache : M.t =
     if size_param > 0 then begin
       Format.eprintf "creating %s cache size: %d (controlled by env param %s, default %d)\n%!" X.name size_param env_param default_size;
-      let m = M.create 8192 in
+      let m = M.create size_param in
       M.resize (size_param) m;
       m
     end else begin
@@ -328,7 +328,7 @@ let disable_all_caches () =
     LookupParentMemo.enabled := false
 
 let reset_caches () =
-  if share_lookup_and_resolve_memos then begin
+  (* if share_lookup_and_resolve_memos then begin
     let cache1 = LookupAndResolveMemo.cache in
     let cache2 = LookupModuleMemo.cache in
     let both = (cache1, cache2) in
@@ -339,7 +339,7 @@ let reset_caches () =
     report "lookup_and_resolve_cache" cache1;
     report "lookup_cache" cache2;
     report "both" both
-  end;
+  end; *)
   LookupModuleMemo.clear ();
   LookupAndResolveMemo.clear ();
   SignatureOfModuleMemo.clear ();
