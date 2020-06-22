@@ -54,7 +54,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
   let result =
     if not (should_resolve (p :> Paths.Path.t)) then p
-    else
+    else begin
       let cp = Component.Of_Lang.(type_path empty p) in
       match cp with
       | `Resolved p ->
@@ -62,12 +62,15 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
           `Resolved (result |> Cpath.resolved_type_path_of_cpath)
       | _ -> (
           match Tools.resolve_type_path env cp with
-          | Resolved p' -> `Resolved (Cpath.resolved_type_path_of_cpath p')
+          | Resolved p' ->
+            let result = Tools.reresolve_type env p' in
+            `Resolved (Cpath.resolved_type_path_of_cpath result)
           | Unresolved unresolved ->
               Lookup_failures.report "Failed to lookup type %a"
                 Component.Fmt.model_path
                 (p :> Paths.Path.t);
               Cpath.type_path_of_cpath unresolved )
+    end
   in
   (* let size = Obj.reachable_words (Obj.repr result) in
   sizes := size :: !sizes;
@@ -88,7 +91,9 @@ and module_type_path :
           |> Cpath.resolved_module_type_path_of_cpath )
     | _ -> (
         match Tools.resolve_module_type_path env cp with
-        | Resolved p' -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
+        | Resolved p' ->
+          let result = Tools.reresolve_module_type env p' in
+          `Resolved (Cpath.resolved_module_type_path_of_cpath result)
         | Unresolved unresolved ->
             Lookup_failures.report "Failed to resolve module type %a"
               Component.Fmt.model_path
@@ -107,7 +112,9 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
           (Cpath.resolved_module_path_of_cpath after)
     | _ -> (
         match Tools.resolve_module_path env cp with
-        | Resolved p' -> `Resolved (Cpath.resolved_module_path_of_cpath p')
+        | Resolved p' ->
+          let result = Tools.reresolve_module env p' in
+          `Resolved (Cpath.resolved_module_path_of_cpath result)
         | Unresolved _ when is_forward p -> p
         | Unresolved unresolved ->
             Lookup_failures.report "Failed to resolve module %a"
