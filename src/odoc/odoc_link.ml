@@ -34,10 +34,11 @@ let from_odoc ~env input =
 
     let finishlink = Unix.gettimeofday () in
 
-    Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
-
     Odoc_xref2.Tools.reset_caches ();
     Hashtbl.clear Compilation_unit.units_cache;
+    Gc.compact ();
+    
+    Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
 
     Format.eprintf "XXXX Linked everything\n%!";
     Gc.print_stat stderr;
