@@ -122,13 +122,26 @@ end = struct
       in
       Fs.File.(set_ext ".odoc" output)
 
+  let find_package_version package_name =
+    let version_path = Unix.getenv "VERSION_PATH" in
+    let name = Printf.sprintf "%s/%s" version_path package_name in
+    let ic = open_in name in
+    let s = input_line ic in
+    close_in ic;
+    s
+
   let compile hidden directories resolve_fwd_refs dst package_name package_version open_modules input warn_error =
     let env =
       Env.create ~important_digests:(not resolve_fwd_refs) ~directories ~open_modules
     in
+    let version =
+      match package_version with
+      | None -> find_package_version package_name
+      | Some x -> x
+    in
     let package = {
       Odoc_model.Root.Package.name = package_name;
-      version = package_version
+      version
     } in
     let input = Fs.File.of_string input in
     let output = output_file ~dst ~input in
@@ -171,7 +184,7 @@ end = struct
     in
     let pkg_version =
       let doc = "Version of the package" in
-      Arg.(required & opt (some string) None &
+      Arg.(value & opt (some string) None &
            info ~docs ~docv:"PKGVER" ~doc ["pkgver"])
     in
     let resolve_fwd_refs =
