@@ -534,16 +534,16 @@ and resolve_signature_reference :
           let parent_cp = Tools.reresolve_parent env parent_cp in
           let sg = Tools.prefix_signature (parent_cp, sg) in
           Find.signature_in_sig sg name >>= function
-          | `Module (_, _, m) ->
+          | `Module (_, _, (lazy m)) ->
               let name = ModuleName.of_string name in
               module_lookup_to_signature_lookup env
-                (M.of_component env (Component.Delayed.get m)
+                (M.of_component env m
                    (`Module (parent_cp, name))
                    (`Module (parent, name)))
-          | `ModuleType (_, mt) ->
+          | `ModuleType (_, (lazy mt)) ->
               let name = ModuleTypeName.of_string name in
               module_type_lookup_to_signature_lookup env
-                (MT.of_component env (Component.Delayed.get mt)
+                (MT.of_component env mt
                    (`ModuleType (parent_cp, name))
                    (`ModuleType (parent, name))) )
     in
@@ -595,21 +595,20 @@ let resolve_reference_dot_sg env ~parent_path ~parent_ref ~parent_sg name =
   let parent_path = Tools.reresolve_parent env parent_path in
   let parent_sg = Tools.prefix_signature (parent_path, parent_sg) in
   Find.any_in_sig parent_sg name >>= function
-  | `Module (_, _, m) ->
+  | `Module (_, _, (lazy m)) ->
       let name = ModuleName.of_string name in
       resolved3
-        (M.of_component env (Component.Delayed.get m)
+        (M.of_component env m
            (`Module (parent_path, name))
            (`Module (parent_ref, name)))
-  | `ModuleType (_, mt) ->
+  | `ModuleType (_, (lazy mt)) ->
       let name = ModuleTypeName.of_string name in
       resolved3
-        (MT.of_component env (Component.Delayed.get mt)
+        (MT.of_component env mt
            (`ModuleType (parent_path, name))
            (`ModuleType (parent_ref, name)))
-  | `Type (_, _, t) ->
-      DT.of_component env (Component.Delayed.get t) ~parent_ref name
-      >>= resolved2
+  | `Type (_, _, (lazy t)) ->
+      DT.of_component env t ~parent_ref name >>= resolved2
   | `Class (_, _, c) -> CL.of_component env c ~parent_ref name >>= resolved2
   | `ClassType (_, _, ct) ->
       CT.of_component env ct ~parent_ref name >>= resolved2

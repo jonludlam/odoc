@@ -196,7 +196,7 @@ val module_type :
   maps ->
   Identifier.Signature.t ->
   Ident.module_type ->
-  Component.ModuleType.t Component.Delayed.t ->
+  Component.ModuleType.t Lazy.t ->
   Odoc_model.Lang.ModuleType.t
 
 val type_decl_constructor_argument :

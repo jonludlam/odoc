@@ -550,30 +550,13 @@ and apply_sig_map s items removed =
     match items with
     | [] -> List.rev acc
     | Module (id, r, m) :: rest ->
-        inner rest
-          ( Module
-              ( id,
-                r,
-                Component.Delayed.put (fun () ->
-                    module_ s (Component.Delayed.get m)) )
-          :: acc )
+        inner rest (Module (id, r, lazy (module_ s (Lazy.force m))) :: acc)
     | ModuleSubstitution (id, m) :: rest ->
         inner rest (ModuleSubstitution (id, module_substitution s m) :: acc)
     | ModuleType (id, mt) :: rest ->
-        inner rest
-          ( ModuleType
-              ( id,
-                Component.Delayed.put (fun () ->
-                    module_type s (Component.Delayed.get mt)) )
-          :: acc )
+        inner rest (ModuleType (id, lazy (module_type s (Lazy.force mt))) :: acc)
     | Type (id, r, t) :: rest ->
-        inner rest
-          ( Type
-              ( id,
-                r,
-                Component.Delayed.put (fun () ->
-                    type_ s (Component.Delayed.get t)) )
-          :: acc )
+        inner rest (Type (id, r, lazy (type_ s (Lazy.force t))) :: acc)
     | TypeSubstitution (id, t) :: rest ->
         inner rest (TypeSubstitution (id, type_ s t) :: acc)
     | Exception (id, e) :: rest ->
@@ -584,7 +567,8 @@ and apply_sig_map s items removed =
               let e' = extension s e in
               TypExt e' :: acc
             with TypeReplacement _ -> acc )
-    | Value (id, v) :: rest -> inner rest (Value (id, (Component.Delayed.put (fun () -> value s (Component.Delayed.get v)))) :: acc)
+    | Value (id, v) :: rest ->
+        inner rest (Value (id, lazy (value s (Lazy.force v))) :: acc)
     | External (id, e) :: rest ->
         inner rest (External (id, external_ s e) :: acc)
     | Class (id, r, c) :: rest -> inner rest (Class (id, r, class_ s c) :: acc)

@@ -37,9 +37,11 @@ open Odoc_model.Names;;
 #install_printer Odoc_model.Names.ExceptionName.fmt;;
 #install_printer Odoc_model.Names.FieldName.fmt;;
 #print_length 65536;;
-Odoc_xref2.Component.Delayed.eager := true;;
 Odoc_xref2.Tools.disable_all_caches ();;
 let id = Common.root_with_name;;
+(* Transparently print lazy values (and print them at all) *)
+let pp_lazy pp_a ppf (lazy a) = pp_a ppf a;;
+#install_printer pp_lazy;;
 ```
 
 Simple resolution
@@ -267,14 +269,11 @@ val module_ : Component.Module.t =
        {Odoc_xref2.Component.Signature.items =
          [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
            Odoc_model.Lang.Signature.Ordinary,
-           {Odoc_xref2.Component.Delayed.v =
-             Some
-              {Odoc_xref2.Component.TypeDecl.doc = [];
-               equation =
-                {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                 private_ = false; manifest = None; constraints = []};
-               representation = None};
-            get = None})];
+           {Odoc_xref2__Component.TypeDecl.doc = [];
+            equation =
+             {Odoc_xref2__Component.TypeDecl.Equation.params = [];
+              private_ = false; manifest = None; constraints = []};
+            representation = None})];
         removed = []});
    canonical = None; hidden = false; display_type = None;
    expansion = Some Odoc_xref2.Component.Module.AlreadyASig}
@@ -288,14 +287,11 @@ The values returned are the resolved path to the module, and a representation of
 {Odoc_xref2.Component.Signature.items =
   [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
     Odoc_model.Lang.Signature.Ordinary,
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.TypeDecl.doc = [];
-        equation =
-         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false; manifest = None; constraints = []};
-        representation = None};
-     get = None})];
+    {Odoc_xref2__Component.TypeDecl.doc = [];
+     equation =
+      {Odoc_xref2__Component.TypeDecl.Equation.params = []; private_ = false;
+       manifest = None; constraints = []};
+     representation = None})];
  removed = []}
 ```
 
@@ -378,41 +374,31 @@ val m : Component.Element.module_type option =
             {Odoc_xref2.Component.Signature.items =
               [Odoc_xref2.Component.Signature.ModuleType
                 (`LModuleType (N, 1),
-                {Odoc_xref2.Component.Delayed.v =
+                {Odoc_xref2__Component.ModuleType.doc = [];
+                 expr =
                   Some
-                   {Odoc_xref2.Component.ModuleType.doc = [];
-                    expr =
-                     Some
-                      (Odoc_xref2.Component.ModuleType.Signature
-                        {Odoc_xref2.Component.Signature.items =
-                          [Odoc_xref2.Component.Signature.Type
-                            (`LType (t, 2),
-                            Odoc_model.Lang.Signature.Ordinary,
-                            {Odoc_xref2.Component.Delayed.v =
-                              Some
-                               {Odoc_xref2.Component.TypeDecl.doc = [];
-                                equation =
-                                 {Odoc_xref2.Component.TypeDecl.Equation.params
-                                   = [];
-                                  private_ = false; manifest = None;
-                                  constraints = []};
-                                representation = None};
-                             get = None})];
-                         removed = []});
-                    expansion = Some Odoc_xref2.Component.Module.AlreadyASig};
-                 get = None});
+                   (Odoc_xref2__Component.ModuleType.Signature
+                     {Odoc_xref2__Component.Signature.items =
+                       [Odoc_xref2__Component.Signature.Type (`LType (t, 2),
+                         Odoc_model.Lang.Signature.Ordinary,
+                         {Odoc_xref2__Component.TypeDecl.doc = [];
+                          equation =
+                           {Odoc_xref2__Component.TypeDecl.Equation.params =
+                             [];
+                            private_ = false; manifest = None;
+                            constraints = []};
+                          representation = None})];
+                      removed = []});
+                 expansion = Some Odoc_xref2__Component.Module.AlreadyASig});
                Odoc_xref2.Component.Signature.Module (`LModule (B, 0),
                 Odoc_model.Lang.Signature.Ordinary,
-                {Odoc_xref2.Component.Delayed.v =
-                  Some
-                   {Odoc_xref2.Component.Module.doc = [];
-                    type_ =
-                     Odoc_xref2.Component.Module.ModuleType
-                      (Odoc_xref2.Component.ModuleType.Path
-                        (`Resolved (`Local (`LModuleType (N, 1)))));
-                    canonical = None; hidden = false; display_type = None;
-                    expansion = None};
-                 get = None})];
+                {Odoc_xref2__Component.Module.doc = [];
+                 type_ =
+                  Odoc_xref2__Component.Module.ModuleType
+                   (Odoc_xref2__Component.ModuleType.Path
+                     (`Resolved (`Local (`LModuleType (N, 1)))));
+                 canonical = None; hidden = false; display_type = None;
+                 expansion = None})];
              removed = []});
         expansion = Some Odoc_xref2.Component.Module.AlreadyASig}))
 ```
@@ -451,43 +437,33 @@ we look up `A` from the environment:
   Tools.prefix_signature (`Module p, sg);;
 - : Component.Signature.t =
 {Odoc_xref2.Component.Signature.items =
-  [Odoc_xref2.Component.Signature.ModuleType (`LModuleType (N, 4),
-    {Odoc_xref2.Component.Delayed.v =
+  [Odoc_xref2.Component.Signature.ModuleType (`LModuleType (N, 3),
+    {Odoc_xref2__Component.ModuleType.doc = [];
+     expr =
       Some
-       {Odoc_xref2.Component.ModuleType.doc = [];
-        expr =
-         Some
-          (Odoc_xref2.Component.ModuleType.Signature
-            {Odoc_xref2.Component.Signature.items =
-              [Odoc_xref2.Component.Signature.Type (`LType (t, 3),
-                Odoc_model.Lang.Signature.Ordinary,
-                {Odoc_xref2.Component.Delayed.v =
-                  Some
-                   {Odoc_xref2.Component.TypeDecl.doc = [];
-                    equation =
-                     {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                      private_ = false; manifest = None; constraints = []};
-                    representation = None};
-                 get = None})];
-             removed = []});
-        expansion = Some Odoc_xref2.Component.Module.AlreadyASig};
-     get = None});
-   Odoc_xref2.Component.Signature.Module (`LModule (B, 5),
+       (Odoc_xref2__Component.ModuleType.Signature
+         {Odoc_xref2__Component.Signature.items =
+           [Odoc_xref2__Component.Signature.Type (`LType (t, 5),
+             Odoc_model.Lang.Signature.Ordinary,
+             {Odoc_xref2__Component.TypeDecl.doc = [];
+              equation =
+               {Odoc_xref2__Component.TypeDecl.Equation.params = [];
+                private_ = false; manifest = None; constraints = []};
+              representation = None})];
+          removed = []});
+     expansion = Some Odoc_xref2__Component.Module.AlreadyASig});
+   Odoc_xref2.Component.Signature.Module (`LModule (B, 4),
     Odoc_model.Lang.Signature.Ordinary,
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.Module.doc = [];
-        type_ =
-         Odoc_xref2.Component.Module.ModuleType
-          (Odoc_xref2.Component.ModuleType.Path
-            (`Resolved
-               (`ModuleType
-                  (`Module
-                     (`Identifier (`Module (`Root (Common.root, Root), A))),
-                   N))));
-        canonical = None; hidden = false; display_type = None;
-        expansion = None};
-     get = None})];
+    {Odoc_xref2__Component.Module.doc = [];
+     type_ =
+      Odoc_xref2__Component.Module.ModuleType
+       (Odoc_xref2__Component.ModuleType.Path
+         (`Resolved
+            (`ModuleType
+               (`Module
+                  (`Identifier (`Module (`Root (Common.root, Root), A))),
+                N))));
+     canonical = None; hidden = false; display_type = None; expansion = None})];
  removed = []}
 ```
 
@@ -705,29 +681,23 @@ now we can ask for the signature of this module:
 # let sg = get_ok @@ Tools.signature_of_module env m;;
 val sg : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (`LModule (M, 32),
+    [Odoc_xref2.Component.Signature.Module (`LModule (M, 31),
       Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v =
-        Some
-         {Odoc_xref2.Component.Module.doc = [];
-          type_ =
-           Odoc_xref2.Component.Module.Alias
-            (`Resolved (`Identifier (`Module (`Root (Common.root, Root), B))));
-          canonical = None; hidden = false; display_type = None;
-          expansion = None};
-       get = None});
-     Odoc_xref2.Component.Signature.Module (`LModule (N, 33),
+      {Odoc_xref2__Component.Module.doc = [];
+       type_ =
+        Odoc_xref2__Component.Module.Alias
+         (`Resolved (`Identifier (`Module (`Root (Common.root, Root), B))));
+       canonical = None; hidden = false; display_type = None;
+       expansion = None});
+     Odoc_xref2.Component.Signature.Module (`LModule (N, 32),
       Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v =
-        Some
-         {Odoc_xref2.Component.Module.doc = [];
-          type_ =
-           Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path
-              (`Dot (`Resolved (`Local (`LModule (M, 32))), "S")));
-          canonical = None; hidden = false; display_type = None;
-          expansion = None};
-       get = None})];
+      {Odoc_xref2__Component.Module.doc = [];
+       type_ =
+        Odoc_xref2__Component.Module.ModuleType
+         (Odoc_xref2__Component.ModuleType.Path
+           (`Dot (`Resolved (`Local (`LModule (M, 31))), "S")));
+       canonical = None; hidden = false; display_type = None;
+       expansion = None})];
    removed = []}
 ```
 
@@ -755,14 +725,11 @@ val m : Component.Module.t =
 {Odoc_xref2.Component.Signature.items =
   [Odoc_xref2.Component.Signature.Type (`LType (t, 40),
     Odoc_model.Lang.Signature.Ordinary,
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.TypeDecl.doc = [];
-        equation =
-         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false; manifest = None; constraints = []};
-        representation = None};
-     get = None})];
+    {Odoc_xref2__Component.TypeDecl.doc = [];
+     equation =
+      {Odoc_xref2__Component.TypeDecl.Equation.params = []; private_ = false;
+       manifest = None; constraints = []};
+     representation = None})];
  removed = []}
 ```
 
@@ -1037,23 +1004,19 @@ val m : Component.Module.t =
 # let sg' = get_ok @@ Tools.signature_of_module env m;;
 val sg' : Component.Signature.t =
   {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 14),
+    [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 12),
       Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v =
-        Some
-         {Odoc_xref2.Component.Module.doc = [];
-          type_ =
-           Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path
-              (`Dot
-                 (`Resolved
-                    (`Substituted
-                       (`Identifier
-                          (`Module (`Root (Common.root, Root), Bar)))),
-                  "T")));
-          canonical = None; hidden = false; display_type = None;
-          expansion = None};
-       get = None})];
+      {Odoc_xref2__Component.Module.doc = [];
+       type_ =
+        Odoc_xref2__Component.Module.ModuleType
+         (Odoc_xref2__Component.ModuleType.Path
+           (`Dot
+              (`Resolved
+                 (`Substituted
+                    (`Identifier (`Module (`Root (Common.root, Root), Bar)))),
+               "T")));
+       canonical = None; hidden = false; display_type = None;
+       expansion = None})];
    removed = []}
 ```
 

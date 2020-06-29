@@ -15,7 +15,6 @@ this is probably the best thing to produce in this case.
 *)
 
 open Component
-open Delayed
 
 let rec signature :
     Cpath.module_ ->
@@ -43,21 +42,23 @@ let rec signature :
             Module
               ( id,
                 r,
-                put (fun () -> module_ ?canonical (`Dot (prefix, name)) (get m))
+                lazy (module_ ?canonical (`Dot (prefix, name)) (Lazy.force m))
               )
         | ModuleType (id, mt) ->
             ModuleType
               ( id,
-                put (fun () ->
-                    module_type
-                      (`Dot (prefix, Ident.Name.module_type id))
-                      (get mt)) )
+                lazy
+                  (module_type
+                     (`Dot (prefix, Ident.Name.module_type id))
+                     (Lazy.force mt)) )
         | Type (id, r, t) ->
             Type
               ( id,
                 r,
-                put (fun () ->
-                    type_decl (`Dot (prefix, Ident.Name.type_ id)) (get t)) )
+                lazy
+                  (type_decl
+                     (`Dot (prefix, Ident.Name.type_ id))
+                     (Lazy.force t)) )
         | Exception _ | TypExt _ | Value _ | External _ | Class _ | ClassType _
         | Include _ | ModuleSubstitution _ | TypeSubstitution _ | Comment _
         | Open _ ->

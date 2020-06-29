@@ -17,7 +17,7 @@ let careful_module_in_sig (s : Signature.t) name =
   in
   let rec inner = function
     | Signature.Module (id, _, m) :: _ when Ident.Name.module_ id = name ->
-        Some (Found (Delayed.get m))
+        Some (Found (Lazy.force m))
     | Signature.Include i :: rest -> (
         match inner i.Include.expansion_.items with
         | Some _ as found -> found
@@ -36,7 +36,7 @@ let careful_type_in_sig (s : Signature.t) name =
   in
   let rec inner = function
     | Signature.Type (id, _, m) :: _ when Ident.Name.type_ id = name ->
-        Some (Found (`T (Component.Delayed.get m)))
+        Some (Found (`T (Lazy.force m)))
     | Signature.Class (id, _, c) :: _ when Ident.Name.class_ id = name ->
         Some (Found (`C c))
     | Signature.ClassType (id, _, c) :: _ when Ident.Name.class_type id = name
@@ -56,7 +56,7 @@ let typename_of_typeid (`LType (n, _) | `LCoreType n) = n
 let datatype_in_sig (s : Signature.t) name =
   let rec inner = function
     | Signature.Type (id, _, m) :: _ when Ident.Name.type_ id = name ->
-        Some (Component.Delayed.get m)
+        Some (Lazy.force m)
     | Signature.Include i :: tl -> (
         match inner i.Include.expansion_.items with
         | Some _ as found -> found
@@ -130,7 +130,8 @@ let any_in_sig (s : Signature.t) name =
         Some (`TypeSubstitution (id, ts))
     | Exception (id, exc) :: _ when N.exception_ id = name ->
         Some (`Exception (id, exc))
-    | Value (id, v) :: _ when N.value id = name -> Some (`Value (id, Delayed.get v))
+    | Value (id, v) :: _ when N.value id = name ->
+        Some (`Value (id, Lazy.force v))
     | External (id, vex) :: _ when N.value id = name ->
         Some (`External (id, vex))
     | Class (id, rec_, c) :: _ when N.class_ id = name ->
@@ -141,13 +142,11 @@ let any_in_sig (s : Signature.t) name =
         match inner inc.Include.expansion_.items with
         | Some _ as found -> found
         | None -> inner tl )
-    | Type (id, _, t) :: tl -> (
-        let typ = Delayed.get t in
-        match any_in_type typ name with
+    | Type (id, _, (lazy t)) :: tl -> (
+        match any_in_type t name with
         | Some (`Constructor cons) ->
-            Some (`Constructor (typename_of_typeid id, typ, cons))
-        | Some (`Field field) ->
-            Some (`Field (typename_of_typeid id, typ, field))
+            Some (`Constructor (typename_of_typeid id, t, cons))
+        | Some (`Field field) -> Some (`Field (typename_of_typeid id, t, field))
         | None -> inner tl )
     | TypExt typext :: tl -> (
         match any_in_typext typext name with
@@ -187,7 +186,7 @@ let module_in_sig s name =
 let module_type_in_sig (s : Signature.t) name =
   let rec inner = function
     | Signature.ModuleType (id, m) :: _ when Ident.Name.module_type id = name ->
-        Some (Delayed.get m)
+        Some (Lazy.force m)
     | Signature.Include i :: rest -> (
         match inner i.Include.expansion_.items with
         | Some _ as found -> found
@@ -203,7 +202,7 @@ let opt_module_type_in_sig s name =
 let opt_value_in_sig s name : value option =
   let rec inner = function
     | Signature.Value (id, m) :: _ when Ident.Name.value id = name ->
-        Some (`V (Delayed.get m))
+        Some (`V (Lazy.force m))
     | Signature.External (id, e) :: _ when Ident.Name.value id = name ->
         Some (`E e)
     | Signature.Include i :: rest -> (
@@ -289,11 +288,10 @@ let label_parent_in_sig s name =
   let module N = Ident.Name in
   find_in_sig s (function
     | Signature.Module (id, _, m) when N.module_ id = name ->
-        Some (`M (Component.Delayed.get m))
+        Some (`M (Lazy.force m))
     | ModuleType (id, mt) when N.module_type id = name ->
-        Some (`MT (Component.Delayed.get mt))
-    | Type (id, _, t) when N.type_ id = name ->
-        Some (`T (Component.Delayed.get t))
+        Some (`MT (Lazy.force mt))
+    | Type (id, _, t) when N.type_ id = name -> Some (`T (Lazy.force t))
     | Class (id, _, c) when N.class_ id = name -> Some (`C c)
     | ClassType (id, _, c) when N.class_type id = name -> Some (`CT c)
     | _ -> None)
@@ -301,7 +299,7 @@ let label_parent_in_sig s name =
 let any_in_type_in_sig s name =
   find_in_sig s (function
     | Signature.Type (id, _, t) -> (
-        match any_in_type (Component.Delayed.get t) name with
+        match any_in_type (Lazy.force t) name with
         | Some x -> Some (typename_of_typeid id, x)
         | None -> None )
     | _ -> None)

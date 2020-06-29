@@ -30,28 +30,6 @@ module IdentMap = Map.Make (struct
   let compare = Ident.compare
 end)
 
-module Delayed = struct
-  let eager = ref false
-
-  type 'a t = { mutable v : 'a option; mutable get : (unit -> 'a) option }
-
-  let get : 'a t -> 'a =
-   fun x ->
-    match (x.v, x.get) with
-    | Some x, _ -> x
-    | None, Some get ->
-        let v = get () in
-        x.v <- Some v;
-        x.get <- None;
-        v
-    | _, _ -> failwith "bad delayed"
-
-  let put : (unit -> 'a) -> 'a t =
-   fun f ->
-    if !eager then { v = Some (f ()); get = None }
-    else { v = None; get = Some f }
-end
-
 module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
@@ -247,14 +225,14 @@ and Signature : sig
   type recursive = Odoc_model.Lang.Signature.recursive
 
   type item =
-    | Module of Ident.module_ * recursive * Module.t Delayed.t
+    | Module of Ident.module_ * recursive * Module.t Lazy.t
     | ModuleSubstitution of Ident.module_ * ModuleSubstitution.t
-    | ModuleType of Ident.module_type * ModuleType.t Delayed.t
-    | Type of Ident.type_ * recursive * TypeDecl.t Delayed.t
+    | ModuleType of Ident.module_type * ModuleType.t Lazy.t
+    | Type of Ident.type_ * recursive * TypeDecl.t Lazy.t
     | TypeSubstitution of Ident.type_ * TypeDecl.t
     | Exception of Ident.exception_ * Exception.t
     | TypExt of Extension.t
-    | Value of Ident.value * Value.t Delayed.t
+    | Value of Ident.value * Value.t Lazy.t
     | External of Ident.value * External.t
     | Class of Ident.class_ * recursive * Class.t
     | ClassType of Ident.class_type * recursive * ClassType.t
@@ -438,18 +416,16 @@ module Fmt = struct
     Format.fprintf ppf "@[<v>";
     List.iter
       (function
-        | Module (id, _, m) ->
-            Format.fprintf ppf "@[<v 2>module %a %a@]@," Ident.fmt id module_
-              (Delayed.get m)
+        | Module (id, _, (lazy m)) ->
+            Format.fprintf ppf "@[<v 2>module %a %a@]@," Ident.fmt id module_ m
         | ModuleSubstitution (id, m) ->
             Format.fprintf ppf "@[<v 2>module %a := %a@]@," Ident.fmt id
               module_path m.ModuleSubstitution.manifest
-        | ModuleType (id, mt) ->
+        | ModuleType (id, (lazy mt)) ->
             Format.fprintf ppf "@[<v 2>module type %a %a@]@," Ident.fmt id
-              module_type (Delayed.get mt)
-        | Type (id, _, t) ->
-            Format.fprintf ppf "@[<v 2>type %a %a@]@," Ident.fmt id type_decl
-              (Delayed.get t)
+              module_type mt
+        | Type (id, _, (lazy t)) ->
+            Format.fprintf ppf "@[<v 2>type %a %a@]@," Ident.fmt id type_decl t
         | TypeSubstitution (id, t) ->
             Format.fprintf ppf "@[<v 2>type %a := %a@]@," Ident.fmt id type_decl
               t
@@ -458,8 +434,8 @@ module Fmt = struct
               exception_ e
         | TypExt e ->
             Format.fprintf ppf "@[<v 2>type_extension %a@]@," extension e
-        | Value (id, v) ->
-            Format.fprintf ppf "@[<v 2>val %a %a@]@," Ident.fmt id value (Delayed.get v)
+        | Value (id, (lazy v)) ->
+            Format.fprintf ppf "@[<v 2>val %a %a@]@," Ident.fmt id value v
         | External (id, e) ->
             Format.fprintf ppf "@[<v 2>external %a %a@]@," Ident.fmt id
               external_ e
@@ -1921,7 +1897,7 @@ module Of_Lang = struct
         function
         | Type (r, t) ->
             let id = Identifier.Maps.Type.find t.id ident_map.types in
-            let t' = Delayed.put (fun () -> type_decl ident_map t) in
+            let t' = lazy (type_decl ident_map t) in
             Signature.Type (id, r, t')
         | TypeSubstitution t ->
             let id = Identifier.Maps.Type.find t.id ident_map.types in
@@ -1933,7 +1909,7 @@ module Of_Lang = struct
                 (m.id :> Identifier.Module.t)
                 ident_map.modules
             in
-            let m' = Delayed.put (fun () -> module_ ident_map m) in
+            let m' = lazy (module_ ident_map m) in
             Signature.Module (id, r, m')
         | ModuleSubstitution m ->
             let id = Identifier.Maps.Module.find m.id ident_map.modules in
@@ -1943,11 +1919,11 @@ module Of_Lang = struct
             let id =
               Identifier.Maps.ModuleType.find m.id ident_map.module_types
             in
-            let m' = Delayed.put (fun () -> module_type ident_map m) in
+            let m' = lazy (module_type ident_map m) in
             Signature.ModuleType (id, m')
         | Value v ->
             let id = Ident.Of_Identifier.value v.id in
-            let v' = Delayed.put (fun () -> value ident_map v) in
+            let v' = lazy (value ident_map v) in
             Signature.Value (id, v')
         | Comment c -> Comment (docs_or_stop ident_map c)
         | TypExt e -> TypExt (extension ident_map e)

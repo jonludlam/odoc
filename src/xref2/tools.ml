@@ -159,19 +159,14 @@ let prefix_signature (path, sg) =
             Module
               ( Ident.Rename.module_ id,
                 r,
-                Component.Delayed.put (fun () ->
-                    Subst.module_ sub (Component.Delayed.get m)) )
+                lazy (Subst.module_ sub (Lazy.force m)) )
         | ModuleType (id, mt) ->
             ModuleType
               ( Ident.Rename.module_type id,
-                Component.Delayed.put (fun () ->
-                    Subst.module_type sub (Component.Delayed.get mt)) )
+                lazy (Subst.module_type sub (Lazy.force mt)) )
         | Type (id, r, t) ->
             Type
-              ( Ident.Rename.type_ id,
-                r,
-                Component.Delayed.put (fun () ->
-                    Subst.type_ sub (Component.Delayed.get t)) )
+              (Ident.Rename.type_ id, r, lazy (Subst.type_ sub (Lazy.force t)))
         | TypeSubstitution (id, t) ->
             TypeSubstitution (Ident.Rename.type_ id, Subst.type_ sub t)
         | ModuleSubstitution (id, m) ->
@@ -179,7 +174,7 @@ let prefix_signature (path, sg) =
               (Ident.Rename.module_ id, Subst.module_substitution sub m)
         | Exception (id, e) -> Exception (id, Subst.exception_ sub e)
         | TypExt t -> TypExt (Subst.extension sub t)
-        | Value (id, v) -> Value (id, Component.Delayed.put (fun () -> Subst.value sub (Component.Delayed.get v)))
+        | Value (id, v) -> Value (id, lazy (Subst.value sub (Lazy.force v)))
         | External (id, e) -> External (id, Subst.external_ sub e)
         | Class (id, r, c) ->
             Class (Ident.Rename.class_ id, r, Subst.class_ sub c)
@@ -1033,12 +1028,10 @@ and fragmap_module :
         match item with
         | Component.Signature.Module (id, r, m)
           when Ident.Name.module_ id = name -> (
-            let m = Component.Delayed.get m in
+            let m = Lazy.force m in
             match map_module m with
             | Left m ->
-                ( Component.Signature.Module
-                    (id, r, Component.Delayed.put (fun () -> m))
-                  :: items,
+                ( Component.Signature.Module (id, r, lazy m) :: items,
                   true,
                   removed,
                   id :: sub )
@@ -1139,11 +1132,9 @@ and fragmap_type :
             match item with
             | Component.Signature.Type (id, r, t)
               when Ident.Name.unsafe_type id = name -> (
-                match mapfn (Component.Delayed.get t) with
+                match mapfn (Lazy.force t) with
                 | Left x ->
-                    ( Component.Signature.Type
-                        (id, r, Component.Delayed.put (fun () -> x))
-                      :: items,
+                    ( Component.Signature.Type (id, r, lazy x) :: items,
                       true,
                       removed )
                 | Right y ->
@@ -1220,11 +1211,8 @@ and fragmap_type :
             match item with
             | Component.Signature.Module (id, r, m)
               when Ident.Name.module_ id = name ->
-                let m = Component.Delayed.get m in
-                let item =
-                  Component.Signature.Module
-                    (id, r, Component.Delayed.put (fun () -> mapfn m))
-                in
+                let m = Lazy.force m in
+                let item = Component.Signature.Module (id, r, lazy (mapfn m)) in
                 (item :: items, true)
             | Component.Signature.Include ({ expansion_; _ } as i) ->
                 let items', handled' = handle_items expansion_.items in

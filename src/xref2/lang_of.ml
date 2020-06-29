@@ -320,16 +320,14 @@ let rec signature_items id map items =
    fun items acc ->
     match items with
     | [] -> List.rev acc
-    | Module (id, r, m) :: rest ->
-        let m = Component.Delayed.get m in
+    | Module (id, r, (lazy m)) :: rest ->
         inner rest
           (Odoc_model.Lang.Signature.Module (r, module_ map parent id m) :: acc)
     | ModuleType (id, m) :: rest ->
         inner rest
           ( Odoc_model.Lang.Signature.ModuleType (module_type map parent id m)
           :: acc )
-    | Type (id, r, t) :: rest ->
-        let t = Component.Delayed.get t in
+    | Type (id, r, (lazy t)) :: rest ->
         inner rest (Type (r, type_decl map parent id t) :: acc)
     | Exception (id', e) :: rest ->
         inner rest
@@ -339,9 +337,8 @@ let rec signature_items id map items =
                  id' e)
           :: acc )
     | TypExt t :: rest -> inner rest (TypExt (typ_ext map id t) :: acc)
-    | Value (id, v) :: rest ->
-      let v = Component.Delayed.get v in
-      inner rest (Value (value_ map parent id v) :: acc)
+    | Value (id, (lazy v)) :: rest ->
+        inner rest (Value (value_ map parent id v) :: acc)
     | Include i :: rest -> inner rest (Include (include_ id map i) :: acc)
     | Open o :: rest -> inner rest (Open (open_ id map o) :: acc)
     | External (id, e) :: rest ->
@@ -661,10 +658,9 @@ and module_type :
     maps ->
     Identifier.Signature.t ->
     Ident.module_type ->
-    Component.ModuleType.t Component.Delayed.t ->
+    Component.ModuleType.t Lazy.t ->
     Odoc_model.Lang.ModuleType.t =
- fun map parent id mty ->
-  let mty = Component.Delayed.get mty in
+ fun map parent id (lazy mty) ->
   let identifier = List.assoc id map.module_type in
   let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
   let expansion = Opt.map (module_expansion map sig_id) mty.expansion in

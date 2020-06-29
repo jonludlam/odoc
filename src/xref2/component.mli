@@ -11,20 +11,6 @@ module ClassTypeMap : Map.S with type key = Ident.path_class_type
 
 module IdentMap : Map.S with type key = Ident.any
 
-(** Delayed is a bit like Lazy.t but may in the future offer the chance to peek inside
-    to be able to optimize the calculation *)
-module Delayed : sig
-  val eager : bool ref
-  (** If [eager] is true then no delaying is done. Most useful for testing and
-        documentation *)
-
-  type 'a t = { mutable v : 'a option; mutable get : (unit -> 'a) option }
-
-  val get : 'a t -> 'a
-
-  val put : (unit -> 'a) -> 'a t
-end
-
 module Opt : sig
   val map : ('a -> 'b) -> 'a option -> 'b option
 end
@@ -236,14 +222,14 @@ and Signature : sig
   type recursive = Odoc_model.Lang.Signature.recursive
 
   type item =
-    | Module of Ident.module_ * recursive * Module.t Delayed.t
+    | Module of Ident.module_ * recursive * Module.t Lazy.t
     | ModuleSubstitution of Ident.module_ * ModuleSubstitution.t
-    | ModuleType of Ident.module_type * ModuleType.t Delayed.t
-    | Type of Ident.type_ * recursive * TypeDecl.t Delayed.t
+    | ModuleType of Ident.module_type * ModuleType.t Lazy.t
+    | Type of Ident.type_ * recursive * TypeDecl.t Lazy.t
     | TypeSubstitution of Ident.type_ * TypeDecl.t
     | Exception of Ident.exception_ * Exception.t
     | TypExt of Extension.t
-    | Value of Ident.value * Value.t Delayed.t
+    | Value of Ident.value * Value.t Lazy.t
     | External of Ident.value * External.t
     | Class of Ident.class_ * recursive * Class.t
     | ClassType of Ident.class_type * recursive * ClassType.t
