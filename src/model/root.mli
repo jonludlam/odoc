@@ -23,7 +23,10 @@
 
 module Package :
 sig
-  type t = string
+  type t = 
+    { name : string;
+      version : string; }
+      
 end
 
 module Odoc_file :

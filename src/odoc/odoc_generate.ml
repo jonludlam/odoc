@@ -35,8 +35,15 @@ let from_odocl ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
   in
   pages >>= fun (pages, name_is_dir, filename) ->
   let base_dir =
-    Fs.Directory.reach_from ~dir:root_dir root.package
+    Fs.Directory.reach_from ~dir:root_dir root.package.name
   in
+  let base_dir =
+    Fs.Directory.reach_from ~dir:base_dir root.package.version
+  in
+  let base_dir =
+    Fs.Directory.reach_from ~dir:base_dir (Digest.to_hex root.digest)
+  in
+
   Renderer.traverse pages ~f:(fun ~parents name content ->
     let directory =
       let dir =

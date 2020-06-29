@@ -38,9 +38,11 @@ let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   Odoc_model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
   {Odoc_model.Root.package; file = file_representation; digest}
 
+let package = {Odoc_model.Root.Package.name="nopackage"; version="v1.0"}
+
 let root = 
     root_of_compilation_unit
-        ~package:"nopackage"
+        ~package
         ~hidden:false
         ~module_name:"Root"
         ~digest:"nodigest"
@@ -88,11 +90,11 @@ let list_files path =
     Sys.readdir path |> Array.to_list
 
 let load_cmti filename =
-  let make_root = root_of_compilation_unit ~package:"nopackage" ~hidden:false in
+  let make_root = root_of_compilation_unit ~package ~hidden:false in
   Odoc_loader.read_cmti ~make_root ~filename
 
 let load_cmt filename =
-    let make_root = root_of_compilation_unit ~package:"nopackage" ~hidden:false in
+    let make_root = root_of_compilation_unit ~package ~hidden:false in
     Odoc_loader.read_cmt ~make_root ~filename
   
 

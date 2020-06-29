@@ -672,7 +672,9 @@ let initial_env :
       | Import.Unresolved (str, _) -> (
           match resolver.lookup_unit str with
           | Forward_reference -> (import :: imports, env)
-          | Found x -> (Import.Resolved x.root :: imports, env)
+          | Found x ->
+            Format.eprintf "Found a reference: %s\n%!" str;
+            (Import.Resolved x.root :: imports, env)
           | Not_found -> (import :: imports, env) ))
     t.imports ([], initial_env)
 

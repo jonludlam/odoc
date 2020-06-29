@@ -50,11 +50,8 @@ let rec from_identifier : stop_before:bool ->
     let open Error in
     function
     | `Root (abstr, unit_name) ->
-      begin try Ok abstr.package
-      with exn -> Error (Uncaught_exn (Printexc.to_string exn))
-      end >>| fun pkg_name ->
-      let page = [ pkg_name ] in
-      let kind = "module" in
+      let page = Odoc_model.Root.Package.[ Digest.to_hex abstr.digest; abstr.package.version; abstr.package.name ] in
+      let kind = "package" in
       (* FIXME: for the moment we ignore [stop_before] for compilation units. At
          some point we want to change that. *)
       (*
@@ -62,12 +59,12 @@ let rec from_identifier : stop_before:bool ->
         { page; anchor = unit_name; kind }
       else
       *)
-      { page = ModuleName.to_string unit_name :: page; anchor = ""; kind }
+      Ok { page = ModuleName.to_string unit_name :: page; anchor = ""; kind }
     | `Page (abstr, page_name) ->
       begin try Ok abstr.package
       with exn -> Error (Uncaught_exn (Printexc.to_string exn))
-      end >>| fun pkg_name ->
-      let page = [ PageName.to_string page_name ^ ".html"; pkg_name ] in
+      end >>| fun pkg ->
+      let page = Odoc_model.Root.Package.[ PageName.to_string page_name ^ ".html"; Digest.to_hex abstr.digest; pkg.version; pkg.name ] in
       let kind = "page" in
       { page; anchor = ""; kind }
     | `Module (parent, mod_name) ->

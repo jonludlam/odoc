@@ -87,15 +87,15 @@ module Path = struct
 
   let rec from_identifier : source -> t = function
     | `Root (abstr, unit_name) ->
-      let parent = mk "package" abstr.Root.package in
-      let kind = "module" in
-      let page = ModuleName.to_string unit_name in
-      mk ~parent kind page
+      let parent = mk "package" Root.(abstr.package.Package.name) in
+      let parent = mk ~parent "version" Root.(abstr.package.Package.version) in
+      let parent = mk ~parent "hash" (Digest.to_hex abstr.digest) in
+      mk ~parent "module" (ModuleName.to_string unit_name)
     | `Page (abstr, page_name) ->
-      let parent = mk "package" abstr.Root.package in
-      let kind = "page" in
-      let page = PageName.to_string page_name in
-      mk ~parent kind page
+      let parent = mk "package" Root.(abstr.package.Package.name) in
+      let parent = mk ~parent "version" Root.(abstr.package.Package.version) in
+      let parent = mk ~parent "hash" (Digest.to_hex abstr.digest) in
+      mk ~parent "page" (PageName.to_string page_name)
     | `Module (parent, mod_name) ->
       let parent = from_identifier (parent :> source) in
       let kind = "module" in

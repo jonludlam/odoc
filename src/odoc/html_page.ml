@@ -50,7 +50,7 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
     in
     Page.save Fs.File.(set_ext ".odocl" input) odoctree;
 
-    let pkg_name = root.package in
+    let pkg_name = root.package.name in
     let pages = to_html_tree_page ?theme_uri ~syntax odoctree in
     let pkg_dir = Fs.Directory.reach_from ~dir:root_dir pkg_name in
     Fs.Directory.mkdir_p pkg_dir;
@@ -96,7 +96,7 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ?theme_uri ~output:root_dir input =
    Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
 
    let pkg_dir =
-      Fs.Directory.reach_from ~dir:root_dir root.package
+      Fs.Directory.reach_from ~dir:root_dir root.package.name
     in
     let pages = to_html_tree_compilation_unit ?theme_uri ~syntax odoctree in
     Renderer.traverse pages ~f:(fun ~parents name content ->
@@ -162,7 +162,7 @@ let from_mld ~env ?(syntax=Renderer.OCaml) ~package ~output:root_dir ~warn_error
       |> Odoc_model.Error.shed_warnings
     in
     let pages = to_html_tree_page ~syntax resolved in
-    let pkg_dir = Fs.Directory.reach_from ~dir:root_dir root.package in
+    let pkg_dir = Fs.Directory.reach_from ~dir:root_dir root.package.name in
     Fs.Directory.mkdir_p pkg_dir;
     Renderer.traverse pages ~f:(fun ~parents _pkg_name content ->
       assert (parents = []);

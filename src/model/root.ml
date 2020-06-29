@@ -27,7 +27,10 @@ let contains_double_underscore s =
 
 module Package =
 struct
-  type t = string
+  type t = {
+    name : string;
+    version: string;
+  }
 
   module Table = Hashtbl.Make(struct
     type nonrec t = t
@@ -65,7 +68,7 @@ type t = {
 let equal : t -> t -> bool = (=)
 let hash : t -> int = Hashtbl.hash
 
-let to_string t = Printf.sprintf "%s::%s" t.package (Odoc_file.name t.file)
+let to_string t = Printf.sprintf "%s.%s::%s" t.package.name t.package.version (Odoc_file.name t.file)
 
 let compare x y = String.compare x.digest y.digest
 

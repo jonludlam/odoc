@@ -20,7 +20,7 @@ open Or_error
 let of_odoc_file ~env:_ ~output:root_dir input =
   Root.read input >>= function
   | { file = Page page_name; package; _ } ->
-      let pkg_dir = Fs.Directory.of_string package in
+      let pkg_dir = Fs.Directory.of_string package.name in
       let directory = Fs.Directory.append root_dir pkg_dir in
       let file = Fs.File.create ~directory ~name:(page_name ^ ".html") in
       Ok [file]
@@ -33,7 +33,7 @@ let of_odoc_file ~env:_ ~output:root_dir input =
       then Ok []
       else
         let root = Compilation_unit.root unit in
-        let package = root.package in
+        let package = root.package.name in
         let targets = Odoc_html.Targets.unit ~package unit in
         (* CR-someday trefis: have [List_targets] return a tree instead of
            postprocessing. *)

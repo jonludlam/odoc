@@ -4,7 +4,7 @@ let from_mld ~xref_base_uri ~env ~output ~warn_error input =
   Odoc_model.Error.set_warn_error warn_error;
   (* Internal names, they don't have effect on the output. *)
   let page_name = "__fragment_page__" in
-  let package = "__fragment_package__" in
+  let package = {Odoc_model.Root.Package.name="__fragment_package__"; version="v1.0"} in
   let input_s = Fs.File.to_string input in
   let digest = Digest.file input_s in
   let root =

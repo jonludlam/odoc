@@ -33,7 +33,7 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ~output:root_dir input =
       |> Odoc_xref2.Lookup_failures.to_warning ~filename:input_s
       |> Odoc_model.Error.shed_warnings
     in
-    let pkg_name = root.package in
+    let pkg_name = root.package.name in
     let pages = mk_page ~syntax odoctree in
     let pkg_dir = Fs.Directory.reach_from ~dir:root_dir pkg_name in
     Fs.Directory.mkdir_p pkg_dir;
@@ -58,7 +58,7 @@ let from_odoc ~env ?(syntax=Renderer.OCaml) ~output:root_dir input =
       |> Odoc_xref2.Lookup_failures.to_warning ~filename:input_s
       |> Odoc_model.Error.shed_warnings
     in
-    let pkg_dir = Fs.Directory.reach_from ~dir:root_dir root.package in
+    let pkg_dir = Fs.Directory.reach_from ~dir:root_dir root.package.name in
     Fs.Directory.mkdir_p pkg_dir;
     let pages = mk_compilation_unit ~syntax odoctree in
     Renderer.traverse pages ~f:(fun ~parents name content ->

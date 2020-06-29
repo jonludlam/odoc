@@ -122,21 +122,25 @@ end = struct
       in
       Fs.File.(set_ext ".odoc" output)
 
-  let compile hidden directories resolve_fwd_refs dst package_name open_modules input warn_error =
+  let compile hidden directories resolve_fwd_refs dst package_name package_version open_modules input warn_error =
     let env =
       Env.create ~important_digests:(not resolve_fwd_refs) ~directories ~open_modules
     in
+    let package = {
+      Odoc_model.Root.Package.name = package_name;
+      version = package_version
+    } in
     let input = Fs.File.of_string input in
     let output = output_file ~dst ~input in
     Fs.Directory.mkdir_p (Fs.File.dirname output);
     if Fs.File.has_ext ".cmti" input then
-      Compile.cmti ~env ~package:package_name ~hidden ~output ~warn_error input
+      Compile.cmti ~env ~package ~hidden ~output ~warn_error input
     else if Fs.File.has_ext ".cmt" input then
-      Compile.cmt ~env ~package:package_name ~hidden ~output ~warn_error input
+      Compile.cmt ~env ~package ~hidden ~output ~warn_error input
     else if Fs.File.has_ext ".cmi" input then
-      Compile.cmi ~env ~package:package_name ~hidden ~output ~warn_error input
+      Compile.cmi ~env ~package ~hidden ~output ~warn_error input
     else if Fs.File.has_ext ".mld" input then
-      Compile.mld ~env ~package:package_name ~output ~warn_error input
+      Compile.mld ~env ~package ~output ~warn_error input
     else
       Error (`Cli_error "Unknown extension, expected one of: cmti, cmt, cmi or mld.\n%!")
 
@@ -165,12 +169,17 @@ end = struct
       Arg.(required & opt (some string) None &
            info ~docs ~docv:"PKG" ~doc ["package"; "pkg"])
     in
+    let pkg_version =
+      let doc = "Version of the package" in
+      Arg.(required & opt (some string) None &
+           info ~docs ~docv:"PKGVER" ~doc ["pkgver"])
+    in
     let resolve_fwd_refs =
       let doc = "Try resolving forward references" in
       Arg.(value & flag & info ~doc ["r";"resolve-fwd-refs"])
     in
     Term.(const handle_error $ (const compile $ hidden $ odoc_file_directories $
-          resolve_fwd_refs $ dst $ pkg $ open_modules $ input $ warn_error))
+          resolve_fwd_refs $ dst $ pkg $ pkg_version $ open_modules $ input $ warn_error))
 
   let info =
     Term.info "compile"
@@ -281,7 +290,7 @@ module Odoc_html : sig
 end = struct
 
   let html semantic_uris closed_details _hidden directories output_dir index_for
-        syntax theme_uri input_file warn_error =
+        syntax theme_uri input_file _warn_error =
     Odoc_html.Link.semantic_uris := semantic_uris;
     Odoc_html.Tree.open_details := not closed_details;
     let env = Env.create ~important_digests:false ~directories ~open_modules:[] in
@@ -289,8 +298,8 @@ end = struct
     match index_for with
     | None ->
       Html_page.from_odoc ~env ~syntax ~theme_uri ~output:output_dir file
-    | Some pkg_name ->
-      Html_page.from_mld ~env ~syntax ~output:output_dir ~package:pkg_name ~warn_error file
+    | Some _pkg_name ->
+      failwith "error"
 
   let cmd =
     let input =
@@ -441,7 +450,7 @@ module Depends = struct
       List.iter depends
         ~f:(fun (root : Odoc_model.Root.t) ->
           Printf.printf "%s %s %s\n"
-            root.package
+            root.package.name
             (Odoc_model.Root.Odoc_file.name root.file)
             (Digest.to_hex root.digest)
         );
