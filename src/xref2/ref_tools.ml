@@ -12,7 +12,7 @@ type module_type_lookup_result =
 type signature_lookup_result =
   Resolved.Signature.t * Cpath.Resolved.parent * Component.Signature.t
 
-type datatype_lookup_result = Resolved.DataType.t * Component.TypeDecl.t
+type datatype_lookup_result = Resolved.DataType.t * Component.TypeDecl.t Lazy.t
 
 type class_lookup_result = Resolved.Class.t * Component.Class.t
 
@@ -202,7 +202,7 @@ module DT = struct
   let of_component _env t ~parent_ref name : t option =
     Some (`Type (parent_ref, TypeName.of_string name), t)
 
-  let of_element _env (`Type (id, t)) : t = (`Identifier id, t)
+  let of_element _env (`Type (id, t)) : t = (`Identifier id, lazy t)
 
   let in_env env name : t option =
     Env.(lookup_by_name s_datatype) (UnitName.to_string name) env >>= function
@@ -213,7 +213,7 @@ module DT = struct
       name : t option =
     let sg = Tools.prefix_signature (parent_cp, sg) in
     Find.datatype_in_sig sg (TypeName.to_string name) >>= fun t ->
-    Some (`Type (parent', name), t)
+    Some (`Type (parent', name), lazy t)
 end
 
 module T = struct
@@ -223,7 +223,7 @@ module T = struct
 
   let in_env env name : type_lookup_result option =
     Env.(lookup_by_name s_datatype) (UnitName.to_string name) env >>= function
-    | `Type (id, t) -> Some (`T (`Identifier id, t))
+    | `Type (id, t) -> Some (`T (`Identifier id, lazy t))
     | `Class _ as e -> Some (`C (CL.of_element env e))
     | `ClassType _ as e -> Some (`CT (CT.of_element env e))
 
@@ -334,7 +334,8 @@ module CS = struct
     Env.(lookup_by_name s_constructor) (UnitName.to_string name) env
     >>= fun (`Constructor (id, _)) -> Some (`Identifier id :> t)
 
-  let in_datatype _env ((parent', t) : datatype_lookup_result) name : t option =
+  let in_datatype _env ((parent', (lazy t)) : datatype_lookup_result) name :
+      t option =
     Find.any_in_type t (ConstructorName.to_string name) >>= function
     | `Constructor _ -> Some (`Constructor (parent', name))
     | `Field _ -> None
@@ -360,7 +361,7 @@ module F = struct
         | _, `Constructor _ -> None
         | typ_name, `Field _ -> Some (`Field (`Type (parent', typ_name), name))
         )
-    | `T (parent', t) -> (
+    | `T (parent', (lazy t)) -> (
         Find.any_in_type t (FieldName.to_string name) >>= function
         | `Constructor _ -> None
         | `Field _ -> Some (`Field ((parent' :> Resolved.Parent.t), name)) )
@@ -607,8 +608,7 @@ let resolve_reference_dot_sg env ~parent_path ~parent_ref ~parent_sg name =
         (MT.of_component env mt
            (`ModuleType (parent_path, name))
            (`ModuleType (parent_ref, name)))
-  | `Type (_, _, (lazy t)) ->
-      DT.of_component env t ~parent_ref name >>= resolved2
+  | `Type (_, _, t) -> DT.of_component env t ~parent_ref name >>= resolved2
   | `Class (_, _, c) -> CL.of_component env c ~parent_ref name >>= resolved2
   | `ClassType (_, _, ct) ->
       CT.of_component env ct ~parent_ref name >>= resolved2
@@ -643,7 +643,8 @@ let resolve_reference_dot env parent name =
   resolve_label_parent_reference env parent >>= function
   | `S (parent_ref, parent_path, parent_sg) ->
       resolve_reference_dot_sg ~parent_path ~parent_ref ~parent_sg env name
-  | `T (parent_ref, t) -> resolve_reference_dot_type env ~parent_ref t name
+  | `T (parent_ref, (lazy t)) ->
+      resolve_reference_dot_type env ~parent_ref t name
   | (`C _ | `CT _) as p -> resolve_reference_dot_class env p name
   | `Page _ as page -> resolve_reference_dot_page env page name
 

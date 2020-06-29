@@ -5,7 +5,7 @@ type class_type = [ `C of Component.Class.t | `CT of Component.ClassType.t ]
 type type_ =
   [ `C of Component.Class.t
   | `CT of Component.ClassType.t
-  | `T of Component.TypeDecl.t ]
+  | `T of Component.TypeDecl.t Lazy.t ]
 
 type value = [ `E of Component.External.t | `V of Component.Value.t ]
 
@@ -21,7 +21,7 @@ val careful_type_in_sig :
   string ->
   ( [> `C of Component.Class.t
     | `CT of Component.ClassType.t
-    | `T of Component.TypeDecl.t ],
+    | `T of Component.TypeDecl.t Lazy.t ],
     Component.TypeExpr.t )
   found
   option
@@ -104,7 +104,7 @@ val type_in_sig :
   string ->
   [> `C of Component.Class.t
   | `CT of Component.ClassType.t
-  | `T of Component.TypeDecl.t ]
+  | `T of Component.TypeDecl.t Lazy.t ]
   option
 
 val class_type_in_sig :
@@ -130,7 +130,7 @@ val label_parent_in_sig :
   | `CT of Component.ClassType.t
   | `M of Component.Module.t
   | `MT of Component.ModuleType.t
-  | `T of Component.TypeDecl.t ]
+  | `T of Component.TypeDecl.t Lazy.t ]
   option
 
 val any_in_type_in_sig :

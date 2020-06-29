@@ -581,7 +581,7 @@ and lookup_type :
       match t' with
       | Find.Found (`C c) -> Find.Found (`C (Subst.class_ sub c))
       | Find.Found (`CT ct) -> Find.Found (`CT (Subst.class_type sub ct))
-      | Find.Found (`T t) -> Find.Found (`T (Subst.type_ sub t))
+      | Find.Found (`T t) -> Find.Found (`T (lazy (Subst.type_ sub (Lazy.force t))))
       | Find.Replaced texpr -> Find.Replaced (Subst.type_expr sub texpr)
     in
     Ok t
@@ -592,10 +592,11 @@ and lookup_type :
     | `Identifier (`CoreType name) ->
         (* CoreTypes aren't put into the environment, so they can't be handled by the
               next clause. We just look them up here in the list of core types *)
-        Ok (Find.Found (`T (List.assoc (TypeName.to_string name) core_types)))
+        let t = lazy (List.assoc (TypeName.to_string name) core_types) in
+        Ok (Find.Found (`T t))
     | `Identifier (`Type _ as i) ->
         of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_type) i env)
-        >>= fun (`Type (_, t)) -> Ok (Find.Found (`T t))
+        >>= fun (`Type (_, t)) -> Ok (Find.Found (`T (lazy t)))
     | `Identifier (`Class _ as i) ->
         of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_class) i env)
         >>= fun (`Class (_, t)) -> Ok (Find.Found (`C t))
@@ -730,7 +731,8 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
           match t' with
           | Find.Found (`C c) -> Find.Found (`C (Subst.class_ sub c))
           | Find.Found (`CT ct) -> Find.Found (`CT (Subst.class_type sub ct))
-          | Find.Found (`T t) -> Find.Found (`T (Subst.type_ sub t))
+          | Find.Found (`T t) ->
+              Find.Found (`T (lazy (Subst.type_ sub (Lazy.force t))))
           | Find.Replaced texpr -> Find.Replaced (Subst.type_expr sub texpr)
         in
         (* let time3 = Unix.gettimeofday () in *)
@@ -962,7 +964,7 @@ and fragmap_module :
           | Alias _ | ModuleType _ -> type_
         in
         (* Finished the substitution *)
-        Left { m with Component.Module.type_; expansion = None }
+        Left { (Lazy.force m) with Component.Module.type_; expansion = None }
     | None, ModuleSubst (_, p) -> (
         match
           resolve_module ~mark_substituted:true ~add_canonical:false env p
@@ -979,6 +981,7 @@ and fragmap_module :
           | ModuleSubst (_, path) -> ModuleSubst (f, path)
           | TypeEq _ | TypeSubst _ -> failwith "Can't happen"
         in
+        let m = Lazy.force m in
         match m.type_ with
         | Alias path ->
             Left
@@ -1028,7 +1031,6 @@ and fragmap_module :
         match item with
         | Component.Signature.Module (id, r, m)
           when Ident.Name.module_ id = name -> (
-            let m = Lazy.force m in
             match map_module m with
             | Left m ->
                 ( Component.Signature.Module (id, r, lazy m) :: items,
@@ -1121,7 +1123,7 @@ and fragmap_type :
         match sub with
         | TypeEq (_, equation) ->
             (* Finished the substitution *)
-            Left { t with Component.TypeDecl.equation }
+            Left { (Lazy.force t) with Component.TypeDecl.equation }
         | TypeSubst (_, { Component.TypeDecl.Equation.manifest = Some x; _ }) ->
             Right x
         | _ -> failwith "Can't happen"
@@ -1132,7 +1134,7 @@ and fragmap_type :
             match item with
             | Component.Signature.Type (id, r, t)
               when Ident.Name.unsafe_type id = name -> (
-                match mapfn (Lazy.force t) with
+                match mapfn t with
                 | Left x ->
                     ( Component.Signature.Type (id, r, lazy x) :: items,
                       true,
@@ -1211,8 +1213,9 @@ and fragmap_type :
             match item with
             | Component.Signature.Module (id, r, m)
               when Ident.Name.module_ id = name ->
-                let m = Lazy.force m in
-                let item = Component.Signature.Module (id, r, lazy (mapfn m)) in
+                let item =
+                  Component.Signature.Module (id, r, lazy (mapfn (Lazy.force m)))
+                in
                 (item :: items, true)
             | Component.Signature.Include ({ expansion_; _ } as i) ->
                 let items', handled' = handle_items expansion_.items in

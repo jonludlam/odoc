@@ -744,7 +744,7 @@ and type_decl : Env.t -> Id.Signature.t -> TypeDecl.t -> TypeDecl.t =
           Component.Of_Lang.resolved_type_path Component.Of_Lang.empty p
         in
         match Tools.lookup_type env p' with
-        | Ok (Found (`T t')) ->
+        | Ok (Found (`T (lazy t'))) ->
             {
               default with
               equation =
@@ -865,6 +865,7 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
             let p = Cpath.resolved_type_path_of_cpath cp' in
             if List.mem p visited then raise Loop
             else if Cpath.is_resolved_type_hidden cp' then
+              let t = Lazy.force t in
               match t.Component.TypeDecl.equation with
               | { manifest = Some expr; params; _ } -> (
                   try

@@ -2,7 +2,7 @@ open Component
 
 type class_type = [ `C of Class.t | `CT of ClassType.t ]
 
-type type_ = [ `T of TypeDecl.t | class_type ]
+type type_ = [ `T of TypeDecl.t Lazy.t | class_type ]
 
 type value = [ `V of Value.t | `E of External.t ]
 
@@ -36,7 +36,7 @@ let careful_type_in_sig (s : Signature.t) name =
   in
   let rec inner = function
     | Signature.Type (id, _, m) :: _ when Ident.Name.type_ id = name ->
-        Some (Found (`T (Lazy.force m)))
+        Some (Found (`T m))
     | Signature.Class (id, _, c) :: _ when Ident.Name.class_ id = name ->
         Some (Found (`C c))
     | Signature.ClassType (id, _, c) :: _ when Ident.Name.class_type id = name
@@ -291,7 +291,7 @@ let label_parent_in_sig s name =
         Some (`M (Lazy.force m))
     | ModuleType (id, mt) when N.module_type id = name ->
         Some (`MT (Lazy.force mt))
-    | Type (id, _, t) when N.type_ id = name -> Some (`T (Lazy.force t))
+    | Type (id, _, t) when N.type_ id = name -> Some (`T t)
     | Class (id, _, c) when N.class_ id = name -> Some (`C c)
     | ClassType (id, _, c) when N.class_type id = name -> Some (`CT c)
     | _ -> None)

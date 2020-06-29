@@ -11,7 +11,7 @@ type module_type_lookup_result =
 type signature_lookup_result =
   Resolved.Signature.t * Cpath.Resolved.parent * Component.Signature.t
 
-type datatype_lookup_result = Resolved.DataType.t * Component.TypeDecl.t
+type datatype_lookup_result = Resolved.DataType.t * Component.TypeDecl.t Lazy.t
 
 type class_lookup_result = Resolved.Class.t * Component.Class.t
 
@@ -159,7 +159,7 @@ module DT : sig
 
   val of_component :
     'a ->
-    Component.TypeDecl.t ->
+    Component.TypeDecl.t Lazy.t ->
     parent_ref:Resolved.Signature.t ->
     string ->
     t option
