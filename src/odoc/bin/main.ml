@@ -123,12 +123,11 @@ end = struct
       Fs.File.(set_ext ".odoc" output)
 
   let find_package_version package_name =
-    let version_path = Unix.getenv "VERSION_PATH" in
-    let name = Printf.sprintf "%s/%s" version_path package_name in
-    let ic = open_in name in
-    let s = input_line ic in
-    close_in ic;
-    s
+    let ic = Unix.open_process_in (Printf.sprintf "opam info -f version %s" package_name) in
+    let v = input_line ic in
+    if Unix.close_process_in ic <> Unix.WEXITED 0
+    then failwith "Failed to find package version"
+    else v
 
   let compile hidden directories resolve_fwd_refs dst package_name package_version open_modules input warn_error =
     let env =
