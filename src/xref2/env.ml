@@ -65,6 +65,8 @@ module StringMap = Map.Make (String)
 
 type t = {
   id : int;
+  forward_references : string list;
+  module_digests : (string * Digest.t) list;
   titles : Odoc_model.Comment.link_content Maps.Label.t;
   elts : Component.Element.any list StringMap.t;
   resolver : resolver option;
@@ -97,12 +99,20 @@ let with_recorded_lookups env f =
 let empty =
   {
     id = 0;
+    forward_references = [];
+    module_digests = [];
     titles = Maps.Label.empty;
     elts = StringMap.empty;
     resolver = None;
     recorder = None;
     fragmentroot = None;
   }
+
+(* let add_forward_reference module_name env =
+  { env with forward_references = module_name :: env.forward_references }
+
+let add_resolved_module module_name digest env =
+  { env with module_digests = (module_name, digest) :: env.module_digests } *)
 
 let add_fragment_root sg env =
   let id =
@@ -120,10 +130,7 @@ let add_to_elts name v elts =
 let add_module identifier m env =
   {
     env with
-    id =
-      ( incr unique_id;
-        (*Format.fprintf Format.err_formatter "unique_id=%d\n%!" !unique_id; *)
-        !unique_id );
+    id = ( incr unique_id; !unique_id );
     elts =
       add_to_elts
         (Odoc_model.Paths.Identifier.name identifier)
@@ -664,10 +671,11 @@ let initial_env :
       match import with
       | Import.Resolved root ->
           let unit = resolver.resolve_unit root in
-          Component.Delayed.eager := true;
           let m = module_of_unit unit in
-          Component.Delayed.eager := false;
-          let env = add_module (unit.id :> Identifier.Path.Module.t) m env in
+          let env =
+            add_module (unit.id :> Identifier.Path.Module.t) m env
+            (* |> add_module_digest (Odoc_model.Names.ModuleName.to_string unit.id) root.digest *)
+          in
           (import :: imports, env)
       | Import.Unresolved (str, _) -> (
           match resolver.lookup_unit str with

@@ -517,6 +517,7 @@ sig
     | tag_only_module_type
     | tag_unknown
   ]
+  
   type module_type = [
     | `Resolved of Resolved_reference.module_type
     | `Root of UnitName.t * tag_module_type

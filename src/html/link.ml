@@ -14,7 +14,7 @@ module Path = struct
   let for_printing url = List.map snd @@ to_list url
 
   let segment_to_string (kind, name) =
-    if kind = "module" || kind = "package"
+    if kind = "module" || kind = "package" || kind = "hash"
     then name
     else Printf.sprintf "%s-%s" kind name
   let for_linking url = List.map segment_to_string @@ to_list url

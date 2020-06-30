@@ -31,17 +31,87 @@ let add_dep acc = function
 | _, None -> acc (* drop module aliases *)
 | unit_name, Some digest ->  { Compile.unit_name; digest } :: acc
 
-let for_compile_step_cmt file =
+let is_hidden s =
+  let len = String.length s in
+  let rec aux i =
+      if i > len - 2 then false else
+      if s.[i] = '_' && s.[i + 1] = '_' then true
+      else aux (i + 1)
+  in aux 0 
+
+let rec read_depends package cur =
+  let deps =
+    try
+      let ic = open_in ("deps/"^package) in
+      Format.eprintf "Opened file %s\n%!" package;
+      let rec inner () =
+        try
+          let l = input_line ic in
+          Format.eprintf "read line: %s\n%!" l;
+          l :: inner ()
+        with _ -> []
+      in
+      let deps = inner () in
+      Format.eprintf "deps of %s: %s\n" package (String.concat "," deps);
+      close_in ic;
+      deps
+    with _ -> []
+  in
+  let new_deps = List.filter (fun l -> not @@ List.mem l cur) deps in
+  Format.eprintf "new deps=%s\n%!" (String.concat "," new_deps);
+  let trans_deps = List.flatten @@ deps :: List.map (fun dep -> read_depends dep (new_deps @ cur)) new_deps in
+  let rec uniq x =
+    match x with
+    | l :: ls -> if List.mem l ls then uniq ls else l::uniq ls
+    | [] -> []
+  in uniq trans_deps
+    
+
+let makefile_fragment file name digest deps package =
+  let outputfilestr = Fs.File.(set_ext ".odoc" file |> basename |> to_string) in
+  let deps = List.filter (fun dep -> dep.Compile.unit_name <> name) deps in
+  let deps = List.map (fun dep -> Printf.sprintf "%s.odoc" (Digest.to_hex dep.Compile.digest)) deps in
+  let pkg_deps_str = String.concat " " (List.map (fun dep -> "-I " ^ dep) (read_depends package [])) in
+  Format.printf "%s.odoc : %s/%s\n" (Digest.to_hex digest) package outputfilestr;
+  Format.printf "\tln -sf $< %s\n" "$@";
+  Format.printf "%s/%s : %s %s\n%!" package outputfilestr (Fs.File.to_string file)
+    (String.concat " " deps);
+  Format.printf "\todoc compile --package %s $< %s -o %s\n" package pkg_deps_str "$@";
+  Format.printf "allcompile : %s.odoc\n" (Digest.to_hex digest);
+  if not (is_hidden name)
+  then begin
+    Format.printf "%s.odocl : %s.odoc\n\todoc link $< %s\n" (Digest.to_hex digest) (Digest.to_hex digest) pkg_deps_str;
+    Format.printf "alllink : %s.odocl\n" (Digest.to_hex digest);
+  end
+
+
+let for_compile_step_cmt file package =
   let cmt_infos = Cmt_format.read_cmt (Fs.File.to_string file) in
-  List.fold_left ~f:add_dep ~init:[] cmt_infos.Cmt_format.cmt_imports
+  let deps = List.fold_left ~f:add_dep ~init:[] cmt_infos.Cmt_format.cmt_imports in
+  let name = cmt_infos.cmt_modname in
+  let digest =
+    match cmt_infos.cmt_interface_digest with
+    | Some d -> d
+    | None ->
+      match List.assoc name cmt_infos.cmt_imports with
+      | Some digest -> digest 
+      | _ -> failwith "Invalid file"
+  in
+  makefile_fragment file name digest deps package;
+  []
 
-let for_compile_step_cmi_or_cmti file =
+let for_compile_step_cmi_or_cmti file package =
   let cmi_infos = Cmi_format.read_cmi (Fs.File.to_string file) in
-  List.fold_left ~f:add_dep ~init:[] cmi_infos.Cmi_format.cmi_crcs
+  match cmi_infos.cmi_crcs with
+  | (name, Some digest) :: imports when name = cmi_infos.cmi_name ->
+    let deps = List.fold_left ~f:add_dep ~init:[] imports in
+    makefile_fragment file name digest deps package;
+    []
+  | _ -> failwith "Error"
 
-let for_compile_step file = match Fs.File.has_ext "cmt" file with
-| true -> for_compile_step_cmt file
-| false -> for_compile_step_cmi_or_cmti file
+let for_compile_step file package = match Fs.File.has_ext "cmt" file with
+| true -> for_compile_step_cmt file package
+| false -> for_compile_step_cmi_or_cmti file package
 
 module Hash_set : sig
   type t

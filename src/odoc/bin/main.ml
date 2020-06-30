@@ -432,8 +432,8 @@ end
 
 module Depends = struct
   module Compile = struct
-    let list_dependencies input_file =
-      let deps = Depends.for_compile_step (Fs.File.of_string input_file) in
+    let list_dependencies input_file package =
+      let deps = Depends.for_compile_step (Fs.File.of_string input_file) package in
       List.iter ~f:(fun t ->
         Printf.printf "%s %s\n"
           (Depends.Compile.name t)
@@ -446,7 +446,12 @@ module Depends = struct
       let doc = "Input file" in
       Arg.(required & pos 0 (some file) None & info ~doc ~docv:"file.cm{i,t,ti}" [])
     in
-    Term.(const list_dependencies $ input)
+    let pkg =
+      let doc = "Package the input is part of" in
+      Arg.(required & opt (some string) None &
+           info ~docs ~docv:"PKG" ~doc ["package"; "pkg"])
+    in
+    Term.(const list_dependencies $ input $ pkg)
 
   let info =
     Term.info "compile-deps"
