@@ -77,7 +77,8 @@ let makefile_fragment file name digest deps package =
   if not (is_hidden name)
   then begin
     Format.printf "%s.odocl : %s.odoc\n\todoc link $< %s\n" (Digest.to_hex digest) (Digest.to_hex digest) pkg_deps_str;
-    Format.printf "alllink : %s.odocl\n" (Digest.to_hex digest);
+    Format.printf "%s.odocl.generated: %s.odocl\n\todoc generate $< --output-dir output\n\ttouch %s\n%!" (Digest.to_hex digest) (Digest.to_hex digest) "$@";
+    Format.printf "alllink : %s.odocl.generated\n" (Digest.to_hex digest);
   end
 
 
