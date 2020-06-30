@@ -43,23 +43,19 @@ let rec read_depends package cur =
   let deps =
     try
       let ic = open_in ("deps/"^package) in
-      Format.eprintf "Opened file %s\n%!" package;
       let rec inner () =
         try
           let l = input_line ic in
-          Format.eprintf "read line: %s\n%!" l;
           l :: inner ()
         with _ -> []
       in
       let deps = inner () in
-      Format.eprintf "deps of %s: %s\n" package (String.concat "," deps);
       close_in ic;
       deps
     with _ -> []
   in
   let new_deps = List.filter (fun l -> not @@ List.mem l cur) deps in
-  Format.eprintf "new deps=%s\n%!" (String.concat "," new_deps);
-  let trans_deps = List.flatten @@ deps :: List.map (fun dep -> read_depends dep (new_deps @ cur)) new_deps in
+  let trans_deps = package :: (List.flatten @@ deps :: List.map (fun dep -> read_depends dep (new_deps @ cur)) new_deps) in
   let rec uniq x =
     match x with
     | l :: ls -> if List.mem l ls then uniq ls else l::uniq ls
