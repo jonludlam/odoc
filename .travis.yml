@@ -137,9 +137,7 @@ cache:
   directories:
     - $HOME/.opam
     - $HOME/.esy
-    - $HOME/.nvm
     - ./_opam
-    - ./_cache
 
 notifications:
   email:
