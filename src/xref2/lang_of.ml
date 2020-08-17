@@ -311,9 +311,7 @@ module ExtractIDs = struct
     }
 
   and include_ parent map i =
-    (* Shadowed items don't apply to nested includes *)
-    let new_map = { map with s_modules = [] } in
-    signature parent new_map i.Include.expansion_
+    signature parent map i.Include.expansion_
 
   and open_ parent map o = signature parent map o.Open.expansion
 
