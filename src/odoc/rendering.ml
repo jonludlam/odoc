@@ -50,7 +50,6 @@ let document_of_input ~env ~syntax input =
     Odoc_xref2.Tools.reset_caches ();
     Hashtbl.clear Compilation_unit.units_cache;
 
-    Compilation_unit.save Fs.File.(set_ext ".odocl" input) odoctree;
     Ok (Renderer.document_of_compilation_unit ~syntax odoctree)
 
 let render_document renderer ~output:root_dir ~extra odoctree =
@@ -75,6 +74,15 @@ let targets ~renderer ~output:root_dir ~extra odoctree =
     Format.printf "%a\n" Fpath.pp filename);
   Ok ()
 
+  (*
+let deprecated_targets ~renderer ~output:root_dir ~extra odoctree =
+  document_of_input ~syntax:OCaml odoctree
+  >>= fun odoctree -> 
+  let pages = renderer.Renderer.render extra odoctree in
+  Renderer.traverse pages ~f:(fun filename _content ->
+    let filename = Fpath.normalize @@ Fs.File.append root_dir filename in
+    Format.printf "%a\n" Fpath.pp filename);
+  Ok ()*)
 let urls_of_input input =
   Root.read input >>= function
   | { file = Page _; _ } ->
