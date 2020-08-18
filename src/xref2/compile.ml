@@ -281,9 +281,13 @@ and module_ : Env.t -> Module.t -> Module.t =
             match
               Expand_tools.expansion_of_module env m.id ~strengthen:true m'
             with
-            | Ok (env, _, ce) ->
-                let e = Lang_of.(module_expansion empty sg_id ce) in
-                Some (expansion env sg_id e)
+            | Ok (env, _, ce) -> (
+                try
+                  let e = Lang_of.(module_expansion empty sg_id ce) in
+                  Some (expansion env sg_id e)
+                with _ ->
+                  Format.eprintf "Failed to convert expansion:\n%!%a\n%!" Component.Fmt.module_expansion ce;
+                  None)
             | Error `OpaqueModule -> None
             | Error _ ->
                 lookup_failure ~what:(`Module m.id) `Expand;
@@ -361,9 +365,12 @@ and find_shadowed map = function
   | _ :: _ -> assert false
   | [] -> map
 
+and n = ref 0
+
 and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
+  let myn = !n in incr n;
   let remove_top_doc_from_signature =
     let open Signature in
     function Comment (`Docs _) :: xs -> xs | xs -> xs
@@ -378,10 +385,15 @@ and include_ : Env.t -> Include.t -> Include.t =
       lookup_failure ~what:(`Include decl) `Expand;
       i
   | Ok (_, ce) ->
+    Format.eprintf "Handling expansion of include decl: %a\n%!" Component.Fmt.module_decl decl;
+
+    Format.eprintf "shadowed items (%d): %s\n%!" myn (String.concat "," @@ List.map fst i.expansion.shadowed);
+
       let map = find_shadowed Lang_of.empty i.expansion.shadowed in
+      (* Format.eprintf "s_modules %d\n%!" (List.length map.s_modules); *)
       let e = Lang_of.(module_expansion map i.parent ce) in
 
-      (* Format.eprintf "Intermediate expansion: %a\n%!"
+      (* Format.eprintf "Intermediate expansion (%d): %a\n%!" myn
          Component.Fmt.module_expansion (Component.Of_Lang.(module_expansion empty e)); *)
       let expansion_sg =
         match e with
@@ -397,7 +409,7 @@ and include_ : Env.t -> Include.t -> Include.t =
         }
       in
 
-      (* Format.eprintf "Final expansion: %a\n%!"
+      (* Format.eprintf "Final expansion (%d): %a\n%!" myn
          Component.Fmt.module_expansion (Component.Of_Lang.(module_expansion empty e)); *)
       { i with decl = module_decl env i.parent i.decl; expansion }
 
@@ -761,11 +773,15 @@ let build_resolver :
   let resolve_unit root =
     match resolve_unit root with
     | Ok unit -> unit
-    | Error e -> raise (Fetch_failed e)
+    | Error e ->
+      Format.eprintf "Failed to resolve unit: %s\n%!" (Root.to_string root);
+      raise (Fetch_failed e)
   and resolve_page root =
     match resolve_page root with
     | Ok page -> page
-    | Error e -> raise (Fetch_failed e)
+    | Error e -> 
+      Format.eprintf "Failed to resolve page: %s\n%!" (Root.to_string root);
+      raise (Fetch_failed e)
   in
   { Env.lookup_unit; resolve_unit; lookup_page; resolve_page; open_units }
 

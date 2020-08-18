@@ -259,8 +259,9 @@ module ExtractIDs = struct
     let name' = Ident.Name.typed_module id in
     let name = ModuleName.to_string name' in
     let identifier =
-      if List.mem_assoc name map.s_modules then List.assoc name map.s_modules
-      else `Module (parent, name')
+      if List.mem_assoc name map.s_modules
+      then (Format.eprintf "shadowing module %s\n%!" name; List.assoc name map.s_modules)
+      else (Format.eprintf "Not shadowing module %s (List.length s_modules=%d)\n%!" name (List.length map.s_modules); `Module (parent, name'))
     in
     { map with module_ = Component.ModuleMap.add id identifier map.module_ }
 

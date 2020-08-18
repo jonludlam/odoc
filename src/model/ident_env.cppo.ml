@@ -50,6 +50,16 @@ type extracted_item = [
   | `ClassType of Ident.t * Ident.t * Ident.t * bool
 ]
 
+(* let pp_extracted_item : Format.formatter -> extracted_item -> unit = fun fmt i ->
+  match i with
+  | `Module (id, b) -> Format.fprintf fmt "(module %a %b)" Ident.print_with_scope id b
+  | `ModuleType (id, b) -> Format.fprintf fmt "(module type %a %b)" Ident.print_with_scope id b
+  | `Type (id, b) -> Format.fprintf fmt "(type %a %b)" Ident.print_with_scope id b
+  | `Class (id1, id2, id3, id4, b) -> Format.fprintf fmt "(class %a %a %a %a %b)" Ident.print_with_scope id1 Ident.print_with_scope id2 Ident.print_with_scope id3 Ident.print_with_scope id4 b
+  | `ClassType (id1, id2, id3, b) -> Format.fprintf fmt "(classtype %a %a %a %b)" Ident.print_with_scope id1 Ident.print_with_scope id2 Ident.print_with_scope id3 b
+
+let _pp_extracted_items = Format.pp_print_list ~pp_sep:(Format.pp_force_newline) pp_extracted_item  *)
+
 type extracted_items =
   [ extracted_item
   | `Include of extracted_item list
@@ -336,8 +346,8 @@ let env_of_items parent items env =
       let is_shadowed = force_shadowed || module_name_exists name rest in
       let identifier, shadowed =
         if is_shadowed 
-        then `Module(parent, ModuleName.internal_of_string name), t :: env.shadowed
-        else `Module(parent, ModuleName.of_string name), env.shadowed
+        then (Format.eprintf "Shadowing %s\n%!" name; `Module(parent, ModuleName.internal_of_string name), t :: env.shadowed)
+        else (Format.eprintf "Not shadowing %s\n%!" name; `Module(parent, ModuleName.of_string name), env.shadowed)
       in
       let path = `Identifier(identifier, is_shadowed) in
       let modules = Ident.add t identifier env.modules in
@@ -376,6 +386,7 @@ let env_of_items parent items env =
 let add_signature_tree_items : Paths.Identifier.Signature.t -> Typedtree.signature -> t -> t = 
   fun parent sg env ->
     let items = extract_signature_tree_items sg |> flatten_extracted in
+    (* Format.eprintf "%a\n%!" pp_extracted_items items; *)
     env_of_items parent items env
 
 let add_structure_tree_items : Paths.Identifier.Signature.t -> Typedtree.structure -> t -> t =
