@@ -16,12 +16,7 @@ type maps = {
     Identifier.Path.ClassType.t Component.PathClassTypeMap.t;
   fragment_root : Cfrag.root option;
   (* Shadowed items *)
-  s_modules : (string * Identifier.Module.t) list;
-  s_module_types : (string * Identifier.ModuleType.t) list;
-  s_functor_parameters : (string * Identifier.FunctorParameter.t) list;
-  s_types : (string * Identifier.Type.t) list;
-  s_classes : (string * Identifier.Class.t) list;
-  s_class_types : (string * Identifier.ClassType.t) list;
+  shadowed : Lang.Include.shadowed
 }
 
 let empty =
@@ -35,12 +30,13 @@ let empty =
     class_type = [];
     path_class_type = Component.PathClassTypeMap.empty;
     fragment_root = None;
-    s_modules = [];
-    s_module_types = [];
-    s_functor_parameters = [];
-    s_types = [];
-    s_classes = [];
-    s_class_types = [];
+    shadowed = {
+      s_modules = [];
+      s_module_types = [];
+      s_types = [];
+      s_classes = [];
+      s_class_types = [];
+    }
   }
 
 let with_fragment_root r = { empty with fragment_root = Some r }
@@ -244,7 +240,7 @@ module ExtractIDs = struct
   let rec type_decl parent map id =
     let name = Ident.Name.type_ id in
     let identifier =
-      if List.mem_assoc name map.s_types then List.assoc name map.s_types
+      if List.mem_assoc name map.shadowed.s_types then List.assoc name map.shadowed.s_types
       else `Type (parent, Ident.Name.typed_type id)
     in
     {
@@ -259,17 +255,17 @@ module ExtractIDs = struct
     let name' = Ident.Name.typed_module id in
     let name = ModuleName.to_string name' in
     let identifier =
-      if List.mem_assoc name map.s_modules
-      then (Format.eprintf "shadowing module %s\n%!" name; List.assoc name map.s_modules)
-      else (Format.eprintf "Not shadowing module %s (List.length s_modules=%d)\n%!" name (List.length map.s_modules); `Module (parent, name'))
+      if List.mem_assoc name map.shadowed.s_modules
+      then (Format.eprintf "shadowing module %s\n%!" name; List.assoc name map.shadowed.s_modules)
+      else (Format.eprintf "Not shadowing module %s (List.length s_modules=%d)\n%!" name (List.length map.shadowed.s_modules); `Module (parent, name'))
     in
     { map with module_ = Component.ModuleMap.add id identifier map.module_ }
 
   and module_type parent map id =
     let name = Ident.Name.module_type id in
     let identifier =
-      if List.mem_assoc name map.s_module_types then
-        List.assoc name map.s_module_types
+      if List.mem_assoc name map.shadowed.s_module_types then
+        List.assoc name map.shadowed.s_module_types
       else `ModuleType (parent, Ident.Name.typed_module_type id)
     in
     { map with module_type = Component.ModuleTypeMap.add id identifier map.module_type }
@@ -277,7 +273,7 @@ module ExtractIDs = struct
   and class_ parent map id =
     let name = Ident.Name.class_ id in
     let identifier =
-      if List.mem_assoc name map.s_classes then List.assoc name map.s_classes
+      if List.mem_assoc name map.shadowed.s_classes then List.assoc name map.shadowed.s_classes
       else `Class (parent, Ident.Name.typed_class id)
     in
     {
@@ -295,8 +291,8 @@ module ExtractIDs = struct
   and class_type parent map (id : Ident.class_type) =
     let name = Ident.Name.class_type id in
     let identifier =
-      if List.mem_assoc name map.s_class_types then
-        List.assoc name map.s_class_types
+      if List.mem_assoc name map.shadowed.s_class_types then
+        List.assoc name map.shadowed.s_class_types
       else `ClassType (parent, Ident.Name.typed_class_type id)
     in
     {
@@ -527,13 +523,7 @@ and module_expansion :
             match arg with
             | Named arg ->
                 let name = Ident.Name.typed_functor_parameter arg.id in
-                let identifier' =
-                  try
-                    List.assoc
-                      (ParameterName.to_string name)
-                      map.s_functor_parameters
-                  with Not_found -> `Parameter (id, name)
-                in
+                let identifier' = `Parameter (id, name) in
                 let identifier_result = `Result id in
                 let map =
                   {
@@ -551,6 +541,14 @@ and module_expansion :
       in
       Functor (List.rev rev_args, signature identifier map sg)
 
+and combine_shadowed s1 s2 =
+  let open Odoc_model.Lang.Include in
+  { s_modules = s1.s_modules @ s2.s_modules;
+    s_module_types = s1.s_module_types @ s2.s_module_types; 
+    s_types = s1.s_types @ s2.s_types;
+    s_classes = s1.s_classes @ s2.s_classes;
+    s_class_types = s1.s_class_types @ s2.s_class_types }
+
 and include_ parent map i =
   let open Component.Include in
   {
@@ -561,7 +559,7 @@ and include_ parent map i =
       {
         resolved = false;
         shadowed = i.shadowed;
-        content = signature parent map i.expansion_;
+        content = signature parent { map with shadowed = combine_shadowed map.shadowed i.shadowed } i.expansion_;
       };
     inline = false;
   }
@@ -673,10 +671,7 @@ and module_type_expr map identifier =
       With (module_type_expr map identifier expr, List.map substitution subs)
   | Functor (Named arg, expr) ->
       let name = Ident.Name.typed_functor_parameter arg.id in
-      let identifier' =
-        try List.assoc (ParameterName.to_string name) map.s_functor_parameters
-        with Not_found -> `Parameter (identifier, name)
-      in
+      let identifier' = `Parameter (identifier, name) in
       let map =
         {
           map with

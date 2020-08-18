@@ -346,31 +346,12 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
   | Error e ->
       lookup_failure ~what:(`Module_type m.id) e;
       m
-
-and find_shadowed map = function
-  | ((_, `Module (_, _)) as ident) :: rest ->
-      find_shadowed Lang_of.{ map with s_modules = ident :: map.s_modules } rest
-  | ((_, `ModuleType (_, _)) as ident) :: rest ->
-      find_shadowed
-        Lang_of.{ map with s_module_types = ident :: map.s_module_types }
-        rest
-  | ((_, `Type (_, _)) as ident) :: rest ->
-      find_shadowed Lang_of.{ map with s_types = ident :: map.s_types } rest
-  | ((_, `Class (_, _)) as ident) :: rest ->
-      find_shadowed Lang_of.{ map with s_classes = ident :: map.s_classes } rest
-  | ((_, `ClassType (_, _)) as ident) :: rest ->
-      find_shadowed
-        Lang_of.{ map with s_class_types = ident :: map.s_class_types }
-        rest
-  | _ :: _ -> assert false
-  | [] -> map
-
 and n = ref 0
 
 and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
-  let myn = !n in incr n;
+  let _myn = !n in incr n;
   let remove_top_doc_from_signature =
     let open Signature in
     function Comment (`Docs _) :: xs -> xs | xs -> xs
@@ -387,9 +368,9 @@ and include_ : Env.t -> Include.t -> Include.t =
   | Ok (_, ce) ->
     Format.eprintf "Handling expansion of include decl: %a\n%!" Component.Fmt.module_decl decl;
 
-    Format.eprintf "shadowed items (%d): %s\n%!" myn (String.concat "," @@ List.map fst i.expansion.shadowed);
+    (* Format.eprintf "shadowed items (%d): %s\n%!" myn (String.concat "," @@ List.map fst i.expansion.shadowed); *)
 
-      let map = find_shadowed Lang_of.empty i.expansion.shadowed in
+      let map = { Lang_of.empty with shadowed = i.expansion.shadowed } in
       (* Format.eprintf "s_modules %d\n%!" (List.length map.s_modules); *)
       let e = Lang_of.(module_expansion map i.parent ce) in
 
