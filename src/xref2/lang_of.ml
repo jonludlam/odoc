@@ -19,6 +19,15 @@ type maps = {
   shadowed : Lang.Include.shadowed
 }
 
+let empty_shadow =
+  let open Lang.Include in
+  {
+    s_modules = [];
+    s_module_types = [];
+    s_types = [];
+    s_classes = [];
+    s_class_types = [];
+  }
 let empty =
   {
     module_ = Component.ModuleMap.empty;
@@ -30,13 +39,7 @@ let empty =
     class_type = [];
     path_class_type = Component.PathClassTypeMap.empty;
     fragment_root = None;
-    shadowed = {
-      s_modules = [];
-      s_module_types = [];
-      s_types = [];
-      s_classes = [];
-      s_class_types = [];
-    }
+    shadowed = empty_shadow;
   }
 
 let with_fragment_root r = { empty with fragment_root = Some r }
@@ -392,6 +395,7 @@ let rec signature_items id map items =
 
 and signature id map sg =
   let open Component.Signature in
+  (* let map = { map with shadowed = empty_shadow } in *)
   signature_items id map sg.items
 
 and class_ map parent id c =
@@ -607,6 +611,7 @@ and module_ map parent id m =
       | Some (p, r) -> Some (Path.module_ map p, r)
       | None -> None
     in
+    let map = { map with shadowed = empty_shadow } in
     let expansion = Opt.map (module_expansion map identifier) m.expansion in
     {
       Odoc_model.Lang.Module.id;
@@ -696,6 +701,7 @@ and module_type :
   let identifier = Component.ModuleTypeMap.find id map.module_type in
   let mty = Component.Delayed.get mty in
   let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
+  let map = { map with shadowed = empty_shadow } in
   let expansion = Opt.map (module_expansion map sig_id) mty.expansion in
   {
     Odoc_model.Lang.ModuleType.id = identifier;
