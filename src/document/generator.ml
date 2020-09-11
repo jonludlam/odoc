@@ -378,6 +378,9 @@ struct
       O.txt (String.concat " " polyvars ^ ". ") ++ type_expr t
     | Package pkg ->
       enclose ~l:"(" ~r:")" (
+        if Paths.Path.(is_hidden (pkg.path :> t))
+        then O.keyword "module" ++ O.txt " ... " 
+        else
          O.keyword "module" ++ O.txt " " ++
            Link.from_path (pkg.path :> Paths.Path.t) ++
          match pkg.substitutions with
