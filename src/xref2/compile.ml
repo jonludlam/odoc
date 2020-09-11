@@ -247,8 +247,21 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.t -> _ =
       | Open o -> Open o)
     s
 
+and filter_signature : Signature.t -> Signature.t = fun sg ->
+  let rec get : bool -> Signature.t -> Signature.t = fun ignore ->
+    function
+    | Comment `Stop :: items -> get (not ignore) items
+    | item :: items ->
+      if ignore
+      then get ignore items
+      else item :: get ignore items
+    | [] -> []
+  in
+  get false sg
+
 and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
  fun env id s ->
+  let s = filter_signature s in
   let env = Env.open_signature s env in
   signature_items env id s
 
