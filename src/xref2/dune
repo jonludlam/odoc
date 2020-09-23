@@ -8,5 +8,52 @@
  (modules_without_implementation errors)
  )
 
-(mdx)
+(rule
+ (targets test.output)
+ (deps (package odoc)
+   (alias ../../mdx/install))
+ (action
+   (run ocaml-mdx test -o %{targets} %{dep:test.md})))
+
+(rule
+ (alias runtest)
+ (action
+  (diff test.md test.output)))
+
+(rule
+ (targets scratch.output)
+ (deps (package odoc)
+   (alias ../../mdx/install))
+ (action
+   (run ocaml-mdx test -o %{targets} %{dep:scratch.md})))
+
+(rule
+ (alias runtest)
+ (action
+  (diff scratch.md scratch.output)))
+
+(rule
+ (targets paths.output)
+ (deps (package odoc)
+   (alias ../../mdx/install))
+ (action
+   (run ocaml-mdx test -o %{targets} %{dep:paths.md})))
+
+(rule
+ (alias runtest)
+ (action
+  (diff paths.md paths.output)))
+
+(rule
+ (targets notes.output)
+ (deps (package odoc)
+   (alias ../../mdx/install))
+ (action
+   (run ocaml-mdx test -o %{targets} %{dep:notes.md})))
+
+(rule
+ (alias runtest)
+ (action
+  (diff notes.md notes.output)))
+
 

@@ -1,7 +1,8 @@
 (rule
  (targets test.output)
  (deps
-  (package odoc))
+  (package odoc)
+  (alias ../../../mdx/install))
  (action
   (run ocaml-mdx test --prelude=%{dep:../lib/prelude.ml} -o %{targets} %{dep:test.md})))
 
