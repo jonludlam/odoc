@@ -458,10 +458,16 @@ module Depends = struct
         (Fs.Directory.of_string input_file) >>= fun depends ->
       List.iter depends
         ~f:(fun (root : Odoc_model.Root.t) ->
-          Format.printf "%a %s %s\n"
-            fmt_page root.parent
-            (Odoc_model.Root.Odoc_file.name root.file)
-            (Digest.to_hex root.digest)
+          match root.parent with
+          | Some p ->
+            Format.printf "%a %s %s\n"
+              fmt_page p
+              (Odoc_model.Root.Odoc_file.name root.file)
+              (Digest.to_hex root.digest)
+          | None ->
+            Format.printf "none %s %s\n"
+              (Odoc_model.Root.Odoc_file.name root.file)
+              (Digest.to_hex root.digest)
         );
       Ok ()
 

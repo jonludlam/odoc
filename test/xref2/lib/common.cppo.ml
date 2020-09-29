@@ -39,7 +39,7 @@ let root_of_compilation_unit ~package ~hidden ~module_name ~digest =
   ignore(package);
   let file_representation : Odoc_model.Root.Odoc_file.t =
   Odoc_model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
-  {Odoc_model.Root.parent; file = file_representation; digest}
+  {Odoc_model.Root.parent = Some parent; file = file_representation; digest}
 
 let root = 
     root_of_compilation_unit

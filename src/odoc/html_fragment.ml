@@ -3,7 +3,7 @@ open Or_error
 let from_mld ~xref_base_uri ~env ~output ~warn_error input =
   (* Internal names, they don't have effect on the output. *)
   let page_name = "__fragment_page__" in
-  let parent = `Page (Odoc_model.Names.PageName.of_string "None") in
+  let parent = None in
   let input_s = Fs.File.to_string input in
   let digest = Digest.file input_s in
   let root =

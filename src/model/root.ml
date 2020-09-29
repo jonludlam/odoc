@@ -50,7 +50,7 @@ module Odoc_file = struct
 end
 
 type t = {
-  parent : Paths.Identifier.Page.t;
+  parent : Paths.Identifier.Page.t option;
   file : Odoc_file.t;
   digest : Digest.t;
 }
@@ -60,9 +60,13 @@ let equal : t -> t -> bool = ( = )
 let hash : t -> int = Hashtbl.hash
 
 let to_string t =
-  Printf.sprintf "%s::%s"
-    (Paths.Identifier.name t.parent)
-    (Odoc_file.name t.file)
+  match t.parent with
+  | Some p ->
+    Printf.sprintf "%s::%s"
+      (Paths.Identifier.name p)
+      (Odoc_file.name t.file)
+  | None ->
+    Odoc_file.name t.file
 
 let compare x y = String.compare x.digest y.digest
 

@@ -46,6 +46,7 @@ let resolve_and_substitute ~env ~output ~warn_error parent input_file read_file 
   Ok ()
 
 let root_of_compilation_unit ~parent ~hidden ~module_name ~digest =
+  let parent = Some parent in
   let file_representation : Odoc_model.Root.Odoc_file.t =
     Odoc_model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
   {Odoc_model.Root.parent; file = file_representation; digest}
@@ -82,7 +83,7 @@ let mld ~env:_ ~package ~output ~warn_error input =
   let digest = Digest.file input_s in
   let root =
     let file = Odoc_model.Root.Odoc_file.create_page root_name in
-    {Odoc_model.Root.parent; file; digest}
+    {Odoc_model.Root.parent = Some parent; file; digest}
   in
   let name = `SubPage (parent, Odoc_model.Names.PageName.of_string root_name) in
   let location =

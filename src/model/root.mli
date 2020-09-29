@@ -38,7 +38,7 @@ module Odoc_file : sig
 end
 
 type t = {
-  parent : Paths.Identifier.Page.t;
+  parent : Paths.Identifier.Page.t option;
   file : Odoc_file.t;
   digest : Digest.t;
 }
