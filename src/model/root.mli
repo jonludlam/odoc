@@ -21,33 +21,32 @@
     file.
 *)
 
-module Package :
-sig
+module Package : sig
   type t = string
 end
 
-module Odoc_file :
-sig
-  type compilation_unit = {name : string; hidden : bool}
+module Odoc_file : sig
+  type compilation_unit = { name : string; hidden : bool }
 
-  type t =
-    | Page of string
-    | Compilation_unit of compilation_unit
+  type t = Page of string | Compilation_unit of compilation_unit
 
   val create_unit : force_hidden:bool -> string -> t
+
   val create_page : string -> t
 
   val name : t -> string
 end
 
 type t = {
-  package : Package.t;
+  parent : Paths.Identifier.Page.t;
   file : Odoc_file.t;
   digest : Digest.t;
 }
 
 val equal : t -> t -> bool
-val hash  : t -> int
+
+val hash : t -> int
+
 val compare : t -> t -> int
 
 val to_string : t -> string
@@ -55,4 +54,5 @@ val to_string : t -> string
 module Hash_table : Hashtbl.S with type key = t
 
 val contains_double_underscore : string -> bool
+
 (* not the best place for this but. *)

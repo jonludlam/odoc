@@ -120,7 +120,7 @@ module Link = struct
        anchor
 
   let rec is_class_or_module_path (url : Odoc_document.Url.Path.t) = match url.kind with
-    | "module" | "package" | "class" ->
+    | "module" | "page" | "class" ->
       begin match url.parent with
       | None -> true
       | Some url -> is_class_or_module_path url

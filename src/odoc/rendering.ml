@@ -52,6 +52,8 @@ let document_of_input ~env ~warn_error ~syntax input =
 let render_document renderer ~output:root_dir ~extra odoctree =
   let pages = renderer.Renderer.render extra odoctree in
   Renderer.traverse pages ~f:(fun filename content ->
+    Format.eprintf "filename: %s\n%!" (Fs.File.to_string filename);
+    Format.eprintf "root_dir: %s\n%!" (Fs.Directory.to_string root_dir);
     let filename = Fpath.normalize @@ Fs.File.append root_dir filename in
     let directory = Fs.File.dirname filename in
     Fs.Directory.mkdir_p directory;

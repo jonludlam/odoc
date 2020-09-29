@@ -22,7 +22,8 @@ module Identifier = struct
 
   let rec name_aux : t -> string = function
     | `Root(_, name) -> ModuleName.to_string name
-    | `Page(_, name) -> PageName.to_string name
+    | `Page name -> PageName.to_string name
+    | `SubPage(_, name) -> PageName.to_string name
     | `Module(_, name) -> ModuleName.to_string name
     | `Parameter(_, name) -> ParameterName.to_string name
     | `Result x -> name_aux (x :> t)
@@ -51,6 +52,7 @@ module Identifier = struct
       | `CoreType _ | `CoreException _ -> assert false
       | `Root _ as p -> (p :> label_parent)
       | `Page _ as p -> (p :> label_parent)
+      | `SubPage _ as p -> (p :> label_parent)
       | `Module (p, _)
       | `ModuleType (p, _)
       | `Parameter (p, _)
@@ -73,9 +75,11 @@ module Identifier = struct
     let open Paths_types.Identifier in
     match id with
     | `Root(r, s) ->
-      Hashtbl.hash (1, Root.hash r, s)
-    | `Page(r, s) ->
-      Hashtbl.hash (2, Root.hash r, s)
+      Hashtbl.hash (1, hash (r : page :> any), s)
+    | `Page s ->
+      Hashtbl.hash (2, s)
+    | `SubPage(r, s) ->
+      Hashtbl.hash (0, hash (r : page :> any), s)
     | `Module(id, s) ->
       Hashtbl.hash (3, hash (id : signature :> any), s)
     | `Parameter(id, s) ->
@@ -116,15 +120,16 @@ module Identifier = struct
     | `Result _ -> 5 | `ModuleType _ -> 6 | `Type _ -> 7 | `CoreType _ -> 8
     | `Constructor _ -> 9 | `Field _ -> 10 | `Extension _ -> 11 | `Exception _ -> 12
     | `CoreException _ -> 13 | `Value _ -> 14 | `Class _ -> 15 | `ClassType _ -> 16
-    | `Method _ -> 17 | `InstanceVariable _ -> 18 | `Label _ -> 19
+    | `Method _ -> 17 | `InstanceVariable _ -> 18 | `Label _ -> 19 | `SubPage _ -> 20
 
   let std_compare = compare
 
   let rec compare : t -> t -> int =
     fun x y ->
       match x,y with
-      | `Root(r, s), `Root(r', s') -> let s = ModuleName.compare s s' in if s<>0 then s else Root.compare r r'
-      | `Page(r, s), `Page(r', s') -> let s = PageName.compare s s' in if s<>0 then s else Root.compare r r'
+      | `Root(r, s), `Root(r', s') -> let s = ModuleName.compare s s' in if s<>0 then s else compare (r :> t) (r' :> t)
+      | `Page s, `Page s' -> PageName.compare s s'
+      | `SubPage(r, s), `SubPage(r', s') -> let s = PageName.compare s s' in if s<>0 then s else compare (r :> t) (r' :> t)
       | `Module (p, s), `Module (p', s') -> let s = ModuleName.compare s s' in if s<>0 then s else compare (p :> t) (p' :> t)
       | `Parameter (p, s), `Parameter (p', s') -> let s = ParameterName.compare s s' in if s<>0 then s else compare (p :> t) (p' :> t)
       | `Result p, `Result p' -> compare (p :> t) (p' :> t)

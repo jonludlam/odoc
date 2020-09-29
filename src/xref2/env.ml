@@ -357,7 +357,7 @@ let lookup_root_module name env =
         | Forward_reference -> Some Forward
         | Not_found -> None
         | Found u ->
-            let id = `Root (u.root, ModuleName.of_string name) in
+            let id = `Root (u.root.parent, ModuleName.of_string name) in
             let m =
               Component.Delayed.put (fun () ->
                   let unit = r.resolve_unit u.root in

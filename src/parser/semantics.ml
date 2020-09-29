@@ -350,11 +350,11 @@ let section_heading
 
 let validate_first_page_heading status ast_element =
   match status.parent_of_sections with
-  | `Page ({file; _}, _) ->
+  | `Page name ->
     begin match ast_element with
       | {Location.value = `Heading (_, _, _); _} -> ()
       | _invalid_ast_element ->
-        let filename = Odoc_model.Root.Odoc_file.name file ^ ".mld" in
+        let filename = Odoc_model.Names.PageName.to_string name ^ ".mld" in
         Error.warning status.warnings
           (Parse_error.page_heading_required filename)
     end

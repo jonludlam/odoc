@@ -1080,7 +1080,8 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" model_identifier
           (p :> Odoc_model.Paths.Identifier.t)
           (ExtensionName.to_string name)
-    | `Page (_, name) -> Format.fprintf ppf "%s" (PageName.to_string name)
+    | `SubPage (_, name)
+    | `Page name -> Format.fprintf ppf "%s" (PageName.to_string name)
 
   and model_fragment ppf (f : Odoc_model.Paths.Fragment.t) =
     match f with

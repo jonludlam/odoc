@@ -447,14 +447,19 @@ module Depends = struct
   end
 
   module Link = struct
+    let rec fmt_page pp page =
+      match page with
+      | `Page name -> Format.fprintf pp "%a" Odoc_model.Names.PageName.fmt name
+      | `SubPage (parent, name) -> Format.fprintf pp "%a/%a" fmt_page parent Odoc_model.Names.PageName.fmt name
+  
     let list_dependencies input_file =
       let open Or_error in
       Depends.for_rendering_step
         (Fs.Directory.of_string input_file) >>= fun depends ->
       List.iter depends
         ~f:(fun (root : Odoc_model.Root.t) ->
-          Printf.printf "%s %s %s\n"
-            root.package
+          Format.printf "%a %s %s\n"
+            fmt_page root.parent
             (Odoc_model.Root.Odoc_file.name root.file)
             (Digest.to_hex root.digest)
         );
