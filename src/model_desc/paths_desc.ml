@@ -54,8 +54,9 @@ module General_paths = struct
   let rec identifier : Paths.Identifier.t t =
     Variant
       (function
-        | `Page (root, name) -> C ("`Page", (root, name), Pair ( Root.t, Names.pagename))
-        | `Root (root, name) -> C ("`Root", (root, name), Pair ( Root.t, Names.modulename))
+        | `Page (name) -> C ("`Page", name, Names.pagename)
+        | `SubPage (parent, name) -> C ("`SubPage", ((parent :> id_t), name), Pair ( identifier, Names.pagename))
+        | `Root (parent, name) -> C ("`Root", ((parent :> id_t), name), Pair ( identifier, Names.modulename))
         | `Module (parent, name) -> C ("`Module", ((parent :> id_t), name), Pair ( identifier, Names.modulename))
         | `Parameter (parent, name) -> C ("`Parameter", ((parent :> id_t), name), Pair ( identifier, Names.parametername))
         | `Result r -> C ("`Result", (r :> id_t), identifier)
@@ -91,7 +92,7 @@ module General_paths = struct
       | `TPage -> C0 "`TPage"
       | `TType -> C0 "`TType"
       | `TUnknown -> C0 "`TUnknown"
-      | `TValue -> C0 "`TValue")
+      | `TValue -> C0 "`TValue" )
 
   let rec path : p t =
     Variant
