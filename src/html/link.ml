@@ -14,7 +14,7 @@ module Path = struct
   let for_printing url = List.map snd @@ to_list url
 
   let segment_to_string (kind, name) =
-    if kind = "module" || kind = "page" || kind = "page"
+    if kind = "module" || kind = "page"
     then name
     else Printf.sprintf "%s-%s" kind name
   let for_linking url = List.map segment_to_string @@ to_list url
@@ -47,12 +47,17 @@ let rec drop_shared_prefix l1 l2 =
   | _, _ -> l1, l2
 
 let href ~resolve { Url.Anchor. page; anchor; kind } =
-  let leaf = if !semantic_uris || kind = "page" then [] else ["index.html"] in
-  let target = Path.for_linking page @ leaf in
+  let leaf str =
+    if kind = "page"
+    then str ^ ".html"
+    else
+      if !semantic_uris then str else str ^ "/index.html"
+  in
+  let target = Path.for_linking page in
   match resolve with
   (* If xref_base_uri is defined, do not perform relative URI resolution. *)
   | Base xref_base_uri ->
-    let page = xref_base_uri ^ String.concat "/" target in
+    let page = leaf (xref_base_uri ^ String.concat "/" target) in
     begin match anchor with
     | "" -> page
     | anchor -> page ^ "#" ^ anchor
@@ -72,7 +77,7 @@ let href ~resolve { Url.Anchor. page; anchor; kind } =
       List.map (fun _ -> "..") current_from_common_ancestor
       @ target_from_common_ancestor
     in
-    let page = String.concat "/" relative_target in
+    let page = leaf (String.concat "/" relative_target) in
     begin match anchor with
     | "" -> page
     | anchor -> page ^ "#" ^ anchor
