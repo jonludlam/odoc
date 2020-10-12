@@ -350,7 +350,8 @@ let section_heading
 
 let validate_first_page_heading status ast_element =
   match status.parent_of_sections with
-  | `Page name ->
+  | `Page name
+  | `SubPage (_, name) ->
     begin match ast_element with
       | {Location.value = `Heading (_, _, _); _} -> ()
       | _invalid_ast_element ->
@@ -410,7 +411,8 @@ let top_level_block_elements
   let top_heading_level =
     (* Non-page documents have a generated title. *)
     match status.parent_of_sections with
-    | `Page _ -> None
+    | `Page _ 
+    | `SubPage _ -> None
     | _parent_with_generated_title -> Some 0
   in
   traverse ~top_heading_level [] ast_elements

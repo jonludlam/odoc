@@ -710,6 +710,7 @@ let resolve_reference : Env.t -> t -> Resolved.t option =
         | `Exception (id, _) -> identifier id
         | `Extension (id, _) -> identifier id
         | `Field (id, _) -> identifier id )
+    | `Root (_name, `TChild) -> failwith "Child unimplemented"
     | `Resolved r -> Some r
     | `Root (name, `TModule) -> M.in_env env name >>= resolved
     | `Module (parent, name) ->
