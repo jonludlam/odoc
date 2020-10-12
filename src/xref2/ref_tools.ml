@@ -710,7 +710,16 @@ let resolve_reference : Env.t -> t -> Resolved.t option =
         | `Exception (id, _) -> identifier id
         | `Extension (id, _) -> identifier id
         | `Field (id, _) -> identifier id )
-    | `Root (_name, `TChild) -> failwith "Child unimplemented"
+    | `Root (name, `TChild) -> begin
+          let page = Env.lookup_page name env in
+          match page with
+          | Some p -> 
+            Format.eprintf "Found page!\n%!";
+            Some (`Identifier (p.name :> Identifier.t))
+          | None ->
+            Format.eprintf "Didn't find page!\n%!";
+            None
+      end 
     | `Resolved r -> Some r
     | `Root (name, `TModule) -> M.in_env env name >>= resolved
     | `Module (parent, name) ->

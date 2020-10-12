@@ -817,6 +817,10 @@ let link x y = Lookup_failures.catch_failures (fun () -> unit x y)
 
 let resolve_page resolver y =
   let env = Env.set_resolver Env.empty resolver in
+  let _ = List.iter (fun child ->
+    match Env.lookup_page child env with
+    | Some _ -> Format.eprintf "Found child %s\n%!" child
+    | None -> failwith "Couldn't find child") y.Odoc_model.Lang.Page.children in
   Lookup_failures.catch_failures (fun () ->
       {
         y with
