@@ -71,7 +71,7 @@ let root_of_compilation_unit ~parent ~hidden ~module_name ~digest =
     Odoc_model.Root.Odoc_file.create_unit ~force_hidden:hidden module_name in
   {Odoc_model.Root.parent = Some parent; file = file_representation; digest}
 
-let mld ~parent_opt ~output ~warn_error input =
+let mld ~parent_opt ~output ~children ~warn_error input =
   let root_name =
     let page_dash_root =
       Filename.chop_extension (Fs.File.(to_string @@ basename output))
@@ -91,7 +91,7 @@ let mld ~parent_opt ~output ~warn_error input =
     | Some p -> `SubPage (p, page_name )
     | None -> `Page (page_name) in
   let resolve content =
-    let page = Odoc_model.Lang.Page.{ name; root; content; digest } in
+    let page = Odoc_model.Lang.Page.{ name; root; children; content; digest } in
     Page.save output page;
     Ok ()
   in
@@ -101,11 +101,11 @@ let mld ~parent_opt ~output ~warn_error input =
   | `Stop -> resolve [] (* TODO: Error? *)
   | `Docs content -> resolve content
 
-let compile ~env ~parent_file_opt ~package_opt ~hidden ~output ~warn_error input =
+let compile ~env ~parent_file_opt ~package_opt ~hidden ~children ~output ~warn_error input =
   let parent_opt = parent parent_file_opt package_opt in
   let ext = Fs.File.get_ext input in
   if ext = ".mld"
-  then mld ~parent_opt ~output ~warn_error input
+  then mld ~parent_opt ~output ~warn_error ~children input
   else
     (match ext with
       | ".cmti" -> Ok Odoc_loader.read_cmti

@@ -20,6 +20,6 @@ open Or_error
 
 val compile :
   env:Env.builder -> parent_file_opt:Fs.File.t option -> package_opt:Odoc_model.Root.Package.t option ->
-  hidden:bool ->
+  hidden:bool -> children:string list ->
   output:Fs.File.t -> warn_error:bool -> Fs.File.t ->
   (unit, [> msg]) result
