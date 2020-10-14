@@ -41,19 +41,14 @@ let load =
     | page -> Ok page
     | exception Not_found ->
       try
-        Format.eprintf "here we are...\n%!";
         let ic = open_in_bin file in
         let res =
           Root.load file ic >>= fun _root ->
-          Format.eprintf "here we are again...\n%!";
           let res = Marshal.from_channel ic in
-          Format.eprintf "here we are again..2.\n%!";
           Hashtbl.add pages file res;
-          Format.eprintf "here we are again..3.\n%!";
           Ok res
         in
         close_in ic;
-        Format.eprintf "here we are again..4.\n%!";
         res
       with exn ->
         let msg =
