@@ -815,12 +815,145 @@ let build_resolver :
 *)
 let link x y = Lookup_failures.catch_failures (fun () -> unit x y)
 
+
+let number_of_level = function
+  | `Title -> 0
+  | `Section -> 1
+  | `Subsection -> 2
+  | `Subsubsection -> 3
+  | `Paragraph -> 4
+  | `Subparagraph -> 5
+
+
+module Rewire = struct
+
+  type ('a, 'h) action =
+    | Rec of 'a
+    | Skip
+    | Heading of 'h * int
+
+  let walk ~classify ~node items =
+    let rec loop current_level acc l =
+      match l with
+      | [] -> List.rev acc, []
+      | b :: rest ->
+        match classify b with
+        | Skip -> loop current_level acc rest
+        | Rec l -> loop current_level acc (l @ rest)
+        | Heading (h, level) ->
+          if level > current_level then
+            let children, rest = loop level [] rest in
+            loop current_level (node h children :: acc) rest
+          else
+            List.rev acc, l
+    in
+    let trees, rest = loop (-1) [] items in
+    assert (rest = []);
+    trees
+
+end
+
+type mytree = one list
+and one = {
+  id : Paths.Identifier.t;
+  children : mytree
+}
+type stripped = [`Heading of int * Paths.Identifier.t * Odoc_model.Comment.non_link_inline_element list ] list 
+let construct_tree resolver page =
+  let strip_locs xs = List.map (fun x -> x.Location_.value) xs in
+
+  let rec handle_paragraph : int -> (Odoc_model.Comment.inline_element Odoc_model.Comment.with_location) list -> stripped =
+    fun cur_level items ->
+    match items with
+    | item :: items -> begin
+        match item.Location_.value with
+        | `Reference (`Root (name, `TChild), _) -> begin
+          match (resolver.Env.lookup_page name, resolver.Env.lookup_unit name) with
+          | Some id, _ ->
+            let page = resolver.Env.resolve_page id in
+            let sub = strip_docs cur_level page.content in
+            let mapped_sub = List.map (function | `Heading (n, id, content) -> `Heading (n + cur_level + 1, id, content)) sub in
+            mapped_sub @ (handle_paragraph cur_level items)
+          | _, Found f ->
+            Format.eprintf "%s found!\n%!" name;
+            let unit = resolver.Env.resolve_unit f.root in
+            let sub = strip_docs cur_level unit.doc in
+            let mapped_sub = List.map (function | `Heading (n, id, content) -> `Heading (n + cur_level + 1, id, content)) sub in
+            let heading = `Heading (cur_level + 1, (unit.id :> Paths.Identifier.t), [`Word (Paths.Identifier.name unit.id)]) in
+            heading :: mapped_sub @ (handle_paragraph cur_level items)
+          | _, Not_found -> Format.eprintf "%s not found\n%!" name; handle_paragraph cur_level items
+          | _, Forward_reference -> Format.eprintf "%s forward\n%!" name; handle_paragraph cur_level items
+          end
+        | _ ->
+          handle_paragraph cur_level items
+      end
+    | _ -> []
+
+  and strip_docs : int -> Odoc_model.Comment.docs -> stripped =
+    fun cur_level ldocs ->
+    let docs = List.map (fun doc -> doc.Location_.value) ldocs in
+    let rec inner : int -> Odoc_model.Comment.block_element list -> stripped = fun cur_level ->
+      function
+      | `Heading (level, id, content) :: rest ->
+        let new_cur_level = number_of_level level in
+        `Heading (new_cur_level, (id :> Paths.Identifier.t), strip_locs content) :: inner new_cur_level rest
+      | `Tag _ :: rest 
+      | `Code_block _ :: rest 
+      | `Verbatim _ :: rest
+      | `Modules _ :: rest -> inner cur_level rest
+      | `List (_, elts) :: rest -> (List.flatten (List.map (fun elt -> strip_docs cur_level (elt :> Odoc_model.Comment.docs)) elts)) @ (inner cur_level rest)
+      | `Paragraph items :: rest -> (handle_paragraph cur_level items) @ (inner cur_level rest)
+      | [] -> []
+    in inner cur_level docs
+  in
+
+  let handle_page p =
+    let page = resolver.Env.resolve_page p in
+    let docs = strip_docs 0 page.content in
+    let classify elt =
+      match elt with
+      | `Heading (nlevel, id, _content) -> begin
+        ignore(Rewire.Skip);
+        ignore(Rewire.Rec []);
+        Rewire.Heading ((id :> Paths.Identifier.t), nlevel)
+        end
+    in
+    Rewire.walk ~classify ~node:(fun id children -> {id; children}) docs
+  in
+
+  let rec find_top_page ident =
+    match ident with
+    | `SubPage (p, _) -> find_top_page p
+    | `Page name -> name
+  in
+
+  let top_page = find_top_page page.Odoc_model.Lang.Page.name in
+
+  let page =
+    match resolver.Env.lookup_page (Names.PageName.to_string top_page) with
+    | Some root -> resolver.Env.resolve_page root
+    | None -> failwith "Failed to find root page"
+  in
+
+  {id=(page.Odoc_model.Lang.Page.name :> Paths.Identifier.t); children=handle_page page.Odoc_model.Lang.Page.root}
+        
+
+
+
 let resolve_page resolver y =
   let env = Env.set_resolver Env.empty resolver in
   let _ = List.iter (fun child ->
     match Env.lookup_page child env with
     | Some _ -> Format.eprintf "Found child %s\n%!" child
     | None -> failwith "Couldn't find child") y.Odoc_model.Lang.Page.children in
+  let tree = construct_tree resolver y in
+  let rec pp_tree fmt tree =
+    match tree.children with
+    | [] -> Format.fprintf fmt "%a"  Component.Fmt.model_identifier tree.id
+    | _ ->
+      Format.fprintf fmt "@[<v 2>%a@,%a@]" Component.Fmt.model_identifier tree.id (Format.pp_print_list ~pp_sep:Format.pp_print_space pp_tree) tree.children
+  in
+  Format.eprintf "%a\n%!" pp_tree tree;
   Lookup_failures.catch_failures (fun () ->
       {
         y with

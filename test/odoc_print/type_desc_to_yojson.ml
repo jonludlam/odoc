@@ -6,7 +6,6 @@ type yojson = Yojson.Basic.t
 
 let rec to_yojson : type a. a t -> a -> yojson =
  fun t a ->
-  Format.eprintf "...toyojson...\n%!";
   match t with
   | Record fields ->
       let field_to_yojson (F (name, get, t)) = (name, to_yojson t (get a)) in
@@ -27,6 +26,4 @@ let rec to_yojson : type a. a t -> a -> yojson =
       | Some a' -> `Assoc [ "Some", to_yojson t a' ]
       | None -> `String "None" )
   | To_string to_string -> `String (to_string a)
-  | Indirect (f, t) ->
-    Format.eprintf "indirect...\n%!";
-    to_yojson t (f a)
+  | Indirect (f, t) -> to_yojson t (f a)
