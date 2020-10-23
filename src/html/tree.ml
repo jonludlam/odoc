@@ -21,14 +21,17 @@ type uri =
   | Relative of string
 
 let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
-  let is_page = Link.Path.is_page url in
   let path = Link.Path.for_printing url in
+
+  Format.eprintf "path = [%s]\n%!" (String.concat " " path);
+
   let rec add_dotdot ~n acc =
     if n <= 0 then
       acc
     else
       add_dotdot ~n:(n - 1) ("../" ^ acc)
   in
+
   let resolve_relative_uri uri =
     (* Remove the first "dot segment". *)
     let uri =
@@ -38,9 +41,7 @@ let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
     in
     (* How deep is this page? *)
     let n =
-      List.length path - (
-        (* This is just horrible. *)
-        if is_page then 1 else 0)
+      List.length path
     in
     add_dotdot uri ~n
   in
@@ -74,7 +75,9 @@ let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
   let breadcrumbs =
     let dot = if !Link.semantic_uris then "" else "index.html" in
     let dotdot = add_dotdot ~n:1 dot in
-    let up_href = if is_page && name <> "index" then dot else dotdot in
+    let up_href = dotdot in
+
+    Format.eprintf "up_href=%s\n%!" up_href;
     let has_parent = List.length path > 1 in
     if has_parent then
       let l =
@@ -87,14 +90,9 @@ let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
           (* Create breadcrumbs *)
           let space = Html.txt " " in
           let breadcrumb_spec =
-            if is_page
-            then (fun n x -> n, dot, x)
-            else (fun n x -> n, add_dotdot ~n dot, x)
+            (fun n x -> n, add_dotdot ~n dot, x)
           in
-          let rev_path = if is_page && name = "index"
-            then List.tl (List.rev path)
-            else List.rev path
-          in
+          let rev_path = List.rev path in
           rev_path |>
           List.mapi breadcrumb_spec |>
           List.rev |>

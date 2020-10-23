@@ -132,18 +132,21 @@ module Link = struct
     | `Closed -> false
     | `Default -> not @@ is_class_or_module_path url
 
-  let rec filepath (url: Odoc_document.Url.Path.t) = match url.kind with
-    | "package" -> url.name, []
-    | _ ->
-      match url.parent with
-      | None -> "", [url.name]
-      | Some p ->
-        let dir, path = filepath p in
+  let rec filepath (url: Odoc_document.Url.Path.t) =
+    match url.parent with
+    | None -> [url.name], []
+    | Some p ->
+      let dir, path = filepath p in
+      match url.kind with
+      | "page"
+      | "package" -> url.name :: dir, []
+      | _ ->
         dir, url.name :: path
 
   let filename url =
     let dir, p = filepath url in
-    Fpath.(v dir / String.concat "." (List.rev p) + ".tex")
+    let dir, p = match p with [] -> List.tl dir, [List.hd dir] | _ -> dir, p in
+    Fpath.(v (String.concat "/" (List.rev dir)) / String.concat "." (List.rev p) + ".tex")
 
 end
 

@@ -96,17 +96,7 @@ end =
 struct
   open Paths
 
-  let rec fmt_url_anchor fmt a =
-    let open Url.Anchor in
-    Format.fprintf fmt "{@[<v 2>@,page: %a@,anchor: %s@,kind: %s@]}" fmt_url_page a.page a.anchor a.kind
-  and fmt_url_page fmt p =
-    let open Url.Path in
-    Format.fprintf fmt "{@[<v 2>@,kind: %s@,parent: %a@,name: %s@]}" p.kind fmt_url_page_option p.parent p.name
   
-  and fmt_url_page_option fmt p =
-    match p with
-    | Some p -> fmt_url_page fmt p
-    | None -> Format.fprintf fmt "None"
 
   let rec from_path : Path.t -> text =
     fun path ->
@@ -141,7 +131,6 @@ struct
         let txt = Url.render_path path in
         begin match Url.from_identifier ~stop_before id with
         | Ok href ->
-          Format.eprintf "%s url: %a\n%!" txt fmt_url_anchor href;
           resolved href [inline @@ Text txt]
         | Error Url.Error.Not_linkable _ -> O.txt txt
         | Error exn ->

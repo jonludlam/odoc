@@ -717,8 +717,10 @@ let resolve_reference : Env.t -> t -> Resolved.t option =
             Format.eprintf "Found page!\n%!";
             Some (`Identifier (p.name :> Identifier.t))
           | None ->
-            Format.eprintf "Didn't find page!\n%!";
-            None
+            match Env.lookup_root_module name env with
+            | Some (Resolved (_, id, _, _)) -> Some (`Identifier (id :> Identifier.t))
+            | Some Forward
+            | None -> None
       end 
     | `Resolved r -> Some r
     | `Root (name, `TModule) -> M.in_env env name >>= resolved

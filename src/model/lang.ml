@@ -410,6 +410,15 @@ and TypeExpr : sig
 end =
   TypeExpr
 
+and Tree : sig
+    type node = {
+      id : Paths.Identifier.t;
+      children : t;
+    }
+    and t = node list
+  end =
+    Tree
+  
 (** {3 Compilation units} *)
 
 module rec Compilation_unit : sig
@@ -442,6 +451,7 @@ module rec Compilation_unit : sig
     hidden : bool;
     content : content;
     expansion : Signature.t option;
+    tree : Tree.t option
   }
 end =
   Compilation_unit
@@ -456,6 +466,7 @@ module rec Page : sig
   }
 end =
   Page
+
 
 let umty_of_mty : ModuleType.expr -> ModuleType.U.expr =
   function

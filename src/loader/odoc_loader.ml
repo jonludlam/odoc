@@ -72,7 +72,7 @@ let read_cmti ~make_root ~parent ~filename () =
         in
         let content = Odoc_model.Lang.Compilation_unit.Module items in
         {Odoc_model.Lang.Compilation_unit.id; root; doc; digest; imports; source;
-         interface; hidden; content; expansion = None}
+         interface; hidden; content; expansion = None; tree=None }
       end
     | _ -> not_an_interface filename
 
@@ -126,7 +126,7 @@ let read_cmt ~make_root ~parent ~filename () =
       let source = None in
       let content = Odoc_model.Lang.Compilation_unit.Pack items in
       {Odoc_model.Lang.Compilation_unit.id; root; doc; digest; imports;
-          source; interface; hidden; content; expansion = None}
+          source; interface; hidden; content; expansion = None; tree=None }
 
     | Implementation impl ->
       let name = cmt_info.cmt_modname in
@@ -157,7 +157,7 @@ let read_cmt ~make_root ~parent ~filename () =
       in
       let content = Odoc_model.Lang.Compilation_unit.Module items in
       {Odoc_model.Lang.Compilation_unit.id; root; doc; digest; imports;
-       source; interface; hidden; content; expansion = None}
+       source; interface; hidden; content; expansion = None; tree=None }
 
     | _ -> not_an_implementation filename
 
@@ -183,7 +183,7 @@ let read_cmi ~make_root ~parent ~filename () =
       let source = None in
       let content = Odoc_model.Lang.Compilation_unit.Module items in
       {Odoc_model.Lang.Compilation_unit.id; root; doc; digest; imports;
-       source; interface; hidden; content; expansion = None}
+       source; interface; hidden; content; expansion = None; tree=None}
 
     | _ -> corrupted filename
 

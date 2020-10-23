@@ -929,13 +929,12 @@ let construct_tree resolver page =
 
   let top_page = find_top_page page.Odoc_model.Lang.Page.name in
 
-  let page =
-    match resolver.Env.lookup_page (Names.PageName.to_string top_page) with
-    | Some root -> resolver.Env.resolve_page root
-    | None -> failwith "Failed to find root page"
-  in
+  match resolver.Env.lookup_page (Names.PageName.to_string top_page) with
+  | Some root ->
+    let page = resolver.Env.resolve_page root in
+    Some {id=(page.Odoc_model.Lang.Page.name :> Paths.Identifier.t); children=handle_page page.Odoc_model.Lang.Page.root}
+  | None -> None
 
-  {id=(page.Odoc_model.Lang.Page.name :> Paths.Identifier.t); children=handle_page page.Odoc_model.Lang.Page.root}
         
 
 
@@ -945,7 +944,12 @@ let resolve_page resolver y =
   let _ = List.iter (fun child ->
     match Env.lookup_page child env with
     | Some _ -> Format.eprintf "Found child %s\n%!" child
-    | None -> failwith "Couldn't find child") y.Odoc_model.Lang.Page.children in
+    | None ->
+      match Env.lookup_root_module child env with
+      | Some _ -> Format.eprintf "Found child %s\n%!" child
+      | None ->
+        Format.eprintf "Couldn't find child: %s\n%!" child;
+        failwith "Couldn't find child") y.Odoc_model.Lang.Page.children in
   let tree = construct_tree resolver y in
   let rec pp_tree fmt tree =
     match tree.children with
@@ -953,7 +957,9 @@ let resolve_page resolver y =
     | _ ->
       Format.fprintf fmt "@[<v 2>%a@,%a@]" Component.Fmt.model_identifier tree.id (Format.pp_print_list ~pp_sep:Format.pp_print_space pp_tree) tree.children
   in
-  Format.eprintf "%a\n%!" pp_tree tree;
+  (match tree with
+  | Some t ->   Format.eprintf "%a\n%!" pp_tree t;
+  | None -> ());
   Lookup_failures.catch_failures (fun () ->
       {
         y with

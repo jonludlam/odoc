@@ -28,9 +28,9 @@ module Path = struct
     | Some p -> Fpath.(get_dir p / s)
 
   let as_filename (url : Url.Path.t) =
-    if is_page url then
+    (* if is_page url then
       Fpath.(get_dir url + ".html")
-    else
+    else *)
       Fpath.(get_dir url / "index.html")
 end
 
@@ -46,30 +46,41 @@ let rec drop_shared_prefix l1 l2 =
     drop_shared_prefix l1s l2s
   | _, _ -> l1, l2
 
-let href ~resolve { Url.Anchor. page; anchor; kind } =
-  let leaf str =
-    if kind = "page"
-    then str ^ ".html"
-    else
-      if !semantic_uris then str else str ^ "/index.html"
+(* let rec fmt_url_anchor fmt a =
+  let open Url.Anchor in
+  Format.fprintf fmt "{@[<v 2>@,page: %a@,anchor: %s@,kind: %s@]}" fmt_url_page a.page a.anchor a.kind
+and fmt_url_page fmt p =
+  let open Url.Path in
+  Format.fprintf fmt "{@[<v 2>@,kind: %s@,parent: %a@,name: %s@]}" p.kind fmt_url_page_option p.parent p.name
+
+and fmt_url_page_option fmt p =
+  match p with
+  | Some p -> fmt_url_page fmt p
+  | None -> Format.fprintf fmt "None" *)
+  
+let href ~resolve t =
+  let { Url.Anchor. page; anchor; _ } = t in
+  let leaf list =
+    let c l = String.concat "/" l in
+    (* if kind = "page"
+    then c list ^ ".html"
+    else *)
+      if !semantic_uris then c list else c (list @ ["index.html"])
   in
   let target = Path.for_linking page in
-  match resolve with
+
+  let result = match resolve with
   (* If xref_base_uri is defined, do not perform relative URI resolution. *)
   | Base xref_base_uri ->
-    let page = leaf (xref_base_uri ^ String.concat "/" target) in
+    (* Format.eprintf "base: \n%s\n%!" xref_base_uri; *)
+    let page = xref_base_uri ^ leaf target in
     begin match anchor with
     | "" -> page
     | anchor -> page ^ "#" ^ anchor
     end
   | Current path ->
-    let current_loc =
-      let l = Path.for_linking path in
-      if Path.is_page path then
-        (* Sadness. *)
-        List.tl l
-      else l
-    in
+    (* Format.eprintf "current: \n%a\n%!" fmt_url_page path; *)
+    let current_loc = Path.for_linking path in
     let current_from_common_ancestor, target_from_common_ancestor =
       drop_shared_prefix current_loc target
     in
@@ -77,8 +88,12 @@ let href ~resolve { Url.Anchor. page; anchor; kind } =
       List.map (fun _ -> "..") current_from_common_ancestor
       @ target_from_common_ancestor
     in
-    let page = leaf (String.concat "/" relative_target) in
+    let page = leaf relative_target in
     begin match anchor with
     | "" -> page
     | anchor -> page ^ "#" ^ anchor
     end
+    in
+    (* Format.eprintf "url: %a\nresult: %s\n%!" fmt_url_anchor t result; *)
+
+    result
