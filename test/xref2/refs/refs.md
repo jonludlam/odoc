@@ -540,42 +540,40 @@ Unambiguous:
 
 ```ocaml
 # resolve_ref "type-t"
-- : ref = `Identifier (`Type (`Root (Common.root, Root), t))
+- : ref = `Identifier (`Type (`Root (`Page None, Root), t))
 # resolve_ref "val-t"
-- : ref = `Identifier (`Value (`Root (Common.root, Root), t))
+- : ref = `Identifier (`Value (`Root (`Page None, Root), t))
 # resolve_ref "constructor-X"
-- : ref =
-`Identifier (`Constructor (`Type (`Root (Common.root, Root), t), X))
+- : ref = `Identifier (`Constructor (`Type (`Root (`Page None, Root), t), X))
 # resolve_ref "module-X"
-- : ref = `Identifier (`Module (`Root (Common.root, Root), X))
+- : ref = `Identifier (`Module (`Root (`Page None, Root), X))
 # resolve_ref "X.type-u"
-- : ref = `Type (`Identifier (`Module (`Root (Common.root, Root), X)), u)
+- : ref = `Type (`Identifier (`Module (`Root (`Page None, Root), X)), u)
 # resolve_ref "X.val-u"
-- : ref = `Value (`Identifier (`Module (`Root (Common.root, Root), X)), u)
+- : ref = `Value (`Identifier (`Module (`Root (`Page None, Root), X)), u)
 # resolve_ref "X.constructor-Y"
 Exception: Failure "resolve_reference".
 # resolve_ref "X.module-Y"
-- : ref = `Module (`Identifier (`Module (`Root (Common.root, Root), X)), Y)
+- : ref = `Module (`Identifier (`Module (`Root (`Page None, Root), X)), Y)
 ```
 
 Unambiguous 2:
 
 ```ocaml
 # resolve_ref "type:t"
-- : ref = `Identifier (`Type (`Root (Common.root, Root), t))
+- : ref = `Identifier (`Type (`Root (`Page None, Root), t))
 # resolve_ref "val:t"
-- : ref = `Identifier (`Value (`Root (Common.root, Root), t))
+- : ref = `Identifier (`Value (`Root (`Page None, Root), t))
 # resolve_ref "constructor:X"
-- : ref =
-`Identifier (`Constructor (`Type (`Root (Common.root, Root), t), X))
+- : ref = `Identifier (`Constructor (`Type (`Root (`Page None, Root), t), X))
 # resolve_ref "module:X"
-- : ref = `Identifier (`Module (`Root (Common.root, Root), X))
+- : ref = `Identifier (`Module (`Root (`Page None, Root), X))
 # resolve_ref "type:X.u"
-- : ref = `Type (`Identifier (`Module (`Root (Common.root, Root), X)), u)
+- : ref = `Type (`Identifier (`Module (`Root (`Page None, Root), X)), u)
 # resolve_ref "val:X.u"
-- : ref = `Value (`Identifier (`Module (`Root (Common.root, Root), X)), u)
+- : ref = `Value (`Identifier (`Module (`Root (`Page None, Root), X)), u)
 # resolve_ref "constructor:X.Y"
 Exception: Failure "resolve_reference".
 # resolve_ref "module:X.Y"
-- : ref = `Module (`Identifier (`Module (`Root (Common.root, Root), X)), Y)
+- : ref = `Module (`Identifier (`Module (`Root (`Page None, Root), X)), Y)
 ```
