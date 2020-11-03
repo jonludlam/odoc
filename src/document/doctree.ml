@@ -59,7 +59,7 @@ module Toc = struct
   type t = one list
 
   and one = {
-    anchor : string;
+    url : Url.t;
     text : Inline.t;
     children : t
   }
@@ -76,11 +76,12 @@ module Toc = struct
     | Heading { label = Some label; level; title } ->
       Heading ((label, title), level)
 
-  let node (anchor, text) children = { anchor; text; children}
+  let node mkurl (anchor, text) children = { url = mkurl anchor; text; children}
 
-  let compute ~on_sub t =
+  let compute page ~on_sub t =
+    let mkurl anchor = { Url.Anchor.page; anchor; kind="page" } in
     Rewire.walk
-      ~classify:(classify ~on_sub) ~node
+      ~classify:(classify ~on_sub) ~node:(node mkurl)
       t
 
 end
