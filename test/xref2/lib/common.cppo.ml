@@ -13,6 +13,7 @@ utop # Resolve.signature Env.empty sg
 
 *)
 
+open Result
 
 let _ = Toploop.set_paths ()
 

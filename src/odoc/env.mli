@@ -19,6 +19,8 @@
     This is the module which does the link between packages, directories and
     {!DocOck}'s needs. *)
 
+open Result
+
 module Accessible_paths : sig
   type t
   val create : directories:Fs.directory list -> t
