@@ -72,7 +72,7 @@ and content env id =
       end else sg' in
     let sg = loop m in
     Module (signature env (id :> Id.Signature.t) sg)
-  | Pack _ -> failwith "Unhandled content"
+  | Pack p -> Pack p
 
 and value_ env parent t =
   let open Value in
