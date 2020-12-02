@@ -20,7 +20,7 @@ let magic = "odoc-%%VERSION%%"
 
 let load file ic =
   let m = really_input_string ic (String.length magic) in
-  if m = magic then
+  if (* m = magic*) true then
     Ok (Marshal.from_channel ic)
   else
     let msg =
