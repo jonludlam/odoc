@@ -32,26 +32,20 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ~/.opam
-          key: ${{ matrix.os }}-${{ matrix.ocaml-version }}-${{ hashFiles('*.opam') }}-opam
+          key: ${{ matrix.os }}-${{ matrix.ocaml-version }}-${{ hashFiles('*.opam') }}
       - name: Setup OCaml ${{ matrix.ocaml-version }}
         uses: avsm/setup-ocaml@v1
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
 
-      # Pull the Mdx submodule
-      # actions/checkout doesn't support that
-      # Also, this is supposed to be temporary
-      - run: git submodule update --init
-
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
-          # Mdx dependencies
-          opam pin add -n ./mdx
-          opam depext -y -t mdx
-          opam install --deps-only mdx
+          # Install Mdx. It is not registered as a dependency because it would
+          # create a cycle. We include it as a submodule but it isn't used here.
+          opam install mdx
           # -
-          opam pin add -n .
+          opam pin add -n odoc .
           opam depext -y -t odoc
           opam install --deps-only -t odoc
 
