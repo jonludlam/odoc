@@ -546,7 +546,7 @@ and u_module_type_expr s t =
   | With (subs, e) -> With (List.map (module_type_substitution s) subs, u_module_type_expr s e)
   | TypeOf { t_desc; t_expansion = Some (Signature e) } -> (
     try
-      TypeOf { t_desc = module_type_type_of_desc s t_desc; t_expansion = Some (Signature (apply_sig_map s e.items e.removed)) }
+      TypeOf { t_desc = module_type_type_of_desc s t_desc; t_expansion = Some (simple_expansion s (Signature e)) }
     with MTOInvalidated ->
       u_module_type_expr s (Signature e))
   | TypeOf { t_expansion = Some (Functor _); _ } -> assert false
