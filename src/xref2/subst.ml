@@ -848,8 +848,9 @@ and removed_items s items =
     items
 
 and signature s sg =
-  let s, items = rename_bound_idents s [] sg.items in
-  apply_sig_map s items sg.removed
+  let s2, items = rename_bound_idents identity [] sg.items in
+  let sg = apply_sig_map s items sg.removed in
+  apply_sig_map s2 sg.items sg.removed
 
 and apply_sig_map s items removed =
   let open Component.Signature in
