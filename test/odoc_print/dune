@@ -1,4 +1,5 @@
 (executable
  (public_name odoc_print)
  (package odoc)
- (libraries odoc_odoc odoc_model_desc cmdliner yojson))
+ (modes byte)
+ (libraries odoc_odoc odoc_model_desc cmdliner yojson odoc.xref_test))
