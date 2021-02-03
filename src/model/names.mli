@@ -82,7 +82,7 @@ module ExtensionName : SimpleName
 
 module ExceptionName : SimpleName
 
-module ValueName : SimpleName
+module ValueName : Name
 
 module ClassName : Name
 

@@ -158,9 +158,7 @@ let rec read_core_type env container ctyp =
 
 let read_value_description env parent vd =
   let open Signature in
-  let open Odoc_model.Names in
-  let name = parenthesise (Ident.name vd.val_id) in
-  let id = `Value(parent, ValueName.of_string name) in
+  let id = Env.find_value_identifier env vd.val_id in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc = Doc_attr.attached container vd.val_attributes in
   let type_ = read_core_type env container vd.val_desc in

@@ -516,8 +516,7 @@ and read_object env fi nm =
 
 let read_value_description env parent id vd =
   let open Signature in
-  let name = parenthesise (Ident.name id) in
-  let id = `Value(parent, Odoc_model.Names.ValueName.of_string name) in
+  let id = Env.find_value_identifier env id in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc = Doc_attr.attached container vd.val_attributes in
     mark_value_description vd;
@@ -914,6 +913,11 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
     match items with
     | Sig_value(id, v, _) :: rest ->
         let vd = read_value_description env parent id v in
+        let shadowed =
+          if Env.is_shadowed env id
+          then { shadowed with s_values = (Ident.name id, (Env.find_value_identifier env id)) :: shadowed.s_values }
+          else shadowed
+        in
           loop (vd :: acc, shadowed) rest
     | Sig_type(id, _, _, _) :: rest
         when Btype.is_row_name (Ident.name id) ->
@@ -986,7 +990,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
 
     | [] -> ({items = List.rev acc; compiled=false}, shadowed)
   in
-    loop ([],{s_modules=[]; s_module_types=[]; s_types=[]; s_classes=[]; s_class_types=[]}) items
+    loop ([],{s_modules=[]; s_module_types=[]; s_values=[];s_types=[]; s_classes=[]; s_class_types=[]}) items
 
 and read_signature env parent (items : Odoc_model.Compat.signature) =
   let env = Env.handle_signature_type_items parent items env in

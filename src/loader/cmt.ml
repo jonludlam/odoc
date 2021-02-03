@@ -41,21 +41,18 @@ let read_core_type env ctyp =
   Cmi.read_type_expr env ctyp.ctyp_type
 
 let rec read_pattern env parent doc pat =
-  let open Odoc_model.Names in
   let open Signature in
     match pat.pat_desc with
     | Tpat_any -> []
     | Tpat_var(id, _) ->
         let open Value in
-        let name = parenthesise (Ident.name id) in
-        let id = `Value(parent, ValueName.of_string name) in
+        let id = Env.find_value_identifier env id in
           Cmi.mark_type_expr pat.pat_type;
           let type_ = Cmi.read_type_expr env pat.pat_type in
             [Value {id; doc; type_}]
     | Tpat_alias(pat, id, _) ->
         let open Value in
-        let name = parenthesise (Ident.name id) in
-        let id = `Value(parent, ValueName.of_string name) in
+        let id = Env.find_value_identifier env id in
           Cmi.mark_type_expr pat.pat_type;
           let type_ = Cmi.read_type_expr env pat.pat_type in
             Value {id; doc; type_} :: read_pattern env parent doc pat
