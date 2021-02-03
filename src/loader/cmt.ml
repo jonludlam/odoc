@@ -25,17 +25,6 @@ open Odoc_model.Lang
 
 module Env = Odoc_model.Ident_env
 
-let parenthesise name =
-  match name with
-  | "asr" | "land" | "lor" | "lsl" | "lsr"
-  | "lxor" | "mod" -> "(" ^ name ^ ")"
-  | _ ->
-    if (String.length name > 0) then
-      match name.[0] with
-      | 'a' .. 'z' | '\223' .. '\246' | '\248' .. '\255' | '_'
-      | 'A' .. 'Z' | '\192' .. '\214' | '\216' .. '\222' -> name
-      | _ -> "(" ^ name ^ ")"
-    else name
 
 let read_core_type env ctyp =
   Cmi.read_type_expr env ctyp.ctyp_type
@@ -138,7 +127,7 @@ let rec read_class_type_field env parent ctf =
   match ctf.ctf_desc with
   | Tctf_val(name, mutable_, virtual_, typ) ->
       let open InstanceVariable in
-      let name = parenthesise name in
+      let name = parenthesise_name name in
       let id = `InstanceVariable(parent, InstanceVariableName.of_string name) in
       let mutable_ = (mutable_ = Mutable) in
       let virtual_ = (virtual_ = Virtual) in
@@ -146,7 +135,7 @@ let rec read_class_type_field env parent ctf =
         Some (InstanceVariable {id; doc; mutable_; virtual_; type_})
   | Tctf_method(name, private_, virtual_, typ) ->
       let open Method in
-      let name = parenthesise name in
+      let name = parenthesise_name name in
       let id = `Method(parent, MethodName.of_string name) in
       let private_ = (private_ = Private) in
       let virtual_ = (virtual_ = Virtual) in
@@ -220,7 +209,7 @@ let rec read_class_field env parent cf =
   match cf.cf_desc with
   | Tcf_val({txt = name; _}, mutable_, _, kind, _) ->
       let open InstanceVariable in
-      let name = parenthesise name in
+      let name = parenthesise_name name in
       let id = `InstanceVariable(parent, InstanceVariableName.of_string name) in
       let mutable_ = (mutable_ = Mutable) in
       let virtual_, type_ =
@@ -233,7 +222,7 @@ let rec read_class_field env parent cf =
         Some (InstanceVariable {id; doc; mutable_; virtual_; type_})
   | Tcf_method({txt = name; _}, private_, kind) ->
       let open Method in
-      let name = parenthesise name in
+      let name = parenthesise_name name in
       let id = `Method(parent, MethodName.of_string name) in
       let private_ = (private_ = Private) in
       let virtual_, type_ =
@@ -360,7 +349,7 @@ let rec read_module_expr env parent label_parent mexpr =
           | Named (id_opt, _, arg) ->
               let name, env =
                 match id_opt with
-                | Some id -> parenthesise (Ident.name id), Env.add_parameter parent id (ParameterName.of_ident id) env
+                | Some id -> parenthesise_name (Ident.name id), Env.add_parameter parent id (ParameterName.of_ident id) env
                 | None -> "_", env
               in
               let id = `Parameter(parent, Odoc_model.Names.ParameterName.of_string name) in
@@ -376,7 +365,7 @@ let rec read_module_expr env parent label_parent mexpr =
           match arg with
           | None -> FunctorParameter.Unit
           | Some arg ->
-              let name = parenthesise (Ident.name id) in
+              let name = parenthesise_name (Ident.name id) in
               let id = `Parameter(parent, ParameterName.of_string name) in
           let arg = Cmti.read_module_type env id label_parent arg in
           Named { FunctorParameter. id; expr = arg; }

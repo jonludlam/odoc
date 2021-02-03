@@ -6,6 +6,8 @@
     name for a module type name.
 *)
 
+val parenthesise_name : string -> string
+
 (** Name is the signature for names that could possibly be internal. Internal
     names occur when we generate items that don't have a path that will be
     exposed in the generated HTML, for example, when we are doing generalised

@@ -364,7 +364,7 @@ let env_of_items parent items env =
       inner rest { env with types; shadowed }
 
     | `Value (t,force_shadowed) :: rest ->
-      let name = Ident.name t in
+      let name = parenthesise_name (Ident.name t) in
       let is_shadowed = force_shadowed || value_name_exists name rest in
         let identifier, shadowed =
         if is_shadowed
