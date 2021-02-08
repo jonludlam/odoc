@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
+open Odoc_model
 open Predefined
 open Names
 
@@ -22,6 +23,8 @@ module P = Paths.Path
 open Typedtree
 
 type type_ident = Paths.Identifier.Path.Type.t
+
+let dummy_parent : Paths.Identifier.LabelParent.t = `Root (`RootPage (PageName.of_string ""), ModuleName.of_string "")
 
 type t =
   { modules : Id.Module.t Ident.tbl;
@@ -194,22 +197,12 @@ let extract_signature_tree_item item =
     | Tsig_include incl ->
       [`Include (extract_signature_type_items (Compat.signature incl.incl_type))]
 
-    | Tsig_attribute
-      {
-        attr_name = { txt = "ocaml.text"; _ };
-        attr_payload =
-          PStr
-            [
-              {
-                pstr_desc = 
-                  Pstr_eval 
-                    ({ pexp_desc = Pexp_constant (Pconst_string ("/*", _)); _ }, _);
-                _
-              };
-            ];
-        _;
-      } -> doc_off_mode_on := not !doc_off_mode_on; []
-
+    | Tsig_attribute attr -> begin
+      match Doc_attr.standalone dummy_parent attr with
+      | Some `Stop -> 
+        doc_off_mode_on := not !doc_off_mode_on; []
+      | _ -> []
+      end
     | Tsig_class cls ->
         List.map
           (fun cld ->
@@ -240,8 +233,7 @@ let extract_signature_tree_item item =
       List.map (fun decl -> `Type (decl.typ_id, false)) ts
 #endif
     | Tsig_typext _
-    | Tsig_exception _ | Tsig_open _
-    | Tsig_attribute _ -> []
+    | Tsig_exception _ | Tsig_open _ -> []
 
 let extract_signature_tree_items sg =
   let open Typedtree in
@@ -301,22 +293,12 @@ let extract_structure_tree_item item =
     | Tstr_include incl ->
         [`Include (extract_signature_type_items (Compat.signature incl.incl_type))]
 
-    | Tstr_attribute
-      {
-        attr_name = { txt = "ocaml.text"; _ };
-        attr_payload =
-          PStr
-            [
-              {
-                pstr_desc = 
-                  Pstr_eval 
-                    ({ pexp_desc = Pexp_constant (Pconst_string ("/*", _)); _ }, _);
-                _
-              };
-            ];
-        _;
-      } -> doc_off_mode_on := not !doc_off_mode_on; []
-
+    | Tstr_attribute attr -> begin
+      match Doc_attr.standalone dummy_parent attr with
+      | Some `Stop ->
+        doc_off_mode_on := not !doc_off_mode_on; []
+      | _ -> []
+      end
     | Tstr_class cls ->
         List.map
 #if OCAML_MAJOR = 4 && OCAML_MINOR = 02
@@ -353,8 +335,7 @@ let extract_structure_tree_item item =
 #endif
     | Tstr_eval _
     | Tstr_primitive _ | Tstr_typext _
-    | Tstr_exception _
-    | Tstr_attribute _ -> []
+    | Tstr_exception _ -> []
 
 let extract_structure_tree_items str =
   let open Typedtree in
