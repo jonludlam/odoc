@@ -273,6 +273,7 @@ let source_files_all =
     ("functor.mli", [ "Functor/index.html" ]);
     ("class.mli", [ "Class/index.html" ]);
     ("stop.mli", [ "Stop/index.html" ]);
+    ("stop_dead_link_doc.mli", [ "Stop_dead_link_doc/index.html" ]);
     ("bugs.ml", [ "Bugs/index.html" ]);
     ("alias.ml", [ "Alias/index.html"; "Alias/X/index.html" ]);
   ]

@@ -31,7 +31,9 @@ type t =
     values: Id.Value.t Ident.tbl;
     classes : Id.Class.t Ident.tbl;
     class_types : Id.ClassType.t Ident.tbl;
-    shadowed : Ident.t list }
+    shadowed : Ident.t list;
+    idents_in_doc_off_mode: Ident.t list
+  }
 
 let empty =
   { modules = Ident.empty;
@@ -41,7 +43,9 @@ let empty =
     values = Ident.empty;
     classes = Ident.empty;
     class_types = Ident.empty;
-    shadowed = [] }
+    shadowed = [];
+    idents_in_doc_off_mode =[]
+  }
 
 (* The boolean is an override for whether it should be hidden - true only for
    items introduced by extended open *)
@@ -153,6 +157,7 @@ let extract_extended_open o =
       extract_extended_open_items o.open_bound_items
 #endif
 
+let doc_off_mode_on = ref false
 
 let extract_signature_tree_item item =
   let open Typedtree in
@@ -188,6 +193,23 @@ let extract_signature_tree_item item =
       [`ModuleType (mtd.mtd_id, false)]
     | Tsig_include incl ->
       [`Include (extract_signature_type_items (Compat.signature incl.incl_type))]
+
+    | Tsig_attribute
+      {
+        attr_name = { txt = "ocaml.text"; _ };
+        attr_payload =
+          PStr
+            [
+              {
+                pstr_desc = 
+                  Pstr_eval 
+                    ({ pexp_desc = Pexp_constant (Pconst_string ("/*", _)); _ }, _);
+                _
+              };
+            ];
+        _;
+      } -> doc_off_mode_on := not !doc_off_mode_on; []
+
     | Tsig_class cls ->
         List.map
           (fun cld ->
@@ -278,6 +300,23 @@ let extract_structure_tree_item item =
         [`ModuleType (mtd.mtd_id, false)]
     | Tstr_include incl ->
         [`Include (extract_signature_type_items (Compat.signature incl.incl_type))]
+
+    | Tstr_attribute
+      {
+        attr_name = { txt = "ocaml.text"; _ };
+        attr_payload =
+          PStr
+            [
+              {
+                pstr_desc = 
+                  Pstr_eval 
+                    ({ pexp_desc = Pexp_constant (Pconst_string ("/*", _)); _ }, _);
+                _
+              };
+            ];
+        _;
+      } -> doc_off_mode_on := not !doc_off_mode_on; []
+
     | Tstr_class cls ->
         List.map
 #if OCAML_MAJOR = 4 && OCAML_MINOR = 02
@@ -355,71 +394,87 @@ let env_of_items parent items env =
     | `Type (t,force_shadowed) :: rest ->
       let name = Ident.name t in
       let is_shadowed = force_shadowed || type_name_exists name rest in
-        let identifier, shadowed =
+        let identifier, shadowed, idents_in_doc_off_mode =
         if is_shadowed
-        then `Type(parent, TypeName.internal_of_string name), t :: env.shadowed
-        else `Type(parent, TypeName.of_string name), env.shadowed
+        then `Type(parent, TypeName.internal_of_string name), t :: env.shadowed, env.idents_in_doc_off_mode
+        else if !doc_off_mode_on
+        then `Type(parent, TypeName.internal_of_string name), env.shadowed, t :: env.idents_in_doc_off_mode
+        else `Type(parent, TypeName.of_string name), env.shadowed, env.idents_in_doc_off_mode
       in
       let types = Ident.add t identifier env.types in      
-      inner rest { env with types; shadowed }
+      inner rest { env with types; shadowed; idents_in_doc_off_mode }
 
     | `Value (t,force_shadowed) :: rest ->
       let name = parenthesise_name (Ident.name t) in
       let is_shadowed = force_shadowed || value_name_exists name rest in
-        let identifier, shadowed =
+      let identifier, shadowed, idents_in_doc_off_mode =
         if is_shadowed
-        then `Value(parent, ValueName.internal_of_string name), t :: env.shadowed
-        else `Value(parent, ValueName.of_string name), env.shadowed
+        then `Value(parent, ValueName.internal_of_string name), t :: env.shadowed, env.idents_in_doc_off_mode
+        else if !doc_off_mode_on
+        then `Value(parent, ValueName.internal_of_string name), env.shadowed, t :: env.idents_in_doc_off_mode
+        else `Value(parent, ValueName.of_string name), env.shadowed, env.idents_in_doc_off_mode
       in
       let values = Ident.add t identifier env.values in      
-      inner rest { env with values; shadowed }
+      inner rest { env with values; shadowed; idents_in_doc_off_mode }
 
     | `ModuleType (t, force_shadowed) :: rest ->
       let name = Ident.name t in
       let is_shadowed = force_shadowed || module_type_name_exists name rest in
-      let identifier, shadowed =
+      let identifier, shadowed, idents_in_doc_off_mode =
         if is_shadowed 
-        then `ModuleType(parent, ModuleTypeName.internal_of_string name), t :: env.shadowed
-        else `ModuleType(parent, ModuleTypeName.of_string name), env.shadowed
+        then `ModuleType(parent, ModuleTypeName.internal_of_string name), t :: env.shadowed, env.idents_in_doc_off_mode
+        else if !doc_off_mode_on
+        then `ModuleType(parent, ModuleTypeName.internal_of_string name), env.shadowed, t :: env.idents_in_doc_off_mode
+        else `ModuleType(parent, ModuleTypeName.of_string name), env.shadowed, env.idents_in_doc_off_mode
       in
       let module_types = Ident.add t identifier env.module_types in
-      inner rest { env with module_types; shadowed }
+      inner rest { env with module_types; shadowed; idents_in_doc_off_mode }
+
     | `Module (t, force_shadowed) :: rest ->
       let name = Ident.name t in
       let is_shadowed = force_shadowed || module_name_exists name rest in
-      let identifier, shadowed =
+      let identifier, shadowed, idents_in_doc_off_mode =
         if is_shadowed 
-        then `Module(parent, ModuleName.internal_of_string name), t :: env.shadowed
-        else `Module(parent, ModuleName.of_string name), env.shadowed
+        then `Module(parent, ModuleName.internal_of_string name), t :: env.shadowed, env.idents_in_doc_off_mode
+        else if !doc_off_mode_on
+        then `Module(parent, ModuleName.internal_of_string name), env.shadowed, t :: env.idents_in_doc_off_mode
+        else `Module(parent, ModuleName.of_string name), env.shadowed, env.idents_in_doc_off_mode
       in
       let path = `Identifier(identifier, is_shadowed) in
       let modules = Ident.add t identifier env.modules in
       let module_paths = Ident.add t path env.module_paths in
-      inner rest { env with modules; module_paths; shadowed }
+      inner rest { env with modules; module_paths; shadowed; idents_in_doc_off_mode }
+
     | `Class (t,t2,t3,t4,force_shadowed) :: rest ->
       let name = Ident.name t in
       let is_shadowed = force_shadowed || class_name_exists name rest in
-      let identifier, shadowed =
+      let identifier, shadowed, idents_in_doc_off_mode =
         if is_shadowed 
-        then `Class(parent, ClassName.internal_of_string name), t :: t2 :: t3 :: t4 :: env.shadowed
-        else `Class(parent, ClassName.of_string name), env.shadowed
+        then `Class(parent, ClassName.internal_of_string name), t :: t2 :: t3 :: t4 :: env.shadowed, env.idents_in_doc_off_mode
+        else if !doc_off_mode_on
+        then `Class(parent, ClassName.internal_of_string name), env.shadowed, t :: t2 :: t3 :: t4 :: env.idents_in_doc_off_mode
+        else `Class(parent, ClassName.of_string name), env.shadowed, env.idents_in_doc_off_mode
       in
       let classes =
         List.fold_right (fun id classes -> Ident.add id identifier classes)
           [t; t2; t3; t4] env.classes in
-      inner rest { env with classes; shadowed }
+      inner rest { env with classes; shadowed; idents_in_doc_off_mode }
+
     | `ClassType (t,t2,t3,force_shadowed) :: rest ->
       let name = Ident.name t in
       let is_shadowed = force_shadowed || class_type_name_exists name rest in
-      let identifier, shadowed =
+      let identifier, shadowed, idents_in_doc_off_mode =
         if is_shadowed 
-        then `ClassType(parent, ClassTypeName.internal_of_string name), t :: t2 :: t3 :: env.shadowed
-        else `ClassType(parent, ClassTypeName.of_string name), env.shadowed
+        then `ClassType(parent, ClassTypeName.internal_of_string name), t :: t2 :: t3 :: env.shadowed, env.idents_in_doc_off_mode
+        else if !doc_off_mode_on
+        then `ClassType(parent, ClassTypeName.internal_of_string name), env.shadowed, t :: t2 :: t3 :: env.idents_in_doc_off_mode
+        else `ClassType(parent, ClassTypeName.of_string name), env.shadowed, env.idents_in_doc_off_mode
       in
       let class_types =
         List.fold_right (fun id class_types -> Ident.add id identifier class_types)
           [t; t2; t3] env.class_types in
-      inner rest { env with class_types; shadowed }
+      inner rest { env with class_types; shadowed; idents_in_doc_off_mode }
+
     | [] -> env
     in inner items env
   
@@ -493,8 +548,7 @@ let find_class_type_identifier env id =
   Ident.find_same id env.class_types
 
 let is_shadowed env id =
-  List.mem id env.shadowed
-
+    List.(rev_append env.shadowed env.idents_in_doc_off_mode |> mem id)
 module Path = struct
 
   let read_module_ident env id =

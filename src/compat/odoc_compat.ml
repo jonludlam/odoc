@@ -18,9 +18,17 @@ struct
 
 end
 
+(**/**)
+  module Simon = 
+  struct
+    let myName = "simon"
+  end
+(**/**)
+
 module Char =
 struct
   include Char
+  include Simon
 
 #if OCAML_MAJOR = 4 && OCAML_MINOR = 02
   let lowercase_ascii = lowercase
@@ -28,4 +36,9 @@ struct
   let lowercase_ascii = lowercase_ascii
 #endif
 
+end
+
+(**/**)
+module Zilla = struct
+  let simon = "zilla"
 end
