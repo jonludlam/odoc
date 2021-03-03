@@ -41,8 +41,8 @@ let not_allowed :
     in_what
 
 let describe_element = function
-  | `Reference (`Simple, _, _) -> "'{!...}' (cross-reference)"
-  | `Reference (`With_text, _, _) -> "'{{!...} ...}' (cross-reference)"
+  | `Reference (_, _, []) -> "'{!...}' (cross-reference)"
+  | `Reference (_, _, _) -> "'{{!...} ...}' (cross-reference)"
   | `Link _ -> "'{{:...} ...}' (external link)"
   | `Heading (level, _, _) ->
       Printf.sprintf "'{%i ...}' (section heading)" level
@@ -95,8 +95,8 @@ type surrounding =
   | `Link of
     string * Odoc_parser.Ast.inline_element Location_.with_location list
   | `Reference of
-    [ `Simple | `With_text ]
-    * string Location_.with_location
+    string with_location option
+    * Odoc_parser.Ast.reference
     * Odoc_parser.Ast.inline_element Location_.with_location list ]
 
 let rec non_link_inline_element :
@@ -126,6 +126,20 @@ let rec non_link_inline_element :
 and non_link_inline_elements status ~surrounding elements =
   List.map (non_link_inline_element status ~surrounding) elements
 
+let unparse_ref old_kind r =
+  let rec inner =
+    let pr = function
+      | (Some ty, ident) -> ty ^"-"^ident
+      | (None, ident) -> ident
+    in
+    function
+    | `Dot (p, Location_.{value; _}) -> Printf.sprintf "%s.%s" (inner p) (pr value)
+    | `Root (Location_.{value; _}) -> pr value
+  in
+  match old_kind with
+  | Some { Location_.value; _ } -> value ^":"^(inner r)
+  | None -> inner r
+
 let rec inline_element :
     status ->
     Odoc_parser.Ast.inline_element with_location ->
@@ -137,9 +151,8 @@ let rec inline_element :
         :> Comment.inline_element with_location )
   | { value = `Styled (style, content); location } ->
       `Styled (style, inline_elements status content) |> Location.at location
-  | { value = `Reference (kind, target, content) as value; location } -> (
-      let { Location.value = target; location = target_location } = target in
-      match Reference.parse status.warnings target_location target with
+  | { value = `Reference (old_kind, target, content) as value; location } -> (
+      match Reference.parse status.warnings location old_kind target with
       | Result.Ok target ->
           let content =
             non_link_inline_elements status ~surrounding:value content
@@ -148,10 +161,9 @@ let rec inline_element :
       | Result.Error error ->
           Error.warning status.warnings error;
           let placeholder =
-            match kind with
-            | `Simple -> `Code_span target
-            | `With_text -> `Styled (`Emphasis, content)
-          in
+            match content with
+            | [] -> `Code_span (unparse_ref old_kind target)
+            | _ -> `Styled (`Emphasis, content) in
           inline_element status (Location.at location placeholder) )
   | { value = `Link (target, content) as value; location } ->
       `Link (target, non_link_inline_elements status ~surrounding:value content)
@@ -172,7 +184,7 @@ let rec nestable_block_element :
   | { value = `Modules modules; location } ->
       let modules =
         List.fold_left
-          (fun acc { Location.value; location } ->
+          (fun acc value ->
             match
               Reference.read_mod_longident status.warnings location value
             with
@@ -192,6 +204,11 @@ let rec nestable_block_element :
 and nestable_block_elements status elements =
   List.map (nestable_block_element status) elements
 
+let rec strip_canonical c : Comment.canonical_path =
+  match c with
+  | `Dot (p, { Location_.value = (_, name); _}) -> `Dot ((strip_canonical p :> Paths.Path.Module.t), name)
+  | `Root ( { Location_.value = (_, name); _}) -> `Root name
+
 let tag :
     location:Location.span ->
     status ->
@@ -204,15 +221,7 @@ let tag :
   match tag with
   | (`Author _ | `Since _ | `Version _ | `Inline | `Open | `Closed) as tag ->
       ok tag
-  | `Canonical { value = s; location = r_location } -> (
-      let path = Reference.read_path_longident r_location s in
-      match path with
-      | Result.Ok path -> ok (`Canonical path)
-      | Result.Error e ->
-          Error.warning status.warnings e;
-          let placeholder = [ `Word "@canonical"; `Space " "; `Code_span s ] in
-          let placeholder = List.map (Location.at location) placeholder in
-          Error (Location.at location (`Paragraph placeholder)) )
+  | `Canonical s -> ok (`Canonical (strip_canonical s))
   | `Deprecated content ->
       ok (`Deprecated (nestable_block_elements status content))
   | `Param (name, content) ->
@@ -420,18 +429,14 @@ let parse_comment ~sections_allowed ~containing_definition ~location ~text =
   }
 
 let parse_reference text =
-  let location =
-    Location_.
-      {
-        file = "";
-        start = { line = 0; column = 0 };
-        end_ = { line = 0; column = String.length text };
-      }
+  let r = Odoc_parser.parse_reference ~text in
+  let (old_kind, target) = r.value in
+  let location = Location_.{ file=""; start = { line=1; column=0; }; end_ = { line=0; column=String.length text } } in
+  let w2 = Error.accumulate_warnings (fun warnings ->
+    Reference.parse warnings location old_kind target)
   in
-  let result =
-    Error.accumulate_warnings (fun warnings ->
-        Reference.parse warnings location text)
-  in
-  match result.Error.value with
-  | Ok x -> Ok x
-  | Error m -> Error (`Msg (Error.to_string m))
+  match w2.value with
+  | Ok res ->
+    Ok { Error.value = res; warnings = w2.warnings @ (r.warnings |> List.map Error.t_of_parser_t) }
+  | Error e ->
+    Error (`Msg (Error.to_string e))

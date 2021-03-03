@@ -80,3 +80,9 @@ let parse_comment ~location ~text =
         Stream.from (fun _token_index -> Some (Lexer.token input lexbuf))
       in
       Syntax.parse warnings token_stream)
+
+let parse_reference ~text =
+  Error.accumulate_warnings (fun warnings ->
+    let location = Location.{ file=""; start = { line=1; column=0; }; end_ = { line=0; column=String.length text } } in
+    Syntax.parse_reference warnings location text
+  )

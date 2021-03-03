@@ -58,6 +58,103 @@ type token_that_always_begins_an_inline_element =
 let _check_subset : token_that_always_begins_an_inline_element -> Token.t =
  fun t -> (t :> Token.t)
 
+exception Invalid_reference
+
+(* The string is scanned right-to-left, because we are interested in right-most
+   hyphens. The tokens are also returned in right-to-left order, because the
+   traversals that consume them prefer to look at the deepest identifier
+   first. *)
+let tokenize_reference :
+    Error.warning_accumulator ->
+    Location.span ->
+    string ->
+    (string option * string) with_location list =
+ fun warnings location s ->
+  let rec scan_identifier started_at open_parenthesis_count index tokens =
+    match s.[index] with
+    | exception Invalid_argument _ ->
+        let identifier, location = identifier_ended started_at index in
+        Location.at location (None, identifier) :: tokens
+    | '-' when open_parenthesis_count = 0 ->
+        let identifier, location = identifier_ended started_at index in
+        scan_kind identifier location index (index - 1) tokens
+    | '.' when open_parenthesis_count = 0 ->
+        let identifier, location = identifier_ended started_at index in
+        scan_identifier index 0 (index - 1)
+          (Location.at location (None, identifier) :: tokens)
+    | ')' ->
+        scan_identifier started_at
+          (open_parenthesis_count + 1)
+          (index - 1) tokens
+    | '(' when open_parenthesis_count > 0 ->
+        scan_identifier started_at
+          (open_parenthesis_count - 1)
+          (index - 1) tokens
+    | _ -> scan_identifier started_at open_parenthesis_count (index - 1) tokens
+  and identifier_ended started_at index =
+    let offset = index + 1 in
+    let length = started_at - offset in
+    let identifier = String.trim (String.sub s offset length) in
+    let location = Location.in_string s ~offset ~length location in
+
+    if identifier = "" then
+      Parse_error.should_not_be_empty ~what:"Identifier in reference" location
+      |> raise Invalid_reference;
+
+    (identifier, location)
+  and scan_kind identifier identifier_location started_at index tokens =
+    match s.[index] with
+    | exception Invalid_argument _ ->
+        let kind, location = kind_ended identifier_location started_at index in
+        Location.at location (kind, identifier) :: tokens
+    | '.' ->
+        let kind, location = kind_ended identifier_location started_at index in
+        scan_identifier index 0 (index - 1)
+          (Location.at location (kind, identifier) :: tokens)
+    | _ ->
+        scan_kind identifier identifier_location started_at (index - 1) tokens
+  and kind_ended identifier_location started_at index =
+    let offset = index + 1 in
+    let length = started_at - offset in
+    let kind = Some (String.sub s offset length) in
+    let location = Location.in_string s ~offset ~length location in
+    let location = Location.span [ location; identifier_location ] in
+    (kind, location)
+  in
+
+  scan_identifier (String.length s) 0 (String.length s - 1) [] |> List.rev
+
+let parse_reference warnings full_location s =
+  let old_kind, s, location =
+    let rec find_old_reference_kind_separator index =
+      match s.[index] with
+      | ':' -> index
+      | ')' -> (
+          match String.rindex_from s index '(' with
+          | index -> find_old_reference_kind_separator (index - 1)
+          | exception (Not_found as exn) -> raise exn )
+      | _ -> find_old_reference_kind_separator (index - 1)
+      | exception Invalid_argument _ -> raise Not_found
+    in
+    match find_old_reference_kind_separator (String.length s - 1) with
+    | index ->
+        let old_kind = String.trim (String.sub s 0 index) in
+        let old_kind_location =
+          Location.set_end_as_offset_from_start index full_location
+        in
+        let s = String.sub s (index + 1) (String.length s - (index + 1)) in
+        let location = Location.nudge_start (index + 1) full_location in
+        (Some (Location.at old_kind_location old_kind), s, location)
+    | exception Not_found -> (None, s, full_location)
+  in
+  let elts = tokenize_reference warnings location s in
+  let rec to_ref = function
+    | [ x ] -> `Root x
+    | x :: xs -> `Dot (to_ref xs, x)
+    | [] -> failwith "Invalid"
+  in
+  (old_kind, to_ref elts)
+
 (* Consumes tokens that make up a single non-link inline element:
 
    - a horizontal space ([`Space], significant in inline elements),
@@ -129,14 +226,14 @@ let rec inline_element :
       junk input;
 
       let r_location = Location.nudge_start (String.length "{!") location in
-      let r = Location.at r_location r in
+      let old_kind, r = parse_reference input.warnings r_location r in
 
-      Location.at location (`Reference (`Simple, r, []))
+      Location.at location (`Reference (old_kind, r, []))
   | `Begin_reference_with_replacement_text r as parent_markup ->
       junk input;
 
       let r_location = Location.nudge_start (String.length "{{!") location in
-      let r = Location.at r_location r in
+      let old_kind, r = parse_reference input.warnings r_location r in
 
       let content, brace_location =
         delimited_inline_element_list ~parent_markup
@@ -152,7 +249,7 @@ let rec inline_element :
           location
         |> Error.warning input.warnings;
 
-      Location.at location (`Reference (`With_text, r, content))
+      Location.at location (`Reference (old_kind, r, content))
   | `Simple_link u ->
       junk input;
 
@@ -659,7 +756,8 @@ let rec block_element_list :
                           (String.length "@canonical ")
                           location
                       in
-                      `Canonical (Location.at r_location s)
+                      let _, r = parse_reference input.warnings r_location s in
+                      `Canonical r
                 in
 
                 let tag = Location.at location (`Tag tag) in
@@ -771,7 +869,10 @@ let rec block_element_list :
         (* TODO Correct locations await a full implementation of {!modules}
            parsing. *)
         let modules =
-          split_string " \t\r\n" s |> List.map (fun r -> Location.at location r)
+          split_string " \t\r\n" s
+          |> List.map (fun r ->
+                 let _, r = parse_reference input.warnings location r in
+                 r)
         in
 
         if modules = [] then

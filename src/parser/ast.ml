@@ -2,7 +2,9 @@ type 'a with_location = 'a Location.with_location
 
 type style = [ `Bold | `Italic | `Emphasis | `Superscript | `Subscript ]
 
-type reference_kind = [ `Simple | `With_text ]
+type reference =
+  [ `Dot of reference * (string option * string) with_location
+  | `Root of (string option * string) with_location ]
 
 type inline_element =
   [ `Space of string
@@ -11,14 +13,14 @@ type inline_element =
   | `Raw_markup of string option * string
   | `Styled of style * inline_element with_location list
   | `Reference of
-    reference_kind * string with_location * inline_element with_location list
+    string with_location option * reference * inline_element with_location list
   | `Link of string * inline_element with_location list ]
 
 type nestable_block_element =
   [ `Paragraph of inline_element with_location list
   | `Code_block of string
   | `Verbatim of string
-  | `Modules of string with_location list
+  | `Modules of reference list
   | `List of
     [ `Unordered | `Ordered ]
     * [ `Light | `Heavy ]
@@ -37,7 +39,7 @@ type tag =
   | `Since of string
   | `Before of string * nestable_block_element with_location list
   | `Version of string
-  | `Canonical of string with_location
+  | `Canonical of reference
   | `Inline
   | `Open
   | `Closed ]

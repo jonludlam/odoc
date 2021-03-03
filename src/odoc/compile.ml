@@ -49,7 +49,7 @@ let parent directories parent_cli_spec =
   match parent_cli_spec with
   | CliParent f ->
       Odoc_model.Semantics.parse_reference f >>= fun r ->
-      find_parent r >>= fun r ->
+      find_parent r.Odoc_model.Error.value >>= fun r ->
       extract_parent r.id >>= fun parent ->
       Env.fetch_page ap r >>= fun page -> Ok (Explicit (parent, page.children))
   | CliPackage package -> Ok (Package (`RootPage (PageName.make_std package)))
@@ -117,7 +117,7 @@ let mld ~parent_spec ~output ~children ~warn_error input =
   List.fold_left
     (fun acc child_str ->
       match (acc, Odoc_model.Semantics.parse_reference child_str) with
-      | Ok acc, Ok r -> Ok (r :: acc)
+      | Ok acc, Ok r -> Ok (r.Odoc_model.Error.value :: acc)
       | Error m, _ -> Error m
       | _, Error (`Msg m) ->
           Error (`Msg ("Failed to parse child reference: " ^ m))
