@@ -128,11 +128,14 @@ let tokenize location s =
         scan_identifier started_at
           (open_parenthesis_count - 1)
           (index - 1) tokens
+    | '"' -> 
+        scan_identifier started_at open_parenthesis_count (String.rindex_from s (index-1) '"' - 1) tokens
     | _ -> scan_identifier started_at open_parenthesis_count (index - 1) tokens
   and identifier_ended started_at index =
     let offset = index + 1 in
     let length = started_at - offset in
     let identifier = String.trim (String.sub s offset length) in
+    let identifier = Astring.String.cuts ~sep:"\"" identifier |> String.concat "" in
     let location = Location_.in_string s ~offset ~length location in
 
     if identifier = "" then
