@@ -138,12 +138,37 @@ let test ?(location = { Location.line = 1; column = 0 }) str =
 
 let%expect_test _ =
   let module T = struct
-    let empty = test ""; [%expect "((output ()) (warnings ()))"]
-    let space = test " "; [%expect "((output ()) (warnings ()))"]
-    let two_spaces = test "  "; [%expect "((output ()) (warnings ()))"]
-    let tab = test "\t"; [%expect "((output ()) (warnings ()))"]
-    let mixed_space = test " \t \t"; [%expect "((output ()) (warnings ()))"]
-    let newline = test "\n"; [%expect "((output ()) (warnings ()))"]
-    let blank_line = test "\n\n"; [%expect "((output ()) (warnings ()))"]
-    let cf_lf = test "\r\n"; [%expect "((output ()) (warnings ()))"] 
-  end [@ocaml.warning "-32"] in ()
+    let empty =
+      test "";
+      [%expect "((output ()) (warnings ()))"]
+
+    let space =
+      test " ";
+      [%expect "((output ()) (warnings ()))"]
+
+    let two_spaces =
+      test "  ";
+      [%expect "((output ()) (warnings ()))"]
+
+    let tab =
+      test "\t";
+      [%expect "((output ()) (warnings ()))"]
+
+    let mixed_space =
+      test " \t \t";
+      [%expect "((output ()) (warnings ()))"]
+
+    let newline =
+      test "\n";
+      [%expect "((output ()) (warnings ()))"]
+
+    let blank_line =
+      test "\n\n";
+      [%expect "((output ()) (warnings ()))"]
+
+    let cf_lf =
+      test "\r\n";
+      [%expect "((output ()) (warnings ()))"]
+  end
+  [@ocaml.warning "-32"] in
+  ()
