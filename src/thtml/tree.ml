@@ -16,6 +16,8 @@
 
 module Html = Tyxml.Html
 
+let hdr = ref None
+
 type uri = Absolute of string | Relative of string
 
 let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
@@ -51,13 +53,16 @@ let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
 
     let support_files_uri = resolve_relative_uri "./" in
 
-    let odoc_css_uri = theme_uri ^ "odoc.css" in
+    let odoc_css_uri = theme_uri ^ "tailwind.css" in
+    let odoc_css_extra = theme_uri ^ "extra.css" in
+
     let highlight_js_uri = support_files_uri ^ "highlight.pack.js" in
 
     Html.head
       (Html.title (Html.txt title_string))
       [
         Html.link ~rel:[ `Stylesheet ] ~href:odoc_css_uri ();
+        Html.link ~rel:[ `Stylesheet ] ~href:odoc_css_extra ();
         Html.meta ~a:[ Html.a_charset "utf-8" ] ();
         Html.meta
           ~a:[ Html.a_name "generator"; Html.a_content "odoc %%VERSION%%" ]
@@ -82,7 +87,14 @@ let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
     if has_parent then
       let l =
         [
-          Html.a ~a:[ Html.a_href up_href ] [ Html.txt "Up" ]; Html.txt " – ";
+          Html.a
+            ~a:
+              [
+                Html.a_href up_href;
+                Html.a_class [ "cursor-pointer"; "text-blue-500" ];
+              ]
+            [ Html.txt "Up" ];
+          Html.txt " – ";
         ]
         @
         (* Create breadcrumbs *)
@@ -100,21 +112,78 @@ let page_creator ?(theme_uri = Relative "./") ~url name header toc content =
              ?sep:(Some [ space; Html.entity "#x00BB"; space ])
              ~f:(fun (n, addr, lbl) ->
                if n > 0 then
-                 [ [ Html.a ~a:[ Html.a_href addr ] [ Html.txt lbl ] ] ]
+                 [
+                   [
+                     Html.a
+                       ~a:
+                         [
+                           Html.a_href addr;
+                           Html.a_class [ "cursor-pointer"; "text-blue-500" ];
+                         ]
+                       [ Html.txt lbl ];
+                   ];
+                 ]
                else [ [ Html.txt lbl ] ])
         |> List.flatten
       in
-      [ Html.nav ~a:[ Html.a_class [ "odoc-nav" ] ] l ]
+      [ Html.nav ~a:[ Html.a_class [ "odoc-nav"; "font-sans" ] ] l ]
     else []
   in
-
-  let body =
-    breadcrumbs
-    @ [ Html.header ~a:[ Html.a_class [ "odoc-preamble" ] ] header ]
-    @ toc
-    @ [ Html.div ~a:[ Html.a_class [ "odoc-content" ] ] content ]
+  let toc_div =
+    Html.div
+      ~a:
+        [
+          Html.a_class
+            [
+              "flex";
+              "flex-col";
+              "w-64";
+              "border-r";
+              "border-gray-200";
+              "pt-5";
+              "pb-4";
+              "bg-gray-100";
+            ];
+        ]
+      toc
   in
-  Html.html head (Html.body ~a:[ Html.a_class [ "odoc" ] ] body)
+  let hdr = match !hdr with None -> [] | Some x -> [ Html.Unsafe.data x ] in
+  let main_div =
+    Html.div
+      ~a:
+        [
+          Html.a_class
+            [
+              "flex-col";
+              "flex-auto";
+              "px-20";
+              "overflow-y-auto";
+              "max-w-4xl";
+              "text-gray-700";
+            ];
+        ]
+      (breadcrumbs @ hdr
+      @ [ Html.header ~a:[ Html.a_class [ "odoc-preamble" ] ] header ]
+      @ [ Html.div ~a:[ Html.a_class [ "odoc-content" ] ] content ])
+  in
+  let body = [ toc_div; main_div ] in
+  Html.html head
+    (Html.body ~a:[ Html.a_class [] ]
+       [
+         Html.div
+           ~a:
+             [
+               Html.a_class
+                 [
+                   "h-screen";
+                   "flex";
+                   "overflow-hidden";
+                   "bg-white";
+                   "font-serif";
+                 ];
+             ]
+           body;
+       ])
 
 let make ?theme_uri ~indent ~url ~header ~toc title content children =
   let filename = Link.Path.as_filename url in

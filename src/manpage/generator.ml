@@ -427,7 +427,7 @@ let rec documentedSrc (l : DocumentedSrc.t) =
           let l = list ~sep:break (List.map f lines) in
           indent 2 (break ++ l) ++ break_if_nonempty rest ++ continue rest)
 
-and subpage { title = _; header = _; items; url = _ } =
+and subpage { title = _; page_type = _; preamble = _; items; url = _ } =
   let content = items in
   let surround body =
     if content = [] then sp else indent 2 (break ++ body) ++ break
@@ -472,9 +472,25 @@ let on_sub subp =
   | `Page p -> if Link.should_inline p.Subpage.content.url then Some 1 else None
   | `Include incl -> if inline_subpage incl.Include.status then Some 0 else None
 
-let page { Page.title; header; items = i; url } =
+let format_title page_type name =
+  let open Odoc_document in
+  let mk title =
+    let level = 0 and label = None in
+    [ Item.Heading { level; label; title } ]
+  in
+  let prefix s =
+    mk
+      (Inline.{ attr = []; desc = Text (s ^ " ") }
+       :: Codefmt.code (Codefmt.txt name))
+  in
+  match page_type with
+  | Some x -> prefix x
+  | None -> mk [ Inline.{ attr = []; desc = Text name } ]
+
+let page { Page.title; page_type; preamble; items = i; url } =
   reset_heading ();
-  let header = Shift.compute ~on_sub header in
+  let t = format_title page_type title in
+  let header = Shift.compute ~on_sub (t @ preamble) in
   let i = Shift.compute ~on_sub i in
   macro "TH" {|%s 3 "" "Odoc" "OCaml Library"|} title
   ++ macro "SH" "Name"

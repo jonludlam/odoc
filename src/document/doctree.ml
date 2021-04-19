@@ -91,7 +91,7 @@ end = struct
       | Declaration { content; _ } -> walk_documentedsrc content
       | Include i -> walk_items i.content.content)
 
-  let compute (p : Page.t) = walk_items (p.header @ p.items)
+  let compute (p : Page.t) = walk_items (p.preamble @ p.items)
 end
 
 module Shift = struct
@@ -133,7 +133,7 @@ module Shift = struct
         let content =
           {
             page with
-            header = walk_item ~on_sub shift_state page.header;
+            preamble = walk_item ~on_sub shift_state page.preamble;
             items = walk_item ~on_sub shift_state page.items;
           }
         in

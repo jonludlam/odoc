@@ -20,10 +20,18 @@ type args = {
   semantic_uris : bool;
   closed_details : bool;
   indent : bool;
+  header : Fpath.t option;
   theme_uri : Odoc_thtml.Tree.uri;
 }
 
 let render args page =
+  (match args.header with
+  | Some f ->
+      let ic = open_in (Fpath.to_string f) in
+      let s = really_input_string ic (in_channel_length ic) in
+      close_in ic;
+      Odoc_thtml.Tree.hdr := Some s
+  | None -> ());
   Odoc_thtml.Link.semantic_uris := args.semantic_uris;
   Odoc_thtml.Tree.open_details := not args.closed_details;
   Odoc_thtml.Generator.render ~theme_uri:args.theme_uri ~indent:args.indent page

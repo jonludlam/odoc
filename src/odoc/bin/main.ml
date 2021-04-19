@@ -445,6 +445,10 @@ module Odoc_thtml = Make_renderer (struct
     let doc = "Format the output HTML files with indentation" in
     Arg.(value & flag (info ~doc [ "indent" ]))
 
+  let header =
+    let doc = "Header to put at the start of the body" in
+    Arg.(value & opt file "" & info ~doc [ "header" ])
+
   (* Very basic validation and normalization for URI paths. *)
   let convert_uri : Odoc_thtml.Tree.uri Arg.converter =
     let parser str =
@@ -477,10 +481,21 @@ module Odoc_thtml = Make_renderer (struct
       value & opt convert_uri default & info ~docv:"URI" ~doc [ "theme-uri" ])
 
   let extra_args =
-    let f semantic_uris closed_details indent theme_uri =
-      { Thtml_page.semantic_uris; closed_details; theme_uri; indent }
+    let f semantic_uris closed_details indent theme_uri header =
+      let header =
+        match header with
+        | "" -> None
+        | x -> (
+            match Fpath.of_string x with
+            | Ok p -> Some p
+            | Error (`Msg m) ->
+                Format.eprintf "Invalid filename: %s (%s)" x m;
+                exit 1)
+      in
+      { Thtml_page.semantic_uris; closed_details; theme_uri; indent; header }
     in
-    Term.(const f $ semantic_uris $ closed_details $ indent $ theme_uri)
+    Term.(
+      const f $ semantic_uris $ closed_details $ indent $ theme_uri $ header)
 end)
 
 module Html_fragment : sig

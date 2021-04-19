@@ -457,6 +457,21 @@ end
 module Page = struct
   let on_sub = function `Page _ -> Some 1 | `Include _ -> None
 
+  let format_title page_type name =
+    let open Odoc_document in
+    let mk title =
+      let level = 0 and label = None in
+      [ Item.Heading { level; label; title } ]
+    in
+    let prefix s =
+      mk
+        (Inline.{ attr = []; desc = Text (s ^ " ") }
+         :: Codefmt.code (Codefmt.txt name))
+    in
+    match page_type with
+    | Some x -> prefix x
+    | None -> mk [ Inline.{ attr = []; desc = Text name } ]
+
   let rec subpage ~with_children (p : Subpage.t) =
     if Link.should_inline p.status p.content.url then []
     else [ page ~with_children p.content ]
@@ -466,10 +481,12 @@ module Page = struct
     @@ List.map (subpage ~with_children)
     @@ Doctree.Subpages.compute i
 
-  and page ~with_children ({ Page.title = _; header; items = i; url } as p) =
+  and page ~with_children
+      ({ Page.title; page_type; preamble; items = i; url } as p) =
     let i = Doctree.Shift.compute ~on_sub i in
     let subpages = subpages ~with_children p in
-    let header = items header in
+    let t = format_title page_type title in
+    let header = items (t @ preamble) in
     let content = items i in
     let page = Doc.make ~with_children url (header @ content) subpages in
     page

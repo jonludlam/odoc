@@ -150,7 +150,8 @@ end =
 and Page : sig
   type t = {
     title : string;
-    header : Item.t list;
+    page_type : string option;
+    preamble : Item.t list;
     items : Item.t list;
     url : Url.Path.t;
   }

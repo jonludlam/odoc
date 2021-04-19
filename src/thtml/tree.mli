@@ -17,6 +17,8 @@
 open Odoc_document
 module Html = Tyxml.Html
 
+val hdr : string option ref
+
 (** Supported languages for printing code parts. *)
 
 type uri =

@@ -22,24 +22,14 @@ module O = Codefmt
 open O.Infix
 
 (* TODO: Title formatting should be a renderer decision *)
-let format_title kind name =
-  let mk title =
-    let level = 0 and label = None in
-    [ Item.Heading { level; label; title } ]
-  in
-  let prefix s = mk (inline (Text (s ^ " ")) :: O.code (O.txt name)) in
-  match kind with
-  | `Mod -> prefix "Module"
-  | `Arg -> prefix "Parameter"
-  | `Mty -> prefix "Module type"
-  | `Cty -> prefix "Class type"
-  | `Class -> prefix "Class"
-  | `Page -> mk [ inline @@ Text name ]
 
-let make_name_from_path { Url.Path.name; parent; _ } =
-  match parent with
-  | None -> name
-  | Some p -> Printf.sprintf "%s.%s" p.name name
+let get_type = function
+  | `Mod -> Some "Module"
+  | `Arg -> Some "Parameter"
+  | `Mty -> Some "Module type"
+  | `Cty -> Some "Class type"
+  | `Class -> Some "Class"
+  | `Page -> None
 
 let label t ppf =
   match t with
@@ -92,12 +82,11 @@ let prepare_preamble comment items =
   in
   (Comment.standalone preamble, Comment.standalone first_comment @ items)
 
-let make_expansion_page title kind url ?(header_title = make_name_from_path url)
-    comments items =
+let make_expansion_page title kind url comments items =
   let comment = List.concat comments in
   let preamble, items = prepare_preamble comment items in
-  let header = format_title kind header_title @ preamble in
-  { Page.title; header; items; url }
+  let page_type = get_type kind in
+  { Page.title; page_type; preamble; items; url }
 
 include Generator_signatures
 
@@ -1582,7 +1571,7 @@ module Make (Syntax : SYNTAX) = struct
         | Module sign -> signature sign
         | Pack packed -> ([], pack packed)
       in
-      make_expansion_page title ~header_title:title `Mod url [ unit_doc ] items
+      make_expansion_page title `Mod url [ unit_doc ] items
 
     let page (t : Odoc_model.Lang.Page.t) : Page.t =
       let name =
@@ -1591,8 +1580,8 @@ module Make (Syntax : SYNTAX) = struct
       in
       let title = Odoc_model.Names.PageName.to_string name in
       let url = Url.Path.from_identifier t.name in
-      let header, items = Sectioning.docs t.content in
-      { Page.title; header; items; url }
+      let preamble, items = Sectioning.docs t.content in
+      { Page.title; page_type = None; preamble; items; url }
   end
 
   include Page
