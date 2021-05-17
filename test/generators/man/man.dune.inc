@@ -895,10 +895,6 @@
     (progn
      (system "cat 'man.gen/test/Ocamlary.Aliases.P2.3o'")))
    (with-stdout-to
-    Ocamlary.Aliases.P2.Z.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Ocamlary.Aliases.P2.Z.3o'")))
-   (with-stdout-to
     Ocamlary.M.3o.gen
     (progn
      (system "cat 'man.gen/test/Ocamlary.M.3o'")))
@@ -1513,13 +1509,6 @@
   (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.P2.3o Ocamlary.Aliases.P2.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Ocamlary.Aliases.P2.Z.3o Ocamlary.Aliases.P2.Z.3o.gen)))
 
 (rule
  (alias runtest)

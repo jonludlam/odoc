@@ -2059,10 +2059,6 @@
     (progn
      (system "cat 'html.gen/test/Ocamlary/Aliases/P2/index.html'")))
    (with-stdout-to
-    Ocamlary.Aliases.P2.Z.index.html.gen
-    (progn
-     (system "cat 'html.gen/test/Ocamlary/Aliases/P2/Z/index.html'")))
-   (with-stdout-to
     Ocamlary.module-type-M.index.html.gen
     (progn
      (system "cat 'html.gen/test/Ocamlary/module-type-M/index.html'")))
@@ -3770,15 +3766,6 @@
   (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.P2.index.html Ocamlary.Aliases.P2.index.html.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff
-   Ocamlary.Aliases.P2.Z.index.html
-   Ocamlary.Aliases.P2.Z.index.html.gen)))
 
 (rule
  (alias runtest)

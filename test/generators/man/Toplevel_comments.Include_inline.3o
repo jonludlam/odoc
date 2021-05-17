@@ -8,6 +8,9 @@ test\.Toplevel_comments\.Include_inline
 \fBModule Toplevel_comments\.Include_inline\fR
 .in 
 .sp 
+.fi 
+Doc of T, part 2\.
+.nf 
 .SH Documentation
 .sp 
 .nf 

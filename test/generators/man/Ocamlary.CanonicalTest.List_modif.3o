@@ -11,9 +11,6 @@ test\.Ocamlary\.CanonicalTest\.List_modif
 .SH Documentation
 .sp 
 .nf 
-.fi 
-.nf 
-.sp 
 \f[CB]type\fR 'c t = \f[CB]'c\fR Base\.List\.t
 .sp 
 \f[CB]val\fR id : \f[CB]'a\fR t \f[CB]\->\fR \f[CB]'a\fR t

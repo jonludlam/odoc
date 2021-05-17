@@ -11,9 +11,6 @@ test\.Ocamlary\.Aliases\.Foo\.D
 .SH Documentation
 .sp 
 .nf 
-.fi 
-.nf 
-.sp 
 \f[CB]type\fR t
 .sp 
 \f[CB]val\fR id : t \f[CB]\->\fR t

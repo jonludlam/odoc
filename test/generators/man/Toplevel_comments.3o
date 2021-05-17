@@ -27,6 +27,11 @@ Doc of T, part 1\.
 .nf 
 .sp 
 \f[CB]module\fR Include_inline : \f[CB]sig\fR \.\.\. \f[CB]end\fR
+.fi 
+.br 
+.ti +2
+Doc of T, part 2\.
+.nf 
 .sp 
 \f[CB]module\fR Include_inline' : \f[CB]sig\fR \.\.\. \f[CB]end\fR
 .fi 
@@ -41,6 +46,11 @@ Doc of Include_inline, part 1\.
 \f[CB]type\fR t
 .br 
 \f[CB]end\fR
+.fi 
+.br 
+.ti +2
+Doc of T, part 2\.
+.nf 
 .sp 
 \f[CB]module\fR \f[CB]type\fR Include_inline_T' = \f[CB]sig\fR
 .br 
