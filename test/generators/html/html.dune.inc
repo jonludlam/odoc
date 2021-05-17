@@ -17,16 +17,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Alias.index.html Alias.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Alias.Foo__X.index.html Alias.Foo__X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Alias.X.index.html Alias.X.index.html.gen)))
 
@@ -41,6 +47,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs.index.html Bugs.index.html.gen)))
 
@@ -71,11 +79,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs_post_406.index.html Bugs_post_406.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Bugs_post_406.class-type-let_open.index.html
@@ -83,6 +95,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Bugs_post_406.class-let_open'.index.html
@@ -99,6 +113,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs_pre_410.index.html Bugs_pre_410.index.html.gen)))
 
@@ -149,11 +165,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Class.index.html Class.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-type-empty.index.html
@@ -161,6 +181,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-type-mutually.index.html
@@ -168,6 +190,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-type-recursive.index.html
@@ -175,6 +199,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-mutually'.index.html
@@ -182,6 +208,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-recursive'.index.html
@@ -189,6 +217,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-type-empty_virtual.index.html
@@ -196,6 +226,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-empty_virtual'.index.html
@@ -203,6 +235,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-type-polymorphic.index.html
@@ -210,6 +244,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Class.class-polymorphic'.index.html
@@ -226,6 +262,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff External.index.html External.index.html.gen)))
 
@@ -289,11 +327,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.index.html Functor.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.module-type-S.index.html
@@ -301,6 +343,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.module-type-S1.index.html
@@ -308,6 +352,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.module-type-S1.argument-1-_.index.html
@@ -315,11 +361,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F1.index.html Functor.F1.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.F1.argument-1-Arg.index.html
@@ -327,11 +377,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F2.index.html Functor.F2.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.F2.argument-1-Arg.index.html
@@ -339,11 +393,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F3.index.html Functor.F3.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.F3.argument-1-Arg.index.html
@@ -351,11 +409,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F4.index.html Functor.F4.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor.F4.argument-1-Arg.index.html
@@ -363,6 +425,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F5.index.html Functor.F5.index.html.gen)))
 
@@ -407,11 +471,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor2.index.html Functor2.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor2.module-type-S.index.html
@@ -419,11 +487,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor2.X.index.html Functor2.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor2.X.argument-1-Y.index.html
@@ -431,6 +503,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor2.X.argument-2-Z.index.html
@@ -438,6 +512,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor2.module-type-XF.index.html
@@ -445,6 +521,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor2.module-type-XF.argument-1-Y.index.html
@@ -452,6 +530,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Functor2.module-type-XF.argument-2-Z.index.html
@@ -497,11 +577,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include.index.html Include.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include.module-type-Not_inlined.index.html
@@ -509,6 +593,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include.module-type-Inlined.index.html
@@ -516,6 +602,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include.module-type-Not_inlined_and_closed.index.html
@@ -523,6 +611,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include.module-type-Not_inlined_and_opened.index.html
@@ -530,6 +620,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include.module-type-Inherent_Module.index.html
@@ -537,6 +629,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include.module-type-Dorminant_Module.index.html
@@ -569,21 +663,29 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include2.index.html Include2.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include2.X.index.html Include2.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include2.Y.index.html Include2.Y.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include2.Y_include_synopsis.index.html
@@ -591,6 +693,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include2.Y_include_doc.index.html
@@ -618,11 +722,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include_sections.index.html Include_sections.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Include_sections.module-type-Something.index.html
@@ -639,6 +747,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Interlude.index.html Interlude.index.html.gen)))
 
@@ -669,26 +779,36 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.index.html Labels.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.A.index.html Labels.A.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.module-type-S.index.html Labels.module-type-S.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.class-c.index.html Labels.class-c.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.class-type-cs.index.html Labels.class-type-cs.index.html.gen)))
 
@@ -703,6 +823,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Markup.index.html Markup.index.html.gen)))
 
@@ -717,6 +839,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff mld.html mld.html.gen)))
 
@@ -803,16 +927,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Module.index.html Module.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Module.module-type-S.index.html Module.module-type-S.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S.M.index.html
@@ -820,6 +950,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S2.index.html
@@ -827,6 +959,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S2.M.index.html
@@ -834,6 +968,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S3.index.html
@@ -841,6 +977,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S3.M.index.html
@@ -848,6 +986,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S4.index.html
@@ -855,6 +995,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S4.M.index.html
@@ -862,6 +1004,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S5.index.html
@@ -869,6 +1013,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S5.M.index.html
@@ -876,6 +1022,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S6.index.html
@@ -883,6 +1031,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S6.M.index.html
@@ -890,11 +1040,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Module.M'.index.html Module.M'.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S7.index.html
@@ -902,6 +1056,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S8.index.html
@@ -909,6 +1065,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Module.module-type-S9.index.html
@@ -916,11 +1074,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Module.Mutually.index.html Module.Mutually.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Module.Recursive.index.html Module.Recursive.index.html.gen)))
 
@@ -963,26 +1125,36 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.index.html Nested.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.X.index.html Nested.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.module-type-Y.index.html Nested.module-type-Y.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.F.index.html Nested.F.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Nested.F.argument-1-Arg1.index.html
@@ -990,6 +1162,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Nested.F.argument-2-Arg2.index.html
@@ -997,11 +1171,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.class-z.index.html Nested.class-z.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Nested.class-inherits.index.html
@@ -1908,16 +2086,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.index.html Ocamlary.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Empty.index.html Ocamlary.Empty.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-Empty.index.html
@@ -1925,6 +2109,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MissingComment.index.html
@@ -1932,6 +2118,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-EmptySig.index.html
@@ -1939,6 +2127,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-EmptySigAlias.index.html
@@ -1946,6 +2136,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.ModuleWithSignature.index.html
@@ -1953,6 +2145,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.ModuleWithSignatureAlias.index.html
@@ -1960,11 +2154,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.One.index.html Ocamlary.One.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SigForMod.index.html
@@ -1972,6 +2170,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SigForMod.Inner.index.html
@@ -1979,6 +2179,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SigForMod.Inner.module-type-Empty.index.html
@@ -1986,6 +2188,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.index.html
@@ -1993,6 +2197,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.module-type-SubSigA.index.html
@@ -2000,6 +2206,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.module-type-SubSigA.SubSigAMod.index.html
@@ -2007,6 +2215,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.module-type-SubSigB.index.html
@@ -2014,6 +2224,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.module-type-EmptySig.index.html
@@ -2021,6 +2233,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.module-type-One.index.html
@@ -2028,6 +2242,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-SuperSig.module-type-SuperSig.index.html
@@ -2035,11 +2251,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Buffer.index.html Ocamlary.Buffer.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.index.html
@@ -2047,6 +2267,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.InnerModuleA.index.html
@@ -2054,6 +2276,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.InnerModuleA.InnerModuleA'.index.html
@@ -2061,6 +2285,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2068,6 +2294,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.module-type-InnerModuleTypeA.index.html
@@ -2075,6 +2303,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-COLLECTION.index.html
@@ -2082,6 +2312,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-COLLECTION.InnerModuleA.index.html
@@ -2089,6 +2321,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-COLLECTION.InnerModuleA.InnerModuleA'.index.html
@@ -2096,6 +2330,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-COLLECTION.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2103,6 +2339,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-COLLECTION.module-type-InnerModuleTypeA.index.html
@@ -2110,6 +2348,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.index.html
@@ -2117,6 +2357,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.argument-1-C.index.html
@@ -2124,6 +2366,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.argument-1-C.InnerModuleA.index.html
@@ -2131,6 +2375,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.argument-1-C.InnerModuleA.InnerModuleA'.index.html
@@ -2138,6 +2384,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.argument-1-C.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2145,6 +2393,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.argument-1-C.module-type-InnerModuleTypeA.index.html
@@ -2152,6 +2402,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.InnerModuleA.index.html
@@ -2159,6 +2411,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.InnerModuleA.InnerModuleA'.index.html
@@ -2166,6 +2420,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2173,6 +2429,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.module-type-InnerModuleTypeA.index.html
@@ -2180,6 +2438,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MMM.index.html
@@ -2187,6 +2447,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MMM.C.index.html
@@ -2194,6 +2456,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MMM.C.InnerModuleA.index.html
@@ -2201,6 +2465,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MMM.C.InnerModuleA.InnerModuleA'.index.html
@@ -2208,6 +2474,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MMM.C.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2215,6 +2483,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-MMM.C.module-type-InnerModuleTypeA.index.html
@@ -2222,6 +2492,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-RECOLLECTION.index.html
@@ -2229,6 +2501,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-RecollectionModule.index.html
@@ -2236,6 +2510,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-RecollectionModule.InnerModuleA.index.html
@@ -2243,6 +2519,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-RecollectionModule.InnerModuleA.InnerModuleA'.index.html
@@ -2250,6 +2528,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-RecollectionModule.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2257,6 +2537,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-RecollectionModule.module-type-InnerModuleTypeA.index.html
@@ -2264,6 +2546,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-A.index.html
@@ -2271,6 +2555,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-A.Q.index.html
@@ -2278,6 +2564,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-A.Q.InnerModuleA.index.html
@@ -2285,6 +2573,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-A.Q.InnerModuleA.InnerModuleA'.index.html
@@ -2292,6 +2582,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-A.Q.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2299,6 +2591,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-A.Q.module-type-InnerModuleTypeA.index.html
@@ -2306,6 +2600,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-B.index.html
@@ -2313,6 +2609,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-B.Q.index.html
@@ -2320,6 +2618,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-B.Q.InnerModuleA.index.html
@@ -2327,6 +2627,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-B.Q.InnerModuleA.InnerModuleA'.index.html
@@ -2334,6 +2636,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-B.Q.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2341,6 +2645,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-B.Q.module-type-InnerModuleTypeA.index.html
@@ -2348,6 +2654,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-C.index.html
@@ -2355,6 +2663,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-C.Q.index.html
@@ -2362,6 +2672,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-C.Q.InnerModuleA.index.html
@@ -2369,6 +2681,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-C.Q.InnerModuleA.InnerModuleA'.index.html
@@ -2376,6 +2690,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-C.Q.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2383,6 +2699,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-C.Q.module-type-InnerModuleTypeA.index.html
@@ -2390,6 +2708,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.FunctorTypeOf.index.html
@@ -2397,6 +2717,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.FunctorTypeOf.argument-1-Collection.index.html
@@ -2404,6 +2726,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.FunctorTypeOf.argument-1-Collection.InnerModuleA.index.html
@@ -2411,6 +2735,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.FunctorTypeOf.argument-1-Collection.InnerModuleA.InnerModuleA'.index.html
@@ -2418,6 +2744,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.FunctorTypeOf.argument-1-Collection.InnerModuleA.module-type-InnerModuleTypeA'.index.html
@@ -2425,6 +2753,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.FunctorTypeOf.argument-1-Collection.module-type-InnerModuleTypeA.index.html
@@ -2432,6 +2762,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-IncludeModuleType.index.html
@@ -2439,6 +2771,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-ToInclude.index.html
@@ -2446,6 +2780,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-ToInclude.IncludedA.index.html
@@ -2453,6 +2789,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-ToInclude.module-type-IncludedB.index.html
@@ -2460,11 +2798,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.IncludedA.index.html Ocamlary.IncludedA.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-IncludedB.index.html
@@ -2472,11 +2814,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.ExtMod.index.html Ocamlary.ExtMod.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.class-empty_class.index.html
@@ -2484,6 +2830,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.class-one_method_class.index.html
@@ -2491,6 +2839,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.class-two_method_class.index.html
@@ -2498,6 +2848,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.class-param_class.index.html
@@ -2505,11 +2857,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep1.index.html Ocamlary.Dep1.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep1.module-type-S.index.html
@@ -2517,6 +2873,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep1.module-type-S.class-c.index.html
@@ -2524,16 +2882,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep1.X.index.html Ocamlary.Dep1.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep1.X.Y.index.html Ocamlary.Dep1.X.Y.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep1.X.Y.class-c.index.html
@@ -2541,11 +2905,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep2.index.html Ocamlary.Dep2.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep2.argument-1-Arg.index.html
@@ -2553,6 +2921,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep2.argument-1-Arg.X.index.html
@@ -2560,21 +2930,29 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep2.A.index.html Ocamlary.Dep2.A.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep3.index.html Ocamlary.Dep3.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep4.index.html Ocamlary.Dep4.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep4.module-type-T.index.html
@@ -2582,6 +2960,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep4.module-type-S.index.html
@@ -2589,6 +2969,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep4.module-type-S.X.index.html
@@ -2596,6 +2978,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep4.module-type-S.Y.index.html
@@ -2603,16 +2987,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep4.X.index.html Ocamlary.Dep4.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep5.index.html Ocamlary.Dep5.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep5.argument-1-Arg.index.html
@@ -2620,6 +3010,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep5.argument-1-Arg.module-type-S.index.html
@@ -2627,6 +3019,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep5.argument-1-Arg.module-type-S.Y.index.html
@@ -2634,16 +3028,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep5.Z.index.html Ocamlary.Dep5.Z.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep6.index.html Ocamlary.Dep6.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep6.module-type-S.index.html
@@ -2651,6 +3051,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep6.module-type-T.index.html
@@ -2658,6 +3060,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep6.module-type-T.module-type-R.index.html
@@ -2665,6 +3069,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep6.module-type-T.Y.index.html
@@ -2672,11 +3078,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep6.X.index.html Ocamlary.Dep6.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep6.X.module-type-R.index.html
@@ -2684,16 +3094,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep6.X.Y.index.html Ocamlary.Dep6.X.Y.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep7.index.html Ocamlary.Dep7.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep7.argument-1-Arg.index.html
@@ -2701,6 +3117,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep7.argument-1-Arg.module-type-T.index.html
@@ -2708,6 +3126,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep7.argument-1-Arg.X.index.html
@@ -2715,16 +3135,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep7.M.index.html Ocamlary.Dep7.M.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep8.index.html Ocamlary.Dep8.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep8.module-type-T.index.html
@@ -2732,11 +3158,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep9.index.html Ocamlary.Dep9.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep9.argument-1-X.index.html
@@ -2744,6 +3174,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-Dep10.index.html
@@ -2751,11 +3183,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep11.index.html Ocamlary.Dep11.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep11.module-type-S.index.html
@@ -2763,6 +3199,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep11.module-type-S.class-c.index.html
@@ -2770,11 +3208,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep12.index.html Ocamlary.Dep12.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep12.argument-1-Arg.index.html
@@ -2782,11 +3224,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep13.index.html Ocamlary.Dep13.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Dep13.class-c.index.html
@@ -2794,6 +3240,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With1.index.html
@@ -2801,6 +3249,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With1.M.index.html
@@ -2808,11 +3258,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With2.index.html Ocamlary.With2.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With2.module-type-S.index.html
@@ -2820,31 +3274,43 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With3.index.html Ocamlary.With3.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With3.N.index.html Ocamlary.With3.N.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With4.index.html Ocamlary.With4.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With4.N.index.html Ocamlary.With4.N.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With5.index.html Ocamlary.With5.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With5.module-type-S.index.html
@@ -2852,16 +3318,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With5.N.index.html Ocamlary.With5.N.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With6.index.html Ocamlary.With6.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With6.module-type-T.index.html
@@ -2869,6 +3341,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With6.module-type-T.M.index.html
@@ -2876,11 +3350,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With7.index.html Ocamlary.With7.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With7.argument-1-X.index.html
@@ -2888,6 +3366,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With8.index.html
@@ -2895,6 +3375,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With8.M.index.html
@@ -2902,6 +3384,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With8.M.module-type-S.index.html
@@ -2909,6 +3393,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With8.M.N.index.html
@@ -2916,11 +3402,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With9.index.html Ocamlary.With9.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With9.module-type-S.index.html
@@ -2928,11 +3418,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With10.index.html Ocamlary.With10.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With10.module-type-T.index.html
@@ -2940,6 +3434,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.With10.module-type-T.M.index.html
@@ -2947,6 +3443,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With11.index.html
@@ -2954,6 +3452,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-With11.N.index.html
@@ -2961,6 +3461,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-NestedInclude1.index.html
@@ -2968,6 +3470,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-NestedInclude1.module-type-NestedInclude2.index.html
@@ -2975,6 +3479,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-NestedInclude2.index.html
@@ -2982,6 +3488,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.DoubleInclude1.index.html
@@ -2989,6 +3497,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.DoubleInclude1.DoubleInclude2.index.html
@@ -2996,6 +3506,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.DoubleInclude3.index.html
@@ -3003,6 +3515,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.DoubleInclude3.DoubleInclude2.index.html
@@ -3010,6 +3524,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.IncludeInclude1.index.html
@@ -3017,6 +3533,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.IncludeInclude1.module-type-IncludeInclude2.index.html
@@ -3024,6 +3542,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-IncludeInclude2.index.html
@@ -3031,6 +3551,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.index.html
@@ -3038,6 +3560,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__List.index.html
@@ -3045,6 +3569,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__.index.html
@@ -3052,6 +3578,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base.index.html
@@ -3059,6 +3587,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base.List.index.html
@@ -3066,6 +3596,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__Tests.index.html
@@ -3073,6 +3605,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__Tests.C.index.html
@@ -3080,6 +3614,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.List_modif.index.html
@@ -3087,11 +3623,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.index.html Ocamlary.Aliases.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo__A.index.html
@@ -3099,6 +3639,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo__B.index.html
@@ -3106,6 +3648,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo__C.index.html
@@ -3113,6 +3657,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo__D.index.html
@@ -3120,6 +3666,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo__E.index.html
@@ -3127,6 +3675,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo__.index.html
@@ -3134,11 +3684,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.Foo.index.html Ocamlary.Aliases.Foo.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo.A.index.html
@@ -3146,6 +3700,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo.B.index.html
@@ -3153,6 +3709,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo.C.index.html
@@ -3160,6 +3718,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo.D.index.html
@@ -3167,6 +3727,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.Foo.E.index.html
@@ -3174,21 +3736,29 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.Std.index.html Ocamlary.Aliases.Std.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.E.index.html Ocamlary.Aliases.E.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.P1.index.html Ocamlary.Aliases.P1.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.P1.Y.index.html
@@ -3196,11 +3766,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Aliases.P2.index.html Ocamlary.Aliases.P2.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Aliases.P2.Z.index.html
@@ -3208,6 +3782,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-M.index.html
@@ -3215,11 +3791,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.M.index.html Ocamlary.M.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Only_a_module.index.html
@@ -3227,6 +3807,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-TypeExt.index.html
@@ -3234,6 +3816,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.module-type-TypeExtPruned.index.html
@@ -3283,16 +3867,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.index.html Recent.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.module-type-S.index.html Recent.module-type-S.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent.module-type-S1.index.html
@@ -3300,6 +3890,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent.module-type-S1.argument-1-_.index.html
@@ -3307,26 +3899,36 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.Z.index.html Recent.Z.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.Z.Y.index.html Recent.Z.Y.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.Z.Y.X.index.html Recent.Z.Y.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.X.index.html Recent.X.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent.module-type-PolyS.index.html
@@ -3376,31 +3978,43 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.index.html Recent_impl.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.Foo.index.html Recent_impl.Foo.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.Foo.A.index.html Recent_impl.Foo.A.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.Foo.B.index.html Recent_impl.Foo.B.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.B.index.html Recent_impl.B.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent_impl.module-type-S.index.html
@@ -3408,6 +4022,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent_impl.module-type-S.F.index.html
@@ -3415,6 +4031,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent_impl.module-type-S.F.argument-1-_.index.html
@@ -3422,6 +4040,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Recent_impl.module-type-S.X.index.html
@@ -3438,6 +4058,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Section.index.html Section.index.html.gen)))
 
@@ -3456,11 +4078,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Stop.index.html Stop.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Stop.N.index.html Stop.N.index.html.gen)))
 
@@ -3485,11 +4111,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Stop_dead_link_doc.index.html Stop_dead_link_doc.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Stop_dead_link_doc.Foo.index.html
@@ -3566,11 +4196,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.index.html Toplevel_comments.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.module-type-T.index.html
@@ -3578,6 +4212,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.Include_inline.index.html
@@ -3585,6 +4221,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.Include_inline'.index.html
@@ -3592,6 +4230,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.module-type-Include_inline_T.index.html
@@ -3599,6 +4239,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.module-type-Include_inline_T'.index.html
@@ -3606,16 +4248,22 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.M.index.html Toplevel_comments.M.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.M'.index.html Toplevel_comments.M'.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.M''.index.html
@@ -3623,6 +4271,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.Alias.index.html
@@ -3630,6 +4280,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.class-c1.index.html
@@ -3637,6 +4289,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.class-type-ct.index.html
@@ -3644,6 +4298,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.class-c2.index.html
@@ -3664,11 +4320,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Type.index.html Type.index.html.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Type.module-type-X.index.html Type.module-type-X.index.html.gen)))
 
@@ -3683,5 +4343,7 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Val.index.html Val.index.html.gen)))

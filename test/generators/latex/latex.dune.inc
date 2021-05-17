@@ -13,11 +13,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Alias.tex Alias.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Alias.X.tex Alias.X.tex.gen)))
 
@@ -32,6 +36,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs.tex Bugs.tex.gen)))
 
@@ -50,11 +56,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs_post_406.tex Bugs_post_406.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs_post_406.let_open'.tex Bugs_post_406.let_open'.tex.gen)))
 
@@ -69,6 +79,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Bugs_pre_410.tex Bugs_pre_410.tex.gen)))
 
@@ -99,26 +111,36 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Class.tex Class.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Class.mutually'.tex Class.mutually'.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Class.recursive'.tex Class.recursive'.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Class.empty_virtual'.tex Class.empty_virtual'.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Class.polymorphic'.tex Class.polymorphic'.tex.gen)))
 
@@ -133,6 +155,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff External.tex External.tex.gen)))
 
@@ -167,31 +191,43 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.tex Functor.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F1.tex Functor.F1.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F2.tex Functor.F2.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F3.tex Functor.F3.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F4.tex Functor.F4.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor.F5.tex Functor.F5.tex.gen)))
 
@@ -210,11 +246,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor2.tex Functor2.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Functor2.X.tex Functor2.X.tex.gen)))
 
@@ -229,6 +269,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include.tex Include.tex.gen)))
 
@@ -243,6 +285,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include2.tex Include2.tex.gen)))
 
@@ -257,6 +301,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Include_sections.tex Include_sections.tex.gen)))
 
@@ -271,6 +317,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Interlude.tex Interlude.tex.gen)))
 
@@ -289,11 +337,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.tex Labels.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Labels.c.tex Labels.c.tex.gen)))
 
@@ -308,6 +360,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Markup.tex Markup.tex.gen)))
 
@@ -322,6 +376,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff mld.tex mld.tex.gen)))
 
@@ -336,6 +392,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Module.tex Module.tex.gen)))
 
@@ -362,21 +420,29 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.tex Nested.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.F.tex Nested.F.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.z.tex Nested.z.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Nested.inherits.tex Nested.inherits.tex.gen)))
 
@@ -479,11 +545,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.tex Ocamlary.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.ModuleWithSignature.tex
@@ -491,6 +561,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.ModuleWithSignatureAlias.tex
@@ -498,101 +570,141 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Recollection.tex Ocamlary.Recollection.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.FunctorTypeOf.tex Ocamlary.FunctorTypeOf.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.empty_class.tex Ocamlary.empty_class.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.one_method_class.tex Ocamlary.one_method_class.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.two_method_class.tex Ocamlary.two_method_class.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.param_class.tex Ocamlary.param_class.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep2.tex Ocamlary.Dep2.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep5.tex Ocamlary.Dep5.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep5.Z.tex Ocamlary.Dep5.Z.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep7.tex Ocamlary.Dep7.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep7.M.tex Ocamlary.Dep7.M.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep9.tex Ocamlary.Dep9.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep12.tex Ocamlary.Dep12.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep13.tex Ocamlary.Dep13.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.Dep13.c.tex Ocamlary.Dep13.c.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With3.tex Ocamlary.With3.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With3.N.tex Ocamlary.With3.N.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With4.tex Ocamlary.With4.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With4.N.tex Ocamlary.With4.N.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Ocamlary.With7.tex Ocamlary.With7.tex.gen)))
 
@@ -607,6 +719,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent.tex Recent.tex.gen)))
 
@@ -625,11 +739,15 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.tex Recent_impl.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Recent_impl.B.tex Recent_impl.B.tex.gen)))
 
@@ -644,6 +762,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Section.tex Section.tex.gen)))
 
@@ -658,6 +778,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Stop.tex Stop.tex.gen)))
 
@@ -672,6 +794,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Stop_dead_link_doc.tex Stop_dead_link_doc.tex.gen)))
 
@@ -698,21 +822,29 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.tex Toplevel_comments.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.Alias.tex Toplevel_comments.Alias.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.c1.tex Toplevel_comments.c1.tex.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Toplevel_comments.c2.tex Toplevel_comments.c2.tex.gen)))
 
@@ -727,6 +859,8 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Type.tex Type.tex.gen)))
 
@@ -741,5 +875,7 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0))
  (action
   (diff Val.tex Val.tex.gen)))

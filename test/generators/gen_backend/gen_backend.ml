@@ -57,6 +57,11 @@ let diff_rule t =
       List [ Atom "alias"; Atom "runtest" ];
       List
         [
+          Atom "enabled_if";
+          List [ Atom ">="; Atom "%{ocaml_version}"; Atom "4.10.0" ];
+        ];
+      List
+        [
           Atom "action";
           List
             [
@@ -70,13 +75,13 @@ let diff_rule t =
 let diff_rules targets = List.map (fun t -> diff_rule t) targets
 
 let gen_backend_rules backend target_rule filenames =
-  let filenames =
+  let rules =
     (List.map (fun odocl ->
          let targets = expected_targets backend odocl in
          let paths = List.map tweak_target targets |> List.map Fpath.v in
          target_rule odocl targets :: diff_rules paths))
       filenames
   in
-  List.flatten filenames
+  List.flatten rules
 
 let files = List.tl (Array.to_list Sys.argv) |> List.map Fpath.v
