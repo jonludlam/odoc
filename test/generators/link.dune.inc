@@ -215,24 +215,6 @@
   (run odoc link -o %{target} %{deps})))
 
 (rule
- (target labels.cmti)
- (deps cases/labels.mli)
- (action
-  (run ocamlc -c -bin-annot -o %{target} %{deps})))
-
-(rule
- (target labels.odoc)
- (deps labels.cmti)
- (action
-  (run odoc compile --pkg test -o %{target} %{deps})))
-
-(rule
- (target labels.odocl)
- (deps labels.odoc)
- (action
-  (run odoc link -o %{target} %{deps})))
-
-(rule
  (target markup.cmti)
  (deps cases/markup.mli)
  (action
@@ -313,42 +295,6 @@
 (rule
  (target ocamlary.odocl)
  (deps ocamlary.odoc)
- (action
-  (run odoc link -o %{target} %{deps})))
-
-(rule
- (target recent.cmti)
- (deps cases/recent.mli)
- (action
-  (run ocamlc -c -bin-annot -o %{target} %{deps})))
-
-(rule
- (target recent.odoc)
- (deps recent.cmti)
- (action
-  (run odoc compile --pkg test -o %{target} %{deps})))
-
-(rule
- (target recent.odocl)
- (deps recent.odoc)
- (action
-  (run odoc link -o %{target} %{deps})))
-
-(rule
- (target recent_impl.cmt)
- (deps cases/recent_impl.ml)
- (action
-  (run ocamlc -c -bin-annot -o %{target} %{deps})))
-
-(rule
- (target recent_impl.odoc)
- (deps recent_impl.cmt)
- (action
-  (run odoc compile --pkg test -o %{target} %{deps})))
-
-(rule
- (target recent_impl.odocl)
- (deps recent_impl.odoc)
  (action
   (run odoc link -o %{target} %{deps})))
 
@@ -480,14 +426,11 @@
      %{dep:../include2.odocl}
      %{dep:../include_sections.odocl}
      %{dep:../interlude.odocl}
-     %{dep:../labels.odocl}
      %{dep:../markup.odocl}
      %{dep:../page-mld.odocl}
      %{dep:../module.odocl}
      %{dep:../nested.odocl}
      %{dep:../ocamlary.odocl}
-     %{dep:../recent.odocl}
-     %{dep:../recent_impl.odocl}
      %{dep:../section.odocl}
      %{dep:../stop.odocl}
      %{dep:../stop_dead_link_doc.odocl}
@@ -516,14 +459,11 @@
      %{dep:../include2.odocl}
      %{dep:../include_sections.odocl}
      %{dep:../interlude.odocl}
-     %{dep:../labels.odocl}
      %{dep:../markup.odocl}
      %{dep:../page-mld.odocl}
      %{dep:../module.odocl}
      %{dep:../nested.odocl}
      %{dep:../ocamlary.odocl}
-     %{dep:../recent.odocl}
-     %{dep:../recent_impl.odocl}
      %{dep:../section.odocl}
      %{dep:../stop.odocl}
      %{dep:../stop_dead_link_doc.odocl}
@@ -552,14 +492,11 @@
      %{dep:../include2.odocl}
      %{dep:../include_sections.odocl}
      %{dep:../interlude.odocl}
-     %{dep:../labels.odocl}
      %{dep:../markup.odocl}
      %{dep:../page-mld.odocl}
      %{dep:../module.odocl}
      %{dep:../nested.odocl}
      %{dep:../ocamlary.odocl}
-     %{dep:../recent.odocl}
-     %{dep:../recent_impl.odocl}
      %{dep:../section.odocl}
      %{dep:../stop.odocl}
      %{dep:../stop_dead_link_doc.odocl}

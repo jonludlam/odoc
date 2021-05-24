@@ -17,24 +17,24 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Alias.3o Alias.3o.gen)))
+  (diff Alias.3o Alias.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Alias.Foo__X.3o Alias.Foo__X.3o.gen)))
+  (diff Alias.Foo__X.3o Alias.Foo__X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Alias.X.3o Alias.X.3o.gen)))
+  (diff Alias.X.3o Alias.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -47,10 +47,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Bugs.3o Bugs.3o.gen)))
+  (diff Bugs.3o Bugs.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -67,17 +67,17 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Bugs_post_406.3o Bugs_post_406.3o.gen)))
+  (diff Bugs_post_406.3o Bugs_post_406.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Bugs_post_406.let_open'.3o Bugs_post_406.let_open'.3o.gen)))
+  (diff Bugs_post_406.let_open'.3o Bugs_post_406.let_open'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -90,10 +90,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Bugs_pre_410.3o Bugs_pre_410.3o.gen)))
+  (diff Bugs_pre_410.3o Bugs_pre_410.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -122,38 +122,38 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Class.3o Class.3o.gen)))
+  (diff Class.3o Class.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Class.mutually'.3o Class.mutually'.3o.gen)))
+  (diff Class.mutually'.3o Class.mutually'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Class.recursive'.3o Class.recursive'.3o.gen)))
+  (diff Class.recursive'.3o Class.recursive'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Class.empty_virtual'.3o Class.empty_virtual'.3o.gen)))
+  (diff Class.empty_virtual'.3o Class.empty_virtual'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Class.polymorphic'.3o Class.polymorphic'.3o.gen)))
+  (diff Class.polymorphic'.3o Class.polymorphic'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -166,10 +166,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff External.3o External.3o.gen)))
+  (diff External.3o External.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -202,45 +202,45 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor.3o Functor.3o.gen)))
+  (diff Functor.3o Functor.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor.F1.3o Functor.F1.3o.gen)))
+  (diff Functor.F1.3o Functor.F1.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor.F2.3o Functor.F2.3o.gen)))
+  (diff Functor.F2.3o Functor.F2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor.F3.3o Functor.F3.3o.gen)))
+  (diff Functor.F3.3o Functor.F3.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor.F4.3o Functor.F4.3o.gen)))
+  (diff Functor.F4.3o Functor.F4.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor.F5.3o Functor.F5.3o.gen)))
+  (diff Functor.F5.3o Functor.F5.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -257,17 +257,17 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor2.3o Functor2.3o.gen)))
+  (diff Functor2.3o Functor2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Functor2.X.3o Functor2.X.3o.gen)))
+  (diff Functor2.X.3o Functor2.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -280,10 +280,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include.3o Include.3o.gen)))
+  (diff Include.3o Include.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -312,38 +312,38 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include2.3o Include2.3o.gen)))
+  (diff Include2.3o Include2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include2.X.3o Include2.X.3o.gen)))
+  (diff Include2.X.3o Include2.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include2.Y.3o Include2.Y.3o.gen)))
+  (diff Include2.Y.3o Include2.Y.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include2.Y_include_synopsis.3o Include2.Y_include_synopsis.3o.gen)))
+  (diff Include2.Y_include_synopsis.3o Include2.Y_include_synopsis.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include2.Y_include_doc.3o Include2.Y_include_doc.3o.gen)))
+  (diff Include2.Y_include_doc.3o Include2.Y_include_doc.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -356,10 +356,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Include_sections.3o Include_sections.3o.gen)))
+  (diff Include_sections.3o Include_sections.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -372,48 +372,10 @@
 
 (rule
  (alias runtest)
+ (action
+  (diff Interlude.3o Interlude.3o.gen))
  (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Interlude.3o Interlude.3o.gen)))
-
-(rule
- (action
-  (progn
-   (run odoc man-generate -o man.gen %{dep:../labels.odocl})
-   (with-stdout-to
-    Labels.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Labels.3o'")))
-   (with-stdout-to
-    Labels.A.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Labels.A.3o'")))
-   (with-stdout-to
-    Labels.c.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Labels.c.3o'"))))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Labels.3o Labels.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Labels.A.3o Labels.A.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Labels.c.3o Labels.c.3o.gen)))
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -426,10 +388,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Markup.3o Markup.3o.gen)))
+  (diff Markup.3o Markup.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -442,10 +404,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff mld.3o mld.3o.gen)))
+  (diff mld.3o mld.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -470,31 +432,31 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Module.3o Module.3o.gen)))
+  (diff Module.3o Module.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Module.M'.3o Module.M'.3o.gen)))
+  (diff Module.M'.3o Module.M'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Module.Mutually.3o Module.Mutually.3o.gen)))
+  (diff Module.Mutually.3o Module.Mutually.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Module.Recursive.3o Module.Recursive.3o.gen)))
+  (diff Module.Recursive.3o Module.Recursive.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -523,38 +485,38 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Nested.3o Nested.3o.gen)))
+  (diff Nested.3o Nested.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Nested.X.3o Nested.X.3o.gen)))
+  (diff Nested.X.3o Nested.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Nested.F.3o Nested.F.3o.gen)))
+  (diff Nested.F.3o Nested.F.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Nested.z.3o Nested.z.3o.gen)))
+  (diff Nested.z.3o Nested.z.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Nested.inherits.3o Nested.inherits.3o.gen)))
+  (diff Nested.inherits.3o Nested.inherits.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -905,744 +867,624 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.3o Ocamlary.3o.gen)))
+  (diff Ocamlary.3o Ocamlary.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Empty.3o Ocamlary.Empty.3o.gen)))
+  (diff Ocamlary.Empty.3o Ocamlary.Empty.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.ModuleWithSignature.3o Ocamlary.ModuleWithSignature.3o.gen)))
+  (diff Ocamlary.ModuleWithSignature.3o Ocamlary.ModuleWithSignature.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.ModuleWithSignatureAlias.3o
-   Ocamlary.ModuleWithSignatureAlias.3o.gen)))
+   Ocamlary.ModuleWithSignatureAlias.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.One.3o Ocamlary.One.3o.gen)))
+  (diff Ocamlary.One.3o Ocamlary.One.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Buffer.3o Ocamlary.Buffer.3o.gen)))
+  (diff Ocamlary.Buffer.3o Ocamlary.Buffer.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.CollectionModule.3o Ocamlary.CollectionModule.3o.gen)))
+  (diff Ocamlary.CollectionModule.3o Ocamlary.CollectionModule.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.InnerModuleA.3o
-   Ocamlary.CollectionModule.InnerModuleA.3o.gen)))
+   Ocamlary.CollectionModule.InnerModuleA.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CollectionModule.InnerModuleA.InnerModuleA'.3o
-   Ocamlary.CollectionModule.InnerModuleA.InnerModuleA'.3o.gen)))
+   Ocamlary.CollectionModule.InnerModuleA.InnerModuleA'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Recollection.3o Ocamlary.Recollection.3o.gen)))
+  (diff Ocamlary.Recollection.3o Ocamlary.Recollection.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.InnerModuleA.3o
-   Ocamlary.Recollection.InnerModuleA.3o.gen)))
+   Ocamlary.Recollection.InnerModuleA.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.Recollection.InnerModuleA.InnerModuleA'.3o
-   Ocamlary.Recollection.InnerModuleA.InnerModuleA'.3o.gen)))
+   Ocamlary.Recollection.InnerModuleA.InnerModuleA'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.FunctorTypeOf.3o Ocamlary.FunctorTypeOf.3o.gen)))
+  (diff Ocamlary.FunctorTypeOf.3o Ocamlary.FunctorTypeOf.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.IncludedA.3o Ocamlary.IncludedA.3o.gen)))
+  (diff Ocamlary.IncludedA.3o Ocamlary.IncludedA.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.ExtMod.3o Ocamlary.ExtMod.3o.gen)))
+  (diff Ocamlary.ExtMod.3o Ocamlary.ExtMod.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.empty_class.3o Ocamlary.empty_class.3o.gen)))
+  (diff Ocamlary.empty_class.3o Ocamlary.empty_class.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.one_method_class.3o Ocamlary.one_method_class.3o.gen)))
+  (diff Ocamlary.one_method_class.3o Ocamlary.one_method_class.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.two_method_class.3o Ocamlary.two_method_class.3o.gen)))
+  (diff Ocamlary.two_method_class.3o Ocamlary.two_method_class.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.param_class.3o Ocamlary.param_class.3o.gen)))
+  (diff Ocamlary.param_class.3o Ocamlary.param_class.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep1.3o Ocamlary.Dep1.3o.gen)))
+  (diff Ocamlary.Dep1.3o Ocamlary.Dep1.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep1.X.3o Ocamlary.Dep1.X.3o.gen)))
+  (diff Ocamlary.Dep1.X.3o Ocamlary.Dep1.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep1.X.Y.3o Ocamlary.Dep1.X.Y.3o.gen)))
+  (diff Ocamlary.Dep1.X.Y.3o Ocamlary.Dep1.X.Y.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep1.X.Y.c.3o Ocamlary.Dep1.X.Y.c.3o.gen)))
+  (diff Ocamlary.Dep1.X.Y.c.3o Ocamlary.Dep1.X.Y.c.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep2.3o Ocamlary.Dep2.3o.gen)))
+  (diff Ocamlary.Dep2.3o Ocamlary.Dep2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep2.A.3o Ocamlary.Dep2.A.3o.gen)))
+  (diff Ocamlary.Dep2.A.3o Ocamlary.Dep2.A.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep3.3o Ocamlary.Dep3.3o.gen)))
+  (diff Ocamlary.Dep3.3o Ocamlary.Dep3.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep4.3o Ocamlary.Dep4.3o.gen)))
+  (diff Ocamlary.Dep4.3o Ocamlary.Dep4.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep4.X.3o Ocamlary.Dep4.X.3o.gen)))
+  (diff Ocamlary.Dep4.X.3o Ocamlary.Dep4.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep5.3o Ocamlary.Dep5.3o.gen)))
+  (diff Ocamlary.Dep5.3o Ocamlary.Dep5.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep5.Z.3o Ocamlary.Dep5.Z.3o.gen)))
+  (diff Ocamlary.Dep5.Z.3o Ocamlary.Dep5.Z.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep6.3o Ocamlary.Dep6.3o.gen)))
+  (diff Ocamlary.Dep6.3o Ocamlary.Dep6.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep6.X.3o Ocamlary.Dep6.X.3o.gen)))
+  (diff Ocamlary.Dep6.X.3o Ocamlary.Dep6.X.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep6.X.Y.3o Ocamlary.Dep6.X.Y.3o.gen)))
+  (diff Ocamlary.Dep6.X.Y.3o Ocamlary.Dep6.X.Y.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep7.3o Ocamlary.Dep7.3o.gen)))
+  (diff Ocamlary.Dep7.3o Ocamlary.Dep7.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep7.M.3o Ocamlary.Dep7.M.3o.gen)))
+  (diff Ocamlary.Dep7.M.3o Ocamlary.Dep7.M.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep8.3o Ocamlary.Dep8.3o.gen)))
+  (diff Ocamlary.Dep8.3o Ocamlary.Dep8.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep9.3o Ocamlary.Dep9.3o.gen)))
+  (diff Ocamlary.Dep9.3o Ocamlary.Dep9.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep11.3o Ocamlary.Dep11.3o.gen)))
+  (diff Ocamlary.Dep11.3o Ocamlary.Dep11.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep12.3o Ocamlary.Dep12.3o.gen)))
+  (diff Ocamlary.Dep12.3o Ocamlary.Dep12.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep13.3o Ocamlary.Dep13.3o.gen)))
+  (diff Ocamlary.Dep13.3o Ocamlary.Dep13.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Dep13.c.3o Ocamlary.Dep13.c.3o.gen)))
+  (diff Ocamlary.Dep13.c.3o Ocamlary.Dep13.c.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With2.3o Ocamlary.With2.3o.gen)))
+  (diff Ocamlary.With2.3o Ocamlary.With2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With3.3o Ocamlary.With3.3o.gen)))
+  (diff Ocamlary.With3.3o Ocamlary.With3.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With3.N.3o Ocamlary.With3.N.3o.gen)))
+  (diff Ocamlary.With3.N.3o Ocamlary.With3.N.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With4.3o Ocamlary.With4.3o.gen)))
+  (diff Ocamlary.With4.3o Ocamlary.With4.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With4.N.3o Ocamlary.With4.N.3o.gen)))
+  (diff Ocamlary.With4.N.3o Ocamlary.With4.N.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With5.3o Ocamlary.With5.3o.gen)))
+  (diff Ocamlary.With5.3o Ocamlary.With5.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With5.N.3o Ocamlary.With5.N.3o.gen)))
+  (diff Ocamlary.With5.N.3o Ocamlary.With5.N.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With6.3o Ocamlary.With6.3o.gen)))
+  (diff Ocamlary.With6.3o Ocamlary.With6.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With7.3o Ocamlary.With7.3o.gen)))
+  (diff Ocamlary.With7.3o Ocamlary.With7.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With9.3o Ocamlary.With9.3o.gen)))
+  (diff Ocamlary.With9.3o Ocamlary.With9.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.With10.3o Ocamlary.With10.3o.gen)))
+  (diff Ocamlary.With10.3o Ocamlary.With10.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.DoubleInclude1.3o Ocamlary.DoubleInclude1.3o.gen)))
+  (diff Ocamlary.DoubleInclude1.3o Ocamlary.DoubleInclude1.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.DoubleInclude1.DoubleInclude2.3o
-   Ocamlary.DoubleInclude1.DoubleInclude2.3o.gen)))
+   Ocamlary.DoubleInclude1.DoubleInclude2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.DoubleInclude3.3o Ocamlary.DoubleInclude3.3o.gen)))
+  (diff Ocamlary.DoubleInclude3.3o Ocamlary.DoubleInclude3.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.DoubleInclude3.DoubleInclude2.3o
-   Ocamlary.DoubleInclude3.DoubleInclude2.3o.gen)))
+   Ocamlary.DoubleInclude3.DoubleInclude2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.IncludeInclude1.3o Ocamlary.IncludeInclude1.3o.gen)))
+  (diff Ocamlary.IncludeInclude1.3o Ocamlary.IncludeInclude1.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.CanonicalTest.3o Ocamlary.CanonicalTest.3o.gen)))
+  (diff Ocamlary.CanonicalTest.3o Ocamlary.CanonicalTest.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__List.3o
-   Ocamlary.CanonicalTest.Base__List.3o.gen)))
+   Ocamlary.CanonicalTest.Base__List.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__.3o
-   Ocamlary.CanonicalTest.Base__.3o.gen)))
+   Ocamlary.CanonicalTest.Base__.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.CanonicalTest.Base.3o Ocamlary.CanonicalTest.Base.3o.gen)))
+  (diff Ocamlary.CanonicalTest.Base.3o Ocamlary.CanonicalTest.Base.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base.List.3o
-   Ocamlary.CanonicalTest.Base.List.3o.gen)))
+   Ocamlary.CanonicalTest.Base.List.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__Tests.3o
-   Ocamlary.CanonicalTest.Base__Tests.3o.gen)))
+   Ocamlary.CanonicalTest.Base__Tests.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.Base__Tests.C.3o
-   Ocamlary.CanonicalTest.Base__Tests.C.3o.gen)))
+   Ocamlary.CanonicalTest.Base__Tests.C.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Ocamlary.CanonicalTest.List_modif.3o
-   Ocamlary.CanonicalTest.List_modif.3o.gen)))
+   Ocamlary.CanonicalTest.List_modif.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.3o Ocamlary.Aliases.3o.gen)))
+  (diff Ocamlary.Aliases.3o Ocamlary.Aliases.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo__A.3o Ocamlary.Aliases.Foo__A.3o.gen)))
+  (diff Ocamlary.Aliases.Foo__A.3o Ocamlary.Aliases.Foo__A.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo__B.3o Ocamlary.Aliases.Foo__B.3o.gen)))
+  (diff Ocamlary.Aliases.Foo__B.3o Ocamlary.Aliases.Foo__B.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo__C.3o Ocamlary.Aliases.Foo__C.3o.gen)))
+  (diff Ocamlary.Aliases.Foo__C.3o Ocamlary.Aliases.Foo__C.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo__D.3o Ocamlary.Aliases.Foo__D.3o.gen)))
+  (diff Ocamlary.Aliases.Foo__D.3o Ocamlary.Aliases.Foo__D.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo__E.3o Ocamlary.Aliases.Foo__E.3o.gen)))
+  (diff Ocamlary.Aliases.Foo__E.3o Ocamlary.Aliases.Foo__E.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo__.3o Ocamlary.Aliases.Foo__.3o.gen)))
+  (diff Ocamlary.Aliases.Foo__.3o Ocamlary.Aliases.Foo__.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo.3o Ocamlary.Aliases.Foo.3o.gen)))
+  (diff Ocamlary.Aliases.Foo.3o Ocamlary.Aliases.Foo.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo.A.3o Ocamlary.Aliases.Foo.A.3o.gen)))
+  (diff Ocamlary.Aliases.Foo.A.3o Ocamlary.Aliases.Foo.A.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo.B.3o Ocamlary.Aliases.Foo.B.3o.gen)))
+  (diff Ocamlary.Aliases.Foo.B.3o Ocamlary.Aliases.Foo.B.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo.C.3o Ocamlary.Aliases.Foo.C.3o.gen)))
+  (diff Ocamlary.Aliases.Foo.C.3o Ocamlary.Aliases.Foo.C.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo.D.3o Ocamlary.Aliases.Foo.D.3o.gen)))
+  (diff Ocamlary.Aliases.Foo.D.3o Ocamlary.Aliases.Foo.D.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Foo.E.3o Ocamlary.Aliases.Foo.E.3o.gen)))
+  (diff Ocamlary.Aliases.Foo.E.3o Ocamlary.Aliases.Foo.E.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.Std.3o Ocamlary.Aliases.Std.3o.gen)))
+  (diff Ocamlary.Aliases.Std.3o Ocamlary.Aliases.Std.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.E.3o Ocamlary.Aliases.E.3o.gen)))
+  (diff Ocamlary.Aliases.E.3o Ocamlary.Aliases.E.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.P1.3o Ocamlary.Aliases.P1.3o.gen)))
+  (diff Ocamlary.Aliases.P1.3o Ocamlary.Aliases.P1.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.P1.Y.3o Ocamlary.Aliases.P1.Y.3o.gen)))
+  (diff Ocamlary.Aliases.P1.Y.3o Ocamlary.Aliases.P1.Y.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.Aliases.P2.3o Ocamlary.Aliases.P2.3o.gen)))
+  (diff Ocamlary.Aliases.P2.3o Ocamlary.Aliases.P2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Ocamlary.M.3o Ocamlary.M.3o.gen)))
+  (diff Ocamlary.M.3o Ocamlary.M.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
+ (action
+  (diff Ocamlary.Only_a_module.3o Ocamlary.Only_a_module.3o.gen))
  (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Ocamlary.Only_a_module.3o Ocamlary.Only_a_module.3o.gen)))
-
-(rule
- (action
-  (progn
-   (run odoc man-generate -o man.gen %{dep:../recent.odocl})
-   (with-stdout-to
-    Recent.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent.3o'")))
-   (with-stdout-to
-    Recent.Z.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent.Z.3o'")))
-   (with-stdout-to
-    Recent.Z.Y.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent.Z.Y.3o'")))
-   (with-stdout-to
-    Recent.Z.Y.X.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent.Z.Y.X.3o'")))
-   (with-stdout-to
-    Recent.X.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent.X.3o'"))))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent.3o Recent.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent.Z.3o Recent.Z.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent.Z.Y.3o Recent.Z.Y.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent.Z.Y.X.3o Recent.Z.Y.X.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent.X.3o Recent.X.3o.gen)))
-
-(rule
- (action
-  (progn
-   (run odoc man-generate -o man.gen %{dep:../recent_impl.odocl})
-   (with-stdout-to
-    Recent_impl.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent_impl.3o'")))
-   (with-stdout-to
-    Recent_impl.Foo.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent_impl.Foo.3o'")))
-   (with-stdout-to
-    Recent_impl.Foo.A.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent_impl.Foo.A.3o'")))
-   (with-stdout-to
-    Recent_impl.Foo.B.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent_impl.Foo.B.3o'")))
-   (with-stdout-to
-    Recent_impl.B.3o.gen
-    (progn
-     (system "cat 'man.gen/test/Recent_impl.B.3o'"))))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent_impl.3o Recent_impl.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent_impl.Foo.3o Recent_impl.Foo.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent_impl.Foo.A.3o Recent_impl.Foo.A.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent_impl.Foo.B.3o Recent_impl.Foo.B.3o.gen)))
-
-(rule
- (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
- (action
-  (diff Recent_impl.B.3o Recent_impl.B.3o.gen)))
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -1655,10 +1497,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Section.3o Section.3o.gen)))
+  (diff Section.3o Section.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -1675,17 +1517,17 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Stop.3o Stop.3o.gen)))
+  (diff Stop.3o Stop.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Stop.N.3o Stop.N.3o.gen)))
+  (diff Stop.N.3o Stop.N.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -1702,17 +1544,17 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Stop_dead_link_doc.3o Stop_dead_link_doc.3o.gen)))
+  (diff Stop_dead_link_doc.3o Stop_dead_link_doc.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Stop_dead_link_doc.Foo.3o Stop_dead_link_doc.Foo.3o.gen)))
+  (diff Stop_dead_link_doc.Foo.3o Stop_dead_link_doc.Foo.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -1757,70 +1599,70 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.3o Toplevel_comments.3o.gen)))
+  (diff Toplevel_comments.3o Toplevel_comments.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.Include_inline.3o
-   Toplevel_comments.Include_inline.3o.gen)))
+   Toplevel_comments.Include_inline.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
   (diff
    Toplevel_comments.Include_inline'.3o
-   Toplevel_comments.Include_inline'.3o.gen)))
+   Toplevel_comments.Include_inline'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.M.3o Toplevel_comments.M.3o.gen)))
+  (diff Toplevel_comments.M.3o Toplevel_comments.M.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.M'.3o Toplevel_comments.M'.3o.gen)))
+  (diff Toplevel_comments.M'.3o Toplevel_comments.M'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.M''.3o Toplevel_comments.M''.3o.gen)))
+  (diff Toplevel_comments.M''.3o Toplevel_comments.M''.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.Alias.3o Toplevel_comments.Alias.3o.gen)))
+  (diff Toplevel_comments.Alias.3o Toplevel_comments.Alias.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.c1.3o Toplevel_comments.c1.3o.gen)))
+  (diff Toplevel_comments.c1.3o Toplevel_comments.c1.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Toplevel_comments.c2.3o Toplevel_comments.c2.3o.gen)))
+  (diff Toplevel_comments.c2.3o Toplevel_comments.c2.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -1833,10 +1675,10 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Type.3o Type.3o.gen)))
+  (diff Type.3o Type.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))
 
 (rule
  (action
@@ -1849,7 +1691,7 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (>= %{ocaml_version} 4.10.0))
  (action
-  (diff Val.3o Val.3o.gen)))
+  (diff Val.3o Val.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.10.0)))

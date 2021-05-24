@@ -1,14 +1,4 @@
-(* let enabled_if_version ver : Gen_backend.sexp list =
-  [ List [ Atom ">="; Atom "%{ocaml_version}"; Atom ver ] ]
-
-let enabled_if path =
-  let path = Fpath.basename path in
-  match path with
-  | "labels.odocl" | "recent.odocl" | "recent_impl.odocl" ->
-      Some (enabled_if_version "4.08.0")
-  | _ -> None *)
-
-let html_target_rule odocl targets : Gen_backend.sexp =
+let html_target_rule odocl targets : Gen_backend_post408.sexp =
   List
     [
       Atom "rule";
@@ -28,12 +18,17 @@ let html_target_rule odocl targets : Gen_backend.sexp =
                  Atom "html.gen";
                  Atom ("%{dep:" ^ Fpath.to_string odocl ^ "}");
                ]
-             :: Gen_backend.gen_targets targets);
+             :: Gen_backend_post408.gen_targets targets);
+        ];
+      List
+        [
+          Atom "enabled_if";
+          List [ Atom "<"; Atom "%{ocaml_version}"; Atom "4.08" ];
         ];
     ]
 
 let () =
   let stanzas =
-    Gen_backend.gen_backend_rules "html" html_target_rule Gen_backend.files
+    Gen_backend_post408.gen_backend_rules "html" html_target_rule Gen_backend_post408.files
   in
   List.iter (Sexplib0.Sexp.pp Format.std_formatter) stanzas

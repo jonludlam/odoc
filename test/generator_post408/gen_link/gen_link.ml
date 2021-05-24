@@ -56,29 +56,6 @@ let enabled_if path =
   | _ -> None *)
 
 let odocl_target_rule dep_path target_path =
-  (* match enabled_if dep_path with
-     | Some p ->
-         List
-           [
-             Atom "rule";
-             List [ Atom "target"; Atom (Fpath.basename target_path) ];
-             List [ Atom "deps"; Atom (Fpath.basename dep_path) ];
-             List
-               [
-                 Atom "action";
-                 List
-                   [
-                     Atom "run";
-                     Atom "odoc";
-                     Atom "link";
-                     Atom "-o";
-                     Atom "%{target}";
-                     Atom "%{deps}";
-                   ];
-               ];
-             List (Atom "enabled_if" :: p);
-           ]
-     | None -> *)
   List
     [
       Atom "rule";
@@ -97,6 +74,11 @@ let odocl_target_rule dep_path target_path =
               Atom "%{deps}";
             ];
         ];
+      (* List
+        [
+          Atom "enabled_if";
+          List [ Atom "<"; Atom "%{ocaml_version}"; Atom "4.08" ];
+        ]; *)
     ]
 
 let mld_odoc_target_rule dep_path target_path =

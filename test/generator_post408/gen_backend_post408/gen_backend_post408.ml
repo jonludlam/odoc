@@ -49,8 +49,8 @@ let gen_targets targets =
             ];
         ])
     targets
-(* 
-let enabled_if_version ver =
+
+(* let enabled_if_version ver =
   [ List [ Atom ">="; Atom "%{ocaml_version}"; Atom ver ] ]
 
 let enabled_if path =
@@ -61,13 +61,10 @@ let enabled_if path =
   | _ -> Some (enabled_if_version "4.10.0") *)
 
 let diff_rule t =
-  (* match enabled_if t with
-     | Some p -> *)
   List
     [
       Atom "rule";
       List [ Atom "alias"; Atom "runtest" ];
-      (* List (Atom "enabled_if" :: p); *)
       List
         [
           Atom "action";
@@ -81,10 +78,9 @@ let diff_rule t =
       List
         [
           Atom "enabled_if";
-          List [ Atom ">="; Atom "%{ocaml_version}"; Atom "4.10.0" ];
+          List [ Atom "<"; Atom "%{ocaml_version}"; Atom "4.08" ];
         ];
     ]
-(* | None -> assert false *)
 
 let diff_rules targets = List.map (fun t -> diff_rule t) targets
 
