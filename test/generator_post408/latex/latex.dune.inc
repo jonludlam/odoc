@@ -9,9 +9,7 @@
    (with-stdout-to
     Labels.c.tex.gen
     (progn
-     (system "cat 'latex.gen/test/Labels.c.tex'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'latex.gen/test/Labels.c.tex'"))))))
 
 (rule
  (alias runtest)
@@ -34,9 +32,7 @@
    (with-stdout-to
     Recent.tex.gen
     (progn
-     (system "cat 'latex.gen/test/Recent.tex'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'latex.gen/test/Recent.tex'"))))))
 
 (rule
  (alias runtest)
@@ -56,9 +52,7 @@
    (with-stdout-to
     Recent_impl.B.tex.gen
     (progn
-     (system "cat 'latex.gen/test/Recent_impl.B.tex'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'latex.gen/test/Recent_impl.B.tex'"))))))
 
 (rule
  (alias runtest)

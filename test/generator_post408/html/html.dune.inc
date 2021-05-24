@@ -21,9 +21,7 @@
    (with-stdout-to
     Labels.class-type-cs.index.html.gen
     (progn
-     (system "cat 'html.gen/test/Labels/class-type-cs/index.html'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'html.gen/test/Labels/class-type-cs/index.html'"))))))
 
 (rule
  (alias runtest)
@@ -100,9 +98,7 @@
    (with-stdout-to
     Recent.module-type-PolyS.index.html.gen
     (progn
-     (system "cat 'html.gen/test/Recent/module-type-PolyS/index.html'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'html.gen/test/Recent/module-type-PolyS/index.html'"))))))
 
 (rule
  (alias runtest)
@@ -213,9 +209,7 @@
    (with-stdout-to
     Recent_impl.module-type-S.X.index.html.gen
     (progn
-     (system "cat 'html.gen/test/Recent_impl/module-type-S/X/index.html'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'html.gen/test/Recent_impl/module-type-S/X/index.html'"))))))
 
 (rule
  (alias runtest)

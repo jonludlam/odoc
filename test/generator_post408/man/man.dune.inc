@@ -13,9 +13,7 @@
    (with-stdout-to
     Labels.c.3o.gen
     (progn
-     (system "cat 'man.gen/test/Labels.c.3o'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'man.gen/test/Labels.c.3o'"))))))
 
 (rule
  (alias runtest)
@@ -61,9 +59,7 @@
    (with-stdout-to
     Recent.X.3o.gen
     (progn
-     (system "cat 'man.gen/test/Recent.X.3o'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'man.gen/test/Recent.X.3o'"))))))
 
 (rule
  (alias runtest)
@@ -123,9 +119,7 @@
    (with-stdout-to
     Recent_impl.B.3o.gen
     (progn
-     (system "cat 'man.gen/test/Recent_impl.B.3o'")))))
- (enabled_if
-  (< %{ocaml_version} 4.08)))
+     (system "cat 'man.gen/test/Recent_impl.B.3o'"))))))
 
 (rule
  (alias runtest)

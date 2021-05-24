@@ -75,10 +75,10 @@ let odocl_target_rule dep_path target_path =
             ];
         ];
       (* List
-        [
-          Atom "enabled_if";
-          List [ Atom "<"; Atom "%{ocaml_version}"; Atom "4.08" ];
-        ]; *)
+         [
+           Atom "enabled_if";
+           List [ Atom "<"; Atom "%{ocaml_version}"; Atom "4.08" ];
+         ]; *)
     ]
 
 let mld_odoc_target_rule dep_path target_path =
