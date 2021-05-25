@@ -1,6 +1,56 @@
 (rule
  (action
   (progn
+   (run
+    odoc
+    html-generate
+    --indent
+    -o
+    html.gen
+    %{dep:../bugs_post_406.odocl})
+   (with-stdout-to
+    Bugs_post_406.index.html.gen
+    (progn
+     (system "cat 'html.gen/test/Bugs_post_406/index.html'")))
+   (with-stdout-to
+    Bugs_post_406.class-type-let_open.index.html.gen
+    (progn
+     (system
+      "cat 'html.gen/test/Bugs_post_406/class-type-let_open/index.html'")))
+   (with-stdout-to
+    Bugs_post_406.class-let_open'.index.html.gen
+    (progn
+     (system
+      "cat 'html.gen/test/Bugs_post_406/class-let_open'\\''/index.html'"))))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff Bugs_post_406.index.html Bugs_post_406.index.html.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff
+   Bugs_post_406.class-type-let_open.index.html
+   Bugs_post_406.class-type-let_open.index.html.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff
+   Bugs_post_406.class-let_open'.index.html
+   Bugs_post_406.class-let_open'.index.html.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (action
+  (progn
    (run odoc html-generate --indent -o html.gen %{dep:../labels.odocl})
    (with-stdout-to
     Labels.index.html.gen

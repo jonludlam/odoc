@@ -1,6 +1,33 @@
 (rule
  (action
   (progn
+   (run odoc man-generate -o man.gen %{dep:../bugs_post_406.odocl})
+   (with-stdout-to
+    Bugs_post_406.3o.gen
+    (progn
+     (system "cat 'man.gen/test/Bugs_post_406.3o'")))
+   (with-stdout-to
+    Bugs_post_406.let_open'.3o.gen
+    (progn
+     (system "cat 'man.gen/test/Bugs_post_406.let_open'\\''.3o'"))))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff Bugs_post_406.3o Bugs_post_406.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff Bugs_post_406.let_open'.3o Bugs_post_406.let_open'.3o.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (action
+  (progn
    (run odoc man-generate -o man.gen %{dep:../labels.odocl})
    (with-stdout-to
     Labels.3o.gen

@@ -1,4 +1,22 @@
 (rule
+ (target bugs_post_406.cmti)
+ (deps cases/bugs_post_406.mli)
+ (action
+  (run ocamlc -c -bin-annot -o %{target} %{deps})))
+
+(rule
+ (target bugs_post_406.odoc)
+ (deps bugs_post_406.cmti)
+ (action
+  (run odoc compile --pkg test -o %{target} %{deps})))
+
+(rule
+ (target bugs_post_406.odocl)
+ (deps bugs_post_406.odoc)
+ (action
+  (run odoc link -o %{target} %{deps})))
+
+(rule
  (target labels.cmti)
  (deps cases/labels.mli)
  (action
@@ -60,6 +78,7 @@
    (pipe-stdout
     (run
      gen_html/gen_html.exe
+     %{dep:../bugs_post_406.odocl}
      %{dep:../labels.odocl}
      %{dep:../recent.odocl}
      %{dep:../recent_impl.odocl})
@@ -73,6 +92,7 @@
    (pipe-stdout
     (run
      gen_latex/gen_latex.exe
+     %{dep:../bugs_post_406.odocl}
      %{dep:../labels.odocl}
      %{dep:../recent.odocl}
      %{dep:../recent_impl.odocl})
@@ -86,6 +106,7 @@
    (pipe-stdout
     (run
      gen_man/gen_man.exe
+     %{dep:../bugs_post_406.odocl}
      %{dep:../labels.odocl}
      %{dep:../recent.odocl}
      %{dep:../recent_impl.odocl})

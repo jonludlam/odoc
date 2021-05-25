@@ -1,6 +1,7 @@
 (include link.dune.inc)
 
 (rule
+ (deps (glob_files cases/*))
  (action
   (with-stdout-to
    link.dune.inc.gen

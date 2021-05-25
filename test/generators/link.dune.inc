@@ -35,24 +35,6 @@
   (run odoc link -o %{target} %{deps})))
 
 (rule
- (target bugs_post_406.cmti)
- (deps cases/bugs_post_406.mli)
- (action
-  (run ocamlc -c -bin-annot -o %{target} %{deps})))
-
-(rule
- (target bugs_post_406.odoc)
- (deps bugs_post_406.cmti)
- (action
-  (run odoc compile --pkg test -o %{target} %{deps})))
-
-(rule
- (target bugs_post_406.odocl)
- (deps bugs_post_406.odoc)
- (action
-  (run odoc link -o %{target} %{deps})))
-
-(rule
  (target bugs_pre_410.cmt)
  (deps cases/bugs_pre_410.ml)
  (action
@@ -416,7 +398,6 @@
      gen_html/gen_html.exe
      %{dep:../alias.odocl}
      %{dep:../bugs.odocl}
-     %{dep:../bugs_post_406.odocl}
      %{dep:../bugs_pre_410.odocl}
      %{dep:../class.odocl}
      %{dep:../external.odocl}
@@ -449,7 +430,6 @@
      gen_latex/gen_latex.exe
      %{dep:../alias.odocl}
      %{dep:../bugs.odocl}
-     %{dep:../bugs_post_406.odocl}
      %{dep:../bugs_pre_410.odocl}
      %{dep:../class.odocl}
      %{dep:../external.odocl}
@@ -482,7 +462,6 @@
      gen_man/gen_man.exe
      %{dep:../alias.odocl}
      %{dep:../bugs.odocl}
-     %{dep:../bugs_post_406.odocl}
      %{dep:../bugs_pre_410.odocl}
      %{dep:../class.odocl}
      %{dep:../external.odocl}

@@ -1,6 +1,33 @@
 (rule
  (action
   (progn
+   (run odoc latex-generate -o latex.gen %{dep:../bugs_post_406.odocl})
+   (with-stdout-to
+    Bugs_post_406.tex.gen
+    (progn
+     (system "cat 'latex.gen/test/Bugs_post_406.tex'")))
+   (with-stdout-to
+    Bugs_post_406.let_open'.tex.gen
+    (progn
+     (system "cat 'latex.gen/test/Bugs_post_406.let_open'\\''.tex'"))))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff Bugs_post_406.tex Bugs_post_406.tex.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (alias runtest)
+ (action
+  (diff Bugs_post_406.let_open'.tex Bugs_post_406.let_open'.tex.gen))
+ (enabled_if
+  (>= %{ocaml_version} 4.08)))
+
+(rule
+ (action
+  (progn
    (run odoc latex-generate -o latex.gen %{dep:../labels.odocl})
    (with-stdout-to
     Labels.tex.gen
