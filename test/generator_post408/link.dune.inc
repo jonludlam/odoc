@@ -93,15 +93,21 @@
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.08))
  (action
   (diff html/html.dune.inc html/html.dune.inc.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.08))
  (action
   (diff latex/latex.dune.inc latex/latex.dune.inc.gen)))
 
 (rule
  (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 4.08))
  (action
   (diff man/man.dune.inc man/man.dune.inc.gen)))

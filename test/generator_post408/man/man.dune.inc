@@ -20,21 +20,21 @@
  (action
   (diff Labels.3o Labels.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.A.3o Labels.A.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.c.3o Labels.c.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (action
@@ -66,35 +66,35 @@
  (action
   (diff Recent.3o Recent.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.Z.3o Recent.Z.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.Z.Y.3o Recent.Z.Y.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.Z.Y.X.3o Recent.Z.Y.X.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.X.3o Recent.X.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (action
@@ -126,32 +126,32 @@
  (action
   (diff Recent_impl.3o Recent_impl.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.Foo.3o Recent_impl.Foo.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.Foo.A.3o Recent_impl.Foo.A.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.Foo.B.3o Recent_impl.Foo.B.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.B.3o Recent_impl.B.3o.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))

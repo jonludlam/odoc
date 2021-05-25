@@ -78,7 +78,7 @@ let diff_rule t =
       List
         [
           Atom "enabled_if";
-          List [ Atom "<"; Atom "%{ocaml_version}"; Atom "4.08" ];
+          List [ Atom ">="; Atom "%{ocaml_version}"; Atom "4.08" ];
         ];
     ]
 

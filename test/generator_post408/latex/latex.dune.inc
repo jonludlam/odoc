@@ -16,14 +16,14 @@
  (action
   (diff Labels.tex Labels.tex.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.c.tex Labels.c.tex.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (action
@@ -39,7 +39,7 @@
  (action
   (diff Recent.tex Recent.tex.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (action
@@ -59,11 +59,11 @@
  (action
   (diff Recent_impl.tex Recent_impl.tex.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.B.tex Recent_impl.B.tex.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))

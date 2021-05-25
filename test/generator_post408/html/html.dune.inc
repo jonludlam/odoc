@@ -28,35 +28,35 @@
  (action
   (diff Labels.index.html Labels.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.A.index.html Labels.A.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.module-type-S.index.html Labels.module-type-S.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.class-c.index.html Labels.class-c.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Labels.class-type-cs.index.html Labels.class-type-cs.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (action
@@ -105,14 +105,14 @@
  (action
   (diff Recent.index.html Recent.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.module-type-S.index.html Recent.module-type-S.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -121,7 +121,7 @@
    Recent.module-type-S1.index.html
    Recent.module-type-S1.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -130,35 +130,35 @@
    Recent.module-type-S1.argument-1-_.index.html
    Recent.module-type-S1.argument-1-_.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.Z.index.html Recent.Z.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.Z.Y.index.html Recent.Z.Y.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.Z.Y.X.index.html Recent.Z.Y.X.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent.X.index.html Recent.X.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -167,7 +167,7 @@
    Recent.module-type-PolyS.index.html
    Recent.module-type-PolyS.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (action
@@ -216,35 +216,35 @@
  (action
   (diff Recent_impl.index.html Recent_impl.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.Foo.index.html Recent_impl.Foo.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.Foo.A.index.html Recent_impl.Foo.A.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.Foo.B.index.html Recent_impl.Foo.B.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
  (action
   (diff Recent_impl.B.index.html Recent_impl.B.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -253,7 +253,7 @@
    Recent_impl.module-type-S.index.html
    Recent_impl.module-type-S.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -262,7 +262,7 @@
    Recent_impl.module-type-S.F.index.html
    Recent_impl.module-type-S.F.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -271,7 +271,7 @@
    Recent_impl.module-type-S.F.argument-1-_.index.html
    Recent_impl.module-type-S.F.argument-1-_.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))
 
 (rule
  (alias runtest)
@@ -280,4 +280,4 @@
    Recent_impl.module-type-S.X.index.html
    Recent_impl.module-type-S.X.index.html.gen))
  (enabled_if
-  (< %{ocaml_version} 4.08)))
+  (>= %{ocaml_version} 4.08)))

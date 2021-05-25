@@ -239,6 +239,11 @@ let diff_rules =
           List [ Atom "alias"; Atom "runtest" ];
           List
             [
+              Atom "enabled_if";
+              List [ Atom ">="; Atom "%{ocaml_version}"; Atom "4.08" ];
+            ];
+          List
+            [
               Atom "action";
               List [ Atom "diff"; Atom b.dune_inc'; Atom b.dune_inc_gen' ];
             ];
