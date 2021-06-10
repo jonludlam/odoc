@@ -46,14 +46,14 @@
     "@opam/sexplib0": "*",
     "@opam/tyxml": "4.3.0",
     "@opam/ocamlfind-secondary":"1.8.1",
-    "ocaml": "^4.2.0"
+    "ocaml": "~4.11.0"
   },
   "resolutions": {
     "@opam/markup": "aantron/markup.ml:markup.opam#9f8e77"
   },
   "devDependencies": {
     "@opam/merlin": "^3.0.3",
-    "ocaml": "^4.6.0"
+    "ocaml": "^4.11.0"
   },
   "license": "ISC",
   "private": false
