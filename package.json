@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@opam/merlin": "^3.0.3",
-    "ocaml": "^4.11.0"
+    "ocaml": "~4.11.0"
   },
   "license": "ISC",
   "private": false
