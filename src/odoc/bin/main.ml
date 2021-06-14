@@ -90,6 +90,14 @@ let open_modules =
   let default = [ "Stdlib" ] in
   Arg.(value & opt_all string default & info ~docv:"MODULE" ~doc [ "open" ])
 
+let extra_suffix =
+  let doc =
+    "Extra suffix to append to generated filenames. This is intended for \
+     expect tests to use."
+  in
+  let default = "" in
+  Arg.(value & opt string default & info ~docv:"SUFFIX" ~doc [ "extra-suffix" ])
+
 module Compile : sig
   val output_file : dst:string option -> input:Fs.file -> Fs.file
 
@@ -472,15 +480,6 @@ module Odoc_html = Make_renderer (struct
     Arg.(
       value & opt convert_uri default & info ~docv:"URI" ~doc [ "support-uri" ])
 
-  let extra_suffix =
-    let doc =
-      "Extra suffix to append to generated filenames. This is intended for \
-       expect tests to use."
-    in
-    let default = "" in
-    Arg.(
-      value & opt string default & info ~docv:"SUFFIX" ~doc [ "extra-suffix" ])
-
   let extra_args =
     let f semantic_uris closed_details indent theme_uri support_uri flat
         extra_suffix =
@@ -549,11 +548,13 @@ end = struct
 end
 
 module Odoc_manpage = Make_renderer (struct
-  type args = unit
+  type args = Man_page.args
 
   let renderer = Man_page.renderer
 
-  let extra_args = Term.const ()
+  let extra_args =
+    let f extra_suffix = Man_page.{ extra_suffix } in
+    Term.(const f $ extra_suffix)
 end)
 
 module Odoc_latex = Make_renderer (struct
@@ -566,8 +567,8 @@ module Odoc_latex = Make_renderer (struct
     Arg.(value & opt bool true & info ~docv:"BOOL" ~doc [ "with-children" ])
 
   let extra_args =
-    let f with_children = { Latex.with_children } in
-    Term.(const f $ with_children)
+    let f with_children extra_suffix = { Latex.with_children; extra_suffix } in
+    Term.(const f $ with_children $ extra_suffix)
 end)
 
 module Depends = struct

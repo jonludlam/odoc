@@ -483,12 +483,14 @@ let page { Page.title; header; items = i; url } =
   ++ macro "SH" "Documentation" ++ vspace ++ macro "nf" ""
   ++ item ~nested:false i
 
-let rec subpage subp =
+let rec subpage ~extra_suffix subp =
   let p = subp.Subpage.content in
-  if Link.should_inline p.url then [] else [ render p ]
+  if Link.should_inline p.url then [] else [ render ~extra_suffix p ]
 
-and render (p : Page.t) =
+and render ~extra_suffix (p : Page.t) =
   let content ppf = Format.fprintf ppf "%a@." Roff.pp (page p) in
-  let children = Utils.flatmap ~f:subpage @@ Subpages.compute p in
-  let filename = Link.as_filename p.url in
+  let children =
+    Utils.flatmap ~f:(subpage ~extra_suffix) @@ Subpages.compute p
+  in
+  let filename = Fpath.add_ext extra_suffix @@ Link.as_filename p.url in
   { Renderer.filename; content; children }

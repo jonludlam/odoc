@@ -438,8 +438,8 @@ module Doc = struct
     in
     Fmt.list input_child ppf children
 
-  let make ~with_children url content children =
-    let filename = Link.filename url in
+  let make ~with_children ~extra_suffix url content children =
+    let filename = Fpath.add_ext extra_suffix (Link.filename url) in
     let label = Label (Link.page url) in
     let content =
       match content with
@@ -457,25 +457,29 @@ end
 module Page = struct
   let on_sub = function `Page _ -> Some 1 | `Include _ -> None
 
-  let rec subpage ~with_children (p : Subpage.t) =
+  let rec subpage ~with_children ~extra_suffix (p : Subpage.t) =
     if Link.should_inline p.status p.content.url then []
-    else [ page ~with_children p.content ]
+    else [ page ~with_children ~extra_suffix p.content ]
 
-  and subpages ~with_children i =
+  and subpages ~with_children ~extra_suffix i =
     List.flatten
-    @@ List.map (subpage ~with_children)
+    @@ List.map (subpage ~with_children ~extra_suffix)
     @@ Doctree.Subpages.compute i
 
-  and page ~with_children ({ Page.title = _; header; items = i; url } as p) =
+  and page ~with_children ~extra_suffix
+      ({ Page.title = _; header; items = i; url } as p) =
     let i = Doctree.Shift.compute ~on_sub i in
-    let subpages = subpages ~with_children p in
+    let subpages = subpages ~with_children ~extra_suffix p in
     let header = items header in
     let content = items i in
-    let page = Doc.make ~with_children url (header @ content) subpages in
+    let page =
+      Doc.make ~with_children ~extra_suffix url (header @ content) subpages
+    in
     page
 end
 
-let render ~with_children page = Page.page ~with_children page
+let render ~with_children ~extra_suffix page =
+  Page.page ~with_children ~extra_suffix page
 
 let files_of_url url =
   if Link.is_class_or_module_path url then [ Link.filename url ] else []
