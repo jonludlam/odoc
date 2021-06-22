@@ -18,7 +18,7 @@ and general_link_content = general_inline_element with_location list
 
 type general_block_element =
   [ `Paragraph of general_link_content
-  | `Code_block of string option * string
+  | `Code_block of string with_location option * string with_location
   | `Verbatim of string
   | `Modules of Comment.module_reference list
   | `List of
@@ -63,6 +63,8 @@ let rec inline_element : general_inline_element t =
 and link_content : general_link_content t =
   List (Indirect (ignore_loc, inline_element))
 
+and located_string : string with_location t = Indirect (ignore_loc, string)
+
 let module_reference =
   let simplify m =
     ( (m.module_reference :> Paths.Reference.t),
@@ -89,7 +91,7 @@ let rec block_element : general_block_element t =
     (function
     | `Paragraph x -> C ("`Paragraph", x, link_content)
     | `Code_block (x, y) ->
-        C ("`Code_block", (x, y), Pair (Option string, string))
+        C ("`Code_block", (x, y), Pair (Option located_string, located_string))
     | `Verbatim x -> C ("`Verbatim", x, string)
     | `Modules x -> C ("`Modules", x, List module_reference)
     | `List (x1, x2) ->
