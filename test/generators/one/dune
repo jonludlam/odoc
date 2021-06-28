@@ -1,4 +1,0 @@
-(rule (target test-Test.html.gen) (deps test.mli)
- (action (run compile --test test.mli)))
-(rule (alias runtest) (enabled_if
-   (>= %{ocaml_version} 4.07.0))  (action (diff test-Test.html test-Test.html.gen)))
