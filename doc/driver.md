@@ -292,15 +292,15 @@ let compile_mlds () =
     let mkpage x = "page-" ^ x in
     let mkmod x = "module-" ^ x in
     let mkmld x = Fpath.(add_ext "mld" (v x)) in
-    compile (mkmld "odoc") ("page-deps" :: (List.map mkpage (odoc_libraries @ extra_docs)));
-    compile (mkmld "deps") ~parent:"odoc" (List.map mkpage dep_libraries);
+    let _ = compile (mkmld "odoc") ("page-deps" :: (List.map mkpage (odoc_libraries @ extra_docs))) in
+    let _ = compile (mkmld "deps") ~parent:"odoc" (List.map mkpage dep_libraries) in
     let extra_odocs = List.map (fun p ->
         ignore(compile (mkmld p) ~parent:"odoc" []);
         "page-"^p^".odoc") extra_docs in
     let odocs = List.map (fun library ->
         let parent = List.assoc library parents in
         let children = List.filter_map (fun (parent, lib, child) -> if lib=library then Some (Fpath.basename child |> mkmod) else None) all_units in
-        compile (mkmld library) ~parent children;
+        let _ = compile (mkmld library) ~parent children in
         "page-"^library^".odoc"
         ) all_libraries in
     List.map Fpath.v ("page-odoc.odoc" :: "page-deps.odoc" ::  odocs @ extra_odocs)
