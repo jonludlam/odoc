@@ -148,7 +148,7 @@ let link file =
 
 let html_generate file =
     let open Cmd in
-    let cmd = odoc % "html-generate" % p file % "-o" % "html" % "--indent" % "--theme-uri" % "odoc" % "--support-uri" % "odoc" in
+    let cmd = odoc % "html-generate" % p file % "-o" % "html" % "--theme-uri" % "odoc" % "--support-uri" % "odoc" in
     OS.Cmd.(run_out cmd ~err:err_null |> to_lines) |> Result.get_ok
 
 let support_files () =
@@ -166,12 +166,13 @@ to the hierarchy declared above.
 ```ocaml env=e1
 let dep_libraries = [
     "cmdliner";
-   "stdlib";
+    "stdlib";
     "astring";
     "fpath";
     "result";
     "yojson";
     "tyxml";
+    "biniou";
 ];;
 
 let odoc_libraries = [
@@ -185,7 +186,8 @@ let extra_docs = [
     "interface";
     "contributing";
     "driver";
-    "parent_child_spec"
+    "parent_child_spec";
+    "markup";
 ]
 
 let parents =
