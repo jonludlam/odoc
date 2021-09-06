@@ -178,7 +178,7 @@ let dep_libraries = [
 let odoc_libraries = [
     "odoc_xref_test"; "print"; "odoc_xref2"; "odoc_parser"; "odoc_odoc";
     "odoc_model_desc"; "odoc_model"; "odoc_manpage"; "odoc_loader";
-    "odoc_latex"; "odoc_html"; "odoc_document" ];;
+    "odoc_latex"; "odoc_html"; "odoc_document"; "odoc_examples" ];;
 
 let all_libraries = dep_libraries @ odoc_libraries;;
 
@@ -188,6 +188,7 @@ let extra_docs = [
     "driver";
     "parent_child_spec";
     "markup";
+    "features";
 ]
 
 let parents =
@@ -286,6 +287,10 @@ let lib_units = List.map (fun (lib, p) ->
 let all_units = (odoc_units @ lib_units) |> List.flatten;;
 ```
 
+```ocaml env=e1
+# Fpath.Set.fold (fun p acc -> p::acc) odoc_all_unit_paths [];;
+```
+
 
 Let's compile all of the parent mld files. We do this in order such that the parents are compiled before the children, so we start with `odoc.mld`, then `deps.mld`, and so on. The result of this file is a list of the resulting `odoc` files.
 
@@ -361,4 +366,20 @@ The following code actually executes all of the above, and we're done!
 let compiled = compile_all () in
 let linked = link_all compiled in
 generate_all linked
+```
+
+Finally we install some ancilliary files specific to our site. This bit can be
+ignored!
+
+```ocaml env=e1
+# let lines =
+    let pngs =
+      OS.Dir.contents ~dotfiles:true Fpath.(v ".") >>|=
+      List.filter (fun p ->
+            Fpath.has_ext "png" p) |> Result.get_ok
+    in
+    let cp = Cmd.(v "cp" % "-f") in
+    let cp = List.fold_right (fun p cp -> Cmd.add_arg cp (Fpath.to_string p)) pngs cp in
+    let cp = Cmd.(cp % "html/odoc") in
+    OS.Cmd.(run_out cp |> to_lines) |> Result.get_ok
 ```
