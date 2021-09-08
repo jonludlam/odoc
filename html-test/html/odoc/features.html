@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+ <head><title>features (odoc.features)</title>
+  <link rel="stylesheet" href="odoc.css"/><meta charset="utf-8"/>
+  <meta name="generator" content="odoc %%VERSION%%"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <script src="highlight.pack.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+ </head>
+ <body class="odoc">
+  <nav class="odoc-nav"><a href="index.html">Up</a> – 
+   <a href="index.html">odoc</a> &#x00BB; features
+  </nav>
+  <header class="odoc-preamble">
+   <h1 id="features"><a href="#features" class="anchor"></a>Features</h1>
+   <p>Odoc works by taking module interfaces, processing them to make
+     them more useful, and turning them into documentation. The processing
+     that odoc does is largely <i>hiding</i>, <i>expansion</i> and 
+    <i>resolution</i>, and this document explains the features of these
+     processes in detail.
+   </p>
+  </header>
+  <nav class="odoc-toc">
+   <ul><li><a href="#hiding">Hiding</a></li>
+    <li><a href="#expansion">Expansion</a>
+     <ul><li><a href="#aliases">Aliases</a></li>
+      <li><a href="#deep-constraints">Deep constraints</a></li>
+      <li><a href="#type-substitution">Type substitution</a></li>
+     </ul>
+    </li>
+   </ul>
+  </nav>
+  <div class="odoc-content">
+   <h2 id="hiding"><a href="#hiding" class="anchor"></a>Hiding</h2>
+   <p>Some items are not intended to be used directly but are present
+     as implementation detail, for example for testing, or for implementing
+     dune's namespacing, or other reasons.
+   </p>
+   <p>There are two mechanisms for explicitly hiding elements from the
+     final output. The first is to use 
+    <a href="https://ocaml.org/manual/ocamldoc.html#ss:ocamldoc-stop">
+     documentation stop comments
+    </a>, which can be used to hide any items at all from the output.
+     The second mechanism is only used for modules, and is a naming 
+    convention. If any module has a double underscore in its name, it
+     is considered to be hidden.
+   </p>
+   <h2 id="expansion"><a href="#expansion" class="anchor"></a>Expansion</h2>
+   <p>There are many instances of items in signatures where what's written
+     is the best thing in terms of semantics, but not necessarily useful
+     in terms of documentation. For example:
+   </p>
+   <pre><code>module StringSet : Stdlib.Set.S with type t = string</code>
+   </pre>
+   <p>Odoc will <em>expand</em> these items, augmenting the declaration
+     with the signature along with all the documentation comments that
+     can be found, so in this case those from <code>Stdlib.Set.S</code>
+    . While the compiler also does a very similar procedure and determines
+     the signature of the module, odoc tries quite hard to preserve as
+     much as possible from the context of the original items.
+   </p>
+   <p>The declaration can be seen rendered 
+    <a href="odoc_examples/Odoc_examples/Expansion/Simple/index.html">here
+    </a>, and the full expansion can be found by clicking on the name
+     of the module (<code>StringSet</code> in this case), or the direct
+     link is 
+    <a
+     href="odoc_examples/Odoc_examples/Expansion/Simple/StringSet/index.html">
+     here
+    </a>.
+   </p>
+   <p>These expansions have to be done carefully. A number of cases follow
+     in which odoc has to treat specially.
+   </p><h3 id="aliases"><a href="#aliases" class="anchor"></a>Aliases</h3>
+   <p>In general odoc does not expand module aliases, unless they are
+     an alias to a hidden module. If this is the case the right-hand 
+    side of the declaration is dropped and replaced with 
+    <code>sig ... end</code> and the expansion is created.
+   </p><p>For example, given the following source,</p>
+   <pre>
+    <code>
+     module Hidden__module : sig
+       type t
+       val f : t -&gt; t
+     end
+     
+     module Alias = Hidden__module
+    </code>
+   </pre>
+   <p>then the <code>Hidden__module</code> module will not be present
+     in the output, and the <code>Alias</code> module will be rendered
+     as if it were a simple signature. This can be seen in the example
+     rendering 
+    <a href="odoc_examples/Odoc_examples/Expansion/Aliases/index.html">here
+    </a>.
+   </p>
+   <h3 id="deep-constraints"><a href="#deep-constraints" class="anchor"></a>
+    Deep constraints
+   </h3>
+   <p>The module type system allows for constraints on abstract types
+     (as seen above in the <code>StringSet</code> declaration). These
+     constraints may be 'deep' in the sense that they operate on a nested
+     module rather than the outer one. For example,
+   </p>
+   <pre>
+    <code>
+     module type SIG = sig
+       type t
+     end
+     
+     module type MODTYPE = sig
+       module X : SIG
+       module Y : SIG
+     end
+     
+     type foo
+     
+     module M : MODTYPE with type X.t = foo
+    </code>
+   </pre>
+   <p>Here we've got a module type <code>SIG</code> that contains an 
+    opaque type <code>t</code>. Then a module type <code>MODTYPE</code>
+     that contains two modules, <code>X</code> and <code>Y</code>, that
+     have signature <code>SIG</code>. Lastly we declare a module 
+    <code>M</code> that has signature <code>MODTYPE</code> with an additional
+     type equality <code>X.t = foo</code>. When the compiler evaluates
+     the signature of module <code>M</code> here, the definition of 
+    <code>X</code> within it is simply replaced with a signature:
+   </p>
+   <pre>
+    <code>module M : sig
+            module X : sig type t = foo end
+            module Y : SIG
+          end
+    </code>
+   </pre>
+   <p>and we lose both the fact that it came from <code>MODTYPE</code>
+     and also that within it <code>X</code> originally had signature 
+    <code>SIG</code>. Odoc tries to be more careful and instead with 
+    keep both the <code>MODTYPE</code> on <code>M</code> with the type
+     equality <code>X.t = foo</code>, and the <code>SIG</code> on 
+    <code>X</code> with the type equality <code>t = foo</code>. The expansion
+     of of module M in this example can be seen 
+    <a
+     href="odoc_examples/Odoc_examples/Expansion/DeepConstraint/M/index.html">
+     here
+    </a>.
+   </p>
+   <h3 id="type-substitution">
+    <a href="#type-substitution" class="anchor"></a>Type substitution
+   </h3>
+   <p>In a similar way to adding type equalities, we can do type substitution
+     where a type from a signature is removed entirely from the signature
+     and a replacement substituted in its place. For example:
+   </p>
+  </div>
+ </body>
+</html>
