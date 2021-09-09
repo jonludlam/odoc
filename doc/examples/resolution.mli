@@ -14,6 +14,14 @@ module Alias : sig
   module B = A
   
   type t = B.t
+
+  module type A = sig
+    type t
+  end
+
+  module type B = A
+
+  (** {!module-type-B.t} *)
 end
 
 module HiddenAlias : sig
@@ -46,4 +54,58 @@ module Canonical : sig
   module B = A
 
   type t = A.t
+end
+
+module Fragments : sig
+  (** Demonstrates the resolution of fragments *)
+
+  module type A = sig
+    module B : sig
+      type t
+      val f : t -> t
+    end
+  end
+  
+  module C : A with type B.t = int
+  module D : module type of C.B with type t := int
+end
+
+module Hidden : sig
+  (** Demonstrates paths to hidden items *)
+
+  (**/**)
+
+type t = int
+type u
+
+(**/**)
+
+type v = T of t
+type w = U of u
+
+
+end
+
+
+module References : sig
+  module type A = sig
+
+    type t
+    (** type [t] in module type [A] *)
+  
+  end
+  
+  module A : sig
+  
+    type t
+    (** type [t] in module [A] *)
+  
+    module B : sig type t end
+    module type B = sig type t end
+  
+  end
+  
+(** We can refer unambiguously to {!module-type-A.t} in module type [A] or {!module-A.t} in module [A],
+and also where there are name clashes within the path: {!A.module-B.t} or {!A.module-type-B.t} *)
+
 end
