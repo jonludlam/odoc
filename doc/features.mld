@@ -96,6 +96,54 @@ if module [A] is an alias to another module [B] that declares [A] to be the cano
 path to the module (ie, it has the tag [@canonical A] in an associated
 comment).
 
+{3 Module type aliases}
+
+Module types do not have aliases in the same way that modules do, but it
+is possible and common to declare an effective alias to another by
+simply creating a new module type that is equal to a previous one. For example:
+
+{[
+module type A = sig
+  type t
+end
+
+module type B = A
+]}
+
+For these simple module type declarations where the right-hand side is just a
+path, odoc treats them as module aliases and does not produce an expansion.
+
+When strengthening, OCaml creates turns modules into aliases to the original
+module, but nothing is done to module types. In contrast, odoc replaces
+module types with 'aliases' to the originals too - these are then not expanded
+and hence this is important for reducing the size of the output.
+
+The following examples uses [module type of struct include ... end] to
+obtain the strengthened signature of [A] (see the {{!module_type_of}[Module Type Of]}
+section for more discussion of this).
+
+{[
+module A : sig
+  module type A = sig type t end
+  module X : A
+end
+module B : module type of struct include A end
+]}
+
+OCaml evaluates the following signature for [B]:
+
+{[
+module B : sig module type A = sig type t end module X = A.X end
+]}
+
+whereas odoc internally evaluates this as:
+
+{[
+module B : sig module type A = A.A end module X = A.X end
+]}
+
+This example is rendered {{!Odoc_examples.Expansion.Aliases.B}here}
+
 {2 Deep constraints}
 
 The module type system allows for constraints on abstract types 
@@ -155,7 +203,7 @@ module M : MODTYPE with type X.t = foo
 
 the {{!Odoc_examples.Expansion.DeepConstraint2.M}expansion of M} does not contain any [with type] constraints.
 
-{2 [module type of]}
+{2:module_type_of [module type of]}
 
 The OCaml construct [module type of] allows the type of a module to be
 recovered. As usual, when OCaml performs this operation it only retains
@@ -278,14 +326,11 @@ links necessarily need to take into account some of the features of expansions
 as outlined above. In order to decide where the links should point to and how to
 turn them into text, a process called 'Resolution' is required.
 
-In the following the general term 'reference' is used for any of the four different
-types described above.
-
 {2 Aliases}
 
-Since aliases are not usually expanded, a reference to an item that is in an aliased
-module must link to the item in the aliased module instead. For example, given
-the following:
+Since aliases are not usually expanded, a path or reference to an item that is in
+an module that's an alias must link to the item in the aliased module instead. For
+example, given the following:
 
 {[
 module A : sig
@@ -347,6 +392,92 @@ type t = A.t
 Note that in this example the [@canonical] tag has been given the path
 [Odoc_examples.Resolution.Canonical.B]. This {e must} be the fully qualified
 path to the canonical item.
+
+In this example, the right-hand side of [type t] will be rewritten such
+that it will be as if [B.t] had been written instead.
+
+Note that canonical tags are only used when resolving {e paths}, not 
+fragments (which are relative anyway) nor references, which since they are
+written by the author are assumed to point to the correct destination.
+
+{2 Fragment resolution}
+
+Fragments are relative paths that appear in module type expressions when
+adding equations or substituting types or modules. For example:
+
+{[
+module type A = sig
+  module B : sig
+    type t
+    val f : t -> t
+  end
+end
+
+module C : A with type B.t = int
+module D : module type of C.B with type t := int
+]}
+
+In this expression the fragment [B.t] should link to the definition of [type t]
+inside module [B] inside module type [A]. The fragment [t] in the definition of
+module [D] should link to the definition of type [t] inside module [B] inside
+module [C]. Note that it can't link to [type t] in [D] since that type has been
+destroyed!
+
+This example is rendered {{!Odoc_examples.Resolution.Fragments}here}.
+
+{2 Hidden elements}
+
+If there are paths that refer to hidden elements, these are removed from the
+interface unless there is an equal non-hidden type that can replace it. For
+example, in the following type definitions,
+
+{[
+
+(**/**)
+
+type t = int
+type u
+
+(**/**)
+
+type v = T of t
+type w = U of u
+
+]}
+
+[type v] will have a right-hand side of [T of int] as the hidden type [t] is
+equal to [int], whereas there is no non-hidden type equivalent to [u] so the
+right-hand side of type [w] is omitted from the output.
+
+{2 Reference resolution}
+
+References are hand-written in comments and not evaluated in any way by the
+compiler. 
+
+{[
+module type A = sig
+
+  type t
+  (** type [t] in module type [A] *)
+
+end
+
+module A : sig
+
+  type t
+  (** type [t] in module [A] *)
+
+  module B : sig type t end
+  module type B = sig type t end
+
+end
+
+(** We can refer unambiguously to {!module-type-A.t} in module type [A] or {!module-A.t} in module [A],
+and also where there are name clashes within the path: {!A.module-B.t} or {!A.module-type-B.t} *)
+]}
+
+This demonstrates that it is possible to refer to elements even when there is ambiguity
+if just the names were used. If odoc detects any ambiguity it will emit a warning.
 
 
 
