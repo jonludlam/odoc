@@ -88,6 +88,8 @@ end
 
 
 module References : sig
+  (** Examples of resolution of references *)
+
   module type A = sig
 
     type t
@@ -109,3 +111,37 @@ module References : sig
 and also where there are name clashes within the path: {!A.module-B.t} or {!A.module-type-B.t} *)
 
 end
+
+module Complicated_1 : sig
+  (** Some more complicated examples of resolution *)
+
+  module type A = sig
+    module M : sig module type S end
+    module N : M.S
+  end
+  
+  module B : sig module type S = sig type t end end
+  
+  module C : A with module M = B with type N.t = int
+  
+  type t = C.N.t
+
+end
+
+module Complicated_2 : sig
+  (** A very complicated example of resolution *)
+
+  module type Type = sig module type T end
+
+  module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+
+  module Bar : sig module type T = sig type bar end end
+
+  module Foo :
+    functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+
+  module FooBarInt : sig module Foo : sig type bar = int end end
+
+  type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+end
+  

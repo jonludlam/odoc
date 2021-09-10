@@ -20,6 +20,27 @@ module Aliases : sig
     module Alias = Hidden__module
 end
 
+module Functors : sig
+    (** Demonstrates the expansion of functors *)
+
+    module type Argument = sig
+
+        (** This type [a] is declared in the Argument module type *)
+        type a
+
+    end
+
+    module type Result = sig
+
+        (** This type [r] is declared in the Result module type *)
+        type r
+
+    end
+
+    module Functor : functor (X : Argument) (Y : Argument) -> Result
+
+end
+
 module DeepConstraint : sig
     (** Demonstrates expansion involving a constraint on a submodule *)
 
@@ -97,3 +118,4 @@ module ModuleTypeOfComplications : sig
     
     module type T = S with module X := X1
 end
+

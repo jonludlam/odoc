@@ -144,6 +144,37 @@ module B : sig module type A = A.A end module X = A.X end
 
 This example is rendered {{!Odoc_examples.Expansion.Aliases.B}here}
 
+
+{2 Functors}
+
+When odoc encounters a functor, these are also expanded. The parameters
+are expanded in the body of the functor expansion above the signature
+representing the result of the functor.
+
+For example, given the following:
+
+{[
+module type Argument = sig
+
+  (** This type [a] is declared in the Argument module type *)
+  type a
+
+end
+
+module type Result = sig
+
+  (** This type [r] is declared in the Result module type *)
+  type r
+
+end
+
+module Functor : functor (X : Argument) (Y : Argument) -> Result
+]}
+
+an expansion will be created for [Functor], containing within it
+expansions for [X] and [Y], followed by the signature of [Result].
+The above functor can be seen rendered {{!Odoc_examples.Expansion.Functors.Functor}here}.
+
 {2 Deep constraints}
 
 The module type system allows for constraints on abstract types 
@@ -479,6 +510,50 @@ and also where there are name clashes within the path: {!A.module-B.t} or {!A.mo
 This demonstrates that it is possible to refer to elements even when there is ambiguity
 if just the names were used. If odoc detects any ambiguity it will emit a warning.
 
+
+{2 Module type challenges}
+
+In some cases resolution can be more challenging than others. Consider this example:
+
+{[
+module type A = sig
+  module M : sig module type S end
+  module N : M.S
+end
+
+module B : sig module type S = sig type t end end
+
+module C : A with module M = B with type N.t = int
+
+type t = C.N.t
+]}
+
+In the expansion of module type [A], module [N] has no expansion because 
+module type [S] is abstract. Therefore in the definition of module [C], 
+the fragment [N.t] therefore cannot link to module [N] in module type [A],
+but instead must link to module type [S] in module [B].
+
+This example is rendered {{!Odoc_examples.Resolution.Complicated_1}here}.
+
+Now a very complicated example:
+
+{[
+module type Type = sig module type T end
+
+module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+
+module Bar : sig module type T = sig type bar end end
+
+module Foo :
+  functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+
+module FooBarInt : sig module Foo : sig type bar = int end end
+
+type t = App(Bar)(Foo)(FooBarInt).Foo.bar
+]}
+
+This one is left as an exercise to the reader! It can be seen rendered
+by odoc {{!Odoc_examples.Resolution.Complicated_2}here}.
 
 
 
