@@ -1,8 +1,9 @@
-{0 Features}
+{0 Language features}
 
 Odoc works by taking module interfaces, processing them to make them more
 useful, and turning them into documentation.
-The processing that odoc does is largely {i hiding}, {i expansion} and {i resolution},
+The processing that odoc does is largely {i hiding}, handling of {i Canonical
+references}, {i expansion} and {i resolution},
 and this document explains the features of these processes in detail.
 
 {1 Hiding}
@@ -175,10 +176,40 @@ an expansion will be created for [Functor], containing within it
 expansions for [X] and [Y], followed by the signature of [Result].
 The above functor can be seen rendered {{!Odoc_examples.Expansion.Functors.Functor}here}.
 
-{2 Deep constraints}
+{2 Shadowing}
 
-The module type system allows for constraints on abstract types 
-(as seen above in the [StringSet] declaration). These constraints
+OCaml ordinarily does not allow two items of the same type with
+the same name. For example, the following is illegal:
+
+```ocaml
+type t = int
+type t = string
+```
+
+However, if the item comes in via an include, then OCaml allows it.
+For example,
+
+```ocaml
+module type A = sig
+  type t = int
+  val f : t
+end
+
+module type B = sig
+  include A
+  type t = string
+  val g : t
+end
+```
+
+Since odoc is required to do its own expansions, it must take
+account of this behaviour. The previous example is rendered
+{{!Odoc_examples.Expansion.Shadowing}here}.
+
+{2 Deep equations}
+
+The module type system allows for adding equations to abstract types 
+(as seen above in the [StringSet] declaration). These equations
 may be 'deep' in the sense that they operate on a nested module
 rather than the outer one. For example,
 
@@ -197,7 +228,7 @@ type foo
 module M : MODTYPE with type X.t = foo
 ]}
 
-Here we've got a module type [SIG] that contains an opaque type [t].
+Here we've got a module type [SIG] that contains an abstract type [t].
 Then a module type [MODTYPE] that contains two modules, [X] and [Y],
 that have signature [SIG]. Lastly we declare a module [M] that
 has signature [MODTYPE] with an additional type equality [X.t = foo].
@@ -232,7 +263,52 @@ type foo
 module M : MODTYPE with type X.t = foo
 ]}
 
-the {{!Odoc_examples.Expansion.DeepConstraint2.M}expansion of M} does not contain any [with type] constraints.
+the {{!Odoc_examples.Expansion.DeepConstraint2.M}expansion of M} does not contain any [with type] equations.
+
+{2 Substitution}
+
+Similar to the addition of equations in the previous section, OCaml allows
+for types and modules to be {e destructively} substituted - so that the
+type or module is entirely removed from the resulting signature.
+
+As with the addition of equations above, these substitutions may be on
+deeply nested modules, and care needs to be taken to ensure that there are
+no references to the removed module or type left. For example,
+
+```ocaml
+module type S = sig
+  module M: sig type t end
+
+  type t = M.t
+end
+
+module type T = S with type M.t := int
+```
+
+The expansion of `T` internally is different from what is rendered.
+Internally, it becomes:
+
+```ocaml
+module M: sig type t end with type t := int
+
+type t = M.t
+```
+
+From this expansion it is still clear how to resolve the right-hand side
+of `type t = M.t`, and the next phase of odoc's transformation turns the
+right-hand side of `M.t` into `int`.
+
+In the output documentation, the declaration of `module M` is rendered
+simply as
+
+```ocaml
+module M : sig ... end
+```
+
+with the type substitution dropped. This is because the type substitition on
+the simple signature is not useful to know to the reader; the link `t` would
+have no destination. This example is rendered {{!Odoc_examples.Expansion.TypeSubstitution}here}.
+
 
 {2:module_type_of [module type of]}
 
@@ -301,7 +377,7 @@ module type S =
 ]}
 
 whereas odoc preserves the fact that [Y] and [Z] are calculated from [X]. If the 
-module [X] is subsequently replaced using a descructive substitution on [S], the
+module [X] is subsequently replaced using a destructive substitution on [S], the
 results would be different. Given the following,
 
 {[

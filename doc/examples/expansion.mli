@@ -41,8 +41,25 @@ module Functors : sig
 
 end
 
-module DeepConstraint : sig
-    (** Demonstrates expansion involving a constraint on a submodule *)
+module Shadowing : sig
+    (** Demonstrates shadowing of identifiers in includes *)
+
+    module type A = sig
+        type t = int
+        val f : t
+    end
+
+    module type B = sig
+        include A
+        type t = string
+        val g : t
+    end
+
+end
+
+
+module DeepEquality : sig
+    (** Demonstrates expansion involving an equation on a type in a submodule *)
 
     module type SIG = sig
         type t
@@ -58,8 +75,8 @@ module DeepConstraint : sig
     module M : MODTYPE with type X.t = foo
 end
 
-module DeepConstraint2 : sig
-    (** Demonstrates expansion involving a constraint on a submodule, but the submodule is already a simple signature *)
+module DeepEquality2 : sig
+    (** Demonstrates expansion involving an equation on a type in a submodule, but the submodule is already a simple signature *)
 
     module type MODTYPE = sig
         module X : sig type t end
@@ -72,17 +89,15 @@ module DeepConstraint2 : sig
 end
 
 module TypeSubstitution : sig
-    module type SIG = sig
-        module M : sig
-            type t
-            val func : t -> t
-        end
-        module N : sig
-            val func2 : M.t -> M.t
-        end
+    (** Demonstrates expansion involving deep destructive type substitution. *)
+
+    module type S = sig
+        module M: sig type t end
+      
+        type t = M.t
     end
-    
-    module X : SIG with type M.t = string
+      
+    module type T = S with type M.t := int
 end
 
 module ModuleTypeOf : sig

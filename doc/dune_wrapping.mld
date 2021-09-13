@@ -1,0 +1,18 @@
+{0 Dune's library wrapping}
+
+Dune has a feature whereby a library may be exposed under a single top-level
+module. This makes use of a feature of OCaml where the use of the compiler
+flag `-no-alias-deps` is used to avoid introducing dependencies between
+compilation units.
+
+The aim is to reduce the number of potential name clashes of modules by
+only exposing one main module the users of the library are intended to use,
+and exposing the modules that comprise the library as submodules, while
+still retaining the usual way of writing OCaml code with one module per
+file. These individual files are still compiled and installed -- and
+available in the global namespace -- but their names are prefixed with
+the name of the library in order to reduce the possibility of clashes.
+
+Dune includes canonical tags for these modules to allow for 
+{1 Example}
+
