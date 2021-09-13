@@ -189,6 +189,7 @@ let extra_docs = [
     "parent_child_spec";
     "markup";
     "features";
+    "dune_wrapping";
 ]
 
 let parents =
