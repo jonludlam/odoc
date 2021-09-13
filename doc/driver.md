@@ -173,6 +173,14 @@ let dep_libraries = [
     "yojson";
     "tyxml";
     "biniou";
+    "base";
+    "core_kernel";
+    "bin_prot";
+    "sexplib";
+    "sexplib0";
+    "base_quickcheck";
+    "ppx_sexp_conv";
+    "ppx_hash";
 ];;
 
 let odoc_libraries = [
