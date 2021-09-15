@@ -73,13 +73,13 @@ dune build @doc
 {1:testing Testing}
 
 odoc uses a variety of different test types. We are slowly converging on using
-dune's {{!https://dune.readthedocs.io/en/stable/tests.html#cram-tests}cram tests},
+dune's {{:https://dune.readthedocs.io/en/stable/tests.html#cram-tests}cram tests},
 though we still have many tests that aren't.
 
 {2 Cram tests}
 
 These are extensively used by the tests for the model layer, and are found in
-{{!https://github.com/ocaml/odoc/blob/master/test/xref2}test/xref2}. These consist
+{{:https://github.com/ocaml/odoc/blob/master/test/xref2}test/xref2}. These consist
 of a directory called [something.t], containing a file [run.t]. This file
 contains shell-like syntax, and usually runs odoc on some carefully crafted
 input files. For tests of the model layer it's often useful to use the binary
@@ -89,7 +89,7 @@ then be piped through [jq] to verify that values are as expected.
 We try to make these test files describe the test and what's expected which
 helps both when the output is not what the test expects, and also means that
 the tests can serve as documentation of how things work. As an example see
-the file {{!https://github.com/ocaml/odoc/blob/master/test/xref2/multi_file_module_type_of.t/run.t}test/xref2/multi_file_module_type_of.t/run.t}
+the file {{:https://github.com/ocaml/odoc/blob/master/test/xref2/multi_file_module_type_of.t/run.t}test/xref2/multi_file_module_type_of.t/run.t}
 
 The tests work by executing the shell script snippets, and then comparing the
 output we actually get with those in the [run.t] files. If these _don't_
@@ -177,7 +177,7 @@ your code is broken, go and fix it!
 We are slowly shifting these custom expect tests over to the dune promote
 workflow.
 
-{1: Coverage analysis}
+{1 Coverage analysis}
 
 The odoc repo is set up for coverage analysis. This is most useful if you're
 writing new tests, and want to know what they are actually touching. To use it,

@@ -33,7 +33,7 @@ real implementation modules and generating the single top-level module that
 simply contains aliases to the these implementation modules. With odoc's
 canonical modules feature all references to the implementation modules are
 rewritten to point at the aliases in the top-level module instead. A 
-{{!page-dune-wrapped-libraries}separate page} documents this in more detail.
+{{!page-dune_wrapping}separate page} documents this in more detail.
 
 
 In a similar fashion, it is sometimes useful to have this feature on module

@@ -10,9 +10,9 @@ module Alias : sig
   module A : sig
     type t
   end
-  
+
   module B = A
-  
+
   type t = B.t
 
   module type A = sig
@@ -37,9 +37,8 @@ module HiddenAlias : sig
   (**/**)
 
   module B = A
-  
-  type t = B.t
 
+  type t = B.t
 end
 
 module Canonical : sig
@@ -62,11 +61,13 @@ module Fragments : sig
   module type A = sig
     module B : sig
       type t
+
       val f : t -> t
     end
   end
-  
+
   module C : A with type B.t = int
+
   module D : module type of C.B with type t := int
 end
 
@@ -75,73 +76,94 @@ module Hidden : sig
 
   (**/**)
 
-type t = int
-type u
+  type t = int
 
-(**/**)
+  type u
 
-type v = T of t
-type w = U of u
+  (**/**)
 
+  type v = T of t
 
+  type w = U of u
 end
-
 
 module References : sig
   (** Examples of resolution of references *)
 
   module type A = sig
-
     type t
     (** type [t] in module type [A] *)
-  
   end
-  
+
   module A : sig
-  
     type t
     (** type [t] in module [A] *)
-  
-    module B : sig type t end
-    module type B = sig type t end
-  
-  end
-  
-(** We can refer unambiguously to {!module-type-A.t} in module type [A] or {!module-A.t} in module [A],
-and also where there are name clashes within the path: {!A.module-B.t} or {!A.module-type-B.t} *)
 
+    module B : sig
+      type t
+    end
+
+    module type B = sig
+      type t
+    end
+  end
+
+  (** We can refer unambiguously to {!module-type-A.t} in module type [A] or {!module-A.t} in module [A],
+and also where there are name clashes within the path: {!module-A.module-B.t} or {!module-A.module-type-B.t} *)
 end
 
 module Complicated_1 : sig
   (** Some more complicated examples of resolution *)
 
   module type A = sig
-    module M : sig module type S end
+    module M : sig
+      module type S
+    end
+
     module N : M.S
   end
-  
-  module B : sig module type S = sig type t end end
-  
-  module C : A with module M = B with type N.t = int
-  
-  type t = C.N.t
 
+  module B : sig
+    module type S = sig
+      type t
+    end
+  end
+
+  module C : A with module M = B with type N.t = int
+
+  type t = C.N.t
 end
 
 module Complicated_2 : sig
   (** A very complicated example of resolution *)
 
-  module type Type = sig module type T end
+  module type Type = sig
+    module type T
+  end
 
-  module App : functor (T : Type) (F : Type -> Type) (M : F(T).T) -> F(T).T
+  module App : functor
+    (T : Type)
+    (F : functor (_ : Type) -> Type)
+    (M : F(T).T)
+    -> F(T).T
 
-  module Bar : sig module type T = sig type bar end end
+  module Bar : sig
+    module type T = sig
+      type bar
+    end
+  end
 
-  module Foo :
-    functor (T : Type) -> sig module type T = sig module Foo : T.T end end
+  module Foo : functor (T : Type) -> sig
+    module type T = sig
+      module Foo : T.T
+    end
+  end
 
-  module FooBarInt : sig module Foo : sig type bar = int end end
+  module FooBarInt : sig
+    module Foo : sig
+      type bar = int
+    end
+  end
 
   type t = App(Bar)(Foo)(FooBarInt).Foo.bar
 end
-  

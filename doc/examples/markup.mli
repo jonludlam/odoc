@@ -13,7 +13,7 @@ module type Foo = sig
 
   (** Special comments can be placed between elements and are kept
     by the OCamldoc tool, but are not associated to any element.
-    @-tags in these comments are ignored.*)
+    [@]-tags in these comments are ignored.*)
 
   (*******************************************************************)
   (** Comments like the one above, with more than two asterisks,

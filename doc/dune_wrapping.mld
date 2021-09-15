@@ -21,27 +21,27 @@ produce correct documentation.
 Given two modules, [A] and [B], with [B] referencing types declared in module
 [A]:
 
-```ocaml
+{[
 (** Module A *)
 type t
-```
+]}
 
-```ocaml
+{[
 (** Module B *)
 type t = A.t
-```
+]}
 
 If these modules are to become part of a library called [Lib], then dune will
 compile these two as if their names were [Lib__A] and [Lib__B] and also 
 create a file [lib.ml] containing the following:
 
-```ocaml
+{[
 (** @canonical Lib.A *)
 module A = Lib__A
 
 (** @canonical Lib.B *)
 module B = Lib__B
-```
+]}
 
 This is the module that will be the one module intended to be used directly by
 users of the library. This module is in fact compiled {e first}, using the
@@ -78,26 +78,26 @@ replaced, but otherwise they will be rendered as unresolved links.
 For example, consider the following module structure. First, the module [Unexposed]
 in file [unexposed.mli]
 
-```ocaml
+{[
 (** Unexposed module *)
 
 type t
-```
+]}
 
 The module [Wrapping], in file [wrapping.mli]:
 
-```ocaml
+{[
 (** Example of dune's wrapping *)
 
 type t = Unexposed.t
 
 val f : Unexposed.t
-```
+]}
 
 and the library module that only exposes the module [Wrapping]:
 
-```ocaml
+{[
 module Wrapping = Wrapping
-```
+]}
 
 This structure is rendered {{!Odoc_examples.Wrapping}here}.

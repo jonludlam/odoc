@@ -13,7 +13,6 @@ First we need to initialise mdx with some libraries and helpful values.
 (* Prelude *)
 #require "bos";;
 #install_printer Fpath.pp;;
-#print_length 65535;;
 open Bos;;
 let (>>=) = Result.bind;;
 let (>>|=) m f = m >>= fun x -> Ok (f x);;
@@ -121,7 +120,15 @@ In all of these we'll ignore `stderr`.
 ```ocaml env=e1
 let odoc = Cmd.v "../src/odoc/bin/main.exe";;
 
-let compile file ?parent children =
+let compile_output = ref [""];;
+let link_output = ref [""];;
+let generate_output = ref [""];;
+
+let add_prefixed_output cmd list prefix lines =
+    if List.length lines > 0 then
+       list := !list @ (Bos.Cmd.to_string cmd :: (List.map (fun l -> prefix ^ ": " ^ l) lines));;
+
+let compile file ?parent ?(ignore_output=false) children =
     let output_file =
         let ext = Fpath.get_ext file in
         let basename = Fpath.basename (Fpath.rem_ext file) in
@@ -140,17 +147,23 @@ let compile file ?parent children =
         | Some p -> cmd % "--parent" % ("page-\"" ^ p ^ "\"")
         | None -> cmd
     in
-    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> get_ok
+    let lines = OS.Cmd.(run_out ~err:err_run_out cmd |> to_lines) |> get_ok in
+    if not ignore_output then
+        add_prefixed_output cmd compile_output (Fpath.to_string file) lines
 
-let link file =
+let link ?(ignore_output=false) file =
     let open Cmd in
     let cmd = odoc % "link" % p file % "-I" % "." in
-    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> get_ok
+    let lines = OS.Cmd.(run_out ~err:err_run_out cmd |> to_lines) |> get_ok in
+    if not ignore_output then
+        add_prefixed_output cmd link_output (Fpath.to_string file) lines
 
-let html_generate file =
+let html_generate ?(ignore_output=false) file =
     let open Cmd in
     let cmd = odoc % "html-generate" % p file % "-o" % "html" % "--theme-uri" % "odoc" % "--support-uri" % "odoc" in
-    OS.Cmd.(run_out cmd ~err:err_null |> to_lines) |> get_ok
+    let lines = OS.Cmd.(run_out cmd ~err:err_run_out |> to_lines) |> get_ok in
+    if not ignore_output then
+        add_prefixed_output cmd generate_output (Fpath.to_string file) lines
 
 let support_files () =
     let open Cmd in
@@ -174,6 +187,7 @@ let dep_libraries = [
     "yojson";
     "tyxml";
     "biniou";
+    "fmt";
     "odoc-parser";
 ];;
 
@@ -281,30 +295,27 @@ which library they're in, and whether that library is a part of odoc or a depend
 library.
 
 ```ocaml env=e1
-# let odoc_all_unit_paths = find_units ".." |> get_ok;;
-# let odoc_units = List.map (fun lib ->
+let odoc_all_unit_paths = find_units ".." |> get_ok
+let odoc_units = List.map (fun lib ->
     Fpath.Set.fold (fun p acc ->
         if Astring.String.is_infix ~affix:lib (Fpath.to_string p)
         then ("odoc",lib,p)::acc
-        else acc) odoc_all_unit_paths []) odoc_libraries;;
-# let lib_units = List.map (fun (lib, p) ->
-    Fpath.Set.fold (fun p acc ->
-        ("deps",lib,p)::acc) (find_units p |> get_ok) []) lib_paths;;
-
-# let all_units = (odoc_units @ lib_units) |> List.flatten;;
+        else acc) odoc_all_unit_paths []) odoc_libraries
 ```
 
 ```ocaml env=e1
-# Fpath.Set.fold (fun p acc -> p::acc) odoc_all_unit_paths [];;
+let lib_units = List.map (fun (lib, p) ->
+    Fpath.Set.fold (fun p acc ->
+        ("deps",lib,p)::acc) (find_units p |> get_ok) []) lib_paths
+let all_units = (odoc_units @ lib_units) |> List.flatten
 ```
-
 
 Let's compile all of the parent mld files. We do this in order such that the parents are compiled before the children, so we start with `odoc.mld`, then `deps.mld`, and so on. The result of this file is a list of the resulting `odoc` files.
 
 ```ocaml env=e1
 let compile_mlds () =
     let mkpage x = "page-\"" ^ x ^ "\"" in
-    let mkmod x = "module-" ^ x in
+    let mkmod x = "module-" ^ String.capitalize_ascii x in
     let mkmld x = Fpath.(add_ext "mld" (v x)) in
     let _ = compile (mkmld "odoc") ("page-deps" :: (List.map mkpage (odoc_libraries @ extra_docs))) in
     let _ = compile (mkmld "deps") ~parent:"odoc" (List.map mkpage dep_libraries) in
@@ -317,7 +328,8 @@ let compile_mlds () =
         let _ = compile (mkmld library) ~parent children in
         "page-"^library^".odoc"
         ) all_libraries in
-    List.map Fpath.v ("page-odoc.odoc" :: "page-deps.odoc" ::  odocs @ extra_odocs)
+    List.map (fun f -> (Fpath.v f, false))
+      ("page-odoc.odoc" :: "page-deps.odoc" ::  odocs @ extra_odocs)
 ```
 
 Now we get to the compilation phase. For each unit, we query its dependencies, then recursively call to compile these dependencies. Once this is done we compile the unit itself. If the unit has already been compiled we don't do anything. Note that we aren't checking the hashes of the dependencies which a build system should do to ensure that the module being compiled is the correct one. Again we benefit here from the fact that we're creating the docs for one leaf package, and that there must be no module name clashes in its dependencies. The result of this function is a list of the resulting `odoc` files.
@@ -325,7 +337,7 @@ Now we get to the compilation phase. For each unit, we query its dependencies, t
 ```ocaml env=e1
 let compile_all () =
     let mld_odocs = compile_mlds () in
-    let rec rec_compile lib file =
+    let rec rec_compile parent lib file =
         let output = Fpath.(base (set_ext "odoc" file)) in
         if OS.File.exists output |> get_ok
         then []
@@ -334,17 +346,17 @@ let compile_all () =
             let files = List.fold_left (fun acc (dep_name, digest) ->
                 match List.find_opt (fun (_,_,f) -> Fpath.basename f |> String.capitalize_ascii = dep_name) all_units with
                 | None -> acc
-                | Some (_,lib,dep_path) ->
+                | Some (parent, lib, dep_path) ->
                     let file = best_file dep_path in
-                    (rec_compile lib file) @ acc
+                    (rec_compile parent lib file) @ acc
             ) [] deps.deps in
-            ignore(compile file ~parent:lib []);
-            output :: files
+            let ignore_output = parent = "deps" in
+            ignore(compile file ~parent:lib ~ignore_output []);
+            (output, ignore_output) :: files
         end
     in
     List.fold_left (fun acc (parent, lib, dep) ->
-        acc @ rec_compile lib (best_file dep)) [] all_units
-        (* (List.flatten odoc_deps) *)
+        acc @ rec_compile parent lib (best_file dep)) [] all_units
     @ mld_odocs
 ```
 
@@ -352,9 +364,9 @@ Linking is now straightforward. We only need to link non-hidden odoc files, as a
 
 ```ocaml env=e1
 let link_all odoc_files =
-    let not_hidden f = not (is_hidden f) in
-    List.map (fun odoc_file ->
-            ignore(link odoc_file);
+    let not_hidden (f, _) = not (is_hidden f) in
+    List.map (fun (odoc_file, ignore_output) ->
+            ignore(link ~ignore_output odoc_file);
             Fpath.set_ext "odocl" odoc_file)
         (List.filter not_hidden odoc_files)
 ```
@@ -375,18 +387,17 @@ let linked = link_all compiled in
 generate_all linked
 ```
 
-Finally we install some ancilliary files specific to our site. This bit can be
-ignored!
-
+Let's see if there was any output from the odoc:
 ```ocaml env=e1
-# let lines =
-    let pngs =
-      OS.Dir.contents ~dotfiles:true Fpath.(v ".") >>|=
-      List.filter (fun p ->
-            Fpath.has_ext "png" p) |> get_ok
-    in
-    let cp = Cmd.(v "cp" % "-f") in
-    let cp = List.fold_right (fun p cp -> Cmd.add_arg cp (Fpath.to_string p)) pngs cp in
-    let cp = Cmd.(cp % "html/odoc") in
-    OS.Cmd.(run_out cp |> to_lines) |> get_ok
+# !compile_output;;
+- : string list = [""]
+# !link_output;;
+- : string list = [""]
+# !generate_output;;
+- : string list =
+["";
+ "'../src/odoc/bin/main.exe' 'html-generate' 'odoc_xref_test.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
+ "odoc_xref_test.odocl: Warning, resolved hidden path: Odoc_model__Lang.Signature.t";
+ "'../src/odoc/bin/main.exe' 'html-generate' 'odoc_examples.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
+ "odoc_examples.odocl: Warning, resolved hidden path: Odoc_examples__Unexposed.t"]
 ```
