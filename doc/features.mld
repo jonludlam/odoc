@@ -2,11 +2,11 @@
 
 Odoc works by taking module interfaces, processing them to make them more
 useful, and turning them into documentation.
-The processing that odoc does is largely {i hiding}, handling of {i Canonical
-references}, {i expansion} and {i resolution},
+The processing that odoc does is largely {!hiding}, handling of {{!canonical}
+canonical references}, {!expansion} and {!resolution},
 and this document explains the features of these processes in detail.
 
-{1 Hiding}
+{1:hiding Hiding}
 
 Some items are not intended to be used directly but are present as
 implementation detail, for example for testing, or for implementing dune's
@@ -19,7 +19,7 @@ mechanism is only used for modules, and is a naming convention. If any
 module has a double underscore in its name, it is considered to be
 hidden.
 
-{1 Canonical items}
+{1:canonical Canonical items}
 
 Occasionally it is useful to declare an item in one place, and expose
 it in the public interface in another. In order to prevent unwanted occurrences
@@ -44,7 +44,7 @@ By annotating the definition point with [@canonical] tags pointing to the
 {{:https://github.com/ocaml/odoc/blob/master/src/model/paths.mli#L419}aliases}, we ensure that all
 references to them point at the {{!Odoc_model.Paths.Path.Resolved.Module}separate} {{!Odoc_model.Paths.Path.Resolved.ModuleType}modules} as intended.
 
-{1 Expansion}
+{1:expansion Expansion}
 
 There are many instances of items in signatures where what's written is
 the best thing in terms of semantics, but not necessarily useful in terms
@@ -92,7 +92,8 @@ then the [Hidden__module] module will not be present in the output, and
 the [Alias] module will be rendered as if it were a simple
 signature. This can be seen in the example rendering {{!Odoc_examples.Expansion.Aliases}here}.
 
-Modules are also expanded if the module alias is "self canonical" - that is,
+As well as expanding aliases to hidden modules, modules are also expanded if the module
+alias is "self canonical" - that is,
 if module [A] is an alias to another module [B] that declares [A] to be the canonical
 path to the module (ie, it has the tag [@canonical A] in an associated
 comment).
@@ -113,6 +114,7 @@ module type B = A
 
 For these simple module type declarations where the right-hand side is just a
 path, odoc treats them as module aliases and does not produce an expansion.
+This example is rendered {{!Odoc_examples.Expansion.ModuleTypeAliases}here}.
 
 When strengthening, OCaml creates turns modules into aliases to the original
 module, but nothing is done to module types. In contrast, odoc replaces
@@ -143,7 +145,7 @@ whereas odoc internally evaluates this as:
 module B : sig module type A = A.A end module X = A.X end
 ]}
 
-This example is rendered {{!Odoc_examples.Expansion.Aliases.B}here}
+This example is rendered {{!Odoc_examples.Expansion.ModuleTypeAliases2.B}here}
 
 
 {2 Functors}
@@ -175,6 +177,47 @@ module Functor : functor (X : Argument) (Y : Argument) -> Result
 an expansion will be created for [Functor], containing within it
 expansions for [X] and [Y], followed by the signature of [Result].
 The above functor can be seen rendered {{!Odoc_examples.Expansion.Functors.Functor}here}.
+
+{2 Includes}
+
+If part of your module signature comes from an include of another
+module or module type, [odoc] keeps track of this and can render
+the included items in a clearly delimited and collapsible way. 
+For example, given the following:
+
+{[
+module type ToBeIncluded = sig
+    type t
+
+    val f : t -> t
+    (** The description of [f] *)
+end
+
+module A : sig
+    include ToBeIncluded
+
+    val g : t -> t
+end
+]}
+
+The {{!Odoc_examples.Expansion.Include.A}expansion of module [A]} will contain a
+clearly demarcated section showing the included items.
+
+If this behaviour is not desired, the include may be inlined with the
+tag [@inline] as follows:
+
+{[
+module B : sig
+    include ToBeIncluded
+    (** @inline *)
+
+    val g : t -> t
+end
+]}
+
+The {{!Odoc_examples.Expansion.Include.B}expansion of module [B]} does not
+contain an indication that the elements [t] and [f] came from an [include]
+directive.
 
 {2 Shadowing}
 
@@ -248,7 +291,7 @@ that within it [X] originally had signature [SIG]. Odoc tries
 to be more careful and instead with keep both the [MODTYPE] on [M] with the 
 type equality [X.t = foo], 
 and the [SIG] on [X] with the type equality [t = foo]. The expansion of
-of module M in this example can be seen {{!Odoc_examples.Expansion.DeepConstraint.M}here}.
+of module M in this example can be seen {{!Odoc_examples.Expansion.DeepEquality.M}here}.
 
 Note that if X was a simple signature before the type equality was added, that does not get preserved. In the following example,
 
@@ -263,7 +306,7 @@ type foo
 module M : MODTYPE with type X.t = foo
 ]}
 
-the {{!Odoc_examples.Expansion.DeepConstraint2.M}expansion of M} does not contain any [with type] equations.
+the {{!Odoc_examples.Expansion.DeepEquality2.M}expansion of M} does not contain any [with type] equations.
 
 {2 Substitution}
 
@@ -410,7 +453,7 @@ and in the {{!Odoc_examples.Expansion.ModuleTypeOfComplications.T}expansion of T
 can be seen that [Y] and [Z] are simple signatures only containing type t.
 
 
-{1 Resolution}
+{1:resolution Resolution}
 
 There are several different but related constructs for referring to elements in
 odoc. The following example demonstrates each:

@@ -5,6 +5,9 @@ of the OCaml reference manual. The eventual aim is to support the in-code markup
 in its entirety, although right now there are some gaps. There are also some
 extensions where odoc goes beyond what is officially supported.
 
+The example interface [foo.mli] {{:https://ocaml.org/manual/ocamldoc.html#ss:ocamldoc-placement}described in the OCaml manual} 
+can be seen rendered by [odoc] {{!Odoc_examples.Markup.Foo}here}.
+
 {3 Changes}
 
 The following describes the changes between what odoc understands and what is in the OCaml manual.

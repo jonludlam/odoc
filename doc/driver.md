@@ -17,6 +17,7 @@ First we need to initialise mdx with some libraries and helpful values.
 open Bos;;
 let (>>=) = Result.bind;;
 let (>>|=) m f = m >>= fun x -> Ok (f x);;
+let get_ok = function | Ok x -> x | Error (`Msg m) -> failwith m
 ```
 
 ## Desired output
@@ -136,25 +137,25 @@ let compile file ?parent children =
     in
     let cmd =
         match parent with 
-        | Some p -> cmd % "--parent" % p
+        | Some p -> cmd % "--parent" % ("page-\"" ^ p ^ "\"")
         | None -> cmd
     in
-    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> Result.get_ok
+    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> get_ok
 
 let link file =
     let open Cmd in
     let cmd = odoc % "link" % p file % "-I" % "." in
-    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> Result.get_ok
+    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> get_ok
 
 let html_generate file =
     let open Cmd in
     let cmd = odoc % "html-generate" % p file % "-o" % "html" % "--theme-uri" % "odoc" % "--support-uri" % "odoc" in
-    OS.Cmd.(run_out cmd ~err:err_null |> to_lines) |> Result.get_ok
+    OS.Cmd.(run_out cmd ~err:err_null |> to_lines) |> get_ok
 
 let support_files () =
     let open Cmd in
     let cmd = odoc % "support-files" % "-o" % "html/odoc" in
-    OS.Cmd.(run_out cmd |> to_lines) |> Result.get_ok
+    OS.Cmd.(run_out cmd |> to_lines) |> get_ok
 
 ```
 
@@ -173,10 +174,11 @@ let dep_libraries = [
     "yojson";
     "tyxml";
     "biniou";
+    "odoc-parser";
 ];;
 
 let odoc_libraries = [
-    "odoc_xref_test"; "print"; "odoc_xref2"; "odoc_parser"; "odoc_odoc";
+    "odoc_xref_test"; "print"; "odoc_xref2"; "odoc_odoc";
     "odoc_model_desc"; "odoc_model"; "odoc_manpage"; "odoc_loader";
     "odoc_latex"; "odoc_html"; "odoc_document"; "odoc_examples" ];;
 
@@ -187,9 +189,12 @@ let extra_docs = [
     "contributing";
     "driver";
     "parent_child_spec";
-    "markup";
     "features";
     "dune_wrapping";
+    "interface";
+    "odoc_for_authors";
+    "using_dune";
+    "ocamldoc_differences";
 ]
 
 let parents =
@@ -210,7 +215,7 @@ let lib_path lib =
 
 let lib_paths =
     List.fold_right (fun lib acc ->
-        acc >>= fun acc -> lib_path lib >>|= fun l -> (lib, l) :: acc) dep_libraries (Ok []) |> Result.get_ok
+        acc >>= fun acc -> lib_path lib >>|= fun l -> (lib, l) :: acc) dep_libraries (Ok []) |> get_ok
 ```
 
 We need a function to find odoc inputs given a search path. The files that `odoc`
@@ -230,6 +235,7 @@ let find_units p =
         (Fpath.v p)
     >>|= fun paths ->
     let l = List.map Fpath.rem_ext paths in
+    let l = List.filter (fun f -> not @@ Astring.String.is_infix ~affix:"ocamldoc" (Fpath.to_string f)) l in
     List.fold_right Fpath.Set.add l Fpath.Set.empty;;
 ```
 
@@ -238,7 +244,7 @@ function to find the best file to use given this basename.
 
 ```ocaml env=e1
 let best_file base =
-    List.map (fun ext -> Fpath.add_ext ext base) ["cmti";"cmt";"cmi"] |> List.find (fun f -> Bos.OS.File.exists f |> Result.get_ok) 
+    List.map (fun ext -> Fpath.add_ext ext base) ["cmti";"cmt";"cmi"] |> List.find (fun f -> Bos.OS.File.exists f |> get_ok) 
 ```
 
 Many of the units will be 'hidden' -- that is, their name will be mangled by dune
@@ -275,17 +281,17 @@ which library they're in, and whether that library is a part of odoc or a depend
 library.
 
 ```ocaml env=e1
-let odoc_all_unit_paths = find_units ".." |> Result.get_ok;;
-let odoc_units = List.map (fun lib ->
+# let odoc_all_unit_paths = find_units ".." |> get_ok;;
+# let odoc_units = List.map (fun lib ->
     Fpath.Set.fold (fun p acc ->
         if Astring.String.is_infix ~affix:lib (Fpath.to_string p)
         then ("odoc",lib,p)::acc
         else acc) odoc_all_unit_paths []) odoc_libraries;;
-let lib_units = List.map (fun (lib, p) ->
+# let lib_units = List.map (fun (lib, p) ->
     Fpath.Set.fold (fun p acc ->
-        ("deps",lib,p)::acc) (find_units p |> Result.get_ok) []) lib_paths;;
+        ("deps",lib,p)::acc) (find_units p |> get_ok) []) lib_paths;;
 
-let all_units = (odoc_units @ lib_units) |> List.flatten;;
+# let all_units = (odoc_units @ lib_units) |> List.flatten;;
 ```
 
 ```ocaml env=e1
@@ -297,7 +303,7 @@ Let's compile all of the parent mld files. We do this in order such that the par
 
 ```ocaml env=e1
 let compile_mlds () =
-    let mkpage x = "page-" ^ x in
+    let mkpage x = "page-\"" ^ x ^ "\"" in
     let mkmod x = "module-" ^ x in
     let mkmld x = Fpath.(add_ext "mld" (v x)) in
     let _ = compile (mkmld "odoc") ("page-deps" :: (List.map mkpage (odoc_libraries @ extra_docs))) in
@@ -321,10 +327,10 @@ let compile_all () =
     let mld_odocs = compile_mlds () in
     let rec rec_compile lib file =
         let output = Fpath.(base (set_ext "odoc" file)) in
-        if OS.File.exists output |> Result.get_ok
+        if OS.File.exists output |> get_ok
         then []
         else begin
-            let deps = compile_deps file |> Result.get_ok in
+            let deps = compile_deps file |> get_ok in
             let files = List.fold_left (fun acc (dep_name, digest) ->
                 match List.find_opt (fun (_,_,f) -> Fpath.basename f |> String.capitalize_ascii = dep_name) all_units with
                 | None -> acc
@@ -377,10 +383,10 @@ ignored!
     let pngs =
       OS.Dir.contents ~dotfiles:true Fpath.(v ".") >>|=
       List.filter (fun p ->
-            Fpath.has_ext "png" p) |> Result.get_ok
+            Fpath.has_ext "png" p) |> get_ok
     in
     let cp = Cmd.(v "cp" % "-f") in
     let cp = List.fold_right (fun p cp -> Cmd.add_arg cp (Fpath.to_string p)) pngs cp in
     let cp = Cmd.(cp % "html/odoc") in
-    OS.Cmd.(run_out cp |> to_lines) |> Result.get_ok
+    OS.Cmd.(run_out cp |> to_lines) |> get_ok
 ```
