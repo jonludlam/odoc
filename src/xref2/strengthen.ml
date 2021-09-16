@@ -83,7 +83,11 @@ and module_ :
 and module_type :
     Cpath.module_type -> Component.ModuleType.t -> Component.ModuleType.t =
  fun prefix m ->
-  let expr = Some (ModuleType.Path { p_path = prefix; p_expansion = None }) in
+  let expr =
+    match m.expr with
+    | None -> Some (ModuleType.Path { p_path = prefix; p_expansion = None })
+    | Some _ -> m.expr
+  in
   { m with expr }
 
 and type_decl : Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
