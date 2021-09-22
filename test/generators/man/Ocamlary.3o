@@ -99,10 +99,6 @@ Here is an index table of Empty modules:
 .nf 
 .sp 
 .fi 
-Here is a table of links to indexes: indexlist
-.nf 
-.sp 
-.fi 
 Here is some superscript: x2
 .nf 
 .sp 
@@ -306,7 +302,7 @@ For a good time, see SuperSig\.SubSigA\.subSig or SuperSig\.SubSigB\.subSig or \
 .fi 
 .br 
 .ti +2
-Buffer\.t
+\f[CI]Buffer\.t\fR
 .nf 
 .sp 
 .fi 
@@ -1753,8 +1749,6 @@ With odoc, everything should be resolved (and linked) but only toplevel units wi
 .sp 
 @\f[CI]Dep1\.X\fR: 
 .br 
-@DocOckTypes: 
-.br 
 @\f[CI]Ocamlary\.IncludeInclude1\fR: 
 .br 
 @\f[CI]Ocamlary\fR: This is an \fIinterface\fR with \fBall\fR of the module system features\. This documentation demonstrates:
@@ -1765,9 +1759,7 @@ With odoc, everything should be resolved (and linked) but only toplevel units wi
 .in 
 .sp 
 .fi 
-@IncludeInclude1\.IncludeInclude2: 
-.br 
-@Dep4\.T: 
+@\f[CI]Dep4\.X\fR: 
 .br 
 @\f[CI]A\.Q\fR: 
 .nf 
@@ -1779,11 +1771,6 @@ With odoc, everything should be resolved (and linked) but only toplevel units wi
 \f[CB]module\fR CanonicalTest : \f[CB]sig\fR \.\.\. \f[CB]end\fR
 .sp 
 \f[CB]val\fR test : \f[CB]'a\fR CanonicalTest\.Base__\.List\.t \f[CB]\->\fR unit
-.fi 
-.br 
-.ti +2
-Some ref to CanonicalTest\.Base__Tests\.C\.t and CanonicalTest\.Base__Tests\.L\.id\. But also to CanonicalTest\.Base__\.List and CanonicalTest\.Base__\.List\.t
-.nf 
 .sp 
 .in 3
 \fB5 Aliases again\fR
@@ -1848,13 +1835,11 @@ Here goes:
 \f[CB]module\fR Only_a_module : \f[CB]sig\fR \.\.\. \f[CB]end\fR
 .sp 
 .fi 
-Some here should fail:
+Failures checked elsewhere
 .sp 
 \(bu {!Only_a_module\.t} : \f[CI]Only_a_module\.t\fR
 .br 
 \(bu {!module-Only_a_module\.t} : \f[CI]Only_a_module\.t\fR
-.br 
-\(bu {!module-type-Only_a_module\.t} : Only_a_module\.t : \f[CI]test\fR
 .nf 
 .sp 
 \f[CB]module\fR \f[CB]type\fR TypeExt = \f[CB]sig\fR

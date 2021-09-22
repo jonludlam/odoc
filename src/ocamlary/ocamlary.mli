@@ -65,10 +65,6 @@ A numbered list:
 *)
 
 (**
-    Here is a table of links to indexes: {!indexlist}
-*)
-
-(**
     Here is some superscript: x{^2}
 *)
 
@@ -181,6 +177,8 @@ end
 
 (** {!Buffer.t} *)
 module Buffer : sig
+  type t
+
   val f : Buffer.t -> unit
 end
 
@@ -850,11 +848,11 @@ include IncludeInclude2
     With odoc, everything should be resolved (and linked) but only toplevel
     units will be documented.
 
-    {!modules: Dep1.X DocOckTypes Ocamlary.IncludeInclude1 Ocamlary}
+    {!modules: Dep1.X Ocamlary.IncludeInclude1 Ocamlary}
 
     {3 Weirder usages involving module types}
 
-    {!modules: IncludeInclude1.IncludeInclude2 Dep4.T A.Q}
+    {!modules: Dep4.X A.Q}
 *)
 
 (** {1 Playing with \@canonical paths} *)
@@ -887,16 +885,12 @@ module CanonicalTest : sig
     (** This is just {!List.id}, or rather {!L.id} *)
 
     val baz : 'a Base__.List.t -> unit
-    (** Just seeing if {!Base__.List.t} ([Base__.List.t]) gets rewriten to
-        {!Base.List.t} ([Base.List.t]) *)
   end
 
   module List_modif : module type of Base.List with type 'c t = 'c Base__.List.t
 end
 
 val test : 'a CanonicalTest.Base__.List.t -> unit
-(** Some ref to {!CanonicalTest.Base__Tests.C.t} and {!CanonicalTest.Base__Tests.L.id}.
-    But also to {!CanonicalTest.Base__.List} and {!CanonicalTest.Base__.List.t} *)
 
 (** {1:aliases Aliases again} *)
 
@@ -1047,10 +1041,9 @@ module Only_a_module : sig
   type t
 end
 
-(** Some here should fail:
+(** Failures checked elsewhere
     - [{!Only_a_module.t}] : {!Only_a_module.t}
-    - [{!module-Only_a_module.t}] : {!module-Only_a_module.t}
-    - [{!module-type-Only_a_module.t}] : {!module-type-Only_a_module.t} : {{!module-type-Only_a_module.t}test}*)
+    - [{!module-Only_a_module.t}] : {!module-Only_a_module.t} *)
 
 module type TypeExt = sig
   type t = ..

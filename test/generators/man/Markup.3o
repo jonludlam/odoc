@@ -227,13 +227,13 @@ Raw HTML can be  as inline elements into sentences\.
 .in 
 .sp 
 .fi 
-@X: 
+@\f[CI]X\fR: 
 .br 
-@X: 
+@\f[CI]X\fR: 
 .br 
-@Y: 
+@\f[CI]Y\fR: 
 .br 
-@Z: 
+@\f[CI]Z\fR: 
 .nf 
 .sp 
 .in 3
@@ -269,6 +269,12 @@ Each comment can end with zero or more tags\. Here are some examples:
 .br 
 @version: -1
 .nf 
+.sp 
+\f[CB]module\fR X : \f[CB]sig\fR \.\.\. \f[CB]end\fR
+.sp 
+\f[CB]module\fR Y = X
+.sp 
+\f[CB]module\fR Z = X
 .sp 
 \f[CB]val\fR foo : unit
 .fi 

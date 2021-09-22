@@ -85,8 +85,7 @@
     <li><a href="Ocamlary-Empty.html"><code>EmptyAlias</code></a> 
      <span class="synopsis">A plain module alias of <code>Empty</code></span>
     </li>
-   </ul><p>Here is a table of links to indexes: <code>indexlist</code></p>
-   <p>Here is some superscript: x<sup>2</sup></p>
+   </ul><p>Here is some superscript: x<sup>2</sup></p>
    <p>Here is some subscript: x<sub>0</sub></p>
    <p>Here are some escaped brackets: { [ @ ] }</p>
    <p>Here is some <em>emphasis</em> <code>followed by code</code>.</p>
@@ -277,7 +276,10 @@
        <span class="keyword">end</span>
       </span>
      </code>
-    </div><div class="spec-doc"><p><code>Buffer</code>.t</p></div>
+    </div>
+    <div class="spec-doc">
+     <p><a href="Ocamlary-Buffer.html#type-t"><code>Buffer.t</code></a></p>
+    </div>
    </div><p>Some text before exception title.</p>
    <h4 id="basic-exception-stuff">
     <a href="#basic-exception-stuff" class="anchor"></a>Basic exception
@@ -2720,7 +2722,6 @@
    </p>
    <ul class="modules">
     <li><a href="Ocamlary-Dep1-X.html"><code>Dep1.X</code></a> </li>
-    <li><code>DocOckTypes</code> </li>
     <li>
      <a href="Ocamlary-IncludeInclude1.html">
       <code>Ocamlary.IncludeInclude1</code>
@@ -2737,8 +2738,8 @@
     <a href="#weirder-usages-involving-module-types" class="anchor"></a>
     Weirder usages involving module types
    </h4>
-   <ul class="modules"><li><code>IncludeInclude1</code>.IncludeInclude2 </li>
-    <li><code>Dep4</code>.T </li>
+   <ul class="modules">
+    <li><a href="Ocamlary-Dep4-X.html"><code>Dep4.X</code></a> </li>
     <li><a href="Ocamlary-module-type-A-Q.html"><code>A.Q</code></a> </li>
    </ul>
    <h2 id="playing-with-@canonical-paths">
@@ -2769,13 +2770,6 @@
        </span> unit
       </span>
      </code>
-    </div>
-    <div class="spec-doc">
-     <p>Some ref to <code>CanonicalTest</code>.Base__Tests.C.t and 
-      <code>CanonicalTest</code>.Base__Tests.L.id. But also to 
-      <code>CanonicalTest</code>.Base__.List and <code>CanonicalTest</code>
-      .Base__.List.t
-     </p>
     </div>
    </div>
    <h2 id="aliases"><a href="#aliases" class="anchor"></a>Aliases again</h2>
@@ -2865,7 +2859,7 @@
       </span>
      </code>
     </div>
-   </div><p>Some here should fail:</p>
+   </div><p>Failures checked elsewhere</p>
    <ul>
     <li><code>{!Only_a_module.t}</code> : 
      <a href="Ocamlary-Only_a_module.html#type-t">
@@ -2876,9 +2870,6 @@
      <a href="Ocamlary-Only_a_module.html#type-t">
       <code>Only_a_module.t</code>
      </a>
-    </li>
-    <li><code>{!module-type-Only_a_module.t}</code> : 
-     <code>Only_a_module</code>.t : <span class="xref-unresolved">test</span>
     </li>
    </ul>
    <div class="odoc-spec">

@@ -154,7 +154,6 @@ v}
 
     {1 Modules}
 
-    {!modules: }
     {!modules: X}
     {!modules: X Y Z}
 
@@ -174,6 +173,10 @@ v}
     @since 0
     @before 1.0 it was in b{^e}t{_a}
     @version -1 *)
+
+module X : sig end
+module Y = X
+module Z = X
 
 val foo : unit
 (** Comments in structure items {b support} {e markup}, t{^o}{_o}. *)

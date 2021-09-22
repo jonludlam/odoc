@@ -2039,7 +2039,7 @@
 (subdir
  html
  (rule
-  (targets Markup.html.gen)
+  (targets Markup.html.gen Markup-X.html.gen)
   (action
    (run
     odoc
@@ -2054,7 +2054,11 @@
  (rule
   (alias runtest)
   (action
-   (diff Markup.html Markup.html.gen))))
+   (diff Markup.html Markup.html.gen)))
+ (rule
+  (alias runtest)
+  (action
+   (diff Markup-X.html Markup-X.html.gen))))
 
 (subdir
  html
@@ -2094,13 +2098,17 @@
 (subdir
  man
  (rule
-  (targets Markup.3o.gen)
+  (targets Markup.3o.gen Markup.X.3o.gen)
   (action
    (run odoc man-generate -o . --extra-suffix gen %{dep:../markup.odocl})))
  (rule
   (alias runtest)
   (action
-   (diff Markup.3o Markup.3o.gen))))
+   (diff Markup.3o Markup.3o.gen)))
+ (rule
+  (alias runtest)
+  (action
+   (diff Markup.X.3o Markup.X.3o.gen))))
 
 (subdir
  man

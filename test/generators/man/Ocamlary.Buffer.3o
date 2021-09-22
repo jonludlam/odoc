@@ -9,9 +9,11 @@ Ocamlary\.Buffer
 .in 
 .sp 
 .fi 
-Buffer\.t
+\f[CI]Buffer\.t\fR
 .nf 
 .SH Documentation
 .sp 
 .nf 
+\f[CB]type\fR t
+.sp 
 \f[CB]val\fR f : Stdlib\.Buffer\.t \f[CB]\->\fR unit
