@@ -1277,7 +1277,10 @@ and signature_of_module :
     Env.t ->
     Component.Module.t ->
     (Component.Signature.t, signature_of_module_error) Result.result =
- fun env m -> signature_of_module_decl env m.type_
+ fun env m ->
+  match signature_of_module_decl env m.type_ with
+  | Ok sg -> Ok { sg with Component.Signature.doc = m.doc @ sg.doc }
+  | e -> e
 
 and signature_of_module_cached :
     Env.t ->
