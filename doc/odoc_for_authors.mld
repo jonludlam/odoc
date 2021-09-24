@@ -11,14 +11,23 @@ to write great documentation using [odoc]. See also the page listing the
 {1:getting_started Getting started}
 
 To generate documentation for your project, you will almost always be using
-odoc indirectly rather than executing it yourself. There are several 'drivers'
-of odoc at time of writing, each with their own strengths:
+odoc indirectly rather than executing it yourself. There are currently several
+'drivers' of odoc at time of writing, each with their own strengths and
+weaknesses:
 
 - {{:https://dune.build/}Dune} is the best way to view docs while you're
-  developing your project. We have a {{!page-using_dune}short page} describing
-  how to use it.
+  developing your project. We have a {{!page-using_dune}page} describing
+  how to use it, but the short version is:
+{[
+$ cd my_dune_project
+$ dune build @doc
+$ open _build/default/_doc/_html/index.html
+]}
 - {{:https://erratique.ch/software/odig}Odig} is the best way to view docs
-  of your installed packages. 
+  of your installed packages. Once it's installed, try:
+{[
+$ odig doc tyxml
+]}
 - {{!page-driver}The reference driver} is the simplest driver, useful if you
   want to see how to integrate it with your own projects.
 - {{:https://github.com/ocaml-doc/voodoo}Voodoo} is the driver used to create
@@ -30,7 +39,6 @@ Odoc is built to produce documentation for your {e libraries}, and the unit of
 organisation is the {e module}. Documentation is written by putting special
 {{!comments} comments} into the source of the {e module} or {e module
 interface}, and correctly placing these is critical to producing good output.
-
 
 All of the ocamldoc documentation comments described in {{:https://ocaml.org/manual/ocamldoc.html#s:ocamldoc-comments}the OCaml manual}
 are supported, with a few important {{!page-ocamldoc_differences}differences}. In addition, 
@@ -90,19 +98,6 @@ comment. For example, in an [.mli] file:
 
 module M : sig
   (** This is the top-comment of [M]. *)
-
-  (* ... *)
-end
-
-module type T = sig
-  (** This is the top-comment of [T]. *)
-
-  (* ... *)
-end
-
-class c =
-  object
-    (** This is the top-comment of [c]. *)
 
     (* ... *)
   end
