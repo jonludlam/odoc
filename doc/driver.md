@@ -229,7 +229,6 @@ let extra_docs = [
     "driver";
     "parent_child_spec";
     "features";
-    "dune_wrapping";
     "interface";
     "odoc_for_authors";
     "dune";
@@ -382,7 +381,7 @@ let compile_mlds () =
               else None)
             all_units
         in
-        ignore (compile (mkmld library) ~parent children);
+        ignore (compile (mkmld ("library_mlds/"^library)) ~parent children);
         "page-" ^ library ^ ".odoc")
       all_libraries
   in
