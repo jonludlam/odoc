@@ -7,7 +7,7 @@
   $ odoc compile sexplib0.cmt -I . 
 
   $ odoc link sexplib0.odoc -I .
-
+  $ odoc_print sexplib0.odocl
   $ odoc html-generate -o html sexplib0.odocl --indent
 
   $ odoc support-files -o html

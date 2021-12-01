@@ -51,31 +51,34 @@ and aux_expansion_of_module_alias env ~strengthen path =
       (* Don't strengthen if the alias is definitely hidden. We can't always resolve canonical
          paths at this stage so use the weak canonical test that assumes all canonical paths
          will resolve correctly *)
-      let strengthen =
+(*      let strengthen
         strengthen
         && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p)
-      in
+      in*)
       let m = Component.Delayed.get m in
       match (aux_expansion_of_module env ~strengthen:true m, m.doc) with
       | (Error _ as e), _ -> e
       | Ok (Signature sg), [] ->
-          (* Format.eprintf "Maybe strenthening now...\n%!"; *)
+         Format.eprintf "Maybe strenthening now...\n%!";
           let sg' =
             if strengthen then
               Strengthen.signature ?canonical:m.canonical (`Resolved p) sg
             else sg
           in
+          Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
+             Component.Fmt.signature sg
+             Component.Fmt.signature sg';
           Ok (Signature sg')
       | Ok (Signature sg), docs ->
-          (* Format.eprintf "Maybe strenthening now...\n%!"; *)
+          Format.eprintf "Maybe strenthening now...\n%!";
           let sg' =
             if strengthen then
               Strengthen.signature ?canonical:m.canonical (`Resolved p) sg
             else sg
           in
-          (* Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
+          Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
              Component.Fmt.signature sg
-             Component.Fmt.signature sg'; *)
+             Component.Fmt.signature sg';
           Ok (Signature { sg' with items = Comment (`Docs docs) :: sg'.items })
       | Ok (Functor _ as x), _ -> Ok x)
   | Error e -> Error (`UnresolvedPath (`Module (path, e)))
