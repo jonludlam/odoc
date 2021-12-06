@@ -185,7 +185,7 @@ let with_recorded_lookups env f =
   let env' = { env with recorder = Some recorder } in
   let restore () =
     match env.recorder with
-    | Some r -> r.lookups <- recorder.lookups @ r.lookups
+    | Some r -> r.lookups <- List.rev_append recorder.lookups r.lookups
     | None -> ()
   in
   try
@@ -872,6 +872,6 @@ let verify_lookups env lookups =
   (* If we're recording lookups, make sure it looks like we
       looked all this stuff up *)
   (match (result, env.recorder) with
-  | true, Some r -> r.lookups <- r.lookups @ lookups
+  | true, Some r -> r.lookups <- List.rev_append r.lookups lookups
   | _ -> ());
   result
