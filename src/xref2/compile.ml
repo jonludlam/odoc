@@ -39,7 +39,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   | _ -> (
       let cp = Component.Of_Lang.(module_path empty p) in
       match Tools.resolve_module_path env cp with
-      | Ok p' -> `Resolved (Cpath.resolved_module_path_of_cpath p')
+      | Ok p' -> `Resolved Lang_of.(Path.resolved_module (empty ()) p')
       | Error _ -> p)
 
 and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
@@ -62,7 +62,10 @@ and content env id =
   function
   | Module m ->
       let sg = Type_of.signature env m in
-      Module (signature env (id :> Id.Signature.t) sg)
+      let sg = signature env (id :> Id.Signature.t) sg in
+      let sg' = Component.Of_Lang.(signature empty sg) in
+      let sg'' = Lang_of.(signature (id :> Id.Signature.t) (empty ()) sg') in
+      Module sg''
   | Pack p -> Pack p
 
 and value_ env parent t =
@@ -113,7 +116,7 @@ and class_type env c =
       Env.(lookup_by_id s_class_type) c.id env >>= fun (`ClassType (_, c')) ->
       Tools.class_signature_of_class_type env c' >>= fun sg ->
       let cs =
-        Lang_of.class_signature Lang_of.empty
+        Lang_of.class_signature (Lang_of.empty ())
           (c.id :> Paths.Identifier.Path.ClassType.t)
           sg
       in
@@ -169,7 +172,7 @@ and class_ env parent c =
       Env.(lookup_by_id s_class) c.id env >>= fun (`Class (_, c')) ->
       Tools.class_signature_of_class env c' >>= fun sg ->
       let cs =
-        Lang_of.class_signature Lang_of.empty
+        Lang_of.class_signature (Lang_of.empty ())
           (c.id :> Paths.Identifier.Path.ClassType.t)
           sg
       in
@@ -315,7 +318,7 @@ and include_ : Env.t -> Include.t -> Include.t =
         Errors.report ~what:(`Include decl) ~tools_error:e `Expand;
         i.expansion
     | Ok sg ->
-        let map = { Lang_of.empty with shadowed = i.expansion.shadowed } in
+        let map = { (Lang_of.empty ()) with shadowed = i.expansion.shadowed } in
         let sg' =
           match i.strengthened with
           | Some p ->
@@ -590,7 +593,7 @@ and module_type_expr :
         let ce = Component.Of_Lang.(module_type_expr empty e) in
         match Expand_tools.expansion_of_module_type_expr env id ce with
         | Ok (_, _, ce) ->
-            let e = Lang_of.simple_expansion Lang_of.empty id ce in
+            let e = Lang_of.simple_expansion (Lang_of.empty ()) id ce in
             Some (simple_expansion env id e)
         | Error `OpaqueModule -> None
         | Error e ->
@@ -723,7 +726,8 @@ and type_expression_package env parent p =
                 Tools.resolve_type_fragment env (`ModuleType path, sg) cfrag
               with
               | Some cfrag' ->
-                  `Resolved (Lang_of.(Path.resolved_type_fragment empty) cfrag')
+                  `Resolved
+                    (Lang_of.(Path.resolved_type_fragment (empty ())) cfrag')
               | None ->
                   Errors.report ~what:(`Type cfrag) `Compile;
                   frag
@@ -754,7 +758,7 @@ and type_expression : Env.t -> Id.Parent.t -> _ -> _ =
           Constr (`Resolved p, ts)
       | Ok (_cp, `FType_removed (_, x, _eq)) ->
           (* Substitute type variables ? *)
-          Lang_of.(type_expr empty parent x)
+          Lang_of.(type_expr (empty ()) parent x)
       | Error _ -> Constr (Cpath.type_path_of_cpath cp, ts))
   | Polymorphic_variant v ->
       Polymorphic_variant (type_expression_polyvar env parent v)

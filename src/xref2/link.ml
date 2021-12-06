@@ -409,7 +409,7 @@ and module_ : Env.t -> Module.t -> Module.t =
               Expand_tools.expansion_of_module_alias env m.id (`Resolved cp)
             with
             | Ok (_, _, e) ->
-                let le = Lang_of.(simple_expansion empty sg_id e) in
+                let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
                 Alias (`Resolved p, Some (simple_expansion env sg_id le))
             | Error _ -> type_
           else type_
@@ -508,7 +508,7 @@ and handle_fragments env id sg subs =
                 in
                 `Resolved
                   (Tools.reresolve_module_fragment env cfrag
-                  |> Lang_of.(Path.resolved_module_fragment empty))
+                  |> Lang_of.(Path.resolved_module_fragment (empty ())))
             | _ -> frag
           in
           let sg' =
@@ -526,7 +526,7 @@ and handle_fragments env id sg subs =
                 in
                 `Resolved
                   (Tools.reresolve_type_fragment env cfrag
-                  |> Lang_of.(Path.resolved_type_fragment empty))
+                  |> Lang_of.(Path.resolved_type_fragment (empty ())))
             | _ -> frag
           in
           let sg' =
@@ -544,7 +544,7 @@ and handle_fragments env id sg subs =
                 in
                 `Resolved
                   (Tools.reresolve_module_type_fragment env cfrag
-                  |> Lang_of.(Path.resolved_module_type_fragment empty))
+                  |> Lang_of.(Path.resolved_module_type_fragment (empty ())))
             | _ -> frag
           in
           let sg' =
@@ -562,7 +562,7 @@ and handle_fragments env id sg subs =
                 in
                 `Resolved
                   (Tools.reresolve_module_fragment env cfrag
-                  |> Lang_of.(Path.resolved_module_fragment empty))
+                  |> Lang_of.(Path.resolved_module_fragment (empty ())))
             | _ -> frag
           in
           let sg' =
@@ -580,7 +580,7 @@ and handle_fragments env id sg subs =
                 in
                 `Resolved
                   (Tools.reresolve_type_fragment env cfrag
-                  |> Lang_of.(Path.resolved_type_fragment empty))
+                  |> Lang_of.(Path.resolved_type_fragment (empty ())))
             | _ -> frag
           in
           let sg' =
@@ -598,7 +598,7 @@ and handle_fragments env id sg subs =
                 in
                 `Resolved
                   (Tools.reresolve_module_type_fragment env cfrag
-                  |> Lang_of.(Path.resolved_module_type_fragment empty))
+                  |> Lang_of.(Path.resolved_module_type_fragment (empty ())))
             | _ -> frag
           in
           let sg' =
@@ -657,7 +657,7 @@ and module_type_expr :
               (Path { p_path = `Resolved cp; p_expansion = None })
           with
           | Ok (_, _, e) ->
-              let le = Lang_of.(simple_expansion empty id e) in
+              let le = Lang_of.(simple_expansion (empty ()) id e) in
               Some (simple_expansion env id le)
           | Error _ -> None
         else None
@@ -739,7 +739,7 @@ and type_decl : Env.t -> Id.Signature.t -> TypeDecl.t -> TypeDecl.t =
           let equation =
             try
               Expand_tools.collapse_eqns default.equation
-                (Lang_of.type_decl_equation Lang_of.empty
+                (Lang_of.type_decl_equation (Lang_of.empty ())
                    (parent :> Id.Parent.t)
                    t'.equation)
                 params
@@ -820,7 +820,7 @@ and type_expression_package env parent visited p =
       | `Resolved f -> `Resolved (Tools.reresolve_type_fragment env f)
       | _ -> cfrag
     in
-    ( Lang_of.(Path.type_fragment empty frag'),
+    ( Lang_of.(Path.type_fragment (empty ()) frag'),
       type_expression env parent visited t )
   in
   {
@@ -865,7 +865,8 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
                     in
                     let t' =
                       Expand_tools.type_expr map
-                        Lang_of.(type_expr empty (parent :> Id.Parent.t) expr)
+                        Lang_of.(
+                          type_expr (empty ()) (parent :> Id.Parent.t) expr)
                     in
                     type_expression env parent (p :: visited) t'
                   with
@@ -884,7 +885,7 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
             Constr (`Resolved p, ts)
         | Ok (_cp, `FType_removed (_, x, _eq)) ->
             (* Type variables ? *)
-            Lang_of.(type_expr empty (parent :> Id.Parent.t) x)
+            Lang_of.(type_expr (empty ()) (parent :> Id.Parent.t) x)
         | Error _ -> Constr (Cpath.type_path_of_cpath cp, ts))
   | Polymorphic_variant v ->
       Polymorphic_variant (type_expression_polyvar env parent visited v)

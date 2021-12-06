@@ -2,7 +2,6 @@
  (name main)
  (package odoc)
  (public_name odoc)
- (modes byte)
  (libraries cmdliner odoc_model odoc_odoc)
  (flags
   (:standard -open StdLabels))

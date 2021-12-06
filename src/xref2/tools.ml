@@ -220,7 +220,8 @@ module MakeMemo (X : MEMO) = struct
       let n = bump_counter arg in
       let no_memo () =
         let lookups, result =
-          Env.with_recorded_lookups env (fun env' -> f env' arg)
+          ([], f env arg)
+          (* Env.with_recorded_lookups env (fun env' -> f env' arg) *)
         in
         if n > 1 then M.add cache arg (result, env_id, lookups);
         result
@@ -723,7 +724,7 @@ and resolve_module :
     resolve_module_result =
  fun ~mark_substituted ~add_canonical env' path ->
   let id = (mark_substituted, add_canonical, path) in
-  Format.eprintf "Resolve module: %a\n%!" Component.Fmt.module_path path;
+  (* Format.eprintf "Resolve module: %a\n%!" Component.Fmt.module_path path; *)
   let resolve env (mark_substituted, add_canonical, p) =
     match p with
     | `Dot (parent, id) ->
@@ -734,9 +735,10 @@ and resolve_module :
         signature_of_module_cached env p m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= fun parent_sig ->
-        Format.eprintf "Handling dot: (id=%s) signature=%a\n%!" id Component.Fmt.signature parent_sig;
+        (* Format.eprintf "Handling dot: (id=%s) signature=%a\n%!" id
+           Component.Fmt.signature parent_sig; *)
         let sub = prefix_substitution (`Module p) parent_sig in
-        Format.eprintf "prefix: %a\n%!" Component.Fmt.resolved_module_path p;
+        (* Format.eprintf "prefix: %a\n%!" Component.Fmt.resolved_module_path p; *)
         handle_module_lookup env ~add_canonical id (`Module p) parent_sig sub
     | `Module (parent, id) ->
         lookup_parent ~mark_substituted env parent
