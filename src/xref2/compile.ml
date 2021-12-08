@@ -18,7 +18,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
   | _ -> (
       let cp = Component.Of_Lang.(type_path empty p) in
       match Tools.resolve_type_path env cp with
-      | Ok p' -> `Resolved (Cpath.resolved_type_path_of_cpath p')
+      | Ok p' -> `Resolved Lang_of.(Path.resolved_type (empty ()) p')
       | Error _ -> p)
 
 and module_type_path :
@@ -29,7 +29,7 @@ and module_type_path :
   | _ -> (
       let cp = Component.Of_Lang.(module_type_path empty p) in
       match Tools.resolve_module_type_path env cp with
-      | Ok p' -> `Resolved (Cpath.resolved_module_type_path_of_cpath p')
+      | Ok p' -> `Resolved Lang_of.(Path.resolved_module_type (empty ()) p')
       | Error _ -> p)
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
@@ -50,8 +50,8 @@ and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
   | _ -> (
       let cp = Component.Of_Lang.(class_type_path empty p) in
       match Tools.resolve_class_type_path env cp with
-      | Ok p' -> `Resolved (Cpath.resolved_class_type_path_of_cpath p')
-      | Error _ -> Cpath.class_type_path_of_cpath cp)
+      | Ok p' -> `Resolved Lang_of.(Path.resolved_class_type (empty ()) p')
+      | Error _ -> p)
 
 let rec unit env t =
   let open Compilation_unit in
@@ -63,9 +63,7 @@ and content env id =
   | Module m ->
       let sg = Type_of.signature env m in
       let sg = signature env (id :> Id.Signature.t) sg in
-      let sg' = Component.Of_Lang.(signature empty sg) in
-      let sg'' = Lang_of.(signature (id :> Id.Signature.t) (empty ()) sg') in
-      Module sg''
+      Module sg
   | Pack p -> Pack p
 
 and value_ env parent t =
@@ -261,13 +259,18 @@ and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
  fun env id s ->
   if s.compiled then s
   else
-    let env = Env.open_signature s env in
-    let items = signature_items env id s.items in
-    {
-      items;
-      compiled = true;
-      doc = s.doc (* comments are ignored while compiling *);
-    }
+    let sg =
+      let env = Env.open_signature s env in
+      let items = signature_items env id s.items in
+      {
+        Signature.items;
+        compiled = true;
+        doc = s.doc (* comments are ignored while compiling *);
+      }
+    in
+    let sg' = Component.Of_Lang.(signature empty sg) in
+    Lang_of.(signature (id :> Id.Signature.t) (empty ()) sg')
+
 
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
@@ -738,7 +741,7 @@ and type_expression_package env parent p =
             path = module_type_path env p.path;
             substitutions = List.map substitution p.substitutions;
           })
-  | Error _ -> { p with path = Cpath.module_type_path_of_cpath cp }
+  | Error _ -> { p with path = Lang_of.(Path.module_type (empty ()) cp) }
 
 and type_expression : Env.t -> Id.Parent.t -> _ -> _ =
  fun env parent texpr ->
@@ -754,12 +757,12 @@ and type_expression : Env.t -> Id.Parent.t -> _ -> _ =
       let ts = List.map (type_expression env parent) ts' in
       match Tools.resolve_type env ~add_canonical:true cp with
       | Ok (cp, (`FType _ | `FClass _ | `FClassType _)) ->
-          let p = Cpath.resolved_type_path_of_cpath cp in
+          let p = Lang_of.(Path.resolved_type (empty ()) cp) in
           Constr (`Resolved p, ts)
       | Ok (_cp, `FType_removed (_, x, _eq)) ->
           (* Substitute type variables ? *)
           Lang_of.(type_expr (empty ()) parent x)
-      | Error _ -> Constr (Cpath.type_path_of_cpath cp, ts))
+      | Error _ -> Constr (Lang_of.(Path.type_ (empty ()) cp), ts))
   | Polymorphic_variant v ->
       Polymorphic_variant (type_expression_polyvar env parent v)
   | Object o -> Object (type_expression_object env parent o)

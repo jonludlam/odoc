@@ -101,15 +101,15 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
     match cp with
     | `Resolved p ->
         let result = Tools.reresolve_type env p in
-        `Resolved (result |> Cpath.resolved_type_path_of_cpath)
+        `Resolved Lang_of.(Path.resolved_type (empty ()) result)
     | _ -> (
         match Tools.resolve_type_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_type env p' in
-            `Resolved (Cpath.resolved_type_path_of_cpath result)
+            `Resolved Lang_of.(Path.resolved_type (empty ()) result)
         | Error e ->
             Errors.report ~what:(`Type_path cp) ~tools_error:e `Lookup;
-            Cpath.type_path_of_cpath cp)
+            p)
 
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
@@ -119,17 +119,17 @@ and module_type_path :
     let cp = Component.Of_Lang.(module_type_path empty p) in
     match cp with
     | `Resolved p ->
+        let result = Tools.reresolve_module_type env p in
         `Resolved
-          (Tools.reresolve_module_type env p
-          |> Cpath.resolved_module_type_path_of_cpath)
+          Lang_of.(Path.resolved_module_type (empty ()) result)
     | _ -> (
         match Tools.resolve_module_type_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_module_type env p' in
-            `Resolved (Cpath.resolved_module_type_path_of_cpath result)
+            `Resolved Lang_of.(Path.resolved_module_type (empty ()) result)
         | Error e ->
             Errors.report ~what:(`Module_type_path cp) ~tools_error:e `Resolve;
-            Cpath.module_type_path_of_cpath cp)
+            p)
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
  fun env p ->
@@ -139,16 +139,16 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
     match cp with
     | `Resolved p ->
         let after = Tools.reresolve_module env p in
-        `Resolved (Cpath.resolved_module_path_of_cpath after)
+        `Resolved Lang_of.(Path.resolved_module (empty ()) after)
     | _ -> (
         match Tools.resolve_module_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_module env p' in
-            `Resolved (Cpath.resolved_module_path_of_cpath result)
+            `Resolved Lang_of.(Path.resolved_module (empty ()) result)
         | Error _ when is_forward p -> p
         | Error e ->
             Errors.report ~what:(`Module_path cp) ~tools_error:e `Resolve;
-            Cpath.module_path_of_cpath cp)
+            p)
 
 let rec comment_inline_element :
     loc:_ -> Env.t -> Comment.inline_element -> Comment.inline_element =
@@ -346,7 +346,9 @@ and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
   let env = Env.open_signature s env |> Env.add_docs s.doc in
   let items = signature_items env id s.items
   and doc = comment_docs env id s.doc in
-  { s with items; doc }
+  let sg = { s with items; doc } in
+  let sg' = Component.Of_Lang.(signature empty sg) in
+  Lang_of.(signature (id :> Id.Signature.t) (empty ()) sg')
 
 and signature_items :
     Env.t -> Id.Signature.t -> Signature.item list -> Signature.item list =
@@ -849,7 +851,7 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
         match Tools.resolve_type env ~add_canonical:true cp with
         | Ok (cp', `FType (_, t)) ->
             let cp' = Tools.reresolve_type env cp' in
-            let p = Cpath.resolved_type_path_of_cpath cp' in
+            let p = Lang_of.(Path.resolved_type (empty ()) cp') in
             if List.mem p visited then raise Loop
             else if Cpath.is_resolved_type_hidden cp' then
               match t.Component.TypeDecl.equation with
@@ -881,12 +883,12 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
               | _ -> Constr (`Resolved p, ts)
             else Constr (`Resolved p, ts)
         | Ok (cp', (`FClass _ | `FClassType _)) ->
-            let p = Cpath.resolved_type_path_of_cpath cp' in
+            let p = Lang_of.(Path.resolved_type (empty ()) cp') in
             Constr (`Resolved p, ts)
         | Ok (_cp, `FType_removed (_, x, _eq)) ->
             (* Type variables ? *)
             Lang_of.(type_expr (empty ()) (parent :> Id.Parent.t) x)
-        | Error _ -> Constr (Cpath.type_path_of_cpath cp, ts))
+        | Error _ -> Constr (path', ts))
   | Polymorphic_variant v ->
       Polymorphic_variant (type_expression_polyvar env parent visited v)
   | Object o -> Object (type_expression_object env parent visited o)
