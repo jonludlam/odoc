@@ -387,7 +387,7 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ empty m) in
+      let ty = Component.Of_Lang.(module_ (empty ()) m) in
       ty
   | Pack _p ->
       let m =
@@ -401,7 +401,7 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ empty m) in
+      let ty = Component.Of_Lang.(module_ (empty ()) m) in
       ty
 
 let lookup_root_module name env =
@@ -607,7 +607,7 @@ let add_functor_parameter : Odoc_model.Lang.FunctorParameter.t -> t -> t =
         Component.Module.
           {
             doc = [];
-            type_ = ModuleType Component.Of_Lang.(module_type_expr empty n.expr);
+            type_ = ModuleType Component.Of_Lang.(module_type_expr (empty ()) n.expr);
             canonical = None;
             hidden = false;
           }
@@ -682,7 +682,7 @@ let open_class_signature : Odoc_model.Lang.ClassSignature.t -> t -> t =
       (fun env orig ->
         match orig with
         | Odoc_model.Lang.ClassSignature.Method m ->
-            let ty = method_ empty m in
+            let ty = method_ (empty ()) m in
             add_method m.Odoc_model.Lang.Method.id ty env
         | _ -> env)
       env s.items
@@ -696,21 +696,21 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
       (fun env orig ->
         match ((orig : L.Signature.item), env.linking) with
         | Type (_, t), _ ->
-            let ty = type_decl empty t in
+            let ty = type_decl (empty ()) t in
             add_type t.L.TypeDecl.id ty env
         | Module (_, t), _ ->
-            let ty = Component.Delayed.put (fun () -> module_ empty t) in
+            let ty = Component.Delayed.put (fun () -> module_ (empty ()) t) in
             add_module
               (t.L.Module.id :> Identifier.Path.Module.t)
               ty
-              (docs empty t.L.Module.doc)
+              (docs (empty ()) t.L.Module.doc)
               env
         | ModuleType t, _ ->
-            let ty = module_type empty t in
+            let ty = module_type (empty ()) t in
             add_module_type t.L.ModuleType.id ty env
         | ModuleTypeSubstitution t, _ ->
             let ty =
-              module_type empty
+              module_type (empty ())
                 {
                   id = t.id;
                   doc = t.doc;
@@ -720,42 +720,42 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             in
             add_module_type t.L.ModuleTypeSubstitution.id ty env
         | L.Signature.TypeSubstitution t, _ ->
-            let ty = type_decl empty t in
+            let ty = type_decl (empty ()) t in
             add_type t.L.TypeDecl.id ty env
         | L.Signature.ModuleSubstitution m, _ ->
             let _id = Ident.Of_Identifier.module_ m.id in
-            let doc = docs empty m.doc in
+            let doc = docs (empty ()) m.doc in
             let ty =
               Component.Delayed.put (fun () ->
                   Of_Lang.(
                     module_of_module_substitution
-                      (*                  { empty with modules = [ (m.id, id) ] } *)
-                      empty m))
+                      (*                  { (empty ()) with modules = [ (m.id, id) ] } *)
+                      (empty ()) m))
             in
             add_module (m.id :> Identifier.Path.Module.t) ty doc env
         | L.Signature.Class (_, c), _ ->
-            let ty = class_ empty c in
+            let ty = class_ (empty ()) c in
             add_class c.id ty env
         | L.Signature.ClassType (_, c), _ ->
-            let ty = class_type empty c in
+            let ty = class_type (empty ()) c in
             add_class_type c.id ty env
         | L.Signature.Include i, _ -> open_signature i.expansion.content env
         | L.Signature.Open o, _ -> open_signature o.expansion env
         (* The following are only added when linking *)
         | Comment c, true -> add_comment c env
         | TypExt te, true ->
-            let doc = docs empty te.doc in
+            let doc = docs (empty ()) te.doc in
             List.fold_left
               (fun env tec ->
-                let ty = extension_constructor empty tec in
+                let ty = extension_constructor (empty ()) tec in
                 add_extension_constructor tec.L.Extension.Constructor.id ty env)
               env te.L.Extension.constructors
             |> add_cdocs te.L.Extension.parent doc
         | Exception e, true ->
-            let ty = exception_ empty e in
+            let ty = exception_ (empty ()) e in
             add_exception e.L.Exception.id ty env
         | L.Signature.Value v, true ->
-            let ty = value empty v in
+            let ty = value (empty ()) v in
             add_value v.L.Value.id ty env
         (* Skip when compiling *)
         | Exception _, false -> env

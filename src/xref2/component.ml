@@ -1554,6 +1554,22 @@ end
 module Of_Lang = struct
   open Odoc_model
 
+  module M = Hashtbl.Make (struct
+    type t = Paths.Path.Module.t
+
+    let equal = ( = )
+
+    let hash x = Hashtbl.hash x
+  end)
+
+  module RM = Hashtbl.Make (struct
+    type t = Paths.Path.Resolved.Module.t
+
+    let equal = ( = )
+
+    let hash x = Hashtbl.hash x
+  end)
+
   type map = {
     modules : Ident.module_ Paths.Identifier.Maps.Module.t;
     module_types : Ident.module_type Paths.Identifier.Maps.ModuleType.t;
@@ -1565,9 +1581,11 @@ module Of_Lang = struct
       Ident.path_class_type Paths.Identifier.Maps.Path.ClassType.t;
     classes : Ident.class_ Paths.Identifier.Maps.Class.t;
     class_types : Ident.class_type Paths.Identifier.Maps.ClassType.t;
+    modpathmemo : Cpath.module_ M.t;
+    rmodpathmemo : Cpath.Resolved.module_ RM.t;
   }
 
-  let empty =
+  let empty () =
     let open Paths.Identifier.Maps in
     {
       modules = Module.empty;
@@ -1578,6 +1596,8 @@ module Of_Lang = struct
       path_class_types = Path.ClassType.empty;
       classes = Class.empty;
       class_types = ClassType.empty;
+      modpathmemo = M.create 127;
+      rmodpathmemo = RM.create 127;
     }
 
   let map_of_idents ids map =
@@ -1670,6 +1690,8 @@ module Of_Lang = struct
       class_types;
       path_types;
       path_class_types;
+      modpathmemo = M.create 127;
+      rmodpathmemo = RM.create 127;
     }
 
   let option conv ident_map x =
@@ -1692,17 +1714,25 @@ module Of_Lang = struct
   let rec resolved_module_path :
       _ -> Odoc_model.Paths.Path.Resolved.Module.t -> Cpath.Resolved.module_ =
    fun ident_map p ->
-    let recurse p = resolved_module_path ident_map p in
-    match p with
-    | `Identifier i -> identifier find_any_module ident_map i
-    | `Module (p, name) -> `Module (`Module (recurse p), name)
-    | `Apply (p1, p2) -> `Apply (recurse p1, recurse p2)
-    | `Alias (p1, p2) -> `Alias (recurse p1, recurse p2)
-    | `Subst (p1, p2) ->
-        `Subst (resolved_module_type_path ident_map p1, recurse p2)
-    | `Canonical (p1, p2) -> `Canonical (recurse p1, module_path ident_map p2)
-    | `Hidden p1 -> `Hidden (recurse p1)
-    | `OpaqueModule m -> `OpaqueModule (recurse m)
+    let f () =
+      let recurse p = resolved_module_path ident_map p in
+      match p with
+      | `Identifier i -> identifier find_any_module ident_map i
+      | `Module (p, name) -> `Module (`Module (recurse p), name)
+      | `Apply (p1, p2) -> `Apply (recurse p1, recurse p2)
+      | `Alias (p1, p2) -> `Alias (recurse p1, recurse p2)
+      | `Subst (p1, p2) ->
+          `Subst (resolved_module_type_path ident_map p1, recurse p2)
+      | `Canonical (p1, p2) -> `Canonical (recurse p1, module_path ident_map p2)
+      | `Hidden p1 -> `Hidden (recurse p1)
+      | `OpaqueModule m -> `OpaqueModule (recurse m)
+    in 
+    try
+      RM.find ident_map.rmodpathmemo p
+    with Not_found ->
+      let res = f () in
+      RM.replace ident_map.rmodpathmemo p res;
+      res
 
   and resolved_module_type_path :
       _ ->
@@ -1755,17 +1785,25 @@ module Of_Lang = struct
 
   and module_path : _ -> Odoc_model.Paths.Path.Module.t -> Cpath.module_ =
    fun ident_map p ->
-    match p with
-    | `Resolved r -> `Resolved (resolved_module_path ident_map r)
-    | `Identifier (i, b) -> (
-        match identifier find_any_module ident_map i with
-        | `Identifier i -> `Identifier (i, b)
-        | `Local i -> `Local (i, b))
-    | `Dot (path', x) -> `Dot (module_path ident_map path', x)
-    | `Apply (p1, p2) ->
-        `Apply (module_path ident_map p1, module_path ident_map p2)
-    | `Forward str -> `Forward str
-    | `Root str -> `Root str
+    let f () =
+      match p with
+      | `Resolved r -> `Resolved (resolved_module_path ident_map r)
+      | `Identifier (i, b) -> (
+          match identifier find_any_module ident_map i with
+          | `Identifier i -> `Identifier (i, b)
+          | `Local i -> `Local (i, b))
+      | `Dot (path', x) -> `Dot (module_path ident_map path', x)
+      | `Apply (p1, p2) ->
+          `Apply (module_path ident_map p1, module_path ident_map p2)
+      | `Forward str -> `Forward str
+      | `Root str -> `Root str
+    in
+    try
+      M.find ident_map.modpathmemo p
+    with Not_found ->
+      let res = f () in
+      M.replace ident_map.modpathmemo p res;
+      res
 
   and module_type_path :
       _ -> Odoc_model.Paths.Path.ModuleType.t -> Cpath.module_type =

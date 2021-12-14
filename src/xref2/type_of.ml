@@ -51,7 +51,7 @@ and module_type_expr_typeof env (id : Id.Signature.t) t =
   let p, strengthen =
     match t.t_desc with ModPath p -> (p, false) | StructInclude p -> (p, true)
   in
-  let cp = Component.Of_Lang.(module_path empty p) in
+  let cp = Component.Of_Lang.(module_path (empty ()) p) in
   let open Expand_tools in
   let open Utils.ResultMonad in
   aux_expansion_of_module_alias env ~strengthen cp >>= handle_expansion env id
