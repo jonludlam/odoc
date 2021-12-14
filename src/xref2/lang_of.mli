@@ -5,26 +5,13 @@ module M : Hashtbl.S with type key = Cpath.module_
 
 module RM : Hashtbl.S with type key = Cpath.Resolved.module_
 
-type maps = {
-  module_ : Identifier.Module.t Component.ModuleMap.t;
-  module_type : Identifier.ModuleType.t Component.ModuleTypeMap.t;
-  functor_parameter :
-    (Ident.functor_parameter * Identifier.FunctorParameter.t) list;
-  type_ : Identifier.Type.t Component.TypeMap.t;
-  path_type : Identifier.Path.Type.t Component.PathTypeMap.t;
-  class_ : (Ident.class_ * Identifier.Class.t) list;
-  class_type : (Ident.class_type * Identifier.ClassType.t) list;
-  path_class_type : Identifier.Path.ClassType.t Component.PathClassTypeMap.t;
-  fragment_root : Cfrag.root option;
-  (* Shadowed items *)
-  shadowed : Odoc_model.Lang.Include.shadowed;
-  modpathmemo : Path.Module.t M.t;
-  rmodpathmemo : Path.Resolved.Module.t RM.t;
-}
+type maps
 
 val empty : unit -> maps
 
 val with_fragment_root : Cfrag.root -> maps
+
+val with_shadowed : Odoc_model.Lang.Include.shadowed -> maps
 
 module Opt = Component.Opt
 

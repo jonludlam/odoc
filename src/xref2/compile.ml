@@ -320,7 +320,7 @@ and include_ : Env.t -> Include.t -> Include.t =
         Errors.report ~what:(`Include decl) ~tools_error:e `Expand;
         i.expansion
     | Ok sg ->
-        let map = { (Lang_of.empty ()) with shadowed = i.expansion.shadowed } in
+        let map = Lang_of.with_shadowed i.expansion.shadowed in 
         let sg' =
           match i.strengthened with
           | Some p ->

@@ -198,7 +198,7 @@ end
 module MakeMemo (X : MEMO) = struct
   module M = Hashtbl.Make (X)
 
-  let cache : (X.result * int * Env.lookup_type list) M.t = M.create 10000
+  let cache : (X.result * int * Env.LookupTypeSet.t) M.t = M.create 10000
 
   let cache_hits : int M.t = M.create 10000
 
@@ -220,7 +220,7 @@ module MakeMemo (X : MEMO) = struct
       let n = bump_counter arg in
       let no_memo () =
         let lookups, result =
-          ([], f env arg)
+          (Env.LookupTypeSet.empty, f env arg)
           (* Env.with_recorded_lookups env (fun env' -> f env' arg) *)
         in
         if n > 1 then M.add cache arg (result, env_id, lookups);

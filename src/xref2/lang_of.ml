@@ -6,7 +6,6 @@ module M = Hashtbl.Make (struct
   type t = Cpath.module_
 
   let equal = ( = )
-
   let hash x = Hashtbl.hash x
 end)
 
@@ -62,7 +61,9 @@ let empty () =
     rmodpathmemo = RM.create 127;
   }
 
-let with_fragment_root r = { (empty ()) with fragment_root = Some r }
+let with_fragment_root r = { (empty ()) with fragment_root = Some r; modpathmemo = M.create 127; rmodpathmemo = RM.create 127 }
+
+let with_shadowed shadowed = { (empty ()) with shadowed; modpathmemo = M.create 127; rmodpathmemo = RM.create 127 }
 
 (** Raises [Not_found] *)
 let lookup_module map : Ident.path_module -> _ = function
