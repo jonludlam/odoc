@@ -1,6 +1,6 @@
   $ ocamlc -c -bin-annot chain.mli
-  $ odoc compile chain.cmti
-  $ odoc link chain.odoc -I .
+  $ /usr/bin/time -l odoc compile chain.cmti
+  $ /usr/bin/time -l odoc link chain.odoc -I .
   $ ls -l
   total 73856
   -rw-r--r--  1 jon  staff     16511 Dec  6 19:58 chain.cmi
