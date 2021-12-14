@@ -691,26 +691,28 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
   let open Component in
   let open Of_Lang in
   let module L = Odoc_model.Lang in
+  
   fun s e ->
+    let ident_map = empty () in
     List.fold_left
       (fun env orig ->
         match ((orig : L.Signature.item), env.linking) with
         | Type (_, t), _ ->
-            let ty = type_decl (empty ()) t in
+            let ty = type_decl ident_map t in
             add_type t.L.TypeDecl.id ty env
         | Module (_, t), _ ->
-            let ty = Component.Delayed.put (fun () -> module_ (empty ()) t) in
+            let ty = Component.Delayed.put (fun () -> module_ ident_map t) in
             add_module
               (t.L.Module.id :> Identifier.Path.Module.t)
               ty
-              (docs (empty ()) t.L.Module.doc)
+              (docs ident_map t.L.Module.doc)
               env
         | ModuleType t, _ ->
-            let ty = module_type (empty ()) t in
+            let ty = module_type ident_map t in
             add_module_type t.L.ModuleType.id ty env
         | ModuleTypeSubstitution t, _ ->
             let ty =
-              module_type (empty ())
+              module_type ident_map
                 {
                   id = t.id;
                   doc = t.doc;
@@ -720,42 +722,42 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             in
             add_module_type t.L.ModuleTypeSubstitution.id ty env
         | L.Signature.TypeSubstitution t, _ ->
-            let ty = type_decl (empty ()) t in
+            let ty = type_decl ident_map t in
             add_type t.L.TypeDecl.id ty env
         | L.Signature.ModuleSubstitution m, _ ->
             let _id = Ident.Of_Identifier.module_ m.id in
-            let doc = docs (empty ()) m.doc in
+            let doc = docs ident_map m.doc in
             let ty =
               Component.Delayed.put (fun () ->
                   Of_Lang.(
                     module_of_module_substitution
-                      (*                  { (empty ()) with modules = [ (m.id, id) ] } *)
-                      (empty ()) m))
+                      (*                  { ident_map with modules = [ (m.id, id) ] } *)
+                      ident_map m))
             in
             add_module (m.id :> Identifier.Path.Module.t) ty doc env
         | L.Signature.Class (_, c), _ ->
-            let ty = class_ (empty ()) c in
+            let ty = class_ ident_map c in
             add_class c.id ty env
         | L.Signature.ClassType (_, c), _ ->
-            let ty = class_type (empty ()) c in
+            let ty = class_type ident_map c in
             add_class_type c.id ty env
         | L.Signature.Include i, _ -> open_signature i.expansion.content env
         | L.Signature.Open o, _ -> open_signature o.expansion env
         (* The following are only added when linking *)
         | Comment c, true -> add_comment c env
         | TypExt te, true ->
-            let doc = docs (empty ()) te.doc in
+            let doc = docs ident_map te.doc in
             List.fold_left
               (fun env tec ->
-                let ty = extension_constructor (empty ()) tec in
+                let ty = extension_constructor ident_map tec in
                 add_extension_constructor tec.L.Extension.Constructor.id ty env)
               env te.L.Extension.constructors
             |> add_cdocs te.L.Extension.parent doc
         | Exception e, true ->
-            let ty = exception_ (empty ()) e in
+            let ty = exception_ ident_map e in
             add_exception e.L.Exception.id ty env
         | L.Signature.Value v, true ->
-            let ty = value (empty ()) v in
+            let ty = value ident_map v in
             add_value v.L.Value.id ty env
         (* Skip when compiling *)
         | Exception _, false -> env
