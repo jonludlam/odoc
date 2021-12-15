@@ -1,17 +1,17 @@
-# odoc &nbsp; [![OCaml-CI Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Focaml%2Fodoc%2Fmaster&logo=ocaml)](https://ci.ocamllabs.io/github/ocaml/odoc) [![Coverage Status](https://coveralls.io/repos/github/ocaml/odoc/badge.svg)](https://coveralls.io/github/ocaml/odoc)
+# `odoc` &nbsp; [![OCaml-CI Build Status](https://img.shields.io/endpoint?url=https%3A%2F%2Fci.ocamllabs.io%2Fbadge%2Focaml%2Fodoc%2Fmaster&logo=ocaml)](https://ci.ocamllabs.io/github/ocaml/odoc) [![Coverage Status](https://coveralls.io/repos/github/ocaml/odoc/badge.svg)](https://coveralls.io/github/ocaml/odoc)
 
-**odoc** is a documentation generator for OCaml. It reads *doc comments* ,
-delimited with `(** ... *)`, and outputs HTML, LaTeX and man pages.
+**`odoc`** is a documentation generator for OCaml. It reads *doc comments* ,
+delimited with `(** ... *)`, and outputs HTML, LaTeX, and man pages.
 
 ## Using `odoc` with OCaml
 
-To install odoc with opam:
+To install `odoc` with Opam:
 
 ```
 $ opam install odoc
 ```
 
-For more information, see the [odoc website](https://ocaml.github.io/odoc) or build
+For more information, see the [`odoc` website](https://ocaml.github.io/odoc) or build
 the docs locally yourself from the `odoc` directory:
 
 ```
@@ -27,15 +27,15 @@ and find the docs in `_build/default/doc/html/index.html`
 
 ## Contact
 
-odoc is most discussed on [discuss.ocaml.org's Ecosystem category][discourse] with the `odoc` tag.
+`odoc` is most discussed on [discuss.ocaml.org's Ecosystem category][discourse] with the `odoc` tag.
 Please also don't hesitate to [open an issue][issues].
 
 <br/>
 
 ## Contributing
 
-Any [question asked](#contact), [issue opened][issues], feedback offered, is a
-contribution to odoc, and the project and all its users are thankful :) If
+Any [question asked](#contact), [issue opened][issues], or feedback offered is a
+contribution to `odoc`. The project and all its users are thankful for these contributions :) If
 you'd like to contribute code specifically, you may find the guide in
 [`doc/contributing.mld`][contributing.mld] helpful.
 
