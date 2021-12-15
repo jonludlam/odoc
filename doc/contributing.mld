@@ -3,10 +3,10 @@
 Please ask any questions you have about [odoc], {{:https://github.com/ocaml/odoc/issues}open any issues},
 {{:https://github.com/ocaml/odoc#contact}offer feedback}, etc. All of these are valued contributions :)
 
-If you'd like specifically to work on the code of [odoc], we hope that you will
+If you'd like specifically to work on the [odoc] code, we hope that you will
 find the information in this file helpful.
 
-{1 Quick start: HTML and CSS}
+{1 Quick Start: HTML and CSS}
 
 The [odoc] CSS is found at {{:https://github.com/ocaml/odoc/blob/master/src/odoc/etc/odoc.css}[src/odoc/etc/odoc.css]}. It
 still needs work, and PRs are very welcome. You can edit CSS using your browser's {{:https://developer.mozilla.org/en-US/docs/Tools}developer}
@@ -52,7 +52,7 @@ and then to run the tests,
 {[
 make test
 ]}
-Changes to the HTML are likely to cause the tests to fail. See the section on {{!testing}testing} below to understand how to update them.
+Changes to the HTML will likely cause the tests to fail. See the section on {{!testing}testing} below to understand how to update them.
 }
 {- To test [odoc] against your own project, install it
 {[
@@ -66,14 +66,14 @@ dune build @doc
 ]}
 }
 
-{- If all looks good, send odoc a PR :)
+{- If all looks good, send [odoc] a PR :)
 }
 }
 
 {1:testing Testing}
 
-[odoc] uses a variety of different test types. We are slowly converging on using
-Dune's {{:https://dune.readthedocs.io/en/stable/tests.html#cram-tests}cram tests},
+[odoc] uses a variety of different test types, but we're slowly converging on using
+Dune's {{:https://dune.readthedocs.io/en/stable/tests.html#cram-tests}Cram tests},
 though we still have many tests that aren't yet converted.
 
 {2 Cram Tests}
@@ -82,7 +82,7 @@ The tests extensively use these for the model layer and are found in
 {{:https://github.com/ocaml/odoc/blob/master/test/xref2}[test/xref2]}. These consist
 of a directory called [something.t], containing a file [run.t]. This file has 
 shell-like syntax and usually runs [odoc] on some carefully crafted
-input files. For tests of the model layer it's often useful to use the binary
+input files. For tests of the model layer, it's often useful to use the binary
 [odoc_print] which can dump [.odoc] and [.odocl] files as JSON. This output can
 then be piped through [jq] to verify that values are as expected.
 
@@ -133,8 +133,8 @@ The intended response to this is:
 {2 Other Expect-Tests}
 
 Many of [odoc]'s older tests are {b custom Expect-tests}, similar to those
-run in the Cram test above, but that don't use Dune's [promote] workflow.
-As an example the parser tests in [test/parser] work in the following way:
+run in the Cram test above, but don't use Dune's [promote] workflow.
+As an example, the parser tests in [test/parser] work in the following way:
 
 + The tests run some code, e.g., the [odoc] parser on the string [{e foo}].
 + They take the output, in this case an AST representing "emphasized [foo],"
@@ -180,7 +180,7 @@ workflow.
 {1 Coverage Analysis}
 
 The [odoc] repo is set up for coverage analysis. This is most useful if you're
-writing new tests, and want to know what they’re actually touching. 
+writing new tests and want to know what they’re actually touching. 
 
 To use it,
 
