@@ -45,7 +45,7 @@ and aux_expansion_of_module_alias env ~strengthen path =
   (* Format.eprintf "aux_expansion_of_module_alias (strengthen=%b, path=%a)\n%!"
      strengthen Component.Fmt.module_path path; *)
   match
-    Tools.resolve_module env ~mark_substituted:false ~add_canonical:false path
+    Tools.resolve_module env ~mark_substituted:false ~add_canonical:true path
   with
   | Ok (p, m) -> (
       (* Don't strengthen if the alias is definitely hidden. We can't always resolve canonical
@@ -56,29 +56,32 @@ and aux_expansion_of_module_alias env ~strengthen path =
         && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p)
       in*)
       let m = Component.Delayed.get m in
+      (* (match m.canonical with
+       | Some c -> Format.eprintf "m.canonical=%a\n%!" Component.Fmt.module_path c
+       | None -> Format.eprintf "No canonical\n%!"); *)
       match (aux_expansion_of_module env ~strengthen:true m, m.doc) with
       | (Error _ as e), _ -> e
       | Ok (Signature sg), [] ->
-         Format.eprintf "Maybe strenthening now...\n%!";
+         (* Format.eprintf "Maybe strengthening now...(path %a)\n%!" Component.Fmt.module_path (`Resolved p); *)
           let sg' =
             if strengthen then
               Strengthen.signature ?canonical:m.canonical (`Resolved p) sg
             else sg
           in
-          Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
+          (* Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
              Component.Fmt.signature sg
-             Component.Fmt.signature sg';
+             Component.Fmt.signature sg'; *)
           Ok (Signature sg')
       | Ok (Signature sg), docs ->
-          Format.eprintf "Maybe strenthening now...\n%!";
-          let sg' =
+        (* Format.eprintf "Maybe strengthening now...(path %a)\n%!" Component.Fmt.module_path (`Resolved p); *)
+        let sg' =
             if strengthen then
               Strengthen.signature ?canonical:m.canonical (`Resolved p) sg
             else sg
           in
-          Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
+          (* Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
              Component.Fmt.signature sg
-             Component.Fmt.signature sg';
+             Component.Fmt.signature sg'; *)
           Ok (Signature { sg' with items = Comment (`Docs docs) :: sg'.items })
       | Ok (Functor _ as x), _ -> Ok x)
   | Error e -> Error (`UnresolvedPath (`Module (path, e)))
@@ -210,12 +213,9 @@ let expansion_of_u_module_type_expr env id expr =
   aux_expansion_of_u_module_type_expr env expr >>= fun sg ->
   handle_expansion env id (Signature sg) >>= fun (env, e) -> Ok (env, false, e)
 
-(* Nb. [strengthen=false] here because the only time we are ever expanding module aliases is when either
-   the module is the canonical one or it's an alias to a hidden module. In neither of these cases do we want
-   to strengthen. *)
 let expansion_of_module_alias env id path =
   let open Paths.Identifier in
-  aux_expansion_of_module_alias ~strengthen:false env path
+  aux_expansion_of_module_alias ~strengthen:true env path
   >>= handle_expansion env (id : Module.t :> Signature.t)
   >>= fun (env, r) -> Ok (env, false, r)
 
