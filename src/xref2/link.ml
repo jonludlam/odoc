@@ -409,9 +409,8 @@ and module_ : Env.t -> Module.t -> Module.t =
           in
           let expansion_needed = self_canonical || hidden_alias in
           if expansion_needed then
-            let cp = Component.Of_Lang.(resolved_module_path (empty ()) p) in
             match
-              Expand_tools.expansion_of_module_alias env m.id (`Resolved cp)
+              Expand_tools.expansion_of_module_alias env m.id (`Identifier ((m.id :> Id.Path.Module.t), m.hidden))
             with
             | Ok (_, _, e) ->
                 let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
