@@ -615,7 +615,7 @@ and lookup_parent :
         |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun m ->
         let m = Component.Delayed.get m in
-        signature_of_module env m
+        signature_of_module_cached env p m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= fun sg -> Ok (sg, prefix_substitution parent sg)
     | `ModuleType p ->
@@ -1700,7 +1700,7 @@ and resolve_signature_fragment :
         | Some (`SubstMT p') -> (`Subst (p', new_path), `Subst (p', new_frag))
       in
       (* Don't use the cached one - `FragmentRoot` is not unique *)
-      of_result (signature_of_module env m') >>= fun parent_sg ->
+      of_result (signature_of_module_cached env new_path m') >>= fun parent_sg ->
       let sg = prefix_signature (`Module cp', parent_sg) in
       Some (f', `Module cp', sg)
 
