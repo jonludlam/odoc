@@ -178,15 +178,9 @@ and handle_expansion env id expansion =
   in
   expand id env expansion
 
-let expansion_of_module_type env id m =
-  let open Paths.Identifier in
-  aux_expansion_of_module_type env m
-  >>= handle_expansion env (id : ModuleType.t :> Signature.t)
-  >>= fun (env, e) -> Ok (env, module_type_needs_recompile m, e)
-
 let expansion_of_module_type_expr env id expr =
   aux_expansion_of_module_type_expr env expr >>= handle_expansion env id
-  >>= fun (env, e) -> Ok (env, module_type_expr_needs_recompile expr, e)
+  >>= fun (env, e) -> Ok (env, e)
 
 let expansion_of_u_module_type_expr env id expr =
   aux_expansion_of_u_module_type_expr env expr >>= fun sg ->
