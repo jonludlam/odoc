@@ -4,6 +4,10 @@ open Odoc_model.Names
 open Utils
 open ResultMonad
 
+(* type expansion =
+  | Signature of Component.Signature.t
+  | Functor of Component.FunctorParameter.t * Component.ModuleType.expr *)
+
 type ('a, 'b) either = Left of 'a | Right of 'b
 
 type module_modifiers =
@@ -1143,19 +1147,22 @@ and module_type_expr_of_module :
 and signature_of_module_path :
     Env.t ->
     strengthen:bool ->
+    canonical:Cpath.module_ option ->
     Cpath.module_ ->
     (Component.Signature.t, signature_of_module_error) Result.result =
- fun env ~strengthen path ->
+ fun env ~strengthen ~canonical path ->
   match resolve_module ~mark_substituted:true ~add_canonical:true env path with
   | Ok (p', m) ->
       let m = Component.Delayed.get m in
       (* p' is the path to the aliased module *)
-      let strengthen =
-        strengthen
-        && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p')
-      in
       signature_of_module_cached env p' m >>= fun sg ->
-      if strengthen then Ok (Strengthen.signature (`Resolved p') sg) else Ok sg
+      let canonical =
+        match canonical, m.canonical with
+        | Some c, _ -> Some c
+        | None, Some c -> Some c
+        | _ -> None
+      in
+      if strengthen then Ok (Strengthen.signature ?canonical (`Resolved p') sg) else Ok sg
   | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
   | Error e -> Error (`UnresolvedPath (`Module (path, e)))
 
@@ -1242,12 +1249,13 @@ and signature_of_module_type :
 and signature_of_module_decl :
     Env.t ->
     Component.Module.decl ->
+    canonical:Cpath.module_ option -> 
     (Component.Signature.t, signature_of_module_error) Result.result =
- fun env decl ->
+ fun env decl ~canonical ->
   match decl with
   | Component.Module.Alias (_, Some e) -> Ok (signature_of_simple_expansion e)
   | Component.Module.Alias (p, _) ->
-      signature_of_module_path env ~strengthen:true p
+      signature_of_module_path env ~canonical ~strengthen:true p
   | Component.Module.ModuleType expr ->
       signature_of_module_type_expr ~mark_substituted:false env expr
 
@@ -1255,7 +1263,7 @@ and signature_of_module :
     Env.t ->
     Component.Module.t ->
     (Component.Signature.t, signature_of_module_error) Result.result =
- fun env m -> signature_of_module_decl env m.type_
+ fun env m -> signature_of_module_decl env ~canonical:m.canonical m.type_
 
 and signature_of_module_cached :
     Env.t ->
@@ -1289,7 +1297,7 @@ and fragmap :
     let open Component.Module in
     match decl with
     | Alias (path, _) ->
-        signature_of_module_path env ~strengthen:true path >>= fun sg ->
+        signature_of_module_path env ~strengthen:true ~canonical:None path >>= fun sg ->
         Ok
           (ModuleType
              (With
@@ -1317,7 +1325,7 @@ and fragmap :
     let open Component.Include in
     match decl with
     | Alias p ->
-        signature_of_module_path env ~strengthen:true p >>= fun sg ->
+        signature_of_module_path env ~strengthen:true ~canonical:None p >>= fun sg ->
         fragmap ~mark_substituted env subst sg >>= fun sg ->
         Ok (ModuleType (Signature sg))
     | ModuleType mty' -> Ok (ModuleType (With ([ subst ], mty')))
