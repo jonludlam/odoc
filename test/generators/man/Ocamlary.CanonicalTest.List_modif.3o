@@ -13,4 +13,4 @@ Ocamlary\.CanonicalTest\.List_modif
 .nf 
 \f[CB]type\fR 'c t = \f[CB]'c\fR Base\.List\.t
 .sp 
-\f[CB]val\fR id : \f[CB]'a\fR t \f[CB]\->\fR \f[CB]'a\fR t
+\f[CB]val\fR id : \f[CB]'a\fR Base\.List\.t \f[CB]\->\fR \f[CB]'a\fR Base\.List\.t

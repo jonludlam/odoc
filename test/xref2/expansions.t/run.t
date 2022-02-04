@@ -254,148 +254,30 @@
                                     "Alias": [
                                       {
                                         "`Resolved": {
-                                          "`Module": [
+                                          "`Canonical": [
                                             {
-                                              "`Canonical": [
+                                              "`Alias": [
                                                 {
-                                                  "`Module": [
+                                                  "`Canonical": [
                                                     {
-                                                      "`Hidden": {
-                                                        "`Identifier": {
-                                                          "`Root": [
-                                                            "None",
-                                                            "Sexplib0__"
-                                                          ]
-                                                        }
-                                                      }
-                                                    },
-                                                    "Sexp"
-                                                  ]
-                                                },
-                                                {
-                                                  "`Resolved": {
-                                                    "`Alias": [
-                                                      {
-                                                        "`Canonical": [
-                                                          {
-                                                            "`Module": [
-                                                              {
-                                                                "`Hidden": {
-                                                                  "`Identifier": {
-                                                                    "`Root": [
-                                                                      "None",
-                                                                      "Sexplib0__"
-                                                                    ]
-                                                                  }
-                                                                }
-                                                              },
-                                                              "Sexp"
-                                                            ]
-                                                          },
-                                                          {
-                                                            "`Resolved": {
-                                                              "`Alias": [
-                                                                {
-                                                                  "`Canonical": [
-                                                                    {
-                                                                      "`Module": [
-                                                                      {
-                                                                      "`Hidden": {
-                                                                      "`Identifier": {
-                                                                      "`Root": [
-                                                                      "None",
-                                                                      "Sexplib0__"
-                                                                      ]
-                                                                      }
-                                                                      }
-                                                                      },
-                                                                      "Sexp"
-                                                                      ]
-                                                                    },
-                                                                    {
-                                                                      "`Dot": [
-                                                                      {
-                                                                      "`Root":
-                                                                      "Sexplib0"
-                                                                      },
-                                                                      "Sexp"
-                                                                      ]
-                                                                    }
-                                                                  ]
-                                                                },
-                                                                {
-                                                                  "`Identifier": {
-                                                                    "`Module": [
-                                                                      {
-                                                                      "`Root": [
-                                                                      "None",
-                                                                      "Sexplib0"
-                                                                      ]
-                                                                      },
-                                                                      "Sexp"
-                                                                    ]
-                                                                  }
-                                                                }
-                                                              ]
-                                                            }
-                                                          }
-                                                        ]
-                                                      },
-                                                      {
-                                                        "`Identifier": {
+                                                      "`Alias": [
+                                                        {
                                                           "`Module": [
                                                             {
-                                                              "`Root": [
-                                                                "None",
-                                                                "Sexplib0"
-                                                              ]
+                                                              "`Hidden": {
+                                                                "`Identifier": {
+                                                                  "`Root": [
+                                                                    "None",
+                                                                    "Sexplib0__Sexp"
+                                                                  ]
+                                                                }
+                                                              }
                                                             },
-                                                            "Sexp"
+                                                            "Private"
                                                           ]
-                                                        }
-                                                      }
-                                                    ]
-                                                  }
-                                                }
-                                              ]
-                                            },
-                                            "Private"
-                                          ]
-                                        }
-                                      },
-                                      {
-                                        "Some": {
-                                          "Signature": {
-                                            "items": [
-                                              {
-                                                "Value": {
-                                                  "id": {
-                                                    "`Value": [
-                                                      {
-                                                        "`Module": [
-                                                          {
-                                                            "`Module": [
-                                                              {
-                                                                "`Root": [
-                                                                  "None",
-                                                                  "Sexplib0"
-                                                                ]
-                                                              },
-                                                              "Sexp"
-                                                            ]
-                                                          },
-                                                          "Private"
-                                                        ]
-                                                      },
-                                                      "x"
-                                                    ]
-                                                  },
-                                                  "doc": [],
-                                                  "type_": {
-                                                    "Constr": [
-                                                      {
-                                                        "`Resolved": {
-                                                          "`Type": [
+                                                        },
+                                                        {
+                                                          "`Module": [
                                                             {
                                                               "`Canonical": [
                                                                 {
@@ -434,30 +316,63 @@
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Alias": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Canonical": [
-                                                                      {
-                                                                      "`Module": [
-                                                                      {
-                                                                      "`Hidden": {
-                                                                      "`Identifier": {
-                                                                      "`Root": [
-                                                                      "None",
-                                                                      "Sexplib0__"
-                                                                      ]
-                                                                      }
-                                                                      }
+                                                                      "`Root":
+                                                                      "Sexplib0"
                                                                       },
                                                                       "Sexp"
                                                                       ]
+                                                                      }
+                                                                      ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Alias": [
+                                                                      "`Identifier": {
+                                                                      "`Module": [
                                                                       {
-                                                                      "`Canonical": [
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0"
+                                                                      ]
+                                                                      },
+                                                                      "Sexp"
+                                                                      ]
+                                                                      }
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                }
+                                                              ]
+                                                            },
+                                                            "Private"
+                                                          ]
+                                                        }
+                                                      ]
+                                                    },
+                                                    {
+                                                      "`Resolved": {
+                                                        "`Alias": [
+                                                          {
+                                                            "`Alias": [
+                                                              {
+                                                                "`Module": [
+                                                                  {
+                                                                    "`Hidden": {
+                                                                      "`Identifier": {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0__Sexp"
+                                                                      ]
+                                                                      }
+                                                                    }
+                                                                  },
+                                                                  "Private"
+                                                                ]
+                                                              },
+                                                              {
+                                                                "`Module": [
+                                                                  {
+                                                                    "`Canonical": [
                                                                       {
                                                                       "`Module": [
                                                                       {
@@ -482,61 +397,311 @@
                                                                       "Sexp"
                                                                       ]
                                                                       }
-                                                                      ]
-                                                                      },
+                                                                    ]
+                                                                  },
+                                                                  "Private"
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "`Module": [
+                                                              {
+                                                                "`Alias": [
+                                                                  {
+                                                                    "`Canonical": [
                                                                       {
-                                                                      "`Identifier": {
                                                                       "`Module": [
                                                                       {
+                                                                      "`Hidden": {
+                                                                      "`Identifier": {
                                                                       "`Root": [
                                                                       "None",
-                                                                      "Sexplib0"
+                                                                      "Sexplib0__"
                                                                       ]
+                                                                      }
+                                                                      }
                                                                       },
                                                                       "Sexp"
                                                                       ]
-                                                                      }
-                                                                      }
-                                                                      ]
-                                                                      }
-                                                                      }
-                                                                      ]
                                                                       },
                                                                       {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Sexplib0"
-                                                                      ]
                                                                       },
                                                                       "Sexp"
                                                                       ]
-                                                                      }
-                                                                      }
-                                                                      ]
-                                                                      }
-                                                                      }
-                                                                      ]
-                                                                      },
-                                                                      {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
-                                                                      {
-                                                                      "`Root": [
-                                                                      "None",
-                                                                      "Sexplib0"
-                                                                      ]
-                                                                      },
-                                                                      "Sexp"
-                                                                      ]
-                                                                      }
                                                                       }
                                                                     ]
+                                                                  },
+                                                                  {
+                                                                    "`Identifier": {
+                                                                      "`Module": [
+                                                                      {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0"
+                                                                      ]
+                                                                      },
+                                                                      "Sexp"
+                                                                      ]
+                                                                    }
                                                                   }
-                                                                }
+                                                                ]
+                                                              },
+                                                              "Private"
+                                                            ]
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "`Module": [
+                                                    {
+                                                      "`Alias": [
+                                                        {
+                                                          "`Canonical": [
+                                                            {
+                                                              "`Module": [
+                                                                {
+                                                                  "`Hidden": {
+                                                                    "`Identifier": {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0__"
+                                                                      ]
+                                                                    }
+                                                                  }
+                                                                },
+                                                                "Sexp"
                                                               ]
+                                                            },
+                                                            {
+                                                              "`Resolved": {
+                                                                "`Alias": [
+                                                                  {
+                                                                    "`Canonical": [
+                                                                      {
+                                                                      "`Module": [
+                                                                      {
+                                                                      "`Hidden": {
+                                                                      "`Identifier": {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0__"
+                                                                      ]
+                                                                      }
+                                                                      }
+                                                                      },
+                                                                      "Sexp"
+                                                                      ]
+                                                                      },
+                                                                      {
+                                                                      "`Dot": [
+                                                                      {
+                                                                      "`Root":
+                                                                      "Sexplib0"
+                                                                      },
+                                                                      "Sexp"
+                                                                      ]
+                                                                      }
+                                                                    ]
+                                                                  },
+                                                                  {
+                                                                    "`Identifier": {
+                                                                      "`Module": [
+                                                                      {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0"
+                                                                      ]
+                                                                      },
+                                                                      "Sexp"
+                                                                      ]
+                                                                    }
+                                                                  }
+                                                                ]
+                                                              }
+                                                            }
+                                                          ]
+                                                        },
+                                                        {
+                                                          "`Identifier": {
+                                                            "`Module": [
+                                                              {
+                                                                "`Root": [
+                                                                  "None",
+                                                                  "Sexplib0"
+                                                                ]
+                                                              },
+                                                              "Sexp"
+                                                            ]
+                                                          }
+                                                        }
+                                                      ]
+                                                    },
+                                                    "Private"
+                                                  ]
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "`Resolved": {
+                                                "`Alias": [
+                                                  {
+                                                    "`Alias": [
+                                                      {
+                                                        "`Module": [
+                                                          {
+                                                            "`Hidden": {
+                                                              "`Identifier": {
+                                                                "`Root": [
+                                                                  "None",
+                                                                  "Sexplib0__Sexp"
+                                                                ]
+                                                              }
+                                                            }
+                                                          },
+                                                          "Private"
+                                                        ]
+                                                      },
+                                                      {
+                                                        "`Module": [
+                                                          {
+                                                            "`Canonical": [
+                                                              {
+                                                                "`Module": [
+                                                                  {
+                                                                    "`Hidden": {
+                                                                      "`Identifier": {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0__"
+                                                                      ]
+                                                                      }
+                                                                    }
+                                                                  },
+                                                                  "Sexp"
+                                                                ]
+                                                              },
+                                                              {
+                                                                "`Dot": [
+                                                                  {
+                                                                    "`Root":
+                                                                      "Sexplib0"
+                                                                  },
+                                                                  "Sexp"
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          "Private"
+                                                        ]
+                                                      }
+                                                    ]
+                                                  },
+                                                  {
+                                                    "`Module": [
+                                                      {
+                                                        "`Alias": [
+                                                          {
+                                                            "`Canonical": [
+                                                              {
+                                                                "`Module": [
+                                                                  {
+                                                                    "`Hidden": {
+                                                                      "`Identifier": {
+                                                                      "`Root": [
+                                                                      "None",
+                                                                      "Sexplib0__"
+                                                                      ]
+                                                                      }
+                                                                    }
+                                                                  },
+                                                                  "Sexp"
+                                                                ]
+                                                              },
+                                                              {
+                                                                "`Dot": [
+                                                                  {
+                                                                    "`Root":
+                                                                      "Sexplib0"
+                                                                  },
+                                                                  "Sexp"
+                                                                ]
+                                                              }
+                                                            ]
+                                                          },
+                                                          {
+                                                            "`Identifier": {
+                                                              "`Module": [
+                                                                {
+                                                                  "`Root": [
+                                                                    "None",
+                                                                    "Sexplib0"
+                                                                  ]
+                                                                },
+                                                                "Sexp"
+                                                              ]
+                                                            }
+                                                          }
+                                                        ]
+                                                      },
+                                                      "Private"
+                                                    ]
+                                                  }
+                                                ]
+                                              }
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      {
+                                        "Some": {
+                                          "Signature": {
+                                            "items": [
+                                              {
+                                                "Value": {
+                                                  "id": {
+                                                    "`Value": [
+                                                      {
+                                                        "`Module": [
+                                                          {
+                                                            "`Module": [
+                                                              {
+                                                                "`Root": [
+                                                                  "None",
+                                                                  "Sexplib0"
+                                                                ]
+                                                              },
+                                                              "Sexp"
+                                                            ]
+                                                          },
+                                                          "Private"
+                                                        ]
+                                                      },
+                                                      "x"
+                                                    ]
+                                                  },
+                                                  "doc": [],
+                                                  "type_": {
+                                                    "Constr": [
+                                                      {
+                                                        "`Resolved": {
+                                                          "`Type": [
+                                                            {
+                                                              "`Hidden": {
+                                                                "`Identifier": {
+                                                                  "`Root": [
+                                                                    "None",
+                                                                    "Sexplib0__Sexp"
+                                                                  ]
+                                                                }
+                                                              }
                                                             },
                                                             "t"
                                                           ]
@@ -605,6 +770,7 @@
     "canonical": "None"
   }
   $ odoc html-generate -o html sexplib0.odocl --indent
+  Warning, resolved hidden path: Sexplib0__Sexp.t
 
   $ odoc support-files -o html
 
@@ -632,7 +798,7 @@
        <a href="#val-x" class="anchor"></a>
        <code>
         <span><span class="keyword">val</span> x : 
-         <a href="../index.html#type-t">Sexp.t</a>
+         <span class="xref-unresolved">Sexplib0__Sexp.t</span>
         </span>
        </code>
       </div>

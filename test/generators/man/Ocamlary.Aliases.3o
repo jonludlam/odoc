@@ -24,7 +24,7 @@ Let's imitate jst's layout\.
 .sp 
 \f[CB]type\fR tete
 .sp 
-\f[CB]type\fR tata' = A'\.t
+\f[CB]type\fR tata' = Foo\.A\.t
 .sp 
 \f[CB]type\fR tete2 = Foo\.E\.t
 .sp 
@@ -50,7 +50,7 @@ Just for giggle, let's see what happens when we include \f[CI]Foo\fR\.
 .sp 
 \f[CB]module\fR E : \f[CB]sig\fR \.\.\. \f[CB]end\fR
 .sp 
-\f[CB]type\fR testa = A\.t
+\f[CB]type\fR testa = Foo\.A\.t
 .sp 
 .fi 
 And also, let's refer to \f[CI]A\.t\fR and \f[CI]Foo\.B\.id\fR
@@ -64,6 +64,6 @@ And also, let's refer to \f[CI]A\.t\fR and \f[CI]Foo\.B\.id\fR
 .sp 
 \f[CB]module\fR X2 = P2\.Z
 .sp 
-\f[CB]type\fR p1 = X1\.t
+\f[CB]type\fR p1 = P2\.Z\.t
 .sp 
-\f[CB]type\fR p2 = X2\.t
+\f[CB]type\fR p2 = P2\.Z\.t

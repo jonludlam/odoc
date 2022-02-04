@@ -15,7 +15,7 @@ Ocamlary\.CanonicalTest\.Base_Tests
 .sp 
 \f[CB]module\fR L = Base\.List
 .sp 
-\f[CB]val\fR foo : int L\.t \f[CB]\->\fR float L\.t
+\f[CB]val\fR foo : int Base\.List\.t \f[CB]\->\fR float Base\.List\.t
 .sp 
 \f[CB]val\fR bar : \f[CB]'a\fR Base\.List\.t \f[CB]\->\fR \f[CB]'a\fR Base\.List\.t
 .sp 

@@ -171,7 +171,7 @@ let html_generate ?(ignore_output = false) file =
   let open Cmd in
   let cmd =
     odoc % "html-generate" % p file % "-o" % "html" % "--theme-uri" % "odoc"
-    % "--support-uri" % "odoc" % "--indent"
+    % "--support-uri" % "odoc"
   in
   let lines = OS.Cmd.(run_out cmd ~err:err_run_out |> to_lines) |> get_ok in
   if not ignore_output then

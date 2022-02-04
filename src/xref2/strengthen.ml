@@ -43,20 +43,33 @@ and sig_items prefix ?canonical sg =
             let m' () = module_ ?canonical (`Dot (prefix, name)) (get m) in
             (Module (id, r, put m') :: items, id :: s)
         | ModuleType (id, mt) ->
+          let name = Ident.Name.module_type id in
+          let canonical =
+            match canonical with
+            | Some p -> Some (`Dot (p, name))
+            | None -> None
+          in
             ( ModuleType
                 ( id,
                   put (fun () ->
                       module_type
+                        ?canonical
                         (`Dot (prefix, Ident.Name.module_type id))
                         (get mt)) )
               :: items,
               s )
         | Type (id, r, t) ->
+          let name = Ident.Name.type_ id in
+          let canonical =
+            match canonical with
+            | Some p -> Some (`Dot (p, name))
+            | None -> None
+          in
             ( Type
                 ( id,
                   r,
                   put (fun () ->
-                      type_decl (`Dot (prefix, Ident.Name.type_ id)) (get t)) )
+                      type_decl ?canonical (`Dot (prefix, Ident.Name.type_ id)) (get t)) )
               :: items,
               s )
         | Include i ->
@@ -75,17 +88,25 @@ and module_ :
     Cpath.module_ ->
     Component.Module.t ->
     Component.Module.t =
- fun ?canonical prefix m -> { m with canonical; type_ = Alias (prefix, None) }
+ fun ?canonical prefix m ->
+  match canonical with
+  | Some _ -> { m with canonical; type_ = Alias (prefix, None) }
+  | None -> {m with type_ = Alias (prefix, None) }
 
 (* nuke the expansion as this could otherwise lead to inconsistencies - e.g. 'AlreadyASig' *)
 and module_type :
-    Cpath.module_type -> Component.ModuleType.t -> Component.ModuleType.t =
- fun prefix m ->
+?canonical:Cpath.module_type -> Cpath.module_type ->  Component.ModuleType.t -> Component.ModuleType.t =
+ fun ?canonical prefix m ->
+  let canonical =
+    match canonical with
+    | Some c -> Some c
+    | None -> m.canonical
+  in
   let expr = Some (ModuleType.Path { p_path = prefix; p_expansion = None }) in
-  { m with expr }
+  { m with expr; canonical }
 
-and type_decl : Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
- fun path t ->
+and type_decl : ?canonical:Cpath.type_ -> Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
+ fun ?canonical path t ->
   let equation =
     let e = t.TypeDecl.equation in
     let open TypeDecl.Equation in
@@ -102,6 +123,7 @@ and type_decl : Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
       | None -> Some (TypeExpr.Constr (path, constr_params))
       | _ -> e.manifest
     in
+    
     {
       params = e.params;
       private_ = e.private_;
@@ -109,7 +131,12 @@ and type_decl : Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
       constraints = e.constraints;
     }
   in
-  { t with equation }
+  let canonical =
+    match canonical with
+    | Some c -> Some c
+    | None -> t.canonical
+  in
+  { t with equation; canonical }
 
 and include_ : Cpath.module_ -> Include.t -> Include.t * Ident.module_ list =
  fun path i ->
