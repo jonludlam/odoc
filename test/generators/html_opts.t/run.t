@@ -44,5 +44,9 @@ Check content-only output:
   $ odoc html-generate test.odocl -o html --indent --content-only
   $ head -n 1 html/test/Test/index.html
   <div class="odoc">
- 
+
+Check dump-toc:
+  $ odoc html-generate test.odocl -o html --indent --dump-toc-json
+  $ cat html/test/Test/index.toc.json 
+  [{"title":"Section   1","href":"#section-1","children":[]},{"title":"Section   2","href":"#section-2","children":[]}]
 

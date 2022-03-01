@@ -30,7 +30,7 @@ let html_of_toc toc =
   | [] -> []
   | _ -> [ Html.nav ~a:[ Html.a_class [ "odoc-toc" ] ] [ sections toc ] ]
 
-let _json_of_toc toc =
+let json_of_toc toc =
   let open Types in
   let rec map { title_str; href; children; _ } =
     `Assoc
@@ -165,4 +165,12 @@ let page_creator ~config ~url name header toc content =
 let make ~config ~url ~header ~toc title content children =
   let filename = Link.Path.as_filename ~is_flat:(Config.flat config) url in
   let content = page_creator ~config ~url title header toc content in
-  [ { Odoc_document.Renderer.filename; content; children } ]
+  let toc_json =
+    let json = json_of_toc toc in
+    let content ppf = Format.fprintf ppf "%s" json in
+    if Config.dump_toc_json config
+      then [{ Odoc_document.Renderer.filename = Fpath.rem_ext filename |> Fpath.add_ext ".toc.json";
+      content; children=[] }]
+  else []
+  in
+  { Odoc_document.Renderer.filename; content; children } :: toc_json

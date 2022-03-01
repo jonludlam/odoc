@@ -10,10 +10,11 @@ type t = {
   omit_breadcrumbs : bool;
   omit_toc : bool;
   content_only : bool;
+  dump_toc_json : bool;
 }
 
-let v ?theme_uri ?support_uri ~semantic_uris ~indent ~flat ~open_details ~omit_breadcrumbs ~omit_toc ~content_only () =
-  { theme_uri; support_uri; semantic_uris; indent; flat; open_details; omit_breadcrumbs; omit_toc; content_only }
+let v ?theme_uri ?support_uri ~semantic_uris ~indent ~flat ~open_details ~omit_breadcrumbs ~omit_toc ~content_only ~dump_toc_json () =
+  { theme_uri; support_uri; semantic_uris; indent; flat; open_details; omit_breadcrumbs; omit_toc; content_only; dump_toc_json }
 
 let theme_uri config =
   match config.theme_uri with None -> Types.Relative None | Some uri -> uri
@@ -34,3 +35,5 @@ let omit_breadcrumbs config = config.omit_breadcrumbs
 let omit_toc config = config.omit_toc
 
 let content_only config = config.content_only
+
+let dump_toc_json config = config.dump_toc_json

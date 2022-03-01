@@ -524,15 +524,23 @@ module Odoc_html_args = struct
     in
     Arg.(value & flag & info ~docs ~doc [ "content-only"])
   
+  let dump_toc_json =
+    let doc =
+      "Output a json file containing the table of contents. The filename will \
+       be based on the filename to which the table of contents relates, with the \
+       suffix '.toc.json' appended"
+    in
+    Arg.(value & flag & info ~docs ~doc [ "dump-toc-json" ])
+  
   let extra_args =
-    let config semantic_uris closed_details indent theme_uri support_uri flat omit_breadcrumbs omit_toc content_only =
+    let config semantic_uris closed_details indent theme_uri support_uri flat omit_breadcrumbs omit_toc content_only dump_toc_json =
       let open_details = not closed_details in
       Odoc_html.Config.v ~theme_uri ~support_uri ~semantic_uris ~indent ~flat
-        ~open_details ~omit_breadcrumbs ~omit_toc ~content_only ()
+        ~open_details ~omit_breadcrumbs ~omit_toc ~content_only ~dump_toc_json ()
     in
     Term.(
       const config $ semantic_uris $ closed_details $ indent $ theme_uri
-      $ support_uri $ flat $ omit_breadcrumbs $ omit_toc $ content_only)
+      $ support_uri $ flat $ omit_breadcrumbs $ omit_toc $ content_only $ dump_toc_json)
 end
 
 module Odoc_html = Make_renderer (Odoc_html_args)

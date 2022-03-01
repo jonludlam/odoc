@@ -12,6 +12,7 @@ val v :
   omit_breadcrumbs:bool ->
   omit_toc:bool ->
   content_only:bool ->
+  dump_toc_json:bool ->
   unit ->
   t
 
@@ -32,3 +33,5 @@ val omit_breadcrumbs : t -> bool
 val omit_toc : t -> bool
 
 val content_only : t -> bool
+
+val dump_toc_json : t -> bool
