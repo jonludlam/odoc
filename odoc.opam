@@ -35,9 +35,9 @@ depends: [
   "result"
   "tyxml" {>= "4.3.0"}
   "fmt"
+  "yojson"
 
   "ocamlfind" {with-test}
-  "yojson" {with-test}
   ("ocaml" {< "4.04.1" & with-test} | "sexplib0" {with-test})
   "conf-jq" {with-test}
 
