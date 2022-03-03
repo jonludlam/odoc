@@ -13,8 +13,20 @@ type t = {
   dump_toc_json : bool;
 }
 
-let v ?theme_uri ?support_uri ~semantic_uris ~indent ~flat ~open_details ~omit_breadcrumbs ~omit_toc ~content_only ~dump_toc_json () =
-  { theme_uri; support_uri; semantic_uris; indent; flat; open_details; omit_breadcrumbs; omit_toc; content_only; dump_toc_json }
+let v ?theme_uri ?support_uri ~semantic_uris ~indent ~flat ~open_details
+    ~omit_breadcrumbs ~omit_toc ~content_only ~dump_toc_json () =
+  {
+    theme_uri;
+    support_uri;
+    semantic_uris;
+    indent;
+    flat;
+    open_details;
+    omit_breadcrumbs;
+    omit_toc;
+    content_only;
+    dump_toc_json;
+  }
 
 let theme_uri config =
   match config.theme_uri with None -> Types.Relative None | Some uri -> uri

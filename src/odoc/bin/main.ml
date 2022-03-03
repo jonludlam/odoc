@@ -507,40 +507,39 @@ module Odoc_html_args = struct
     Arg.(value & flag & info ~docs ~doc [ "flat" ])
 
   let omit_breadcrumbs =
-    let doc = 
-      "Don't emit the breadcrumbs navigation element"
-    in
-    Arg.(value & flag & info ~docs ~doc [ "omit-breadcrumbs"])
+    let doc = "Don't emit the breadcrumbs navigation element" in
+    Arg.(value & flag & info ~docs ~doc [ "omit-breadcrumbs" ])
 
   let omit_toc =
-    let doc = 
-      "Don't emit the table of contents div"
-    in
-    Arg.(value & flag & info ~docs ~doc [ "omit-toc"])
+    let doc = "Don't emit the table of contents div" in
+    Arg.(value & flag & info ~docs ~doc [ "omit-toc" ])
 
   let content_only =
-    let doc = 
+    let doc =
       "Only emit the content of the page, not the html, head and body elements"
     in
-    Arg.(value & flag & info ~docs ~doc [ "content-only"])
-  
+    Arg.(value & flag & info ~docs ~doc [ "content-only" ])
+
   let dump_toc_json =
     let doc =
       "Output a json file containing the table of contents. The filename will \
-       be based on the filename to which the table of contents relates, with the \
-       suffix '.toc.json' appended"
+       be based on the filename to which the table of contents relates, with \
+       the suffix '.toc.json' appended"
     in
     Arg.(value & flag & info ~docs ~doc [ "dump-toc-json" ])
-  
+
   let extra_args =
-    let config semantic_uris closed_details indent theme_uri support_uri flat omit_breadcrumbs omit_toc content_only dump_toc_json =
+    let config semantic_uris closed_details indent theme_uri support_uri flat
+        omit_breadcrumbs omit_toc content_only dump_toc_json =
       let open_details = not closed_details in
       Odoc_html.Config.v ~theme_uri ~support_uri ~semantic_uris ~indent ~flat
-        ~open_details ~omit_breadcrumbs ~omit_toc ~content_only ~dump_toc_json ()
+        ~open_details ~omit_breadcrumbs ~omit_toc ~content_only ~dump_toc_json
+        ()
     in
     Term.(
       const config $ semantic_uris $ closed_details $ indent $ theme_uri
-      $ support_uri $ flat $ omit_breadcrumbs $ omit_toc $ content_only $ dump_toc_json)
+      $ support_uri $ flat $ omit_breadcrumbs $ omit_toc $ content_only
+      $ dump_toc_json)
 end
 
 module Odoc_html = Make_renderer (Odoc_html_args)

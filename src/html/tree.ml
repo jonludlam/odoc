@@ -142,7 +142,9 @@ let page_creator ~config ~url name header toc content =
         make_navigation ~up_url l
   in
 
-  let breadcrumbs = if Config.omit_breadcrumbs config then [] else gen_breadcrumbs () in
+  let breadcrumbs =
+    if Config.omit_breadcrumbs config then [] else gen_breadcrumbs ()
+  in
   let toc = if Config.omit_toc config then [] else html_of_toc toc in
   let body =
     breadcrumbs
@@ -152,15 +154,15 @@ let page_creator ~config ~url name header toc content =
   in
   let htmlpp_elt = Html.pp_elt ~indent:(Config.indent config) () in
   let htmlpp = Html.pp ~indent:(Config.indent config) () in
-  if Config.content_only config
-  then begin
-    let content ppf = htmlpp_elt ppf (Html.div ~a:[ Html.a_class [ "odoc" ] ] body) in
+  if Config.content_only config then
+    let content ppf =
+      htmlpp_elt ppf (Html.div ~a:[ Html.a_class [ "odoc" ] ] body)
+    in
     content
-  end else begin
+  else
     let html = Html.html head (Html.body ~a:[ Html.a_class [ "odoc" ] ] body) in
     let content ppf = htmlpp ppf html in
     content
-  end
 
 let make ~config ~url ~header ~toc title content children =
   let filename = Link.Path.as_filename ~is_flat:(Config.flat config) url in
@@ -168,9 +170,15 @@ let make ~config ~url ~header ~toc title content children =
   let toc_json =
     let json = json_of_toc toc in
     let content ppf = Format.fprintf ppf "%s" json in
-    if Config.dump_toc_json config
-      then [{ Odoc_document.Renderer.filename = Fpath.rem_ext filename |> Fpath.add_ext ".toc.json";
-      content; children=[] }]
-  else []
+    if Config.dump_toc_json config then
+      [
+        {
+          Odoc_document.Renderer.filename =
+            Fpath.rem_ext filename |> Fpath.add_ext ".toc.json";
+          content;
+          children = [];
+        };
+      ]
+    else []
   in
   { Odoc_document.Renderer.filename; content; children } :: toc_json
