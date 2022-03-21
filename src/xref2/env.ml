@@ -713,6 +713,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
         match ((orig : L.Signature.item), env.linking) with
         | Type (_, t), _ ->
             let ty = type_decl ident_map t in
+            Format.eprintf "Adding %a to env\n%!" Component.Fmt.model_identifier (t.L.TypeDecl.id :> Paths.Identifier.t);
             add_type t.L.TypeDecl.id ty env
         | Module (_, t), _ ->
             let ty = Component.Delayed.put (fun () -> module_ ident_map t) in
@@ -805,7 +806,9 @@ let rec close_signature : Odoc_model.Lang.Signature.t -> t -> t =
     List.fold_left
       (fun env orig ->
         match (orig : L.Signature.item) with
-        | Type (_, t) -> remove t.L.TypeDecl.id env
+        | Type (_, t) ->
+          Format.eprintf "Removing %a from env\n%!" Component.Fmt.model_identifier (t.L.TypeDecl.id :> Paths.Identifier.t);
+          remove t.L.TypeDecl.id env
         | Module (_, t) -> remove t.L.Module.id env
         | ModuleType t -> remove t.L.ModuleType.id env
         | Class (_, c) -> remove c.id env
