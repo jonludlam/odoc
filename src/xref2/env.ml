@@ -119,14 +119,14 @@ end = struct
   let remove id t =
     let id = (id :> Identifier.t) in
     let name = Identifier.name id in
-    let l = StringMap.find name t in
+    let l = begin try StringMap.find name t with e -> Format.eprintf "Failed to find %s\n%!" name; raise e end in
     match
       List.filter
         (fun e ->
           not (Identifier.equal id (Component.Element.identifier e.elem)))
         l
     with
-    | [] -> StringMap.remove name t
+    | [] -> begin try StringMap.remove name t with Not_found -> Format.eprintf "Failed to find %s\n%!" name; raise Not_found end
     | xs -> StringMap.add name xs (StringMap.remove name t)
 
   let find_by_name f name t =

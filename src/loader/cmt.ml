@@ -552,15 +552,17 @@ and read_include env parent incl =
     | With (_, w_expr) -> contains_signature w_expr
     | TypeOf _ -> false
   in 
+  let expansion = { content; shadowed; } in
   match decl_modty with
   | Some m when not (contains_signature m) ->
     let decl = ModuleType m in
-    let expansion = { content; shadowed; } in
     [Include {parent; doc; decl; expansion; status; strengthened=None; loc }]
-  | Some (ModuleType.U.Signature { items; _ }) ->
-    items
-  | _ ->
-    content.items
+  | _ -> 
+    let items = match decl_modty with | Some (ModuleType.U.Signature { items; _ }) -> items | _ -> content.items in
+    let fake_id = `Module(parent, Odoc_model.Names.ModuleName.internal_of_string "IncludedModule") in
+    [Module (Ordinary, { id=fake_id; hidden=true; canonical=None; doc=[];
+    type_=ModuleType (Signature {items; compiled=false; doc=[]})})
+    ; Include {parent; doc; decl=Alias (`Identifier (fake_id, true)); expansion; status; strengthened=None; loc}]
 
 and read_open env parent o =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
