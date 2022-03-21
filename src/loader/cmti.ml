@@ -749,25 +749,18 @@ and read_include env parent incl =
     | With (_, w_expr) -> contains_signature w_expr
     | TypeOf _ -> false
   in
-  (* inline type or module substitution is tricky to inline, because the
-     scope of the substitution is to the end of the signature being inlined.
-     If we've got one of those, we fall back to inlining the compiler-computed signature *)
-  let is_inlinable items =
-    not (List.exists
-          (function
-           | Signature.TypeSubstitution _ -> true
-           | ModuleSubstitution _ -> true
-           | _ -> false) items)
-  in
-  match Odoc_model.Lang.umty_of_mty expr with
+  let umty = Odoc_model.Lang.umty_of_mty expr in 
+  let expansion = { content; shadowed; } in
+  match umty with
   | Some uexpr when not (contains_signature uexpr) ->
     let decl = Include.ModuleType uexpr in
-    let expansion = { content; shadowed; } in
     [Include {parent; doc; decl; expansion; status; strengthened=None; loc }]
-  | Some ModuleType.U.Signature { items; _ } when is_inlinable items ->
-    items
   | _ ->
-    content.items
+    let items = match umty with | Some ModuleType.U.Signature { items; _ }  -> items | _ -> content.items in
+    let fake_id = `ModuleType(parent, Odoc_model.Names.ModuleTypeName.internal_of_string "IncludedModule") in
+    [ModuleType ({ id=fake_id; canonical=None; doc=[];
+    expr=Some (Signature {items; compiled=false; doc=[]})})
+    ; Include {parent; doc; decl=ModuleType (ModuleType.U.Path (`Identifier (fake_id, true))); expansion; status; strengthened=None; loc}]
 
 and read_open env parent o =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
