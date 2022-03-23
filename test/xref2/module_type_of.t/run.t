@@ -34,6 +34,39 @@ Compile
 -------
 
   $ compile m.mli
+  Starting type_of pass
+  Adding (root M).X1 to env
+  Adding (root M).S.X to env
+  Adding (root M).S.X.t to env
+  Adding (root M).S.Y.t to env
+  Adding (root M).S.Z.t to env
+  Adding (root M).X1.t to env
+  Adding (root M).X1.u to env
+  Finished type_of pass
+  Adding (root M).X1 to env
+  Adding (root M).S.X to env
+  Adding (root M).S.X.t to env
+  Adding (root M).S.Y.t to env
+  Adding (root M).S.Y.t to env
+  Adding (root M).S.Z.t to env
+  Adding (root M).S.Z.t to env
+  Adding (root M).S.X to env
+  Adding (root M).S.X.t to env
+  Adding (root M).S.Y.t to env
+  Adding (root M).S.Y.t to env
+  Adding (root M).S.Z.t to env
+  Adding (root M).S.Z.t to env
+  Adding (root M).X1.t to env
+  Adding (root M).X1.u to env
+  Adding (root M).X1 to env
+  Adding (root M).S.X to env
+  Adding (root M).S.X.t to env
+  Adding (root M).S.Y.t to env
+  Adding (root M).S.Z.t to env
+  Adding (root M).X1.t to env
+  Adding (root M).X1.u to env
+  Adding (root M).T.Y.t to env
+  Adding (root M).T.Z.t to env
 
 Tests
 -----

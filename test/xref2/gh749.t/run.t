@@ -1,6 +1,10 @@
   $ compile good_ref.mli
+  Starting type_of pass
+  Finished type_of pass
 
   $ compile bad_ref.mli
+  Starting type_of pass
+  Finished type_of pass
   File "bad_ref.mli", line 7, characters 8-18:
   Warning: Failed to resolve reference unresolvedroot(( * )) Couldn't find "( * )"
   File "bad_ref.mli", line 3, characters 8-18:

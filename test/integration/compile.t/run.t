@@ -4,6 +4,29 @@ Various tests for the 'compile' command.
 
   $ ocamlc -bin-annot -c ast.mli
   $ odoc compile --package foo ast.cmti
+  Starting type_of pass
+  Adding (root Ast).t1 to env
+  Adding (root Ast).t2 to env
+  Adding (root Ast).t3 to env
+  Adding (root Ast).t4 to env
+  Adding (root Ast).te to env
+  Adding (root Ast).M to env
+  Adding (root Ast).t to env
+  Adding (root Ast).Mt.t to env
+  Adding (root Ast).M.N to env
+  Adding (root Ast).M.N.t to env
+  Finished type_of pass
+  Adding (root Ast).t1 to env
+  Adding (root Ast).t2 to env
+  Adding (root Ast).t3 to env
+  Adding (root Ast).t4 to env
+  Adding (root Ast).te to env
+  Adding (root Ast).M to env
+  Adding (root Ast).t to env
+  Adding (root Ast).Mt.t to env
+  Adding (root Ast).Mt.t to env
+  Adding (root Ast).M.N to env
+  Adding (root Ast).M.N.t to env
   File "ast.mli", line 1, characters 4-17:
   Warning: Unknown tag '@TxtAttribute'.
   File "ast.mli", line 4, characters 4-21:
@@ -71,6 +94,8 @@ Test different parsing errors.
 
   $ ocamlc -bin-annot -c parser_errors.mli
   $ odoc compile --package foo parser_errors.cmti
+  Starting type_of pass
+  Finished type_of pass
   File "parser_errors.mli", line 1, characters 4-26:
   Warning: '{x This is bad markup}': bad markup.
   Suggestion: did you mean '{!x This is bad markup}' or '[x This is bad markup]'?
@@ -118,6 +143,8 @@ Test different parsing errors.
 With warn-error enabled.
 
   $ odoc compile --package foo --warn-error parser_errors.cmti
+  Starting type_of pass
+  Finished type_of pass
   File "parser_errors.mli", line 1, characters 4-26:
   Error: '{x This is bad markup}': bad markup.
   Suggestion: did you mean '{!x This is bad markup}' or '[x This is bad markup]'?
@@ -168,6 +195,8 @@ Compiling a '.cmt' file.
 
   $ ocamlc -bin-annot -c impl_only.ml
   $ odoc compile --package foo impl_only.cmt
+  Starting type_of pass
+  Finished type_of pass
 
 Check line numbers for errors in a '.mld' file.
 

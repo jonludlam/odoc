@@ -4,6 +4,80 @@ top-comment.
 The module Test_x is expected to be referenced as Test.X.
 
   $ compile test_x.mli test_y.ml test.ml
+  Starting type_of pass
+  Adding (root Test_x).t to env
+  Adding (root Test_x).Out to env
+  Adding (root Test_x).In to env
+  Adding (root Test_x).Out.t to env
+  Adding (root Test_x).In.t to env
+  Finished type_of pass
+  Adding (root Test_x).t to env
+  Adding (root Test_x).Out to env
+  Adding (root Test_x).In to env
+  Adding (root Test_x).Out.t to env
+  Adding (root Test_x).In.t to env
+  Starting type_of pass
+  Adding (root Test_y).t to env
+  Adding (root Test_y).Out to env
+  Adding (root Test_y).In to env
+  Adding (root Test_y).Out.t to env
+  Adding (root Test_y).In.t to env
+  Finished type_of pass
+  Adding (root Test_y).t to env
+  Adding (root Test_y).Out to env
+  Adding (root Test_y).In to env
+  Adding (root Test_y).Out.t to env
+  Adding (root Test_y).In.t to env
+  Starting type_of pass
+  Adding (root Test).X to env
+  Adding (root Test).X_out to env
+  Adding (root Test).X_in to env
+  Adding (root Test).Y to env
+  Adding (root Test).Y_out to env
+  Adding (root Test).Y_in to env
+  Adding (root Test).t to env
+  Adding (root Test).u to env
+  Finished type_of pass
+  Adding (root Test).X to env
+  Adding (root Test).X_out to env
+  Adding (root Test).X_in to env
+  Adding (root Test).Y to env
+  Adding (root Test).Y_out to env
+  Adding (root Test).Y_in to env
+  Adding (root Test).t to env
+  Adding (root Test).u to env
+  Adding (root Test_x).t to env
+  Adding (root Test_x).Out to env
+  Adding (root Test_x).In to env
+  Adding (root Test_x).Out.t to env
+  Adding (root Test_x).In.t to env
+  Adding (root Test_y).t to env
+  Adding (root Test_y).Out to env
+  Adding (root Test_y).In to env
+  Adding (root Test_y).Out.t to env
+  Adding (root Test_y).In.t to env
+  Adding (root Test).X to env
+  Adding (root Test).X_out to env
+  Adding (root Test).X_in to env
+  Adding (root Test).Y to env
+  Adding (root Test).Y_out to env
+  Adding (root Test).Y_in to env
+  Adding (root Test).t to env
+  Adding (root Test).u to env
+  Adding (root Test).X.t to env
+  Adding (root Test).X.Out to env
+  Adding (root Test).X.In to env
+  Adding (root Test).X.Out.t to env
+  Adding (root Test).X.In.t to env
+  Adding (root Test).X_out.t to env
+  Adding (root Test).X_in.t to env
+  Adding (root Test).Y.t to env
+  Adding (root Test).Y.Out to env
+  Adding (root Test).Y.In to env
+  Adding (root Test).Y.Out.t to env
+  Adding (root Test).Y.In.t to env
+  Adding (root Test).Y_out.t to env
+  Adding (root Test).Y_in.t to env
 
 Test_x and Test_y have a 'canonical' field:
 

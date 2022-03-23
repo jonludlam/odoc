@@ -37,5 +37,94 @@ error. If it doesn't here, that particular issue is fixed!
 
   $ ocamlc -c -bin-annot uwt_base.mli
   $ odoc compile uwt_base.cmti
+  Starting type_of pass
+  Adding (root Uwt_base).Base to env
+  Adding (root Uwt_base).uv_result to env
+  Adding (root Uwt_base).Fs_types to env
+  Adding (root Uwt_base).Base.uv_result to env
+  Adding (root Uwt_base).Base.Fs_types to env
+  Adding (root Uwt_base).Base.Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.t to env
+  Handling include in type_of
+  Removing (root Uwt_base).Base.Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Finished handling include in type_of
+  Handling include in type_of
+  Removing (root Uwt_base).uv_result from env
+  Removing (root Uwt_base).Fs_types from env
+  Adding (root Uwt_base).uv_result to env
+  Adding (root Uwt_base).Fs_types to env
+  Adding (root Uwt_base).Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.t to env
+  Handling include in type_of
+  Removing (root Uwt_base).Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Finished handling include in type_of
+  Adding (root Uwt_base).Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.t to env
+  Finished handling include in type_of
+  Finished type_of pass
+  Adding (root Uwt_base).Base to env
+  Adding (root Uwt_base).uv_result to env
+  Adding (root Uwt_base).Fs_types to env
+  Adding (root Uwt_base).Base.uv_result to env
+  Adding (root Uwt_base).Base.Fs_types to env
+  Adding (root Uwt_base).Base.Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.t to env
+  Handling include of : module type of identifier((root Uwt_base).Base.Fs_types, false) with [root.uv_open_flag = identifier((root Uwt_base).Base.Fs_types, false).uv_open_flag]
+  Removing (root Uwt_base).Base.Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Removing (root Uwt_base).Base.Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.t to env
+  Handling include of : module type of identifier((root Uwt_base).Base.Fs_types, false) with [root.uv_open_flag = identifier((root Uwt_base).Base.Fs_types, false).uv_open_flag]
+  Removing (root Uwt_base).Base.Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Removing (root Uwt_base).Base.Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Handling include of : module type of identifier((root Uwt_base).Base, false) with [root.Fs_types.uv_open_flag = identifier((root Uwt_base).Base, false).Fs_types.uv_open_flag]
+  Removing (root Uwt_base).uv_result from env
+  Removing (root Uwt_base).Fs_types from env
+  Adding (root Uwt_base).uv_result to env
+  Adding (root Uwt_base).Fs_types to env
+  Adding (root Uwt_base).Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.t to env
+  Handling include of : sig
+  type uv_open_flag/100 = O_RDONLY of 
+   (removed=[])end with [root.uv_open_flag = identifier((root Uwt_base).Fs_types, false).uv_open_flag]
+  Removing (root Uwt_base).Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Removing (root Uwt_base).Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.t to env
+  Handling include of : sig
+  type uv_open_flag/116 = O_RDONLY of 
+   (removed=[])end with [root.uv_open_flag = identifier((root Uwt_base).Fs_types, false).uv_open_flag]
+  Removing (root Uwt_base).Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Removing (root Uwt_base).Fs_functions.uv_open_flag from env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Removing (root Uwt_base).uv_result from env
+  Removing (root Uwt_base).Fs_types from env
+  Adding (root Uwt_base).uv_result to env
+  Adding (root Uwt_base).Fs_types to env
   $ odoc link uwt_base.odoc
+  Adding (root Uwt_base).Base to env
+  Adding (root Uwt_base).uv_result to env
+  Adding (root Uwt_base).Fs_types to env
+  Adding (root Uwt_base).Base.uv_result to env
+  Adding (root Uwt_base).Base.Fs_types to env
+  Adding (root Uwt_base).Base.Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Base.Fs_functions.t to env
+  Adding (root Uwt_base).Fs_types.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.uv_open_flag to env
+  Adding (root Uwt_base).Fs_functions.t to env
 

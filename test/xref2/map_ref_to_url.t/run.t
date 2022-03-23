@@ -1,4 +1,9 @@
   $ compile foo.mli
+  Starting type_of pass
+  Adding (root Foo).t to env
+  Finished type_of pass
+  Adding (root Foo).t to env
+  Adding (root Foo).t to env
 
 Generating html url for a reference
   $ odoc html-url -I . Foo.t

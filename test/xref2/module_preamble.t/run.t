@@ -12,12 +12,22 @@ and that "hidden" modules (eg. `A__b`, rendered to `html/A__b`) are not rendered
   $ ocamlc -bin-annot -a -o a.cma a.cmo a__b.cmo
 
   $ odoc compile --pkg test -o a__b.odoc -I . a__b.cmti
+  Starting type_of pass
+  Adding (root A__b).t to env
+  Finished type_of pass
+  Adding (root A__b).t to env
   $ odoc compile --pkg test -o a.odoc -I . a.cmti
+  Starting type_of pass
+  Adding (root A).B to env
+  Finished type_of pass
+  Adding (root A).B to env
   File "a.mli", line 4, characters 4-17:
   Warning: Canonical paths must contain a dot, eg. X.Y.
 
   $ odoc link -I . a__b.odoc
   $ odoc link -I . a.odoc
+  Adding (root A).B to env
+  Adding (root A).B.t to env
 
   $ odoc html-generate --indent -o html a.odocl
   $ odoc html-generate --indent -o html a__b.odocl

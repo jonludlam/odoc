@@ -21,4 +21,23 @@ warnings raised when we compile the module.
 
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile --package test test.cmti
+  Starting type_of pass
+  Adding (root Test).X to env
+  Adding (root Test).Y to env
+  Adding (root Test).Z to env
+  Adding (root Test).X.t to env
+  Adding (root Test).Y.t to env
+  Adding (root Test).X to env
+  Adding (root Test).Y to env
+  Adding (root Test).Z to env
+  Adding (root Test).X.t to env
+  Adding (root Test).Y.t to env
+  Adding (root Test).Z.t to env
+  Finished type_of pass
+  Adding (root Test).X to env
+  Adding (root Test).Y to env
+  Adding (root Test).Z to env
+  Adding (root Test).X.t to env
+  Adding (root Test).Y.t to env
+  Adding (root Test).Z.t to env
 

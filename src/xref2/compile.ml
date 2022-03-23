@@ -61,7 +61,9 @@ and content env id =
   let open Compilation_unit in
   function
   | Module m ->
+      Format.eprintf "Starting type_of pass\n%!";
       let sg = Type_of.signature env m in
+      Format.eprintf "Finished type_of pass\n%!";
       let sg = signature env (id :> Id.Signature.t) sg in
       Module sg
   | Pack p -> Pack p
@@ -239,9 +241,11 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
         | Class (r, c) -> std @@ Class (r, class_ env id c)
         | ClassType (r, c) -> std @@ ClassType (r, class_type env c)
         | Include i ->
+            let i_decl = Component.Of_Lang.(include_decl (empty ()) i.decl) in
+            Format.eprintf "Handling include of %a\n%!" (Component.Fmt.include_decl) i_decl;
             let i' = include_ env i in
-            if i'.expansion == i.expansion then std @@ Include i'
-            else
+            (* if i'.expansion == i.expansion then std @@ Include i'
+            else *)
               (* Expansion has changed, let's put the content into the environment *)
               let env' = Env.close_signature i.Include.expansion.content env in
               let env'' =

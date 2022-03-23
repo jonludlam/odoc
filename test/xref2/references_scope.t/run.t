@@ -1,8 +1,64 @@
 # Testing the scope of references
 
   $ compile a.mli shadowed.mli shadowed_through_open.mli
+  Starting type_of pass
+  Adding (root A).B to env
+  Adding (root A).D to env
+  Adding (root A).B.C to env
+  Finished type_of pass
+  Adding (root A).B to env
+  Adding (root A).D to env
+  Adding (root A).B.C to env
+  Starting type_of pass
+  Adding (root Shadowed).t to env
+  Adding (root Shadowed).M to env
+  Adding (root Shadowed).N to env
+  Adding (root Shadowed).M.t to env
+  Finished type_of pass
+  Adding (root Shadowed).t to env
+  Adding (root Shadowed).M to env
+  Adding (root Shadowed).N to env
+  Adding (root Shadowed).M.t to env
+  Starting type_of pass
+  Adding (root Shadowed_through_open).T to env
+  Adding (root Shadowed_through_open).t to env
+  Adding (root Shadowed_through_open).Through_open to env
+  Adding (root Shadowed_through_open).Through_include to env
+  Adding (root Shadowed_through_open).T.t to env
+  Adding (root Shadowed_through_open).T'.t to env
+  Adding (root Shadowed_through_open).Through_include.t to env
+  Handling include in type_of
+  Removing (root Shadowed_through_open).Through_include.t from env
+  Finished handling include in type_of
+  Finished type_of pass
+  Adding (root Shadowed_through_open).T to env
+  Adding (root Shadowed_through_open).t to env
+  Adding (root Shadowed_through_open).Through_open to env
+  Adding (root Shadowed_through_open).Through_include to env
+  Adding (root Shadowed_through_open).T.t to env
+  Adding (root Shadowed_through_open).T'.t to env
+  Adding (root Shadowed_through_open).T'.t to env
+  Adding (root Shadowed_through_open).Through_include.t to env
+  Handling include of : identifier((root Shadowed_through_open).T', false)
+  Removing (root Shadowed_through_open).Through_include.t from env
+  Removing (root Shadowed_through_open).Through_include.t from env
+  Adding (root Shadowed_through_open).Through_include.t to env
+  Adding (root A).B to env
+  Adding (root A).D to env
+  Adding (root A).B.C to env
   File "a.mli", line 18, characters 6-24:
   Warning: Failed to resolve reference unresolvedroot(C) Couldn't find "C"
+  Adding (root Shadowed).t to env
+  Adding (root Shadowed).M to env
+  Adding (root Shadowed).N to env
+  Adding (root Shadowed).M.t to env
+  Adding (root Shadowed_through_open).T to env
+  Adding (root Shadowed_through_open).t to env
+  Adding (root Shadowed_through_open).Through_open to env
+  Adding (root Shadowed_through_open).Through_include to env
+  Adding (root Shadowed_through_open).T.t to env
+  Adding (root Shadowed_through_open).T'.t to env
+  Adding (root Shadowed_through_open).Through_include.t to env
 
   $ jq_scan_references() { jq -c '.. | .["`Reference"]? | select(.)'; }
 

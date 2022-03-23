@@ -6,6 +6,10 @@ Test the behavior of warnings generated while compiling and linking.
 A contains both parsing errors and a reference to B that isn't compiled yet:
 
   $ odoc compile --warn-error --package test a.cmti
+  Starting type_of pass
+  Adding (root A).b to env
+  Finished type_of pass
+  Adding (root A).b to env
   File "a.mli", line 8, characters 23-23:
   Error: End of text is not allowed in '{!...}' (cross-reference).
   File "a.mli", line 8, characters 22-23:
@@ -14,7 +18,15 @@ A contains both parsing errors and a reference to B that isn't compiled yet:
   [1]
 
   $ odoc compile --package test b.cmti
+  Starting type_of pass
+  Adding (root B).t to env
+  Finished type_of pass
+  Adding (root B).t to env
   $ odoc compile --package test a.cmti
+  Starting type_of pass
+  Adding (root A).b to env
+  Finished type_of pass
+  Adding (root A).b to env
   File "a.mli", line 8, characters 23-23:
   Warning: End of text is not allowed in '{!...}' (cross-reference).
   File "a.mli", line 8, characters 22-23:
@@ -29,6 +41,7 @@ A contains both parsing errors and a reference to B that isn't compiled yet:
 A contains linking errors:
 
   $ odoc link a.odoc
+  Adding (root A).b to env
   File "a.odoc":
   Warning: Couldn't find the following modules:
     B
@@ -49,5 +62,14 @@ A contains linking errors:
 It is possible to hide the warnings too:
 
   $ odoc compile --print-warnings false --package test a.cmti
+  Starting type_of pass
+  Adding (root A).b to env
+  Finished type_of pass
+  Adding (root A).b to env
   $ odoc link --print-warnings false a.odoc
+  Adding (root A).b to env
   $ ODOC_PRINT_WARNINGS=false odoc compile --package test a.cmti
+  Starting type_of pass
+  Adding (root A).b to env
+  Finished type_of pass
+  Adding (root A).b to env

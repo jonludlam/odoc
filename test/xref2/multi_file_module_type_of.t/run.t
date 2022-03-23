@@ -27,6 +27,10 @@ odoc file for `Test0` - so there will be a warning when we run `odoc compile`
 on test1.cmti:
 
   $ odoc compile --package foo test1.cmti
+  Starting type_of pass
+  Adding (root Test1).S to env
+  Finished type_of pass
+  Adding (root Test1).S to env
   File "test1.cmti":
   Warning: Couldn't find the following modules:
     Test0
@@ -35,6 +39,10 @@ Similarly, module `T` also can not be expanded, therefore we expect
 another warning when we run `odoc compile` on test2.cmti:
 
   $ odoc compile --package foo test2.cmti -I .
+  Starting type_of pass
+  Adding (root Test2).T to env
+  Finished type_of pass
+  Adding (root Test2).T to env
   File "test2.cmti":
   Warning: Couldn't find the following modules:
     Test1

@@ -1,6 +1,11 @@
 The warning only shows up for explicitly defined labels.
 
   $ compile test.mli
+  Starting type_of pass
+  Adding (root Test).M to env
+  Finished type_of pass
+  Adding (root Test).M to env
+  Adding (root Test).M to env
   File "test.mli", line 11, characters 4-14:
   Warning: Multiple sections named 'heading' found. Please alter one to ensure reference is unambiguous. Locations:
     File "test.mli", line 7, character 4

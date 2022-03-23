@@ -46,11 +46,26 @@ Now compile the pages:
   $ odoc compile sub2.mld -I . --parent top2 --child m2
   $ odoc compile sub3.mld -I . --parent sub1 --child m3
   $ odoc compile m1.cmti -I . --parent sub1
+  Starting type_of pass
+  Adding (root M1).m1t to env
+  Finished type_of pass
+  Adding (root M1).m1t to env
   $ odoc compile m2.cmti -I . --parent sub2
+  Starting type_of pass
+  Adding (root M2).m2t to env
+  Finished type_of pass
+  Adding (root M2).m2t to env
   $ odoc compile m3.cmti -I . --parent sub3
+  Starting type_of pass
+  Adding (root M3).m3t to env
+  Finished type_of pass
+  Adding (root M3).m3t to env
 
 Now link everything:
   $ for i in *.odoc; do odoc link -I . $i; done
+  Adding (root M1).m1t to env
+  Adding (root M2).m2t to env
+  Adding (root M3).m3t to env
 
 And output the HTML:
   $ for i in *.odocl; do odoc html-generate -o html $i; done

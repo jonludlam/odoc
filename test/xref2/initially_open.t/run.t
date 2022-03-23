@@ -17,12 +17,21 @@ once with the module opened and once without.
   $ ocamlc -c -bin-annot to_open.mli
   $ ocamlc -c -bin-annot other.mli
   $ odoc compile --package x to_open.cmti
+  Starting type_of pass
+  Adding (root To_open).t to env
+  Finished type_of pass
+  Adding (root To_open).t to env
 
 
 Run 'normally', without opening the module 'To_open':
 
   $ odoc compile --package x -I . other.cmti
+  Starting type_of pass
+  Adding (root Other).t to env
+  Finished type_of pass
+  Adding (root Other).t to env
   $ odoc link -I . other.odoc
+  Adding (root Other).t to env
   $ odoc html-generate -o . other.odocl --indent
   $ grep To_open x/Other/index.html
         <span> = <a href="../To_open/index.html#type-t">To_open.t</a></span>
@@ -30,7 +39,13 @@ Run 'normally', without opening the module 'To_open':
 Now try again, this time opening 'To_open', and expect the rendered link to be simplified:
 
   $ odoc compile --package x -I . other.cmti --open To_open
+  Adding (root To_open).t to env
+  Starting type_of pass
+  Adding (root Other).t to env
+  Finished type_of pass
+  Adding (root Other).t to env
   $ odoc link -I . other.odoc
+  Adding (root Other).t to env
   $ odoc html-generate -o . other.odocl --indent
   $ grep To_open x/Other/index.html
         <span> = <a href="../To_open/index.html#type-t">t</a></span>

@@ -119,7 +119,7 @@ end = struct
   let remove id t =
     let id = (id :> Identifier.t) in
     let name = Identifier.name id in
-    let l = StringMap.find name t in
+    let l = try StringMap.find name t with Not_found -> Format.eprintf "Failed to find %s\n%!" name; raise Not_found in
     match
       List.filter
         (fun e ->
@@ -228,7 +228,8 @@ let add_to_elts kind identifier component env =
     let other = ElementsById.find_by_id identifier env.ids in
     match other with
     | Some _ ->
-        (* Format.eprintf "Overriding duplicate env entry: %s\n%!" (Identifier.name identifier); *)
+        Format.eprintf "Overriding duplicate env entry: %s\n%!" (Identifier.name identifier);
+        (* failwith "error" *)
         ()
     | None -> ()
   in
@@ -717,6 +718,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             add_type t.L.TypeDecl.id ty env
         | Module (_, t), _ ->
             let ty = Component.Delayed.put (fun () -> module_ ident_map t) in
+            Format.eprintf "Adding %a to env\n%!" Component.Fmt.model_identifier (t.L.Module.id :> Paths.Identifier.t);
             add_module
               (t.L.Module.id :> Identifier.Path.Module.t)
               ty
@@ -809,7 +811,9 @@ let rec close_signature : Odoc_model.Lang.Signature.t -> t -> t =
         | Type (_, t) ->
           Format.eprintf "Removing %a from env\n%!" Component.Fmt.model_identifier (t.L.TypeDecl.id :> Paths.Identifier.t);
           remove t.L.TypeDecl.id env
-        | Module (_, t) -> remove t.L.Module.id env
+        | Module (_, t) ->
+          Format.eprintf "Removing %a from env\n%!" Component.Fmt.model_identifier (t.L.Module.id :> Paths.Identifier.t);
+          remove t.L.Module.id env
         | ModuleType t -> remove t.L.ModuleType.id env
         | Class (_, c) -> remove c.id env
         | ClassType (_, c) -> remove c.id env

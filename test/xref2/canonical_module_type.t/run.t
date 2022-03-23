@@ -23,7 +23,19 @@ constructor where the second element of the tuple is Resolved.
 
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile --package x test.cmti
+  Starting type_of pass
+  Adding (root Test).A.t to env
+  Adding (root Test).B.t to env
+  Finished type_of pass
+  Adding (root Test).A.t to env
+  Adding (root Test).A.t to env
+  Adding (root Test).B.t to env
+  Adding (root Test).B.t to env
   $ odoc link test.odoc
+  Adding (root Test).A.t to env
+  Adding (root Test).B.t to env
+  Adding (root Test).X.t to env
+  Adding (root Test).Y.t to env
 
 Every module type aliases and the path they link to:
 

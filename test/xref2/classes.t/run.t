@@ -9,10 +9,24 @@ resolve correctly. All of the 'Class' json objects should contain
   $ ocamlc -c -bin-annot f.mli
 
   $ odoc compile b.cmt
+  Starting type_of pass
+  Adding (root B).t to env
+  Finished type_of pass
+  Adding (root B).t to env
   $ odoc compile c.cmt -I .
+  Starting type_of pass
+  Finished type_of pass
   $ odoc compile d.cmti -I .
+  Starting type_of pass
+  Adding (root D).t to env
+  Finished type_of pass
+  Adding (root D).t to env
   $ odoc compile e.cmti -I .
+  Starting type_of pass
+  Finished type_of pass
   $ odoc compile f.cmti -I .
+  Starting type_of pass
+  Finished type_of pass
   $ odoc_print -r f f.odoc 
   {
     "id": { "`Value": [ { "`Root": [ "None", "F" ] }, "f" ] },

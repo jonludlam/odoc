@@ -8,6 +8,16 @@ Two modules that reference each other:
   (** {!A} *)
 
   $ compile a.mli b.mli
+  Starting type_of pass
+  Adding (root A).t to env
+  Finished type_of pass
+  Adding (root A).t to env
+  Starting type_of pass
+  Adding (root B).t to env
+  Finished type_of pass
+  Adding (root B).t to env
+  Adding (root A).t to env
+  Adding (root B).t to env
 
 Check that references are resolved:
 

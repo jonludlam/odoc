@@ -26,6 +26,10 @@ And these need to specify compilation unit children as well as mld children
 Parents must be pages
   $ odoc compile top1.mld --child m1
   $ odoc compile m1.cmti -I . --parent top1
+  Starting type_of pass
+  Adding (root M1).m1t to env
+  Finished type_of pass
+  Adding (root M1).m1t to env
   $ odoc compile sub1.mld -I . --parent module-M1
   ERROR: Expecting page as parent
   [1]

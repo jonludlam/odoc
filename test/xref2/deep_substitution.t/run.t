@@ -17,7 +17,27 @@ its RHS correctly replaced with an `int`
 
   $ ocamlc -c -bin-annot m.mli
   $ odoc compile m.cmti
+  Starting type_of pass
+  Adding (root M).S.M to env
+  Adding (root M).S.t to env
+  Adding (root M).S.M.t to env
+  Finished type_of pass
+  Adding (root M).S.M to env
+  Adding (root M).S.t to env
+  Adding (root M).S.M.t to env
+  Adding (root M).S.M to env
+  Adding (root M).S.t to env
+  Adding (root M).S.M.t to env
+  Adding (root M).T.M to env
+  Adding (root M).T.t to env
+  Adding (root M).T.M to env
+  Adding (root M).T.t to env
   $ odoc link m.odoc
+  Adding (root M).S.M to env
+  Adding (root M).S.t to env
+  Adding (root M).S.M.t to env
+  Adding (root M).T.M to env
+  Adding (root M).T.t to env
   $ odoc html-generate m.odocl --indent -o .
   $ odoc_print m.odocl -r T.t
   {

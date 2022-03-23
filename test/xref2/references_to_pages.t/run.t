@@ -1,6 +1,16 @@
 # References to pages and items in pages
 
   $ compile p.mld good_references.mli bad_references.mli
+  Starting type_of pass
+  Adding (root Good_references).t to env
+  Finished type_of pass
+  Adding (root Good_references).t to env
+  Starting type_of pass
+  Adding (root Bad_references).t to env
+  Finished type_of pass
+  Adding (root Bad_references).t to env
+  Adding (root Good_references).t to env
+  Adding (root Bad_references).t to env
   File "bad_references.mli", line 6, characters 42-69:
   Warning: Failed to resolve reference unresolvedroot(p).not_found Couldn't find page "not_found"
   File "bad_references.mli", line 4, characters 20-37:

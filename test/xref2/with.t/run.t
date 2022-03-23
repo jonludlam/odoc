@@ -21,6 +21,16 @@ be able to link anywhere because we don't render the inner signature anywhere.
   
 
   $ ./compile.sh
+  Starting type_of pass
+  Adding (root Test).S.t to env
+  Adding (root Test).S.u to env
+  Finished type_of pass
+  Adding (root Test).S.t to env
+  Adding (root Test).S.u to env
+  Adding (root Test).S.t to env
+  Adding (root Test).S.u to env
+  Adding (root Test).S.t to env
+  Adding (root Test).S.u to env
 
 Let's check which module type `.content.Module.items[0].ModuleType` refers to:
 

@@ -3,6 +3,11 @@ Label in a submodule clashing with a previously defined label
 There should be no ambiguous labels in this example.
 
   $ compile test.mli
+  Starting type_of pass
+  Adding (root Test).X to env
+  Finished type_of pass
+  Adding (root Test).X to env
+  Adding (root Test).X to env
 
 All the references should resolve and point to what's written in the text.
 

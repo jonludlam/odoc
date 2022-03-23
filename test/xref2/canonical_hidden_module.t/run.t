@@ -58,7 +58,59 @@ See the comments on the types at the end of test.mli for the expectation.
 
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
+  Starting type_of pass
+  Adding (root Test).A_nonhidden to env
+  Adding (root Test).{B__hidden}1 to env
+  Adding (root Test).{C__hidden}2 to env
+  Adding (root Test).{D_hidden}3 to env
+  Adding (root Test).A to env
+  Adding (root Test).B to env
+  Adding (root Test).C to env
+  Adding (root Test).D to env
+  Adding (root Test).a to env
+  Adding (root Test).b to env
+  Adding (root Test).c to env
+  Adding (root Test).d to env
+  Adding (root Test).A_nonhidden.t to env
+  Adding (root Test).{B__hidden}1.t to env
+  Adding (root Test).{C__hidden}2.t to env
+  Adding (root Test).{D_hidden}3.t to env
+  Finished type_of pass
+  Adding (root Test).A_nonhidden to env
+  Adding (root Test).{B__hidden}1 to env
+  Adding (root Test).{C__hidden}2 to env
+  Adding (root Test).{D_hidden}3 to env
+  Adding (root Test).A to env
+  Adding (root Test).B to env
+  Adding (root Test).C to env
+  Adding (root Test).D to env
+  Adding (root Test).a to env
+  Adding (root Test).b to env
+  Adding (root Test).c to env
+  Adding (root Test).d to env
+  Adding (root Test).A_nonhidden.t to env
+  Adding (root Test).{C__hidden}2.t to env
+  Adding (root Test).{D_hidden}3.t to env
   $ odoc link test.odoc
+  Adding (root Test).A_nonhidden to env
+  Adding (root Test).{B__hidden}1 to env
+  Adding (root Test).{C__hidden}2 to env
+  Adding (root Test).{D_hidden}3 to env
+  Adding (root Test).A to env
+  Adding (root Test).B to env
+  Adding (root Test).C to env
+  Adding (root Test).D to env
+  Adding (root Test).a to env
+  Adding (root Test).b to env
+  Adding (root Test).c to env
+  Adding (root Test).d to env
+  Adding (root Test).A_nonhidden.t to env
+  Adding (root Test).{C__hidden}2.t to env
+  Adding (root Test).{D_hidden}3.t to env
+  Adding (root Test).A.t to env
+  Adding (root Test).B.t to env
+  Adding (root Test).C.t to env
+  Adding (root Test).D.t to env
   $ odoc html-generate test.odocl --indent -o .
   $ odoc support-files -o .
   $ find Test -type f | sort

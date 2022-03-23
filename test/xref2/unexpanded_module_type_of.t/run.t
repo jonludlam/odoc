@@ -16,6 +16,18 @@ Compiling an odoc file for `test` without compiling one for `test0`
 should _not_ result in an exception, merely a warning.
 
   $ odoc compile --package test test.cmti
+  Starting type_of pass
+  Adding (root Test).M to env
+  Adding (root Test).M.t to env
+  Handling include in type_of
+  Removing (root Test).M.t from env
+  Finished handling include in type_of
+  Finished type_of pass
+  Adding (root Test).M to env
+  Adding (root Test).M.t to env
+  Handling include of : module type of unresolvedroot(Test0)
+  Removing (root Test).M.t from env
+  Adding (root Test).M.t to env
   File "test.cmti":
   Warning: Couldn't find the following modules:
     Test0

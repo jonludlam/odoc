@@ -22,10 +22,15 @@ Then we need to compile the package mld file, because when you're passing the '-
 This will have produced a file called 'page-package.odoc'. Now we can compile the module odoc file passing that file as parent.
 
   $ odoc compile test.cmti -I . --parent package
+  Starting type_of pass
+  Adding (root Test).t to env
+  Finished type_of pass
+  Adding (root Test).t to env
 
 Link and generate the HTML:
 
   $ for i in *.odoc; do odoc link -I . $i; done
+  Adding (root Test).t to env
   $ for i in *.odocl; do odoc html-generate $i -o html; done
 
 We should see a directory structure here where the module 'Test' is found underneath the top-level directory 'package'. Also, the contents of the

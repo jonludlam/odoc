@@ -35,10 +35,42 @@ aren't roots.
 
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
+  Starting type_of pass
+  Adding (root Test).CanonicalTest to env
+  Adding (root Test).CanonicalTest.{Base__List}1 to env
+  Adding (root Test).CanonicalTest.{Base__}2 to env
+  Adding (root Test).CanonicalTest.Base to env
+  Adding (root Test).CanonicalTest.Base_Tests to env
+  Adding (root Test).CanonicalTest.{Base__List}1.t to env
+  Adding (root Test).CanonicalTest.{Base__}2.List to env
+  Adding (root Test).CanonicalTest.Base.List to env
+  Adding (root Test).CanonicalTest.Base_Tests.C to env
+  Adding (root Test).CanonicalTest.Base_Tests.L to env
+  Adding (root Test).CanonicalTest.Base_Tests.C.t to env
+  Finished type_of pass
+  Adding (root Test).CanonicalTest to env
+  Adding (root Test).CanonicalTest.{Base__List}1 to env
+  Adding (root Test).CanonicalTest.{Base__}2 to env
+  Adding (root Test).CanonicalTest.Base to env
+  Adding (root Test).CanonicalTest.Base_Tests to env
+  Adding (root Test).CanonicalTest.Base.List to env
+  Adding (root Test).CanonicalTest.Base_Tests.C to env
+  Adding (root Test).CanonicalTest.Base_Tests.L to env
+  Adding (root Test).CanonicalTest.Base_Tests.C.t to env
 
 This shouldn't cause any warnings:
 
   $ odoc link test.odoc -I .
+  Adding (root Test).CanonicalTest to env
+  Adding (root Test).CanonicalTest.{Base__List}1 to env
+  Adding (root Test).CanonicalTest.{Base__}2 to env
+  Adding (root Test).CanonicalTest.Base to env
+  Adding (root Test).CanonicalTest.Base_Tests to env
+  Adding (root Test).CanonicalTest.Base.List to env
+  Adding (root Test).CanonicalTest.Base.List.t to env
+  Adding (root Test).CanonicalTest.Base_Tests.C to env
+  Adding (root Test).CanonicalTest.Base_Tests.L to env
+  Adding (root Test).CanonicalTest.Base_Tests.C.t to env
   File "test.odoc":
   Warning: Failed to lookup type identifier((root Test).CanonicalTest, false).Base__.List.t Parent_module: Parent_module: Find failure
   File "test.mli", line 25, characters 8-17:

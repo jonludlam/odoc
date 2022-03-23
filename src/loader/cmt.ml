@@ -532,6 +532,12 @@ and read_structure_item env parent item =
           | None -> []
           | Some doc -> [Comment doc]
 
+and dump_sig ppf (sg : Signature.t) =
+  List.iter (function
+    | Signature.Module (_,m) -> Format.fprintf ppf "module %s\n" (Odoc_model.Paths.Identifier.name m.id)
+    | Signature.Type (_, t) -> Format.fprintf ppf "type %s\n" (Odoc_model.Paths.Identifier.name t.id)
+    | _ -> Format.fprintf ppf "...\n") sg.items
+
 and read_include env parent incl =
   let open Include in
   let loc = Doc_attr.read_location incl.incl_loc in
@@ -546,6 +552,8 @@ and read_include env parent incl =
       umty_of_mty mty
   in
   let content, shadowed = Cmi.read_signature_noenv env parent (Odoc_model.Compat.signature incl.incl_type) in
+  Format.eprintf "Read include - shadowed.types = %a\ncontent=%a\n%!" (Fmt.(list string)) shadowed.s_types dump_sig content;
+
   let rec contains_signature = function
     | ModuleType.U.Signature _ -> true
     | Path _ -> false

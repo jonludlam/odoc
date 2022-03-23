@@ -107,6 +107,7 @@ and simple_expansion :
   | Functor (Unit, sg) -> Functor (Unit, simple_expansion env sg)
 
 and include_ env i =
+  Format.eprintf "Handling include in type_of\n%!";
   let decl =
     let env = Env.close_signature i.expansion.content env in
     match i.decl with
@@ -117,7 +118,9 @@ and include_ env i =
     let { Include.content; _ } = i.expansion in
     signature_items env content
   in
-  { i with expansion = { i.expansion with content }; decl }
+  let result = { i with expansion = { i.expansion with content }; decl } in
+  Format.eprintf "Finished handling include in type_of\n%!";
+  result
 
 let signature env =
   let rec loop sg =

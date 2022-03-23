@@ -1,5 +1,13 @@
 
   $ compile test.mli
+  Starting type_of pass
+  Adding (root Test).M to env
+  Adding (root Test).N to env
+  Finished type_of pass
+  Adding (root Test).M to env
+  Adding (root Test).N to env
+  Adding (root Test).M to env
+  Adding (root Test).N to env
   File "test.mli", line 27, characters 9-13:
   Warning: Multiple sections named 'B' found. Please alter one to ensure reference is unambiguous. Locations:
     File "test.mli", line 3, character 4

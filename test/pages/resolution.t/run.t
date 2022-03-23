@@ -19,8 +19,13 @@ Check resolution works
   $ odoc compile sub1.mld -I . --parent top1 --child m1
   $ odoc compile sub2.mld -I . --parent top1 --child page-m1
   $ odoc compile m1.cmti -I . --parent sub1
+  Starting type_of pass
+  Adding (root M1).m1t to env
+  Finished type_of pass
+  Adding (root M1).m1t to env
   $ odoc compile m1.mld -I . --parent sub2
   $ for i in *.odoc; do odoc link -I . $i; done
+  Adding (root M1).m1t to env
   $ for i in *.odocl; do odoc html-generate -o html $i; done
 
 If everything has worked to plan, we'll have resolved references for all of the 'child' refs in the various pages. Additionally, the

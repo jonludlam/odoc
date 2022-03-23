@@ -54,13 +54,48 @@ And finally the module we expose everything underneath.
 Now we can run odoc
 
   $ odoc compile --package x -I . foo__.cmt
+  Starting type_of pass
+  Adding (root Foo__).Type0 to env
+  Adding (root Foo__).Type to env
+  Finished type_of pass
+  Adding (root Foo__).Type0 to env
+  Adding (root Foo__).Type to env
   $ odoc compile --package x -I . foo__type0.cmt
+  Starting type_of pass
+  Adding (root Foo__type0).Identifier to env
+  Adding (root Foo__type0).Resolved_path to env
+  Adding (root Foo__type0).Identifier.t to env
+  Adding (root Foo__type0).Resolved_path.module_ to env
+  Finished type_of pass
+  Adding (root Foo__type0).Identifier to env
+  Adding (root Foo__type0).Resolved_path to env
+  Adding (root Foo__type0).Identifier.t to env
+  Adding (root Foo__type0).Resolved_path.module_ to env
   $ odoc compile --package x -I . foo__type.cmt
+  Starting type_of pass
+  Adding (root Foo__type).Path to env
+  Adding (root Foo__type).t to env
+  Adding (root Foo__type).Path.t to env
+  Adding (root Foo__type).Path.u to env
+  Finished type_of pass
+  Adding (root Foo__type).Path to env
+  Adding (root Foo__type).t to env
+  Adding (root Foo__type).Path.t to env
+  Adding (root Foo__type).Path.u to env
   $ odoc compile --package x -I . foo.cmt
+  Starting type_of pass
+  Adding (root Foo).Type to env
+  Finished type_of pass
+  Adding (root Foo).Type to env
 
 We only need to link `foo` as all the others are hidden
 
   $ odoc link -I . foo.odoc
+  Adding (root Foo).Type to env
+  Adding (root Foo).Type.Path to env
+  Adding (root Foo).Type.t to env
+  Adding (root Foo).Type.Path.t to env
+  Adding (root Foo).Type.Path.u to env
   $ odoc html-generate foo.odocl -o html
   $ odoc support-files -o html
 

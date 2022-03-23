@@ -1,10 +1,92 @@
 # Testing {!modules:...} lists
 
   $ compile external.mli starts_with_open.mli main.mli
+  Starting type_of pass
+  Adding (root External).X to env
+  Adding (root External).Resolve_synopsis to env
+  Adding (root External).X.t to env
+  Adding (root External).Resolve_synopsis.t to env
+  Finished type_of pass
+  Adding (root External).X to env
+  Adding (root External).Resolve_synopsis to env
+  Adding (root External).X.t to env
+  Adding (root External).Resolve_synopsis.t to env
+  Starting type_of pass
+  Adding (root Starts_with_open).t to env
+  Finished type_of pass
+  Adding (root Starts_with_open).t to env
+  Starting type_of pass
+  Adding (root Main).Internal to env
+  Adding (root Main).Z to env
+  Adding (root Main).F to env
+  Adding (root Main).Type_of to env
+  Adding (root Main).Type_of_str to env
+  Adding (root Main).With_type to env
+  Adding (root Main).Alias to env
+  Adding (root Main).C1 to env
+  Adding (root Main).C2 to env
+  Adding (root Main).Inline_include to env
+  Adding (root Main).Resolve_synopsis to env
+  Adding (root Main).Internal.Y to env
+  Adding (root Main).Internal.C1 to env
+  Adding (root Main).Internal.C2 to env
+  Adding (root Main).T.t to env
+  Adding (root Main).Inline_include.t to env
+  Handling include in type_of
+  Removing (root Main).Inline_include.t from env
+  Finished handling include in type_of
+  Adding (root Main).Resolve_synopsis.t to env
+  Finished type_of pass
+  Adding (root Main).Internal to env
+  Adding (root Main).Z to env
+  Adding (root Main).F to env
+  Adding (root Main).Type_of to env
+  Adding (root Main).Type_of_str to env
+  Adding (root Main).With_type to env
+  Adding (root Main).Alias to env
+  Adding (root Main).C1 to env
+  Adding (root Main).C2 to env
+  Adding (root Main).Inline_include to env
+  Adding (root Main).Resolve_synopsis to env
+  Adding (root Main).Internal.Y to env
+  Adding (root Main).Internal.C1 to env
+  Adding (root Main).Internal.C2 to env
+  Adding (root Main).T.t to env
+  Adding (root Main).T.t to env
+  Adding (root Main).With_type.t to env
+  Adding (root Main).Inline_include.t to env
+  Handling include of : identifier((root Main).T, false)
+  Removing (root Main).Inline_include.t from env
+  Removing (root Main).Inline_include.t from env
+  Adding (root Main).Inline_include.t to env
+  Adding (root Main).Resolve_synopsis.t to env
+  Adding (root External).X to env
+  Adding (root External).Resolve_synopsis to env
+  Adding (root External).X.t to env
+  Adding (root External).Resolve_synopsis.t to env
   File "main.mli", line 63, characters 22-43:
   Warning: Failed to resolve reference unresolvedroot(Resolve_synopsis).t Couldn't find "Resolve_synopsis"
   File "main.mli", line 63, characters 17-21:
   Warning: Failed to resolve reference unresolvedroot(t) Couldn't find "t"
+  Adding (root Starts_with_open).t to env
+  Adding (root Main).Internal to env
+  Adding (root Main).Z to env
+  Adding (root Main).F to env
+  Adding (root Main).Type_of to env
+  Adding (root Main).Type_of_str to env
+  Adding (root Main).With_type to env
+  Adding (root Main).Alias to env
+  Adding (root Main).C1 to env
+  Adding (root Main).C2 to env
+  Adding (root Main).Inline_include to env
+  Adding (root Main).Resolve_synopsis to env
+  Adding (root Main).Internal.Y to env
+  Adding (root Main).Internal.C1 to env
+  Adding (root Main).Internal.C2 to env
+  Adding (root Main).T.t to env
+  Adding (root Main).With_type.t to env
+  Adding (root Main).Inline_include.t to env
+  Adding (root Main).Resolve_synopsis.t to env
   File "external.mli", line 9, characters 6-10:
   Warning: Failed to resolve reference unresolvedroot(t) Couldn't find "t"
   File "main.mli", line 63, characters 22-43:
