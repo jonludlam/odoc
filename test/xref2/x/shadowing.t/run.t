@@ -16,75 +16,75 @@
   $ odoc compile -I . c.cmti
   Starting type_of pass
   Adding (root C).t to env
-  Adding (root C).{Q}1 to env
-  Adding (root C).{U}2 to env
+  Adding (root C).[Q]1 to env
+  Adding (root C).[U]2 to env
   Adding (root C).Q to env
   Adding (root C).U to env
   Handling include in type_of
   Removing (root C).t from env
-  Removing (root C).{Q}1 from env
-  Removing (root C).{U}2 from env
+  Removing (root C).[Q]1 from env
+  Removing (root C).[U]2 from env
   Adding (root C).t to env
   Adding (root C).Q to env
   Overriding duplicate env entry: Q
   Adding (root C).U to env
   Overriding duplicate env entry: U
   Finished handling include in type_of
-  Adding (root C).Q.{U}5 to env
+  Adding (root C).Q.[U]3 to env
   Adding (root C).Q.U to env
   Handling include in type_of
-  Removing (root C).Q.{U}5 from env
+  Removing (root C).Q.[U]3 from env
   Adding (root C).Q.U to env
   Overriding duplicate env entry: U
   Finished handling include in type_of
   Finished type_of pass
   Adding (root C).t to env
-  Adding (root C).{Q}1 to env
-  Adding (root C).{U}2 to env
+  Adding (root C).[Q]1 to env
+  Adding (root C).[U]2 to env
   Adding (root C).Q to env
   Adding (root C).U to env
   Handling include of : module type of struct include unresolvedroot(B) end
   Removing (root C).t from env
-  Removing (root C).{Q}1 from env
-  Removing (root C).{U}2 from env
+  Removing (root C).[Q]1 from env
+  Removing (root C).[U]2 from env
   Adding (root C).t to env
-  Adding (root C).{Q}8 to env
-  Adding (root C).{U}9 to env
+  Adding (root C).[Q]4 to env
+  Adding (root C).[U]5 to env
   Removing (root C).t from env
-  Removing (root C).{Q}1 from env
-  Removing (root C).{U}2 from env
+  Removing (root C).[Q]1 from env
+  Removing (root C).[U]2 from env
   Adding (root C).t to env
-  Adding (root C).{Q}8 to env
-  Adding (root C).{U}9 to env
-  Adding (root C).Q.{U}5 to env
+  Adding (root C).[Q]4 to env
+  Adding (root C).[U]5 to env
+  Adding (root C).Q.[U]3 to env
   Adding (root C).Q.U to env
   Handling include of : module type of struct include unresolvedroot(B).Q end
-  Removing (root C).Q.{U}5 from env
-  Adding (root C).Q.{U}12 to env
-  Removing (root C).Q.{U}5 from env
-  Adding (root C).Q.{U}12 to env
+  Removing (root C).Q.[U]3 from env
+  Adding (root C).Q.[U]6 to env
+  Removing (root C).Q.[U]3 from env
+  Adding (root C).Q.[U]6 to env
   $ odoc compile -I . d.cmti
   Starting type_of pass
-  Adding (root D).{t}1 to env
+  Adding (root D).[t]1 to env
   Adding (root D).Q to env
-  Adding (root D).{U}6 to env
+  Adding (root D).[U]3 to env
   Adding (root D).t to env
   Adding (root D).U to env
   Handling include in type_of
-  Removing (root D).{t}1 from env
+  Removing (root D).[t]1 from env
   Removing (root D).Q from env
-  Removing (root D).{U}6 from env
+  Removing (root D).[U]3 from env
   Adding (root D).t to env
   Overriding duplicate env entry: t
-  Adding (root D).{Q}8 to env
-  Adding (root D).{U}9 to env
+  Adding (root D).[Q]4 to env
+  Adding (root D).[U]5 to env
   Adding (root D).Q to env
   Adding (root D).U to env
   Overriding duplicate env entry: U
   Handling include in type_of
   Removing (root D).t from env
-  Removing (root D).{Q}8 from env
-  Removing (root D).{U}9 from env
+  Removing (root D).[Q]4 from env
+  Removing (root D).[U]5 from env
   Adding (root D).t to env
   Adding (root D).Q to env
   Overriding duplicate env entry: Q
@@ -93,35 +93,35 @@
   Finished handling include in type_of
   Finished handling include in type_of
   Finished type_of pass
-  Adding (root D).{t}1 to env
+  Adding (root D).[t]1 to env
   Adding (root D).Q to env
-  Adding (root D).{U}6 to env
+  Adding (root D).[U]3 to env
   Adding (root D).t to env
   Adding (root D).U to env
   Handling include of : module type of struct include unresolvedroot(C) end
-  Removing (root D).{t}1 from env
+  Removing (root D).[t]1 from env
   Removing (root D).Q from env
-  Removing (root D).{U}6 from env
-  Adding (root D).{t}10 to env
-  Adding (root D).{Q}8 to env
-  Adding (root D).{U}9 to env
+  Removing (root D).[U]3 from env
+  Adding (root D).[t]6 to env
+  Adding (root D).[Q]4 to env
+  Adding (root D).[U]5 to env
   Adding (root D).Q to env
-  Adding (root D).{U}9 to env
-  Overriding duplicate env entry: {U}9
+  Adding (root D).[U]5 to env
+  Overriding duplicate env entry: [U]5
   Handling include of : module type of struct include r((root B)) end
-  Removing (root D).{t}10 from env
-  Removing (root D).{Q}8 from env
-  Removing (root D).{U}9 from env
-  Adding (root D).{t}15 to env
-  Adding (root D).{Q}23 to env
-  Adding (root D).{U}16 to env
-  Removing (root D).{t}10 from env
-  Removing (root D).{Q}8 from env
-  Removing (root D).{U}9 from env
-  Adding (root D).{t}15 to env
-  Adding (root D).{Q}23 to env
-  Adding (root D).{U}16 to env
-  Failed to find {U}9
+  Removing (root D).[t]6 from env
+  Removing (root D).[Q]4 from env
+  Removing (root D).[U]5 from env
+  Adding (root D).[t]8 to env
+  Adding (root D).[Q]11 to env
+  Adding (root D).[U]9 to env
+  Removing (root D).[t]6 from env
+  Removing (root D).[Q]4 from env
+  Removing (root D).[U]5 from env
+  Adding (root D).[t]8 to env
+  Adding (root D).[Q]11 to env
+  Adding (root D).[U]9 to env
+  Failed to find [U]5
   odoc: internal error, uncaught exception:
         Not_found
         Raised at Odoc_xref2__Env.ElementsByName.remove in file "src/xref2/env.ml", line 122, characters 101-116
