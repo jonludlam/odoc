@@ -229,8 +229,8 @@ let add_to_elts kind identifier component env =
     match other with
     | Some _ ->
         Format.eprintf "Overriding duplicate env entry: %s\n%!" (Identifier.name identifier);
-        (* failwith "error" *)
-        ()
+        failwith "error"
+        (* () *)
     | None -> ()
   in
   let name = Identifier.name identifier in

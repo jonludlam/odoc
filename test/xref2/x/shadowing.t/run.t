@@ -27,116 +27,22 @@
   Adding (root C).t to env
   Adding (root C).Q to env
   Overriding duplicate env entry: Q
-  Adding (root C).U to env
-  Overriding duplicate env entry: U
-  Finished handling include in type_of
-  Adding (root C).Q.[U]3 to env
-  Adding (root C).Q.U to env
-  Handling include in type_of
-  Removing (root C).Q.[U]3 from env
-  Adding (root C).Q.U to env
-  Overriding duplicate env entry: U
-  Finished handling include in type_of
-  Finished type_of pass
-  Adding (root C).t to env
-  Adding (root C).[Q]1 to env
-  Adding (root C).[U]2 to env
-  Adding (root C).Q to env
-  Adding (root C).U to env
-  Handling include of : module type of struct include unresolvedroot(B) end
-  Removing (root C).t from env
-  Removing (root C).[Q]1 from env
-  Removing (root C).[U]2 from env
-  Adding (root C).t to env
-  Adding (root C).[Q]4 to env
-  Adding (root C).[U]5 to env
-  Removing (root C).t from env
-  Removing (root C).[Q]1 from env
-  Removing (root C).[U]2 from env
-  Adding (root C).t to env
-  Adding (root C).[Q]4 to env
-  Adding (root C).[U]5 to env
-  Adding (root C).Q.[U]3 to env
-  Adding (root C).Q.U to env
-  Handling include of : module type of struct include unresolvedroot(B).Q end
-  Removing (root C).Q.[U]3 from env
-  Adding (root C).Q.[U]6 to env
-  Removing (root C).Q.[U]3 from env
-  Adding (root C).Q.[U]6 to env
-  $ odoc compile -I . d.cmti
-  Starting type_of pass
-  Adding (root D).[t]1 to env
-  Adding (root D).Q to env
-  Adding (root D).[U]3 to env
-  Adding (root D).t to env
-  Adding (root D).U to env
-  Handling include in type_of
-  Removing (root D).[t]1 from env
-  Removing (root D).Q from env
-  Removing (root D).[U]3 from env
-  Adding (root D).t to env
-  Overriding duplicate env entry: t
-  Adding (root D).[Q]4 to env
-  Adding (root D).[U]5 to env
-  Adding (root D).Q to env
-  Adding (root D).U to env
-  Overriding duplicate env entry: U
-  Handling include in type_of
-  Removing (root D).t from env
-  Removing (root D).[Q]4 from env
-  Removing (root D).[U]5 from env
-  Adding (root D).t to env
-  Adding (root D).Q to env
-  Overriding duplicate env entry: Q
-  Adding (root D).U to env
-  Overriding duplicate env entry: U
-  Finished handling include in type_of
-  Finished handling include in type_of
-  Finished type_of pass
-  Adding (root D).[t]1 to env
-  Adding (root D).Q to env
-  Adding (root D).[U]3 to env
-  Adding (root D).t to env
-  Adding (root D).U to env
-  Handling include of : module type of struct include unresolvedroot(C) end
-  Removing (root D).[t]1 from env
-  Removing (root D).Q from env
-  Removing (root D).[U]3 from env
-  Adding (root D).[t]6 to env
-  Adding (root D).[Q]4 to env
-  Adding (root D).[U]5 to env
-  Adding (root D).Q to env
-  Adding (root D).[U]5 to env
-  Overriding duplicate env entry: [U]5
-  Handling include of : module type of struct include r((root B)) end
-  Removing (root D).[t]6 from env
-  Removing (root D).[Q]4 from env
-  Removing (root D).[U]5 from env
-  Adding (root D).[t]8 to env
-  Adding (root D).[Q]11 to env
-  Adding (root D).[U]9 to env
-  Removing (root D).[t]6 from env
-  Removing (root D).[Q]4 from env
-  Removing (root D).[U]5 from env
-  Adding (root D).[t]8 to env
-  Adding (root D).[Q]11 to env
-  Adding (root D).[U]9 to env
-  Failed to find [U]5
   odoc: internal error, uncaught exception:
-        Not_found
-        Raised at Odoc_xref2__Env.ElementsByName.remove in file "src/xref2/env.ml", line 122, characters 101-116
-        Called from Odoc_xref2__Env.remove in file "src/xref2/env.ml", line 248, characters 11-52
-        Called from Odoc_xref2__Env.update_module in file "src/xref2/env.ml", line 312, characters 2-23
-        Called from Odoc_xref2__Compile.signature_items.(fun) in file "src/xref2/compile.ml", line 216, characters 16-122
+        Failure("error")
+        Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
+        Called from Odoc_xref2__Env.add_to_elts in file "src/xref2/env.ml", line 232, characters 8-24
+        Called from Odoc_xref2__Env.add_module in file "src/xref2/env.ml", line 308, characters 13-77
         Called from Stdlib__List.fold_left in file "list.ml", line 121, characters 24-34
-        Called from Odoc_xref2__Compile.signature_items in file "src/xref2/compile.ml", line 202, characters 4-1023
-        Called from Odoc_xref2__Compile.signature in file "src/xref2/compile.ml", line 273, characters 18-48
-        Called from Odoc_xref2__Compile.include_.get_expansion in file "src/xref2/compile.ml", line 350, characters 10-45
-        Called from Odoc_xref2__Compile.signature_items.(fun) in file "src/xref2/compile.ml", line 246, characters 21-35
-        Called from Stdlib__List.fold_left in file "list.ml", line 121, characters 24-34
-        Called from Odoc_xref2__Compile.signature_items in file "src/xref2/compile.ml", line 202, characters 4-1023
-        Called from Odoc_xref2__Compile.signature in file "src/xref2/compile.ml", line 273, characters 18-48
-        Called from Odoc_xref2__Compile.content.(fun) in file "src/xref2/compile.ml", line 67, characters 15-54
+        Called from Odoc_xref2__Type_of.signature in file "src/xref2/type_of.ml" (inlined), line 13, characters 12-37
+        Called from Odoc_xref2__Type_of.simple_expansion in file "src/xref2/type_of.ml", line 104, characters 30-48
+        Called from Odoc_xref2__Type_of.u_module_type_expr in file "src/xref2/type_of.ml", line 90, characters 45-70
+        Called from Odoc_xref2__Type_of.include_ in file "src/xref2/type_of.ml", line 115, characters 33-68
+        Called from Odoc_xref2__Type_of.signature_items.(fun) in file "src/xref2/type_of.ml", line 25, characters 31-47
+        Called from Stdlib__List.map in file "list.ml", line 92, characters 20-23
+        Called from Odoc_xref2__Type_of.signature_items in file "src/xref2/type_of.ml", line 20, characters 4-253
+        Called from Odoc_xref2__Type_of.signature in file "src/xref2/type_of.ml" (inlined), line 14, characters 2-24
+        Called from Odoc_xref2__Type_of.signature.loop in file "src/xref2/type_of.ml", line 128, characters 14-30
+        Called from Odoc_xref2__Compile.content.(fun) in file "src/xref2/compile.ml", line 65, characters 15-38
         Called from Odoc_xref2__Compile.unit in file "src/xref2/compile.ml", line 58, characters 21-47
         Called from Odoc_xref2__Lookup_failures.with_ref in file "src/xref2/lookup_failures.ml", line 13, characters 10-14
         Called from Odoc_xref2__Lookup_failures.catch_failures in file "src/xref2/lookup_failures.ml", line 60, characters 20-37
@@ -150,4 +56,32 @@
         Called from Cmdliner_term.app.(fun) in file "cmdliner_term.ml", line 23, characters 12-19
         Called from Cmdliner.Term.run in file "cmdliner.ml", line 117, characters 32-39
   [2]
+  $ odoc compile -I . d.cmti
+  Starting type_of pass
+  Adding (root D).[t]1 to env
+  Adding (root D).Q to env
+  Adding (root D).[U]3 to env
+  Adding (root D).t to env
+  Adding (root D).U to env
+  Handling include in type_of
+  Removing (root D).[t]1 from env
+  Removing (root D).Q from env
+  Removing (root D).[U]3 from env
+  Finished handling include in type_of
+  Finished type_of pass
+  Adding (root D).[t]1 to env
+  Adding (root D).Q to env
+  Adding (root D).[U]3 to env
+  Adding (root D).t to env
+  Adding (root D).U to env
+  Handling include of : module type of struct include unresolvedroot(C) end
+  Removing (root D).[t]1 from env
+  Removing (root D).Q from env
+  Removing (root D).[U]3 from env
+  Adding (root D).[t]1 to env
+  Adding (root D).Q to env
+  Adding (root D).[U]3 to env
+  File "d.cmti":
+  Warning: Couldn't find the following modules:
+    C
 

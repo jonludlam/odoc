@@ -5,11 +5,11 @@
   Starting type_of pass
   Adding (root A).t to env
   Adding (root A).B.A to env
-  Adding (root A).B.{t}1 to env
+  Adding (root A).B.[t]1 to env
   Adding (root A).B.t to env
   Adding (root A).B.A.t to env
   Handling include in type_of
-  Removing (root A).B.{t}1 from env
+  Removing (root A).B.[t]1 from env
   Adding (root A).B.t to env
   Overriding duplicate env entry: t
   odoc: internal error, uncaught exception:
@@ -52,25 +52,25 @@
   [2]
   $ odoc compile -I . b.cmt
   Read include - shadowed.types = t
-  content=type {t}1
+  content=type [t]1
   ...
   ...
   
   Starting type_of pass
-  Adding (root B).{t}1 to env
+  Adding (root B).[t]1 to env
   Adding (root B).t to env
   Handling include in type_of
-  Removing (root B).{t}1 from env
+  Removing (root B).[t]1 from env
   Adding (root B).B.A to env
   Adding (root B).B.t to env
   Adding (root B).B.A.t to env
   Finished handling include in type_of
   Finished type_of pass
-  Adding (root B).{t}1 to env
+  Adding (root B).[t]1 to env
   Adding (root B).t to env
   Handling include of : module type of struct include unresolvedroot(A) end
-  Removing (root B).{t}1 from env
-  Adding (root B).{t}1 to env
+  Removing (root B).[t]1 from env
+  Adding (root B).[t]1 to env
   File "b.cmt":
   Warning: Couldn't find the following modules:
     A
@@ -78,7 +78,7 @@
   Read include - shadowed.types = t
   content=...
   ...
-  type {t}3
+  type [t]3
   
   Read include - shadowed.types = 
   content=...
@@ -86,11 +86,11 @@
   type t
   
   Starting type_of pass
-  Adding (root C).{t}3 to env
+  Adding (root C).[t]3 to env
   Adding (root C).t to env
   Handling include in type_of
-  Removing (root C).{t}3 from env
-  Adding (root C).{t}1 to env
+  Removing (root C).[t]3 from env
+  Adding (root C).[t]1 to env
   Overriding duplicate env entry: B
   odoc: internal error, uncaught exception:
         Failure("error")
@@ -173,7 +173,7 @@
                         "Ordinary",
                         {
                           "id": {
-                            "`Type": [ { "`Root": [ "None", "B" ] }, "{t}1" ]
+                            "`Type": [ { "`Root": [ "None", "B" ] }, "[t]1" ]
                           },
                           "doc": [],
                           "equation": {
@@ -211,7 +211,7 @@
                                 {
                                   "`Type": [
                                     { "`Root": [ "None", "B" ] },
-                                    "{t}1"
+                                    "[t]1"
                                   ]
                                 },
                                 "false"
@@ -410,7 +410,7 @@
   Try `odoc link --help' or `odoc --help' for more information.
   [2]
   $ odoc link -I . b.odoc
-  Adding (root B).{t}1 to env
+  Adding (root B).[t]1 to env
   Adding (root B).t to env
   Adding (root B).B.A to env
   Adding (root B).B.t to env

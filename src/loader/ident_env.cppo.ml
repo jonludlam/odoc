@@ -377,59 +377,67 @@ let env_of_items parent items env =
     match items with
     | `Type (t, is_hidden_item) :: rest ->
       let name = Ident.name t in
-      let is_hidden = is_hidden_item || type_name_exists name rest in
-        let identifier, hidden =
-        if is_hidden
-        then `Type(parent, TypeName.internal_of_string name), t :: env.hidden
-        else `Type(parent, TypeName.make_std name), env.hidden
+      let identifier, hidden =
+        match is_hidden_item, type_name_exists name rest with
+        | false, false -> `Type(parent, TypeName.make_std name), env.hidden
+        | true, false -> `Type(parent, TypeName.internal_of_string name), t :: env.hidden
+        | false, true -> `Type(parent, TypeName.shadowed_of_string name), t :: env.hidden
+        | true, true -> `Type(parent, TypeName.shadowed_of_string name), t :: env.hidden
       in
       let types = Ident.add t identifier env.types in      
       inner rest { env with types; hidden }
 
     | `Value (t, is_hidden_item) :: rest ->
       let name = Ident.name t in
-      let is_hidden = is_hidden_item || value_name_exists name rest in
       let identifier, hidden =
-        if is_hidden
-        then `Value(parent, ValueName.internal_of_string name), t :: env.hidden
-        else `Value(parent, ValueName.make_std name), env.hidden
+        match is_hidden_item, value_name_exists name rest with
+        | false, false -> `Value(parent, ValueName.make_std name), env.hidden
+        | true, false -> `Value(parent, ValueName.internal_of_string name), t :: env.hidden
+        | false, true -> `Value(parent, ValueName.shadowed_of_string name), t :: env.hidden
+        | true, true -> `Value(parent, ValueName.shadowed_of_string name), t :: env.hidden
       in
       let values = Ident.add t identifier env.values in      
       inner rest { env with values; hidden }
 
     | `ModuleType (t, is_hidden_item) :: rest ->
       let name = Ident.name t in
-      let is_hidden = is_hidden_item || module_type_name_exists name rest in
       let identifier, hidden =
-        if is_hidden
-        then `ModuleType(parent, ModuleTypeName.internal_of_string name), t :: env.hidden
-        else `ModuleType(parent, ModuleTypeName.make_std name), env.hidden
-      in
+      match is_hidden_item, module_type_name_exists name rest with
+      | false, false -> `ModuleType(parent, ModuleTypeName.make_std name), env.hidden
+      | true, false -> `ModuleType(parent, ModuleTypeName.internal_of_string name), t :: env.hidden
+      | false, true -> `ModuleType(parent, ModuleTypeName.shadowed_of_string name), t :: env.hidden
+      | true, true -> `ModuleType(parent, ModuleTypeName.shadowed_of_string name), t :: env.hidden
+    in
+
       let module_types = Ident.add t identifier env.module_types in
       inner rest { env with module_types; hidden }
 
     | `Module (t, is_hidden_item) :: rest ->
       let name = Ident.name t in
       let double_underscore = Odoc_model.Root.contains_double_underscore name in
-      let is_hidden = is_hidden_item || module_name_exists name rest || double_underscore in
       let identifier, hidden =
-        if is_hidden 
-        then `Module(parent, ModuleName.internal_of_string name), t :: env.hidden
-        else `Module(parent, ModuleName.make_std name), env.hidden
+      match is_hidden_item || double_underscore, module_name_exists name rest with
+      | false, false -> `Module(parent, ModuleName.make_std name), env.hidden
+      | true, false -> `Module(parent, ModuleName.internal_of_string name), t :: env.hidden
+      | false, true -> `Module(parent, ModuleName.shadowed_of_string name), t :: env.hidden
+      | true, true -> `Module(parent, ModuleName.shadowed_of_string name), t :: env.hidden
       in
-      let path = `Identifier(identifier, is_hidden) in
+
+      let path = `Identifier(identifier, is_hidden_item || double_underscore || module_name_exists name rest) in
       let modules = Ident.add t identifier env.modules in
       let module_paths = Ident.add t path env.module_paths in
       inner rest { env with modules; module_paths; hidden }
 
     | `Class (t,t2,t3,t4, is_hidden_item) :: rest ->
       let name = Ident.name t in
-      let is_hidden = is_hidden_item || class_name_exists name rest in
       let identifier, hidden =
-        if is_hidden 
-        then `Class(parent, ClassName.internal_of_string name), t :: t2 :: t3 :: t4 :: env.hidden
-        else `Class(parent, ClassName.make_std name), env.hidden
-      in
+      match is_hidden_item, class_name_exists name rest with
+      | false, false -> `Class(parent, ClassName.make_std name), env.hidden
+      | true, false -> `Class(parent, ClassName.internal_of_string name), t :: env.hidden
+      | false, true -> `Class(parent, ClassName.shadowed_of_string name), t :: env.hidden
+      | true, true -> `Class(parent, ClassName.shadowed_of_string name), t :: env.hidden
+    in
+
       let classes =
         List.fold_right (fun id classes -> Ident.add id identifier classes)
           [t; t2; t3; t4] env.classes in
@@ -437,12 +445,14 @@ let env_of_items parent items env =
 
     | `ClassType (t,t2,t3, is_hidden_item) :: rest ->
       let name = Ident.name t in
-      let is_hidden = is_hidden_item || class_type_name_exists name rest in
       let identifier, hidden =
-        if is_hidden 
-        then `ClassType(parent, ClassTypeName.internal_of_string name), t :: t2 :: t3 :: env.hidden
-        else `ClassType(parent, ClassTypeName.make_std name), env.hidden
-      in
+      match is_hidden_item, class_type_name_exists name rest with
+      | false, false -> `ClassType(parent, ClassTypeName.make_std name), env.hidden
+      | true, false -> `ClassType(parent, ClassTypeName.internal_of_string name), t :: env.hidden
+      | false, true -> `ClassType(parent, ClassTypeName.shadowed_of_string name), t :: env.hidden
+      | true, true -> `ClassType(parent, ClassTypeName.shadowed_of_string name), t :: env.hidden
+    in
+
       let class_types =
         List.fold_right (fun id class_types -> Ident.add id identifier class_types)
           [t; t2; t3] env.class_types in

@@ -2,7 +2,7 @@
   $ ocamlc -bin-annot -c b.ml
   $ odoc compile a.cmt
   Read include - shadowed.types = 
-  content=module {Bar}1
+  content=module [Bar]1
   
   Read include - shadowed.types = 
   content=module Bar
@@ -14,68 +14,18 @@
   Adding (root A).Baz.Bar to env
   Adding (root A).Baz.Bar to env
   Overriding duplicate env entry: Bar
-  Handling include in type_of
-  Removing (root A).Bar from env
-  Adding (root A).Bar to env
-  Adding (root A).Bar to env
-  Overriding duplicate env entry: Bar
-  Finished handling include in type_of
-  Finished type_of pass
-  Adding (root A).Foo to env
-  Adding (root A).Baz to env
-  Adding (root A).Bar to env
-  Adding (root A).Baz.Bar to env
-  Adding (root A).Baz.Bar to env
-  Overriding duplicate env entry: Bar
-  Handling include of : module type of struct include identifier((root A).Baz, false) end
-  Removing (root A).Bar from env
-  Adding (root A).Bar to env
-  Adding (root A).Bar to env
-  Overriding duplicate env entry: Bar
-  Removing (root A).Bar from env
-  Adding (root A).Bar to env
-  Adding (root A).Bar to env
-  Overriding duplicate env entry: Bar
-  $ odoc compile -I . b.cmt
-  Read include - shadowed.types = 
-  content=module Foo
-  module Baz
-  module Bar
-  
-  Starting type_of pass
-  Adding (root B).Foo to env
-  Adding (root B).Baz to env
-  Adding (root B).Bar to env
-  Handling include in type_of
-  Removing (root B).Foo from env
-  Removing (root B).Baz from env
-  Removing (root B).Bar from env
-  Adding (root B).Foo to env
-  Adding (root B).Baz to env
-  Adding (root B).Bar to env
-  Adding (root B).Bar to env
-  Overriding duplicate env entry: Bar
-  Handling include in type_of
-  Removing (root B).Bar from env
-  Removing (root B).Bar from env
-  Failed to find Bar
   odoc: internal error, uncaught exception:
-        Not_found
-        Raised at Odoc_xref2__Env.ElementsByName.remove in file "src/xref2/env.ml", line 122, characters 101-116
-        Called from Odoc_xref2__Env.remove in file "src/xref2/env.ml", line 248, characters 11-52
+        Failure("error")
+        Raised at Stdlib.failwith in file "stdlib.ml", line 29, characters 17-33
+        Called from Odoc_xref2__Env.add_to_elts in file "src/xref2/env.ml", line 232, characters 8-24
+        Called from Odoc_xref2__Env.add_module in file "src/xref2/env.ml", line 308, characters 13-77
         Called from Stdlib__List.fold_left in file "list.ml", line 121, characters 24-34
-        Called from Odoc_xref2__Type_of.include_ in file "src/xref2/type_of.ml", line 112, characters 14-57
-        Called from Odoc_xref2__Type_of.signature_items.(fun) in file "src/xref2/type_of.ml", line 25, characters 31-47
+        Called from Odoc_xref2__Type_of.signature in file "src/xref2/type_of.ml" (inlined), line 13, characters 12-37
+        Called from Odoc_xref2__Type_of.module_type_expr in file "src/xref2/type_of.ml", line 67, characters 30-48
+        Called from Odoc_xref2__Type_of.module_ in file "src/xref2/type_of.ml", line 37, characters 27-79
+        Called from Odoc_xref2__Type_of.signature_items.(fun) in file "src/xref2/type_of.ml", line 23, characters 38-51
         Called from Stdlib__List.map in file "list.ml", line 92, characters 20-23
         Called from Stdlib__List.map in file "list.ml", line 92, characters 32-39
-        Called from Stdlib__List.map in file "list.ml", line 92, characters 32-39
-        Called from Odoc_xref2__Type_of.signature_items in file "src/xref2/type_of.ml", line 20, characters 4-253
-        Called from Odoc_xref2__Type_of.signature in file "src/xref2/type_of.ml" (inlined), line 14, characters 2-24
-        Called from Odoc_xref2__Type_of.simple_expansion in file "src/xref2/type_of.ml", line 104, characters 30-48
-        Called from Odoc_xref2__Type_of.u_module_type_expr in file "src/xref2/type_of.ml", line 90, characters 45-70
-        Called from Odoc_xref2__Type_of.include_ in file "src/xref2/type_of.ml", line 115, characters 33-68
-        Called from Odoc_xref2__Type_of.signature_items.(fun) in file "src/xref2/type_of.ml", line 25, characters 31-47
-        Called from Stdlib__List.map in file "list.ml", line 92, characters 20-23
         Called from Odoc_xref2__Type_of.signature_items in file "src/xref2/type_of.ml", line 20, characters 4-253
         Called from Odoc_xref2__Type_of.signature in file "src/xref2/type_of.ml" (inlined), line 14, characters 2-24
         Called from Odoc_xref2__Type_of.signature.loop in file "src/xref2/type_of.ml", line 128, characters 14-30
@@ -93,20 +43,47 @@
         Called from Cmdliner_term.app.(fun) in file "cmdliner_term.ml", line 23, characters 12-19
         Called from Cmdliner.Term.run in file "cmdliner.ml", line 117, characters 32-39
   [2]
+  $ odoc compile -I . b.cmt
+  Read include - shadowed.types = 
+  content=module Foo
+  module Baz
+  module Bar
+  
+  Starting type_of pass
+  Adding (root B).Foo to env
+  Adding (root B).Baz to env
+  Adding (root B).Bar to env
+  Handling include in type_of
+  Removing (root B).Foo from env
+  Removing (root B).Baz from env
+  Removing (root B).Bar from env
+  Finished handling include in type_of
+  Finished type_of pass
+  Adding (root B).Foo to env
+  Adding (root B).Baz to env
+  Adding (root B).Bar to env
+  Handling include of : module type of struct include unresolvedroot(A) end
+  Removing (root B).Foo from env
+  Removing (root B).Baz from env
+  Removing (root B).Bar from env
+  Adding (root B).Foo to env
+  Adding (root B).Baz to env
+  Adding (root B).Bar to env
+  File "b.cmt":
+  Warning: Couldn't find the following modules:
+    A
   $ odoc html-generate -o html a.odoc
+  odoc: file.odoc argument: no `a.odoc' file or directory
+  Usage: odoc html-generate [OPTION]... file.odoc
+  Try `odoc html-generate --help' or `odoc --help' for more information.
+  [2]
   $ odoc support-files -o html
   $ rsync -avz html /tmp/html/
   building file list ... done
   html/
   html/highlight.pack.js
   html/odoc.css
-  html/A/
-  html/A/index.html
-  html/A/Baz/
-  html/A/Baz/index.html
-  html/A/Foo/
-  html/A/Foo/index.html
   
-  sent 12311 bytes  received 154 bytes  24930.00 bytes/sec
-  total size is 32216  speedup is 2.58
+  sent 10638 bytes  received 70 bytes  21416.00 bytes/sec
+  total size is 28403  speedup is 2.65
 

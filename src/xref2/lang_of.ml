@@ -299,7 +299,7 @@ module ExtractIDs = struct
     let name = Ident.Name.type_ id in
     let identifier =
       if List.mem name map.shadowed.s_types then
-        `Type (parent, Odoc_model.Names.TypeName.internal_of_string name)
+        `Type (parent, Odoc_model.Names.TypeName.shadowed_of_string name)
       else `Type (parent, Ident.Name.typed_type id)
     in
     {
@@ -316,8 +316,11 @@ module ExtractIDs = struct
     let name = Ident.Name.module_ id in
     let identifier =
       if List.mem name map.shadowed.s_modules then
-        `Module (parent, ModuleName.internal_of_string name)
-      else `Module (parent, Ident.Name.typed_module id)
+        `Module (parent, ModuleName.shadowed_of_string name)
+      else begin
+        let n = Ident.Name.typed_module id in
+        `Module (parent, Names.ModuleName.freshen n)
+      end
     in
     { map with module_ = Component.ModuleMap.add id identifier map.module_ }
 
@@ -325,7 +328,7 @@ module ExtractIDs = struct
     let name = Ident.Name.module_type id in
     let identifier =
       if List.mem name map.shadowed.s_module_types then
-        `ModuleType (parent, ModuleTypeName.internal_of_string name)
+        `ModuleType (parent, ModuleTypeName.shadowed_of_string name)
       else `ModuleType (parent, Ident.Name.typed_module_type id)
     in
     {
@@ -337,7 +340,7 @@ module ExtractIDs = struct
     let name = Ident.Name.class_ id in
     let identifier =
       if List.mem name map.shadowed.s_classes then
-        `Class (parent, ClassName.internal_of_string name)
+        `Class (parent, ClassName.shadowed_of_string name)
       else `Class (parent, Ident.Name.typed_class id)
     in
     {
@@ -359,7 +362,7 @@ module ExtractIDs = struct
     let name = Ident.Name.class_type id in
     let identifier =
       if List.mem name map.shadowed.s_class_types then
-        `ClassType (parent, ClassTypeName.internal_of_string name)
+        `ClassType (parent, ClassTypeName.shadowed_of_string name)
       else `ClassType (parent, Ident.Name.typed_class_type id)
     in
     {
@@ -652,7 +655,7 @@ and value_ map parent id v =
   let name = Ident.Name.value id in
   let identifier =
     if List.mem name map.shadowed.s_values then
-      `Value (parent, ValueName.internal_of_string name)
+      `Value (parent, ValueName.shadowed_of_string name)
     else `Value (parent, Ident.Name.typed_value id)
   in
   {

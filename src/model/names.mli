@@ -35,8 +35,12 @@ module type Name = sig
 
   val internal_of_ident : Ident.t -> t
 
-  val is_internal : t -> bool
+  val freshen : t -> t
 
+  val shadowed_of_string : string -> t
+
+  val is_internal : t -> bool
+  
   val equal : t -> t -> bool
 
   val compare : t -> t -> int
