@@ -757,7 +757,7 @@ and read_include env parent incl =
     [Include {parent; doc; decl; expansion; status; strengthened=None; loc }]
   | _ ->
     let items = match umty with | Some ModuleType.U.Signature { items; _ }  -> items | _ -> content.items in
-    let fake_id = `ModuleType(parent, Odoc_model.Names.ModuleTypeName.internal_of_string "IncludedModule") in
+    let fake_id = `ModuleType(parent, Odoc_model.Names.ModuleTypeName.internal_of_string "OdocIncludedModule") in
     [ModuleType ({ id=fake_id; canonical=None; doc=[];
     expr=Some (Signature {items; compiled=false; doc=[]})})
     ; Include {parent; doc; decl=ModuleType (ModuleType.U.Path (`Identifier (fake_id, true))); expansion; status; strengthened=None; loc}]
