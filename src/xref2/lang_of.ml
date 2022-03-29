@@ -324,8 +324,9 @@ module ExtractIDs = struct
   and module_type parent map id =
     let name = Ident.Name.unsafe_module_type id in
     let identifier =
-      if List.mem name map.shadowed.s_module_types then
-        `ModuleType (parent, ModuleTypeName.internal_of_string name)
+      if
+        List.mem name map.shadowed.s_module_types || name = "OdocIncludedModule"
+      then `ModuleType (parent, ModuleTypeName.internal_of_string name)
       else `ModuleType (parent, Ident.Name.typed_module_type id)
     in
     {
