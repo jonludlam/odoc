@@ -198,7 +198,7 @@ let rec resolved_module_path :
       | Some (`Prefixed (_p, rp)) -> rp
       | Some `Substituted -> `Substituted p
       | None -> p)
-  | `Identifier _ -> p
+  | `GPath _ -> p
   | `Apply (p1, p2) ->
       `Apply (resolved_module_path s p1, resolved_module_path s p2)
   | `Substituted p -> `Substituted (resolved_module_path s p)
@@ -271,7 +271,7 @@ and resolved_module_type_path :
         | `Prefixed (_p, rp) -> Not_replaced rp
         | `Renamed x -> Not_replaced (`Local x)
         | exception Not_found -> Not_replaced (`Local id))
-  | `Identifier _ -> Not_replaced p
+  | `GPath _ -> Not_replaced p
   | `Substituted p ->
       resolved_module_type_path s p |> map_replaced (fun p -> `Substituted p)
   | `ModuleType (p, n) ->
@@ -658,7 +658,7 @@ and mto_module_path_invalidated : t -> Cpath.module_ -> bool =
 and mto_resolved_module_path_invalidated s p =
   match p with
   | `Local id -> List.mem id s.module_type_of_invalidating_modules
-  | `Identifier _ -> false
+  | `GPath _ -> false
   | `Apply (p1, p2) ->
       mto_resolved_module_path_invalidated s p1
       || mto_resolved_module_path_invalidated s p2

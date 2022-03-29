@@ -166,8 +166,9 @@ and handle_expansion env id expansion =
         let subst =
           Subst.add_module
             (arg.id :> Ident.path_module)
-            (`Resolved (`Identifier identifier))
-            (`Identifier identifier) Subst.identity
+            (`Resolved (`GPath (`Identifier identifier)))
+            (`GPath (`Identifier identifier))
+            Subst.identity
         in
         let subst =
           Subst.mto_invalidate_module (arg.id :> Ident.path_module) subst

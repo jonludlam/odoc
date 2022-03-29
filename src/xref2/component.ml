@@ -894,9 +894,9 @@ module Fmt = struct
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" resolved_module_path p1 resolved_module_path
           p2
-    | `Identifier p ->
-        Format.fprintf ppf "%a" model_identifier
-          (p :> Odoc_model.Paths.Identifier.t)
+    | `GPath p ->
+        Format.fprintf ppf "%a" model_resolved_path
+          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted p ->
         Format.fprintf ppf "substituted(%a)" resolved_module_path p
     | `Module (p, m) ->
@@ -938,9 +938,9 @@ module Fmt = struct
    fun ppf p ->
     match p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
-    | `Identifier id ->
-        Format.fprintf ppf "%a" model_identifier
-          (id :> Odoc_model.Paths.Identifier.t)
+    | `GPath p ->
+        Format.fprintf ppf "%a" model_resolved_path
+          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted x ->
         Format.fprintf ppf "substituted(%a)" resolved_module_type_path x
     | `ModuleType (p, m) ->
@@ -1662,13 +1662,30 @@ module Of_Lang = struct
     let f () =
       let recurse p = resolved_module_path ident_map p in
       match p with
-      | `Identifier i -> identifier find_any_module ident_map i
-      | `Module (p, name) -> `Module (`Module (recurse p), name)
-      | `Apply (p1, p2) -> `Apply (recurse p1, recurse p2)
-      | `Alias (p1, p2) -> `Alias (recurse p1, recurse p2)
-      | `Subst (p1, p2) ->
-          `Subst (resolved_module_type_path ident_map p1, recurse p2)
-      | `Canonical (p1, p2) -> `Canonical (recurse p1, p2)
+      | `Identifier i -> (
+          match identifier find_any_module ident_map i with
+          | `Identifier _ as s -> `GPath s
+          | `Local _ as y -> y)
+      | `Module (p1, name) -> (
+          match recurse p1 with
+          | `GPath _ -> `GPath p
+          | x -> `Module (`Module x, name))
+      | `Apply (p1, p2) -> (
+          match (recurse p1, recurse p2) with
+          | `GPath _, `GPath _ -> `GPath p
+          | p1', p2' -> `Apply (p1', p2'))
+      | `Alias (p1, p2) -> (
+          match (recurse p1, recurse p2) with
+          | `GPath _, `GPath _ -> `GPath p
+          | p1', p2' -> `Alias (p1', p2'))
+      | `Subst (p1, p2) -> (
+          match (resolved_module_type_path ident_map p1, recurse p2) with
+          | `GPath _, `GPath _ -> `GPath p
+          | p1', p2' -> `Subst (p1', p2'))
+      | `Canonical (p1, p2) -> (
+          match recurse p1 with
+          | `GPath _ -> `GPath p
+          | p1' -> `Canonical (p1', p2))
       | `Hidden p1 -> `Hidden (recurse p1)
       | `OpaqueModule m -> `OpaqueModule (recurse m)
     in
@@ -1684,21 +1701,36 @@ module Of_Lang = struct
       Cpath.Resolved.module_type =
    fun ident_map p ->
     match p with
-    | `Identifier i -> identifier Maps.ModuleType.find ident_map.module_types i
-    | `ModuleType (p, name) ->
-        `ModuleType (`Module (resolved_module_path ident_map p), name)
-    | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type_path ident_map p1, p2)
-    | `OpaqueModuleType m ->
-        `OpaqueModuleType (resolved_module_type_path ident_map m)
-    | `AliasModuleType (m1, m2) ->
-        `AliasModuleType
-          ( resolved_module_type_path ident_map m1,
-            resolved_module_type_path ident_map m2 )
-    | `SubstT (p1, p2) ->
-        `SubstT
+    | `Identifier i -> (
+        match identifier Maps.ModuleType.find ident_map.module_types i with
+        | `Identifier _ as s -> `GPath s
+        | `Local _ as y -> y)
+    | `ModuleType (p1, name) -> (
+        match resolved_module_path ident_map p1 with
+        | `GPath _ -> `GPath p
+        | p -> `ModuleType (`Module p, name))
+    | `CanonicalModuleType (p1, p2) -> (
+        match resolved_module_type_path ident_map p1 with
+        | `GPath _ -> `GPath p
+        | p1' -> `CanonicalModuleType (p1', p2))
+    | `OpaqueModuleType p1 -> (
+        match resolved_module_type_path ident_map p1 with
+        | `GPath _ -> `GPath p
+        | p1' -> `OpaqueModuleType p1')
+    | `AliasModuleType (p1, p2) -> (
+        match
           ( resolved_module_type_path ident_map p1,
             resolved_module_type_path ident_map p2 )
+        with
+        | `GPath _, `GPath _ -> `GPath p
+        | p1', p2' -> `AliasModuleType (p1', p2'))
+    | `SubstT (p1, p2) -> (
+        match
+          ( resolved_module_type_path ident_map p1,
+            resolved_module_type_path ident_map p2 )
+        with
+        | `GPath _, `GPath _ -> `GPath p
+        | p1', p2' -> `SubstT (p1', p2'))
 
   and resolved_type_path :
       _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =

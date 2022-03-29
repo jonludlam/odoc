@@ -148,7 +148,7 @@ module Path = struct
              with Not_found ->
                failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
       | `Substituted x -> resolved_module map x
-      | `Identifier y -> `Identifier y
+      | `GPath y -> y
       | `Subst (mty, m) ->
           `Subst (resolved_module_type map mty, resolved_module map m)
       | `Hidden h -> `Hidden (resolved_module map h)
@@ -180,8 +180,7 @@ module Path = struct
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     match p with
-    | `Identifier (#Odoc_model.Paths.Identifier.ModuleType.t as y) ->
-        `Identifier y
+    | `GPath y -> y
     | `Local id ->
         `Identifier
           (try Component.ModuleTypeMap.find id map.module_type
