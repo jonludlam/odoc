@@ -144,7 +144,7 @@ module Path = struct
       Odoc_model.Paths.Path.Resolved.Module.t =
     let open R.Module.Mk in
     let f () =
-      match p with
+      match snd p with
       | `Local id ->
           identifier
             (try lookup_module map id
@@ -183,7 +183,7 @@ module Path = struct
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     let open R.ModuleType.Mk in
-    match p with
+    match snd p with
     | `GPath y -> y
     | `Local id ->
         identifier
@@ -205,7 +205,7 @@ module Path = struct
   and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =
     let open R.Type.Mk in
-    match p with
+    match snd p with
     | `Identifier (#Odoc_model.Paths.Identifier.Path.Type.t as y) ->
         identifier y
     | `Local id -> identifier (Component.PathTypeMap.find id map.path_type)
@@ -218,7 +218,7 @@ module Path = struct
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
       Odoc_model.Paths.Path.Resolved.ClassType.t =
     let open R.ClassType.Mk in
-    match p with
+    match snd p with
     | `Identifier (#Odoc_model.Paths.Identifier.Path.ClassType.t as y) ->
         identifier y
     | `Local id ->

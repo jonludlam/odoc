@@ -187,24 +187,25 @@ and substitute_vars_poly_variant vars v =
 let rec resolved_module_path :
     t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun s p ->
-  match p with
+  let open Cpath.Mk.Module in
+  match snd p with
   | `Local id -> (
       if List.mem id s.path_invalidating_modules then raise Invalidated;
       match
         try Some (PathModuleMap.find (id :> Ident.path_module) s.module_)
         with _ -> None
       with
-      | Some (`Renamed x) -> `Local x
+      | Some (`Renamed x) -> local x
       | Some (`Prefixed (_p, rp)) -> rp
-      | Some `Substituted -> `Substituted p
+      | Some `Substituted -> substituted p
       | None -> p)
   | `GPath _ -> p
   | `Apply (p1, p2) ->
-      `Apply (resolved_module_path s p1, resolved_module_path s p2)
-  | `Substituted p -> `Substituted (resolved_module_path s p)
-  | `Module (p, n) -> `Module (resolved_parent_path s p, n)
+      apply (resolved_module_path s p1) (resolved_module_path s p2)
+  | `Substituted p -> substituted (resolved_module_path s p)
+  | `Module (p, n) -> module_ (resolved_parent_path s p) n
   | `Alias (p1, p2) ->
-      `Alias (resolved_module_path s p1, resolved_module_path s p2)
+      alias (resolved_module_path s p1) (resolved_module_path s p2)
   | `Subst (p1, p2) ->
       let p1 =
         match resolved_module_type_path s p1 with
@@ -214,12 +215,12 @@ let rec resolved_module_path :
             assert false
         | Not_replaced p1 -> p1
       in
-      `Subst (p1, resolved_module_path s p2)
-  | `Hidden p1 -> `Hidden (resolved_module_path s p1)
-  | `Canonical (p1, p2) -> `Canonical (resolved_module_path s p1, p2)
+      subst p1 (resolved_module_path s p2)
+  | `Hidden p1 -> hidden (resolved_module_path s p1)
+  | `Canonical (p1, p2) -> canonical (resolved_module_path s p1) p2
   | `OpaqueModule m ->
       if s.unresolve_opaque_paths then raise Invalidated
-      else `OpaqueModule (resolved_module_path s m)
+      else opaquemodule (resolved_module_path s m)
 
 and resolved_parent_path s = function
   | `Module m -> `Module (resolved_module_path s m)
@@ -262,41 +263,41 @@ and resolved_module_type_path :
     Cpath.Resolved.module_type ->
     (Cpath.Resolved.module_type, ModuleType.expr) or_replaced =
  fun s p ->
-  match p with
+  let open Cpath.Mk.ModuleType in
+  match snd p with
   | `Local id -> (
       if ModuleTypeMap.mem id s.module_type_replacement then
         Replaced (ModuleTypeMap.find id s.module_type_replacement)
       else
         match ModuleTypeMap.find id s.module_type with
         | `Prefixed (_p, rp) -> Not_replaced rp
-        | `Renamed x -> Not_replaced (`Local x)
-        | exception Not_found -> Not_replaced (`Local id))
+        | `Renamed x -> Not_replaced (local x)
+        | exception Not_found -> Not_replaced (local id))
   | `GPath _ -> Not_replaced p
   | `Substituted p ->
-      resolved_module_type_path s p |> map_replaced (fun p -> `Substituted p)
+      resolved_module_type_path s p |> map_replaced (fun p -> substituted p)
   | `ModuleType (p, n) ->
-      Not_replaced (`ModuleType (resolved_parent_path s p, n))
+      Not_replaced (module_type (resolved_parent_path s p) n)
   | `CanonicalModuleType (mt1, mt2) -> (
       match resolved_module_type_path s mt1 with
-      | Not_replaced mt1' -> Not_replaced (`CanonicalModuleType (mt1', mt2))
+      | Not_replaced mt1' -> Not_replaced (canonicalmoduletype mt1' mt2)
       | x -> x)
   | `OpaqueModuleType m ->
       if s.unresolve_opaque_paths then raise Invalidated
       else
         resolved_module_type_path s m
-        |> map_replaced (fun x -> `OpaqueModuleType x)
+        |> map_replaced (fun x -> opaquemoduletype x)
   | `SubstT (p1, p2) -> (
       match
         (resolved_module_type_path s p1, resolved_module_type_path s p2)
       with
-      | Not_replaced p1, Not_replaced p2 -> Not_replaced (`SubstT (p1, p2))
+      | Not_replaced p1, Not_replaced p2 -> Not_replaced (substt p1 p2)
       | Replaced mt, _ | _, Replaced mt -> Replaced mt)
   | `AliasModuleType (p1, p2) -> (
       match
         (resolved_module_type_path s p1, resolved_module_type_path s p2)
       with
-      | Not_replaced p1, Not_replaced p2 ->
-          Not_replaced (`AliasModuleType (p1, p2))
+      | Not_replaced p1, Not_replaced p2 -> Not_replaced (aliasmoduletype p1 p2)
       | Replaced mt, _ | _, Replaced mt -> Replaced mt)
 
 and module_type_path :
@@ -333,7 +334,8 @@ and resolved_type_path :
     Cpath.Resolved.type_ ->
     (Cpath.Resolved.type_, TypeExpr.t * TypeDecl.Equation.t) or_replaced =
  fun s p ->
-  match p with
+  let open Cpath.Mk.Type in
+  match snd p with
   | `Local id -> (
       if PathTypeMap.mem id s.type_replacement then
         Replaced (PathTypeMap.find id s.type_replacement)
@@ -342,18 +344,18 @@ and resolved_type_path :
           try Some (PathTypeMap.find id s.type_) with Not_found -> None
         with
         | Some (`Prefixed (_p, rp)) -> Not_replaced rp
-        | Some (`Renamed x) -> Not_replaced (`Local x)
-        | None -> Not_replaced (`Local id))
+        | Some (`Renamed x) -> Not_replaced (local x)
+        | None -> Not_replaced (local id))
   | `CanonicalType (t1, t2) -> (
       match resolved_type_path s t1 with
-      | Not_replaced t1' -> Not_replaced (`CanonicalType (t1', t2))
+      | Not_replaced t1' -> Not_replaced (canonicaltype t1' t2)
       | x -> x)
   | `Identifier _ -> Not_replaced p
   | `Substituted p ->
-      resolved_type_path s p |> map_replaced (fun p -> `Substituted p)
-  | `Type (p, n) -> Not_replaced (`Type (resolved_parent_path s p, n))
-  | `ClassType (p, n) -> Not_replaced (`ClassType (resolved_parent_path s p, n))
-  | `Class (p, n) -> Not_replaced (`Class (resolved_parent_path s p, n))
+      resolved_type_path s p |> map_replaced (fun p -> substituted p)
+  | `Type (p, n) -> Not_replaced (type_ (resolved_parent_path s p) n)
+  | `ClassType (p, n) -> Not_replaced (class_type (resolved_parent_path s p) n)
+  | `Class (p, n) -> Not_replaced (class_ (resolved_parent_path s p) n)
 
 and type_path : t -> Cpath.type_ -> Cpath.type_ type_or_replaced =
  fun s p ->
@@ -383,18 +385,19 @@ and type_path : t -> Cpath.type_ -> Cpath.type_ type_or_replaced =
 and resolved_class_type_path :
     t -> Cpath.Resolved.class_type -> Cpath.Resolved.class_type =
  fun s p ->
-  match p with
+  let open Cpath.Mk.ClassType in
+  match snd p with
   | `Local id -> (
       match
         try Some (PathClassTypeMap.find id s.class_type) with _ -> None
       with
       | Some (`Prefixed (_p, rp)) -> rp
-      | Some (`Renamed x) -> `Local x
-      | None -> `Local id)
+      | Some (`Renamed x) -> local x
+      | None -> local id)
   | `Identifier _ -> p
-  | `Substituted p -> `Substituted (resolved_class_type_path s p)
-  | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
-  | `Class (p, n) -> `Class (resolved_parent_path s p, n)
+  | `Substituted p -> substituted (resolved_class_type_path s p)
+  | `ClassType (p, n) -> class_type (resolved_parent_path s p) n
+  | `Class (p, n) -> class_ (resolved_parent_path s p) n
 
 and class_type_path : t -> Cpath.class_type -> Cpath.class_type =
  fun s p ->
@@ -656,7 +659,7 @@ and mto_module_path_invalidated : t -> Cpath.module_ -> bool =
   | `Root _ -> false
 
 and mto_resolved_module_path_invalidated s p =
-  match p with
+  match snd p with
   | `Local id -> List.mem id s.module_type_of_invalidating_modules
   | `GPath _ -> false
   | `Apply (p1, p2) ->

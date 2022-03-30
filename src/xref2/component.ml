@@ -889,7 +889,7 @@ module Fmt = struct
   and resolved_module_path : Format.formatter -> Cpath.Resolved.module_ -> unit
       =
    fun ppf p ->
-    match p with
+    match snd p with
     | `Local ident -> Format.fprintf ppf "%a" Ident.fmt ident
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" resolved_module_path p1 resolved_module_path
@@ -936,7 +936,7 @@ module Fmt = struct
   and resolved_module_type_path :
       Format.formatter -> Cpath.Resolved.module_type -> unit =
    fun ppf p ->
-    match p with
+    match snd p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
     | `GPath p ->
         Format.fprintf ppf "%a" model_resolved_path
@@ -975,7 +975,7 @@ module Fmt = struct
 
   and resolved_type_path : Format.formatter -> Cpath.Resolved.type_ -> unit =
    fun ppf p ->
-    match p with
+    match snd p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
     | `Identifier id ->
         Format.fprintf ppf "%a" model_identifier
@@ -1026,7 +1026,7 @@ module Fmt = struct
   and resolved_class_type_path :
       Format.formatter -> Cpath.Resolved.class_type -> unit =
    fun ppf p ->
-    match p with
+    match snd p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
     | `Identifier id ->
         Format.fprintf ppf "%a" model_identifier
@@ -1659,36 +1659,37 @@ module Of_Lang = struct
   let rec resolved_module_path :
       _ -> Odoc_model.Paths.Path.Resolved.Module.t -> Cpath.Resolved.module_ =
    fun ident_map p ->
+    let open Cpath.Mk.Module in
     let f () =
       let recurse p = resolved_module_path ident_map p in
       match snd p with
       | `Identifier i -> (
           match identifier find_any_module ident_map i with
           | `Identifier id ->
-              `GPath (Odoc_model.Paths.Path.Resolved.Module.Mk.identifier id)
-          | `Local _ as y -> y)
+              gpath (Odoc_model.Paths.Path.Resolved.Module.Mk.identifier id)
+          | `Local _ as y -> (fst p, y))
       | `Module (p1, name) -> (
           match recurse p1 with
-          | `GPath _ -> `GPath p
-          | x -> `Module (`Module x, name))
+          | _, `GPath _ -> gpath p
+          | x -> module_ (`Module x) name)
       | `Apply (p1, p2) -> (
           match (recurse p1, recurse p2) with
-          | `GPath _, `GPath _ -> `GPath p
-          | p1', p2' -> `Apply (p1', p2'))
+          | (_, `GPath _), (_, `GPath _) -> gpath p
+          | p1', p2' -> apply p1' p2')
       | `Alias (p1, p2) -> (
           match (recurse p1, recurse p2) with
-          | `GPath _, `GPath _ -> `GPath p
-          | p1', p2' -> `Alias (p1', p2'))
+          | (_, `GPath _), (_, `GPath _) -> gpath p
+          | p1', p2' -> alias p1' p2')
       | `Subst (p1, p2) -> (
           match (resolved_module_type_path ident_map p1, recurse p2) with
-          | `GPath _, `GPath _ -> `GPath p
-          | p1', p2' -> `Subst (p1', p2'))
+          | (_, `GPath _), (_, `GPath _) -> gpath p
+          | p1', p2' -> subst p1' p2')
       | `Canonical (p1, p2) -> (
           match recurse p1 with
-          | `GPath _ -> `GPath p
-          | p1' -> `Canonical (p1', p2))
-      | `Hidden p1 -> `Hidden (recurse p1)
-      | `OpaqueModule m -> `OpaqueModule (recurse m)
+          | _, `GPath _ -> gpath p
+          | p1' -> canonical p1' p2)
+      | `Hidden p1 -> hidden (recurse p1)
+      | `OpaqueModule m -> opaquemodule (recurse m)
     in
     try RM.find p ident_map.memos.rmodpathmemo
     with Not_found ->
@@ -1701,64 +1702,73 @@ module Of_Lang = struct
       Odoc_model.Paths.Path.Resolved.ModuleType.t ->
       Cpath.Resolved.module_type =
    fun ident_map p ->
+    let open Cpath.Mk.ModuleType in
     match snd p with
     | `Identifier i -> (
         match identifier Maps.ModuleType.find ident_map.module_types i with
         | `Identifier s ->
-            `GPath (Odoc_model.Paths.Path.Resolved.ModuleType.Mk.identifier s)
-        | `Local _ as y -> y)
+            gpath (Odoc_model.Paths.Path.Resolved.ModuleType.Mk.identifier s)
+        | `Local _ as y -> (fst p, y))
     | `ModuleType (p1, name) -> (
         match resolved_module_path ident_map p1 with
-        | `GPath _ -> `GPath p
-        | p -> `ModuleType (`Module p, name))
+        | _, `GPath _ -> gpath p
+        | p -> module_type (`Module p) name)
     | `CanonicalModuleType (p1, p2) -> (
         match resolved_module_type_path ident_map p1 with
-        | `GPath _ -> `GPath p
-        | p1' -> `CanonicalModuleType (p1', p2))
+        | _, `GPath _ -> gpath p
+        | p1' -> canonicalmoduletype p1' p2)
     | `OpaqueModuleType p1 -> (
         match resolved_module_type_path ident_map p1 with
-        | `GPath _ -> `GPath p
-        | p1' -> `OpaqueModuleType p1')
+        | _, `GPath _ -> gpath p
+        | p1' -> opaquemoduletype p1')
     | `AliasModuleType (p1, p2) -> (
         match
           ( resolved_module_type_path ident_map p1,
             resolved_module_type_path ident_map p2 )
         with
-        | `GPath _, `GPath _ -> `GPath p
-        | p1', p2' -> `AliasModuleType (p1', p2'))
+        | (_, `GPath _), (_, `GPath _) -> gpath p
+        | p1', p2' -> aliasmoduletype p1' p2')
     | `SubstT (p1, p2) -> (
         match
           ( resolved_module_type_path ident_map p1,
             resolved_module_type_path ident_map p2 )
         with
-        | `GPath _, `GPath _ -> `GPath p
-        | p1', p2' -> `SubstT (p1', p2'))
+        | (_, `GPath _), (_, `GPath _) -> gpath p
+        | p1', p2' -> substt p1' p2')
 
   and resolved_type_path :
       _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =
    fun ident_map p ->
+    let module T = Cpath.Mk.Type in
     match snd p with
-    | `Identifier i -> identifier Maps.Path.Type.find ident_map.path_types i
+    | `Identifier i -> (
+        match Maps.Path.Type.find i ident_map.path_types with
+        | x -> T.local x
+        | exception Not_found -> T.identifier i)
     | `CanonicalType (p1, p2) ->
-        `CanonicalType (resolved_type_path ident_map p1, p2)
-    | `Type (p, name) -> `Type (`Module (resolved_module_path ident_map p), name)
+        T.canonicaltype (resolved_type_path ident_map p1) p2
+    | `Type (p, name) ->
+        T.type_ (`Module (resolved_module_path ident_map p)) name
     | `Class (p, name) ->
-        `Class (`Module (resolved_module_path ident_map p), name)
+        T.class_ (`Module (resolved_module_path ident_map p)) name
     | `ClassType (p, name) ->
-        `ClassType (`Module (resolved_module_path ident_map p), name)
+        T.class_type (`Module (resolved_module_path ident_map p)) name
 
   and resolved_class_type_path :
       _ ->
       Odoc_model.Paths.Path.Resolved.ClassType.t ->
       Cpath.Resolved.class_type =
    fun ident_map p ->
+    let module T = Cpath.Mk.ClassType in
     match snd p with
-    | `Identifier i ->
-        identifier Maps.Path.ClassType.find ident_map.path_class_types i
+    | `Identifier i -> (
+        match Maps.Path.ClassType.find i ident_map.path_class_types with
+        | x -> T.local x
+        | exception Not_found -> T.identifier i)
     | `Class (p, name) ->
-        `Class (`Module (resolved_module_path ident_map p), name)
+        T.class_ (`Module (resolved_module_path ident_map p)) name
     | `ClassType (p, name) ->
-        `ClassType (`Module (resolved_module_path ident_map p), name)
+        T.class_type (`Module (resolved_module_path ident_map p)) name
 
   and module_path : _ -> Odoc_model.Paths.Path.Module.t -> Cpath.module_ =
    fun ident_map p ->

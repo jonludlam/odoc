@@ -677,10 +677,11 @@ let add_functor_args' :
       let m = Component.Delayed.put_val (Subst.module_ subst m) in
       let env' = add_module identifier m doc env in
       ( env',
-        let id =
-          Odoc_model.Paths.Path.Resolved.Module.Mk.identifier identifier
+        let gp =
+          Cpath.Mk.Module.gpath
+            (Odoc_model.Paths.Path.Resolved.Module.Mk.identifier identifier)
         in
-        Subst.add_module ident (`Resolved (`GPath id)) (`GPath id) subst )
+        Subst.add_module ident (`Resolved gp) gp subst )
     in
     let env', _subst =
       List.fold_left fold_fn (env, Subst.identity) (find_args id expr)

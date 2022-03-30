@@ -167,8 +167,9 @@ module M = struct
   type t = module_lookup_result
 
   let of_component env m base_path' base_ref' : t =
+    let open Cpath.Mk.Module in
     let base_path, base_ref =
-      if m.Component.Module.hidden then (`Hidden base_path', `Hidden base_ref')
+      if m.Component.Module.hidden then (hidden base_path', `Hidden base_ref')
       else (base_path', base_ref')
     in
     let p, r =
@@ -177,10 +178,10 @@ module M = struct
       | Some (`Aliased cp) ->
           let cp = Tools.reresolve_module env cp in
           let p = Lang_of.(Path.resolved_module (empty ()) cp) in
-          (`Alias (cp, base_path), `Alias (p, base_ref))
+          (Cpath.Mk.Module.alias cp base_path, `Alias (p, base_ref))
       | Some (`SubstMT cp) ->
           let cp = Tools.reresolve_module_type env cp in
-          (`Subst (cp, base_path), base_ref)
+          (subst cp base_path, base_ref)
     in
     (r, p, m)
 
@@ -189,13 +190,16 @@ module M = struct
     let parent_cp = Tools.reresolve_parent env parent_cp in
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find Find.module_in_sig sg name >>= fun (`FModule (name, m)) ->
-    Ok (of_component env m (`Module (parent_cp, name)) (`Module (parent, name)))
+    Ok
+      (of_component env m
+         (Cpath.Mk.Module.module_ parent_cp name)
+         (`Module (parent, name)))
 
   let of_element env (`Module (id, m)) : t =
     let m = Component.Delayed.get m in
     let id = (id :> Identifier.Path.Module.t) in
     let base = Odoc_model.Paths.Path.Resolved.Module.Mk.identifier id in
-    of_component env m (`GPath base) (`Identifier id)
+    of_component env m (Cpath.Mk.Module.gpath base) (`Identifier id)
 
   let in_env env name =
     match env_lookup_by_name Env.s_module name env with
@@ -214,7 +218,9 @@ module MT = struct
     | Some (`AliasModuleType cp) ->
         let cp = Tools.reresolve_module_type env cp in
         let p = Lang_of.(Path.resolved_module_type (empty ()) cp) in
-        (`AliasModuleType (p, base_ref), `AliasModuleType (cp, base_path), mt)
+        ( `AliasModuleType (p, base_ref),
+          Cpath.Mk.ModuleType.aliasmoduletype cp base_path,
+          mt )
 
   let in_signature env ((parent', parent_cp, sg) : signature_lookup_result) name
       =
@@ -222,12 +228,12 @@ module MT = struct
     find Find.module_type_in_sig sg name >>= fun (`FModuleType (name, mt)) ->
     Ok
       (of_component env mt
-         (`ModuleType (parent_cp, name))
+         (Cpath.Mk.ModuleType.module_type parent_cp name)
          (`ModuleType (parent', name)))
 
   let of_element env (`ModuleType (id, mt)) : t =
     let p = Odoc_model.Paths.Path.Resolved.ModuleType.Mk.identifier id in
-    of_component env mt (`GPath p) (`Identifier id)
+    of_component env mt (Cpath.Mk.ModuleType.gpath p) (`Identifier id)
 
   let in_env env name =
     env_lookup_by_name Env.s_module_type name env >>= fun e ->
@@ -517,13 +523,13 @@ module LP = struct
     | `FModule (name, m) ->
         module_lookup_to_signature_lookup env
           (M.of_component env m
-             (`Module (parent_cp, name))
+             (Cpath.Mk.Module.module_ parent_cp name)
              (`Module (parent', name)))
         >>= fun s -> Ok (`S s)
     | `FModuleType (name, mt) ->
         module_type_lookup_to_signature_lookup env
           (MT.of_component env mt
-             (`ModuleType (parent_cp, name))
+             (Cpath.Mk.ModuleType.module_type parent_cp name)
              (`ModuleType (parent', name)))
         >>= fun s -> Ok (`S s)
     | `FType (name, t) ->
@@ -607,12 +613,12 @@ and resolve_signature_reference :
         | `FModule (name, m) ->
             module_lookup_to_signature_lookup env
               (M.of_component env m
-                 (`Module (parent_cp, name))
+                 (Cpath.Mk.Module.module_ parent_cp name)
                  (`Module (parent, name)))
         | `FModuleType (name, mt) ->
             module_type_lookup_to_signature_lookup env
               (MT.of_component env mt
-                 (`ModuleType (parent_cp, name))
+                 (Cpath.Mk.ModuleType.module_type parent_cp name)
                  (`ModuleType (parent, name))))
   in
   resolve env'
@@ -671,12 +677,12 @@ let resolve_reference_dot_sg env ~parent_path ~parent_ref ~parent_sg name =
   | `FModule (name, m) ->
       resolved3
         (M.of_component env m
-           (`Module (parent_path, name))
+           (Cpath.Mk.Module.module_ parent_path name)
            (`Module (parent_ref, name)))
   | `FModuleType (name, mt) ->
       resolved3
         (MT.of_component env mt
-           (`ModuleType (parent_path, name))
+           (Cpath.Mk.ModuleType.module_type parent_path name)
            (`ModuleType (parent_ref, name)))
   | `FType (name, t) -> DT.of_component env t ~parent_ref name >>= resolved2
   | `FClass (name, c) -> CL.of_component env c ~parent_ref name >>= resolved2
