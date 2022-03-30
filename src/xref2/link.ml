@@ -54,7 +54,9 @@ let check_ambiguous_label ~loc env (attrs, (`Label (_, label_name) as id), _) =
 
 exception Loop
 
-let rec is_forward : Paths.Path.Module.t -> bool = function
+let rec is_forward : Paths.Path.Module.t -> bool =
+ fun x ->
+  match x with
   | `Resolved _ -> false
   | `Root _ -> false
   | `Forward _ -> true
@@ -98,15 +100,15 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(type_path (empty ()) p) in
-    match cp with
+    match cp.v with
     | `Resolved p ->
         let result = Tools.reresolve_type env p in
-        `Resolved Lang_of.(Path.resolved_type (empty ()) result)
+        Lang_of.(Path.type_ (empty ()) (Cpath.Mk.Type.resolved result))
     | _ -> (
         match Tools.resolve_type_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_type env p' in
-            `Resolved Lang_of.(Path.resolved_type (empty ()) result)
+            Lang_of.(Path.type_ (empty ()) (Cpath.Mk.Type.resolved result))
         | Error e ->
             Errors.report ~what:(`Type_path cp) ~tools_error:e `Lookup;
             p)
@@ -117,15 +119,17 @@ let class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(class_type_path (empty ()) p) in
-    match cp with
+    match cp.v with
     | `Resolved p ->
         let result = Tools.reresolve_class_type env p in
-        `Resolved Lang_of.(Path.resolved_class_type (empty ()) result)
+        Lang_of.(
+          Path.class_type (empty ()) (Cpath.Mk.ClassType.resolved result))
     | _ -> (
         match Tools.resolve_class_type_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_class_type env p' in
-            `Resolved Lang_of.(Path.resolved_class_type (empty ()) result)
+            Lang_of.(
+              Path.class_type (empty ()) (Cpath.Mk.ClassType.resolved result))
         | Error e ->
             Errors.report ~what:(`Class_type_path cp) ~tools_error:e `Lookup;
             p)
@@ -136,15 +140,17 @@ and module_type_path :
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(module_type_path (empty ()) p) in
-    match cp with
+    match cp.v with
     | `Resolved p ->
         let result = Tools.reresolve_module_type env p in
-        `Resolved Lang_of.(Path.resolved_module_type (empty ()) result)
+        Lang_of.(
+          Path.module_type (empty ()) (Cpath.Mk.ModuleType.resolved result))
     | _ -> (
         match Tools.resolve_module_type_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_module_type env p' in
-            `Resolved Lang_of.(Path.resolved_module_type (empty ()) result)
+            Lang_of.(
+              Path.module_type (empty ()) (Cpath.Mk.ModuleType.resolved result))
         | Error e ->
             Errors.report ~what:(`Module_type_path cp) ~tools_error:e `Resolve;
             p)
@@ -154,15 +160,15 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(module_path (empty ()) p) in
-    match cp with
+    match cp.v with
     | `Resolved p ->
         let after = Tools.reresolve_module env p in
-        `Resolved Lang_of.(Path.resolved_module (empty ()) after)
+        Lang_of.(Path.module_ (empty ()) (Cpath.Mk.Module.resolved after))
     | _ -> (
         match Tools.resolve_module_path env cp with
         | Ok p' ->
             let result = Tools.reresolve_module env p' in
-            `Resolved Lang_of.(Path.resolved_module (empty ()) result)
+            Lang_of.(Path.module_ (empty ()) (Cpath.Mk.Module.resolved result))
         | Error _ when is_forward p -> p
         | Error e ->
             Errors.report ~what:(`Module_path cp) ~tools_error:e `Resolve;
@@ -428,9 +434,7 @@ and module_ : Env.t -> Module.t -> Module.t =
     let type_ =
       match type_ with
       | Alias (`Resolved p, _) ->
-          let hidden_alias =
-            Paths.Path.is_hidden (`Resolved (p :> Paths.Path.Resolved.t))
-          in
+          let hidden_alias = Paths.Path.Resolved.Module.is_hidden p in
           let self_canonical =
             let i = Paths.Path.Resolved.Module.identifier p in
             i = (m.id :> Paths.Identifier.Path.Module.t)
@@ -439,7 +443,8 @@ and module_ : Env.t -> Module.t -> Module.t =
           if expansion_needed then
             let cp = Component.Of_Lang.(resolved_module_path (empty ()) p) in
             match
-              Expand_tools.expansion_of_module_alias env m.id (`Resolved cp)
+              Expand_tools.expansion_of_module_alias env m.id
+                (Cpath.Mk.Module.resolved cp)
             with
             | Ok (_, _, e) ->
                 let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
@@ -675,9 +680,7 @@ and module_type_expr :
     | Some e, _ ->
         Some (simple_expansion env (id :> Paths.Identifier.Signature.t) e)
     | None, Some (`Resolved p_path) ->
-        let hidden_alias =
-          Paths.Path.is_hidden (`Resolved (p_path :> Paths.Path.Resolved.t))
-        in
+        let hidden_alias = Paths.Path.Resolved.ModuleType.is_hidden p_path in
         let self_canonical =
           let i = Paths.Path.Resolved.ModuleType.identifier p_path in
           (i :> Id.Signature.t) = id
@@ -689,7 +692,11 @@ and module_type_expr :
           in
           match
             Expand_tools.expansion_of_module_type_expr env id
-              (Path { p_path = `Resolved cp; p_expansion = None })
+              (Path
+                 {
+                   p_path = Cpath.Mk.ModuleType.resolved cp;
+                   p_expansion = None;
+                 })
           with
           | Ok (_, _, e) ->
               let le = Lang_of.(simple_expansion (empty ()) id e) in
