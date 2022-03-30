@@ -111,7 +111,7 @@ module Make (Syntax : SYNTAX) = struct
 
     let rec from_path : Path.t -> text =
      fun path ->
-      match path with
+      match path.v with
       | `Identifier (id, _) ->
           unresolved [ inline @@ Text (Identifier.name id) ]
       | `Root root -> unresolved [ inline @@ Text root ]
@@ -133,7 +133,7 @@ module Make (Syntax : SYNTAX) = struct
              the parent page, and link instead to the anchor representing
              the declaration of the opaque module(_type) *)
           let stop_before =
-            match rp with
+            match rp.v with
             | `OpaqueModule _ | `OpaqueModuleType _ -> true
             | _ -> false
           in

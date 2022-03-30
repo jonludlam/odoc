@@ -417,7 +417,7 @@ let env_of_items parent items env =
         then `Module(parent, ModuleName.internal_of_string name), t :: env.hidden
         else `Module(parent, ModuleName.make_std name), env.hidden
       in
-      let path = `Identifier(identifier, is_hidden) in
+      let path = Odoc_model.Paths.Path.Module.Mk.identifier (identifier, is_hidden) in
       let modules = Ident.add t identifier env.modules in
       let module_paths = Ident.add t path env.module_paths in
       inner rest { env with modules; module_paths; hidden }
@@ -469,7 +469,7 @@ let handle_signature_type_items : Paths.Identifier.Signature.t -> Compat.signatu
 
 let add_parameter parent id name env =
   let hidden = ParameterName.is_hidden name in
-  let path = `Identifier (`Parameter(parent, name), hidden) in
+  let path = Paths.Path.Module.Mk.identifier (`Parameter(parent, name), hidden) in
   let module_paths = Ident.add id path env.module_paths in
   { env with module_paths }
 
@@ -521,27 +521,28 @@ let is_shadowed
     List.mem id env.hidden
 module Path = struct
 
+  module P = Paths.Path
   let read_module_ident env id =
-    if Ident.persistent id then `Root (Ident.name id)
+    if Ident.persistent id then P.Module.Mk.root (Ident.name id)
     else
       try find_module env id
       with Not_found -> assert false
 
   let read_module_type_ident env id =
     try
-      `Identifier (find_module_type env id, false)
+      P.ModuleType.Mk.identifier ((find_module_type env id :> Id.Path.ModuleType.t), false)
     with Not_found -> assert false
 
   let read_type_ident env id =
     try
-      `Identifier (find_type env id, false)
+      P.Type.Mk.identifier ((find_type env id :> Id.Path.Type.t), false)
     with Not_found -> assert false
 
   let read_class_type_ident env id : Paths.Path.ClassType.t =
     try
-      `Identifier (find_class_type env id, false)
+      P.ClassType.Mk.identifier ((find_class_type env id :> Id.Path.ClassType.t), false)
     with Not_found ->
-      `Dot(`Root "*", (Ident.name id))
+      P.ClassType.Mk.dot (P.Module.Mk.root "*", (Ident.name id))
       (* TODO remove this hack once the fix for PR#6650
          is in the OCaml release *)
 
@@ -566,36 +567,36 @@ module Path = struct
   let rec read_module : t -> Path.t -> Paths.Path.Module.t = fun env -> function
     | Path.Pident id -> read_module_ident env id
 #if OCAML_VERSION >= (4,8,0)
-    | Path.Pdot(p, s) -> `Dot(read_module env p, s)
+    | Path.Pdot(p, s) -> Odoc_model.Paths.Path.Module.Mk.dot (read_module env p, s)
 #else
-    | Path.Pdot(p, s, _) -> `Dot(read_module env p, s)
+    | Path.Pdot(p, s, _) -> Odoc_model.Paths.Path.Module.Mk.dot (read_module env p, s)
 #endif
-    | Path.Papply(p, arg) -> `Apply(read_module env p, read_module env arg)
+    | Path.Papply(p, arg) -> Odoc_model.Paths.Path.Module.Mk.apply (read_module env p, read_module env arg)
 
   let read_module_type env = function
     | Path.Pident id -> read_module_type_ident env id
 #if OCAML_VERSION >= (4,8,0)
-    | Path.Pdot(p, s) -> `Dot(read_module env p, s)
+    | Path.Pdot(p, s) -> P.ModuleType.Mk.dot (read_module env p, s)
 #else
-    | Path.Pdot(p, s, _) -> `Dot(read_module env p, s)
+    | Path.Pdot(p, s, _) -> P.ModuleType.Mk.dot (read_module env p, s)
 #endif
     | Path.Papply(_, _)-> assert false
 
   let read_class_type env = function
     | Path.Pident id -> read_class_type_ident env id
 #if OCAML_VERSION >= (4,8,0)
-    | Path.Pdot(p, s) -> `Dot(read_module env p, strip_hash s)
+    | Path.Pdot(p, s) -> P.ClassType.Mk.dot (read_module env p, strip_hash s)
 #else
-    | Path.Pdot(p, s, _) -> `Dot(read_module env p, strip_hash s)
+    | Path.Pdot(p, s, _) -> P.ClassType.Mk.dot (read_module env p, strip_hash s)
 #endif
     | Path.Papply(_, _)-> assert false
 
   let read_type env = function
     | Path.Pident id -> read_type_ident env id
 #if OCAML_VERSION >= (4,8,0)
-    | Path.Pdot(p, s) -> `Dot(read_module env p, strip_hash s)
+    | Path.Pdot(p, s) -> P.Type.Mk.dot (read_module env p, strip_hash s)
 #else
-    | Path.Pdot(p, s, _) -> `Dot(read_module env p, strip_hash s)
+    | Path.Pdot(p, s, _) -> P.Type.Mk.dot (read_module env p, strip_hash s)
 #endif
     | Path.Papply(_, _)-> assert false
 

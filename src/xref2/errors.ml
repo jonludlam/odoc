@@ -217,7 +217,9 @@ let is_unexpanded_module_type_of =
 
 type kind = [ `OpaqueModule | `Root of string ]
 
-let rec kind_of_module_cpath = function
+let rec kind_of_module_cpath : Cpath.module_ -> kind option =
+ fun x ->
+  match x.v with
   | `Root name -> Some (`Root name)
   | `Substituted p' | `Dot (p', _) -> kind_of_module_cpath p'
   | `Apply (a, b) -> (
@@ -226,7 +228,9 @@ let rec kind_of_module_cpath = function
       | None -> kind_of_module_cpath b)
   | _ -> None
 
-let rec kind_of_module_type_cpath = function
+let rec kind_of_module_type_cpath : Cpath.module_type -> kind option =
+ fun x ->
+  match x.v with
   | `Substituted p' -> kind_of_module_type_cpath p'
   | `Dot (p', _) -> kind_of_module_cpath p'
   | _ -> None

@@ -158,47 +158,60 @@ module Identifier = struct
   type reference_page = page
 end
 
+(* For hash-consing *)
+type 'a hashed = 'a Hc.hashed = { v : 'a; key : int * string }
+
 module rec Path : sig
-  type module_ =
+  type module_unhashed =
     [ `Resolved of Resolved_path.module_
     | `Identifier of Identifier.path_module * bool
     | `Root of string
     | `Forward of string
     | `Dot of module_ * string
     | `Apply of module_ * module_ ]
+
+  and module_ = module_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.Module.t *)
 
-  type module_type =
+  type module_type_unhashed =
     [ `Resolved of Resolved_path.module_type
     | `Identifier of Identifier.path_module_type * bool
     | `Dot of module_ * string ]
+
+  and module_type = module_type_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.ModuleType.t *)
 
-  type type_ =
+  type type_unhashed =
     [ `Resolved of Resolved_path.type_
     | `Identifier of Identifier.path_type * bool
     | `Dot of module_ * string ]
+
+  and type_ = type_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.Type.t *)
 
-  type class_type =
+  type class_type_unhashed =
     [ `Resolved of Resolved_path.class_type
     | `Identifier of Identifier.path_class_type * bool
     | `Dot of module_ * string ]
+
+  and class_type = class_type_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.ClassType.t *)
 
-  type any =
+  type any_unhashed =
     [ `Resolved of Resolved_path.any
     | `Identifier of Identifier.path_any * bool
     | `Root of string
     | `Forward of string
     | `Dot of module_ * string
     | `Apply of module_ * module_ ]
+
+  and any = any_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.t *)
 end =
   Path
 
 and Resolved_path : sig
-  type module_ =
+  type module_unhashed =
     [ `Identifier of Identifier.path_module
     | `Subst of module_type * module_
     | `Hidden of module_
@@ -210,7 +223,7 @@ and Resolved_path : sig
     | `OpaqueModule of module_ ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Module.t *)
 
-  and module_type =
+  and module_type_unhashed =
     [ `Identifier of Identifier.path_module_type
     | `SubstT of module_type * module_type
     | `CanonicalModuleType of module_type * Path.module_type
@@ -219,7 +232,11 @@ and Resolved_path : sig
     | `OpaqueModuleType of module_type ]
   (** @canonical Odoc_model.Paths.Path.Resolved.ModuleType.t *)
 
-  type type_ =
+  and module_ = module_unhashed hashed
+
+  and module_type = module_type_unhashed hashed
+
+  type type_unhashed =
     [ `Identifier of Identifier.path_type
     | `CanonicalType of type_ * Path.type_
     | `Type of module_ * TypeName.t
@@ -227,12 +244,16 @@ and Resolved_path : sig
     | `ClassType of module_ * ClassTypeName.t ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Type.t *)
 
-  type class_type =
+  and type_ = type_unhashed hashed
+
+  type class_type_unhashed =
     [ `Identifier of Identifier.path_class_type
     | `Class of module_ * ClassName.t
     | `ClassType of module_ * ClassTypeName.t ]
 
-  type any =
+  and class_type = class_type_unhashed hashed
+
+  type any_unhashed =
     [ `Identifier of Identifier.any
     | `Subst of module_type * module_
     | `Hidden of module_
@@ -253,6 +274,8 @@ and Resolved_path : sig
     | `ClassType of module_ * ClassTypeName.t
     | `Class of module_ * ClassName.t
     | `ClassType of module_ * ClassTypeName.t ]
+
+  and any = any_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.Resolved.t *)
 end =
   Resolved_path

@@ -72,72 +72,90 @@ polymorphic variants rather than Constrs
 
 Canonical paths should be as short as possible. As such, the following ought to be just an Identifier:
 
-  $ odoc_print foo.odocl -r Type.Path.u | jq '.. | .["equation"]? | select(.) | .manifest.Some.Constr[0]["`Resolved"]["`CanonicalType"][1]'
+  $ odoc_print foo.odocl -r Type.Path.u | jq '.. | .["equation"]? | select(.) | .manifest.Some.Constr[0].v["`Resolved"].v["`CanonicalType"][1].v'
   {
     "`Resolved": {
-      "`Identifier": {
-        "`Type": [
-          {
-            "`Module": [
-              {
-                "`Module": [
-                  {
-                    "`Root": [
-                      {
-                        "Some": {
-                          "`Page": [
-                            "None",
-                            "x"
-                          ]
-                        }
-                      },
-                      "Foo"
-                    ]
-                  },
-                  "Type"
-                ]
-              },
-              "Path"
-            ]
-          },
-          "t"
-        ]
-      }
+      "v": {
+        "`Identifier": {
+          "`Type": [
+            {
+              "`Module": [
+                {
+                  "`Module": [
+                    {
+                      "`Root": [
+                        {
+                          "Some": {
+                            "`Page": [
+                              "None",
+                              "x"
+                            ]
+                          }
+                        },
+                        "Foo"
+                      ]
+                    },
+                    "Type"
+                  ]
+                },
+                "Path"
+              ]
+            },
+            "t"
+          ]
+        }
+      },
+      "key": [
+        "130",
+        "foo.odoc"
+      ]
     }
   }
 
 And this one should be `` `Type(`Identifier,t) ``
 
-  $ odoc_print foo.odocl -r Type.t | jq '.. | .["equation"]? | select(.) | .manifest.Some.Constr[0]["`Resolved"]["`CanonicalType"][1]'
+  $ odoc_print foo.odocl -r Type.t | jq '.. | .["equation"]? | select(.) | .manifest.Some.Constr[0].v["`Resolved"].v["`CanonicalType"][1].v'
   {
     "`Resolved": {
-      "`Type": [
-        {
-          "`Identifier": {
-            "`Module": [
-              {
+      "v": {
+        "`Type": [
+          {
+            "v": {
+              "`Identifier": {
                 "`Module": [
                   {
-                    "`Root": [
+                    "`Module": [
                       {
-                        "Some": {
-                          "`Page": [
-                            "None",
-                            "x"
-                          ]
-                        }
+                        "`Root": [
+                          {
+                            "Some": {
+                              "`Page": [
+                                "None",
+                                "x"
+                              ]
+                            }
+                          },
+                          "Foo"
+                        ]
                       },
-                      "Foo"
+                      "Type"
                     ]
                   },
-                  "Type"
+                  "Path"
                 ]
-              },
-              "Path"
+              }
+            },
+            "key": [
+              "198",
+              "foo.odoc"
             ]
-          }
-        },
-        "t"
+          },
+          "t"
+        ]
+      },
+      "key": [
+        "199",
+        "foo.odoc"
       ]
     }
   }

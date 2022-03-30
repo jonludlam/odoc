@@ -698,7 +698,8 @@ let read_type_declaration env parent id decl =
   let doc, canonical =
     Doc_attr.attached Odoc_model.Semantics.Expect_canonical container decl.type_attributes
   in
-  let canonical = (canonical :> Path.Type.t option) in
+  let conv_canonical = function | `Dot (x,y) -> Paths.Path.Type.Mk.dot (x, y) in
+  let canonical = match canonical with | Some c -> Some (conv_canonical c) | None -> None in
   let params = mark_type_declaration decl in
   let manifest = opt_map (read_type_expr env) decl.type_manifest in
   let constraints = read_type_constraints env params in
@@ -937,7 +938,8 @@ and read_module_type_declaration env parent id (mtd : Odoc_model.Compat.modtype_
   let id = Env.find_module_type env id in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc, canonical = Doc_attr.attached Odoc_model.Semantics.Expect_canonical container mtd.mtd_attributes in
-  let canonical = (canonical :> Path.ModuleType.t option) in
+  let conv_canonical = function | `Dot (x,y) -> Paths.Path.ModuleType.Mk.dot (x, y) in
+  let canonical = match canonical with | Some c -> Some (conv_canonical c) | None -> None in
   let expr = opt_map (read_module_type env (id :> Identifier.Signature.t)) mtd.mtd_type in
   {id; doc; canonical; expr }
 
@@ -946,7 +948,8 @@ and read_module_declaration env parent ident (md : Odoc_model.Compat.module_decl
   let id = (Env.find_module_identifier env ident :> Identifier.Module.t) in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc, canonical = Doc_attr.attached Odoc_model.Semantics.Expect_canonical container md.md_attributes in
-  let canonical = (canonical :> Path.Module.t option) in
+  let conv_canonical = function | `Dot (x,y) -> Paths.Path.Module.Mk.dot (x, y) in
+  let canonical = match canonical with | Some c -> Some (conv_canonical c) | None -> None in
   let type_ =
     match md.md_type with
     | Mty_alias p -> Alias (Env.Path.read_module env p, None)

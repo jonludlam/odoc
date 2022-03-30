@@ -430,71 +430,159 @@ module rec Path : sig
     module Module : sig
       type t = Paths_types.Resolved_path.module_
 
-      val of_ident : Identifier.Path.Module.t -> t
-
       val is_hidden : t -> bool
 
       val identifier : t -> Identifier.Path.Module.t
 
       val canonical_ident : t -> Identifier.Path.Module.t option
+
+      module Mk : sig
+        val identifier : Identifier.Path.Module.t -> t
+
+        val subst : Paths_types.Resolved_path.module_type * t -> t
+
+        val hidden : t -> t
+
+        val module_ : t * Names.ModuleName.t -> t
+
+        val canonical : t * Paths_types.Path.module_ -> t
+
+        val apply : t * t -> t
+
+        val aliasrs : Paths_types.Path.module_ * t -> t
+
+        val aliasrd : t * Paths_types.Path.module_ -> t
+
+        val opaquemodule : t -> t
+      end
     end
 
     module ModuleType : sig
       type t = Paths_types.Resolved_path.module_type
-
-      val of_ident : Identifier.Path.ModuleType.t -> t
 
       val is_hidden : t -> bool
 
       val identifier : t -> Identifier.Path.ModuleType.t
 
       val canonical_ident : t -> Identifier.Path.ModuleType.t option
+
+      module Mk : sig
+        val identifier : Identifier.Path.ModuleType.t -> t
+
+        val module_type : Module.t * Names.ModuleTypeName.t -> t
+
+        val substt : t * t -> t
+
+        val aliasmoduletype : t * t -> t
+
+        val canonicalmoduletype : t * Paths_types.Path.module_type -> t
+
+        val opaquemoduletype : t -> t
+      end
     end
 
     module Type : sig
       type t = Paths_types.Resolved_path.type_
-
-      val of_ident : Identifier.Path.Type.t -> t
 
       val is_hidden : t -> bool
 
       val identifier : t -> Identifier.Path.Type.t
 
       val canonical_ident : t -> Identifier.Path.Type.t option
+
+      module Mk : sig
+        val identifier : Identifier.Path.Type.t -> t
+
+        val canonicaltype : t * Paths_types.Path.type_ -> t
+
+        val type_ : Module.t * Names.TypeName.t -> t
+
+        val class_ : Module.t * Names.ClassName.t -> t
+
+        val class_type : Module.t * Names.ClassTypeName.t -> t
+      end
     end
 
     module ClassType : sig
       type t = Paths_types.Resolved_path.class_type
 
-      val of_ident : Identifier.Path.ClassType.t -> t
-
       val is_hidden : t -> bool
 
       val identifier : t -> Identifier.Path.ClassType.t
+
+      module Mk : sig
+        val identifier : Identifier.Path.ClassType.t -> t
+
+        val class_ : Module.t * Names.ClassName.t -> t
+
+        val class_type : Module.t * Names.ClassTypeName.t -> t
+      end
     end
 
     type t = Paths_types.Resolved_path.any
+
+    type t_unhashed = Paths_types.Resolved_path.any_unhashed
 
     val identifier : t -> Identifier.t
   end
 
   module Module : sig
     type t = Paths_types.Path.module_
+
+    module Mk : sig
+      val resolved : Resolved.Module.t -> t
+
+      val identifier : Identifier.Path.Module.t * bool -> t
+
+      val forward : string -> t
+
+      val dot : t * string -> t
+
+      val root : string -> t
+
+      val apply : t * t -> t
+    end
   end
 
   module ModuleType : sig
     type t = Paths_types.Path.module_type
+
+    module Mk : sig
+      val resolved : Resolved.ModuleType.t -> t
+
+      val identifier : Identifier.Path.ModuleType.t * bool -> t
+
+      val dot : Module.t * string -> t
+    end
   end
 
   module Type : sig
     type t = Paths_types.Path.type_
+
+    module Mk : sig
+      val resolved : Resolved.Type.t -> t
+
+      val identifier : Identifier.Path.Type.t * bool -> t
+
+      val dot : Module.t * string -> t
+    end
   end
 
   module ClassType : sig
     type t = Paths_types.Path.class_type
+
+    module Mk : sig
+      val resolved : Resolved.ClassType.t -> t
+
+      val identifier : Identifier.Path.ClassType.t * bool -> t
+
+      val dot : Module.t * string -> t
+    end
   end
 
   type t = Paths_types.Path.any
+
+  type t_unhashed = Paths_types.Path.any_unhashed
 
   val is_hidden : t -> bool
 end

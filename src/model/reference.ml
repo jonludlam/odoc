@@ -438,10 +438,10 @@ let parse whole_reference_location s :
 
 type path = [ `Root of string | `Dot of Paths.Path.Module.t * string ]
 
+type path_simple = [ `Root of string | `Dot of path_simple * string ]
+
 let read_path_longident location s =
-  let open Paths.Path in
-  let rec loop : string -> int -> path option =
-   fun s pos ->
+  let rec loop s pos =
     try
       let idx = String.rindex_from s pos '.' in
       let name = String.sub s (idx + 1) (pos - idx) in
@@ -449,15 +449,21 @@ let read_path_longident location s =
       else
         match loop s (idx - 1) with
         | None -> None
-        | Some parent -> Some (`Dot ((parent :> Module.t), name))
+        | Some parent -> Some (`Dot (parent, name))
     with Not_found ->
       let name = String.sub s 0 (pos + 1) in
       if String.length name = 0 then None else Some (`Root name)
   in
   Error.catch_warnings (fun () ->
       match loop s (String.length s - 1) with
-      | Some r -> Result.Ok (r :> path)
-      | None -> Result.Error (expected_err "a valid path" location))
+      | Some (`Dot (p, r)) ->
+          let rec conv : path_simple -> Paths.Path.Module.t = function
+            | `Root x -> Paths.Path.Module.Mk.root x
+            | `Dot (p, y) -> Paths.Path.Module.Mk.dot (conv p, y)
+          in
+          Result.Ok (`Dot (conv p, r))
+      | Some (`Root r) -> Result.Ok (`Root r)
+      | _ -> Result.Error (expected_err "a valid path" location))
 
 let read_mod_longident location lid =
   Error.catch_warnings (fun () ->

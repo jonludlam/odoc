@@ -677,11 +677,10 @@ let add_functor_args' :
       in
       let doc = m.Component.Module.doc in
       let m = Component.Delayed.put_val (Subst.module_ subst m) in
+      let rp = Cpath.Mk.Resolved.Module.identifier identifier in
+      let p = Cpath.Mk.Module.resolved rp in
       let env' = add_module identifier m doc env in
-      ( env',
-        Subst.add_module ident
-          (`Resolved (`Identifier identifier))
-          (`Identifier identifier) subst )
+      (env', Subst.add_module ident p rp subst)
     in
     let env', _subst =
       List.fold_left fold_fn (env, Subst.identity) (find_args id expr)
