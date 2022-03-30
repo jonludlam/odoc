@@ -20,11 +20,17 @@ resolve correctly. All of the 'Class' json objects should contain
     "type_": {
       "Class": [
         {
-          "`Resolved": {
-            "`Identifier": {
-              "`ClassType": [ { "`Root": [ "None", "F" ] }, "u" ]
+          "v": {
+            "`Resolved": {
+              "v": {
+                "`Identifier": {
+                  "`ClassType": [ { "`Root": [ "None", "F" ] }, "u" ]
+                }
+              },
+              "key": [ "41", "f.cmti" ]
             }
-          }
+          },
+          "key": [ "42", "f.cmti" ]
         },
         []
       ]
@@ -38,12 +44,21 @@ resolve correctly. All of the 'Class' json objects should contain
     "type_": {
       "Class": [
         {
-          "`Resolved": {
-            "`ClassType": [
-              { "`Identifier": { "`Root": [ "None", "B" ] } },
-              "u"
-            ]
-          }
+          "v": {
+            "`Resolved": {
+              "v": {
+                "`ClassType": [
+                  {
+                    "v": { "`Identifier": { "`Root": [ "None", "B" ] } },
+                    "key": [ "53", "e.cmti" ]
+                  },
+                  "u"
+                ]
+              },
+              "key": [ "56", "e.cmti" ]
+            }
+          },
+          "key": [ "57", "e.cmti" ]
         },
         []
       ]
@@ -54,19 +69,37 @@ resolve correctly. All of the 'Class' json objects should contain
   {
     "Class": [
       {
-        "`Resolved": {
-          "`ClassType": [
-            {
-              "`Identifier": {
-                "`Root": [
-                  "None",
-                  "B"
-                ]
-              }
+        "v": {
+          "`Resolved": {
+            "v": {
+              "`ClassType": [
+                {
+                  "v": {
+                    "`Identifier": {
+                      "`Root": [
+                        "None",
+                        "B"
+                      ]
+                    }
+                  },
+                  "key": [
+                    "53",
+                    "e.cmti"
+                  ]
+                },
+                "u"
+              ]
             },
-            "u"
-          ]
-        }
+            "key": [
+              "56",
+              "e.cmti"
+            ]
+          }
+        },
+        "key": [
+          "57",
+          "e.cmti"
+        ]
       },
       []
     ]
@@ -82,19 +115,36 @@ resolve correctly. All of the 'Class' json objects should contain
         {
           "Class": [
             {
-              "`Resolved": {
-                "`ClassType": [
-                  { "`Identifier": { "`Root": [ "None", "B" ] } },
-                  "u"
-                ]
-              }
+              "v": {
+                "`Resolved": {
+                  "v": {
+                    "`ClassType": [
+                      {
+                        "v": { "`Identifier": { "`Root": [ "None", "B" ] } },
+                        "key": [ "55", "c.cmt" ]
+                      },
+                      "u"
+                    ]
+                  },
+                  "key": [ "59", "c.cmt" ]
+                }
+              },
+              "key": [ "60", "c.cmt" ]
             },
             []
           ]
         },
         {
           "Constr": [
-            { "`Resolved": { "`Identifier": { "`CoreType": "unit" } } },
+            {
+              "v": {
+                "`Resolved": {
+                  "v": { "`Identifier": { "`CoreType": "unit" } },
+                  "key": [ "13", "predefined" ]
+                }
+              },
+              "key": [ "14", "predefined" ]
+            },
             []
           ]
         }

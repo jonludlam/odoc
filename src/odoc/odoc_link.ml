@@ -29,6 +29,7 @@ let handle_warnings ~input_warnings ~warnings_options ww =
     Also return the resulting tree. *)
 let from_odoc ~resolver ~warnings_options input output =
   let filename = Fs.File.to_string input in
+  Odoc_model.Hc.set_name filename;
   Odoc_file.load input >>= fun unit ->
   let input_warnings = unit.Odoc_file.warnings in
   match unit.content with

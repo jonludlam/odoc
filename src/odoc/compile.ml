@@ -78,6 +78,7 @@ let resolve_and_substitute ~resolver
     (parent : Odoc_model.Paths.Identifier.ContainerPage.t option) input_file
     read_file =
   let filename = Fs.File.to_string input_file in
+  Odoc_model.Hc.set_name filename;
   let unit =
     read_file ~parent ~filename |> Odoc_model.Error.raise_errors_and_warnings
   in
@@ -143,6 +144,7 @@ let mld ~parent_spec ~output ~children ~warnings_options input =
     String.sub page_dash_root (String.length "page-")
       (String.length page_dash_root - String.length "page-")
   in
+  Odoc_model.Hc.set_name root_name;
   let input_s = Fs.File.to_string input in
   let digest = Digest.file input_s in
   let page_name = PageName.make_std root_name in

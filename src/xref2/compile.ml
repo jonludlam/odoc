@@ -13,44 +13,47 @@ end
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
-  match p with
+  match p.v with
   | `Resolved _ -> p
   | _ -> (
       let cp = Component.Of_Lang.(type_path (empty ()) p) in
       match Tools.resolve_type_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_type (empty ()) p')
+      | Ok p' -> Lang_of.(Path.type_ (empty ()) (Cpath.Mk.Type.resolved p'))
       | Error _ -> p)
 
 and module_type_path :
     Env.t -> Paths.Path.ModuleType.t -> Paths.Path.ModuleType.t =
  fun env p ->
-  match p with
+  match p.v with
   | `Resolved _ -> p
   | _ -> (
       let cp = Component.Of_Lang.(module_type_path (empty ()) p) in
       match Tools.resolve_module_type_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_module_type (empty ()) p')
+      | Ok p' ->
+          Lang_of.(
+            Path.module_type (empty ()) (Cpath.Mk.ModuleType.resolved p'))
       | Error _ -> p)
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
  fun env p ->
-  match p with
+  match p.v with
   | `Resolved _ -> p
   | _ -> (
       let cp = Component.Of_Lang.(module_path (empty ()) p) in
       match Tools.resolve_module_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_module (empty ()) p')
+      | Ok p' -> Lang_of.(Path.module_ (empty ()) (Cpath.Mk.Module.resolved p'))
       | Error _ -> p)
 
 and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
     =
  fun env p ->
-  match p with
+  match p.v with
   | `Resolved _ -> p
   | _ -> (
       let cp = Component.Of_Lang.(class_type_path (empty ()) p) in
       match Tools.resolve_class_type_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_class_type (empty ()) p')
+      | Ok p' ->
+          Lang_of.(Path.class_type (empty ()) (Cpath.Mk.ClassType.resolved p'))
       | Error _ -> p)
 
 let rec unit env t =
@@ -534,11 +537,11 @@ and module_type_map_subs env id cexpr subs =
    fun expr ->
     match expr with
     | Component.ModuleType.U.Signature _ -> None
-    | Path (`Resolved p) -> Some (`ModuleType p)
+    | Path { v = `Resolved p; _ } -> Some (`ModuleType p)
     | Path _ -> None
     | With (_, e) -> find_parent e
-    | TypeOf { t_desc = ModPath (`Resolved p); _ }
-    | TypeOf { t_desc = StructInclude (`Resolved p); _ } ->
+    | TypeOf { t_desc = ModPath { v = `Resolved p; _ }; _ }
+    | TypeOf { t_desc = StructInclude { v = `Resolved p; _ }; _ } ->
         Some (`Module p)
     | TypeOf _ -> None
   in
@@ -766,7 +769,7 @@ and type_expression : Env.t -> Id.Parent.t -> _ -> _ =
       match Tools.resolve_type env ~add_canonical:true cp with
       | Ok (cp, (`FType _ | `FClass _ | `FClassType _)) ->
           let p = Lang_of.(Path.resolved_type (empty ()) cp) in
-          Constr (`Resolved p, ts)
+          Constr (Odoc_model.Paths.Path.Type.Mk.resolved p, ts)
       | Ok (_cp, `FType_removed (_, x, _eq)) ->
           (* Substitute type variables ? *)
           Lang_of.(type_expr (empty ()) parent x)
@@ -780,7 +783,7 @@ and type_expression : Env.t -> Id.Parent.t -> _ -> _ =
       match Tools.resolve_class_type env cp with
       | Ok (cp, (`FClass _ | `FClassType _)) ->
           let p = Lang_of.(Path.resolved_class_type (empty ()) cp) in
-          Class (`Resolved p, ts')
+          Class (Odoc_model.Paths.Path.ClassType.Mk.resolved p, ts')
       | _ -> Class (path, ts'))
   | Poly (strs, t) -> Poly (strs, type_expression env parent t)
   | Package p -> Package (type_expression_package env parent p)

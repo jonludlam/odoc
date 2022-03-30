@@ -258,7 +258,7 @@ let read_type_declaration env parent decl =
   let id = Env.find_type_identifier env decl.typ_id in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc, canonical = Doc_attr.attached Odoc_model.Semantics.Expect_canonical container decl.typ_attributes in
-  let canonical = (canonical :> Path.Type.t option) in
+  let canonical = match canonical with | Some `Dot (x,y) -> Some (Paths.Path.Type.Mk.dot (x, y)) | None -> None in
   let equation = read_type_equation env container decl in
   let representation = read_type_kind env (id :> Identifier.DataType.t) decl.typ_kind in
     {id; doc; canonical; equation; representation}
@@ -592,7 +592,7 @@ and read_module_type_declaration env parent mtd =
         (Some expr, canonical)
     | None -> (None, canonical)
   in
-  let canonical = (canonical :> Path.ModuleType.t option) in
+  let canonical = match canonical with | Some `Dot (x,y) -> Some (Paths.Path.ModuleType.Mk.dot (x, y)) | None -> None in
   { id; doc; canonical; expr }
 
 and read_module_declaration env parent md =
@@ -619,7 +619,7 @@ and read_module_declaration env parent md =
         in
         (ModuleType expr, canonical)
   in
-  let canonical = (canonical :> Path.Module.t option) in
+  let canonical = match canonical with | Some `Dot (x,y) -> Some (Paths.Path.Module.Mk.dot (x, y)) | None -> None in
   let hidden =
 #if OCAML_VERSION >= (4,10,0)
     match canonical, md.md_id with
@@ -760,7 +760,7 @@ and read_include env parent incl =
     let fake_id = `ModuleType(parent, Odoc_model.Names.ModuleTypeName.internal_of_string "OdocIncludedModule") in
     [ModuleType ({ id=fake_id; canonical=None; doc=[];
     expr=Some (Signature {items; compiled=false; doc=[]})})
-    ; Include {parent; doc; decl=ModuleType (ModuleType.U.Path (`Identifier (fake_id, true))); expansion; status; strengthened=None; loc}]
+    ; Include {parent; doc; decl=ModuleType (ModuleType.U.Path (Paths.Path.ModuleType.Mk.identifier (fake_id, true))); expansion; status; strengthened=None; loc}]
 
 and read_open env parent o =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
@@ -805,4 +805,6 @@ let read_interface root name intf =
   let sg, canonical =
     read_signature Odoc_model.Semantics.Expect_canonical Env.empty id intf
   in
+  let canonical = match canonical with | Some `Dot (x,y) -> Some (Paths.Path.Module.Mk.dot (x, y)) | None -> None in
+
   (id, sg, (canonical :> Odoc_model.Paths.Path.Module.t option))

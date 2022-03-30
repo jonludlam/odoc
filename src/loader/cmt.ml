@@ -438,7 +438,7 @@ and read_module_binding env parent mb =
         in
         (ModuleType expr, canonical)
   in
-  let canonical = (canonical :> Path.Module.t option) in
+  let canonical = match canonical with | Some `Dot (x,y) -> Some (Odoc_model.Paths.Path.Module.Mk.dot (x, y)) | None -> None in
   let hidden =
 #if OCAML_VERSION >= (4,10,0)
     match canonical, mb.mb_id with
@@ -562,7 +562,7 @@ and read_include env parent incl =
     let fake_id = `Module(parent, Odoc_model.Names.ModuleName.internal_of_string "OdocIncludedModule") in
     [Module (Ordinary, { id=fake_id; hidden=true; canonical=None; doc=[];
     type_=ModuleType (Signature {items; compiled=false; doc=[]})})
-    ; Include {parent; doc; decl=Alias (`Identifier (fake_id, true)); expansion; status; strengthened=None; loc}]
+    ; Include {parent; doc; decl=Alias (Odoc_model.Paths.Path.Module.Mk.identifier (fake_id, true)); expansion; status; strengthened=None; loc}]
 
 and read_open env parent o =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
@@ -607,6 +607,8 @@ let read_implementation root name impl =
   let sg, canonical =
     read_structure Odoc_model.Semantics.Expect_canonical Env.empty id impl
   in
+  let canonical = match canonical with | Some `Dot (x,y) -> Some (Odoc_model.Paths.Path.Module.Mk.dot (x, y)) | None -> None in
+
   (id, sg, (canonical :> Odoc_model.Paths.Path.Module.t option))
 
 let _ = Cmti.read_module_expr := read_module_expr

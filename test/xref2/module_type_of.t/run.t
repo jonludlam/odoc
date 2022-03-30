@@ -118,31 +118,49 @@ But that T.Z.t _has_ been strengthened
     "Some": {
       "Constr": [
         {
-          "`Resolved": {
-            "`Type": [
-              {
-                "`Identifier": {
-                  "`Module": [
-                    {
-                      "`Root": [
-                        {
-                          "Some": {
-                            "`Page": [
-                              "None",
-                              "test"
+          "v": {
+            "`Resolved": {
+              "v": {
+                "`Type": [
+                  {
+                    "v": {
+                      "`Identifier": {
+                        "`Module": [
+                          {
+                            "`Root": [
+                              {
+                                "Some": {
+                                  "`Page": [
+                                    "None",
+                                    "test"
+                                  ]
+                                }
+                              },
+                              "M"
                             ]
-                          }
-                        },
-                        "M"
-                      ]
+                          },
+                          "X1"
+                        ]
+                      }
                     },
-                    "X1"
-                  ]
-                }
+                    "key": [
+                      "59",
+                      "m.odoc"
+                    ]
+                  },
+                  "t"
+                ]
               },
-              "t"
-            ]
-          }
+              "key": [
+                "60",
+                "m.odoc"
+              ]
+            }
+          },
+          "key": [
+            "61",
+            "m.odoc"
+          ]
         },
         []
       ]

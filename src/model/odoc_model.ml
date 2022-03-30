@@ -1,3 +1,4 @@
+module Hc = Hc
 module Lang = Lang
 module Comment = Comment
 module Paths = Paths

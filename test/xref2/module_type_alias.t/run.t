@@ -32,17 +32,23 @@ as they are both referencing items that won't be expanded.
                   "`Resolved": {
                     "`AliasModuleType": [
                       {
-                        "`Identifier": {
-                          "`ModuleType": [
-                            {
-                              "`Root": [
-                                "None",
-                                "Test"
-                              ]
-                            },
-                            "A"
-                          ]
-                        }
+                        "v": {
+                          "`Identifier": {
+                            "`ModuleType": [
+                              {
+                                "`Root": [
+                                  "None",
+                                  "Test"
+                                ]
+                              },
+                              "A"
+                            ]
+                          }
+                        },
+                        "key": [
+                          "47",
+                          "test.odoc"
+                        ]
                       },
                       {
                         "`Identifier": {
@@ -72,17 +78,23 @@ as they are both referencing items that won't be expanded.
                       {
                         "`AliasModuleType": [
                           {
-                            "`Identifier": {
-                              "`ModuleType": [
-                                {
-                                  "`Root": [
-                                    "None",
-                                    "Test"
-                                  ]
-                                },
-                                "A"
-                              ]
-                            }
+                            "v": {
+                              "`Identifier": {
+                                "`ModuleType": [
+                                  {
+                                    "`Root": [
+                                      "None",
+                                      "Test"
+                                    ]
+                                  },
+                                  "A"
+                                ]
+                              }
+                            },
+                            "key": [
+                              "47",
+                              "test.odoc"
+                            ]
                           },
                           {
                             "`Identifier": {

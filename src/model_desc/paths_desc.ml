@@ -44,7 +44,11 @@ module General_paths = struct
 
   type p = Paths.Path.t
 
+  type pu = Paths.Path.t_unhashed
+
   type rp = Paths.Path.Resolved.t
+
+  type rpu = Paths.Path.Resolved.t_unhashed
 
   type f = Paths.Fragment.t
 
@@ -171,7 +175,7 @@ module General_paths = struct
       | `TChildPage -> C0 "`TChildPage"
       | `TChildModule -> C0 "`TChildModule")
 
-  let rec path : p t =
+  let rec path_inner : pu t =
     Variant
       (function
       | `Resolved x -> C ("`Resolved", x, resolved_path)
@@ -183,7 +187,21 @@ module General_paths = struct
       | `Apply (x1, x2) ->
           C ("`Apply", ((x1 :> p), (x2 :> p)), Pair (path, path)))
 
+  and path : p t =
+    Record
+      [
+        F ("v", (fun t -> t.Odoc_model.Hc.v), path_inner);
+        F ("key", (fun t -> t.key), Pair (int, string));
+      ]
+
   and resolved_path : rp t =
+    Record
+      [
+        F ("v", (fun t -> t.Odoc_model.Hc.v), resolved_path_inner);
+        F ("key", (fun t -> t.key), Pair (int, string));
+      ]
+
+  and resolved_path_inner : rpu t =
     Variant
       (function
       | `Identifier x -> C ("`Identifier", x, identifier)
@@ -435,10 +453,10 @@ let modulename = Names.modulename
 let identifier : [< Paths.Identifier.t ] Type_desc.t =
   Indirect ((fun n -> (n :> Paths.Identifier.t)), General_paths.identifier)
 
-let resolved_path : [< Paths.Path.Resolved.t ] Type_desc.t =
+let resolved_path : Paths.Path.Resolved.t Type_desc.t =
   Indirect ((fun n -> (n :> General_paths.rp)), General_paths.resolved_path)
 
-let path : [< Paths.Path.t ] Type_desc.t =
+let path : [< Paths.Path.t_unhashed ] Hc.hashed Type_desc.t =
   Indirect ((fun n -> (n :> General_paths.p)), General_paths.path)
 
 let resolved_fragment =
