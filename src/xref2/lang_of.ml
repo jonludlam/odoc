@@ -68,6 +68,8 @@ let lookup_module map : Ident.path_module -> _ = function
 module Opt = Component.Opt
 
 module Path = struct
+  module R = Odoc_model.Paths.Path.Resolved
+
   let rec module_ map (p : Cpath.module_) : Odoc_model.Paths.Path.Module.t =
     match p with
     | `Substituted x -> module_ map x
@@ -140,25 +142,26 @@ module Path = struct
 
   and resolved_module map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
+    let open R.Module.Mk in
     let f () =
       match p with
       | `Local id ->
-          `Identifier
+          identifier
             (try lookup_module map id
              with Not_found ->
                failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
       | `Substituted x -> resolved_module map x
       | `GPath y -> y
       | `Subst (mty, m) ->
-          `Subst (resolved_module_type map mty, resolved_module map m)
-      | `Hidden h -> `Hidden (resolved_module map h)
-      | `Module (p, n) -> `Module (resolved_parent map p, n)
-      | `Canonical (r, m) -> `Canonical (resolved_module map r, m)
+          subst (resolved_module_type map mty) (resolved_module map m)
+      | `Hidden h -> hidden (resolved_module map h)
+      | `Module (p, n) -> module_ (resolved_parent map p) n
+      | `Canonical (r, m) -> canonical (resolved_module map r) m
       | `Apply (m1, m2) ->
-          `Apply (resolved_module map m1, resolved_module map m2)
+          apply (resolved_module map m1) (resolved_module map m2)
       | `Alias (m1, m2) ->
-          `Alias (resolved_module map m1, resolved_module map m2)
-      | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
+          alias (resolved_module map m1) (resolved_module map m2)
+      | `OpaqueModule m -> opaquemodule (resolved_module map m)
     in
     try
       let result = RM.find p map.memos.rmodpathmemo in
@@ -179,45 +182,49 @@ module Path = struct
 
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
+    let open R.ModuleType.Mk in
     match p with
     | `GPath y -> y
     | `Local id ->
-        `Identifier
+        identifier
           (try Component.ModuleTypeMap.find id map.module_type
            with Not_found ->
              failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
-    | `ModuleType (p, name) -> `ModuleType (resolved_parent map p, name)
+    | `ModuleType (p, name) -> module_type (resolved_parent map p) name
     | `Substituted s -> resolved_module_type map s
     | `SubstT (p1, p2) ->
-        `SubstT (resolved_module_type map p1, resolved_module_type map p2)
+        substt (resolved_module_type map p1) (resolved_module_type map p2)
     | `AliasModuleType (p1, p2) ->
-        `AliasModuleType
-          (resolved_module_type map p1, resolved_module_type map p2)
+        aliasmoduletype
+          (resolved_module_type map p1)
+          (resolved_module_type map p2)
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type map p1, p2)
-    | `OpaqueModuleType m -> `OpaqueModuleType (resolved_module_type map m)
+        canonicalmoduletype (resolved_module_type map p1) p2
+    | `OpaqueModuleType m -> opaquemoduletype (resolved_module_type map m)
 
   and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =
+    let open R.Type.Mk in
     match p with
     | `Identifier (#Odoc_model.Paths.Identifier.Path.Type.t as y) ->
-        `Identifier y
-    | `Local id -> `Identifier (Component.PathTypeMap.find id map.path_type)
-    | `CanonicalType (t1, t2) -> `CanonicalType (resolved_type map t1, t2)
-    | `Type (p, name) -> `Type (resolved_parent map p, name)
-    | `Class (p, name) -> `Class (resolved_parent map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
+        identifier y
+    | `Local id -> identifier (Component.PathTypeMap.find id map.path_type)
+    | `CanonicalType (t1, t2) -> canonicaltype (resolved_type map t1) t2
+    | `Type (p, name) -> type_ (resolved_parent map p) name
+    | `Class (p, name) -> class_ (resolved_parent map p) name
+    | `ClassType (p, name) -> class_type (resolved_parent map p) name
     | `Substituted s -> resolved_type map s
 
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
       Odoc_model.Paths.Path.Resolved.ClassType.t =
+    let open R.ClassType.Mk in
     match p with
     | `Identifier (#Odoc_model.Paths.Identifier.Path.ClassType.t as y) ->
-        `Identifier y
+        identifier y
     | `Local id ->
-        `Identifier (Component.PathClassTypeMap.find id map.path_class_type)
-    | `Class (p, name) -> `Class (resolved_parent map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
+        identifier (Component.PathClassTypeMap.find id map.path_class_type)
+    | `Class (p, name) -> class_ (resolved_parent map p) name
+    | `ClassType (p, name) -> class_type (resolved_parent map p) name
     | `Substituted s -> resolved_class_type map s
 
   let rec module_fragment :

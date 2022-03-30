@@ -31,19 +31,22 @@ as they are both referencing items that won't be expanded.
                 {
                   "`Resolved": {
                     "`AliasModuleType": [
-                      {
-                        "`Identifier": {
-                          "`ModuleType": [
-                            {
-                              "`Root": [
-                                "None",
-                                "Test"
-                              ]
-                            },
-                            "A"
-                          ]
+                      [
+                        "89229827",
+                        {
+                          "`Identifier": {
+                            "`ModuleType": [
+                              {
+                                "`Root": [
+                                  "None",
+                                  "Test"
+                                ]
+                              },
+                              "A"
+                            ]
+                          }
                         }
-                      },
+                      ],
                       {
                         "`Identifier": {
                           "`ModuleType": [
@@ -71,19 +74,22 @@ as they are both referencing items that won't be expanded.
                     "`Type": [
                       {
                         "`AliasModuleType": [
-                          {
-                            "`Identifier": {
-                              "`ModuleType": [
-                                {
-                                  "`Root": [
-                                    "None",
-                                    "Test"
-                                  ]
-                                },
-                                "A"
-                              ]
+                          [
+                            "89229827",
+                            {
+                              "`Identifier": {
+                                "`ModuleType": [
+                                  {
+                                    "`Root": [
+                                      "None",
+                                      "Test"
+                                    ]
+                                  },
+                                  "A"
+                                ]
+                              }
                             }
-                          },
+                          ],
                           {
                             "`Identifier": {
                               "`ModuleType": [

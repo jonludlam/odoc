@@ -1080,7 +1080,7 @@ module Fmt = struct
 
   and model_resolved_path ppf (p : Odoc_model.Paths.Path.Resolved.t) =
     let open Odoc_model.Paths.Path.Resolved in
-    match p with
+    match snd p with
     | `Identifier id ->
         Format.fprintf ppf "%a" model_identifier
           (id :> Odoc_model.Paths.Identifier.t)
@@ -1661,10 +1661,11 @@ module Of_Lang = struct
    fun ident_map p ->
     let f () =
       let recurse p = resolved_module_path ident_map p in
-      match p with
+      match snd p with
       | `Identifier i -> (
           match identifier find_any_module ident_map i with
-          | `Identifier _ as s -> `GPath s
+          | `Identifier id ->
+              `GPath (Odoc_model.Paths.Path.Resolved.Module.Mk.identifier id)
           | `Local _ as y -> y)
       | `Module (p1, name) -> (
           match recurse p1 with
@@ -1700,10 +1701,11 @@ module Of_Lang = struct
       Odoc_model.Paths.Path.Resolved.ModuleType.t ->
       Cpath.Resolved.module_type =
    fun ident_map p ->
-    match p with
+    match snd p with
     | `Identifier i -> (
         match identifier Maps.ModuleType.find ident_map.module_types i with
-        | `Identifier _ as s -> `GPath s
+        | `Identifier s ->
+            `GPath (Odoc_model.Paths.Path.Resolved.ModuleType.Mk.identifier s)
         | `Local _ as y -> y)
     | `ModuleType (p1, name) -> (
         match resolved_module_path ident_map p1 with
@@ -1735,7 +1737,7 @@ module Of_Lang = struct
   and resolved_type_path :
       _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =
    fun ident_map p ->
-    match p with
+    match snd p with
     | `Identifier i -> identifier Maps.Path.Type.find ident_map.path_types i
     | `CanonicalType (p1, p2) ->
         `CanonicalType (resolved_type_path ident_map p1, p2)
@@ -1750,7 +1752,7 @@ module Of_Lang = struct
       Odoc_model.Paths.Path.Resolved.ClassType.t ->
       Cpath.Resolved.class_type =
    fun ident_map p ->
-    match p with
+    match snd p with
     | `Identifier i ->
         identifier Maps.Path.ClassType.find ident_map.path_class_types i
     | `Class (p, name) ->

@@ -35,11 +35,11 @@ Everything should resolve:
   {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"of"},"`Space",{"`Code_span":"Type_of_str"},{"`Word":"."}]}
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"With_type"]}}}
   {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"for"},"`Space",{"`Code_span":"T"},{"`Word":"."}]}
-  {"`Resolved":{"`Alias":[{"`Module":[{"`Identifier":{"`Root":[{"Some":{"`Page":["None","test"]}},"External"]}},"X"]},{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Alias"]}}]}}
+  {"`Resolved":{"`Alias":[["217784133",{"`Module":[["295002680",{"`Identifier":{"`Root":[{"Some":{"`Page":["None","test"]}},"External"]}}],"X"]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Alias"]}}]}}
   "None"
-  {"`Resolved":{"`Alias":[{"`Canonical":[{"`Module":[{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]}},"C1"]},{"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}}]},{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}}
+  {"`Resolved":{"`Alias":[["765647304",{"`Canonical":[["364497978",{"`Module":[["267448347",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]}}],"C1"]}],{"`Resolved":["53231112",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}}
   "None"
-  {"`Resolved":{"`Alias":[{"`Canonical":[{"`Module":[{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]}},"C2"]},{"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}}]},{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}}
+  {"`Resolved":{"`Alias":[["388751169",{"`Canonical":[["160616904",{"`Module":[["267448347",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]}}],"C2"]}],{"`Resolved":["699693476",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}}
   "None"
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Inline_include"]}}}
   {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"for"},"`Space",{"`Code_span":"T"},{"`Word":"."}]}

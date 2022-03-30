@@ -65,7 +65,7 @@ let rec is_forward : Paths.Path.Module.t -> bool = function
 let rec should_reresolve : Paths.Path.Resolved.t -> bool =
  fun p ->
   let open Paths.Path.Resolved in
-  match p with
+  match snd p with
   | `Identifier _ -> false
   | `Subst (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
   | `Hidden p -> should_reresolve (p :> t)

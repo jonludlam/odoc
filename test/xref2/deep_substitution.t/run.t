@@ -34,7 +34,12 @@ its RHS correctly replaced with an `int`
       "manifest": {
         "Some": {
           "Constr": [
-            { "`Resolved": { "`Identifier": { "`CoreType": "int" } } },
+            {
+              "`Resolved": [
+                "755874976",
+                { "`Identifier": { "`CoreType": "int" } }
+              ]
+            },
             []
           ]
         }

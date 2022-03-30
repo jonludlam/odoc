@@ -20,11 +20,14 @@ resolve correctly. All of the 'Class' json objects should contain
     "type_": {
       "Class": [
         {
-          "`Resolved": {
-            "`Identifier": {
-              "`ClassType": [ { "`Root": [ "None", "F" ] }, "u" ]
+          "`Resolved": [
+            "1017860565",
+            {
+              "`Identifier": {
+                "`ClassType": [ { "`Root": [ "None", "F" ] }, "u" ]
+              }
             }
-          }
+          ]
         },
         []
       ]
@@ -38,12 +41,18 @@ resolve correctly. All of the 'Class' json objects should contain
     "type_": {
       "Class": [
         {
-          "`Resolved": {
-            "`ClassType": [
-              { "`Identifier": { "`Root": [ "None", "B" ] } },
-              "u"
-            ]
-          }
+          "`Resolved": [
+            "644075904",
+            {
+              "`ClassType": [
+                [
+                  "431292351",
+                  { "`Identifier": { "`Root": [ "None", "B" ] } }
+                ],
+                "u"
+              ]
+            }
+          ]
         },
         []
       ]
@@ -54,19 +63,25 @@ resolve correctly. All of the 'Class' json objects should contain
   {
     "Class": [
       {
-        "`Resolved": {
-          "`ClassType": [
-            {
-              "`Identifier": {
-                "`Root": [
-                  "None",
-                  "B"
-                ]
-              }
-            },
-            "u"
-          ]
-        }
+        "`Resolved": [
+          "644075904",
+          {
+            "`ClassType": [
+              [
+                "431292351",
+                {
+                  "`Identifier": {
+                    "`Root": [
+                      "None",
+                      "B"
+                    ]
+                  }
+                }
+              ],
+              "u"
+            ]
+          }
+        ]
       },
       []
     ]
@@ -82,19 +97,30 @@ resolve correctly. All of the 'Class' json objects should contain
         {
           "Class": [
             {
-              "`Resolved": {
-                "`ClassType": [
-                  { "`Identifier": { "`Root": [ "None", "B" ] } },
-                  "u"
-                ]
-              }
+              "`Resolved": [
+                "644075904",
+                {
+                  "`ClassType": [
+                    [
+                      "431292351",
+                      { "`Identifier": { "`Root": [ "None", "B" ] } }
+                    ],
+                    "u"
+                  ]
+                }
+              ]
             },
             []
           ]
         },
         {
           "Constr": [
-            { "`Resolved": { "`Identifier": { "`CoreType": "unit" } } },
+            {
+              "`Resolved": [
+                "322923554",
+                { "`Identifier": { "`CoreType": "unit" } }
+              ]
+            },
             []
           ]
         }

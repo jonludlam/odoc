@@ -5,146 +5,179 @@
   $ odoc support-files -o html
 
 The following should be resolved as identifier Test.A
-  $ odoc_print -r test test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
+  $ odoc_print -r test test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"][1]["`Type"][0][1]["`Canonical"][1]'
   {
-    "`Resolved": {
-      "`Identifier": {
-        "`Module": [
-          {
-            "`Root": [
-              "None",
-              "Test"
-            ]
-          },
-          "A"
-        ]
+    "`Resolved": [
+      "535728653",
+      {
+        "`Identifier": {
+          "`Module": [
+            {
+              "`Root": [
+                "None",
+                "Test"
+              ]
+            },
+            "A"
+          ]
+        }
       }
-    }
+    ]
   }
 
 The following should be resolved as Test.Wrapper.X
 
-  $ odoc_print -r test2 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
+  $ odoc_print -r test2 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"][1]["`Type"][0][1]["`Canonical"][1]'
   {
-    "`Resolved": {
-      "`Module": [
-        {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Root": [
-                  "None",
-                  "Test"
+    "`Resolved": [
+      "1959452",
+      {
+        "`Module": [
+          [
+            "959309538",
+            {
+              "`Identifier": {
+                "`Module": [
+                  {
+                    "`Root": [
+                      "None",
+                      "Test"
+                    ]
+                  },
+                  "Wrapper"
                 ]
-              },
-              "Wrapper"
-            ]
-          }
-        },
-        "X"
-      ]
-    }
+              }
+            }
+          ],
+          "X"
+        ]
+      }
+    ]
   }
 
 The following should be resolved as Test.Wrapper2.X
 
 
-  $ odoc_print -r test3 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
+  $ odoc_print -r test3 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"][1]["`Type"][0][1]["`Canonical"][1]'
   {
-    "`Resolved": {
-      "`Module": [
-        {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Root": [
-                  "None",
-                  "Test"
+    "`Resolved": [
+      "709499461",
+      {
+        "`Module": [
+          [
+            "109110765",
+            {
+              "`Identifier": {
+                "`Module": [
+                  {
+                    "`Root": [
+                      "None",
+                      "Test"
+                    ]
+                  },
+                  "Wrapper2"
                 ]
-              },
-              "Wrapper2"
-            ]
-          }
-        },
-        "X"
-      ]
-    }
+              }
+            }
+          ],
+          "X"
+        ]
+      }
+    ]
   }
 
 This should probably not resolve at all, but that's a problem for another day. currently it resolves as Test.Wrapper3.X
 
-  $ odoc_print -r test3a test.odocl | jq '.type_.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
+  $ odoc_print -r test3a test.odocl | jq '.type_.Constr[0]["`Resolved"][1]["`Type"][0][1]["`Canonical"][1]'
   {
-    "`Resolved": {
-      "`Module": [
-        {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Root": [
-                  "None",
-                  "Test"
+    "`Resolved": [
+      "271090315",
+      {
+        "`Module": [
+          [
+            "316857010",
+            {
+              "`Identifier": {
+                "`Module": [
+                  {
+                    "`Root": [
+                      "None",
+                      "Test"
+                    ]
+                  },
+                  "Wrapper3"
                 ]
-              },
-              "Wrapper3"
-            ]
-          }
-        },
-        "X"
-      ]
-    }
+              }
+            }
+          ],
+          "X"
+        ]
+      }
+    ]
   }
 
 Should resolve as identifier Test.B
-  $ odoc_print -r test4 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
+  $ odoc_print -r test4 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"][1]["`Type"][0][1]["`Canonical"][1]'
   {
-    "`Resolved": {
-      "`Identifier": {
-        "`Module": [
-          {
-            "`Root": [
-              "None",
-              "Test"
-            ]
-          },
-          "B"
-        ]
+    "`Resolved": [
+      "1045356825",
+      {
+        "`Identifier": {
+          "`Module": [
+            {
+              "`Root": [
+                "None",
+                "Test"
+              ]
+            },
+            "B"
+          ]
+        }
       }
-    }
+    ]
   }
 
 Should resove to be an alias!
-  $ odoc_print -r test5 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
+  $ odoc_print -r test5 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"][1]["`Type"][0][1]["`Canonical"][1]'
   {
-    "`Resolved": {
-      "`Alias": [
-        {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Root": [
-                  "None",
-                  "Test"
+    "`Resolved": [
+      "805818828",
+      {
+        "`Alias": [
+          [
+            "374815833",
+            {
+              "`Identifier": {
+                "`Module": [
+                  {
+                    "`Root": [
+                      "None",
+                      "Test"
+                    ]
+                  },
+                  "C_"
                 ]
-              },
-              "C_"
-            ]
-          }
-        },
-        {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Root": [
-                  "None",
-                  "Test"
+              }
+            }
+          ],
+          [
+            "284777662",
+            {
+              "`Identifier": {
+                "`Module": [
+                  {
+                    "`Root": [
+                      "None",
+                      "Test"
+                    ]
+                  },
+                  "C"
                 ]
-              },
-              "C"
-            ]
-          }
-        }
-      ]
-    }
+              }
+            }
+          ]
+        ]
+      }
+    ]
   }
 

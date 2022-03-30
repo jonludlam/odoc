@@ -133,7 +133,7 @@ module Make (Syntax : SYNTAX) = struct
              the parent page, and link instead to the anchor representing
              the declaration of the opaque module(_type) *)
           let stop_before =
-            match rp with
+            match snd rp with
             | `OpaqueModule _ | `OpaqueModuleType _ -> true
             | _ -> false
           in

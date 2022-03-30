@@ -14,39 +14,41 @@ let render_path : Odoc_model.Paths.Path.t -> string =
   let open Odoc_model.Paths.Path in
   let rec render_resolved : Odoc_model.Paths.Path.Resolved.t -> string =
     let open Resolved in
-    function
-    | `Identifier id -> Identifier.name id
-    | `OpaqueModule p -> render_resolved (p :> t)
-    | `OpaqueModuleType p -> render_resolved (p :> t)
-    | `Subst (_, p) -> render_resolved (p :> t)
-    | `SubstT (_, p) -> render_resolved (p :> t)
-    | `Alias (p1, p2) ->
-        if Odoc_model.Paths.Path.is_hidden (`Resolved (p2 :> t)) then
-          render_resolved (p1 :> t)
-        else render_resolved (p2 :> t)
-    | `AliasModuleType (p1, p2) ->
-        if Odoc_model.Paths.Path.is_hidden (`Resolved (p2 :> t)) then
-          render_resolved (p1 :> t)
-        else render_resolved (p2 :> t)
-    | `Hidden p -> render_resolved (p :> t)
-    | `Module (p, s) -> render_resolved (p :> t) ^ "." ^ ModuleName.to_string s
-    | `Canonical (_, `Resolved p) -> render_resolved (p :> t)
-    | `Canonical (p, _) -> render_resolved (p :> t)
-    | `CanonicalModuleType (_, `Resolved p) -> render_resolved (p :> t)
-    | `CanonicalModuleType (p, _) -> render_resolved (p :> t)
-    | `CanonicalType (_, `Resolved p) -> render_resolved (p :> t)
-    | `CanonicalType (p, _) -> render_resolved (p :> t)
-    | `Apply (rp, p) ->
-        render_resolved (rp :> t)
-        ^ "("
-        ^ render_resolved (p :> Odoc_model.Paths.Path.Resolved.t)
-        ^ ")"
-    | `ModuleType (p, s) ->
-        render_resolved (p :> t) ^ "." ^ ModuleTypeName.to_string s
-    | `Type (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
-    | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ ClassName.to_string s
-    | `ClassType (p, s) ->
-        render_resolved (p :> t) ^ "." ^ ClassTypeName.to_string s
+    fun (_, x) ->
+      match x with
+      | `Identifier id -> Identifier.name id
+      | `OpaqueModule p -> render_resolved (p :> t)
+      | `OpaqueModuleType p -> render_resolved (p :> t)
+      | `Subst (_, p) -> render_resolved (p :> t)
+      | `SubstT (_, p) -> render_resolved (p :> t)
+      | `Alias (p1, p2) ->
+          if Odoc_model.Paths.Path.is_hidden (`Resolved (p2 :> t)) then
+            render_resolved (p1 :> t)
+          else render_resolved (p2 :> t)
+      | `AliasModuleType (p1, p2) ->
+          if Odoc_model.Paths.Path.is_hidden (`Resolved (p2 :> t)) then
+            render_resolved (p1 :> t)
+          else render_resolved (p2 :> t)
+      | `Hidden p -> render_resolved (p :> t)
+      | `Module (p, s) ->
+          render_resolved (p :> t) ^ "." ^ ModuleName.to_string s
+      | `Canonical (_, `Resolved p) -> render_resolved (p :> t)
+      | `Canonical (p, _) -> render_resolved (p :> t)
+      | `CanonicalModuleType (_, `Resolved p) -> render_resolved (p :> t)
+      | `CanonicalModuleType (p, _) -> render_resolved (p :> t)
+      | `CanonicalType (_, `Resolved p) -> render_resolved (p :> t)
+      | `CanonicalType (p, _) -> render_resolved (p :> t)
+      | `Apply (rp, p) ->
+          render_resolved (rp :> t)
+          ^ "("
+          ^ render_resolved (p :> Odoc_model.Paths.Path.Resolved.t)
+          ^ ")"
+      | `ModuleType (p, s) ->
+          render_resolved (p :> t) ^ "." ^ ModuleTypeName.to_string s
+      | `Type (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
+      | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ ClassName.to_string s
+      | `ClassType (p, s) ->
+          render_resolved (p :> t) ^ "." ^ ClassTypeName.to_string s
   and render_path : Odoc_model.Paths.Path.t -> string = function
     | `Identifier (id, _) -> Identifier.name id
     | `Root root -> root

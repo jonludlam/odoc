@@ -209,7 +209,9 @@ and is_resolved_parent_hidden :
 and is_module_type_hidden : module_type -> bool = function
   | `Resolved r -> is_resolved_module_type_hidden r
   | `Identifier (id, b) ->
-      b || is_resolved_module_type_hidden (`GPath (`Identifier id))
+      b
+      || is_resolved_module_type_hidden
+           (`GPath (Odoc_model.Paths.Path.Resolved.ModuleType.Mk.identifier id))
   | `Local (_, b) -> b
   | `Substituted p -> is_module_type_hidden p
   | `Dot (p, _) -> is_module_hidden p
@@ -279,13 +281,15 @@ let rec resolved_module_of_resolved_module_reference :
   | `Module (parent, name) ->
       `Module
         (`Module (resolved_module_of_resolved_signature_reference parent), name)
-  | `Identifier i -> `GPath (`Identifier i)
+  | `Identifier i ->
+      `GPath (Odoc_model.Paths.Path.Resolved.Module.Mk.identifier i)
   | `Alias (_m1, _m2) -> failwith "gah"
   | `Hidden s -> `Hidden (resolved_module_of_resolved_module_reference s)
 
 and resolved_module_of_resolved_signature_reference :
     Reference.Resolved.Signature.t -> Resolved.module_ = function
-  | `Identifier (#Identifier.Module.t as i) -> `GPath (`Identifier i)
+  | `Identifier (#Identifier.Module.t as i) ->
+      `GPath (Odoc_model.Paths.Path.Resolved.Module.Mk.identifier i)
   | (`Alias _ | `Module _ | `Hidden _) as r' ->
       resolved_module_of_resolved_module_reference r'
   | `ModuleType (_, n) ->

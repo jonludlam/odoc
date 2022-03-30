@@ -187,40 +187,41 @@ let core_constructor_identifier = function
   | "Some" -> Some some_identifier
   | _ -> None
 
-let bool_path = `Resolved (`Identifier bool_identifier)
+let mk id = `Resolved (Paths.Path.Resolved.Type.Mk.identifier id)
 
-let int_path = `Resolved (`Identifier int_identifier)
+let bool_path = mk bool_identifier
 
-let char_path = `Resolved (`Identifier char_identifier)
+let int_path = mk int_identifier
 
-let bytes_path = `Resolved (`Identifier bytes_identifier)
+let char_path = mk char_identifier
 
-let string_path = `Resolved (`Identifier string_identifier)
+let bytes_path = mk bytes_identifier
 
-let float_path = `Resolved (`Identifier float_identifier)
+let string_path = mk string_identifier
 
-let unit_path = `Resolved (`Identifier unit_identifier)
+let float_path = mk float_identifier
 
-let exn_path = `Resolved (`Identifier exn_identifier)
+let unit_path = mk unit_identifier
 
-let array_path = `Resolved (`Identifier array_identifier)
+let exn_path = mk exn_identifier
 
-let list_path = `Resolved (`Identifier list_identifier)
+let array_path = mk array_identifier
 
-let option_path = `Resolved (`Identifier option_identifier)
+let list_path = mk list_identifier
 
-let int32_path = `Resolved (`Identifier int32_identifier)
+let option_path = mk option_identifier
 
-let int64_path = `Resolved (`Identifier int64_identifier)
+let int32_path = mk int32_identifier
 
-let nativeint_path = `Resolved (`Identifier nativeint_identifier)
+let int64_path = mk int64_identifier
 
-let lazy_t_path = `Resolved (`Identifier lazy_t_identifier)
+let nativeint_path = mk nativeint_identifier
 
-let extension_constructor_path =
-  `Resolved (`Identifier extension_constructor_identifier)
+let lazy_t_path = mk lazy_t_identifier
 
-let _floatarray_path = `Resolved (`Identifier floatarray_identifier)
+let extension_constructor_path = mk extension_constructor_identifier
+
+let _floatarray_path = mk floatarray_identifier
 
 let bool_reference = `Resolved (`Identifier bool_identifier)
 

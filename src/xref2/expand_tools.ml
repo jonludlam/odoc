@@ -164,11 +164,13 @@ and handle_expansion env id expansion =
           Env.add_module identifier (Component.Delayed.put_val m) m.doc env
         in
         let subst =
+          let id =
+            Odoc_model.Paths.Path.Resolved.Module.Mk.identifier identifier
+          in
           Subst.add_module
             (arg.id :> Ident.path_module)
-            (`Resolved (`GPath (`Identifier identifier)))
-            (`GPath (`Identifier identifier))
-            Subst.identity
+            (`Resolved (`GPath id))
+            (`GPath id) Subst.identity
         in
         let subst =
           Subst.mto_invalidate_module (arg.id :> Ident.path_module) subst
