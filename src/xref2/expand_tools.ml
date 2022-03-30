@@ -62,7 +62,9 @@ and aux_expansion_of_module_alias env ~strengthen path =
           (* Format.eprintf "Maybe strenthening now...\n%!"; *)
           let sg' =
             if strengthen then
-              Strengthen.signature ?canonical:m.canonical (`Resolved p) sg
+              Strengthen.signature ?canonical:m.canonical
+                (Cpath.Mk.Module.resolved p)
+                sg
             else sg
           in
           Ok (Signature sg')
@@ -70,7 +72,9 @@ and aux_expansion_of_module_alias env ~strengthen path =
           (* Format.eprintf "Maybe strenthening now...\n%!"; *)
           let sg' =
             if strengthen then
-              Strengthen.signature ?canonical:m.canonical (`Resolved p) sg
+              Strengthen.signature ?canonical:m.canonical
+                (Cpath.Mk.Module.resolved p)
+                sg
             else sg
           in
           (* Format.eprintf "Before:\n%a\n\n%!After\n%a\n\n%!"
@@ -163,11 +167,10 @@ and handle_expansion env id expansion =
         let env' =
           Env.add_module identifier (Component.Delayed.put_val m) m.doc env
         in
+        let rp = Cpath.Mk.Resolved.Module.identifier identifier in
+        let p = Cpath.Mk.Module.resolved rp in
         let subst =
-          Subst.add_module
-            (arg.id :> Ident.path_module)
-            (`Resolved (`Identifier identifier))
-            (`Identifier identifier) Subst.identity
+          Subst.add_module (arg.id :> Ident.path_module) p rp Subst.identity
         in
         let subst =
           Subst.mto_invalidate_module (arg.id :> Ident.path_module) subst

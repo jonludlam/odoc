@@ -2,13 +2,15 @@ open Odoc_model
 open Paths
 open Names
 
-module RM = Map.Make (struct
+module RM = Hashtbl.Make (struct
   type t = Cpath.Resolved.module_
 
-  let compare x y = if x == y then 0 else compare x y
+  let equal x y = x.Hc.key = y.Hc.key
+
+  let hash x = Hashtbl.hash x.Hc.key
 end)
 
-type memos = { mutable rmodpathmemo : Path.Resolved.Module.t RM.t }
+type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t }
 
 type maps = {
   module_ : Identifier.Module.t Component.ModuleMap.t;
@@ -38,7 +40,7 @@ let empty_shadow =
   }
 
 let empty () =
-  let memos = { rmodpathmemo = RM.empty } in
+  let memos = { rmodpathmemo = RM.create 255 } in
   {
     module_ = Component.ModuleMap.empty;
     module_type = Component.ModuleTypeMap.empty;
@@ -68,8 +70,10 @@ let lookup_module map : Ident.path_module -> _ = function
 module Opt = Component.Opt
 
 module Path = struct
+  module R = Odoc_model.Paths.Path.Resolved
+
   let rec module_ map (p : Cpath.module_) : Odoc_model.Paths.Path.Module.t =
-    match p with
+    match p.v with
     | `Substituted x -> module_ map x
     | `Local (id, b) ->
         `Identifier
@@ -83,13 +87,13 @@ module Path = struct
     | `Dot (p, s) -> `Dot (module_ map p, s)
     | `Forward s -> `Forward s
     | `Apply (m1, m2) -> `Apply (module_ map m1, module_ map m2)
-    | `Module (`Module p, n) ->
+    | `Module ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), ModuleName.to_string n)
     | `Module (_, _) -> failwith "Probably shouldn't happen"
 
   and module_type map (p : Cpath.module_type) :
       Odoc_model.Paths.Path.ModuleType.t =
-    match p with
+    match p.v with
     | `Substituted x -> module_type map x
     | `Identifier ((#Odoc_model.Paths.Identifier.ModuleType.t as y), b) ->
         `Identifier (y, b)
@@ -101,12 +105,12 @@ module Path = struct
             b )
     | `Resolved x -> `Resolved (resolved_module_type map x)
     | `Dot (p, n) -> `Dot (module_ map p, n)
-    | `ModuleType (`Module p, n) ->
+    | `ModuleType ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), ModuleTypeName.to_string n)
     | `ModuleType (_, _) -> failwith "Probably shouldn't happen"
 
   and type_ map (p : Cpath.type_) : Odoc_model.Paths.Path.Type.t =
-    match p with
+    match p.v with
     | `Substituted x -> type_ map x
     | `Identifier ((#Odoc_model.Paths.Identifier.Path.Type.t as y), b) ->
         `Identifier (y, b)
@@ -114,17 +118,17 @@ module Path = struct
         `Identifier (Component.PathTypeMap.find id map.path_type, b)
     | `Resolved x -> `Resolved (resolved_type map x)
     | `Dot (p, n) -> `Dot (module_ map p, n)
-    | `Type (`Module p, n) ->
+    | `Type ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), TypeName.to_string n)
-    | `Class (`Module p, n) ->
+    | `Class ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), ClassName.to_string n)
-    | `ClassType (`Module p, n) ->
+    | `ClassType ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), ClassTypeName.to_string n)
     | `Type _ | `Class _ | `ClassType _ -> failwith "Probably shouldn't happen"
 
   and class_type map (p : Cpath.class_type) : Odoc_model.Paths.Path.ClassType.t
       =
-    match p with
+    match p.v with
     | `Substituted x -> class_type map x
     | `Identifier ((#Odoc_model.Paths.Identifier.Path.ClassType.t as y), b) ->
         `Identifier (y, b)
@@ -132,16 +136,16 @@ module Path = struct
         `Identifier (Component.PathClassTypeMap.find id map.path_class_type, b)
     | `Resolved x -> `Resolved (resolved_class_type map x)
     | `Dot (p, n) -> `Dot (module_ map p, n)
-    | `Class (`Module p, n) ->
+    | `Class ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), ClassName.to_string n)
-    | `ClassType (`Module p, n) ->
+    | `ClassType ({ v = `Module p; _ }, n) ->
         `Dot (`Resolved (resolved_module map p), ClassTypeName.to_string n)
     | `Class _ | `ClassType _ -> failwith "Probably shouldn't happen"
 
   and resolved_module map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     let f () =
-      match p with
+      match p.v with
       | `Local id ->
           `Identifier
             (try lookup_module map id
@@ -161,25 +165,28 @@ module Path = struct
       | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
     in
     try
-      let result = RM.find p map.memos.rmodpathmemo in
+      let result = RM.find map.memos.rmodpathmemo p in
       result
     with Not_found ->
       let result = f () in
-      map.memos.rmodpathmemo <- RM.add p result map.memos.rmodpathmemo;
+      RM.add map.memos.rmodpathmemo p result;
       result
 
   and resolved_parent map (p : Cpath.Resolved.parent) =
-    match p with
+    match p.v with
     | `Module m -> resolved_module map m
     | `ModuleType _ -> failwith "Invalid"
     | `FragmentRoot -> (
         match map.fragment_root with
-        | Some r -> resolved_parent map (r :> Cpath.Resolved.parent)
+        | Some (`ModuleType m) ->
+            resolved_parent map (Cpath.Mk.Resolved.Parent.module_type m)
+        | Some (`Module m) ->
+            resolved_parent map (Cpath.Mk.Resolved.Parent.module_ m)
         | None -> failwith "Invalid")
 
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
-    match p with
+    match p.v with
     | `Identifier (#Odoc_model.Paths.Identifier.ModuleType.t as y) ->
         `Identifier y
     | `Local id ->
@@ -200,7 +207,7 @@ module Path = struct
 
   and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =
-    match p with
+    match p.v with
     | `Identifier (#Odoc_model.Paths.Identifier.Path.Type.t as y) ->
         `Identifier y
     | `Local id -> `Identifier (Component.PathTypeMap.find id map.path_type)
@@ -212,7 +219,7 @@ module Path = struct
 
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
       Odoc_model.Paths.Path.Resolved.ClassType.t =
-    match p with
+    match p.v with
     | `Identifier (#Odoc_model.Paths.Identifier.Path.ClassType.t as y) ->
         `Identifier y
     | `Local id ->
