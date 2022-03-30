@@ -18,7 +18,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
   | _ -> (
       let cp = Component.Of_Lang.(type_path (empty ()) p) in
       match Tools.resolve_type_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_type (empty ()) p')
+      | Ok p' -> Lang_of.(Path.type_ (empty ()) (Cpath.Mk.Type.resolved p'))
       | Error _ -> p)
 
 and module_type_path :
@@ -29,7 +29,9 @@ and module_type_path :
   | _ -> (
       let cp = Component.Of_Lang.(module_type_path (empty ()) p) in
       match Tools.resolve_module_type_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_module_type (empty ()) p')
+      | Ok p' ->
+          Lang_of.(
+            Path.module_type (empty ()) (Cpath.Mk.ModuleType.resolved p'))
       | Error _ -> p)
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
@@ -39,7 +41,7 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
   | _ -> (
       let cp = Component.Of_Lang.(module_path (empty ()) p) in
       match Tools.resolve_module_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_module (empty ()) p')
+      | Ok p' -> Lang_of.(Path.module_ (empty ()) (Cpath.Mk.Module.resolved p'))
       | Error _ -> p)
 
 and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
@@ -50,7 +52,8 @@ and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
   | _ -> (
       let cp = Component.Of_Lang.(class_type_path (empty ()) p) in
       match Tools.resolve_class_type_path env cp with
-      | Ok p' -> `Resolved Lang_of.(Path.resolved_class_type (empty ()) p')
+      | Ok p' ->
+          Lang_of.(Path.class_type (empty ()) (Cpath.Mk.ClassType.resolved p'))
       | Error _ -> p)
 
 let rec unit env t =
@@ -534,11 +537,11 @@ and module_type_map_subs env id cexpr subs =
    fun expr ->
     match expr with
     | Component.ModuleType.U.Signature _ -> None
-    | Path (`Resolved p) -> Some (`ModuleType p)
+    | Path { v = `Resolved p; _ } -> Some (`ModuleType p)
     | Path _ -> None
     | With (_, e) -> find_parent e
-    | TypeOf { t_desc = ModPath (`Resolved p); _ }
-    | TypeOf { t_desc = StructInclude (`Resolved p); _ } ->
+    | TypeOf { t_desc = ModPath { v = `Resolved p; _ }; _ }
+    | TypeOf { t_desc = StructInclude { v = `Resolved p; _ }; _ } ->
         Some (`Module p)
     | TypeOf _ -> None
   in

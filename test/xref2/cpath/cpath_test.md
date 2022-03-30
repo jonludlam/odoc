@@ -4,21 +4,27 @@ Tests for `weak_canonical_test`. When calling `is_resolved_module_hidden`, we no
 
 In the following test, we create a path with an unresolved canonical 
 ```ocaml env=e1
-# let m = `Hidden (`Local (`LModule (Odoc_model.Names.ModuleName.internal_of_string "M", 1)));;
-val m :
-  [> `Hidden of
-       [> `Local of [> `LModule of Odoc_model.Names.ModuleName.t * int ] ] ] =
-  `Hidden (`Local (`LModule ({M}1, 1)))
+# open Odoc_xref2.Cpath.Mk;;
+# let m = Resolved.Module.(hidden (local (`LModule (Odoc_model.Names.ModuleName.internal_of_string "M", 1))));;
+val m : Odoc_xref2.Cpath.Resolved.module_ =
+  {Odoc_xref2.Hc.v =
+    `Hidden
+      {Odoc_xref2.Hc.v = `Local (`LModule ({M}1, 1));
+       key = (4, "predefined")};
+   key = (5, "predefined")}
 # let cm = `Root "Foo";;
 val cm : [> `Root of string ] = `Root "Foo"
-# let p = `Canonical(m, cm);;
-val p :
-  [> `Canonical of
-       [> `Hidden of
-            [> `Local of [> `LModule of Odoc_model.Names.ModuleName.t * int ]
-            ] ] *
-       [> `Root of string ] ] =
-  `Canonical (`Hidden (`Local (`LModule ({M}1, 1))), `Root "Foo")
+# let p = Resolved.Module.canonical (m, cm);;
+val p : Odoc_xref2.Cpath.Resolved.module_ =
+  {Odoc_xref2.Hc.v =
+    `Canonical
+      ({Odoc_xref2.Hc.v =
+         `Hidden
+           {Odoc_xref2.Hc.v = `Local (`LModule ({M}1, 1));
+            key = (4, "predefined")};
+        key = (5, "predefined")},
+       `Root "Foo");
+   key = (6, "predefined")}
 # let r1 = Cpath.is_resolved_module_hidden ~weak_canonical_test:false p;;
 val r1 : bool = true
 # let r2 = Cpath.is_resolved_module_hidden ~weak_canonical_test:true p;;
