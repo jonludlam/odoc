@@ -43,14 +43,17 @@ and sig_items prefix ?canonical sg =
               | Some p -> Some (`Dot (p, name))
               | None -> None
             in
-            let m' () = module_ ?canonical (`Dot (prefix, name)) (get m) in
+            let m' () =
+              module_ ?canonical (Cpath.Mk.Module.dot (prefix, name)) (get m)
+            in
             (Module (id, r, put m') :: items, id :: s)
         | ModuleType (id, mt) ->
             ( ModuleType
                 ( id,
                   put (fun () ->
                       module_type
-                        (`Dot (prefix, Ident.Name.module_type id))
+                        (Cpath.Mk.ModuleType.dot
+                           (prefix, Ident.Name.module_type id))
                         (get mt)) )
               :: items,
               s )
@@ -59,7 +62,9 @@ and sig_items prefix ?canonical sg =
                 ( id,
                   r,
                   put (fun () ->
-                      type_decl (`Dot (prefix, Ident.Name.type_ id)) (get t)) )
+                      type_decl
+                        (Cpath.Mk.Type.dot (prefix, Ident.Name.type_ id))
+                        (get t)) )
               :: items,
               s )
         | Include i ->
