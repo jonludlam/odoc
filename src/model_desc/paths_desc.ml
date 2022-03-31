@@ -200,7 +200,7 @@ module General_paths = struct
       | `Module (x1, x2) ->
           C ("`Module", ((x1 :> rp), x2), Pair (resolved_path, Names.modulename))
       | `Canonical (x1, x2) ->
-          C ("`Canonical", ((x1 :> rp), (x2 :> p)), Pair (resolved_path, path))
+          C ("`Canonical", ((x1 :> p), (x2 :> p)), Pair (path, path))
       | `Apply (x1, x2) ->
           C
             ( "`Apply",

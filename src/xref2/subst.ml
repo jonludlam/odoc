@@ -217,7 +217,7 @@ let rec resolved_module_path :
       in
       subst p1 (resolved_module_path s p2)
   | `Hidden p1 -> hidden (resolved_module_path s p1)
-  | `Canonical (p1, p2) -> canonical (resolved_module_path s p1) p2
+  | `Canonical (p1, p2) -> canonical (module_path s p1) p2
   | `OpaqueModule m ->
       if s.unresolve_opaque_paths then raise Invalidated
       else opaquemodule (resolved_module_path s m)
@@ -671,7 +671,8 @@ and mto_resolved_module_path_invalidated s p =
   | `Alias (p1, _p2) -> mto_resolved_module_path_invalidated s p1
   | `Subst (_p1, p2) -> mto_resolved_module_path_invalidated s p2
   | `Hidden p -> mto_resolved_module_path_invalidated s p
-  | `Canonical (p1, _p2) -> mto_resolved_module_path_invalidated s p1
+  | `Canonical (`Resolved p1, _p2) -> mto_resolved_module_path_invalidated s p1
+  | `Canonical (_, _) -> false
   | `OpaqueModule p -> mto_resolved_module_path_invalidated s p
 
 and u_module_type_expr s t =

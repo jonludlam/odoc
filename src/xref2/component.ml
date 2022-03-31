@@ -910,7 +910,7 @@ module Fmt = struct
           resolved_module_path p2
     | `Hidden p1 -> Format.fprintf ppf "hidden(%a)" resolved_module_path p1
     | `Canonical (p1, p2) ->
-        Format.fprintf ppf "canonical(%a,%a)" resolved_module_path p1 model_path
+        Format.fprintf ppf "canonical(%a,%a)" module_path p1 model_path
           (p2 :> Odoc_model.Paths.Path.t)
     | `OpaqueModule m ->
         Format.fprintf ppf "opaquemodule(%a)" resolved_module_path m
@@ -1132,8 +1132,8 @@ module Fmt = struct
           model_resolved_path
           (arg :> t)
     | `Canonical (p1, p2) ->
-        Format.fprintf ppf "canonical(%a,%a)" model_resolved_path
-          (p1 :> t)
+        Format.fprintf ppf "canonical(%a,%a)" model_path
+          (p1 :> Odoc_model.Paths.Path.t)
           model_path
           (p2 :> Odoc_model.Paths.Path.t)
     | `Hidden p -> Format.fprintf ppf "hidden(%a)" model_resolved_path (p :> t)
@@ -1684,10 +1684,9 @@ module Of_Lang = struct
           match (resolved_module_type_path ident_map p1, recurse p2) with
           | (_, `GPath _), (_, `GPath _) -> gpath p
           | p1', p2' -> subst p1' p2')
-      | `Canonical (p1, p2) -> (
-          match recurse p1 with
-          | _, `GPath _ -> gpath p
-          | p1' -> canonical p1' p2)
+      | `Canonical (p1, p2) ->
+          let p1' = module_path ident_map p1 in
+          canonical p1' p2
       | `Hidden p1 -> hidden (recurse p1)
       | `OpaqueModule m -> opaquemodule (recurse m)
     in

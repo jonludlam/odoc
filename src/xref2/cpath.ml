@@ -13,7 +13,7 @@ module rec Resolved : sig
     | `Subst of module_type * module_
     | `Hidden of module_
     | `Module of parent * ModuleName.t
-    | `Canonical of module_ * Path.Module.t
+    | `Canonical of Cpath.module_ * Path.Module.t
     | `Apply of module_ * module_
     | `Alias of module_ * module_
     | `OpaqueModule of module_
@@ -187,8 +187,9 @@ let rec is_resolved_module_substituted : Resolved.module_ -> bool =
   | `Substituted _ -> true
   | `GPath _ -> false
   | `Subst (_a, _) -> false (* is_resolved_module_type_substituted a*)
-  | `Hidden a | `Canonical (a, _) | `Apply (a, _) | `Alias (a, _) ->
+  | `Hidden a | `Apply (a, _) | `Alias (a, _) | `Canonical (`Resolved a, _) ->
       is_resolved_module_substituted a
+  | `Canonical (_, _) -> false
   | `Module (a, _) -> is_resolved_parent_substituted a
   | `OpaqueModule a -> is_resolved_module_substituted a
 
@@ -290,7 +291,8 @@ and is_resolved_module_hidden :
         Odoc_model.Paths.Path.Resolved.Module.is_hidden ~weak_canonical_test p
     | `Hidden _ -> true
     | `Canonical (_, `Resolved _) -> false
-    | `Canonical (p, _) -> weak_canonical_test || inner p
+    | `Canonical (`Resolved p, _) -> (not weak_canonical_test) || inner p
+    | `Canonical (_, _) -> not weak_canonical_test
     | `Substituted p | `Apply (p, _) -> inner p
     | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
     | `Subst (p1, p2) -> is_resolved_module_type_hidden p1 || inner p2
@@ -436,7 +438,7 @@ let rec unresolve_resolved_module_path : Resolved.module_ -> module_ =
   | `Hidden x -> unresolve_resolved_module_path x (* should assert false here *)
   | `Module (p, m) ->
       `Dot (unresolve_resolved_parent_path p, ModuleName.to_string m)
-  | `Canonical (m, _) -> unresolve_resolved_module_path m
+  | `Canonical (m, _) -> m
   | `Apply (m, a) ->
       `Apply (unresolve_resolved_module_path m, unresolve_resolved_module_path a)
   | `Alias (_, m) -> unresolve_resolved_module_path m

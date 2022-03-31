@@ -485,7 +485,7 @@ and add_canonical_path :
   | `Canonical _ -> p
   | _ -> (
       match m.Component.Module.canonical with
-      | Some cp -> Cpath.Mk.Module.canonical p cp
+      | Some cp -> Cpath.Mk.Module.canonical (`Resolved p) cp
       | None -> p)
 
 and add_canonical_path_mt :
@@ -656,8 +656,11 @@ and lookup_module_gpath :
   | `Subst (_, p) ->
       lookup_module ~mark_substituted env (Cpath.Mk.Module.gpath p)
   | `Hidden p -> lookup_module ~mark_substituted env (Cpath.Mk.Module.gpath p)
-  | `Canonical (p, _) ->
-      lookup_module ~mark_substituted env (Cpath.Mk.Module.gpath p)
+  | `Canonical (p, _) -> (
+      let cp = Component.Of_Lang.(module_path (empty ()) p) in
+      match resolve_module ~mark_substituted ~add_canonical:false env cp with
+      | Ok (_, m) -> Ok m
+      | Error p -> Error p)
   | `OpaqueModule m ->
       lookup_module ~mark_substituted env (Cpath.Mk.Module.gpath m)
 
@@ -696,7 +699,11 @@ and lookup_module :
     | `Alias (_, p) -> lookup_module ~mark_substituted env p
     | `Subst (_, p) -> lookup_module ~mark_substituted env p
     | `Hidden p -> lookup_module ~mark_substituted env p
-    | `Canonical (p, _) -> lookup_module ~mark_substituted env p
+    | `Canonical (`Resolved p, _) -> lookup_module ~mark_substituted env p
+    | `Canonical (cp, _) -> (
+        match resolve_module ~mark_substituted ~add_canonical:false env cp with
+        | Ok (_, m) -> Ok m
+        | Error p -> Error p)
     | `OpaqueModule m -> lookup_module ~mark_substituted env m
   in
   LookupModuleMemo.memoize lookup env' (m, path')
@@ -1160,12 +1167,20 @@ and reresolve_module_gpath : Env.t -> RP.Module.t -> RP.Module.t =
   | `Hidden p ->
       let p' = reresolve_module_gpath env p in
       RP.Module.Mk.hidden p'
-  | `Canonical (p, `Resolved p2) ->
-      RP.Module.Mk.canonical (reresolve_module_gpath env p) (`Resolved p2)
-  | `Canonical (p, p2) ->
-      RP.Module.Mk.canonical
-        (reresolve_module_gpath env p)
-        (handle_canonical_module env p2)
+  | `Canonical (p, `Resolved p2) -> RP.Module.Mk.canonical p (`Resolved p2)
+  | `Canonical (p, p2) -> (
+      match handle_canonical_module env p2 with
+      | `Resolved _ as p2' -> RP.Module.Mk.canonical p p2'
+      | p2' -> (
+          match
+            let cp = Component.Of_Lang.(module_path (empty ()) p) in
+            resolve_module ~mark_substituted:true ~add_canonical:false env cp
+          with
+          | Ok (cp', _m) ->
+              let cp'' = reresolve_module env cp' in
+              let p'' = Lang_of.(Path.resolved_module (empty ()) cp'') in
+              RP.Module.Mk.canonical (`Resolved p'') p2'
+          | Error _ -> RP.Module.Mk.canonical p p2'))
   | `OpaqueModule m -> RP.Module.Mk.opaquemodule (reresolve_module_gpath env m)
 
 and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
@@ -1187,10 +1202,18 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
   | `Hidden p ->
       let p' = reresolve_module env p in
       hidden p'
-  | `Canonical (p, `Resolved p2) ->
-      canonical (reresolve_module env p) (`Resolved p2)
-  | `Canonical (p, p2) ->
-      canonical (reresolve_module env p) (handle_canonical_module env p2)
+  | `Canonical (p, `Resolved p2) -> canonical p (`Resolved p2)
+  | `Canonical (p, p2) -> (
+      match handle_canonical_module env p2 with
+      | `Resolved _ as p2' -> canonical p p2'
+      | p2' -> (
+          match
+            resolve_module ~mark_substituted:true ~add_canonical:false env p
+          with
+          | Ok (p', _m) ->
+              let p'' = reresolve_module env p' in
+              canonical (`Resolved p'') p2'
+          | Error _ -> canonical p p2'))
   | `OpaqueModule m -> opaquemodule (reresolve_module env m)
 
 and handle_canonical_module env p2 =
@@ -1232,22 +1255,24 @@ and handle_canonical_module env p2 =
         match m.type_ with
         | Component.Module.Alias (_, Some _) -> true
         | Alias (`Resolved p, None) ->
-            (* check for an alias chain with a canonical in it... *)
-            let rec check (m, p) =
+            (* we're an alias - check to see if we're marked as the canonical path.
+               If not, check for an alias chain with us as canonical in it... *)
+            let rec check m =
               match m.Component.Module.canonical with
               | Some p ->
                   p = p2
                   (* The canonical path is the same one we're trying to resolve *)
               | None -> (
-                  match lookup_module ~mark_substituted:false env p with
-                  | Error _ -> false
-                  | Ok m -> (
-                      let m = Component.Delayed.get m in
-                      match m.type_ with
-                      | Alias (`Resolved p, _) -> check (m, p)
-                      | _ -> false))
+                  match m.type_ with
+                  | Component.Module.Alias (`Resolved p, _) -> (
+                      match lookup_module ~mark_substituted:false env p with
+                      | Error _ -> false
+                      | Ok m ->
+                          let m = Component.Delayed.get m in
+                          check m)
+                  | _ -> false)
             in
-            let self_canonical () = check (m, p) in
+            let self_canonical () = check m in
             let hidden =
               Cpath.is_resolved_module_hidden ~weak_canonical_test:true p
             in
@@ -1834,8 +1859,9 @@ and find_external_module_path :
   | `Local x -> Some (Cpath.Mk.Module.local x)
   | `Substituted x ->
       find_external_module_path x >>= fun x -> Some (substituted x)
-  | `Canonical (x, y) ->
-      find_external_module_path x >>= fun x -> Some (canonical x y)
+  | `Canonical (`Resolved x, y) ->
+      find_external_module_path x >>= fun x -> Some (canonical (`Resolved x) y)
+  | `Canonical _ -> None (* FIXME *)
   | `Hidden x -> find_external_module_path x >>= fun x -> Some (hidden x)
   | `Alias (x, y) -> (
       match (find_external_module_path x, find_external_module_path y) with

@@ -207,7 +207,7 @@ and Resolved_path : sig
     | `Subst of module_type * module_
     | `Hidden of module_
     | `Module of module_ * ModuleName.t
-    | `Canonical of module_ * Path.module_
+    | `Canonical of Path.module_ * Path.module_
     | `Apply of module_ * module_
     | `Alias of module_ * module_
     | `OpaqueModule of module_ ]
@@ -248,7 +248,7 @@ and Resolved_path : sig
     | `Subst of module_type * module_
     | `Hidden of module_
     | `Module of module_ * ModuleName.t
-    | `Canonical of module_ * Path.module_
+    | `Canonical of Path.module_ * Path.module_
     | `Apply of module_ * module_
     | `Alias of module_ * module_
     | `AliasModuleType of module_type * module_type

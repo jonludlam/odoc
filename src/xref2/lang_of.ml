@@ -142,26 +142,26 @@ module Path = struct
 
   and resolved_module map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
-    let open R.Module.Mk in
+    let module M = R.Module.Mk in
     let f () =
       match snd p with
       | `Local id ->
-          identifier
+          M.identifier
             (try lookup_module map id
              with Not_found ->
                failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
       | `Substituted x -> resolved_module map x
       | `GPath y -> y
       | `Subst (mty, m) ->
-          subst (resolved_module_type map mty) (resolved_module map m)
-      | `Hidden h -> hidden (resolved_module map h)
-      | `Module (p, n) -> module_ (resolved_parent map p) n
-      | `Canonical (r, m) -> canonical (resolved_module map r) m
+          M.subst (resolved_module_type map mty) (resolved_module map m)
+      | `Hidden h -> M.hidden (resolved_module map h)
+      | `Module (p, n) -> M.module_ (resolved_parent map p) n
+      | `Canonical (r, m) -> M.canonical (module_ map r) m
       | `Apply (m1, m2) ->
-          apply (resolved_module map m1) (resolved_module map m2)
+          M.apply (resolved_module map m1) (resolved_module map m2)
       | `Alias (m1, m2) ->
-          alias (resolved_module map m1) (resolved_module map m2)
-      | `OpaqueModule m -> opaquemodule (resolved_module map m)
+          M.alias (resolved_module map m1) (resolved_module map m2)
+      | `OpaqueModule m -> M.opaquemodule (resolved_module map m)
     in
     try
       let result = RM.find p map.memos.rmodpathmemo in

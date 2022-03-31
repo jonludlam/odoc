@@ -454,7 +454,9 @@ module Path = struct
       | `Identifier (`Module (_, m)) when Names.ModuleName.is_internal m -> true
       | `Identifier _ -> false
       | `Canonical (_, `Resolved _) -> false
-      | `Canonical (x, _) -> weak_canonical_test || inner (x : module_ :> any)
+      | `Canonical (`Resolved x, _) ->
+          weak_canonical_test || inner (x : module_ :> any)
+      | `Canonical (_, _) -> weak_canonical_test
       | `Hidden _ -> true
       | `Subst (p1, p2) ->
           inner (p1 : module_type :> any) || inner (p2 : module_ :> any)
@@ -526,7 +528,8 @@ module Path = struct
       | `Hidden p -> parent_module_identifier p
       | `Module (m, n) -> `Module (parent_module_identifier m, n)
       | `Canonical (_, `Resolved p) -> parent_module_identifier p
-      | `Canonical (p, _) -> parent_module_identifier p
+      | `Canonical (`Resolved p, _) -> parent_module_identifier p
+      | `Canonical (_, _) -> failwith "Bad path"
       | `Apply (m, _) -> parent_module_identifier m
       | `Alias (sub, orig) ->
           if is_path_hidden (`Resolved (sub :> t)) then
@@ -548,7 +551,8 @@ module Path = struct
         | `Hidden p -> identifier p
         | `Module (m, n) -> `Module (parent_module_identifier m, n)
         | `Canonical (_, `Resolved p) -> identifier p
-        | `Canonical (p, _) -> identifier p
+        | `Canonical (`Resolved p, _) -> identifier p
+        | `Canonical (_, _) -> failwith "Bad path"
         | `Apply (m, _) -> identifier m
         | `Alias (sub, orig) ->
             if is_path_hidden (`Resolved (sub :> Paths_types.Resolved_path.any))
@@ -719,7 +723,8 @@ module Path = struct
       | `Hidden p -> identifier (p :> t)
       | `Module (m, n) -> `Module (parent_module_identifier m, n)
       | `Canonical (_, `Resolved p) -> identifier (p :> t)
-      | `Canonical (p, _) -> identifier (p :> t)
+      | `Canonical (`Resolved p, _) -> identifier (p :> t)
+      | `Canonical _ -> failwith "Bad path"
       | `Apply (m, _) -> identifier (m :> t)
       | `Type (m, n) -> `Type (parent_module_identifier m, n)
       | `ModuleType (m, n) -> `ModuleType (parent_module_identifier m, n)

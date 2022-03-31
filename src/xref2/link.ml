@@ -70,7 +70,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `Subst (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
   | `Hidden p -> should_reresolve (p :> t)
   | `Canonical (x, y) ->
-      should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
+      should_resolve (x :> Paths.Path.t) || should_resolve (y :> Paths.Path.t)
   | `CanonicalModuleType (x, y) ->
       should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
   | `CanonicalType (x, y) ->

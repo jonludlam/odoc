@@ -445,7 +445,8 @@ module rec Path : sig
 
         val module_ : t -> Names.ModuleName.t -> t
 
-        val canonical : t -> Paths_types.Path.module_ -> t
+        val canonical :
+          Paths_types.Path.module_ -> Paths_types.Path.module_ -> t
 
         val apply : t -> t -> t
 

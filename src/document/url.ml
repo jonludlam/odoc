@@ -33,7 +33,8 @@ let render_path : Odoc_model.Paths.Path.t -> string =
       | `Module (p, s) ->
           render_resolved (p :> t) ^ "." ^ ModuleName.to_string s
       | `Canonical (_, `Resolved p) -> render_resolved (p :> t)
-      | `Canonical (p, _) -> render_resolved (p :> t)
+      | `Canonical (`Resolved p, _) -> render_resolved (p :> t)
+      | `Canonical (p, _) -> render_path (p :> Path.t)
       | `CanonicalModuleType (_, `Resolved p) -> render_resolved (p :> t)
       | `CanonicalModuleType (p, _) -> render_resolved (p :> t)
       | `CanonicalType (_, `Resolved p) -> render_resolved (p :> t)
