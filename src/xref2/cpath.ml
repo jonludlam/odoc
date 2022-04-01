@@ -191,7 +191,7 @@ and is_resolved_module_hidden :
     | `Identifier _ -> false
     | `Hidden _ -> true
     | `Canonical (_, `Resolved _) -> false
-    | `Canonical (p, _) -> weak_canonical_test || inner p
+    | `Canonical (p, _) -> (not weak_canonical_test) || inner p
     | `Substituted p | `Apply (p, _) -> inner p
     | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
     | `Subst (p1, p2) -> is_resolved_module_type_hidden p1 || inner p2
