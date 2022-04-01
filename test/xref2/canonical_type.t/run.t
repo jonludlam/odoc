@@ -57,7 +57,7 @@ Now we can run odoc
   $ odoc compile --package x -I . foo__type0.cmt
   $ odoc compile --package x -I . foo__type.cmt
   $ odoc compile --package x -I . foo.cmt
-  Error: Unresolved path doesn't look like unresolve_resolve_module_path: unresolvedroot(Foo__).Type != identifier((root Foo__), false).Type
+  Error: Unresolved path doesn't look like unresolve_resolve_module_path: unresolvedroot(Foo__).Type != identifier((root Foo__), true).Type
 
 We only need to link `foo` as all the others are hidden
 
