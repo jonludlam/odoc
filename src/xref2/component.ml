@@ -1528,7 +1528,8 @@ module Of_Lang = struct
   module RM = Map.Make (struct
     type t = Paths.Path.Resolved.Module.t
 
-    let compare x y = Int.compare (fst x) (fst y)
+    let compare x y =
+      match Int.compare (fst x) (fst y) with 0 -> compare x y | z -> z
   end)
 
   type memos = { mutable rmodpathmemo : Cpath.Resolved.module_ RM.t }

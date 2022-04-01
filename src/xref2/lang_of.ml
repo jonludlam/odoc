@@ -5,7 +5,8 @@ open Names
 module RM = Map.Make (struct
   type t = Cpath.Resolved.module_
 
-  let compare x y = Int.compare (fst x) (fst y)
+  let compare x y =
+    match Int.compare (fst x) (fst y) with 0 -> compare x y | z -> z
 end)
 
 type memos = { mutable rmodpathmemo : Path.Resolved.Module.t RM.t }

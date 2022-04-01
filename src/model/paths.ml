@@ -455,8 +455,8 @@ module Path = struct
       | `Identifier _ -> false
       | `Canonical (_, `Resolved _) -> false
       | `Canonical (`Resolved x, _) ->
-          weak_canonical_test || inner (x : module_ :> any)
-      | `Canonical (_, _) -> weak_canonical_test
+          (not weak_canonical_test) || inner (x : module_ :> any)
+      | `Canonical (_, _) -> not weak_canonical_test
       | `Hidden _ -> true
       | `Subst (p1, p2) ->
           inner (p1 : module_type :> any) || inner (p2 : module_ :> any)
@@ -475,9 +475,10 @@ module Path = struct
       | `SubstT (p1, p2) -> inner (p1 :> any) || inner (p2 :> any)
       | `CanonicalModuleType (_, `Resolved _) -> false
       | `CanonicalModuleType (x, _) ->
-          weak_canonical_test || inner (x : module_type :> any)
+          (not weak_canonical_test) || inner (x : module_type :> any)
       | `CanonicalType (_, `Resolved _) -> false
-      | `CanonicalType (x, _) -> weak_canonical_test || inner (x : type_ :> any)
+      | `CanonicalType (x, _) ->
+          (not weak_canonical_test) || inner (x : type_ :> any)
       | `OpaqueModule m -> inner (m :> any)
       | `OpaqueModuleType mt -> inner (mt :> any)
     and inner = function _, x -> inner_unhashed x in
