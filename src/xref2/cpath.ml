@@ -430,6 +430,12 @@ and module_of_module_reference : Reference.Module.t -> module_ = function
 let rec unresolve_resolved_module_path : Resolved.module_ -> module_ =
  fun (_, x) ->
   match x with
+  | `Hidden (_, `GPath (_, `Identifier x)) -> `Identifier (x, true)
+  | `GPath ((_, `Identifier x) as p) ->
+      `Identifier
+        ( x,
+          Odoc_model.Paths.Path.Resolved.Module.is_hidden
+            ~weak_canonical_test:false p )
   | `GPath x -> `Resolved (Mk.Module.gpath x)
   | `Hidden (_, `Local x) -> `Local (x, true)
   | `Local x -> `Local (x, false)

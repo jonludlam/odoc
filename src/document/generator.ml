@@ -137,14 +137,24 @@ module Make (Syntax : SYNTAX) = struct
             | `OpaqueModule _ | `OpaqueModuleType _ -> true
             | _ -> false
           in
-          let id = Paths.Path.Resolved.identifier rp in
-          let txt = Url.render_path path in
-          match Url.from_identifier ~stop_before id with
-          | Ok href -> resolved href [ inline @@ Text txt ]
-          | Error (Url.Error.Not_linkable _) -> O.txt txt
-          | Error exn ->
-              Printf.eprintf "Id.href failed: %S\n%!" (Url.Error.to_string exn);
-              O.txt txt)
+          try
+            let id = Paths.Path.Resolved.identifier rp in
+            let txt = Url.render_path path in
+            match Url.from_identifier ~stop_before id with
+            | Ok href -> resolved href [ inline @@ Text txt ]
+            | Error (Url.Error.Not_linkable _) -> O.txt txt
+            | Error exn ->
+                Printf.eprintf "Id.href failed: %S\n%!"
+                  (Url.Error.to_string exn);
+                O.txt txt
+          with _ ->
+            let txt = Url.render_path path ^ string_of_int (Random.int 65535) in
+            Format.eprintf
+              "Failed to generate identifier for path: %a (hidden=%b)\n%!"
+              Odoc_xref2.Component.Fmt.model_resolved_path rp
+              (Paths.Path.is_hidden (`Resolved rp));
+            Format.eprintf "Warning, resolved hidden path: %s\n%!" txt;
+            unresolved [ inline @@ Text txt ])
 
     let dot prefix suffix = prefix ^ "." ^ suffix
 

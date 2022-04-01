@@ -481,20 +481,30 @@ let rec handle_apply ~mark_substituted env func_path arg_path m =
 and add_canonical_path :
     Env.t ->
     Component.Module.t ->
+    Cpath.module_ option ->
     Cpath.Resolved.module_ ->
     Cpath.Resolved.module_ =
- fun env m p ->
-  match snd p with
-  | `Canonical _ -> p
+ fun env m p_opt rp ->
+  match snd rp with
+  | `Canonical _ -> rp
   | _ -> (
-      match m.Component.Module.canonical with
-      | Some cp ->
-          let p =
-            if Env.is_linking env then `Resolved p
-            else Cpath.unresolve_resolved_module_path p
+      match (m.Component.Module.canonical, p_opt) with
+      | Some cp, Some p ->
+          let p' =
+            if Env.is_linking env then `Resolved rp
+            else Cpath.unresolve_resolved_module_path rp
           in
+          if not (p = p') then
+            Format.eprintf
+              "Error: Unresolved path doesn't look like \
+               unresolve_resolve_module_path: %a != %a\n\
+               %!"
+              Component.Fmt.module_path p Component.Fmt.module_path p';
           Cpath.Mk.Module.canonical p cp
-      | None -> p)
+      | Some _, None ->
+          Format.eprintf "Handling canonical path without a parent!\n%!";
+          failwith "error"
+      | None, _ -> rp)
 
 and add_canonical_path_mt :
     Component.ModuleType.t ->
@@ -579,24 +589,31 @@ and get_module_path_modifiers :
       | Some s -> Some (`SubstMT s)
       | None -> None)
 
-and process_module_path env ~add_canonical m p =
-  let p = if m.Component.Module.hidden then Cpath.Mk.Module.hidden p else p in
-  let p' =
-    match get_module_path_modifiers env ~add_canonical m with
-    | None -> p
-    | Some (`Aliased p') -> Cpath.Mk.Module.alias p' p
-    | Some (`SubstMT p') -> Cpath.Mk.Module.subst p' p
+and process_module_path env ~add_canonical m p rp =
+  let rp =
+    if m.Component.Module.hidden then Cpath.Mk.Module.hidden rp else rp
   in
-  let p'' = if add_canonical then add_canonical_path env m p' else p' in
-  p''
+  let rp' =
+    match get_module_path_modifiers env ~add_canonical m with
+    | None -> rp
+    | Some (`Aliased p') -> Cpath.Mk.Module.alias p' rp
+    | Some (`SubstMT p') -> Cpath.Mk.Module.subst p' rp
+  in
+  let rp'' = if add_canonical then add_canonical_path env m p rp' else rp' in
+  rp''
 
-and handle_module_lookup env ~add_canonical id parent sg sub =
+and handle_module_lookup env ~add_canonical id parent_opt rparent sg sub =
   match Find.careful_module_in_sig sg id with
   | Some (`FModule (name, m)) ->
-      let p' = simplify_module env (Cpath.Mk.Module.module_ parent name) in
+      let rp' = simplify_module env (Cpath.Mk.Module.module_ rparent name) in
+      let p' =
+        match parent_opt with
+        | Some parent -> Some (`Dot (parent, ModuleName.to_string_unsafe name))
+        | None -> None
+      in
       let m' = Subst.module_ sub m in
       let md' = Component.Delayed.put_val m' in
-      Ok (process_module_path env ~add_canonical m' p', md')
+      Ok (process_module_path env ~add_canonical m' p' rp', md')
   | Some (`FModule_removed p) ->
       lookup_module ~mark_substituted:false env p >>= fun m -> Ok (p, m)
   | None -> Error `Find_failure
@@ -918,13 +935,18 @@ and resolve_module :
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= fun parent_sig ->
         let sub = prefix_substitution (`Module p) parent_sig in
-        handle_module_lookup env ~add_canonical id (`Module p) parent_sig sub
-    | `Module (parent, id) ->
-        lookup_parent ~mark_substituted env parent
+        handle_module_lookup env ~add_canonical id (Some parent) (`Module p)
+          parent_sig sub
+    | `Module (rparent, id) ->
+        lookup_parent ~mark_substituted env rparent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (parent_sig, sub) ->
+        let parent =
+          try Some (Cpath.unresolve_resolved_parent_path rparent)
+          with _ -> None
+        in
         handle_module_lookup env ~add_canonical (ModuleName.to_string id) parent
-          parent_sig sub
+          rparent parent_sig sub
     | `Apply (m1, m2) -> (
         let func = resolve_module ~mark_substituted ~add_canonical env m1 in
         let arg = resolve_module ~mark_substituted ~add_canonical env m2 in
@@ -938,13 +960,15 @@ and resolve_module :
     | `Identifier (i, hidden) ->
         of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
         >>= fun (`Module (_, m)) ->
-        let p =
+        let rp =
           if hidden then
             Cpath.Mk.Module.(hidden (gpath (RP.Module.Mk.identifier i)))
           else Cpath.Mk.Module.gpath (RP.Module.Mk.identifier i)
         in
         Ok
-          (process_module_path env ~add_canonical (Component.Delayed.get m) p, m)
+          ( process_module_path env ~add_canonical (Component.Delayed.get m)
+              (Some p) rp,
+            m )
     | `Local (p, _) -> Error (`Local (env, p))
     | `Resolved r -> lookup_module ~mark_substituted env r >>= fun m -> Ok (r, m)
     | `Substituted s ->
@@ -953,13 +977,13 @@ and resolve_module :
         >>= fun (p, m) -> Ok (Cpath.Mk.Module.substituted p, m)
     | `Root r -> (
         match Env.lookup_root_module r env with
-        | Some (Env.Resolved (_, p, m)) ->
-            let p =
+        | Some (Env.Resolved (_, p', m)) ->
+            let rp =
               Cpath.Mk.Module.gpath
                 (RP.Module.Mk.identifier
-                   (p :> Odoc_model.Paths.Identifier.Path.Module.t))
+                   (p' :> Odoc_model.Paths.Identifier.Path.Module.t))
             in
-            let p = process_module_path env ~add_canonical m p in
+            let p = process_module_path env ~add_canonical m (Some p) rp in
             Ok (p, Component.Delayed.put_val m)
         | Some Env.Forward ->
             Error (`Parent (`Parent_sig `UnresolvedForwardPath))
@@ -1215,13 +1239,18 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       match handle_canonical_module env p2 with
       | `Resolved _ as p2' -> canonical p p2'
       | p2' -> (
+          Format.eprintf "Failed to resolve canonical path\n%!";
           match
             resolve_module ~mark_substituted:true ~add_canonical:false env p
           with
           | Ok (p', _m) ->
               let p'' = reresolve_module env p' in
               canonical (`Resolved p'') p2'
-          | Error _ -> canonical p p2'))
+          | Error _ ->
+              Format.eprintf
+                "Failed to resolve non-canonical part of the canonical path too!\n\
+                 %!";
+              canonical p p2'))
   | `OpaqueModule m -> opaquemodule (reresolve_module env m)
 
 and handle_canonical_module env p2 =
@@ -1292,7 +1321,11 @@ and handle_canonical_module env p2 =
       in
       let cpath =
         if expanded then rp
-        else process_module_path env ~add_canonical:false m rp
+        else
+          let up =
+            try Some (Cpath.unresolve_resolved_module_path rp) with _ -> None
+          in
+          process_module_path env ~add_canonical:false m up rp
       in
       `Resolved Lang_of.(Path.resolved_module (empty ()) cpath)
 

@@ -37,9 +37,9 @@ Everything should resolve:
   {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"for"},"`Space",{"`Code_span":"T"},{"`Word":"."}]}
   {"`Resolved":{"`Alias":[["217784133",{"`Module":[["295002680",{"`Identifier":{"`Root":[{"Some":{"`Page":["None","test"]}},"External"]}}],"X"]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Alias"]}}]}}
   "None"
-  {"`Resolved":{"`Alias":[["507139835",{"`Canonical":[{"`Dot":[{"`Resolved":["267448347",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]}}]},"C1"]},{"`Resolved":["53231112",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}}
+  {"`Resolved":{"`Alias":[["347932413",{"`Canonical":[{"`Dot":[{"`Identifier":[{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]},"false"]},"C1"]},{"`Resolved":["53231112",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C1"]}}]}}
   "None"
-  {"`Resolved":{"`Alias":[["537973459",{"`Canonical":[{"`Dot":[{"`Resolved":["267448347",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]}}]},"C2"]},{"`Resolved":["699693476",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}}
+  {"`Resolved":{"`Alias":[["437519641",{"`Canonical":[{"`Dot":[{"`Identifier":[{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Internal"]},"false"]},"C2"]},{"`Resolved":["699693476",{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}]}],{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"C2"]}}]}}
   "None"
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Inline_include"]}}}
   {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"for"},"`Space",{"`Code_span":"T"},{"`Word":"."}]}

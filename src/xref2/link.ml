@@ -651,7 +651,7 @@ and u_module_type_expr :
   | Signature s -> Signature s
   (* No need to link 'unexpanded' module type expressions that are actually expanded... *)
   | Path p -> Path (module_type_path env p)
-  | With (subs, expr) as unresolved -> (
+  | With (subs, expr) -> (
       let cexpr = Component.Of_Lang.(u_module_type_expr (empty ()) expr) in
       match
         Tools.signature_of_u_module_type_expr ~mark_substituted:true env cexpr
@@ -660,7 +660,7 @@ and u_module_type_expr :
           With (handle_fragments env id sg subs, u_module_type_expr env id expr)
       | Error e ->
           Errors.report ~what:(`Module_type_U cexpr) ~tools_error:e `Resolve;
-          unresolved)
+          With (subs, u_module_type_expr env id expr))
   | TypeOf { t_desc = StructInclude p; t_expansion } ->
       TypeOf { t_desc = StructInclude (module_path env p); t_expansion }
   | TypeOf { t_desc = ModPath p; t_expansion } ->

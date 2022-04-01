@@ -939,7 +939,7 @@ module Fmt = struct
     match snd p with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
     | `GPath p ->
-        Format.fprintf ppf "%a" model_resolved_path
+        Format.fprintf ppf "gpath(%a)" model_resolved_path
           (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted x ->
         Format.fprintf ppf "substituted(%a)" resolved_module_type_path x

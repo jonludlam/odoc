@@ -456,7 +456,7 @@ module Path = struct
       | `Canonical (_, `Resolved _) -> false
       | `Canonical (`Resolved x, _) ->
           (not weak_canonical_test) || inner (x : module_ :> any)
-      | `Canonical (_, _) -> not weak_canonical_test
+      | `Canonical (x, _) -> is_path_hidden (x :> Paths_types.Path.any)
       | `Hidden _ -> true
       | `Subst (p1, p2) ->
           inner (p1 : module_type :> any) || inner (p2 : module_ :> any)
@@ -484,12 +484,21 @@ module Path = struct
     and inner = function _, x -> inner_unhashed x in
     inner x
 
+  and contains_double_underscore s =
+    let len = String.length s in
+    let rec aux i =
+      if i > len - 2 then false
+      else if s.[i] = '_' && s.[i + 1] = '_' then true
+      else aux (i + 1)
+    in
+    aux 0
+
   and is_path_hidden : Paths_types.Path.any -> bool =
     let open Paths_types.Path in
     function
     | `Resolved r -> is_resolved_hidden ~weak_canonical_test:false r
     | `Identifier (_, hidden) -> hidden
-    | `Root _ -> false
+    | `Root x -> contains_double_underscore x
     | `Forward _ -> false
     | `Dot (p, _) -> is_path_hidden (p : module_ :> any)
     | `Apply (p1, p2) ->
