@@ -17,7 +17,7 @@ module rec Resolved : sig
     | `Module of parent * ModuleName.t
     | `Canonical of module_ * Path.Module.t
     | `Apply of module_ * module_
-    | `Alias of module_ * module_
+    | `Alias of module_ * Cpath.module_ * module_ option
     | `OpaqueModule of module_ ]
 
   and module_ = module_unhashed Hc.hashed
@@ -247,8 +247,7 @@ module Mk = struct
          | `Module of parent * ModuleName.t
          | `Canonical of module_ * Path.Module.t
          | `Apply of module_ * module_
-         | `AliasRS of Cpath.module_ * module_
-         | `AliasRD of module_ * Cpath.module_
+         | `Alias of module_ * Cpath.module_
          | `OpaqueModule of module_ ] *)
 
       let local : Ident.path_module -> Resolved.module_ =
@@ -277,8 +276,10 @@ module Mk = struct
       let apply : Resolved.module_ * Resolved.module_ -> Resolved.module_ =
        fun (x, y) -> Hc.mk (`Apply (x, y))
 
-      let alias : Resolved.module_ * Resolved.module_ -> Resolved.module_ =
-       fun (x, y) -> Hc.mk (`Alias (x, y))
+      let alias :
+          Resolved.module_ * module_ * Resolved.module_ option ->
+          Resolved.module_ =
+       fun (x, y, z) -> Hc.mk (`Alias (x, y, z))
 
       let opaquemodule : Resolved.module_ -> Resolved.module_ =
        fun x -> Hc.mk (`OpaqueModule x)
@@ -390,7 +391,7 @@ let rec is_resolved_module_substituted : Resolved.module_ -> bool =
   | `Substituted _ -> true
   | `Identifier _ -> false
   | `Subst (_a, _) -> false (* is_resolved_module_type_substituted a*)
-  | `Hidden a | `Canonical (a, _) | `Apply (a, _) | `Alias (a, _) ->
+  | `Hidden a | `Apply (a, _) | `Alias (a, _, _) | `Canonical (a, _) ->
       is_resolved_module_substituted a
   | `Module (a, _) -> is_resolved_parent_substituted a
   | `OpaqueModule a -> is_resolved_module_substituted a
@@ -512,8 +513,9 @@ and is_resolved_module_hidden :
     | `Substituted p -> inner p
     | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
     | `Subst (p1, p2) -> is_resolved_module_type_hidden p1 || inner p2
-    | `Alias (p1, p2) 
-    | `Apply (p1, p2) -> inner p1 || inner p2 
+    | `Alias (p1, { v = `Resolved p2; _ }, _) -> inner p1 && inner p2
+    | `Alias (p1, _p2, _) -> inner p1
+    | `Apply (p1, p2) -> inner p1 || inner p2
     | `OpaqueModule m -> inner m
   in
   inner
@@ -651,7 +653,13 @@ let rec unresolve_resolved_module_path : Resolved.module_ -> module_ =
   fun x ->
     match x.v with
     | `Hidden { v = `Identifier x; _ } -> identifier (x, true)
-    | `Identifier x -> identifier (x, false)
+    | `Identifier x ->
+        let hidden =
+          match x with
+          | `Module (_, n) -> Odoc_model.Names.ModuleName.is_internal n
+          | _ -> false
+        in
+        identifier (x, hidden)
     | `Hidden { v = `Local x; _ } -> local (x, true)
     | `Local x -> local (x, false)
     | `Substituted x -> unresolve_resolved_module_path x
@@ -664,7 +672,8 @@ let rec unresolve_resolved_module_path : Resolved.module_ -> module_ =
     | `Apply (m, a) ->
         apply
           (unresolve_resolved_module_path m, unresolve_resolved_module_path a)
-    | `Alias (_, m) -> unresolve_resolved_module_path m
+    | `Alias (_, { v = `Resolved m; _ }, _) -> unresolve_resolved_module_path m
+    | `Alias (_, m, _) -> m
     | `OpaqueModule m -> unresolve_resolved_module_path m
 
 and unresolve_module_path : module_ -> module_ =
