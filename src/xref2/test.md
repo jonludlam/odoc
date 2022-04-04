@@ -535,10 +535,11 @@ Some
                (`Identifier
                   (`Module (`Root (Some (`Page (None, None)), Root), A)),
                 M),
-             `Module
+             `Dot
                (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                N)),
+                  (`Module (`Root (Some (`Page (None, None)), Root), A),
+                   false),
+                "N")),
           t)),
    []))
 ```
@@ -574,14 +575,16 @@ Some
                   (`Identifier
                      (`Module (`Root (Some (`Page (None, None)), Root), A)),
                    M),
-                `Module
+                `Dot
                   (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                   N)),
-             `Module
+                     (`Module (`Root (Some (`Page (None, None)), Root), A),
+                      false),
+                   "N")),
+             `Dot
                (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                O)),
+                  (`Module (`Root (Some (`Page (None, None)), Root), A),
+                   false),
+                "O")),
           t)),
    []))
 ```
@@ -1042,6 +1045,34 @@ val sg' : Component.Signature.t =
           canonical = None; hidden = false};
        get = None})];
    compiled = false; removed = []; doc = []}
+# let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+val sg' : Component.Signature.t =
+  {Odoc_xref2.Component.Signature.items =
+    [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 17),
+      Odoc_model.Lang.Signature.Ordinary,
+      {Odoc_xref2.Component.Delayed.v =
+        Some
+         {Odoc_xref2.Component.Module.doc = [];
+          type_ =
+           Odoc_xref2.Component.Module.ModuleType
+            (Odoc_xref2.Component.ModuleType.Path
+              {Odoc_xref2.Component.ModuleType.p_expansion = None;
+               p_path =
+                {Odoc_xref2.Hc.v =
+                  `Dot
+                    ({Odoc_xref2.Hc.v =
+                       `Resolved
+                         {Odoc_xref2.Hc.v =
+                           `Substituted
+                             {Odoc_xref2.Hc.v =
+                               `Identifier
+                                 (`Module
+                                    (`Root (Some (`Page (None, None)), Root),
+                                     Bar))}}},
+                     "T")}});
+          canonical = None; hidden = false};
+       get = None})];
+   compiled = false; removed = []; doc = []}
 ```
 
 ```ocaml env=e1
@@ -1176,13 +1207,15 @@ Some
                               (`Root (Some (`Page (None, None)), Root), Dep1))),
                       A),
                    Y)),
-             `Module
+             `Dot
                (`Apply
                   (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep2)),
+                     (`Module (`Root (Some (`Page (None, None)), Root), Dep2),
+                      false),
                    `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep1))),
-                B)),
+                     (`Module (`Root (Some (`Page (None, None)), Root), Dep1),
+                      false)),
+                "B")),
           c)),
    []))
 ```
@@ -1251,17 +1284,19 @@ Some
          (`Alias
             (`Identifier
                (`Module (`Root (Some (`Page (None, None)), Root), Dep3)),
-             `Module
-               (`Module
+             `Dot
+               (`Dot
                   (`Apply
                      (`Identifier
                         (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep5)),
+                           (`Root (Some (`Page (None, None)), Root), Dep5),
+                         false),
                       `Identifier
                         (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep4))),
-                   Z),
-                Y)),
+                           (`Root (Some (`Page (None, None)), Root), Dep4),
+                         false)),
+                   "Z"),
+                "Y")),
           a)),
    []))
 ```
