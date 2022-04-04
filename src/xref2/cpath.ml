@@ -14,7 +14,8 @@ module rec Resolved : sig
     | `Module of parent * ModuleName.t
     | `Canonical of module_ * Path.Module.t
     | `Apply of module_ * module_
-    | `Alias of module_ * module_
+    | `AliasRS of Cpath.module_ * module_
+    | `AliasRD of module_ * Cpath.module_
     | `OpaqueModule of module_ ]
 
   and module_type =
@@ -93,8 +94,9 @@ let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
   | `Substituted _ -> true
   | `Identifier _ -> false
   | `Subst (_a, _) -> false (* is_resolved_module_type_substituted a*)
-  | `Hidden a | `Canonical (a, _) | `Apply (a, _) | `Alias (a, _) ->
+  | `Hidden a | `Apply (a, _) | `AliasRD (a, _) | `Canonical (a, _) ->
       is_resolved_module_substituted a
+  | `AliasRS _ -> false
   | `Module (a, _) -> is_resolved_parent_substituted a
   | `OpaqueModule a -> is_resolved_module_substituted a
 
@@ -195,7 +197,10 @@ and is_resolved_module_hidden :
     | `Substituted p | `Apply (p, _) -> inner p
     | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
     | `Subst (p1, p2) -> is_resolved_module_type_hidden p1 || inner p2
-    | `Alias (p1, p2) -> inner p1 || inner p2
+    | `AliasRS (`Resolved p1, p2) | `AliasRD (p1, `Resolved p2) ->
+        inner p1 && inner p2
+    | `AliasRS (_p1, p2) -> inner p2
+    | `AliasRD (p1, _p2) -> inner p1
     | `OpaqueModule m -> inner m
   in
   inner
@@ -322,8 +327,22 @@ let rec unresolve_resolved_module_path : Resolved.module_ -> module_ = function
   | `Canonical (m, _) -> unresolve_resolved_module_path m
   | `Apply (m, a) ->
       `Apply (unresolve_resolved_module_path m, unresolve_resolved_module_path a)
-  | `Alias (_, m) -> unresolve_resolved_module_path m
+  | `AliasRS (_, m) -> unresolve_resolved_module_path m
+  | `AliasRD (_, `Resolved m) -> unresolve_resolved_module_path m
+  | `AliasRD (_, m) -> m
   | `OpaqueModule m -> unresolve_resolved_module_path m
+
+and unresolve_module_path : module_ -> module_ = function
+  | `Resolved x -> unresolve_resolved_module_path x
+  | `Substituted x -> unresolve_module_path x
+  | `Local (_, _) as z -> z
+  | `Identifier _ as z -> z
+  | `Root _ as z -> z
+  | `Forward _ as z -> z
+  | `Dot (p, x) -> `Dot (unresolve_module_path p, x)
+  | `Module (p, x) ->
+      `Dot (unresolve_resolved_parent_path p, ModuleName.to_string_unsafe x)
+  | `Apply (x, y) -> `Apply (unresolve_module_path x, unresolve_module_path y)
 
 and unresolve_resolved_module_type_path : Resolved.module_type -> module_type =
   function
@@ -358,10 +377,6 @@ and unresolve_resolved_class_type_path : Resolved.class_type -> class_type =
       `Dot (unresolve_resolved_parent_path p, ClassName.to_string n)
   | `ClassType (p, n) ->
       `Dot (unresolve_resolved_parent_path p, ClassTypeName.to_string n)
-
-and unresolve_module_path : module_ -> module_ = function
-  | `Resolved m -> unresolve_resolved_module_path m
-  | y -> y
 
 and unresolve_module_type_path : module_type -> module_type = function
   | `Resolved m -> unresolve_resolved_module_type_path m

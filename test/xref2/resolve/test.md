@@ -1169,13 +1169,14 @@ Resolve a module alias:
             (Odoc_model.Lang.TypeExpr.Constr
               (`Resolved
                  (`Type
-                    (`Alias
+                    (`AliasRD
                        (`Identifier
                           (`Module
                              (`Root (Some (`Page (None, None)), Root), A)),
-                        `Identifier
-                          (`Module
-                             (`Root (Some (`Page (None, None)), Root), B))),
+                        `Resolved
+                          (`Identifier
+                             (`Module
+                                (`Root (Some (`Page (None, None)), Root), B)))),
                      t)),
               []));
           constraints = []};
@@ -1241,11 +1242,12 @@ Resolve a module alias:
         type_ =
          Odoc_model.Lang.Module.Alias
           (`Resolved
-             (`Alias
+             (`AliasRD
                 (`Identifier
                    (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                 `Identifier
-                   (`Module (`Root (Some (`Page (None, None)), Root), B)))),
+                 `Resolved
+                   (`Identifier
+                      (`Module (`Root (Some (`Page (None, None)), Root), B))))),
            None);
         canonical = None; hidden = false});
       Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
@@ -1259,17 +1261,20 @@ Resolve a module alias:
             (Odoc_model.Lang.TypeExpr.Constr
               (`Resolved
                  (`Type
-                    (`Alias
-                       (`Alias
+                    (`AliasRD
+                       (`AliasRD
                           (`Identifier
                              (`Module
                                 (`Root (Some (`Page (None, None)), Root), A)),
-                           `Identifier
+                           `Resolved
+                             (`Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    B)))),
+                        `Resolved
+                          (`Identifier
                              (`Module
-                                (`Root (Some (`Page (None, None)), Root), B))),
-                        `Identifier
-                          (`Module
-                             (`Root (Some (`Page (None, None)), Root), C))),
+                                (`Root (Some (`Page (None, None)), Root), C)))),
                      t)),
               []));
           constraints = []};

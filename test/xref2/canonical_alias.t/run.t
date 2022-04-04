@@ -117,7 +117,7 @@ Should resove to be an alias!
   $ odoc_print -r test5 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
   {
     "`Resolved": {
-      "`Alias": [
+      "`AliasRD": [
         {
           "`Identifier": {
             "`Module": [
@@ -132,16 +132,18 @@ Should resove to be an alias!
           }
         },
         {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Root": [
-                  "None",
-                  "Test"
-                ]
-              },
-              "C"
-            ]
+          "`Resolved": {
+            "`Identifier": {
+              "`Module": [
+                {
+                  "`Root": [
+                    "None",
+                    "Test"
+                  ]
+                },
+                "C"
+              ]
+            }
           }
         }
       ]

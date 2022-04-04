@@ -1,9 +1,9 @@
 (library
  (name odoc_xref2)
  (public_name odoc.xref2)
- (instrumentation
-  (backend bisect_ppx))
- (libraries compiler-libs.common odoc_model unix))
+ (preprocess
+  (pps landmarks-ppx --auto))
+ (libraries compiler-libs.common odoc_model unix landmarks))
 
 (rule
  (alias runmdx)

@@ -203,8 +203,14 @@ let rec resolved_module_path :
       `Apply (resolved_module_path s p1, resolved_module_path s p2)
   | `Substituted p -> `Substituted (resolved_module_path s p)
   | `Module (p, n) -> `Module (resolved_parent_path s p, n)
-  | `Alias (p1, p2) ->
-      `Alias (resolved_module_path s p1, resolved_module_path s p2)
+  | `AliasRS (p1, p2) ->
+      let p1' = module_path s p1 in
+      let up1' = try Cpath.unresolve_module_path p1' with _ -> p1' in
+      `AliasRS (Cpath.unresolve_module_path up1', resolved_module_path s p2)
+  | `AliasRD (p1, p2) ->
+      let p2' = module_path s p2 in
+      let up2' = try Cpath.unresolve_module_path p2' with _ -> p2' in
+      `AliasRD (resolved_module_path s p1, up2')
   | `Subst (p1, p2) ->
       let p1 =
         match resolved_module_type_path s p1 with
@@ -665,7 +671,8 @@ and mto_resolved_module_path_invalidated s p =
   | `Module (`Module p, _) | `Substituted p ->
       mto_resolved_module_path_invalidated s p
   | `Module (_, _) -> false
-  | `Alias (p1, _p2) -> mto_resolved_module_path_invalidated s p1
+  | `AliasRD (p1, _p2) -> mto_resolved_module_path_invalidated s p1
+  | `AliasRS (_p1, _p2) -> false
   | `Subst (_p1, p2) -> mto_resolved_module_path_invalidated s p2
   | `Hidden p -> mto_resolved_module_path_invalidated s p
   | `Canonical (p1, _p2) -> mto_resolved_module_path_invalidated s p1
