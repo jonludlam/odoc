@@ -68,41 +68,87 @@ Now we check that any types with 'equations' found in `foo` are equal to
 polymorphic variants rather than Constrs
 
   $ odoc_print foo.odocl -r Type.Path.t | jq '.. | .["equation"]? | select(.) | .manifest.Some.Polymorphic_variant.kind'
-  "Fixed"
+  null
 
 Canonical paths should be as short as possible. As such, the following ought to be just an Identifier:
 
   $ odoc_print foo.odocl -r Type.Path.u | jq '.. | .["equation"]? | select(.) | .manifest.Some.Constr[0]["`Resolved"]["`CanonicalType"][1]'
   {
     "`Resolved": {
-      "`Identifier": {
-        "`Type": [
-          {
-            "`Module": [
-              {
-                "`Module": [
-                  {
-                    "`Root": [
-                      {
-                        "Some": {
-                          "`Page": [
-                            "None",
-                            "x"
+      "`Type": [
+        {
+          "`Alias": [
+            {
+              "`Module": [
+                {
+                  "`Canonical": [
+                    {
+                      "`Module": [
+                        {
+                          "`Hidden": {
+                            "`Identifier": {
+                              "`Root": [
+                                {
+                                  "Some": {
+                                    "`Page": [
+                                      "None",
+                                      "x"
+                                    ]
+                                  }
+                                },
+                                "Foo__"
+                              ]
+                            }
+                          }
+                        },
+                        "Type"
+                      ]
+                    },
+                    {
+                      "`Dot": [
+                        {
+                          "`Root": "Foo"
+                        },
+                        "Type"
+                      ]
+                    }
+                  ]
+                },
+                "Path"
+              ]
+            },
+            {
+              "`Dot": [
+                {
+                  "`Identifier": [
+                    {
+                      "`Module": [
+                        {
+                          "`Root": [
+                            {
+                              "Some": {
+                                "`Page": [
+                                  "None",
+                                  "x"
+                                ]
+                              }
+                            },
+                            "Foo"
                           ]
-                        }
-                      },
-                      "Foo"
-                    ]
-                  },
-                  "Type"
-                ]
-              },
-              "Path"
-            ]
-          },
-          "t"
-        ]
-      }
+                        },
+                        "Type"
+                      ]
+                    },
+                    "false"
+                  ]
+                },
+                "Path"
+              ]
+            }
+          ]
+        },
+        "t"
+      ]
     }
   }
 
@@ -113,29 +159,75 @@ And this one should be `` `Type(`Identifier,t) ``
     "`Resolved": {
       "`Type": [
         {
-          "`Identifier": {
-            "`Module": [
-              {
-                "`Module": [
-                  {
-                    "`Root": [
-                      {
-                        "Some": {
-                          "`Page": [
-                            "None",
-                            "x"
+          "`Alias": [
+            {
+              "`Module": [
+                {
+                  "`Canonical": [
+                    {
+                      "`Module": [
+                        {
+                          "`Hidden": {
+                            "`Identifier": {
+                              "`Root": [
+                                {
+                                  "Some": {
+                                    "`Page": [
+                                      "None",
+                                      "x"
+                                    ]
+                                  }
+                                },
+                                "Foo__"
+                              ]
+                            }
+                          }
+                        },
+                        "Type"
+                      ]
+                    },
+                    {
+                      "`Dot": [
+                        {
+                          "`Root": "Foo"
+                        },
+                        "Type"
+                      ]
+                    }
+                  ]
+                },
+                "Path"
+              ]
+            },
+            {
+              "`Dot": [
+                {
+                  "`Identifier": [
+                    {
+                      "`Module": [
+                        {
+                          "`Root": [
+                            {
+                              "Some": {
+                                "`Page": [
+                                  "None",
+                                  "x"
+                                ]
+                              }
+                            },
+                            "Foo"
                           ]
-                        }
-                      },
-                      "Foo"
-                    ]
-                  },
-                  "Type"
-                ]
-              },
-              "Path"
-            ]
-          }
+                        },
+                        "Type"
+                      ]
+                    },
+                    "false"
+                  ]
+                },
+                "Path"
+              ]
+            }
+          ]
         },
         "t"
       ]
