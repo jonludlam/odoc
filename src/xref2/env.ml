@@ -119,14 +119,23 @@ end = struct
   let remove id t =
     let id = (id :> Identifier.t) in
     let name = Identifier.name id in
-    let l = begin try StringMap.find name t with e -> Format.eprintf "Failed to find %s\n%!" name; raise e end in
+    let l =
+      try StringMap.find name t
+      with e ->
+        Format.eprintf "Failed to find %s\n%!" name;
+        raise e
+    in
     match
       List.filter
         (fun e ->
           not (Identifier.equal id (Component.Element.identifier e.elem)))
         l
     with
-    | [] -> begin try StringMap.remove name t with Not_found -> Format.eprintf "Failed to find %s\n%!" name; raise Not_found end
+    | [] -> (
+        try StringMap.remove name t
+        with Not_found ->
+          Format.eprintf "Failed to find %s\n%!" name;
+          raise Not_found)
     | xs -> StringMap.add name xs (StringMap.remove name t)
 
   let find_by_name f name t =
@@ -179,6 +188,8 @@ type t = {
   recorder : recorder option;
   fragmentroot : (int * Component.Signature.t) option;
 }
+
+let is_linking env = env.linking
 
 let set_resolver t resolver = { t with resolver = Some resolver }
 

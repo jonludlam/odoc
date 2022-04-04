@@ -202,11 +202,10 @@ module General_paths = struct
             ( "`Apply",
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
-      | `Alias (x1, x2) ->
-          C
-            ( "`Alias",
-              ((x1 :> rp), (x2 :> rp)),
-              Pair (resolved_path, resolved_path) )
+      | `AliasRS (dest, src) ->
+          C ("`AliasRS", ((dest :> p), (src :> rp)), Pair (path, resolved_path))
+      | `AliasRD (dest, src) ->
+          C ("`AliasRD", ((dest :> rp), (src :> p)), Pair (resolved_path, path))
       | `AliasModuleType (x1, x2) ->
           C
             ( "`AliasModuleType",

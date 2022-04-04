@@ -156,8 +156,8 @@ module Path = struct
       | `Canonical (r, m) -> `Canonical (resolved_module map r, m)
       | `Apply (m1, m2) ->
           `Apply (resolved_module map m1, resolved_module map m2)
-      | `Alias (m1, m2) ->
-          `Alias (resolved_module map m1, resolved_module map m2)
+      | `AliasRS (m1, m2) -> `AliasRS (module_ map m1, resolved_module map m2)
+      | `AliasRD (m1, m2) -> `AliasRD (resolved_module map m1, module_ map m2)
       | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
     in
     try
