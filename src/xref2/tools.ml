@@ -639,7 +639,7 @@ and lookup_module :
         lookup_parent ~mark_substituted env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (sg, sub) -> find_in_sg sg sub
-    | `Alias (_, p) -> lookup_module ~mark_substituted env p
+    | `Alias (p, _) -> lookup_module ~mark_substituted env p
     | `Subst (_, p) -> lookup_module ~mark_substituted env p
     | `Hidden p -> lookup_module ~mark_substituted env p
     | `Canonical (p, _) -> lookup_module ~mark_substituted env p
