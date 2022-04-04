@@ -536,10 +536,11 @@ Some
                (`Identifier
                   (`Module (`Root (Some (`Page (None, None)), Root), A)),
                 M),
-             `Module
+             `Dot
                (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                N)),
+                  (`Module (`Root (Some (`Page (None, None)), Root), A),
+                   false),
+                "N")),
           t)),
    []))
 ```
@@ -575,14 +576,16 @@ Some
                   (`Identifier
                      (`Module (`Root (Some (`Page (None, None)), Root), A)),
                    M),
-                `Module
+                `Dot
                   (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                   N)),
-             `Module
+                     (`Module (`Root (Some (`Page (None, None)), Root), A),
+                      false),
+                   "N")),
+             `Dot
                (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                O)),
+                  (`Module (`Root (Some (`Page (None, None)), Root), A),
+                   false),
+                "O")),
           t)),
    []))
 ```
@@ -972,22 +975,22 @@ val p : Cpath.Resolved.module_ =
                 ({Odoc_xref2.Hc.v =
                    `Identifier
                      (`Module (`Root (Some (`Page (None, None)), Root), App));
-                  key = (541, "predefined")},
+                  key = (537, "predefined")},
                  {Odoc_xref2.Hc.v =
                    `Identifier
                      (`Module (`Root (Some (`Page (None, None)), Root), Bar));
-                  key = (539, "predefined")});
-             key = (547, "predefined")},
+                  key = (535, "predefined")});
+             key = (543, "predefined")},
             {Odoc_xref2.Hc.v =
               `Identifier
                 (`Module (`Root (Some (`Page (None, None)), Root), Foo));
-             key = (537, "predefined")});
-        key = (552, "predefined")},
+             key = (533, "predefined")});
+        key = (548, "predefined")},
        {Odoc_xref2.Hc.v =
          `Identifier
            (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt));
-        key = (535, "predefined")});
-   key = (557, "predefined")}
+        key = (531, "predefined")});
+   key = (553, "predefined")}
 val m : Component.Module.t Component.Delayed.t =
   {Odoc_xref2.Component.Delayed.v =
     Some
@@ -1010,9 +1013,9 @@ val m : Component.Module.t Component.Delayed.t =
                                   (`Module
                                      (`Root (Some (`Page (None, None)), Root),
                                       Foo));
-                               key = (537, "predefined")};
-                           key = (551, "predefined")};
-                       key = (553, "predefined")},
+                               key = (533, "predefined")};
+                           key = (547, "predefined")};
+                       key = (549, "predefined")},
                       {Odoc_xref2.Hc.v =
                         `Resolved
                           {Odoc_xref2.Hc.v =
@@ -1022,12 +1025,12 @@ val m : Component.Module.t Component.Delayed.t =
                                   (`Module
                                      (`Root (Some (`Page (None, None)), Root),
                                       Bar));
-                               key = (539, "predefined")};
-                           key = (546, "predefined")};
-                       key = (548, "predefined")});
-                  key = (554, "predefined")},
+                               key = (535, "predefined")};
+                           key = (542, "predefined")};
+                       key = (544, "predefined")});
+                  key = (550, "predefined")},
                  "T");
-             key = (555, "predefined")}});
+             key = (551, "predefined")}});
       canonical = None; hidden = false};
    get = None}
 # let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
@@ -1054,11 +1057,43 @@ val sg' : Component.Signature.t =
                                  (`Module
                                     (`Root (Some (`Page (None, None)), Root),
                                      Bar));
-                              key = (539, "predefined")};
-                          key = (546, "predefined")};
-                      key = (548, "predefined")},
+                              key = (535, "predefined")};
+                          key = (542, "predefined")};
+                      key = (544, "predefined")},
                      "T");
-                 key = (560, "predefined")}});
+                 key = (556, "predefined")}});
+          canonical = None; hidden = false};
+       get = None})];
+   compiled = false; removed = []; doc = []}
+# let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+val sg' : Component.Signature.t =
+  {Odoc_xref2.Component.Signature.items =
+    [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 17),
+      Odoc_model.Lang.Signature.Ordinary,
+      {Odoc_xref2.Component.Delayed.v =
+        Some
+         {Odoc_xref2.Component.Module.doc = [];
+          type_ =
+           Odoc_xref2.Component.Module.ModuleType
+            (Odoc_xref2.Component.ModuleType.Path
+              {Odoc_xref2.Component.ModuleType.p_expansion = None;
+               p_path =
+                {Odoc_xref2.Hc.v =
+                  `Dot
+                    ({Odoc_xref2.Hc.v =
+                       `Resolved
+                         {Odoc_xref2.Hc.v =
+                           `Substituted
+                             {Odoc_xref2.Hc.v =
+                               `Identifier
+                                 (`Module
+                                    (`Root (Some (`Page (None, None)), Root),
+                                     Bar));
+                              key = (535, "predefined")};
+                          key = (542, "predefined")};
+                      key = (544, "predefined")},
+                     "T");
+                 key = (556, "predefined")}});
           canonical = None; hidden = false};
        get = None})];
    compiled = false; removed = []; doc = []}
@@ -1196,13 +1231,15 @@ Some
                               (`Root (Some (`Page (None, None)), Root), Dep1))),
                       A),
                    Y)),
-             `Module
+             `Dot
                (`Apply
                   (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep2)),
+                     (`Module (`Root (Some (`Page (None, None)), Root), Dep2),
+                      false),
                    `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep1))),
-                B)),
+                     (`Module (`Root (Some (`Page (None, None)), Root), Dep1),
+                      false)),
+                "B")),
           c)),
    []))
 ```
@@ -1271,17 +1308,19 @@ Some
          (`Alias
             (`Identifier
                (`Module (`Root (Some (`Page (None, None)), Root), Dep3)),
-             `Module
-               (`Module
+             `Dot
+               (`Dot
                   (`Apply
                      (`Identifier
                         (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep5)),
+                           (`Root (Some (`Page (None, None)), Root), Dep5),
+                         false),
                       `Identifier
                         (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep4))),
-                   Z),
-                Y)),
+                           (`Root (Some (`Page (None, None)), Root), Dep4),
+                         false)),
+                   "Z"),
+                "Y")),
           a)),
    []))
 ```

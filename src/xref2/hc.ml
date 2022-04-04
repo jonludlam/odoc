@@ -41,6 +41,21 @@ module HT2Canonical = Hashtbl.MakeSeeded (struct
   let hash (i : int) (x : t) = Hashtbl.hash (i, x)
 end)
 
+module HT3 = Hashtbl.MakeSeeded (struct
+  type t = (int * string) * (int * string) * (int * string) option
+
+  let equal : t -> t -> bool =
+   fun ((a, b), (c, d), efopt) ((g, h), (i, j), klopt) ->
+    Int.equal a g && Int.equal c i && String.equal b h && String.equal d j
+    &&
+    match (efopt, klopt) with
+    | Some (e, f), Some (k, l) -> Int.equal e k && String.equal f l
+    | None, None -> true
+    | _, _ -> false
+
+  let hash (i : int) (x : t) = Hashtbl.hash (i, x)
+end)
+
 module HT2str = Hashtbl.MakeSeeded (struct
   type t = (int * string) * string
 
@@ -125,6 +140,23 @@ let gen2canonical_t :
     if M.mem tbl key then M.find tbl key
     else
       let y = mk (mk' (x, y)) in
+      M.add tbl key y;
+      y
+
+let gen3 :
+    ('a hashed * 'b hashed * 'c hashed option -> 'd) ->
+    'a hashed * 'b hashed * 'c hashed option ->
+    'd hashed =
+ fun mk' ->
+  let module M = HT3 in
+  let tbl = M.create 4095 in
+  fun (x, y, zopt) ->
+    let key =
+      (x.key, y.key, match zopt with Some z -> Some z.key | None -> None)
+    in
+    if M.mem tbl key then M.find tbl key
+    else
+      let y = mk (mk' (x, y, zopt)) in
       M.add tbl key y;
       y
 
