@@ -76,9 +76,9 @@ This should probably not resolve at all, but that's a problem for another day. c
   $ odoc_print -r test3a test.odocl | jq '.type_.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
   {
     "`Resolved": {
-      "`Module": [
-        {
-          "`Identifier": {
+      "`Identifier": {
+        "`Module": [
+          {
             "`Module": [
               {
                 "`Root": [
@@ -88,10 +88,10 @@ This should probably not resolve at all, but that's a problem for another day. c
               },
               "Wrapper3"
             ]
-          }
-        },
-        "X"
-      ]
+          },
+          "X"
+        ]
+      }
     }
   }
 
