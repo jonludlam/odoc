@@ -305,7 +305,7 @@ end
 module MakeMemo (X : MEMO) = struct
   module M = Hashtbl.Make (X)
 
-  let cache : (X.result * int * Env.LookupTypeSet.t) M.t = M.create 10000
+  let cache : (X.result * int) M.t = M.create 10000
 
   let cache_hits : int M.t = M.create 10000
 
@@ -326,27 +326,16 @@ module MakeMemo (X : MEMO) = struct
       let env_id = Env.id env in
       let n = bump_counter arg in
       let no_memo () =
-        let lookups, result =
-          Env.with_recorded_lookups env (fun env' -> f env' arg)
-        in
-        if n > 1 then M.add cache arg (result, env_id, lookups);
+        let result = f env arg in
+        (* let lookups, result =
+             Env.with_recorded_lookups env (fun env' -> f env' arg)
+           in *)
+        if n > 1 then M.add cache arg (result, env_id);
         result
       in
       match M.find_all cache arg with
       | [] -> no_memo ()
-      | xs ->
-          let rec find_fast = function
-            | (result, env_id', _) :: _ when env_id' = env_id ->
-                M.replace cache_hits arg (M.find cache_hits arg + 1);
-                result
-            | _ :: ys -> find_fast ys
-            | [] -> find xs
-          and find = function
-            | (m, _, lookups) :: xs ->
-                if Env.verify_lookups env lookups then m else find xs
-            | [] -> no_memo ()
-          in
-          find_fast xs
+      | (result, _) :: _ -> result
 
   let clear () =
     M.clear cache;
