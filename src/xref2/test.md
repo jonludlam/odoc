@@ -972,17 +972,23 @@ val p : Cpath.Resolved.module_ =
            ({Odoc_xref2.Hc.v =
               `Apply
                 ({Odoc_xref2.Hc.v =
-                   `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), App))},
+                   `Gpath
+                     (`Identifier
+                        (`Module
+                           (`Root (Some (`Page (None, None)), Root), App)))},
                  {Odoc_xref2.Hc.v =
-                   `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Bar))})},
+                   `Gpath
+                     (`Identifier
+                        (`Module
+                           (`Root (Some (`Page (None, None)), Root), Bar)))})},
             {Odoc_xref2.Hc.v =
-              `Identifier
-                (`Module (`Root (Some (`Page (None, None)), Root), Foo))})},
+              `Gpath
+                (`Identifier
+                   (`Module (`Root (Some (`Page (None, None)), Root), Foo)))})},
        {Odoc_xref2.Hc.v =
-         `Identifier
-           (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt))})}
+         `Gpath
+           (`Identifier
+              (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt)))})}
 val m : Component.Module.t Component.Delayed.t =
   {Odoc_xref2.Component.Delayed.v =
     Some
@@ -1001,19 +1007,23 @@ val m : Component.Module.t Component.Delayed.t =
                           {Odoc_xref2.Hc.v =
                             `Substituted
                               {Odoc_xref2.Hc.v =
-                                `Identifier
-                                  (`Module
-                                     (`Root (Some (`Page (None, None)), Root),
-                                      Foo))}}},
+                                `Gpath
+                                  (`Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Foo)))}}},
                       {Odoc_xref2.Hc.v =
                         `Resolved
                           {Odoc_xref2.Hc.v =
                             `Substituted
                               {Odoc_xref2.Hc.v =
-                                `Identifier
-                                  (`Module
-                                     (`Root (Some (`Page (None, None)), Root),
-                                      Bar))}}})},
+                                `Gpath
+                                  (`Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Bar)))}}})},
                  "T")}});
       canonical = None; hidden = false};
    get = None}
@@ -1037,10 +1047,12 @@ val sg' : Component.Signature.t =
                          {Odoc_xref2.Hc.v =
                            `Substituted
                              {Odoc_xref2.Hc.v =
-                               `Identifier
-                                 (`Module
-                                    (`Root (Some (`Page (None, None)), Root),
-                                     Bar))}}},
+                               `Gpath
+                                 (`Identifier
+                                    (`Module
+                                       (`Root
+                                          (Some (`Page (None, None)), Root),
+                                        Bar)))}}},
                      "T")}});
           canonical = None; hidden = false};
        get = None})];
@@ -1065,10 +1077,12 @@ val sg' : Component.Signature.t =
                          {Odoc_xref2.Hc.v =
                            `Substituted
                              {Odoc_xref2.Hc.v =
-                               `Identifier
-                                 (`Module
-                                    (`Root (Some (`Page (None, None)), Root),
-                                     Bar))}}},
+                               `Gpath
+                                 (`Identifier
+                                    (`Module
+                                       (`Root
+                                          (Some (`Page (None, None)), Root),
+                                        Bar)))}}},
                      "T")}});
           canonical = None; hidden = false};
        get = None})];
