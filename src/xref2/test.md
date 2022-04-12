@@ -152,7 +152,9 @@ and using this lens on our original signature we obtain:
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Identifier (`Type (`Root (Some (`Page (None, None)), Root), x), false),
+   ({Odoc_model__Paths_types.v =
+      `Identifier (`Type (`Root (Some (`Page (None, None)), Root), x), false);
+     key = (38, "predefined")},
    []))
 ```
 
@@ -198,9 +200,13 @@ and so we simply look up the type in the environment, giving a `Component.Type.t
        manifest =
         Some
          (Odoc_model.Lang.TypeExpr.Constr
-           (`Resolved
-              (`Identifier
-                 (`Type (`Root (Some (`Page (None, None)), Root), x))),
+           ({Odoc_model__Paths_types.v =
+              `Resolved
+                {Odoc_model__Paths_types.v =
+                  `Identifier
+                    (`Type (`Root (Some (`Page (None, None)), Root), x));
+                 key = (40, "predefined")};
+             key = (42, "predefined")},
            []));
        constraints = []};
      representation = None})];
@@ -231,10 +237,14 @@ to identify precisely. So the manifest of `u` is now:
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Dot
-      (`Identifier
-         (`Module (`Root (Some (`Page (None, None)), Root), M), false),
-       "t"),
+   ({Odoc_model__Paths_types.v =
+      `Dot
+        ({Odoc_model__Paths_types.v =
+           `Identifier
+             (`Module (`Root (Some (`Page (None, None)), Root), M), false);
+          key = (45, "predefined")},
+         "t");
+     key = (46, "predefined")},
    []))
 ```
 
@@ -262,48 +272,25 @@ which are:
     | Error _ -> failwith "Found error";;
 val get_ok : ('a, 'b) result -> 'a = <fun>
 # let (path, module_) = get_ok @@ Tools.resolve_module ~mark_substituted:true ~add_canonical:true env (`Resolved (`Identifier (Common.root_module "M")));;
-val path : Cpath.Resolved.module_ =
-  `Identifier (`Module (`Root (Some (`Page (None, None)), Root), M))
-val module_ : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Signature
-          {Odoc_xref2.Component.Signature.items =
-            [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
-              Odoc_model.Lang.Signature.Ordinary,
-              {Odoc_xref2.Component.Delayed.v =
-                Some
-                 {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-                  equation =
-                   {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                    private_ = false; manifest = None; constraints = []};
-                  representation = None};
-               get = None})];
-           compiled = false; removed = []; doc = []});
-      canonical = None; hidden = false};
-   get = None}
+Line 1, characters 101-151:
+Error: This expression has type
+         [> `Resolved of
+              [> `Identifier of
+                   [> `Module of
+                        [> `Root of
+                             [> `Page of 'a option * PageName.t ] option *
+                             ModuleName.t ] *
+                        ModuleName.t ] ] ]
+       but an expression was expected of type
+         Cpath.module_ = Cpath.module_unhashed Odoc_model.Hc.hashed
 ```
 
 The values returned are the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `signature_of_module`, which in this case is quite simple since the module contains an explicit signature:
 
 ```ocaml env=e1
 # get_ok @@ Tools.signature_of_module env (Component.Delayed.get module_);;
-- : Component.Signature.t =
-{Odoc_xref2.Component.Signature.items =
-  [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
-    Odoc_model.Lang.Signature.Ordinary,
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-        equation =
-         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false; manifest = None; constraints = []};
-        representation = None};
-     get = None})];
- compiled = false; removed = []; doc = []}
+Line 1, characters 64-71:
+Error: Unbound value module_
 ```
 
 We're now in a position to verify the existence of the type `t` we're
@@ -334,22 +321,17 @@ of looking up the module `N`:
 
 ```ocaml env=e1
 # let (path, module_) = get_ok @@ Tools.resolve_module ~mark_substituted:true ~add_canonical:true env (`Resolved (`Identifier (Common.root_module "N")));;
-val path : Cpath.Resolved.module_ =
-  `Identifier (`Module (`Root (Some (`Page (None, None)), Root), N))
-val module_ : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          {Odoc_xref2.Component.ModuleType.p_expansion = None;
-           p_path =
-            `Identifier
-              (`ModuleType (`Root (Some (`Page (None, None)), Root), M),
-               false)});
-      canonical = None; hidden = false};
-   get = None}
+Line 1, characters 101-151:
+Error: This expression has type
+         [> `Resolved of
+              [> `Identifier of
+                   [> `Module of
+                        [> `Root of
+                             [> `Page of 'a option * PageName.t ] option *
+                             ModuleName.t ] *
+                        ModuleName.t ] ] ]
+       but an expression was expected of type
+         Cpath.module_ = Cpath.module_unhashed Odoc_model.Hc.hashed
 ```
 
 This time turning the module into a signature demonstrates why the function `signature_of_module` requires the environment. We need to lookup the module type `M` from the environment to determine the
@@ -425,7 +407,10 @@ val m : Component.Element.module_type option =
                      Odoc_xref2.Component.Module.ModuleType
                       (Odoc_xref2.Component.ModuleType.Path
                         {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                         p_path = `Local (`LModuleType (N, 1), false)});
+                         p_path =
+                          {Odoc_model.Hc.v =
+                            `Local (`LModuleType (N, 1), false);
+                           key = (60, "predefined")}});
                     canonical = None; hidden = false};
                  get = None})];
              compiled = false; removed = []; doc = []})}))
@@ -448,12 +433,19 @@ which is `A.B.t`. The compiler has started us off by resolving the
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Dot
-      (`Dot
-         (`Identifier
-            (`Module (`Root (Some (`Page (None, None)), Root), A), false),
-          "B"),
-       "t"),
+   ({Odoc_model__Paths_types.v =
+      `Dot
+        ({Odoc_model__Paths_types.v =
+           `Dot
+             ({Odoc_model__Paths_types.v =
+                `Identifier
+                  (`Module (`Root (Some (`Page (None, None)), Root), A),
+                   false);
+               key = (55, "predefined")},
+              "B");
+          key = (58, "predefined")},
+         "t");
+     key = (59, "predefined")},
    []))
 ```
 
@@ -464,46 +456,17 @@ we look up `A` from the environment:
   let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env p in
   let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m) in
   Tools.prefix_signature (`Module p, sg);;
-- : Component.Signature.t =
-{Odoc_xref2.Component.Signature.items =
-  [Odoc_xref2.Component.Signature.ModuleType (`LModuleType (N, 4),
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.ModuleType.doc = []; canonical = None;
-        expr =
-         Some
-          (Odoc_xref2.Component.ModuleType.Signature
-            {Odoc_xref2.Component.Signature.items =
-              [Odoc_xref2.Component.Signature.Type (`LType (t, 3),
-                Odoc_model.Lang.Signature.Ordinary,
-                {Odoc_xref2.Component.Delayed.v =
-                  Some
-                   {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-                    equation =
-                     {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                      private_ = false; manifest = None; constraints = []};
-                    representation = None};
-                 get = None})];
-             compiled = false; removed = []; doc = []})};
-     get = None});
-   Odoc_xref2.Component.Signature.Module (`LModule (B, 5),
-    Odoc_model.Lang.Signature.Ordinary,
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.Module.doc = [];
-        type_ =
-         Odoc_xref2.Component.Module.ModuleType
-          (Odoc_xref2.Component.ModuleType.Path
-            {Odoc_xref2.Component.ModuleType.p_expansion = None;
-             p_path =
-              `ModuleType
-                (`Module
-                   (`Identifier
-                      (`Module (`Root (Some (`Page (None, None)), Root), A))),
-                 N)});
-        canonical = None; hidden = false};
-     get = None})];
- compiled = false; removed = []; doc = []}
+Line 2, characters 68-69:
+Error: This expression has type
+         [> `Identifier of
+              [> `Module of
+                   [> `Root of
+                        [> `Page of 'a option * PageName.t ] option *
+                        ModuleName.t ] *
+                   ModuleName.t ] ]
+       but an expression was expected of type
+         Cpath.Resolved.module_ =
+           Cpath.Resolved.module_unhashed Odoc_model.Hc.hashed
 ```
 
 So before the prefixing operation we had that the type of the module was
@@ -545,15 +508,21 @@ we then return along with the fully resolved identifier.
             (`Identifier (Common.root_module "A")),
           "B"),
        "t"));;
-- : Cpath.Resolved.type_ =
-`Type
-  (`Module
-     (`Module
-        (`Module
-           (`Identifier
-              (`Module (`Root (Some (`Page (None, None)), Root), A))),
-         B)),
-   t)
+Lines 2-7, characters 5-13:
+Error: This expression has type
+         [> `Dot of
+              [> `Dot of
+                   [> `Resolved of
+                        [> `Identifier of
+                             [> `Module of
+                                  [> `Root of
+                                       [> `Page of 'a option * PageName.t ]
+                                       option * ModuleName.t ] *
+                                  ModuleName.t ] ] ] *
+                   string ] *
+              string ]
+       but an expression was expected of type
+         Cpath.type_ = Cpath.type_unhashed Odoc_model.Hc.hashed
 ```
 
 ### Module aliases
@@ -578,19 +547,38 @@ Let's look at `t`'s manifest:
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`AliasRD
-            (`Module
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                M),
-             `Resolved
-               (`Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                   N))),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `AliasRD
+                 ({Odoc_model__Paths_types.v =
+                    `Module
+                      ({Odoc_model__Paths_types.v =
+                         `Identifier
+                           (`Module
+                              (`Root (Some (`Page (None, None)), Root), A));
+                        key = (80, "predefined")},
+                       M);
+                   key = (96, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Resolved
+                      {Odoc_model__Paths_types.v =
+                        `Module
+                          ({Odoc_model__Paths_types.v =
+                             `Identifier
+                               (`Module
+                                  (`Root (Some (`Page (None, None)), Root),
+                                   A));
+                            key = (80, "predefined")},
+                           N);
+                       key = (94, "predefined")};
+                   key = (95, "predefined")});
+              key = (111, "predefined")},
+             t);
+         key = (112, "predefined")};
+     key = (113, "predefined")},
    []))
 ```
 
@@ -617,25 +605,53 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`AliasRD
-            (`AliasRD
-               (`Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                   M),
-                `Dot
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), A),
-                      false),
-                   "N")),
-             `Resolved
-               (`Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                   O))),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `AliasRD
+                 ({Odoc_model__Paths_types.v =
+                    `AliasRD
+                      ({Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    A));
+                             key = (80, "predefined")},
+                            M);
+                        key = (96, "predefined")},
+                       {Odoc_model__Paths_types.v =
+                         `Dot
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    A),
+                                 false);
+                             key = (55, "predefined")},
+                            "N");
+                        key = (66, "predefined")});
+                   key = (187, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Resolved
+                      {Odoc_model__Paths_types.v =
+                        `Module
+                          ({Odoc_model__Paths_types.v =
+                             `Identifier
+                               (`Module
+                                  (`Root (Some (`Page (None, None)), Root),
+                                   A));
+                            key = (80, "predefined")},
+                           O);
+                       key = (161, "predefined")};
+                   key = (162, "predefined")});
+              key = (188, "predefined")},
+             t);
+         key = (189, "predefined")};
+     key = (190, "predefined")},
    []))
 ```
 
@@ -696,14 +712,18 @@ val module_C_lens :
      {Odoc_model.Lang.ModuleType.w_substitutions =
        [Odoc_model.Lang.ModuleType.ModuleEq (`Dot (`Root, "M"),
          Odoc_model.Lang.Module.Alias
-          (`Identifier
-             (`Module (`Root (Some (`Page (None, None)), Root), B), false),
+          ({Odoc_model__Paths_types.v =
+             `Identifier
+               (`Module (`Root (Some (`Page (None, None)), Root), B), false);
+            key = (191, "predefined")},
            None))];
       w_expansion = None;
       w_expr =
        Odoc_model.Lang.ModuleType.U.Path
-        (`Identifier
-           (`ModuleType (`Root (Some (`Page (None, None)), Root), A), false))});
+        {Odoc_model__Paths_types.v =
+          `Identifier
+            (`ModuleType (`Root (Some (`Page (None, None)), Root), A), false);
+         key = (196, "predefined")}});
  canonical = None; hidden = false}
 ```
 
@@ -712,61 +732,26 @@ of module `C` we see the following:
 
 ```ocaml env=e1
 # let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env (`Identifier (Common.root_module "C"));;
-val m : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.With
-          {Odoc_xref2.Component.ModuleType.w_substitutions =
-            [Odoc_xref2.Component.ModuleType.ModuleEq (`Dot (`Root, "M"),
-              Odoc_xref2.Component.Module.Alias
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), B),
-                   false),
-               None))];
-           w_expansion = None;
-           w_expr =
-            Odoc_xref2.Component.ModuleType.U.Path
-             (`Identifier
-                (`ModuleType (`Root (Some (`Page (None, None)), Root), A),
-                 false))});
-      canonical = None; hidden = false};
-   get = None}
+Line 1, characters 66-104:
+Error: This expression has type
+         [> `Identifier of
+              [> `Module of
+                   [> `Root of
+                        [> `Page of 'a option * PageName.t ] option *
+                        ModuleName.t ] *
+                   ModuleName.t ] ]
+       but an expression was expected of type
+         Cpath.Resolved.module_ =
+           Cpath.Resolved.module_unhashed Odoc_model.Hc.hashed
 ```
 
 now we can ask for the signature of this module:
 
 ```ocaml env=e1
 # let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-val sg : Component.Signature.t =
-  {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (`LModule (M, 72),
-      Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v =
-        Some
-         {Odoc_xref2.Component.Module.doc = [];
-          type_ =
-           Odoc_xref2.Component.Module.Alias
-            (`Identifier
-               (`Module (`Root (Some (`Page (None, None)), Root), B), false),
-            None);
-          canonical = None; hidden = false};
-       get = None});
-     Odoc_xref2.Component.Signature.Module (`LModule (N, 73),
-      Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v =
-        Some
-         {Odoc_xref2.Component.Module.doc = [];
-          type_ =
-           Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path
-              {Odoc_xref2.Component.ModuleType.p_expansion = None;
-               p_path = `Dot (`Local (`LModule (M, 72), false), "S")});
-          canonical = None; hidden = false};
-       get = None})];
-   compiled = false; removed = []; doc = []}
+Line 1, characters 73-74:
+Error: This expression has type Component.Element.module_type option
+       but an expression was expected of type 'a Component.Delayed.t
 ```
 
 and we can see the module `M` is now an alias of the root module `B`. We can now
@@ -775,38 +760,24 @@ look up module `N` from within this and find its signature:
 ```ocaml env=e1
 # let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env
       (`Module (`Module (`Identifier (Common.root_module "C")), ModuleName.make_std "N"));;
-val m : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          {Odoc_xref2.Component.ModuleType.p_expansion = None;
-           p_path =
-            `Dot
-              (`Module
-                 (`Module
-                    (`Identifier
-                       (`Module (`Root (Some (`Page (None, None)), Root), C))),
-                  M),
-               "S")});
-      canonical = None; hidden = false};
-   get = None}
+Line 2, characters 7-90:
+Error: This expression has type
+         [> `Module of
+              [> `Module of
+                   [> `Identifier of
+                        [> `Module of
+                             [> `Root of
+                                  [> `Page of 'a option * PageName.t ] option *
+                                  ModuleName.t ] *
+                             ModuleName.t ] ] ] *
+              ModuleName.t ]
+       but an expression was expected of type
+         Cpath.Resolved.module_ =
+           Cpath.Resolved.module_unhashed Odoc_model.Hc.hashed
 # get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-- : Component.Signature.t =
-{Odoc_xref2.Component.Signature.items =
-  [Odoc_xref2.Component.Signature.Type (`LType (t, 80),
-    Odoc_model.Lang.Signature.Ordinary,
-    {Odoc_xref2.Component.Delayed.v =
-      Some
-       {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-        equation =
-         {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-          private_ = false; manifest = None; constraints = []};
-        representation = None};
-     get = None})];
- compiled = false; removed = []; doc = []}
+Line 1, characters 64-65:
+Error: This expression has type Component.Element.module_type option
+       but an expression was expected of type 'a Component.Delayed.t
 ```
 
 where we've correctly identified that a type `t` exists in the signature. The path in
@@ -817,13 +788,21 @@ type t is resolved as:
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Module
-            (`Identifier
-               (`Module (`Root (Some (`Page (None, None)), Root), C)),
-             N),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Module
+                 ({Odoc_model__Paths_types.v =
+                    `Identifier
+                      (`Module (`Root (Some (`Page (None, None)), Root), C));
+                   key = (309, "predefined")},
+                  N);
+              key = (330, "predefined")},
+             t);
+         key = (331, "predefined")};
+     key = (332, "predefined")},
    []))
 ```
 
@@ -862,39 +841,79 @@ type within this is not within the body of the functor itself.
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Module
-            (`Identifier
-               (`Module (`Root (Some (`Page (None, None)), Root), M)),
-             O),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Module
+                 ({Odoc_model__Paths_types.v =
+                    `Identifier
+                      (`Module (`Root (Some (`Page (None, None)), Root), M));
+                   key = (498, "predefined")},
+                  O);
+              key = (518, "predefined")},
+             t);
+         key = (519, "predefined")};
+     key = (520, "predefined")},
    []))
 # Common.LangUtils.Lens.get (type_manifest "s") resolved;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Subst
-            (`ModuleType
-               (`Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                   T),
-                S),
-             `Module
-               (`Apply
-                  (`Module
-                     (`Identifier
-                        (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                      F),
-                   `Module
-                     (`Identifier
-                        (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                      T)),
-                N)),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Subst
+                 ({Odoc_model__Paths_types.v =
+                    `ModuleType
+                      ({Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    M));
+                             key = (498, "predefined")},
+                            T);
+                        key = (542, "predefined")},
+                       S);
+                   key = (546, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Module
+                      ({Odoc_model__Paths_types.v =
+                         `Apply
+                           ({Odoc_model__Paths_types.v =
+                              `Module
+                                ({Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         M));
+                                  key = (498, "predefined")},
+                                 F);
+                             key = (543, "predefined")},
+                            {Odoc_model__Paths_types.v =
+                              `Module
+                                ({Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         M));
+                                  key = (498, "predefined")},
+                                 T);
+                             key = (542, "predefined")});
+                        key = (587, "predefined")},
+                       N);
+                   key = (588, "predefined")});
+              key = (589, "predefined")},
+             t);
+         key = (590, "predefined")};
+     key = (591, "predefined")},
    []))
 ```
 
@@ -932,15 +951,26 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Module
-            (`Module
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                O),
-             N),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Module
+                 ({Odoc_model__Paths_types.v =
+                    `Module
+                      ({Odoc_model__Paths_types.v =
+                         `Identifier
+                           (`Module
+                              (`Root (Some (`Page (None, None)), Root), M));
+                        key = (498, "predefined")},
+                       O);
+                   key = (518, "predefined")},
+                  N);
+              key = (674, "predefined")},
+             t);
+         key = (675, "predefined")};
+     key = (676, "predefined")},
    []))
 ```
 
@@ -976,20 +1006,40 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Module
-            (`Apply
-               (`Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                   O),
-                `Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                   T)),
-             N),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Module
+                 ({Odoc_model__Paths_types.v =
+                    `Apply
+                      ({Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    M));
+                             key = (498, "predefined")},
+                            O);
+                        key = (518, "predefined")},
+                       {Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    M));
+                             key = (498, "predefined")},
+                            T);
+                        key = (542, "predefined")});
+                   key = (829, "predefined")},
+                  N);
+              key = (830, "predefined")},
+             t);
+         key = (831, "predefined")};
+     key = (832, "predefined")},
    []))
 ```
 
@@ -1019,25 +1069,50 @@ The type path we're trying to look up is:
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Dot
-      (`Dot
-         (`Apply
-            (`Apply
-               (`Apply
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), App),
-                      false),
-                   `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Bar),
-                      false)),
-                `Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), Foo),
-                   false)),
-             `Identifier
-               (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt),
-                false)),
-          "Foo"),
-       "bar"),
+   ({Odoc_model__Paths_types.v =
+      `Dot
+        ({Odoc_model__Paths_types.v =
+           `Dot
+             ({Odoc_model__Paths_types.v =
+                `Apply
+                  ({Odoc_model__Paths_types.v =
+                     `Apply
+                       ({Odoc_model__Paths_types.v =
+                          `Apply
+                            ({Odoc_model__Paths_types.v =
+                               `Identifier
+                                 (`Module
+                                    (`Root (Some (`Page (None, None)), Root),
+                                     App),
+                                  false);
+                              key = (833, "predefined")},
+                             {Odoc_model__Paths_types.v =
+                               `Identifier
+                                 (`Module
+                                    (`Root (Some (`Page (None, None)), Root),
+                                     Bar),
+                                  false);
+                              key = (834, "predefined")});
+                         key = (850, "predefined")},
+                        {Odoc_model__Paths_types.v =
+                          `Identifier
+                            (`Module
+                               (`Root (Some (`Page (None, None)), Root), Foo),
+                             false);
+                         key = (835, "predefined")});
+                    key = (851, "predefined")},
+                   {Odoc_model__Paths_types.v =
+                     `Identifier
+                       (`Module
+                          (`Root (Some (`Page (None, None)), Root),
+                           FooBarInt),
+                        false);
+                    key = (836, "predefined")});
+               key = (852, "predefined")},
+              "Foo");
+          key = (853, "predefined")},
+         "bar");
+     key = (854, "predefined")},
    []))
 ```
 
@@ -1060,69 +1135,104 @@ let test_path =
           (Common.root_module "FooBarInt")));;
 let cp = Component.Of_Lang.(module_path (empty ()) test_path);;
 ```
+```mdx-error
+val test_path :
+  [> `Apply of
+       [> `Apply of
+            [> `Apply of
+                 [> `Resolved of
+                      [> `Identifier of
+                           [> `Module of
+                                [> `Root of
+                                     [> `Page of 'a option * PageName.t ]
+                                     option * ModuleName.t ] *
+                                ModuleName.t ] ] ] *
+                 [> `Resolved of
+                      [> `Identifier of
+                           [> `Module of
+                                [> `Root of
+                                     [> `Page of 'b option * PageName.t ]
+                                     option * ModuleName.t ] *
+                                ModuleName.t ] ] ] ] *
+            [> `Resolved of
+                 [> `Identifier of
+                      [> `Module of
+                           [> `Root of
+                                [> `Page of 'c option * PageName.t ] option *
+                                ModuleName.t ] *
+                           ModuleName.t ] ] ] ] *
+       [> `Resolved of
+            [> `Identifier of
+                 [> `Module of
+                      [> `Root of
+                           [> `Page of 'd option * PageName.t ] option *
+                           ModuleName.t ] *
+                      ModuleName.t ] ] ] ] =
+  `Apply
+    (`Apply
+       (`Apply
+          (`Resolved
+             (`Identifier
+                (`Module (`Root (Some (`Page (None, None)), Root), App))),
+           `Resolved
+             (`Identifier
+                (`Module (`Root (Some (`Page (None, None)), Root), Bar)))),
+        `Resolved
+          (`Identifier
+             (`Module (`Root (Some (`Page (None, None)), Root), Foo)))),
+     `Resolved
+       (`Identifier
+          (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt))))
+Line 1, characters 54-63:
+Error: This expression has type
+         [> `Apply of
+              [> `Apply of
+                   [> `Apply of
+                        [> `Resolved of
+                             [> `Identifier of
+                                  [> `Module of
+                                       [> `Root of
+                                            [> `Page of
+                                                 'a option * PageName.t ]
+                                            option * ModuleName.t ] *
+                                       ModuleName.t ] ] ] *
+                        [> `Resolved of
+                             [> `Identifier of
+                                  [> `Module of
+                                       [> `Root of
+                                            [> `Page of
+                                                 'b option * PageName.t ]
+                                            option * ModuleName.t ] *
+                                       ModuleName.t ] ] ] ] *
+                   [> `Resolved of
+                        [> `Identifier of
+                             [> `Module of
+                                  [> `Root of
+                                       [> `Page of 'c option * PageName.t ]
+                                       option * ModuleName.t ] *
+                                  ModuleName.t ] ] ] ] *
+              [> `Resolved of
+                   [> `Identifier of
+                        [> `Module of
+                             [> `Root of
+                                  [> `Page of 'd option * PageName.t ] option *
+                                  ModuleName.t ] *
+                             ModuleName.t ] ] ] ]
+       but an expression was expected of type
+         Odoc_model.Paths.Path.Module.t =
+           Odoc_model__Paths_types.Path.module_unhashed Odoc_model.Hc.hashed
+```
 
 Now let's lookup that module:
 
 ```ocaml env=e1
 # let (p,m) = get_ok @@ Tools.resolve_module ~mark_substituted:true ~add_canonical:true env cp;;
-val p : Cpath.Resolved.module_ =
-  `Apply
-    (`Apply
-       (`Apply
-          (`Identifier
-             (`Module (`Root (Some (`Page (None, None)), Root), App)),
-           `Identifier
-             (`Module (`Root (Some (`Page (None, None)), Root), Bar))),
-        `Identifier (`Module (`Root (Some (`Page (None, None)), Root), Foo))),
-     `Identifier
-       (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt)))
-val m : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          {Odoc_xref2.Component.ModuleType.p_expansion = None;
-           p_path =
-            `Dot
-              (`Apply
-                 (`Resolved
-                    (`Substituted
-                       (`Identifier
-                          (`Module
-                             (`Root (Some (`Page (None, None)), Root), Foo)))),
-                  `Resolved
-                    (`Substituted
-                       (`Identifier
-                          (`Module
-                             (`Root (Some (`Page (None, None)), Root), Bar))))),
-               "T")});
-      canonical = None; hidden = false};
-   get = None}
+Line 1, characters 91-93:
+Error: Unbound value cp
 # let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-val sg' : Component.Signature.t =
-  {Odoc_xref2.Component.Signature.items =
-    [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 14),
-      Odoc_model.Lang.Signature.Ordinary,
-      {Odoc_xref2.Component.Delayed.v =
-        Some
-         {Odoc_xref2.Component.Module.doc = [];
-          type_ =
-           Odoc_xref2.Component.Module.ModuleType
-            (Odoc_xref2.Component.ModuleType.Path
-              {Odoc_xref2.Component.ModuleType.p_expansion = None;
-               p_path =
-                `Dot
-                  (`Resolved
-                     (`Substituted
-                        (`Identifier
-                           (`Module
-                              (`Root (Some (`Page (None, None)), Root), Bar)))),
-                   "T")});
-          canonical = None; hidden = false};
-       get = None})];
-   compiled = false; removed = []; doc = []}
+Line 1, characters 74-75:
+Error: This expression has type Component.Element.module_type option
+       but an expression was expected of type 'a Component.Delayed.t
 ```
 
 ```ocaml env=e1
@@ -1136,31 +1246,67 @@ The resolved path of t is:
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Subst
-            (`ModuleType
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), Bar)),
-                T),
-             `Module
-               (`Apply
-                  (`Apply
-                     (`Apply
-                        (`Identifier
-                           (`Module
-                              (`Root (Some (`Page (None, None)), Root), App)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Subst
+                 ({Odoc_model__Paths_types.v =
+                    `ModuleType
+                      ({Odoc_model__Paths_types.v =
                          `Identifier
                            (`Module
-                              (`Root (Some (`Page (None, None)), Root), Bar))),
-                      `Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Foo))),
-                   `Identifier
-                     (`Module
-                        (`Root (Some (`Page (None, None)), Root), FooBarInt))),
-                Foo)),
-          bar)),
+                              (`Root (Some (`Page (None, None)), Root), Bar));
+                        key = (976, "predefined")},
+                       T);
+                   key = (1028, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Module
+                      ({Odoc_model__Paths_types.v =
+                         `Apply
+                           ({Odoc_model__Paths_types.v =
+                              `Apply
+                                ({Odoc_model__Paths_types.v =
+                                   `Apply
+                                     ({Odoc_model__Paths_types.v =
+                                        `Identifier
+                                          (`Module
+                                             (`Root
+                                                (Some (`Page (None, None)),
+                                                 Root),
+                                              App));
+                                       key = (974, "predefined")},
+                                      {Odoc_model__Paths_types.v =
+                                        `Identifier
+                                          (`Module
+                                             (`Root
+                                                (Some (`Page (None, None)),
+                                                 Root),
+                                              Bar));
+                                       key = (976, "predefined")});
+                                  key = (1074, "predefined")},
+                                 {Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Foo));
+                                  key = (991, "predefined")});
+                             key = (1075, "predefined")},
+                            {Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    FooBarInt));
+                             key = (1000, "predefined")});
+                        key = (1076, "predefined")},
+                       Foo);
+                   key = (1077, "predefined")});
+              key = (1078, "predefined")},
+             bar);
+         key = (1079, "predefined")};
+     key = (1080, "predefined")},
    []))
 ```
 
@@ -1190,18 +1336,35 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Module
-            (`Apply
-               (`Module
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), M)),
-                   O),
-                `Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), M))),
-             N),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Module
+                 ({Odoc_model__Paths_types.v =
+                    `Apply
+                      ({Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    M));
+                             key = (498, "predefined")},
+                            O);
+                        key = (518, "predefined")},
+                       {Odoc_model__Paths_types.v =
+                         `Identifier
+                           (`Module
+                              (`Root (Some (`Page (None, None)), Root), M));
+                        key = (498, "predefined")});
+                   key = (1200, "predefined")},
+                  N);
+              key = (1201, "predefined")},
+             t);
+         key = (1202, "predefined")};
+     key = (1203, "predefined")},
    []))
 ```
 
@@ -1238,36 +1401,80 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`AliasRD
-            (`Subst
-               (`ModuleType
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep1)),
-                   S),
-                `Module
-                  (`Module
-                     (`Apply
-                        (`Identifier
-                           (`Module
-                              (`Root (Some (`Page (None, None)), Root), Dep2)),
-                         `Identifier
-                           (`Module
-                              (`Root (Some (`Page (None, None)), Root), Dep1))),
-                      A),
-                   Y)),
-             `Resolved
-               (`Module
-                  (`Apply
-                     (`Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep2)),
-                      `Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep1))),
-                   B))),
-          c)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `AliasRD
+                 ({Odoc_model__Paths_types.v =
+                    `Subst
+                      ({Odoc_model__Paths_types.v =
+                         `ModuleType
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    Dep1));
+                             key = (1301, "predefined")},
+                            S);
+                        key = (1347, "predefined")},
+                       {Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Module
+                                ({Odoc_model__Paths_types.v =
+                                   `Apply
+                                     ({Odoc_model__Paths_types.v =
+                                        `Identifier
+                                          (`Module
+                                             (`Root
+                                                (Some (`Page (None, None)),
+                                                 Root),
+                                              Dep2));
+                                       key = (1299, "predefined")},
+                                      {Odoc_model__Paths_types.v =
+                                        `Identifier
+                                          (`Module
+                                             (`Root
+                                                (Some (`Page (None, None)),
+                                                 Root),
+                                              Dep1));
+                                       key = (1301, "predefined")});
+                                  key = (1383, "predefined")},
+                                 A);
+                             key = (1386, "predefined")},
+                            Y);
+                        key = (1387, "predefined")});
+                   key = (1388, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Resolved
+                      {Odoc_model__Paths_types.v =
+                        `Module
+                          ({Odoc_model__Paths_types.v =
+                             `Apply
+                               ({Odoc_model__Paths_types.v =
+                                  `Identifier
+                                    (`Module
+                                       (`Root
+                                          (Some (`Page (None, None)), Root),
+                                        Dep2));
+                                 key = (1299, "predefined")},
+                                {Odoc_model__Paths_types.v =
+                                  `Identifier
+                                    (`Module
+                                       (`Root
+                                          (Some (`Page (None, None)), Root),
+                                        Dep1));
+                                 key = (1301, "predefined")});
+                            key = (1383, "predefined")},
+                           B);
+                       key = (1384, "predefined")};
+                   key = (1385, "predefined")});
+              key = (1389, "predefined")},
+             c);
+         key = (1390, "predefined")};
+     key = (1391, "predefined")},
    []))
 ```
 
@@ -1306,48 +1513,100 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Subst
-            (`ModuleType
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), Dep4)),
-                T),
-             `Module
-               (`Module
-                  (`Apply
-                     (`Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep5)),
-                      `Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep4))),
-                   Z),
-                X)),
-          b)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Subst
+                 ({Odoc_model__Paths_types.v =
+                    `ModuleType
+                      ({Odoc_model__Paths_types.v =
+                         `Identifier
+                           (`Module
+                              (`Root (Some (`Page (None, None)), Root), Dep4));
+                        key = (1498, "predefined")},
+                       T);
+                   key = (1530, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Module
+                      ({Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Apply
+                                ({Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Dep5));
+                                  key = (1496, "predefined")},
+                                 {Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Dep4));
+                                  key = (1498, "predefined")});
+                             key = (1597, "predefined")},
+                            Z);
+                        key = (1598, "predefined")},
+                       X);
+                   key = (1599, "predefined")});
+              key = (1600, "predefined")},
+             b);
+         key = (1601, "predefined")};
+     key = (1602, "predefined")},
    []))
 # Common.LangUtils.Lens.get (type_manifest "dep3") resolved;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`AliasRD
-            (`Identifier
-               (`Module (`Root (Some (`Page (None, None)), Root), Dep3)),
-             `Resolved
-               (`Module
-                  (`Module
-                     (`Apply
-                        (`Identifier
-                           (`Module
-                              (`Root (Some (`Page (None, None)), Root), Dep5)),
-                         `Identifier
-                           (`Module
-                              (`Root (Some (`Page (None, None)), Root), Dep4))),
-                      Z),
-                   Y))),
-          a)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `AliasRD
+                 ({Odoc_model__Paths_types.v =
+                    `Identifier
+                      (`Module
+                         (`Root (Some (`Page (None, None)), Root), Dep3));
+                   key = (1469, "predefined")},
+                  {Odoc_model__Paths_types.v =
+                    `Resolved
+                      {Odoc_model__Paths_types.v =
+                        `Module
+                          ({Odoc_model__Paths_types.v =
+                             `Module
+                               ({Odoc_model__Paths_types.v =
+                                  `Apply
+                                    ({Odoc_model__Paths_types.v =
+                                       `Identifier
+                                         (`Module
+                                            (`Root
+                                               (Some (`Page (None, None)),
+                                                Root),
+                                             Dep5));
+                                      key = (1496, "predefined")},
+                                     {Odoc_model__Paths_types.v =
+                                       `Identifier
+                                         (`Module
+                                            (`Root
+                                               (Some (`Page (None, None)),
+                                                Root),
+                                             Dep4));
+                                      key = (1498, "predefined")});
+                                 key = (1603, "predefined")},
+                                Z);
+                            key = (1604, "predefined")},
+                           Y);
+                       key = (1605, "predefined")};
+                   key = (1606, "predefined")});
+              key = (1607, "predefined")},
+             a);
+         key = (1608, "predefined")};
+     key = (1609, "predefined")},
    []))
 ```
 
@@ -1385,25 +1644,51 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Module
-            (`Subst
-               (`ModuleType
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep6)),
-                   T),
-                `Module
-                  (`Apply
-                     (`Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep7)),
-                      `Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep6))),
-                   M)),
-             Y),
-          d)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Module
+                 ({Odoc_model__Paths_types.v =
+                    `Subst
+                      ({Odoc_model__Paths_types.v =
+                         `ModuleType
+                           ({Odoc_model__Paths_types.v =
+                              `Identifier
+                                (`Module
+                                   (`Root (Some (`Page (None, None)), Root),
+                                    Dep6));
+                             key = (1882, "predefined")},
+                            T);
+                        key = (1927, "predefined")},
+                       {Odoc_model__Paths_types.v =
+                         `Module
+                           ({Odoc_model__Paths_types.v =
+                              `Apply
+                                ({Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Dep7));
+                                  key = (1880, "predefined")},
+                                 {Odoc_model__Paths_types.v =
+                                   `Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Dep6));
+                                  key = (1882, "predefined")});
+                             key = (1992, "predefined")},
+                            M);
+                        key = (1993, "predefined")});
+                   key = (1994, "predefined")},
+                  Y);
+              key = (1995, "predefined")},
+             d);
+         key = (1996, "predefined")};
+     key = (1997, "predefined")},
    []))
 ```
 
@@ -1439,11 +1724,17 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Identifier
-            (`Module (`Root (Some (`Page (None, None)), Root), Dep13)),
-          c)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Identifier
+                 (`Module (`Root (Some (`Page (None, None)), Root), Dep13));
+              key = (2200, "predefined")},
+             c);
+         key = (2205, "predefined")};
+     key = (2206, "predefined")},
    []))
 ```
 
@@ -1504,14 +1795,25 @@ let resolved = Common.compile_signature sg;;
 - : Odoc_model.Lang.TypeExpr.t option =
 Some
  (Odoc_model.Lang.TypeExpr.Constr
-   (`Resolved
-      (`Type
-         (`Hidden
-            (`Hidden
-               (`Identifier
-                  (`Module
-                     (`Root (Some (`Page (None, None)), Root), {Hidden__}1)))),
-          t)),
+   ({Odoc_model__Paths_types.v =
+      `Resolved
+        {Odoc_model__Paths_types.v =
+          `Type
+            ({Odoc_model__Paths_types.v =
+               `Hidden
+                 {Odoc_model__Paths_types.v =
+                   `Hidden
+                     {Odoc_model__Paths_types.v =
+                       `Identifier
+                         (`Module
+                            (`Root (Some (`Page (None, None)), Root),
+                             {Hidden__}1));
+                      key = (2796, "predefined")};
+                  key = (2801, "predefined")};
+              key = (2802, "predefined")},
+             t);
+         key = (2807, "predefined")};
+     key = (2808, "predefined")},
    []))
 ```
 
@@ -1624,17 +1926,26 @@ let sg = Common.signature_of_mli_string test_data;;
               manifest =
                Some
                 (Odoc_model.Lang.TypeExpr.Constr
-                  (`Resolved
-                     (`Identifier
-                        (`Type (`Root (Some (`Page (None, None)), Root), u))),
+                  ({Odoc_model__Paths_types.v =
+                     `Resolved
+                       {Odoc_model__Paths_types.v =
+                         `Identifier
+                           (`Type
+                              (`Root (Some (`Page (None, None)), Root), u));
+                        key = (2822, "predefined")};
+                    key = (2825, "predefined")},
                   []));
               constraints = []})];
           w_expansion = None;
           w_expr =
            Odoc_model.Lang.ModuleType.U.Path
-            (`Resolved
-               (`Identifier
-                  (`ModuleType (`Root (Some (`Page (None, None)), Root), M))))})}];
+            {Odoc_model__Paths_types.v =
+              `Resolved
+                {Odoc_model__Paths_types.v =
+                  `Identifier
+                    (`ModuleType (`Root (Some (`Page (None, None)), Root), M));
+                 key = (2818, "predefined")};
+             key = (2821, "predefined")}})}];
  compiled = false; doc = []}
 ```
 
@@ -1685,30 +1996,54 @@ Odoc_model.Lang.ModuleType.Path
                  args =
                   Odoc_model.Lang.TypeDecl.Constructor.Tuple
                    [Odoc_model.Lang.TypeExpr.Constr
-                     (`Resolved
-                        (`Type
-                           (`Apply
-                              (`Identifier
-                                 (`Module
-                                    (`Root (Some (`Page (None, None)), Root),
-                                     Foo)),
-                               `Identifier
-                                 (`Module
-                                    (`Root (Some (`Page (None, None)), Root),
-                                     Bar))),
-                            t)),
+                     ({Odoc_model__Paths_types.v =
+                        `Resolved
+                          {Odoc_model__Paths_types.v =
+                            `Type
+                              ({Odoc_model__Paths_types.v =
+                                 `Apply
+                                   ({Odoc_model__Paths_types.v =
+                                      `Identifier
+                                        (`Module
+                                           (`Root
+                                              (Some (`Page (None, None)),
+                                               Root),
+                                            Foo));
+                                     key = (991, "predefined")},
+                                    {Odoc_model__Paths_types.v =
+                                      `Identifier
+                                        (`Module
+                                           (`Root
+                                              (Some (`Page (None, None)),
+                                               Root),
+                                            Bar));
+                                     key = (976, "predefined")});
+                                key = (2940, "predefined")},
+                               t);
+                           key = (2941, "predefined")};
+                       key = (2942, "predefined")},
                      [])];
                  res = None}])})];
        compiled = true; doc = []});
   p_path =
-   `Resolved
-     (`ModuleType
-        (`Apply
-           (`Identifier
-              (`Module (`Root (Some (`Page (None, None)), Root), Foo)),
-            `Identifier
-              (`Module (`Root (Some (`Page (None, None)), Root), Bar))),
-         S))}
+   {Odoc_model__Paths_types.v =
+     `Resolved
+       {Odoc_model__Paths_types.v =
+         `ModuleType
+           ({Odoc_model__Paths_types.v =
+              `Apply
+                ({Odoc_model__Paths_types.v =
+                   `Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), Foo));
+                  key = (991, "predefined")},
+                 {Odoc_model__Paths_types.v =
+                   `Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), Bar));
+                  key = (976, "predefined")});
+             key = (2937, "predefined")},
+            S);
+        key = (2938, "predefined")};
+    key = (2939, "predefined")}}
 ```
 
 # Shadowing
@@ -1753,10 +2088,14 @@ let m_e_i_s_value mod_name n val_name =
  doc = [];
  type_ =
   Odoc_model.Lang.TypeExpr.Constr
-   (`Dot
-      (`Identifier
-         (`Module (`Root (Some (`Page (None, None)), Root), Foo), false),
-       "t"),
+   ({Odoc_model__Paths_types.v =
+      `Dot
+        ({Odoc_model__Paths_types.v =
+           `Identifier
+             (`Module (`Root (Some (`Page (None, None)), Root), Foo), false);
+          key = (835, "predefined")},
+         "t");
+     key = (2946, "predefined")},
    []);
  value = Odoc_model.Lang.Value.Abstract}
 # Common.LangUtils.Lens.get (m_e_i_s_value "Foo3" 0 "id2") sg;;
@@ -1766,9 +2105,12 @@ let m_e_i_s_value mod_name n val_name =
  doc = [];
  type_ =
   Odoc_model.Lang.TypeExpr.Constr
-   (`Identifier
-      (`Type (`Module (`Root (Some (`Page (None, None)), Root), Foo3), {t}3),
-       false),
+   ({Odoc_model__Paths_types.v =
+      `Identifier
+        (`Type
+           (`Module (`Root (Some (`Page (None, None)), Root), Foo3), {t}3),
+         false);
+     key = (2950, "predefined")},
    []);
  value = Odoc_model.Lang.Value.Abstract}
 ```
@@ -1813,11 +2155,15 @@ let sg = Common.signature_of_mli_string test_data;;
        manifest =
         Some
          (Odoc_model.Lang.TypeExpr.Constr
-           (`Dot
-              (`Identifier
-                 (`Module (`Root (Some (`Page (None, None)), Root), Foo),
-                  false),
-               "t"),
+           ({Odoc_model__Paths_types.v =
+              `Dot
+                ({Odoc_model__Paths_types.v =
+                   `Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), Foo),
+                      false);
+                  key = (835, "predefined")},
+                 "t");
+             key = (2946, "predefined")},
            []));
        constraints = []};
      representation = None});
@@ -1827,10 +2173,13 @@ let sg = Common.signature_of_mli_string test_data;;
      doc = [];
      type_ =
       Odoc_model.Lang.TypeExpr.Constr
-       (`Identifier
-          (`Type
-             (`Module (`Root (Some (`Page (None, None)), Root), Foo3), {t}4),
-           false),
+       ({Odoc_model__Paths_types.v =
+          `Identifier
+            (`Type
+               (`Module (`Root (Some (`Page (None, None)), Root), Foo3),
+                {t}4),
+             false);
+         key = (2952, "predefined")},
        []);
      value = Odoc_model.Lang.Value.Abstract}];
  compiled = false; doc = []}
@@ -1846,11 +2195,15 @@ let sg = Common.signature_of_mli_string test_data;;
        manifest =
         Some
          (Odoc_model.Lang.TypeExpr.Constr
-           (`Dot
-              (`Identifier
-                 (`Module (`Root (Some (`Page (None, None)), Root), Foo2),
-                  false),
-               "t"),
+           ({Odoc_model__Paths_types.v =
+              `Dot
+                ({Odoc_model__Paths_types.v =
+                   `Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), Foo2),
+                      false);
+                  key = (2943, "predefined")},
+                 "t");
+             key = (2949, "predefined")},
            []));
        constraints = []};
      representation = None});
@@ -1860,10 +2213,13 @@ let sg = Common.signature_of_mli_string test_data;;
      doc = [];
      type_ =
       Odoc_model.Lang.TypeExpr.Constr
-       (`Identifier
-          (`Type
-             (`Module (`Root (Some (`Page (None, None)), Root), Foo3), {t}5),
-           false),
+       ({Odoc_model__Paths_types.v =
+          `Identifier
+            (`Type
+               (`Module (`Root (Some (`Page (None, None)), Root), Foo3),
+                {t}5),
+             false);
+         key = (2953, "predefined")},
        []);
      value = Odoc_model.Lang.Value.Abstract}];
  compiled = false; doc = []}
@@ -1911,11 +2267,15 @@ let sg = Common.signature_of_mli_string test_data;;
        manifest =
         Some
          (Odoc_model.Lang.TypeExpr.Constr
-           (`Dot
-              (`Identifier
-                 (`Module (`Root (Some (`Page (None, None)), Root), Foo),
-                  false),
-               "t"),
+           ({Odoc_model__Paths_types.v =
+              `Dot
+                ({Odoc_model__Paths_types.v =
+                   `Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), Foo),
+                      false);
+                  key = (835, "predefined")},
+                 "t");
+             key = (2946, "predefined")},
            []));
        constraints = []};
      representation = None});
@@ -1924,7 +2284,9 @@ let sg = Common.signature_of_mli_string test_data;;
       `Value (`Module (`Root (Some (`Page (None, None)), Root), Foo3), {x}7);
      doc = [];
      type_ =
-      Odoc_model.Lang.TypeExpr.Constr (`Identifier (`CoreType int, false),
+      Odoc_model.Lang.TypeExpr.Constr
+       ({Odoc_model__Paths_types.v = `Identifier (`CoreType int, false);
+         key = (849, "predefined")},
        []);
      value = Odoc_model.Lang.Value.Abstract};
    Odoc_model.Lang.Signature.Value
@@ -1933,10 +2295,13 @@ let sg = Common.signature_of_mli_string test_data;;
      doc = [];
      type_ =
       Odoc_model.Lang.TypeExpr.Constr
-       (`Identifier
-          (`Type
-             (`Module (`Root (Some (`Page (None, None)), Root), Foo3), {t}6),
-           false),
+       ({Odoc_model__Paths_types.v =
+          `Identifier
+            (`Type
+               (`Module (`Root (Some (`Page (None, None)), Root), Foo3),
+                {t}6),
+             false);
+         key = (2954, "predefined")},
        []);
      value = Odoc_model.Lang.Value.Abstract}];
  compiled = false; doc = []}
@@ -1981,10 +2346,15 @@ let sg = Common.signature_of_mli_string test_data;;
      doc = [];
      type_ =
       Odoc_model.Lang.Module.Alias
-       (`Dot
-          (`Identifier
-             (`Module (`Root (Some (`Page (None, None)), Root), Foo), false),
-           "Bar"),
+       ({Odoc_model__Paths_types.v =
+          `Dot
+            ({Odoc_model__Paths_types.v =
+               `Identifier
+                 (`Module (`Root (Some (`Page (None, None)), Root), Foo),
+                  false);
+              key = (835, "predefined")},
+             "Bar");
+         key = (2961, "predefined")},
         None);
      canonical = None; hidden = false});
    Odoc_model.Lang.Signature.Value
@@ -1993,13 +2363,17 @@ let sg = Common.signature_of_mli_string test_data;;
      doc = [];
      type_ =
       Odoc_model.Lang.TypeExpr.Constr
-       (`Dot
-          (`Identifier
-             (`Module
-                (`Module (`Root (Some (`Page (None, None)), Root), Foo3),
-                 {Bar}9),
-              true),
-           "t"),
+       ({Odoc_model__Paths_types.v =
+          `Dot
+            ({Odoc_model__Paths_types.v =
+               `Identifier
+                 (`Module
+                    (`Module (`Root (Some (`Page (None, None)), Root), Foo3),
+                     {Bar}9),
+                  true);
+              key = (2959, "predefined")},
+             "t");
+         key = (2962, "predefined")},
        []);
      value = Odoc_model.Lang.Value.Abstract}];
  compiled = false; doc = []}

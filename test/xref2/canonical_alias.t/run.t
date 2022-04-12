@@ -21,7 +21,7 @@ The following should be resolved as identifier Test.A
         }
       },
       "key": [
-        "143",
+        "138",
         "test.odoc"
       ]
     }
@@ -49,7 +49,7 @@ The following should be resolved as Test.Wrapper.X
               }
             },
             "key": [
-              "183",
+              "169",
               "test.odoc"
             ]
           },
@@ -57,7 +57,7 @@ The following should be resolved as Test.Wrapper.X
         ]
       },
       "key": [
-        "184",
+        "183",
         "test.odoc"
       ]
     }
@@ -96,19 +96,19 @@ The following should be resolved as Test.Wrapper2.X
                                   }
                                 },
                                 "key": [
-                                  "233",
-                                  "test.odoc"
+                                  "148",
+                                  "test.cmti"
                                 ]
                               }
                             },
                             "key": [
-                              "234",
+                              "233",
                               "test.odoc"
                             ]
                           }
                         },
                         "key": [
-                          "235",
+                          "234",
                           "test.odoc"
                         ]
                       },
@@ -148,7 +148,7 @@ The following should be resolved as Test.Wrapper2.X
                     ]
                   },
                   "key": [
-                    "236",
+                    "235",
                     "test.odoc"
                   ]
                 },
@@ -186,7 +186,7 @@ The following should be resolved as Test.Wrapper2.X
               ]
             },
             "key": [
-              "237",
+              "236",
               "test.odoc"
             ]
           },
@@ -210,7 +210,7 @@ The following should be resolved as Test.Wrapper2.X
                         }
                       },
                       "key": [
-                        "246",
+                        "199",
                         "test.odoc"
                       ]
                     },
@@ -218,20 +218,20 @@ The following should be resolved as Test.Wrapper2.X
                   ]
                 },
                 "key": [
-                  "247",
+                  "245",
                   "test.odoc"
                 ]
               }
             },
             "key": [
-              "249",
+              "247",
               "test.odoc"
             ]
           }
         ]
       },
       "key": [
-        "250",
+        "248",
         "test.odoc"
       ]
     }
@@ -259,7 +259,7 @@ This should probably not resolve at all, but that's a problem for another day. c
               }
             },
             "key": [
-              "310",
+              "260",
               "test.odoc"
             ]
           },
@@ -267,7 +267,7 @@ This should probably not resolve at all, but that's a problem for another day. c
         ]
       },
       "key": [
-        "311",
+        "308",
         "test.odoc"
       ]
     }
@@ -299,7 +299,7 @@ Should resolve as identifier Test.B
         }
       },
       "key": [
-        "331",
+        "323",
         "test.odoc"
       ]
     }
@@ -326,8 +326,8 @@ Should resove to be an alias!
               }
             },
             "key": [
-              "347",
-              "test.odoc"
+              "193",
+              "test.cmti"
             ]
           },
           {
@@ -347,20 +347,20 @@ Should resove to be an alias!
                   }
                 },
                 "key": [
-                  "357",
+                  "348",
                   "test.odoc"
                 ]
               }
             },
             "key": [
-              "361",
+              "356",
               "test.odoc"
             ]
           }
         ]
       },
       "key": [
-        "362",
+        "357",
         "test.odoc"
       ]
     }
