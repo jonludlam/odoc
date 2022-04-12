@@ -973,22 +973,28 @@ val p : Cpath.Resolved.module_ =
            ({Odoc_xref2.Hc.v =
               `Apply
                 ({Odoc_xref2.Hc.v =
-                   `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), App));
+                   `Gpath
+                     (`Identifier
+                        (`Module
+                           (`Root (Some (`Page (None, None)), Root), App)));
                   key = (537, "predefined")},
                  {Odoc_xref2.Hc.v =
-                   `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Bar));
+                   `Gpath
+                     (`Identifier
+                        (`Module
+                           (`Root (Some (`Page (None, None)), Root), Bar)));
                   key = (535, "predefined")});
              key = (543, "predefined")},
             {Odoc_xref2.Hc.v =
-              `Identifier
-                (`Module (`Root (Some (`Page (None, None)), Root), Foo));
+              `Gpath
+                (`Identifier
+                   (`Module (`Root (Some (`Page (None, None)), Root), Foo)));
              key = (533, "predefined")});
         key = (548, "predefined")},
        {Odoc_xref2.Hc.v =
-         `Identifier
-           (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt));
+         `Gpath
+           (`Identifier
+              (`Module (`Root (Some (`Page (None, None)), Root), FooBarInt)));
         key = (531, "predefined")});
    key = (553, "predefined")}
 val m : Component.Module.t Component.Delayed.t =
@@ -1009,10 +1015,12 @@ val m : Component.Module.t Component.Delayed.t =
                           {Odoc_xref2.Hc.v =
                             `Substituted
                               {Odoc_xref2.Hc.v =
-                                `Identifier
-                                  (`Module
-                                     (`Root (Some (`Page (None, None)), Root),
-                                      Foo));
+                                `Gpath
+                                  (`Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Foo)));
                                key = (533, "predefined")};
                            key = (547, "predefined")};
                        key = (549, "predefined")},
@@ -1021,10 +1029,12 @@ val m : Component.Module.t Component.Delayed.t =
                           {Odoc_xref2.Hc.v =
                             `Substituted
                               {Odoc_xref2.Hc.v =
-                                `Identifier
-                                  (`Module
-                                     (`Root (Some (`Page (None, None)), Root),
-                                      Bar));
+                                `Gpath
+                                  (`Identifier
+                                     (`Module
+                                        (`Root
+                                           (Some (`Page (None, None)), Root),
+                                         Bar)));
                                key = (535, "predefined")};
                            key = (542, "predefined")};
                        key = (544, "predefined")});
@@ -1053,10 +1063,12 @@ val sg' : Component.Signature.t =
                          {Odoc_xref2.Hc.v =
                            `Substituted
                              {Odoc_xref2.Hc.v =
-                               `Identifier
-                                 (`Module
-                                    (`Root (Some (`Page (None, None)), Root),
-                                     Bar));
+                               `Gpath
+                                 (`Identifier
+                                    (`Module
+                                       (`Root
+                                          (Some (`Page (None, None)), Root),
+                                        Bar)));
                               key = (535, "predefined")};
                           key = (542, "predefined")};
                       key = (544, "predefined")},
@@ -1085,10 +1097,12 @@ val sg' : Component.Signature.t =
                          {Odoc_xref2.Hc.v =
                            `Substituted
                              {Odoc_xref2.Hc.v =
-                               `Identifier
-                                 (`Module
-                                    (`Root (Some (`Page (None, None)), Root),
-                                     Bar));
+                               `Gpath
+                                 (`Identifier
+                                    (`Module
+                                       (`Root
+                                          (Some (`Page (None, None)), Root),
+                                        Bar)));
                               key = (535, "predefined")};
                           key = (542, "predefined")};
                       key = (544, "predefined")},

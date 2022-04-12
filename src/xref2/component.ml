@@ -894,17 +894,16 @@ module Fmt = struct
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" resolved_module_path p1 resolved_module_path
           p2
-    | `Identifier p ->
-        Format.fprintf ppf "%a" model_identifier
-          (p :> Odoc_model.Paths.Identifier.t)
+    | `Gpath p ->
+        Format.fprintf ppf "%a" model_resolved_path
+          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted p ->
         Format.fprintf ppf "substituted(%a)" resolved_module_path p
     | `Module (p, m) ->
         Format.fprintf ppf "%a.%s" resolved_parent_path p
           (Odoc_model.Names.ModuleName.to_string m)
     | `Alias (p1, p2, _) ->
-        Format.fprintf ppf "alias(%a,%a)" resolved_module_path p1 module_path
-          p2
+        Format.fprintf ppf "alias(%a,%a)" resolved_module_path p1 module_path p2
     | `Subst (p1, p2) ->
         Format.fprintf ppf "subst(%a,%a)" resolved_module_type_path p1
           resolved_module_path p2
@@ -938,9 +937,9 @@ module Fmt = struct
    fun ppf p ->
     match p.v with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
-    | `Identifier id ->
-        Format.fprintf ppf "%a" model_identifier
-          (id :> Odoc_model.Paths.Identifier.t)
+    | `Gpath p ->
+        Format.fprintf ppf "%a" model_resolved_path
+          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted x ->
         Format.fprintf ppf "substituted(%a)" resolved_module_type_path x
     | `ModuleType (p, m) ->
@@ -977,9 +976,9 @@ module Fmt = struct
    fun ppf p ->
     match p.v with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
-    | `Identifier id ->
-        Format.fprintf ppf "%a" model_identifier
-          (id :> Odoc_model.Paths.Identifier.t)
+    | `Gpath p ->
+        Format.fprintf ppf "%a" model_resolved_path
+          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted x ->
         Format.fprintf ppf "substituted(%a)" resolved_type_path x
     | `CanonicalType (t1, t2) ->
@@ -1028,9 +1027,9 @@ module Fmt = struct
    fun ppf p ->
     match p.v with
     | `Local id -> Format.fprintf ppf "%a" Ident.fmt id
-    | `Identifier id ->
-        Format.fprintf ppf "%a" model_identifier
-          (id :> Odoc_model.Paths.Identifier.t)
+    | `Gpath p ->
+        Format.fprintf ppf "%a" model_resolved_path
+          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted s ->
         Format.fprintf ppf "substituted(%a)" resolved_class_type_path s
     | `Class (p, t) ->
@@ -1668,7 +1667,7 @@ module Of_Lang = struct
       | `Identifier i -> (
           match identifier find_any_module ident_map i with
           | `Local l -> M.Module.local l
-          | `Identifier i -> M.Module.identifier i)
+          | `Identifier _ -> M.Module.gpath p)
       | `Module (p, name) ->
           M.Module.module_ (M.Parent.module_ (recurse p), name)
       | `Apply (p1, p2) -> M.Module.apply (recurse p1, recurse p2)
@@ -1696,7 +1695,7 @@ module Of_Lang = struct
       | `Identifier i -> (
           match identifier Maps.ModuleType.find ident_map.module_types i with
           | `Local l -> M.ModuleType.local l
-          | `Identifier i -> M.ModuleType.identifier i)
+          | `Identifier _ -> M.ModuleType.gpath p)
       | `ModuleType (p, name) ->
           M.ModuleType.module_type
             (M.Parent.module_ (resolved_module_path ident_map p), name)
@@ -1722,7 +1721,7 @@ module Of_Lang = struct
       | `Identifier i -> (
           match identifier Maps.Path.Type.find ident_map.path_types i with
           | `Local l -> M.Type.local l
-          | `Identifier i -> M.Type.identifier i)
+          | `Identifier _ -> M.Type.gpath p)
       | `CanonicalType (p1, p2) ->
           M.Type.canonicaltype (resolved_type_path ident_map p1, p2)
       | `Type (p, name) ->
@@ -1747,7 +1746,7 @@ module Of_Lang = struct
             identifier Maps.Path.ClassType.find ident_map.path_class_types i
           with
           | `Local l -> M.ClassType.local l
-          | `Identifier i -> M.ClassType.identifier i)
+          | `Identifier _ -> M.ClassType.gpath p)
       | `Class (p, name) ->
           M.ClassType.class_
             (M.Parent.module_ (resolved_module_path ident_map p), name)
