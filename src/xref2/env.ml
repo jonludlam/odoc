@@ -634,7 +634,7 @@ let add_functor_args' :
       in
       let doc = m.Component.Module.doc in
       let m = Component.Delayed.put_val (Subst.module_ subst m) in
-      let rp = Cpath.Mk.Resolved.Module.identifier identifier in
+      let rp = Cpath.Mk.Resolved.Module.gpath (`Identifier identifier) in
       let p = Cpath.Mk.Module.resolved rp in
       let env' = add_module identifier m doc env in
       (env', Subst.add_module ident p rp subst)
