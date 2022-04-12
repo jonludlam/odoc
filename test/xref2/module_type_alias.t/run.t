@@ -46,8 +46,8 @@ as they are both referencing items that won't be expanded.
                           }
                         },
                         "key": [
-                          "47",
-                          "test.odoc"
+                          "49",
+                          "test.cmti"
                         ]
                       },
                       {
@@ -92,8 +92,8 @@ as they are both referencing items that won't be expanded.
                               }
                             },
                             "key": [
-                              "47",
-                              "test.odoc"
+                              "49",
+                              "test.cmti"
                             ]
                           },
                           {

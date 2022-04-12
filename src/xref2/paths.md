@@ -166,25 +166,37 @@ and now we can get the paths for all three type declarations:
 ```ocaml env=e1
 # Common.LangUtils.Lens.(get (Signature.module_ "M" |-- mod_sig |-- Signature.module_ "N" |-- mod_sig |-- type_constr_path "x1") sg);;
 - : Odoc_model.Paths.Path.Type.t =
-`Identifier
-  (`Type
-     (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N), t),
-   false)
+{Odoc_model__Paths_types.v =
+  `Identifier
+    (`Type
+       (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N), t),
+     false);
+ key = (44, "predefined")}
 # Common.LangUtils.Lens.(get (Signature.module_ "M" |-- mod_sig |-- type_constr_path "x2") sg);;
 - : Odoc_model.Paths.Path.Type.t =
-`Dot
-  (`Identifier
-     (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N),
-      false),
-   "t")
+{Odoc_model__Paths_types.v =
+  `Dot
+    ({Odoc_model__Paths_types.v =
+       `Identifier
+         (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N),
+          false);
+      key = (43, "predefined")},
+     "t");
+ key = (45, "predefined")}
 # Common.LangUtils.Lens.(get (type_constr_path "x3") sg);;
 - : Odoc_model.Paths.Path.Type.t =
-`Dot
-  (`Dot
-     (`Identifier
-        (`Module (`Root (Some (`Page (None, None)), Root), M), false),
-      "N"),
-   "t")
+{Odoc_model__Paths_types.v =
+  `Dot
+    ({Odoc_model__Paths_types.v =
+       `Dot
+         ({Odoc_model__Paths_types.v =
+            `Identifier
+              (`Module (`Root (Some (`Page (None, None)), Root), M), false);
+           key = (38, "predefined")},
+          "N");
+      key = (46, "predefined")},
+     "t");
+ key = (47, "predefined")}
 ```
 
 We can resolve the paths:
@@ -198,26 +210,46 @@ and now the paths are:
 ```ocaml env=e1
 # Common.LangUtils.Lens.(get (Signature.module_ "M" |-- mod_sig |-- Signature.module_ "N" |-- mod_sig |-- type_constr_path "x1") sg');;
 - : Odoc_model.Paths.Path.Type.t =
-`Resolved
-  (`Identifier
-     (`Type
-        (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N),
-         t)))
+{Odoc_model__Paths_types.v =
+  `Resolved
+    {Odoc_model__Paths_types.v =
+      `Identifier
+        (`Type
+           (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N),
+            t));
+     key = (54, "predefined")};
+ key = (56, "predefined")}
 # Common.LangUtils.Lens.(get (Signature.module_ "M" |-- mod_sig |-- type_constr_path "x2") sg');;
 - : Odoc_model.Paths.Path.Type.t =
-`Resolved
-  (`Type
-     (`Identifier
-        (`Module (`Module (`Root (Some (`Page (None, None)), Root), M), N)),
-      t))
+{Odoc_model__Paths_types.v =
+  `Resolved
+    {Odoc_model__Paths_types.v =
+      `Type
+        ({Odoc_model__Paths_types.v =
+           `Identifier
+             (`Module
+                (`Module (`Root (Some (`Page (None, None)), Root), M), N));
+          key = (59, "predefined")},
+         t);
+     key = (66, "predefined")};
+ key = (67, "predefined")}
 # Common.LangUtils.Lens.(get (type_constr_path "x3") sg');;
 - : Odoc_model.Paths.Path.Type.t =
-`Resolved
-  (`Type
-     (`Module
-        (`Identifier (`Module (`Root (Some (`Page (None, None)), Root), M)),
-         N),
-      t))
+{Odoc_model__Paths_types.v =
+  `Resolved
+    {Odoc_model__Paths_types.v =
+      `Type
+        ({Odoc_model__Paths_types.v =
+           `Module
+             ({Odoc_model__Paths_types.v =
+                `Identifier
+                  (`Module (`Root (Some (`Page (None, None)), Root), M));
+               key = (74, "predefined")},
+              N);
+          key = (86, "predefined")},
+         t);
+     key = (87, "predefined")};
+ key = (88, "predefined")}
 ```
 
 So the difference in the paths is essentially at what point we switch to the identifier.
@@ -306,10 +338,14 @@ val sg : Odoc_model.Lang.Signature.t =
                           doc = []; canonical = None; expr = None}];
                       compiled = true; doc = []});
                  p_path =
-                  `Resolved
-                    (`Identifier
-                       (`ModuleType
-                          (`Root (Some (`Page (None, None)), Root), ARG)))}},
+                  {Odoc_model__Paths_types.v =
+                    `Resolved
+                      {Odoc_model__Paths_types.v =
+                        `Identifier
+                          (`ModuleType
+                             (`Root (Some (`Page (None, None)), Root), ARG));
+                       key = (112, "predefined")};
+                   key = (115, "predefined")}}},
            Odoc_model.Lang.ModuleType.Signature
             {Odoc_model.Lang.Signature.items =
               [Odoc_model.Lang.Signature.Module
@@ -325,17 +361,26 @@ val sg : Odoc_model.Lang.Signature.t =
                    (Odoc_model.Lang.ModuleType.Path
                      {Odoc_model.Lang.ModuleType.p_expansion = None;
                       p_path =
-                       `Resolved
-                         (`OpaqueModuleType
-                            (`ModuleType
-                               (`Identifier
-                                  (`Parameter
-                                     (`Module
-                                        (`Root
-                                           (Some (`Page (None, None)), Root),
-                                         F),
-                                      X)),
-                                S)))});
+                       {Odoc_model__Paths_types.v =
+                         `Resolved
+                           {Odoc_model__Paths_types.v =
+                             `OpaqueModuleType
+                               {Odoc_model__Paths_types.v =
+                                 `ModuleType
+                                   ({Odoc_model__Paths_types.v =
+                                      `Identifier
+                                        (`Parameter
+                                           (`Module
+                                              (`Root
+                                                 (Some (`Page (None, None)),
+                                                  Root),
+                                               F),
+                                            X));
+                                     key = (118, "predefined")},
+                                    S);
+                                key = (125, "predefined")};
+                            key = (126, "predefined")};
+                        key = (127, "predefined")}});
                  canonical = None; hidden = false})];
              compiled = true; doc = []}));
        canonical = None; hidden = false});
@@ -351,25 +396,7 @@ val sg : Odoc_model.Lang.Signature.t =
                {Odoc_model.Lang.ModuleType.id =
                  `ModuleType
                    (`Module (`Root (Some (`Page (None, None)), Root), M), S);
-                doc = []; canonical = None;
-                expr =
-                 Some
-                  (Odoc_model.Lang.ModuleType.Signature
-                    {Odoc_model.Lang.Signature.items =
-                      [Odoc_model.Lang.Signature.Type
-                        (Odoc_model.Lang.Signature.Ordinary,
-                        {Odoc_model.Lang.TypeDecl.id =
-                          `Type
-                            (`ModuleType
-                               (`Module
-                                  (`Root (Some (`Page (None, None)), Root),
-                                   M),
-                                ...),
-                             ...);
-                         doc = ...; canonical = ...; equation = ...;
-                         representation = ...});
-                       ...];
-                     compiled = ...; doc = ...})};
+                doc = ...; canonical = ...; expr = ...};
               ...];
             compiled = ...; doc = ...});
        canonical = ...; hidden = ...});
@@ -388,21 +415,41 @@ path as this `` `Subst `` constructor:
 ```ocaml env=e1
 # Common.LangUtils.Lens.(get (type_constr_path "t") sg) ;;
 - : Odoc_model.Paths.Path.Type.t =
-`Resolved
-  (`Type
-     (`Subst
-        (`ModuleType
-           (`Identifier
-              (`Module (`Root (Some (`Page (None, None)), Root), M)),
-            S),
-         `Module
-           (`Apply
-              (`Identifier
-                 (`Module (`Root (Some (`Page (None, None)), Root), F)),
-               `Identifier
-                 (`Module (`Root (Some (`Page (None, None)), Root), M))),
-            N)),
-      t))
+{Odoc_model__Paths_types.v =
+  `Resolved
+    {Odoc_model__Paths_types.v =
+      `Type
+        ({Odoc_model__Paths_types.v =
+           `Subst
+             ({Odoc_model__Paths_types.v =
+                `ModuleType
+                  ({Odoc_model__Paths_types.v =
+                     `Identifier
+                       (`Module (`Root (Some (`Page (None, None)), Root), M));
+                    key = (74, "predefined")},
+                   S);
+               key = (156, "predefined")},
+              {Odoc_model__Paths_types.v =
+                `Module
+                  ({Odoc_model__Paths_types.v =
+                     `Apply
+                       ({Odoc_model__Paths_types.v =
+                          `Identifier
+                            (`Module
+                               (`Root (Some (`Page (None, None)), Root), F));
+                         key = (131, "predefined")},
+                        {Odoc_model__Paths_types.v =
+                          `Identifier
+                            (`Module
+                               (`Root (Some (`Page (None, None)), Root), M));
+                         key = (74, "predefined")});
+                    key = (178, "predefined")},
+                   N);
+               key = (179, "predefined")});
+          key = (180, "predefined")},
+         t);
+     key = (181, "predefined")};
+ key = (182, "predefined")}
 ```
 
 This way we can render the path as `F(M).N.t` but actually link to `M.S.t`

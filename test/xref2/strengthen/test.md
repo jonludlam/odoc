@@ -11,6 +11,18 @@ let simple_strengthening input =
     fprintf std_formatter "AFTER \n======\n%!";
     fprintf std_formatter "%a\n%!" Component.Fmt.signature c'
 ```
+```mdx-error
+Line 5, characters 67-68:
+Error: This expression has type
+         [> `Identifier of
+              [> `Root of
+                   [> `Page of 'a option * Odoc_model.Names.PageName.t ]
+                   option * Odoc_model.Names.ModuleName.t ] ]
+       but an expression was expected of type
+         Odoc_model.Paths.Path.Resolved.Module.t =
+           Odoc_model__Paths_types.Resolved_path.module_unhashed
+           Odoc_model.Hc.hashed
+```
 
 Simple strengthening
 
@@ -22,15 +34,6 @@ type equations for all abstract types.
   type t
   type u = t
   |} ;;
-BEFORE
-======
-type t/1
-type u/0 = local(t/1,false)
- (removed=[])
-AFTER
-======
-type t/2 = r((root Root)).t
-type u/3 = local(t/2,false)
- (removed=[])
-- : unit = ()
+Line 1, characters 1-21:
+Error: Unbound value simple_strengthening
 ```

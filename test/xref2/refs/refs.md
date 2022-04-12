@@ -765,7 +765,9 @@ let resolve_ref = resolve_ref_of_mli {|
 - : ref =
 `Type
   (`Alias
-     (`Identifier (`Module (`Root (Some (`Page (None, None)), Root), A)),
+     ({Odoc_model__Paths_types.v =
+        `Identifier (`Module (`Root (Some (`Page (None, None)), Root), A));
+       key = (94, "predefined")},
       `Identifier (`Module (`Root (Some (`Page (None, None)), Root), B))),
    t)
 # resolve_ref "C.t" ;;
@@ -779,7 +781,9 @@ Failure
 - : ref =
 `Type
   (`Alias
-     (`Identifier (`Module (`Root (Some (`Page (None, None)), Root), A)),
+     ({Odoc_model__Paths_types.v =
+        `Identifier (`Module (`Root (Some (`Page (None, None)), Root), A));
+       key = (94, "predefined")},
       `Module
         (`Identifier (`Module (`Root (Some (`Page (None, None)), Root), E)),
          N)),

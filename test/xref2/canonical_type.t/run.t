@@ -106,7 +106,7 @@ Canonical paths should be as short as possible. As such, the following ought to 
         }
       },
       "key": [
-        "130",
+        "123",
         "foo.odoc"
       ]
     }
@@ -146,7 +146,7 @@ And this one should be `` `Type(`Identifier,t) ``
               }
             },
             "key": [
-              "198",
+              "125",
               "foo.odoc"
             ]
           },
@@ -154,7 +154,7 @@ And this one should be `` `Type(`Identifier,t) ``
         ]
       },
       "key": [
-        "199",
+        "208",
         "foo.odoc"
       ]
     }

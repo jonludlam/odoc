@@ -430,7 +430,7 @@ module rec Path : sig
     module Module : sig
       type t = Paths_types.Resolved_path.module_
 
-      val is_hidden : t -> bool
+      val is_hidden : t -> weak_canonical_test:bool -> bool
 
       val identifier : t -> Identifier.Path.Module.t
 
@@ -460,7 +460,7 @@ module rec Path : sig
     module ModuleType : sig
       type t = Paths_types.Resolved_path.module_type
 
-      val is_hidden : t -> bool
+      val is_hidden : t -> weak_canonical_test:bool -> bool
 
       val identifier : t -> Identifier.Path.ModuleType.t
 

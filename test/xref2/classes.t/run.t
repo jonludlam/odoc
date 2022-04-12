@@ -27,7 +27,7 @@ resolve correctly. All of the 'Class' json objects should contain
                   "`ClassType": [ { "`Root": [ "None", "F" ] }, "u" ]
                 }
               },
-              "key": [ "41", "f.cmti" ]
+              "key": [ "40", "f.cmti" ]
             }
           },
           "key": [ "42", "f.cmti" ]
@@ -50,7 +50,7 @@ resolve correctly. All of the 'Class' json objects should contain
                 "`ClassType": [
                   {
                     "v": { "`Identifier": { "`Root": [ "None", "B" ] } },
-                    "key": [ "53", "e.cmti" ]
+                    "key": [ "45", "e.cmti" ]
                   },
                   "u"
                 ]
@@ -83,7 +83,7 @@ resolve correctly. All of the 'Class' json objects should contain
                     }
                   },
                   "key": [
-                    "53",
+                    "45",
                     "e.cmti"
                   ]
                 },
@@ -121,7 +121,7 @@ resolve correctly. All of the 'Class' json objects should contain
                     "`ClassType": [
                       {
                         "v": { "`Identifier": { "`Root": [ "None", "B" ] } },
-                        "key": [ "55", "c.cmt" ]
+                        "key": [ "47", "c.cmt" ]
                       },
                       "u"
                     ]
