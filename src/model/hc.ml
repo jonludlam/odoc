@@ -52,7 +52,7 @@ end)
 let gen1 : ('a hashed -> 'b) -> 'a hashed -> 'b hashed =
  fun mk' ->
   let module M = HT1 in
-  let tbl = M.create 255 in
+  let tbl = M.create 4095 in
   fun x ->
     let key = x.key in
     if M.mem tbl key then M.find tbl key
@@ -64,7 +64,7 @@ let gen1 : ('a hashed -> 'b) -> 'a hashed -> 'b hashed =
 let gen2 : ('a hashed * 'b hashed -> 'c) -> 'a hashed * 'b hashed -> 'c hashed =
  fun mk' ->
   let module M = HT2 in
-  let tbl = M.create 255 in
+  let tbl = M.create 4095 in
   fun (x, y) ->
     let key = (x.key, y.key) in
     if M.mem tbl key then M.find tbl key
@@ -77,7 +77,7 @@ let gen_named :
     ('a -> string) -> ('b hashed * 'a -> 'c) -> 'b hashed * 'a -> 'c hashed =
  fun str_of_name mk' ->
   let module M = HT2str in
-  let tbl = M.create 255 in
+  let tbl = M.create 4095 in
   fun (x, y) ->
     let key = (x.key, str_of_name y) in
     if M.mem tbl key then M.find tbl key
@@ -89,7 +89,7 @@ let gen_named :
 let gen_str : (string -> 'c) -> string -> 'c hashed =
  fun mk' ->
   let module M = HTStr in
-  let tbl = M.create 255 in
+  let tbl = M.create 4095 in
   fun x ->
     let key = x in 
     if M.mem tbl key then M.find tbl key
