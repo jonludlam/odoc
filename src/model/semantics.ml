@@ -342,8 +342,7 @@ let section_heading :
     | None -> (false, generate_heading_label text)
   in
   let label =
-    Paths.Identifier.Mk.label
-      (status.parent_of_sections, Names.LabelName.make_std label)
+    `Label (status.parent_of_sections, Names.LabelName.make_std label)
   in
 
   let mk_heading heading_level =
@@ -392,7 +391,7 @@ let section_heading :
       mk_heading level'
 
 let validate_first_page_heading status ast_element =
-  match status.parent_of_sections.v with
+  match status.parent_of_sections with
   | `Page (_, name) | `LeafPage (_, name) -> (
       match ast_element with
       | { Location.value = `Heading (_, _, _); _ } -> ()
@@ -442,7 +441,7 @@ let top_level_block_elements status ast_elements =
   in
   let top_heading_level =
     (* Non-page documents have a generated title. *)
-    match status.parent_of_sections.v with
+    match status.parent_of_sections with
     | `Page _ | `LeafPage _ -> None
     | _parent_with_generated_title -> Some 0
   in

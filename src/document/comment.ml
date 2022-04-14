@@ -295,7 +295,7 @@ let heading_level_to_int = function
   | `Paragraph -> 4
   | `Subparagraph -> 5
 
-let heading (attrs, { Odoc_model.Hc.v = `Label (_, label); _ }, text) =
+let heading (attrs, `Label (_, label), text) =
   let label = Odoc_model.Names.LabelName.to_string label in
   let title = non_link_inline_element_list text in
   let level = heading_level_to_int attrs.Comment.heading_level in

@@ -36,8 +36,7 @@ let ambiguous_label_warning label_name labels =
 (** Raise a warning when a label explicitly set by the user collides. This
     warning triggers even if one of the colliding labels have been automatically
     generated. *)
-let check_ambiguous_label ~loc env
-    (attrs, ({ Odoc_model.Hc.v = `Label (_, label_name); _ } as id), _) =
+let check_ambiguous_label ~loc env (attrs, (`Label (_, label_name) as id), _) =
   if attrs.Comment.heading_label_explicit then
     (* Looking for an identical identifier but a different location. *)
     let conflicting (`Label (id', comp)) =
@@ -191,7 +190,7 @@ let rec comment_inline_element :
             (* In case of labels, use the heading text as reference text if
                it's not specified. *)
             match (content, x) with
-            | [], `Identifier ({ v = #Id.Label.t_unhashed; _ } as i) -> (
+            | [], `Identifier (#Id.Label.t as i) -> (
                 match Env.lookup_by_id Env.s_label i env with
                 | Some (`Label (_, lbl)) -> lbl.Component.Label.text
                 | None -> [])
@@ -739,7 +738,7 @@ and module_type_expr :
   | Functor (arg, res) ->
       let arg' = functor_argument env arg in
       let env = Env.add_functor_parameter arg env in
-      let res' = module_type_expr env (Paths.Identifier.Mk.result id) res in
+      let res' = module_type_expr env (`Result id) res in
       Functor (arg', res')
   | TypeOf { t_desc = StructInclude p; t_expansion } ->
       TypeOf

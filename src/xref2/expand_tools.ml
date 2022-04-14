@@ -158,7 +158,7 @@ and handle_expansion env id expansion =
     | Component.FunctorParameter.Unit -> (env, expr)
     | Named arg ->
         let identifier =
-          Paths.Identifier.Mk.parameter
+          `Parameter
             ( parent,
               Ident.Name.typed_functor_parameter
                 arg.Component.FunctorParameter.id )
@@ -191,7 +191,7 @@ and handle_expansion env id expansion =
     | Functor (arg, expr) ->
         let env', expr' = handle_argument id arg expr env in
         aux_expansion_of_module_type_expr env' expr' >>= fun res ->
-        expand (Paths.Identifier.Mk.result id) env res >>= fun (env, res) ->
+        expand (`Result id) env res >>= fun (env, res) ->
         Ok
           ( env,
             (Component.ModuleType.Functor (arg, res)

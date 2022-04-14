@@ -346,8 +346,7 @@ module L = struct
     let rec find = function
       | hd :: tl -> (
           match Odoc_model.Location_.value hd with
-          | `Heading
-              (_, ({ Odoc_model.Hc.v = `Label (_, name'); _ } as label), _)
+          | `Heading (_, (`Label (_, name') as label), _)
             when name = LabelName.to_string name' ->
               Ok (`Identifier label)
           | _ -> find tl)

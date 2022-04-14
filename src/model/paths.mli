@@ -32,8 +32,6 @@ module Identifier : sig
   module Signature : sig
     type t = Paths_types.Identifier.signature
 
-    type t_unhashed = Paths_types.Identifier.signature_unhashed
-
     val equal : t -> t -> bool
 
     val hash : t -> int
@@ -43,8 +41,6 @@ module Identifier : sig
 
   module ClassSignature : sig
     type t = Paths_types.Identifier.class_signature
-
-    type t_unhashed = Paths_types.Identifier.class_signature_unhashed
 
     val equal : t -> t -> bool
 
@@ -56,8 +52,6 @@ module Identifier : sig
   module DataType : sig
     type t = Paths_types.Identifier.datatype
 
-    type t_unhashed = Paths_types.Identifier.datatype_unhashed
-
     val equal : t -> t -> bool
 
     val hash : t -> int
@@ -68,8 +62,6 @@ module Identifier : sig
   module Parent : sig
     type t = Paths_types.Identifier.parent
 
-    type t_unhashed = Paths_types.Identifier.parent_unhashed
-
     val equal : t -> t -> bool
 
     val hash : t -> int
@@ -79,8 +71,6 @@ module Identifier : sig
 
   module LabelParent : sig
     type t = Paths_types.Identifier.label_parent
-
-    type t_unhashed = Paths_types.Identifier.label_parent_unhashed
 
     val equal : t -> t -> bool
 
@@ -102,8 +92,6 @@ module Identifier : sig
   module Module : sig
     type t = Paths_types.Identifier.module_
 
-    type t_unhashed = Paths_types.Identifier.module_unhashed
-
     val equal : t -> t -> bool
 
     val hash : t -> int
@@ -113,8 +101,6 @@ module Identifier : sig
 
   module FunctorParameter : sig
     type t = Paths_types.Identifier.functor_parameter
-
-    type t_unhashed = Paths_types.Identifier.functor_parameter_unhashed
 
     val equal : t -> t -> bool
 
@@ -136,8 +122,6 @@ module Identifier : sig
   module ModuleType : sig
     type t = Paths_types.Identifier.module_type
 
-    type t_unhashed = Paths_types.Identifier.module_type_unhashed
-
     val equal : t -> t -> bool
 
     val hash : t -> int
@@ -147,8 +131,6 @@ module Identifier : sig
 
   module Type : sig
     type t = Paths_types.Identifier.type_
-
-    type t_unhashed = Paths_types.Identifier.type_unhashed
 
     val equal : t -> t -> bool
 
@@ -250,8 +232,6 @@ module Identifier : sig
   module Label : sig
     type t = Paths_types.Identifier.label
 
-    type t_unhashed = Paths_types.Identifier.label_unhashed
-
     val equal : t -> t -> bool
 
     val hash : t -> int
@@ -261,8 +241,6 @@ module Identifier : sig
 
   module Page : sig
     type t = Paths_types.Identifier.page
-
-    type t_unhashed = Paths_types.Identifier.page_unhashed
 
     val equal : t -> t -> bool
 
@@ -295,8 +273,6 @@ module Identifier : sig
     module Module : sig
       type t = Paths_types.Identifier.path_module
 
-      type t_unhashed = Paths_types.Identifier.path_module_unhashed
-
       val equal : t -> t -> bool
 
       val hash : t -> int
@@ -317,8 +293,6 @@ module Identifier : sig
     module Type : sig
       type t = Paths_types.Identifier.path_type
 
-      type t_unhashed = Paths_types.Identifier.path_type_unhashed
-
       val equal : t -> t -> bool
 
       val hash : t -> int
@@ -328,8 +302,6 @@ module Identifier : sig
 
     module ClassType : sig
       type t = Paths_types.Identifier.path_class_type
-
-      type t_unhashed = Paths_types.Identifier.path_class_type_unhashed
 
       val equal : t -> t -> bool
 
@@ -343,17 +315,15 @@ module Identifier : sig
 
   type t = Paths_types.Identifier.any
 
-  type t_unhashed = Paths_types.Identifier.any_unhashed
-
   val hash : t -> int
 
-  val name : [< t_unhashed ] Hc.hashed -> string
+  val name : [< t ] -> string
 
   val compare : t -> t -> int
 
-  val equal : ([< t_unhashed ] Hc.hashed as 'a) -> 'a -> bool
+  val equal : ([< t ] as 'a) -> 'a -> bool
 
-  val label_parent : [< t_unhashed ] Hc.hashed -> LabelParent.t
+  val label_parent : [< t ] -> LabelParent.t
 
   module Sets : sig
     module Signature : Set.S with type elt = Signature.t
@@ -451,85 +421,6 @@ module Identifier : sig
 
       module ClassType : Map.S with type key = Path.ClassType.t
     end
-  end
-
-  module Mk : sig
-    open Names
-
-    val page :
-      ContainerPage.t option * PageName.t ->
-      [> `Page of ContainerPage.t option * PageName.t ] Hc.hashed
-
-    val leaf_page :
-      ContainerPage.t option * PageName.t ->
-      [> `LeafPage of ContainerPage.t option * PageName.t ] Hc.hashed
-
-    val root :
-      ContainerPage.t option * ModuleName.t ->
-      [> `Root of ContainerPage.t option * ModuleName.t ] Hc.hashed
-
-    val module_ :
-      Signature.t * ModuleName.t ->
-      [> `Module of Signature.t * ModuleName.t ] Hc.hashed
-
-    val parameter :
-      Signature.t * ParameterName.t ->
-      [> `Parameter of Signature.t * ParameterName.t ] Hc.hashed
-
-    val result : Signature.t -> [> `Result of Signature.t ] Hc.hashed
-
-    val module_type :
-      Signature.t * ModuleTypeName.t ->
-      [> `ModuleType of Signature.t * ModuleTypeName.t ] Hc.hashed
-
-    val class_ :
-      Signature.t * ClassName.t ->
-      [> `Class of Signature.t * ClassName.t ] Hc.hashed
-
-    val class_type :
-      Signature.t * ClassTypeName.t ->
-      [> `ClassType of Signature.t * ClassTypeName.t ] Hc.hashed
-
-    val type_ :
-      Signature.t * TypeName.t ->
-      [> `Type of Signature.t * TypeName.t ] Hc.hashed
-
-    val core_type : string -> [> `CoreType of TypeName.t ] Hc.hashed
-
-    val constructor :
-      Type.t * ConstructorName.t ->
-      [> `Constructor of Type.t * ConstructorName.t ] Hc.hashed
-
-    val field :
-      Parent.t * FieldName.t -> [> `Field of Parent.t * FieldName.t ] Hc.hashed
-
-    val extension :
-      Signature.t * ExtensionName.t ->
-      [> `Extension of Signature.t * ExtensionName.t ] Hc.hashed
-
-    val exception_ :
-      Signature.t * ExceptionName.t ->
-      [> `Exception of Signature.t * ExceptionName.t ] Hc.hashed
-
-    val core_exception :
-      string -> [> `CoreException of ExceptionName.t ] Hc.hashed
-
-    val value :
-      Signature.t * ValueName.t ->
-      [> `Value of Signature.t * ValueName.t ] Hc.hashed
-
-    val method_ :
-      ClassSignature.t * MethodName.t ->
-      [> `Method of ClassSignature.t * MethodName.t ] Hc.hashed
-
-    val instance_variable :
-      ClassSignature.t * InstanceVariableName.t ->
-      [> `InstanceVariable of ClassSignature.t * InstanceVariableName.t ]
-      Hc.hashed
-
-    val label :
-      LabelParent.t * LabelName.t ->
-      [> `Label of LabelParent.t * LabelName.t ] Hc.hashed
   end
 end
 

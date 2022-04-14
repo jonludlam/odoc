@@ -28,14 +28,10 @@ module Path : sig
 
   type t = { kind : kind; parent : t option; name : string }
 
-  type source_unhashed =
-    [ Identifier.Page.t_unhashed
-    | Identifier.Signature.t_unhashed
-    | Identifier.ClassSignature.t_unhashed ]
+  type source =
+    [ Identifier.Page.t | Identifier.Signature.t | Identifier.ClassSignature.t ]
 
-  and source = source_unhashed Odoc_model.Hc.hashed
-
-  val from_identifier : [< source_unhashed ] Odoc_model.Hc.hashed -> t
+  val from_identifier : [< source ] -> t
 
   val to_list : t -> (kind * string) list
 

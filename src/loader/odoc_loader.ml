@@ -115,10 +115,7 @@ let read_cmt ~make_root ~parent ~filename () =
       let imports = cmt_info.cmt_imports in
       match cmt_info.cmt_annots with
       | Packed (_, files) ->
-          let id =
-            Odoc_model.Paths.Identifier.Mk.root
-              (parent, Odoc_model.Names.ModuleName.make_std name)
-          in
+          let id = `Root (parent, Odoc_model.Names.ModuleName.make_std name) in
           let items =
             List.map
               (fun file ->
@@ -131,8 +128,7 @@ let read_cmt ~make_root ~parent ~filename () =
             List.map
               (fun name ->
                 let id =
-                  Odoc_model.Paths.Identifier.Mk.module_
-                    (id, Odoc_model.Names.ModuleName.make_std name)
+                  `Module (id, Odoc_model.Names.ModuleName.make_std name)
                 in
                 let path = Odoc_model.Paths.Path.Module.Mk.root name in
                 { Odoc_model.Lang.Compilation_unit.Packed.id; path })

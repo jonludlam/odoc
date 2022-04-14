@@ -246,7 +246,7 @@ let rec kind_of_error : Tools_error.any -> kind option = function
       match kind_of_module_type_cpath cp with
       | None -> kind_of_error (e :> Tools_error.any)
       | x -> x)
-  | `Lookup_failure { v = `Root (_, name); _ } ->
+  | `Lookup_failure (`Root (_, name)) ->
       Some (`Root (Names.ModuleName.to_string name))
   | `UnexpandedTypeOf type_of_desc -> kind_of_type_of_desc type_of_desc
   | `Lookup_failure_root name -> Some (`Root name)
@@ -270,7 +270,7 @@ let kind_of_error ~what = function
   | None -> (
       match what with
       | `Include (Component.Include.Alias cp) -> kind_of_module_cpath cp
-      | `Module { Odoc_model.Hc.v = `Root (_, name); _ } ->
+      | `Module (`Root (_, name)) ->
           Some (`Root (Names.ModuleName.to_string name))
       | _ -> None)
 

@@ -4,8 +4,8 @@ module ModuleMap = Map.Make (struct
   type t = Ident.module_
 
   let compare a b =
-    let i1 = match a with `LRoot (_, i) | `LModule (_, i) -> i in
-    let i2 = match b with `LRoot (_, i) | `LModule (_, i) -> i in
+    let i1 = match a with | `LRoot (_, i) | `LModule (_, i) -> i in
+    let i2 = match b with | `LRoot (_, i) | `LModule (_, i) -> i in
     Int.compare i1 i2
 end)
 
@@ -13,27 +13,17 @@ module TypeMap = Map.Make (struct
   type t = Ident.type_
 
   let compare a b =
-    let i1 = match a with `LType (_, i) -> i in
-    let i2 = match b with `LType (_, i) -> i in
+    let i1 = match a with | `LType (_, i) -> i in
+    let i2 = match b with | `LType (_, i) -> i in
     Int.compare i1 i2
-end)
+  end)
 
 module PathModuleMap = Map.Make (struct
   type t = Ident.path_module
 
   let compare a b =
-    let i1 =
-      match a with
-      | `LRoot (_, i) | `LModule (_, i) | `LParameter (_, i) | `LResult (_, i)
-        ->
-          i
-    in
-    let i2 =
-      match b with
-      | `LRoot (_, i) | `LModule (_, i) | `LParameter (_, i) | `LResult (_, i)
-        ->
-          i
-    in
+    let i1 = match a with | `LRoot (_, i) | `LModule (_, i) | `LParameter (_, i) | `LResult (_, i) -> i in
+    let i2 = match b with | `LRoot (_, i) | `LModule (_, i) | `LParameter (_, i) | `LResult (_, i) -> i in
     Int.compare i1 i2
 end)
 
@@ -41,8 +31,8 @@ module ModuleTypeMap = Map.Make (struct
   type t = Ident.module_type
 
   let compare a b =
-    let i1 = match a with `LModuleType (_, i) -> i in
-    let i2 = match b with `LModuleType (_, i) -> i in
+    let i1 = match a with | `LModuleType (_, i) -> i in
+    let i2 = match b with | `LModuleType (_, i) -> i in
     Int.compare i1 i2
 end)
 
@@ -50,12 +40,8 @@ module PathTypeMap = Map.Make (struct
   type t = Ident.path_type
 
   let compare a b =
-    let i1 =
-      match a with `LType (_, i) | `LClass (_, i) | `LClassType (_, i) -> i
-    in
-    let i2 =
-      match b with `LType (_, i) | `LClass (_, i) | `LClassType (_, i) -> i
-    in
+    let i1 = match a with | `LType (_, i) | `LClass (_, i) | `LClassType (_, i) -> i in
+    let i2 = match b with | `LType (_, i) | `LClass (_, i) | `LClassType (_, i) -> i in
     Int.compare i1 i2
 end)
 
@@ -63,8 +49,8 @@ module PathClassTypeMap = Map.Make (struct
   type t = Ident.path_class_type
 
   let compare a b =
-    let i1 = match a with `LClass (_, i) | `LClassType (_, i) -> i in
-    let i2 = match b with `LClass (_, i) | `LClassType (_, i) -> i in
+    let i1 = match a with | `LClass (_, i) | `LClassType (_, i) -> i in
+    let i2 = match b with | `LClass (_, i) | `LClassType (_, i) -> i in
     Int.compare i1 i2
 end)
 
@@ -1191,7 +1177,7 @@ module Fmt = struct
         Format.fprintf ppf "opaquemoduletype(%a)" model_resolved_path (m :> t)
 
   and model_identifier ppf (p : Odoc_model.Paths.Identifier.t) =
-    match p.v with
+    match p with
     | `Root (_, unit_name) ->
         Format.fprintf ppf "(root %s)"
           (Odoc_model.Names.ModuleName.to_string unit_name)
@@ -1691,10 +1677,9 @@ module Of_Lang = struct
 
   let find_any_module i ident_map =
     match i with
-    | { Odoc_model.Hc.v = #Paths.Identifier.Module.t_unhashed; _ } as id ->
+    | #Paths.Identifier.Module.t as id ->
         (Maps.Module.find id ident_map.modules :> Ident.path_module)
-    | { Odoc_model.Hc.v = #Paths.Identifier.FunctorParameter.t_unhashed; _ } as
-      id ->
+    | #Paths.Identifier.FunctorParameter.t as id ->
         (Maps.FunctorParameter.find id ident_map.functor_parameters
           :> Ident.path_module)
     | _ -> raise Not_found
