@@ -404,18 +404,11 @@ let reset_caches () =
 let simplify_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
     =
  fun env m ->
+  let open Odoc_model.Paths.Identifier in
   match m.v with
   | `Module ({ v = `Module { v = `Gpath (`Identifier p); _ }; _ }, name) -> (
-      let ident =
-        (`Module ((p :> Odoc_model.Paths.Identifier.Signature.t), name)
-          : Odoc_model.Paths.Identifier.Path.Module.t)
-      in
-      match
-        Env.(
-          lookup_by_id s_module
-            (ident :> Odoc_model.Paths.Identifier.Signature.t)
-            env)
-      with
+      let ident = (Mk.module_ ((p :> Signature.t), name) : Path.Module.t) in
+      match Env.(lookup_by_id s_module (ident :> Signature.t) env) with
       | Some _ -> Cpath.Mk.Resolved.Module.gpath (`Identifier ident)
       | None -> m)
   | _ -> m
@@ -423,37 +416,25 @@ let simplify_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
 let simplify_module_type :
     Env.t -> Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
  fun env m ->
+  let open Odoc_model.Paths.Identifier in
   match m.v with
   | `ModuleType ({ v = `Module { v = `Gpath (`Identifier p); _ }; _ }, name)
     -> (
       let ident =
-        (`ModuleType ((p :> Odoc_model.Paths.Identifier.Signature.t), name)
-          : Odoc_model.Paths.Identifier.Path.ModuleType.t)
+        (Mk.module_type ((p :> Signature.t), name) : Path.ModuleType.t)
       in
-      match
-        Env.(
-          lookup_by_id s_module_type
-            (ident :> Odoc_model.Paths.Identifier.Signature.t)
-            env)
-      with
+      match Env.(lookup_by_id s_module_type (ident :> Signature.t) env) with
       | Some _ -> Cpath.Mk.Resolved.ModuleType.gpath (`Identifier ident)
       | None -> m)
   | _ -> m
 
 let simplify_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
  fun env m ->
+  let open Odoc_model.Paths.Identifier in
   match m.v with
   | `Type ({ v = `Module { v = `Gpath (`Identifier p); _ }; _ }, name) -> (
-      let ident =
-        (`Type ((p :> Odoc_model.Paths.Identifier.Signature.t), name)
-          : Odoc_model.Paths.Identifier.Path.Type.t)
-      in
-      match
-        Env.(
-          lookup_by_id s_type
-            (ident :> Odoc_model.Paths.Identifier.Path.Type.t)
-            env)
-      with
+      let ident = (Mk.type_ ((p :> Signature.t), name) : Path.Type.t) in
+      match Env.(lookup_by_id s_type (ident :> Path.Type.t) env) with
       | Some _ -> Cpath.Mk.Resolved.Type.gpath (`Identifier ident)
       | None -> m)
   | _ -> m
@@ -861,21 +842,22 @@ and lookup_type_gpath :
   in
   let res =
     match p with
-    | `Identifier (`CoreType name) ->
+    | `Identifier { iv = `CoreType name; _ } ->
         (* CoreTypes aren't put into the environment, so they can't be handled by the
               next clause. We just look them up here in the list of core types *)
         Ok (`FType (name, List.assoc (TypeName.to_string name) core_types))
-    | `Identifier (`Type _ as i) ->
+    | `Identifier ({ iv = `Type _; _ } as i) ->
         of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_type) i env)
-        >>= fun (`Type ((`CoreType name | `Type (_, name)), t)) ->
+        >>= fun (`Type ({ iv = `CoreType name | `Type (_, name); _ }, t)) ->
         Ok (`FType (name, t))
-    | `Identifier (`Class _ as i) ->
+    | `Identifier ({ iv = `Class _; _ } as i) ->
         of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_class) i env)
-        >>= fun (`Class (`Class (_, name), t)) -> Ok (`FClass (name, t))
-    | `Identifier (`ClassType _ as i) ->
+        >>= fun (`Class ({ iv = `Class (_, name); _ }, t)) ->
+        Ok (`FClass (name, t))
+    | `Identifier ({ iv = `ClassType _; _ } as i) ->
         of_option ~error:(`Lookup_failureT i)
           (Env.(lookup_by_id s_class_type) i env)
-        >>= fun (`ClassType (`ClassType (_, name), t)) ->
+        >>= fun (`ClassType ({ iv = `ClassType (_, name); _ }, t)) ->
         Ok (`FClassType (name, t))
     | `CanonicalType (t1, _) -> lookup_type_gpath env t1
     | `Type (p, id) -> do_type p (TypeName.to_string id)
@@ -903,13 +885,14 @@ and lookup_class_type_gpath :
   in
   let res =
     match p with
-    | `Identifier (`Class _ as i) ->
+    | `Identifier ({ iv = `Class _; _ } as i) ->
         of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_class) i env)
-        >>= fun (`Class (`Class (_, name), t)) -> Ok (`FClass (name, t))
-    | `Identifier (`ClassType _ as i) ->
+        >>= fun (`Class ({ iv = `Class (_, name); _ }, t)) ->
+        Ok (`FClass (name, t))
+    | `Identifier ({ iv = `ClassType _; _ } as i) ->
         of_option ~error:(`Lookup_failureT i)
           (Env.(lookup_by_id s_class_type) i env)
-        >>= fun (`ClassType (`ClassType (_, name), t)) ->
+        >>= fun (`ClassType ({ iv = `ClassType (_, name); _ }, t)) ->
         Ok (`FClassType (name, t))
     | `Class (p, id) -> do_type p (ClassName.to_string id)
     | `ClassType (p, id) -> do_type p (ClassTypeName.to_string id)
@@ -1298,7 +1281,8 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
  fun env path ->
   let open Cpath.Mk.Resolved.Module in
   match path.v with
-  | `Local _ | `Gpath _ -> path
+  | `Local _ -> path
+  | `Gpath path -> gpath (reresolve_module_gpath env path)
   | `Substituted x -> substituted (reresolve_module env x)
   | `Apply (functor_path, argument_path) ->
       apply
@@ -1457,7 +1441,8 @@ and reresolve_module_type :
  fun env path ->
   let open Cpath.Mk.Resolved.ModuleType in
   match path.v with
-  | `Local _ | `Gpath _ -> path
+  | `Local _ -> path
+  | `Gpath p -> gpath (reresolve_module_type_gpath env p)
   | `Substituted x -> substituted (reresolve_module_type env x)
   | `ModuleType (parent, name) -> module_type (reresolve_parent env parent, name)
   | `CanonicalModuleType (p1, (`Resolved _ as p2')) ->
@@ -2257,8 +2242,8 @@ let resolve_module_path env p =
   resolve_module ~mark_substituted:true ~add_canonical:true env p
   >>= fun (p, m) ->
   match p.v with
-  | `Gpath (`Identifier (`Root _))
-  | `Hidden { v = `Gpath (`Identifier (`Root _)); _ } ->
+  | `Gpath (`Identifier { iv = `Root _; _ })
+  | `Hidden { v = `Gpath (`Identifier { iv = `Root _; _ }); _ } ->
       Ok p
   | _ -> (
       let m = Component.Delayed.get m in
