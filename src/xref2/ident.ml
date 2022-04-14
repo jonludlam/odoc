@@ -37,8 +37,7 @@ type field = [ `LField of FieldName.t * int ]
 
 type extension = [ `LExtension of ExtensionName.t * int ]
 
-type exception_ =
-  [ `LException of ExceptionName.t * int ]
+type exception_ = [ `LException of ExceptionName.t * int ]
 
 type value = [ `LValue of ValueName.t * int ]
 
@@ -111,7 +110,7 @@ module Of_Identifier = struct
   let rec signature : Signature.t -> signature =
    fun sg ->
     let i = fresh_int () in
-    match sg with
+    match sg.v with
     | `Root (_, n) -> `LRoot (n, i)
     | `Module (_, n) -> `LModule (n, i)
     | `Parameter (_, n) -> `LParameter (n, i)
@@ -121,42 +120,45 @@ module Of_Identifier = struct
   let class_signature : ClassSignature.t -> class_signature =
    fun sg ->
     let i = fresh_int () in
-    match sg with
+    match sg.v with
     | `Class (_, n) -> `LClass (n, i)
     | `ClassType (_, n) -> `LClassType (n, i)
 
   let datatype : DataType.t -> datatype =
    fun t ->
     let i = fresh_int () in
-    match t with `Type (_, n) -> `LType (n, i) | `CoreType _n -> failwith "Bad"
+    match t.v with
+    | `Type (_, n) -> `LType (n, i)
+    | `CoreType _n -> failwith "Bad"
 
   let parent : Parent.t -> parent =
    fun p ->
     match p with
-    | #Signature.t as s -> (signature s :> parent)
-    | #DataType.t as s -> (datatype s :> parent)
-    | #ClassSignature.t as s -> (class_signature s :> parent)
+    | { v = #Signature.t_unhashed; _ } as s -> (signature s :> parent)
+    | { v = #DataType.t_unhashed; _ } as s -> (datatype s :> parent)
+    | { v = #ClassSignature.t_unhashed; _ } as s ->
+        (class_signature s :> parent)
 
   let label_parent : LabelParent.t -> label_parent =
    fun p ->
     match p with
-    | #Parent.t as s -> (parent s :> label_parent)
-    | `Page (_, n) -> `LPage (n, fresh_int ())
-    | `LeafPage (_, n) -> `LLeafPage (n, fresh_int ())
+    | { v = #Parent.t_unhashed; _ } as s -> (parent s :> label_parent)
+    | { v = `Page (_, n); _ } -> `LPage (n, fresh_int ())
+    | { v = `LeafPage (_, n); _ } -> `LLeafPage (n, fresh_int ())
 
   let module_ : Odoc_model.Paths.Identifier.Module.t -> module_ =
-   fun (`Module (_, n) | `Root (_, n)) ->
+   fun { v = `Module (_, n) | `Root (_, n); _ } ->
     let i = fresh_int () in
     `LModule (n, i)
 
   let functor_parameter :
       Odoc_model.Paths.Identifier.FunctorParameter.t -> functor_parameter =
-   fun (`Parameter (_, n)) -> `LParameter (n, fresh_int ())
+   fun { v = `Parameter (_, n); _ } -> `LParameter (n, fresh_int ())
 
   let path_module : Path.Module.t -> path_module =
    fun m ->
     let i = fresh_int () in
-    match m with
+    match m.v with
     | `Root (_, n) -> `LRoot (n, i)
     | `Module (_, n) -> `LModule (n, i)
     | `Parameter (_, n) -> `LParameter (n, i)
@@ -165,48 +167,49 @@ module Of_Identifier = struct
   let module_type : ModuleType.t -> module_type =
    fun m ->
     let i = fresh_int () in
-    match m with `ModuleType (_, n) -> `LModuleType (n, i)
+    match m.v with `ModuleType (_, n) -> `LModuleType (n, i)
 
   let type_ : Type.t -> type_ = datatype
 
   let constructor : Constructor.t -> constructor =
-   fun c -> match c with `Constructor (_, n) -> `LConstructor (n, fresh_int ())
+   fun c ->
+    match c.v with `Constructor (_, n) -> `LConstructor (n, fresh_int ())
 
   let field : Field.t -> field =
-   fun f -> match f with `Field (_, n) -> `LField (n, fresh_int ())
+   fun f -> match f.v with `Field (_, n) -> `LField (n, fresh_int ())
 
   let extension : Extension.t -> extension =
-   fun e -> match e with `Extension (_, n) -> `LExtension (n, fresh_int ())
+   fun e -> match e.v with `Extension (_, n) -> `LExtension (n, fresh_int ())
 
   let exception_ : Exception.t -> exception_ =
    fun e ->
-    match e with
+    match e.v with
     | `Exception (_, n) -> `LException (n, fresh_int ())
     | `CoreException _ -> failwith "Bad"
 
   let value : Value.t -> value =
-   fun v -> match v with `Value (_, n) -> `LValue (n, fresh_int ())
+   fun v -> match v.v with `Value (_, n) -> `LValue (n, fresh_int ())
 
   let class_ : Class.t -> class_ =
-   fun c -> match c with `Class (_, n) -> `LClass (n, fresh_int ())
+   fun c -> match c.v with `Class (_, n) -> `LClass (n, fresh_int ())
 
   let class_type : ClassType.t -> class_type =
-   fun c -> match c with `ClassType (_, n) -> `LClassType (n, fresh_int ())
+   fun c -> match c.v with `ClassType (_, n) -> `LClassType (n, fresh_int ())
 
   let method_ : Method.t -> method_ =
-   fun c -> match c with `Method (_, n) -> `LMethod (n, fresh_int ())
+   fun c -> match c.v with `Method (_, n) -> `LMethod (n, fresh_int ())
 
   let instance_variable : InstanceVariable.t -> instance_variable =
    fun i ->
-    match i with
+    match i.v with
     | `InstanceVariable (_, n) -> `LInstanceVariable (n, fresh_int ())
 
   let label : Label.t -> label =
-   fun l -> match l with `Label (_, n) -> `LLabel (n, fresh_int ())
+   fun l -> match l.v with `Label (_, n) -> `LLabel (n, fresh_int ())
 
   let page : Page.t -> page =
    fun p ->
-    match p with
+    match p.v with
     | `Page (_, n) -> `LPage (n, fresh_int ())
     | `LeafPage (_, n) -> `LLeafPage (n, fresh_int ())
 end
@@ -241,16 +244,14 @@ module Name = struct
   let functor_parameter : functor_parameter -> string =
    fun (`LParameter (n, _)) -> ParameterName.to_string n
 
-  let type' : type_ -> TypeName.t = function
-    | `LType (n, _) -> n
+  let type' : type_ -> TypeName.t = function `LType (n, _) -> n
 
   let type_ t = TypeName.to_string (type' t)
 
   let unsafe_type : type_ -> string = function
     | `LType (n, _) -> TypeName.to_string_unsafe n
 
-  let typed_type : type_ -> TypeName.t = function
-    | `LType (n, _) -> n
+  let typed_type : type_ -> TypeName.t = function `LType (n, _) -> n
 
   let path_type : path_type -> string = function
     | `LClassType (n, _) -> ClassTypeName.to_string n

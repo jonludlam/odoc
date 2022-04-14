@@ -1,128 +1,198 @@
 open Names
 (** {1 Paths} *)
 
+(* For hash-consing *)
+type 'a hashed = 'a Hc.hashed = { v : 'a; key : int * string }
+
 module Identifier = struct
-  type container_page = [ `Page of container_page option * PageName.t ]
+  type container_page_unhashed = [ `Page of container_page option * PageName.t ]
+
+  and container_page = container_page_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.ContainerPage.t *)
 
-  type page =
-    [ container_page | `LeafPage of container_page option * PageName.t ]
+  type page_unhashed =
+    [ container_page_unhashed | `LeafPage of container_page option * PageName.t ]
+
+  and page = page_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Page.t *)
 
-  type odoc_id = [ page | `Root of container_page option * ModuleName.t ]
+  type odoc_id_unhashed =
+    [ page_unhashed | `Root of container_page option * ModuleName.t ]
+
+  and odoc_id = odoc_id_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.OdocId.t *)
 
-  type signature =
+  type signature_unhashed =
     [ `Root of container_page option * ModuleName.t
     | `Module of signature * ModuleName.t
     | `Parameter of signature * ParameterName.t
     | `Result of signature
     | `ModuleType of signature * ModuleTypeName.t ]
+
+  and signature = signature_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Signature.t *)
 
-  type class_signature =
+  type class_signature_unhashed =
     [ `Class of signature * ClassName.t
     | `ClassType of signature * ClassTypeName.t ]
+
+  and class_signature = class_signature_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.ClassSignature.t *)
 
-  type datatype = [ `Type of signature * TypeName.t | `CoreType of TypeName.t ]
+  type datatype_unhashed =
+    [ `Type of signature * TypeName.t | `CoreType of TypeName.t ]
+
+  and datatype = datatype_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.DataType.t *)
 
-  type parent = [ signature | datatype | class_signature ]
+  type parent_unhashed =
+    [ signature_unhashed | datatype_unhashed | class_signature_unhashed ]
+
+  and parent = parent_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Parent.t *)
 
-  type label_parent = [ parent | page ]
+  type label_parent_unhashed = [ parent_unhashed | page_unhashed ]
+
+  and label_parent = label_parent_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.LabelParent.t *)
 
-  type root_module = [ `Root of container_page option * ModuleName.t ]
+  type root_module_unhashed = [ `Root of container_page option * ModuleName.t ]
+
+  and root_module = root_module_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.RootModule.t *)
 
-  type module_ = [ root_module | `Module of signature * ModuleName.t ]
+  type module_unhashed =
+    [ root_module_unhashed | `Module of signature * ModuleName.t ]
+
+  and module_ = module_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Module.t *)
 
-  type functor_parameter = [ `Parameter of signature * ParameterName.t ]
+  type functor_parameter_unhashed = [ `Parameter of signature * ParameterName.t ]
+
+  and functor_parameter = functor_parameter_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.FunctorParameter.t *)
 
-  type functor_result = [ `Result of signature ]
+  type functor_result_unhashed = [ `Result of signature ]
+
+  and functor_result = functor_result_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.FunctorResult.t *)
 
-  type module_type = [ `ModuleType of signature * ModuleTypeName.t ]
+  type module_type_unhashed = [ `ModuleType of signature * ModuleTypeName.t ]
+
+  and module_type = module_type_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.ModuleType.t *)
 
-  type type_ = [ `Type of signature * TypeName.t | `CoreType of TypeName.t ]
+  type type_unhashed =
+    [ `Type of signature * TypeName.t | `CoreType of TypeName.t ]
+
+  and type_ = type_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Type.t *)
 
-  type constructor = [ `Constructor of type_ * ConstructorName.t ]
+  type constructor_unhashed = [ `Constructor of type_ * ConstructorName.t ]
+
+  and constructor = constructor_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Constructor.t *)
 
-  type field = [ `Field of parent * FieldName.t ]
+  type field_unhashed = [ `Field of parent * FieldName.t ]
+
+  and field = field_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Field.t *)
 
-  type extension = [ `Extension of signature * ExtensionName.t ]
+  type extension_unhashed = [ `Extension of signature * ExtensionName.t ]
+
+  and extension = extension_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Extension.t *)
 
-  type exception_ =
+  type exception_unhashed =
     [ `Exception of signature * ExceptionName.t
     | `CoreException of ExceptionName.t ]
+
+  and exception_ = exception_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Exception.t *)
 
-  type value = [ `Value of signature * ValueName.t ]
+  type value_unhashed = [ `Value of signature * ValueName.t ]
+
+  and value = value_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Value.t *)
 
-  type class_ = [ `Class of signature * ClassName.t ]
+  type class_unhashed = [ `Class of signature * ClassName.t ]
+
+  and class_ = class_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Class.t *)
 
-  type class_type = [ `ClassType of signature * ClassTypeName.t ]
+  type class_type_unhashed = [ `ClassType of signature * ClassTypeName.t ]
+
+  and class_type = class_type_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.ClassType.t *)
 
-  type method_ = [ `Method of class_signature * MethodName.t ]
+  type method_unhashed = [ `Method of class_signature * MethodName.t ]
+
+  and method_ = method_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Method.t *)
 
-  type instance_variable =
+  type instance_variable_unhashed =
     [ `InstanceVariable of class_signature * InstanceVariableName.t ]
+
+  and instance_variable = instance_variable_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.InstanceVariable.t *)
 
-  type label = [ `Label of label_parent * LabelName.t ]
+  type label_unhashed = [ `Label of label_parent * LabelName.t ]
+
+  and label = label_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Label.t *)
 
-  type any =
-    [ signature
-    | class_signature
-    | datatype
-    | parent
-    | label_parent
-    | module_
-    | functor_parameter
-    | functor_result
-    | module_type
-    | type_
-    | constructor
-    | field
-    | extension
-    | exception_
-    | value
-    | class_
-    | class_type
-    | method_
-    | instance_variable
-    | label
-    | page ]
+  type any_unhashed =
+    [ signature_unhashed
+    | class_signature_unhashed
+    | datatype_unhashed
+    | parent_unhashed
+    | label_parent_unhashed
+    | module_unhashed
+    | functor_parameter_unhashed
+    | functor_result_unhashed
+    | module_type_unhashed
+    | type_unhashed
+    | constructor_unhashed
+    | field_unhashed
+    | extension_unhashed
+    | exception_unhashed
+    | value_unhashed
+    | class_unhashed
+    | class_type_unhashed
+    | method_unhashed
+    | instance_variable_unhashed
+    | label_unhashed
+    | page_unhashed ]
+
+  and any = any_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.t *)
 
-  type path_module = [ module_ | functor_parameter | functor_result ]
+  type path_module_unhashed =
+    [ module_unhashed | functor_parameter_unhashed | functor_result_unhashed ]
+
+  and path_module = path_module_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Path.Module.t *)
 
   type path_module_type = module_type
   (** @canonical Odoc_model.Paths.Identifier.Path.ModuleType.t *)
 
-  type path_type = [ type_ | class_ | class_type ]
+  type path_type_unhashed =
+    [ type_unhashed | class_unhashed | class_type_unhashed ]
+
+  and path_type = path_type_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Path.Type.t *)
 
-  type path_class_type = [ class_ | class_type ]
+  type path_class_type_unhashed = [ class_unhashed | class_type_unhashed ]
+
+  and path_class_type = path_class_type_unhashed hashed
   (** @canonical Odoc_model.Paths.Identifier.Path.ClassType.t *)
 
   type path_any =
-    [ path_module | path_module_type | path_type | path_class_type ]
+    [ path_module_unhashed
+    | module_type_unhashed
+    | path_type_unhashed
+    | path_class_type_unhashed ]
+    hashed
   (** @canonical Odoc_model.Paths.Identifier.Path.t *)
 
   type fragment_module = path_module
@@ -131,15 +201,16 @@ module Identifier = struct
 
   type reference_module = path_module
 
-  type reference_module_type = path_module_type
+  type reference_module_type = module_type
 
   type reference_type = path_type
 
-  type reference_constructor = [ constructor | extension | exception_ ]
+  type reference_constructor =
+    [ constructor_unhashed | extension_unhashed | exception_unhashed ] hashed
 
   type reference_field = field
 
-  type reference_extension = [ extension | exception_ ]
+  type reference_extension = [ extension_unhashed | exception_unhashed ] hashed
 
   type reference_exception = exception_
 
@@ -147,7 +218,7 @@ module Identifier = struct
 
   type reference_class = class_
 
-  type reference_class_type = [ class_ | class_type ]
+  type reference_class_type = [ class_unhashed | class_type_unhashed ] hashed
 
   type reference_method = method_
 
@@ -157,9 +228,6 @@ module Identifier = struct
 
   type reference_page = page
 end
-
-(* For hash-consing *)
-type 'a hashed = 'a Hc.hashed = { v : 'a; key : int * string }
 
 module rec Path : sig
   type module_unhashed =
