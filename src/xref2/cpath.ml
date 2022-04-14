@@ -531,7 +531,8 @@ and is_module_type_hidden : module_type -> bool =
  fun x ->
   match x.v with
   | `Resolved r -> is_resolved_module_type_hidden r
-  | `Identifier (`ModuleType (_, t), b) -> b || ModuleTypeName.is_internal t
+  | `Identifier ({ iv = `ModuleType (_, t); _ }, b) ->
+      b || ModuleTypeName.is_internal t
   | `Local (_, b) -> b
   | `Substituted p -> is_module_type_hidden p
   | `Dot (p, _) -> is_module_hidden p
@@ -558,10 +559,11 @@ and is_type_hidden : type_ -> bool =
  fun x ->
   match x.v with
   | `Resolved r -> is_resolved_type_hidden r
-  | `Identifier (`Type (_, t), b) -> b || TypeName.is_internal t
-  | `Identifier (`ClassType (_, t), b) -> b || ClassTypeName.is_internal t
-  | `Identifier (`Class (_, t), b) -> b || ClassName.is_internal t
-  | `Identifier (`CoreType _, b) -> b
+  | `Identifier ({ iv = `Type (_, t); _ }, b) -> b || TypeName.is_internal t
+  | `Identifier ({ iv = `ClassType (_, t); _ }, b) ->
+      b || ClassTypeName.is_internal t
+  | `Identifier ({ iv = `Class (_, t); _ }, b) -> b || ClassName.is_internal t
+  | `Identifier ({ iv = `CoreType _; _ }, b) -> b
   | `Local (_, b) -> b
   | `Substituted p -> is_type_hidden p
   | `Dot (p, _) -> is_module_hidden p
@@ -615,7 +617,8 @@ and resolved_module_of_resolved_signature_reference :
     Reference.Resolved.Signature.t -> Resolved.module_ =
   let open Mk.Resolved in
   function
-  | `Identifier (#Identifier.Module.t as i) -> Module.gpath (`Identifier i)
+  | `Identifier ({ iv = #Identifier.Module.t_pv; _ } as i) ->
+      Module.gpath (`Identifier i)
   | (`Alias _ | `Module _ | `Hidden _) as r' ->
       resolved_module_of_resolved_module_reference r'
   | `ModuleType (_, n) ->
@@ -628,13 +631,13 @@ and module_of_module_reference : Reference.Module.t -> module_ = function
       Mk.Module.resolved (resolved_module_of_resolved_module_reference r)
   | `Root (_, _) -> failwith "unhandled"
   | `Dot
-      ( (( `Resolved (`Identifier #Identifier.Module.t)
+      ( (( `Resolved (`Identifier { iv = #Identifier.Module.t_pv; _ })
          | `Dot (_, _)
          | `Module (_, _) ) as parent),
         name ) ->
       Mk.Module.dot (module_of_module_reference parent, name)
   | `Module
-      ( (( `Resolved (`Identifier #Identifier.Module.t)
+      ( (( `Resolved (`Identifier { iv = #Identifier.Module.t_pv; _ })
          | `Dot (_, _)
          | `Module (_, _) ) as parent),
         name ) ->
@@ -649,7 +652,7 @@ let rec unresolve_resolved_module_path : Resolved.module_ -> module_ =
     | `Hidden { v = `Gpath (`Identifier x); _ } -> identifier (x, true)
     | `Gpath (`Identifier x) ->
       let hidden =
-        match x with
+        match x.iv with
         | `Module (_, n) -> Odoc_model.Names.ModuleName.is_internal n
         | _ -> false
       in
