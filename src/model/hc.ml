@@ -41,6 +41,20 @@ module HT2str = Hashtbl.MakeSeeded (struct
   let hash (i : int) (x : t) = Hashtbl.hash (i, x)
 end)
 
+module HT2optstr = Hashtbl.MakeSeeded (struct
+  type t = (int * string) option * string
+
+  let equal : t -> t -> bool =
+   fun (x, c) (y, g) ->
+    match (x, y) with
+    | None, None -> String.equal c g
+    | Some (a, b), Some (e, f) ->
+        Int.equal a e && String.equal b f && String.equal c g
+    | _ -> false
+
+  let hash (i : int) (x : t) = Hashtbl.hash (i, x)
+end)
+
 module HTStr = Hashtbl.MakeSeeded (struct
   type t = string
 
@@ -86,12 +100,30 @@ let gen_named :
       M.add tbl key z;
       z
 
+let gen_named_opt_parent :
+    ('a -> string) ->
+    ('b hashed option * 'a -> 'c) ->
+    'b hashed option * 'a ->
+    'c hashed =
+ fun str_of_name mk' ->
+  let module M = HT2optstr in
+  let tbl = M.create 4095 in
+  fun (x, y) ->
+    let key =
+      ((match x with Some x -> Some x.key | None -> None), str_of_name y)
+    in
+    if M.mem tbl key then M.find tbl key
+    else
+      let z = mk (mk' (x, y)) in
+      M.add tbl key z;
+      z
+
 let gen_str : (string -> 'c) -> string -> 'c hashed =
  fun mk' ->
   let module M = HTStr in
   let tbl = M.create 4095 in
   fun x ->
-    let key = x in 
+    let key = x in
     if M.mem tbl key then M.find tbl key
     else
       let z = mk (mk' x) in
