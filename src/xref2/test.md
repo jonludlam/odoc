@@ -37,7 +37,6 @@ open Odoc_model.Names;;
 #install_printer Odoc_model.Names.FieldName.fmt;;
 #install_printer Odoc_model.Names.PageName.fmt;;
 #print_length 65536;;
-Odoc_xref2.Component.Delayed.eager := true;;
 Odoc_xref2.Tools.disable_all_caches ();;
 let id = Common.id;;
 ```
@@ -330,45 +329,29 @@ val path : Cpath.Resolved.module_ =
             M);
         ihash = 716453475; ikey = "m_M.r_Root.p_None"})
 val module_ : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Signature
-          {Odoc_xref2.Component.Signature.items =
-            [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
-              Odoc_model.Lang.Signature.Ordinary,
-              {Odoc_xref2.Component.Delayed.v =
-                Some
-                 {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-                  equation =
-                   {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-                    private_ = false; manifest = None; constraints = []};
-                  representation = None};
-               get = None})];
-           compiled = false; removed = []; doc = []});
-      canonical = None; hidden = false};
-   get = None}
+  Odoc_xref2.Component.Delayed.OfLang (Odoc_xref2.Component.Delayed.Module,
+   <poly>,
+   {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+    module_types = <abstr>; functor_parameters = <abstr>; types = <abstr>;
+    path_types = <abstr>; path_class_types = <abstr>; classes = <abstr>;
+    class_types = <abstr>})
 ```
 
 The values returned are the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `expansion_of_module`, which in this case is quite simple since the module contains an explicit signature:
 
 ```ocaml env=e1
-# get_ok @@ Tools.expansion_of_module env (Component.Delayed.get module_);;
+# get_ok @@ Tools.expansion_of_module env (Component.dget module_);;
 - : Tools.expansion =
 Odoc_xref2.Tools.Signature
  {Odoc_xref2.Component.Signature.items =
    [Odoc_xref2.Component.Signature.Type (`LType (t, 0),
      Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Delayed.v =
-       Some
-        {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-         equation =
-          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-           private_ = false; manifest = None; constraints = []};
-         representation = None};
-      get = None})];
+     Odoc_xref2.Component.Delayed.OfLang (Odoc_xref2.Component.Delayed.Type,
+      <poly>,
+      {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+       module_types = <abstr>; functor_parameters = <abstr>; types = <abstr>;
+       path_types = <abstr>; path_class_types = <abstr>; classes = <abstr>;
+       class_types = <abstr>}))];
   compiled = false; removed = []; doc = []}
 ```
 
@@ -415,29 +398,12 @@ val path : Cpath.Resolved.module_ =
             N);
         ihash = 502470005; ikey = "m_N.r_Root.p_None"})
 val module_ : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          {Odoc_xref2.Component.ModuleType.p_expansion = None;
-           p_path =
-            `Identifier
-              ({Odoc_model__Paths_types.iv =
-                 `ModuleType
-                   ({Odoc_model__Paths_types.iv =
-                      `Root
-                        (Some
-                          {Odoc_model__Paths_types.iv = `Page (None, None);
-                           ihash = 236059787; ikey = "p_None"},
-                         Root);
-                     ihash = 818126955; ikey = "r_Root.p_None"},
-                    M);
-                ihash = 459143770; ikey = "mt_M.r_Root.p_None"},
-               false)});
-      canonical = None; hidden = false};
-   get = None}
+  Odoc_xref2.Component.Delayed.OfLang (Odoc_xref2.Component.Delayed.Module,
+   <poly>,
+   {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+    module_types = <abstr>; functor_parameters = <abstr>; types = <abstr>;
+    path_types = <abstr>; path_class_types = <abstr>; classes = <abstr>;
+    class_types = <abstr>})
 ```
 
 This time turning the module into a signature demonstrates why the function `expansion_of_module` requires the environment. We need to lookup the module type `M` from the environment to determine the
@@ -490,42 +456,22 @@ val m : Component.Element.module_type option =
             {Odoc_xref2.Component.Signature.items =
               [Odoc_xref2.Component.Signature.ModuleType
                 (`LModuleType (N, 1),
-                {Odoc_xref2.Component.Delayed.v =
-                  Some
-                   {Odoc_xref2.Component.ModuleType.doc = [];
-                    canonical = None;
-                    expr =
-                     Some
-                      (Odoc_xref2.Component.ModuleType.Signature
-                        {Odoc_xref2.Component.Signature.items =
-                          [Odoc_xref2.Component.Signature.Type
-                            (`LType (t, 2),
-                            Odoc_model.Lang.Signature.Ordinary,
-                            {Odoc_xref2.Component.Delayed.v =
-                              Some
-                               {Odoc_xref2.Component.TypeDecl.doc = [];
-                                canonical = None;
-                                equation =
-                                 {Odoc_xref2.Component.TypeDecl.Equation.params
-                                   = [];
-                                  private_ = false; manifest = None;
-                                  constraints = []};
-                                representation = None};
-                             get = None})];
-                         compiled = false; removed = []; doc = []})};
-                 get = None});
+                Odoc_xref2.Component.Delayed.OfLang
+                 (Odoc_xref2.Component.Delayed.ModuleType, <poly>,
+                 {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+                  module_types = <abstr>; functor_parameters = <abstr>;
+                  types = <abstr>; path_types = <abstr>;
+                  path_class_types = <abstr>; classes = <abstr>;
+                  class_types = <abstr>}));
                Odoc_xref2.Component.Signature.Module (`LModule (B, 0),
                 Odoc_model.Lang.Signature.Ordinary,
-                {Odoc_xref2.Component.Delayed.v =
-                  Some
-                   {Odoc_xref2.Component.Module.doc = [];
-                    type_ =
-                     Odoc_xref2.Component.Module.ModuleType
-                      (Odoc_xref2.Component.ModuleType.Path
-                        {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                         p_path = `Local (`LModuleType (N, 1), false)});
-                    canonical = None; hidden = false};
-                 get = None})];
+                Odoc_xref2.Component.Delayed.OfLang
+                 (Odoc_xref2.Component.Delayed.Module, <poly>,
+                 {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+                  module_types = <abstr>; functor_parameters = <abstr>;
+                  types = <abstr>; path_types = <abstr>;
+                  path_class_types = <abstr>; classes = <abstr>;
+                  class_types = <abstr>}))];
              compiled = false; removed = []; doc = []})}))
 ```
 
@@ -571,11 +517,42 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let p = `Gpath (`Identifier (Common.root_module "A")) in
   let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env p in
-  let sg = get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m) in
+  let e = get_ok @@ Tools.expansion_of_module env (Component.dget m) in
+  let sg = get_ok @@ Tools.assert_not_functor e in 
   Tools.prefix_signature (`Module p, sg);;
-Line 4, characters 38-40:
-Error: This expression has type Tools.expansion
-       but an expression was expected of type Component.Signature.t
+- : Component.Signature.t =
+{Odoc_xref2.Component.Signature.items =
+  [Odoc_xref2.Component.Signature.ModuleType (`LModuleType (N, 2),
+    Odoc_xref2.Component.Delayed.Subst
+     (Odoc_xref2.Component.Delayed.ModuleType,
+     Odoc_xref2.Component.Delayed.OfLang
+      (Odoc_xref2.Component.Delayed.ModuleType, <poly>,
+      {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+       module_types = <abstr>; functor_parameters = <abstr>; types = <abstr>;
+       path_types = <abstr>; path_class_types = <abstr>; classes = <abstr>;
+       class_types = <abstr>}),
+     {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+      module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+      type_replacement = <abstr>; module_type_replacement = <abstr>;
+      path_invalidating_modules = [];
+      module_type_of_invalidating_modules = [];
+      unresolve_opaque_paths = false}));
+   Odoc_xref2.Component.Signature.Module (`LModule (B, 3),
+    Odoc_model.Lang.Signature.Ordinary,
+    Odoc_xref2.Component.Delayed.Subst (Odoc_xref2.Component.Delayed.Module,
+     Odoc_xref2.Component.Delayed.OfLang
+      (Odoc_xref2.Component.Delayed.Module, <poly>,
+      {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+       module_types = <abstr>; functor_parameters = <abstr>; types = <abstr>;
+       path_types = <abstr>; path_class_types = <abstr>; classes = <abstr>;
+       class_types = <abstr>}),
+     {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+      module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+      type_replacement = <abstr>; module_type_replacement = <abstr>;
+      path_invalidating_modules = [];
+      module_type_of_invalidating_modules = [];
+      unresolve_opaque_paths = false}))];
+ compiled = false; removed = []; doc = []}
 ```
 
 So before the prefixing operation we had that the type of the module was
@@ -882,61 +859,28 @@ of module `C` we see the following:
 ```ocaml env=e1
 # let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env (`Gpath (`Identifier (Common.root_module "C")));;
 val m : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.With
-          {Odoc_xref2.Component.ModuleType.w_substitutions =
-            [Odoc_xref2.Component.ModuleType.ModuleEq (`Dot (`Root, "M"),
-              Odoc_xref2.Component.Module.Alias
-               (`Identifier
-                  ({Odoc_model__Paths_types.iv =
-                     `Module
-                       ({Odoc_model__Paths_types.iv =
-                          `Root
-                            (Some
-                              {Odoc_model__Paths_types.iv =
-                                `Page (None, None);
-                               ihash = 236059787; ikey = "p_None"},
-                             Root);
-                         ihash = 818126955; ikey = "r_Root.p_None"},
-                        B);
-                    ihash = 814134997; ikey = "m_B.r_Root.p_None"},
-                   false),
-               None))];
-           w_expansion = None;
-           w_expr =
-            Odoc_xref2.Component.ModuleType.U.Path
-             (`Identifier
-                ({Odoc_model__Paths_types.iv =
-                   `ModuleType
-                     ({Odoc_model__Paths_types.iv =
-                        `Root
-                          (Some
-                            {Odoc_model__Paths_types.iv = `Page (None, None);
-                             ihash = 236059787; ikey = "p_None"},
-                           Root);
-                       ihash = 818126955; ikey = "r_Root.p_None"},
-                      A);
-                  ihash = 231492881; ikey = "mt_A.r_Root.p_None"},
-                 false))});
-      canonical = None; hidden = false};
-   get = None}
+  Odoc_xref2.Component.Delayed.OfLang (Odoc_xref2.Component.Delayed.Module,
+   <poly>,
+   {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+    module_types = <abstr>; functor_parameters = <abstr>; types = <abstr>;
+    path_types = <abstr>; path_class_types = <abstr>; classes = <abstr>;
+    class_types = <abstr>})
 ```
 
 now we can ask for the signature of this module:
 
 ```ocaml env=e1
-# let sg = get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m);;
+# let sg = get_ok @@ Tools.expansion_of_module env (Component.dget m);;
 val sg : Tools.expansion =
   Odoc_xref2.Tools.Signature
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule (M, 37),
+     [Odoc_xref2.Component.Signature.Module (`LModule (M, 67),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
+       Odoc_xref2.Component.Delayed.Subst
+        (Odoc_xref2.Component.Delayed.Module,
+        Odoc_xref2.Component.Delayed.Subst
+         (Odoc_xref2.Component.Delayed.Module,
+         Odoc_xref2.Component.Delayed.Val
           {Odoc_xref2.Component.Module.doc = [];
            type_ =
             Odoc_xref2.Component.Module.Alias
@@ -954,20 +898,43 @@ val sg : Tools.expansion =
                   ihash = 814134997; ikey = "m_B.r_Root.p_None"},
                  false),
              None);
-           canonical = None; hidden = false};
-        get = None});
-      Odoc_xref2.Component.Signature.Module (`LModule (N, 38),
+           canonical = None; hidden = false},
+         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+          type_replacement = <abstr>; module_type_replacement = <abstr>;
+          path_invalidating_modules = [`LModule (M, 65)];
+          module_type_of_invalidating_modules = [`LModule (M, 65)];
+          unresolve_opaque_paths = false}),
+        {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+         module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+         type_replacement = <abstr>; module_type_replacement = <abstr>;
+         path_invalidating_modules = [];
+         module_type_of_invalidating_modules = [];
+         unresolve_opaque_paths = false}));
+      Odoc_xref2.Component.Signature.Module (`LModule (N, 68),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.ModuleType
-             (Odoc_xref2.Component.ModuleType.Path
-               {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                p_path = `Dot (`Local (`LModule (M, 37), false), "S")});
-           canonical = None; hidden = false};
-        get = None})];
+       Odoc_xref2.Component.Delayed.Subst
+        (Odoc_xref2.Component.Delayed.Module,
+        Odoc_xref2.Component.Delayed.Subst
+         (Odoc_xref2.Component.Delayed.Module,
+         Odoc_xref2.Component.Delayed.OfLang
+          (Odoc_xref2.Component.Delayed.Module, <poly>,
+          {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+           module_types = <abstr>; functor_parameters = <abstr>;
+           types = <abstr>; path_types = <abstr>; path_class_types = <abstr>;
+           classes = <abstr>; class_types = <abstr>}),
+         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+          type_replacement = <abstr>; module_type_replacement = <abstr>;
+          path_invalidating_modules = [`LModule (M, 65)];
+          module_type_of_invalidating_modules = [`LModule (M, 65)];
+          unresolve_opaque_paths = false}),
+        {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+         module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+         type_replacement = <abstr>; module_type_replacement = <abstr>;
+         path_invalidating_modules = [];
+         module_type_of_invalidating_modules = [];
+         unresolve_opaque_paths = false}))];
     compiled = false; removed = []; doc = []}
 ```
 
@@ -978,49 +945,39 @@ look up module `N` from within this and find its signature:
 # let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env
       (`Module (`Module (`Gpath (`Identifier (Common.root_module "C"))), ModuleName.make_std "N"));;
 val m : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          {Odoc_xref2.Component.ModuleType.p_expansion = None;
-           p_path =
-            `Dot
-              (`Module
-                 (`Module
-                    (`Gpath
-                       (`Identifier
-                          {Odoc_model__Paths_types.iv =
-                            `Module
-                              ({Odoc_model__Paths_types.iv =
-                                 `Root
-                                   (Some
-                                     {Odoc_model__Paths_types.iv =
-                                       `Page (None, None);
-                                      ihash = 236059787; ikey = "p_None"},
-                                    Root);
-                                ihash = 818126955; ikey = "r_Root.p_None"},
-                               C);
-                           ihash = 43786577; ikey = "m_C.r_Root.p_None"})),
-                  M),
-               "S")});
-      canonical = None; hidden = false};
-   get = None}
-# get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m);;
+  Odoc_xref2.Component.Delayed.Subst (Odoc_xref2.Component.Delayed.Module,
+   Odoc_xref2.Component.Delayed.Val
+    {Odoc_xref2.Component.Module.doc = [];
+     type_ =
+      Odoc_xref2.Component.Module.ModuleType
+       (Odoc_xref2.Component.ModuleType.Path
+         {Odoc_xref2.Component.ModuleType.p_expansion = None;
+          p_path = `Dot (`Local (`LModule (M, 70), false), "S")});
+     canonical = None; hidden = false},
+   {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+    module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+    type_replacement = <abstr>; module_type_replacement = <abstr>;
+    path_invalidating_modules = []; module_type_of_invalidating_modules = [];
+    unresolve_opaque_paths = false})
+# get_ok @@ Tools.expansion_of_module env (Component.dget m);;
 - : Tools.expansion =
 Odoc_xref2.Tools.Signature
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (`LType (t, 45),
+   [Odoc_xref2.Component.Signature.Type (`LType (t, 85),
      Odoc_model.Lang.Signature.Ordinary,
-     {Odoc_xref2.Component.Delayed.v =
-       Some
-        {Odoc_xref2.Component.TypeDecl.doc = []; canonical = None;
-         equation =
-          {Odoc_xref2.Component.TypeDecl.Equation.params = [];
-           private_ = false; manifest = None; constraints = []};
-         representation = None};
-      get = None})];
+     Odoc_xref2.Component.Delayed.Subst (Odoc_xref2.Component.Delayed.Type,
+      Odoc_xref2.Component.Delayed.OfLang (Odoc_xref2.Component.Delayed.Type,
+       <poly>,
+       {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+        module_types = <abstr>; functor_parameters = <abstr>;
+        types = <abstr>; path_types = <abstr>; path_class_types = <abstr>;
+        classes = <abstr>; class_types = <abstr>}),
+      {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+       module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+       type_replacement = <abstr>; module_type_replacement = <abstr>;
+       path_invalidating_modules = [];
+       module_type_of_invalidating_modules = [];
+       unresolve_opaque_paths = false}))];
   compiled = false; removed = []; doc = []}
 ```
 
@@ -1502,199 +1459,164 @@ val p : Cpath.Resolved.module_ =
                FooBarInt);
            ihash = 706684202; ikey = "m_FooBarInt.r_Root.p_None"}))
 val m : Component.Module.t Component.Delayed.t =
-  {Odoc_xref2.Component.Delayed.v =
-    Some
-     {Odoc_xref2.Component.Module.doc = [];
-      type_ =
-       Odoc_xref2.Component.Module.ModuleType
-        (Odoc_xref2.Component.ModuleType.Path
-          {Odoc_xref2.Component.ModuleType.p_expansion = None;
-           p_path =
-            `Dot
-              (`Apply
-                 (`Resolved
-                    (`Substituted
-                       (`Gpath
-                          (`Identifier
-                             {Odoc_model__Paths_types.iv =
-                               `Module
-                                 ({Odoc_model__Paths_types.iv =
-                                    `Root
-                                      (Some
-                                        {Odoc_model__Paths_types.iv =
-                                          `Page (None, None);
-                                         ihash = 236059787; ikey = "p_None"},
-                                       Root);
-                                   ihash = 818126955; ikey = "r_Root.p_None"},
-                                  Foo);
-                              ihash = 249248993;
-                              ikey = "m_Foo.r_Root.p_None"}))),
-                  `Resolved
-                    (`Substituted
-                       (`Gpath
-                          (`Identifier
-                             {Odoc_model__Paths_types.iv =
-                               `Module
-                                 ({Odoc_model__Paths_types.iv =
-                                    `Root
-                                      (Some
-                                        {Odoc_model__Paths_types.iv =
-                                          `Page (None, None);
-                                         ihash = 236059787; ikey = "p_None"},
-                                       Root);
-                                   ihash = 818126955; ikey = "r_Root.p_None"},
-                                  Bar);
-                              ihash = 608577; ikey = "m_Bar.r_Root.p_None"})))),
-               "T")});
-      canonical = None; hidden = false};
-   get = None}
-# let sg' = get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m);;
+  Odoc_xref2.Component.Delayed.Val
+   {Odoc_xref2.Component.Module.doc = [];
+    type_ =
+     Odoc_xref2.Component.Module.ModuleType
+      (Odoc_xref2.Component.ModuleType.Path
+        {Odoc_xref2.Component.ModuleType.p_expansion = None;
+         p_path =
+          `Dot
+            (`Apply
+               (`Resolved
+                  (`Substituted
+                     (`Gpath
+                        (`Identifier
+                           {Odoc_model__Paths_types.iv =
+                             `Module
+                               ({Odoc_model__Paths_types.iv =
+                                  `Root
+                                    (Some
+                                      {Odoc_model__Paths_types.iv =
+                                        `Page (None, None);
+                                       ihash = 236059787; ikey = "p_None"},
+                                     Root);
+                                 ihash = 818126955; ikey = "r_Root.p_None"},
+                                Foo);
+                            ihash = 249248993; ikey = "m_Foo.r_Root.p_None"}))),
+                `Resolved
+                  (`Substituted
+                     (`Gpath
+                        (`Identifier
+                           {Odoc_model__Paths_types.iv =
+                             `Module
+                               ({Odoc_model__Paths_types.iv =
+                                  `Root
+                                    (Some
+                                      {Odoc_model__Paths_types.iv =
+                                        `Page (None, None);
+                                       ihash = 236059787; ikey = "p_None"},
+                                     Root);
+                                 ihash = 818126955; ikey = "r_Root.p_None"},
+                                Bar);
+                            ihash = 608577; ikey = "m_Bar.r_Root.p_None"})))),
+             "T")});
+    canonical = None; hidden = false}
+# let sg' = get_ok @@ Tools.expansion_of_module env (Component.dget m);;
 val sg' : Tools.expansion =
   Odoc_xref2.Tools.Signature
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 14),
+     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 10),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.ModuleType
-             (Odoc_xref2.Component.ModuleType.Path
-               {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                p_path =
-                 `Dot
-                   (`Resolved
-                      (`Substituted
-                         (`Gpath
-                            (`Identifier
-                               {Odoc_model__Paths_types.iv =
-                                 `Module
-                                   ({Odoc_model__Paths_types.iv =
-                                      `Root
-                                        (Some
-                                          {Odoc_model__Paths_types.iv =
-                                            `Page (None, None);
-                                           ihash = 236059787;
-                                           ikey = "p_None"},
-                                         Root);
-                                     ihash = 818126955;
-                                     ikey = "r_Root.p_None"},
-                                    Bar);
-                                ihash = 608577; ikey = "m_Bar.r_Root.p_None"}))),
-                    "T")});
-           canonical = None; hidden = false};
-        get = None})];
+       Odoc_xref2.Component.Delayed.Subst
+        (Odoc_xref2.Component.Delayed.Module,
+        Odoc_xref2.Component.Delayed.Subst
+         (Odoc_xref2.Component.Delayed.Module,
+         Odoc_xref2.Component.Delayed.OfLang
+          (Odoc_xref2.Component.Delayed.Module, <poly>,
+          {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+           module_types = <abstr>; functor_parameters = <abstr>;
+           types = <abstr>; path_types = <abstr>; path_class_types = <abstr>;
+           classes = <abstr>; class_types = <abstr>}),
+         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+          type_replacement = <abstr>; module_type_replacement = <abstr>;
+          path_invalidating_modules = [];
+          module_type_of_invalidating_modules = [];
+          unresolve_opaque_paths = true}),
+        {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+         module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+         type_replacement = <abstr>; module_type_replacement = <abstr>;
+         path_invalidating_modules = [];
+         module_type_of_invalidating_modules = [];
+         unresolve_opaque_paths = false}))];
     compiled = false; removed = []; doc = []}
-# let sg' = get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m);;
+# let sg' = get_ok @@ Tools.expansion_of_module env (Component.dget m);;
 val sg' : Tools.expansion =
   Odoc_xref2.Tools.Signature
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 17),
+     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 16),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.ModuleType
-             (Odoc_xref2.Component.ModuleType.Path
-               {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                p_path =
-                 `Dot
-                   (`Resolved
-                      (`Substituted
-                         (`Gpath
-                            (`Identifier
-                               {Odoc_model__Paths_types.iv =
-                                 `Module
-                                   ({Odoc_model__Paths_types.iv =
-                                      `Root
-                                        (Some
-                                          {Odoc_model__Paths_types.iv =
-                                            `Page (None, None);
-                                           ihash = 236059787;
-                                           ikey = "p_None"},
-                                         Root);
-                                     ihash = 818126955;
-                                     ikey = "r_Root.p_None"},
-                                    Bar);
-                                ihash = 608577; ikey = "m_Bar.r_Root.p_None"}))),
-                    "T")});
-           canonical = None; hidden = false};
-        get = None})];
+       Odoc_xref2.Component.Delayed.Subst
+        (Odoc_xref2.Component.Delayed.Module,
+        Odoc_xref2.Component.Delayed.Subst
+         (Odoc_xref2.Component.Delayed.Module,
+         Odoc_xref2.Component.Delayed.OfLang
+          (Odoc_xref2.Component.Delayed.Module, <poly>,
+          {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+           module_types = <abstr>; functor_parameters = <abstr>;
+           types = <abstr>; path_types = <abstr>; path_class_types = <abstr>;
+           classes = <abstr>; class_types = <abstr>}),
+         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+          type_replacement = <abstr>; module_type_replacement = <abstr>;
+          path_invalidating_modules = [];
+          module_type_of_invalidating_modules = [];
+          unresolve_opaque_paths = true}),
+        {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+         module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+         type_replacement = <abstr>; module_type_replacement = <abstr>;
+         path_invalidating_modules = [];
+         module_type_of_invalidating_modules = [];
+         unresolve_opaque_paths = false}))];
     compiled = false; removed = []; doc = []}
-# let sg' = get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m);;
+# let sg' = get_ok @@ Tools.expansion_of_module env (Component.dget m);;
 val sg' : Tools.expansion =
   Odoc_xref2.Tools.Signature
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 20),
+     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 22),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.ModuleType
-             (Odoc_xref2.Component.ModuleType.Path
-               {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                p_path =
-                 `Dot
-                   (`Resolved
-                      (`Substituted
-                         (`Gpath
-                            (`Identifier
-                               {Odoc_model__Paths_types.iv =
-                                 `Module
-                                   ({Odoc_model__Paths_types.iv =
-                                      `Root
-                                        (Some
-                                          {Odoc_model__Paths_types.iv =
-                                            `Page (None, None);
-                                           ihash = 236059787;
-                                           ikey = "p_None"},
-                                         Root);
-                                     ihash = 818126955;
-                                     ikey = "r_Root.p_None"},
-                                    Bar);
-                                ihash = 608577; ikey = "m_Bar.r_Root.p_None"}))),
-                    "T")});
-           canonical = None; hidden = false};
-        get = None})];
+       Odoc_xref2.Component.Delayed.Subst
+        (Odoc_xref2.Component.Delayed.Module,
+        Odoc_xref2.Component.Delayed.Subst
+         (Odoc_xref2.Component.Delayed.Module,
+         Odoc_xref2.Component.Delayed.OfLang
+          (Odoc_xref2.Component.Delayed.Module, <poly>,
+          {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+           module_types = <abstr>; functor_parameters = <abstr>;
+           types = <abstr>; path_types = <abstr>; path_class_types = <abstr>;
+           classes = <abstr>; class_types = <abstr>}),
+         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+          type_replacement = <abstr>; module_type_replacement = <abstr>;
+          path_invalidating_modules = [];
+          module_type_of_invalidating_modules = [];
+          unresolve_opaque_paths = true}),
+        {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+         module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+         type_replacement = <abstr>; module_type_replacement = <abstr>;
+         path_invalidating_modules = [];
+         module_type_of_invalidating_modules = [];
+         unresolve_opaque_paths = false}))];
     compiled = false; removed = []; doc = []}
-# let sg' = get_ok @@ Tools.expansion_of_module env (Component.Delayed.get m);;
+# let sg' = get_ok @@ Tools.expansion_of_module env (Component.dget m);;
 val sg' : Tools.expansion =
   Odoc_xref2.Tools.Signature
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 23),
+     [Odoc_xref2.Component.Signature.Module (`LModule (Foo, 28),
        Odoc_model.Lang.Signature.Ordinary,
-       {Odoc_xref2.Component.Delayed.v =
-         Some
-          {Odoc_xref2.Component.Module.doc = [];
-           type_ =
-            Odoc_xref2.Component.Module.ModuleType
-             (Odoc_xref2.Component.ModuleType.Path
-               {Odoc_xref2.Component.ModuleType.p_expansion = None;
-                p_path =
-                 `Dot
-                   (`Resolved
-                      (`Substituted
-                         (`Gpath
-                            (`Identifier
-                               {Odoc_model__Paths_types.iv =
-                                 `Module
-                                   ({Odoc_model__Paths_types.iv =
-                                      `Root
-                                        (Some
-                                          {Odoc_model__Paths_types.iv =
-                                            `Page (None, None);
-                                           ihash = 236059787;
-                                           ikey = "p_None"},
-                                         Root);
-                                     ihash = 818126955;
-                                     ikey = "r_Root.p_None"},
-                                    Bar);
-                                ihash = 608577; ikey = "m_Bar.r_Root.p_None"}))),
-                    "T")});
-           canonical = None; hidden = false};
-        get = None})];
+       Odoc_xref2.Component.Delayed.Subst
+        (Odoc_xref2.Component.Delayed.Module,
+        Odoc_xref2.Component.Delayed.Subst
+         (Odoc_xref2.Component.Delayed.Module,
+         Odoc_xref2.Component.Delayed.OfLang
+          (Odoc_xref2.Component.Delayed.Module, <poly>,
+          {Odoc_xref2.Component.Of_Lang_types.modules = <abstr>;
+           module_types = <abstr>; functor_parameters = <abstr>;
+           types = <abstr>; path_types = <abstr>; path_class_types = <abstr>;
+           classes = <abstr>; class_types = <abstr>}),
+         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+          type_replacement = <abstr>; module_type_replacement = <abstr>;
+          path_invalidating_modules = [];
+          module_type_of_invalidating_modules = [];
+          unresolve_opaque_paths = true}),
+        {Odoc_xref2.Component.Substitution.module_ = <abstr>;
+         module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
+         type_replacement = <abstr>; module_type_replacement = <abstr>;
+         path_invalidating_modules = [];
+         module_type_of_invalidating_modules = [];
+         unresolve_opaque_paths = false}))];
     compiled = false; removed = []; doc = []}
 ```
 

@@ -24,13 +24,13 @@ type equations for all abstract types.
   |} ;;
 BEFORE
 ======
-type t/1
-type u/0 = local(t/1,false)
+type t/1 ...
+type u/0 ...
  (removed=[])
 AFTER
 ======
-type t/2 = r((root Root)).t
-type u/3 = local(t/2,false)
+type t/2 ...
+type u/3 ...
  (removed=[])
 - : unit = ()
 ```

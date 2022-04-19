@@ -203,7 +203,7 @@ module M = struct
     Ok (of_component env m (`Module (parent_cp, name)) (`Module (parent, name)))
 
   let of_element env (`Module (id, m)) : t =
-    let m = Component.Delayed.get m in
+    let m = Component.dget m in
     let id = (id :> Identifier.Path.Module.t) in
     of_component env m (`Gpath (`Identifier id)) (`Identifier id)
 
