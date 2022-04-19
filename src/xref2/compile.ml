@@ -210,7 +210,7 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
             else
               let ty =
                 Component.Delayed.(
-                  put (fun () -> Component.Of_Lang.(module_ (empty ()) m')))
+                  OfLang (Module, m', Component.Of_Lang.empty ()))
               in
               let docs = [] in
               let env' =
