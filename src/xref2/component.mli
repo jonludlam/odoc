@@ -15,20 +15,41 @@ module PathClassTypeMap : Map.S with type key = Ident.path_class_type
 
 module IdentMap : Map.S with type key = Ident.any
 
-(** Delayed is a bit like Lazy.t but may in the future offer the chance to peek inside
-    to be able to optimize the calculation *)
-module Delayed : sig
-  val eager : bool ref
-  (** If [eager] is true then no delaying is done. Most useful for testing and
-        documentation *)
+module Of_Lang_types : sig
+  open Odoc_model
 
-  type 'a t = { mutable v : 'a option; mutable get : (unit -> 'a) option }
+  type map = {
+    modules : Ident.module_ Paths.Identifier.Maps.Module.t;
+    module_types : Ident.module_type Paths.Identifier.Maps.ModuleType.t;
+    functor_parameters :
+      Ident.functor_parameter Paths.Identifier.Maps.FunctorParameter.t;
+    types : Ident.type_ Paths.Identifier.Maps.Type.t;
+    path_types : Ident.path_type Paths.Identifier.Maps.Path.Type.t;
+    path_class_types :
+      Ident.path_class_type Paths.Identifier.Maps.Path.ClassType.t;
+    classes : Ident.class_ Paths.Identifier.Maps.Class.t;
+    class_types : Ident.class_type Paths.Identifier.Maps.ClassType.t;
+  }
+end
 
-  val get : 'a t -> 'a
+module Lang_of_types : sig
+  open Odoc_model
+  open Paths
 
-  val put : (unit -> 'a) -> 'a t
-
-  val put_val : 'a -> 'a t
+  type maps = {
+    module_ : Identifier.Module.t ModuleMap.t;
+    module_type : Identifier.ModuleType.t ModuleTypeMap.t;
+    functor_parameter :
+      (Ident.functor_parameter * Identifier.FunctorParameter.t) list;
+    type_ : Identifier.Type.t TypeMap.t;
+    path_type : Identifier.Path.Type.t PathTypeMap.t;
+    class_ : (Ident.class_ * Identifier.Class.t) list;
+    class_type : (Ident.class_type * Identifier.ClassType.t) list;
+    path_class_type : Identifier.Path.ClassType.t PathClassTypeMap.t;
+    fragment_root : Cfrag.root option;
+    (* Shadowed items *)
+    shadowed : Lang.Include.shadowed;
+  }
 end
 
 module Opt : sig
@@ -60,7 +81,39 @@ end
 
 *)
 
-module rec Module : sig
+(** Delayed is a bit like Lazy.t but may in the future offer the chance to peek inside
+    to be able to optimize the calculation *)
+module rec Delayed : sig
+  open Odoc_model
+  (** If [eager] is true then no delaying is done. Most useful for testing and
+            documentation *)
+
+  type 'a general = { mutable v : 'a option; mutable get : (unit -> 'a) option }
+
+  (* Lang type, Lang path, Component type, Component path *)
+  type (_, _, _, _) ty =
+    | Module : (Lang.Module.t, Paths.Path.Module.t, Module.t, Cpath.module_) ty
+    | ModuleType
+        : ( Lang.ModuleType.t,
+            Odoc_model.Paths.Path.ModuleType.t,
+            ModuleType.t,
+            Cpath.module_type )
+          ty
+    | Type
+        : ( Lang.TypeDecl.t,
+            Odoc_model.Paths.Path.Type.t,
+            TypeDecl.t,
+            Cpath.type_ )
+          ty
+    | Value : (Lang.Value.t, unit, Value.t, unit) ty
+
+  type _ t =
+    | Val : 'a -> 'a t
+    | OfLang : ('a, _, 'b, _) ty * 'a * Of_Lang_types.map -> 'b t
+    | Subst : ('a, 'b, 'c, 'd) ty * 'c t * Substitution.t -> 'c t
+end
+
+and Module : sig
   type decl =
     | Alias of Cpath.module_ * ModuleType.simple_expansion option
     | ModuleType of ModuleType.expr
@@ -431,16 +484,23 @@ and Label : sig
   }
 end
 
+type dget_impl_t = { dget : 'a. 'a Delayed.t -> 'a }
+
+val dget_impl : dget_impl_t option ref
+
+val dget : 'a Delayed.t -> 'a
+
 module Element : sig
   open Odoc_model.Paths
 
   type module_ = [ `Module of Identifier.Path.Module.t * Module.t Delayed.t ]
 
-  type module_type = [ `ModuleType of Identifier.ModuleType.t * ModuleType.t ]
+  type module_type =
+    [ `ModuleType of Identifier.ModuleType.t * ModuleType.t Delayed.t ]
 
-  type type_ = [ `Type of Identifier.Type.t * TypeDecl.t ]
+  type type_ = [ `Type of Identifier.Type.t * TypeDecl.t Delayed.t ]
 
-  type value = [ `Value of Identifier.Value.t * Value.t ]
+  type value = [ `Value of Identifier.Value.t * Value.t Delayed.t ]
 
   type label = [ `Label of Identifier.Label.t * Label.t ]
 
@@ -607,7 +667,7 @@ module Fmt : sig
 end
 
 module Of_Lang : sig
-  type map
+  open Of_Lang_types
 
   val empty : unit -> map
 
