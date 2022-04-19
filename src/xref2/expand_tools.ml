@@ -55,7 +55,7 @@ and aux_expansion_of_module_alias env ~strengthen path =
         strengthen
         && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p)
       in
-      let m = Component.Delayed.get m in
+      let m = Component.dget m in
       match (aux_expansion_of_module env ~strengthen:true m, m.doc) with
       | (Error _ as e), _ -> e
       | Ok (Signature sg), [] ->
@@ -165,7 +165,7 @@ and handle_expansion env id expansion =
         in
         let m = Component.module_of_functor_argument arg in
         let env' =
-          Env.add_module identifier (Component.Delayed.put_val m) m.doc env
+          Env.add_module identifier (Component.Delayed.Val m) m.doc env
         in
         let rp = Cpath.Mk.Resolved.Module.gpath (`Identifier identifier) in
         let p = Cpath.Mk.Module.resolved rp in
