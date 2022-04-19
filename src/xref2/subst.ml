@@ -1060,8 +1060,7 @@ and apply_sig_map s items removed =
           (Module
              ( id,
                r,
-               Component.Delayed.put (fun () ->
-                   module_ s (Component.Delayed.get m)) )
+               Component.Delayed.(Subst (Module, m, s)) )
           :: acc)
     | ModuleSubstitution (id, m) :: rest ->
         inner rest (ModuleSubstitution (id, module_substitution s m) :: acc)
@@ -1069,8 +1068,7 @@ and apply_sig_map s items removed =
         inner rest
           (ModuleType
              ( id,
-               Component.Delayed.put (fun () ->
-                   module_type s (Component.Delayed.get mt)) )
+               Component.Delayed.(Subst (ModuleType, mt, s)))
           :: acc)
     | ModuleTypeSubstitution (id, mt) :: rest ->
         inner rest
@@ -1080,8 +1078,7 @@ and apply_sig_map s items removed =
           (Type
              ( id,
                r,
-               Component.Delayed.put (fun () ->
-                   type_ s (Component.Delayed.get t)) )
+               Component.Delayed.(Subst (Type, t, s)))
           :: acc)
     | TypeSubstitution (id, t) :: rest ->
         inner rest (TypeSubstitution (id, type_ s t) :: acc)
@@ -1091,9 +1088,8 @@ and apply_sig_map s items removed =
     | Value (id, v) :: rest ->
         inner rest
           (Value
-             ( id,
-               Component.Delayed.put (fun () ->
-                   value s (Component.Delayed.get v)) )
+             (id,
+             Component.Delayed.(Subst (Value, v, s)))
           :: acc)
     | Class (id, r, c) :: rest -> inner rest (Class (id, r, class_ s c) :: acc)
     | ClassType (id, r, c) :: rest ->

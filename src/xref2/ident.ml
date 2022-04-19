@@ -136,8 +136,7 @@ module Of_Identifier = struct
     match p with
     | { iv = #Signature.t_pv; _ } as s -> (signature s :> parent)
     | { iv = #DataType.t_pv; _ } as s -> (datatype s :> parent)
-    | { iv = #ClassSignature.t_pv; _ } as s ->
-        (class_signature s :> parent)
+    | { iv = #ClassSignature.t_pv; _ } as s -> (class_signature s :> parent)
 
   let label_parent : LabelParent.t -> label_parent =
    fun p ->

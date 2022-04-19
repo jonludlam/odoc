@@ -4,7 +4,7 @@ open Names
 (* For hash-consing *)
 type 'a hashed = 'a Hc.hashed = { v : 'a; key : int * string }
 
-type 'a id = { iv : 'a; ihash: int; ikey : string }
+type 'a id = { iv : 'a; ihash : int; ikey : string }
 
 module Identifier = struct
   type container_page_pv = [ `Page of container_page option * PageName.t ]
@@ -18,8 +18,7 @@ module Identifier = struct
   and page = page_pv id
   (** @canonical Odoc_model.Paths.Identifier.Page.t *)
 
-  type odoc_id_pv =
-    [ page_pv | `Root of container_page option * ModuleName.t ]
+  type odoc_id_pv = [ page_pv | `Root of container_page option * ModuleName.t ]
 
   and odoc_id = odoc_id_pv id
   (** @canonical Odoc_model.Paths.Identifier.OdocId.t *)
@@ -47,8 +46,7 @@ module Identifier = struct
   and datatype = datatype_pv id
   (** @canonical Odoc_model.Paths.Identifier.DataType.t *)
 
-  type parent_pv =
-    [ signature_pv | datatype_pv | class_signature_pv ]
+  type parent_pv = [ signature_pv | datatype_pv | class_signature_pv ]
 
   and parent = parent_pv id
   (** @canonical Odoc_model.Paths.Identifier.Parent.t *)
@@ -63,8 +61,7 @@ module Identifier = struct
   and root_module = root_module_pv id
   (** @canonical Odoc_model.Paths.Identifier.RootModule.t *)
 
-  type module_pv =
-    [ root_module_pv | `Module of signature * ModuleName.t ]
+  type module_pv = [ root_module_pv | `Module of signature * ModuleName.t ]
 
   and module_ = module_pv id
   (** @canonical Odoc_model.Paths.Identifier.Module.t *)
@@ -84,8 +81,7 @@ module Identifier = struct
   and module_type = module_type_pv id
   (** @canonical Odoc_model.Paths.Identifier.ModuleType.t *)
 
-  type type_pv =
-    [ `Type of signature * TypeName.t | `CoreType of TypeName.t ]
+  type type_pv = [ `Type of signature * TypeName.t | `CoreType of TypeName.t ]
 
   and type_ = type_pv id
   (** @canonical Odoc_model.Paths.Identifier.Type.t *)
@@ -169,8 +165,7 @@ module Identifier = struct
   and any = any_pv id
   (** @canonical Odoc_model.Paths.Identifier.t *)
 
-  type path_module_pv =
-    [ module_pv | functor_parameter_pv | functor_result_pv ]
+  type path_module_pv = [ module_pv | functor_parameter_pv | functor_result_pv ]
 
   and path_module = path_module_pv id
   (** @canonical Odoc_model.Paths.Identifier.Path.Module.t *)
@@ -178,8 +173,7 @@ module Identifier = struct
   type path_module_type = module_type
   (** @canonical Odoc_model.Paths.Identifier.Path.ModuleType.t *)
 
-  type path_type_pv =
-    [ type_pv | class_pv | class_type_pv ]
+  type path_type_pv = [ type_pv | class_pv | class_type_pv ]
 
   and path_type = path_type_pv id
   (** @canonical Odoc_model.Paths.Identifier.Path.Type.t *)
@@ -190,11 +184,7 @@ module Identifier = struct
   (** @canonical Odoc_model.Paths.Identifier.Path.ClassType.t *)
 
   type path_any =
-    [ path_module_pv
-    | module_type_pv
-    | path_type_pv
-    | path_class_type_pv ]
-    id
+    [ path_module_pv | module_type_pv | path_type_pv | path_class_type_pv ] id
   (** @canonical Odoc_model.Paths.Identifier.Path.t *)
 
   type fragment_module = path_module
