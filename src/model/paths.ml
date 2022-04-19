@@ -16,7 +16,7 @@
 
 open Names
 
-type 'a id = 'a Paths_types.id = { iv : 'a; ihash: int; ikey: string }
+type 'a id = 'a Paths_types.id = { iv : 'a; ihash : int; ikey : string }
 
 module Identifier = struct
   type t = Paths_types.Identifier.any
@@ -88,7 +88,9 @@ module Identifier = struct
     type t = any
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -98,7 +100,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.signature_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -108,7 +112,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.class_signature_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -118,7 +124,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.datatype_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -128,7 +136,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.parent_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -138,7 +148,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.label_parent_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -146,7 +158,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.root_module
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -156,7 +170,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.module_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -166,7 +182,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.functor_parameter_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -174,7 +192,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.functor_result
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -184,7 +204,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.module_type_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -194,7 +216,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.type_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -202,7 +226,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.constructor
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -210,7 +236,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.field
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -218,7 +246,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.extension
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -226,7 +256,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.exception_
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -234,7 +266,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.value
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -242,7 +276,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.class_
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -250,7 +286,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.class_type
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -258,7 +296,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.method_
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -266,7 +306,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.instance_variable
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -276,7 +318,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.label_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -286,7 +330,9 @@ module Identifier = struct
     type t_pv = Paths_types.Identifier.page_pv
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -294,7 +340,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.container_page
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -302,7 +350,9 @@ module Identifier = struct
     type t = Paths_types.Identifier.odoc_id
 
     let equal = equal
+
     let hash = hash
+
     let compare = compare
   end
 
@@ -313,16 +363,20 @@ module Identifier = struct
       type t_pv = Paths_types.Identifier.path_module_pv
 
       let equal = equal
-    let hash = hash
-    let compare = compare
+
+      let hash = hash
+
+      let compare = compare
     end
 
     module ModuleType = struct
       type t = Paths_types.Identifier.path_module_type
 
       let equal = equal
-    let hash = hash
-    let compare = compare
+
+      let hash = hash
+
+      let compare = compare
     end
 
     module Type = struct
@@ -331,7 +385,9 @@ module Identifier = struct
       type t_pv = Paths_types.Identifier.path_type_pv
 
       let equal = equal
+
       let hash = hash
+
       let compare = compare
     end
 
@@ -341,7 +397,9 @@ module Identifier = struct
       type t_pv = Paths_types.Identifier.path_class_type_pv
 
       let equal = equal
+
       let hash = hash
+
       let compare = compare
     end
 
@@ -414,25 +472,26 @@ module Identifier = struct
   end
 
   module Mk = struct
-
     let mk_fresh to_str ty f x =
       let ikey = Printf.sprintf "%s_%s" ty (to_str x) in
       let ihash = Hashtbl.hash ikey in
-      {iv = f x; ihash; ikey}
-    
+      { iv = f x; ihash; ikey }
+
     let mk_parent to_str ty f (parent, x) =
       let ikey = Printf.sprintf "%s_%s.%s" ty (to_str x) parent.ikey in
       let ihash = Hashtbl.hash ikey in
 
-      {iv = f (parent, x); ihash; ikey}
-    
+      { iv = f (parent, x); ihash; ikey }
+
     let mk_parent_opt to_str ty f (parent_opt, x) =
-      let ikey = 
-      match parent_opt with
-      | None ->  Printf.sprintf "%s_%s" ty (to_str x)
-      | Some p ->Printf.sprintf "%s_%s.%s" ty (to_str x) p.ikey in
+      let ikey =
+        match parent_opt with
+        | None -> Printf.sprintf "%s_%s" ty (to_str x)
+        | Some p -> Printf.sprintf "%s_%s.%s" ty (to_str x) p.ikey
+      in
       let ihash = Hashtbl.hash ikey in
-        { iv = f (parent_opt, x); ihash; ikey }
+      { iv = f (parent_opt, x); ihash; ikey }
+
     let page :
         ContainerPage.t option * PageName.t ->
         [> `Page of ContainerPage.t option * PageName.t ] id =
@@ -441,13 +500,12 @@ module Identifier = struct
     let leaf_page :
         ContainerPage.t option * PageName.t ->
         [> `LeafPage of ContainerPage.t option * PageName.t ] id =
-      mk_parent_opt PageName.to_string "lp" (fun (p, n) ->
-          `LeafPage (p, n))
+      mk_parent_opt PageName.to_string "lp" (fun (p, n) -> `LeafPage (p, n))
 
     let root :
         ContainerPage.t option * ModuleName.t ->
         [> `Root of ContainerPage.t option * ModuleName.t ] id =
-     mk_parent_opt ModuleName.to_string "r" (fun (p, n) -> `Root (p, n))
+      mk_parent_opt ModuleName.to_string "r" (fun (p, n) -> `Root (p, n))
 
     let module_ :
         Signature.t * ModuleName.t ->
@@ -460,7 +518,8 @@ module Identifier = struct
       mk_parent ParameterName.to_string "p" (fun (p, n) -> `Parameter (p, n))
 
     let result : Signature.t -> [> `Result of Signature.t ] id =
-      fun s -> mk_parent (fun () -> "__result__") "" (fun (s, ()) -> `Result s) (s, ())
+     fun s ->
+      mk_parent (fun () -> "__result__") "" (fun (s, ()) -> `Result s) (s, ())
 
     let module_type :
         Signature.t * ModuleTypeName.t ->
@@ -468,8 +527,8 @@ module Identifier = struct
       mk_parent ModuleTypeName.to_string "mt" (fun (p, n) -> `ModuleType (p, n))
 
     let class_ :
-        Signature.t * ClassName.t ->
-        [> `Class of Signature.t * ClassName.t ] id =
+        Signature.t * ClassName.t -> [> `Class of Signature.t * ClassName.t ] id
+        =
       mk_parent ClassName.to_string "c" (fun (p, n) -> `Class (p, n))
 
     let class_type :
@@ -478,20 +537,20 @@ module Identifier = struct
       mk_parent ClassTypeName.to_string "ct" (fun (p, n) -> `ClassType (p, n))
 
     let type_ :
-        Signature.t * TypeName.t ->
-        [> `Type of Signature.t * TypeName.t ] id =
+        Signature.t * TypeName.t -> [> `Type of Signature.t * TypeName.t ] id =
       mk_parent TypeName.to_string "t" (fun (p, n) -> `Type (p, n))
 
-    let core_type = mk_fresh (fun s -> s) "coret" (fun s -> `CoreType (TypeName.make_std s))
+    let core_type =
+      mk_fresh (fun s -> s) "coret" (fun s -> `CoreType (TypeName.make_std s))
 
     let constructor :
         Type.t * ConstructorName.t ->
         [> `Constructor of Type.t * ConstructorName.t ] id =
-      mk_parent ConstructorName.to_string "ctor" (fun (p, n) -> `Constructor (p, n))
+      mk_parent ConstructorName.to_string "ctor" (fun (p, n) ->
+          `Constructor (p, n))
 
     let field :
-        Parent.t * FieldName.t ->
-        [> `Field of Parent.t * FieldName.t ] id =
+        Parent.t * FieldName.t -> [> `Field of Parent.t * FieldName.t ] id =
       mk_parent FieldName.to_string "fld" (fun (p, n) -> `Field (p, n))
 
     let extension :
@@ -505,11 +564,14 @@ module Identifier = struct
       mk_parent ExceptionName.to_string "exn" (fun (p, n) -> `Exception (p, n))
 
     let core_exception =
-      mk_fresh (fun s -> s) "coreexn" (fun s -> `CoreException (ExceptionName.make_std s))
+      mk_fresh
+        (fun s -> s)
+        "coreexn"
+        (fun s -> `CoreException (ExceptionName.make_std s))
 
     let value :
-        Signature.t * ValueName.t ->
-        [> `Value of Signature.t * ValueName.t ] id =
+        Signature.t * ValueName.t -> [> `Value of Signature.t * ValueName.t ] id
+        =
       mk_parent ValueName.to_string "v" (fun (p, n) -> `Value (p, n))
 
     let method_ :
@@ -519,8 +581,7 @@ module Identifier = struct
 
     let instance_variable :
         ClassSignature.t * InstanceVariableName.t ->
-        [> `InstanceVariable of ClassSignature.t * InstanceVariableName.t ]
-        id =
+        [> `InstanceVariable of ClassSignature.t * InstanceVariableName.t ] id =
       mk_parent InstanceVariableName.to_string "iv" (fun (p, n) ->
           `InstanceVariable (p, n))
 
@@ -545,7 +606,8 @@ module Path = struct
       | `Identifier { iv = `ModuleType (_, m); _ }
         when Names.ModuleTypeName.is_internal m ->
           true
-      | `Identifier { iv = `Type (_, t); _ } when Names.TypeName.is_internal t ->
+      | `Identifier { iv = `Type (_, t); _ } when Names.TypeName.is_internal t
+        ->
           true
       | `Identifier { iv = `Module (_, m); _ }
         when Names.ModuleName.is_internal m ->

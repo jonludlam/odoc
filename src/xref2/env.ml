@@ -516,7 +516,8 @@ let lookup_by_id (scope : 'a scope) id env : 'a option =
       scope.filter x
   | None -> (
       match (id :> Identifier.t) with
-      | { iv = `Root (_, name); _ } -> scope.root (ModuleName.to_string name) env
+      | { iv = `Root (_, name); _ } ->
+          scope.root (ModuleName.to_string name) env
       | _ -> None)
 
 let lookup_root_module_fallback name t =
@@ -524,7 +525,7 @@ let lookup_root_module_fallback name t =
   | Some (Resolved (_, id, m)) ->
       Some
         (`Module
-          ((id :> Identifier.Path.Module.t), Component.Delayed.put_val m))
+          ((id :> Identifier.Path.Module.t), Component.Delayed.Val m))
   | Some Forward | None -> None
 
 let lookup_page_or_root_module_fallback name t =
@@ -645,7 +646,7 @@ let add_functor_parameter : Odoc_model.Lang.FunctorParameter.t -> t -> t =
       in
       add_module
         (n.id :> Paths.Identifier.Path.Module.t)
-        (Component.Delayed.put_val m)
+        (Component.Delayed.Val m)
         [] t
 
 let add_functor_args' :
@@ -682,7 +683,7 @@ let add_functor_args' :
         ((ident, identifier) :> Ident.path_module * Identifier.Path.Module.t)
       in
       let doc = m.Component.Module.doc in
-      let m = Component.Delayed.put_val (Subst.module_ subst m) in
+      let m = Component.Delayed.(Subst (Module, Val m, subst)) in
       let rp =
         Cpath.Mk.Resolved.Module.gpath
           (Path.Resolved.Module.Mk.identifier identifier)
@@ -734,7 +735,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             let ty = type_decl ident_map t in
             add_type t.L.TypeDecl.id ty env
         | Module (_, t), _ ->
-            let ty = Component.Delayed.put (fun () -> module_ ident_map t) in
+            let ty = Component.Delayed.(OfLang (Module, t, ident_map)) in
             add_module
               (t.L.Module.id :> Identifier.Path.Module.t)
               ty
@@ -795,13 +796,15 @@ let open_module_substitution : Odoc_model.Lang.ModuleSubstitution.t -> t -> t =
   let module L = Odoc_model.Lang in
   let _id = Ident.Of_Identifier.module_ m.id in
   let doc = docs (empty ()) m.doc in
+  let m = L.Module.{
+    id = m.id;
+    doc = m.doc;
+    type_ = Alias (m.manifest, None);
+    canonical = None;
+    hidden = false;
+  } in
   let ty =
-    Component.Delayed.put (fun () ->
-        Of_Lang.(
-          module_of_module_substitution
-            (*                  { empty with modules = [ (m.id, id) ] } *)
-            (empty ())
-            m))
+    Component.Delayed.(OfLang (Module, m, (empty ())))
   in
   add_module (m.id :> Identifier.Path.Module.t) ty doc env
 
@@ -859,7 +862,7 @@ let env_of_unit t ~linking resolver =
   let open Odoc_model.Lang.Compilation_unit in
   let initial_env =
     let m = module_of_unit t in
-    let dm = Component.Delayed.put (fun () -> m) in
+    let dm = Component.Delayed.Val m in
     let env = { empty with linking } in
     env |> add_module (t.id :> Identifier.Path.Module.t) dm m.doc
   in

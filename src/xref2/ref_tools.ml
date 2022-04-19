@@ -200,7 +200,7 @@ module M = struct
          (`Module (parent, name)))
 
   let of_element env (`Module (id, m)) : t =
-    let m = Component.Delayed.get m in
+    let m = Component.dget m in
     let id = (id :> Identifier.Path.Module.t) in
     of_component env m
       (Cpath.Mk.Resolved.Module.gpath (Path.Resolved.Module.Mk.identifier id))

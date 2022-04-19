@@ -12,5 +12,6 @@
  (public_name odoc.model)
  (instrumentation
   (backend bisect_ppx))
- 
- (libraries result compiler-libs.common odoc-parser))
+ (preprocess
+  (pps landmarks-ppx --auto))
+ (libraries result compiler-libs.common odoc-parser landmarks))

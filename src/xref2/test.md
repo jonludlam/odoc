@@ -288,7 +288,7 @@ Error: This expression has type
 The values returned are the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `signature_of_module`, which in this case is quite simple since the module contains an explicit signature:
 
 ```ocaml env=e1
-# get_ok @@ Tools.signature_of_module env (Component.Delayed.get module_);;
+# get_ok @@ Tools.signature_of_module env (Component.dget module_);;
 Line 1, characters 64-71:
 Error: Unbound value module_
 ```
@@ -454,7 +454,7 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let p = `Identifier (Common.root_module "A") in
   let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env p in
-  let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m) in
+  let sg = get_ok @@ Tools.signature_of_module env (Component.dget m) in
   Tools.prefix_signature (`Module p, sg);;
 Line 2, characters 68-69:
 Error: This expression has type
@@ -748,7 +748,7 @@ Error: This expression has type
 now we can ask for the signature of this module:
 
 ```ocaml env=e1
-# let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+# let sg = get_ok @@ Tools.signature_of_module env (Component.dget m);;
 Line 1, characters 73-74:
 Error: This expression has type Component.Element.module_type option
        but an expression was expected of type 'a Component.Delayed.t
@@ -774,7 +774,7 @@ Error: This expression has type
        but an expression was expected of type
          Cpath.Resolved.module_ =
            Cpath.Resolved.module_unhashed Odoc_model.Hc.hashed
-# get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+# get_ok @@ Tools.signature_of_module env (Component.dget m);;
 Line 1, characters 64-65:
 Error: This expression has type Component.Element.module_type option
        but an expression was expected of type 'a Component.Delayed.t
@@ -1229,7 +1229,7 @@ Now let's lookup that module:
 # let (p,m) = get_ok @@ Tools.resolve_module ~mark_substituted:true ~add_canonical:true env cp;;
 Line 1, characters 91-93:
 Error: Unbound value cp
-# let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+# let sg' = get_ok @@ Tools.signature_of_module env (Component.dget m);;
 Line 1, characters 74-75:
 Error: This expression has type Component.Element.module_type option
        but an expression was expected of type 'a Component.Delayed.t
