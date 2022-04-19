@@ -120,30 +120,10 @@ let compile mli =
   end
   |} ;;
 - : Component.Signature.t =
-module type Monad/59 = sig
-  type t/60
-  val map/61 : ([a] r(t/60)) -> ((a) -> b) -> [b] r(t/60)
-  val join/62 : ([[a] r(t/60)] r(t/60)) -> [a] r(t/60)
-   (removed=[])end
-module SomeMonad/58 : sig
-  type t/63
-  include : r(Monad/59) with [r(root(Monad/59).t) = [a] r(t/63)] (sig =
-    val map/64 : ([a] r(t/63)) -> ((a) -> b) -> [b] r(t/63)
-    val join/65 : ([[a] r(t/63)] r(t/63)) -> [a] r(t/63)
-     (removed=[]))
-   (removed=[])end
-module ComplexTypeExpr/57 : sig
-  type t/66
-  include : r(Monad/59) with [r(root(Monad/59).t) = ([r(int) * a] r(t/66) * [a * r(int)] r(t/66))] (sig =
-    val map/67 : (([r(int) * a] r(t/66) * [a * r(int)] r(t/66))) -> ((a) -> b) -> ([r(int) * b] r(t/66) * [b * r(int)] r(t/66))
-    val join/68 : (([r(int) * ([r(int) * a] r(t/66) * [a * r(int)] r(t/66))] r(t/66) * [([r(int) * a] r(t/66) * [a * r(int)] r(t/66)) * r(int)] r(t/66))) -> ([r(int) * a] r(t/66) * [a * r(int)] r(t/66))
-     (removed=[]))
-   (removed=[])end
-module Erase/56 : sig
-  include : r(Monad/59) with [r(root(Monad/59).t) = a] (sig = val map/69 : (a) -> ((a) -> b) -> b
-                                                              val join/70 : (a) -> a
-                                                               (removed=[]))
-   (removed=[])end
+module type Monad/59 ...
+module SomeMonad/58 ...
+module ComplexTypeExpr/57 ...
+module Erase/56 ...
  (removed=[])
 ```
 
@@ -164,20 +144,8 @@ More tests with two type variables:
   end
   |} ;;
 - : Component.Signature.t =
-module type Monad_2/112 = sig
-  type t/113
-  val map/114 : ([a * err] r(t/113)) -> f:((a) -> b) -> [b * err] r(t/113)
-  val join/115 : ([[a * e] r(t/113) * e] r(t/113)) -> [a * e] r(t/113)
-  val both/116 : ([a * e] r(t/113)) -> ([b * e] r(t/113)) -> [(a * b) * e] r(t/113)
-   (removed=[])end
-module SwappedVars/111 : sig
-  type t/117
-  include : r(Monad_2/112) with [r(root(Monad_2/112).t) = [b * a] r(t/117)] (sig =
-    val map/118 : ([err * a] r(t/117)) -> f:((a) -> b) -> [err * b] r(t/117)
-    val join/119 : ([e * [e * a] r(t/117)] r(t/117)) -> [e * a] r(t/117)
-    val both/120 : ([e * a] r(t/117)) -> ([e * b] r(t/117)) -> [e * (a * b)] r(t/117)
-     (removed=[]))
-   (removed=[])end
+module type Monad_2/101 ...
+module SwappedVars/100 ...
  (removed=[])
 ```
 
@@ -196,15 +164,7 @@ Edge cases:
   end
   |} ;;
 - : Component.Signature.t =
-module type S/142 = sig
-  type t/143
-  val map/144 : ([a] r(t/143)) -> ((a) -> b) -> [b] r(t/143)
-   (removed=[])end
-module M/141 : sig
-  type t/145
-  include : r(S/142) with [r(root(S/142).t) = [(alias (poly_var [ `A of (a * b) ]) b)] r(t/145)] (sig =
-    val map/146 : ([(alias (poly_var [ `A of (a * b) ]) b)] r(t/145)) -> ((a) -> b) -> [(alias (poly_var [ `A of (b * b) ]) b)] r(t/145)
-     (removed=[]))
-   (removed=[])end
+module type S/123 ...
+module M/122 ...
  (removed=[])
 ```
