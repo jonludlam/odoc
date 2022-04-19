@@ -1,32 +1,7 @@
 open Odoc_model
 open Paths
 open Names
-
-module RM = Hashtbl.Make (struct
-  type t = Cpath.Resolved.module_
-
-  let equal x y = x.Hc.key = y.Hc.key
-
-  let hash x = Hashtbl.hash x.Hc.key
-end)
-
-type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t }
-
-type maps = {
-  module_ : Identifier.Module.t Component.ModuleMap.t;
-  module_type : Identifier.ModuleType.t Component.ModuleTypeMap.t;
-  functor_parameter :
-    (Ident.functor_parameter * Identifier.FunctorParameter.t) list;
-  type_ : Identifier.Type.t Component.TypeMap.t;
-  path_type : Identifier.Path.Type.t Component.PathTypeMap.t;
-  class_ : (Ident.class_ * Identifier.Class.t) list;
-  class_type : (Ident.class_type * Identifier.ClassType.t) list;
-  path_class_type : Identifier.Path.ClassType.t Component.PathClassTypeMap.t;
-  fragment_root : Cfrag.root option;
-  (* Shadowed items *)
-  shadowed : Lang.Include.shadowed;
-  memos : memos;
-}
+open Component.Lang_of_types
 
 let empty_shadow =
   let open Lang.Include in
@@ -98,8 +73,7 @@ module Path = struct
     match p.v with
     | `Substituted x -> module_type map x
     | `Identifier
-        (({ iv = #Odoc_model.Paths.Identifier.ModuleType.t_pv; _ } as y), b)
-      ->
+        (({ iv = #Odoc_model.Paths.Identifier.ModuleType.t_pv; _ } as y), b) ->
         Mk.identifier (y, b)
     | `Local (id, b) ->
         Mk.identifier
@@ -121,8 +95,7 @@ module Path = struct
     match p.v with
     | `Substituted x -> type_ map x
     | `Identifier
-        (({ iv = #Odoc_model.Paths.Identifier.Path.Type.t_pv; _ } as y), b)
-      ->
+        (({ iv = #Odoc_model.Paths.Identifier.Path.Type.t_pv; _ } as y), b) ->
         Mk.identifier (y, b)
     | `Local (id, b) ->
         Mk.identifier (Component.PathTypeMap.find id map.path_type, b)
@@ -145,9 +118,8 @@ module Path = struct
     match p.v with
     | `Substituted x -> class_type map x
     | `Identifier
-        ( ({ iv = #Odoc_model.Paths.Identifier.Path.ClassType.t_pv; _ } as
-          y),
-          b ) ->
+        (({ iv = #Odoc_model.Paths.Identifier.Path.ClassType.t_pv; _ } as y), b)
+      ->
         Mk.identifier (y, b)
     | `Local (id, b) ->
         Mk.identifier (Component.PathClassTypeMap.find id map.path_class_type, b)
@@ -352,8 +324,9 @@ module ExtractIDs = struct
   and module_type parent map id =
     let name = Ident.Name.unsafe_module_type id in
     let typed_name =
-      if List.mem name map.shadowed.s_module_types || name = "OdocIncludedModule" then
-        ModuleTypeName.internal_of_string name
+      if
+        List.mem name map.shadowed.s_module_types || name = "OdocIncludedModule"
+      then ModuleTypeName.internal_of_string name
       else Ident.Name.typed_module_type id
     in
     let identifier = Identifier.Mk.module_type (parent, typed_name) in
@@ -451,7 +424,7 @@ let rec signature_items id map items =
     match items with
     | [] -> List.rev acc
     | Module (id, r, m) :: rest ->
-        let m = Component.Delayed.get m in
+        let m = Component.dget m in
         inner rest
           (Odoc_model.Lang.Signature.Module (r, module_ map parent id m) :: acc)
     | ModuleType (id, m) :: rest ->
@@ -464,7 +437,7 @@ let rec signature_items id map items =
              (module_type_substitution map parent id m)
           :: acc)
     | Type (id, r, t) :: rest ->
-        let t = Component.Delayed.get t in
+        let t = Component.dget t in
         inner rest (Type (r, type_decl map parent id t) :: acc)
     | Exception (id', e) :: rest ->
         inner rest
@@ -475,7 +448,7 @@ let rec signature_items id map items =
           :: acc)
     | TypExt t :: rest -> inner rest (TypExt (typ_ext map id t) :: acc)
     | Value (id, v) :: rest ->
-        let v = Component.Delayed.get v in
+        let v = Component.dget v in
         inner rest (Value (value_ map parent id v) :: acc)
     | Include i :: rest -> inner rest (Include (include_ id map i) :: acc)
     | Open o :: rest -> inner rest (Open (open_ id map o) :: acc)
@@ -863,7 +836,7 @@ and module_type :
     Odoc_model.Lang.ModuleType.t =
  fun map parent id mty ->
   let identifier = Component.ModuleTypeMap.find id map.module_type in
-  let mty = Component.Delayed.get mty in
+  let mty = Component.dget mty in
   let sig_id = (identifier :> Odoc_model.Paths.Identifier.Signature.t) in
   let map = { map with shadowed = empty_shadow } in
   {

@@ -16,7 +16,7 @@
 
 (** Identifiers for definitions *)
 
-type 'a id = 'a Paths_types.id = { iv : 'a; ihash: int; ikey: string }
+type 'a id = 'a Paths_types.id = { iv : 'a; ihash : int; ikey : string }
 
 module Identifier : sig
   (** {2 Generic operations} *)
@@ -485,16 +485,14 @@ module Identifier : sig
       [> `ModuleType of Signature.t * ModuleTypeName.t ] id
 
     val class_ :
-      Signature.t * ClassName.t ->
-      [> `Class of Signature.t * ClassName.t ] id
+      Signature.t * ClassName.t -> [> `Class of Signature.t * ClassName.t ] id
 
     val class_type :
       Signature.t * ClassTypeName.t ->
       [> `ClassType of Signature.t * ClassTypeName.t ] id
 
     val type_ :
-      Signature.t * TypeName.t ->
-      [> `Type of Signature.t * TypeName.t ] id
+      Signature.t * TypeName.t -> [> `Type of Signature.t * TypeName.t ] id
 
     val core_type : string -> [> `CoreType of TypeName.t ] id
 
@@ -513,12 +511,10 @@ module Identifier : sig
       Signature.t * ExceptionName.t ->
       [> `Exception of Signature.t * ExceptionName.t ] id
 
-    val core_exception :
-      string -> [> `CoreException of ExceptionName.t ] id
+    val core_exception : string -> [> `CoreException of ExceptionName.t ] id
 
     val value :
-      Signature.t * ValueName.t ->
-      [> `Value of Signature.t * ValueName.t ] id
+      Signature.t * ValueName.t -> [> `Value of Signature.t * ValueName.t ] id
 
     val method_ :
       ClassSignature.t * MethodName.t ->
@@ -526,8 +522,7 @@ module Identifier : sig
 
     val instance_variable :
       ClassSignature.t * InstanceVariableName.t ->
-      [> `InstanceVariable of ClassSignature.t * InstanceVariableName.t ]
-      id
+      [> `InstanceVariable of ClassSignature.t * InstanceVariableName.t ] id
 
     val label :
       LabelParent.t * LabelName.t ->

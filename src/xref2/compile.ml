@@ -209,8 +209,7 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
             if m == m' then (item :: items, env)
             else
               let ty =
-                Component.Delayed.(
-                  put (fun () -> Component.Of_Lang.(module_ (empty ()) m')))
+                Component.Delayed.(OfLang (Module, m', Component.Of_Lang.empty ()))
               in
               let docs = [] in
               let env' =
