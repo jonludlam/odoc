@@ -41,6 +41,22 @@ Odoc_xref2.Component.Delayed.eager := true;;
 Odoc_xref2.Tools.disable_all_caches ();;
 let id = Common.id;;
 ```
+```mdx-error
+Line 1, characters 3-37:
+Error: Unbound value Odoc_xref2.Component.Delayed.eager
+- : unit = ()
+val id :
+  [> `Root of
+       Odoc_model.Paths.Identifier.ContainerPage.t option * ModuleName.t ]
+  Odoc_model.Paths.id =
+  {Odoc_model.Paths.iv =
+    `Root
+      (Some
+        {Odoc_model__Paths_types.iv = `Page (None, None); ihash = 236059787;
+         ikey = "p_None"},
+       Root);
+   ihash = 818126955; ikey = "r_Root.p_None"}
+```
 
 Simple resolution
 -----------------
@@ -332,8 +348,13 @@ The values returned are the resolved path to the module, and a representation of
 
 ```ocaml env=e1
 <<<<<<< HEAD
+<<<<<<< HEAD
 # get_ok @@ Tools.signature_of_module env (Component.Delayed.get module_);;
 Line 1, characters 64-71:
+=======
+# get_ok @@ Tools.signature_of_module env (Component.dget module_);;
+Line 1, characters 57-64:
+>>>>>>> 60a18a240 (Reimplementation of Delayed)
 Error: Unbound value module_
 =======
 # get_ok @@ Tools.signature_of_module env (Component.dget module_);;
@@ -343,6 +364,8 @@ Error: Unbound value Tools.signature_of_module
 ```
 ```mdx-error
 Line 1, characters 1-8:
+Error: Syntax error
+Line 1, characters 27-28:
 Error: Syntax error
 Line 1, characters 27-28:
 Error: Syntax error
@@ -473,7 +496,7 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let p = `Identifier (Common.root_module "A") in
   let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env p in
-  let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m) in
+  let sg = get_ok @@ Tools.signature_of_module env (Component.dget m) in
   Tools.prefix_signature (`Module p, sg);;
 Line 2, characters 68-69:
 Error: This expression has type
@@ -1373,7 +1396,7 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type
          [> `Apply of
@@ -1395,7 +1418,7 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type
          [> `Apply of
@@ -1417,7 +1440,7 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type [> `Resolved of 'd ] as 'c is not compatible with type
          Odoc_model.Paths.Path.Module.t =
@@ -1428,28 +1451,27 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type [> `Identifier of 'e ] as 'd is not compatible with type
-         Odoc_model.Paths.Path.Resolved.Module.t =
+         Component.Of_Lang_types.RM.key =
            [ `Alias of
-               Odoc_model.Paths.Path.Resolved.Module.t *
+               Component.Of_Lang_types.RM.key *
                Odoc_model.Paths.Path.Module.t
            | `Apply of
-               Odoc_model.Paths.Path.Resolved.Module.t *
-               Odoc_model.Paths.Path.Resolved.Module.t
+               Component.Of_Lang_types.RM.key *
+               Component.Of_Lang_types.RM.key
            | `Canonical of
-               Odoc_model.Paths.Path.Resolved.Module.t *
+               Component.Of_Lang_types.RM.key *
                Odoc_model.Paths.Path.Module.t
-           | `Hidden of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Hidden of Component.Of_Lang_types.RM.key
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module
-           | `Module of
-               Odoc_model.Paths.Path.Resolved.Module.t * ModuleName.t
-           | `OpaqueModule of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Module of Component.Of_Lang_types.RM.key * ModuleName.t
+           | `OpaqueModule of Component.Of_Lang_types.RM.key
            | `Subst of
                Odoc_model.Paths.Path.Resolved.ModuleType.t *
-               Odoc_model.Paths.Path.Resolved.Module.t ]
+               Component.Of_Lang_types.RM.key ]
        Type
          [> `Module of
               [> `Root of
@@ -1469,6 +1491,12 @@ Now let's lookup that module:
 # let (p,m) = get_ok @@ Tools.resolve_module ~mark_substituted:true ~add_canonical:true env cp;;
 Line 1, characters 91-93:
 Error: Unbound value cp
+# let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+Line 1, characters 21-46:
+Error: Unbound value Tools.signature_of_module
+# let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+Line 1, characters 21-46:
+Error: Unbound value Tools.signature_of_module
 # let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
 Line 1, characters 21-46:
 Error: Unbound value Tools.signature_of_module

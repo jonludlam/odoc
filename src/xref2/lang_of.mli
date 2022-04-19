@@ -1,7 +1,6 @@
 (* Lang_of *)
 open Odoc_model.Paths
-
-type maps
+open Component.Lang_of_types
 
 val empty : unit -> maps
 
