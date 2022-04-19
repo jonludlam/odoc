@@ -14,7 +14,6 @@
 *)
 
 open Component
-open Delayed
 
 let rec signature :
     Cpath.module_ ->
@@ -43,28 +42,34 @@ and sig_items prefix ?canonical sg =
               | Some p -> Some (`Dot (p, name))
               | None -> None
             in
-            let m' () =
-              module_ ?canonical (Cpath.Mk.Module.dot (prefix, name)) (get m)
+            let m' =
+              Component.Delayed.(
+                Strengthen
+                  (Module, m, Cpath.Mk.Module.dot (prefix, name), canonical))
             in
-            (Module (id, r, put m') :: items, id :: s)
+            (Module (id, r, m') :: items, id :: s)
         | ModuleType (id, mt) ->
             ( ModuleType
                 ( id,
-                  put (fun () ->
-                      module_type
-                        (Cpath.Mk.ModuleType.dot
-                           (prefix, Ident.Name.module_type id))
-                        (get mt)) )
+                  Component.Delayed.(
+                    Strengthen
+                      ( ModuleType,
+                        mt,
+                        Cpath.Mk.ModuleType.dot
+                          (prefix, Ident.Name.module_type id),
+                        None )) )
               :: items,
               s )
         | Type (id, r, t) ->
             ( Type
                 ( id,
                   r,
-                  put (fun () ->
-                      type_decl
-                        (Cpath.Mk.Type.dot (prefix, Ident.Name.type_ id))
-                        (get t)) )
+                  Component.Delayed.(
+                    Strengthen
+                      ( Type,
+                        t,
+                        Cpath.Mk.Type.dot (prefix, Ident.Name.type_ id),
+                        None )) )
               :: items,
               s )
         | Include i ->

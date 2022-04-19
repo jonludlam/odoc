@@ -41,6 +41,22 @@ Odoc_xref2.Component.Delayed.eager := true;;
 Odoc_xref2.Tools.disable_all_caches ();;
 let id = Common.id;;
 ```
+```mdx-error
+Line 1, characters 3-37:
+Error: Unbound value Odoc_xref2.Component.Delayed.eager
+- : unit = ()
+val id :
+  [> `Root of
+       Odoc_model.Paths.Identifier.ContainerPage.t option * ModuleName.t ]
+  Odoc_model.Paths.id =
+  {Odoc_model.Paths.iv =
+    `Root
+      (Some
+        {Odoc_model__Paths_types.iv = `Page (None, None); ihash = 236059787;
+         ikey = "p_None"},
+       Root);
+   ihash = 818126955; ikey = "r_Root.p_None"}
+```
 
 Simple resolution
 -----------------
@@ -331,8 +347,8 @@ Error: This expression has type
 The values returned are the resolved path to the module, and a representation of the module itself. We then turn the module into a signature via `signature_of_module`, which in this case is quite simple since the module contains an explicit signature:
 
 ```ocaml env=e1
-# get_ok @@ Tools.signature_of_module env (Component.Delayed.get module_);;
-Line 1, characters 64-71:
+# get_ok @@ Tools.signature_of_module env (Component.dget module_);;
+Line 1, characters 57-64:
 Error: Unbound value module_
 ```
 
@@ -459,7 +475,7 @@ we look up `A` from the environment:
 ```ocaml env=e1
 # let p = `Identifier (Common.root_module "A") in
   let m = get_ok @@ Tools.lookup_module ~mark_substituted:true env p in
-  let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m) in
+  let sg = get_ok @@ Tools.signature_of_module env (Component.dget m) in
   Tools.prefix_signature (`Module p, sg);;
 Line 2, characters 68-69:
 Error: This expression has type
@@ -787,8 +803,8 @@ now we can ask for the signature of this module:
 
 ```ocaml env=e1
 # let sg = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-Line 1, characters 73-74:
-Error: Unbound value m
+Line 1, characters 51-72:
+Error: Unbound value Component.Delayed.get
 ```
 
 and we can see the module `M` is now an alias of the root module `B`. We can now
@@ -811,8 +827,8 @@ Error: This expression has type
        but an expression was expected of type
          Cpath.Resolved.module_ = Cpath.Resolved.module_unhashed Hc.hashed
 # get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-Line 1, characters 64-65:
-Error: Unbound value m
+Line 1, characters 42-63:
+Error: Unbound value Component.Delayed.get
 ```
 
 where we've correctly identified that a type `t` exists in the signature. The path in
@@ -1322,7 +1338,7 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type
          [> `Apply of
@@ -1344,7 +1360,7 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type
          [> `Apply of
@@ -1366,7 +1382,7 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type [> `Resolved of 'd ] as 'c is not compatible with type
          Odoc_model.Paths.Path.Module.t =
@@ -1377,28 +1393,27 @@ Error: This expression has type
            | `Forward of string
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module * bool
-           | `Resolved of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Resolved of Component.Of_Lang_types.RM.key
            | `Root of string ]
        Type [> `Identifier of 'e ] as 'd is not compatible with type
-         Odoc_model.Paths.Path.Resolved.Module.t =
+         Component.Of_Lang_types.RM.key =
            [ `Alias of
-               Odoc_model.Paths.Path.Resolved.Module.t *
+               Component.Of_Lang_types.RM.key *
                Odoc_model.Paths.Path.Module.t
            | `Apply of
-               Odoc_model.Paths.Path.Resolved.Module.t *
-               Odoc_model.Paths.Path.Resolved.Module.t
+               Component.Of_Lang_types.RM.key *
+               Component.Of_Lang_types.RM.key
            | `Canonical of
-               Odoc_model.Paths.Path.Resolved.Module.t *
+               Component.Of_Lang_types.RM.key *
                Odoc_model.Paths.Path.Module.t
-           | `Hidden of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Hidden of Component.Of_Lang_types.RM.key
            | `Identifier of
                Odoc_model__Paths_types.Identifier.reference_module
-           | `Module of
-               Odoc_model.Paths.Path.Resolved.Module.t * ModuleName.t
-           | `OpaqueModule of Odoc_model.Paths.Path.Resolved.Module.t
+           | `Module of Component.Of_Lang_types.RM.key * ModuleName.t
+           | `OpaqueModule of Component.Of_Lang_types.RM.key
            | `Subst of
                Odoc_model.Paths.Path.Resolved.ModuleType.t *
-               Odoc_model.Paths.Path.Resolved.Module.t ]
+               Component.Of_Lang_types.RM.key ]
        Type
          [> `Module of
               [> `Root of
@@ -1419,11 +1434,14 @@ Now let's lookup that module:
 Line 1, characters 91-93:
 Error: Unbound value cp
 # let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-Line 1, characters 74-75:
-Error: Unbound value m
+Line 1, characters 52-73:
+Error: Unbound value Component.Delayed.get
 # let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
-Line 1, characters 74-75:
-Error: Unbound value m
+Line 1, characters 52-73:
+Error: Unbound value Component.Delayed.get
+# let sg' = get_ok @@ Tools.signature_of_module env (Component.Delayed.get m);;
+Line 1, characters 52-73:
+Error: Unbound value Component.Delayed.get
 ```
 
 ```ocaml env=e1

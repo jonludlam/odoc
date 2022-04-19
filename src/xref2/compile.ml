@@ -209,7 +209,7 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
             let add_to_env env m =
               let ty =
                 Component.Delayed.(
-                  put (fun () -> Component.Of_Lang.(module_ (empty ()) m)))
+                  OfLang (Module, m, Component.Of_Lang.empty ()))
               in
               Env.add_module (m.id :> Paths.Identifier.Path.Module.t) ty [] env
             in
