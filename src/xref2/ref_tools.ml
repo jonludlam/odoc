@@ -193,7 +193,8 @@ module M = struct
       =
     let parent_cp = Tools.reresolve_parent env parent_cp in
     let sg = Tools.prefix_signature (parent_cp, sg) in
-    find Find.module_in_sig sg name >>= fun (`FModule (name, m)) ->
+    find Find.module_in_sig sg name >>= fun (`FModule (name, dm)) ->
+    let m = Component.dget dm in
     Ok
       (of_component env m
          (Cpath.Mk.Resolved.Module.module_ (parent_cp, name))
@@ -230,13 +231,15 @@ module MT = struct
   let in_signature env ((parent', parent_cp, sg) : signature_lookup_result) name
       =
     let sg = Tools.prefix_signature (parent_cp, sg) in
-    find Find.module_type_in_sig sg name >>= fun (`FModuleType (name, mt)) ->
+    find Find.module_type_in_sig sg name >>= fun (`FModuleType (name, dmt)) ->
+    let mt = Component.dget dmt in
     Ok
       (of_component env mt
          (Cpath.Mk.Resolved.ModuleType.module_type (parent_cp, name))
          (`ModuleType (parent', name)))
 
-  let of_element env (`ModuleType (id, mt)) : t =
+  let of_element env (`ModuleType (id, dmt)) : t =
+    let mt = Component.dget dmt in
     of_component env mt
       (Cpath.Mk.Resolved.ModuleType.gpath
          (Path.Resolved.ModuleType.Mk.identifier id))
@@ -279,9 +282,9 @@ module DT = struct
 
   type t = datatype_lookup_result
 
-  let of_component _env t ~parent_ref name = Ok (`Type (parent_ref, name), t)
+  let of_component _env t ~parent_ref name = Ok (`Type (parent_ref, name), Component.dget t)
 
-  let of_element _env (`Type (id, t)) : t = (`Identifier id, t)
+  let of_element _env (`Type (id, dt)) : t = let t = Component.dget dt in (`Identifier id, t)
 
   let in_env env name =
     env_lookup_by_name Env.s_type name env >>= fun e -> Ok (of_element env e)
@@ -290,7 +293,7 @@ module DT = struct
       name =
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find Find.datatype_in_sig sg name >>= fun (`FType (name, t)) ->
-    Ok (`Type (parent', name), t)
+    Ok (`Type (parent', name), Component.dget t)
 end
 
 module T = struct
@@ -312,7 +315,7 @@ module T = struct
       name =
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find Find.type_in_sig sg name >>= function
-    | `FType (name, t) -> Ok (`T (`Type (parent', name), t))
+    | `FType (name, t) -> Ok (`T (`Type (parent', name), Component.dget t))
     | `FClass (name, c) -> Ok (`C (`Class (parent', name), c))
     | `FClassType (name, ct) -> Ok (`CT (`ClassType (parent', name), ct))
 end
@@ -528,13 +531,15 @@ module LP = struct
       =
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find_ambiguous Find.label_parent_in_sig sg name >>= function
-    | `FModule (name, m) ->
+    | `FModule (name, dm) ->
+        let m = Component.dget dm in
         module_lookup_to_signature_lookup env
           (M.of_component env m
              (Cpath.Mk.Resolved.Module.module_ (parent_cp, name))
              (`Module (parent', name)))
         >>= fun s -> Ok (`S s)
-    | `FModuleType (name, mt) ->
+    | `FModuleType (name, dmt) ->
+        let mt = Component.dget dmt in
         module_type_lookup_to_signature_lookup env
           (MT.of_component env mt
              (Cpath.Mk.Resolved.ModuleType.module_type (parent_cp, name))
@@ -618,12 +623,14 @@ and resolve_signature_reference :
         let parent_cp = Tools.reresolve_parent env parent_cp in
         let sg = Tools.prefix_signature (parent_cp, sg) in
         find_ambiguous ~kind:`S Find.signature_in_sig sg name >>= function
-        | `FModule (name, m) ->
+        | `FModule (name, dm) ->
+            let m = Component.dget dm in
             module_lookup_to_signature_lookup env
               (M.of_component env m
                  (Cpath.Mk.Resolved.Module.module_ (parent_cp, name))
                  (`Module (parent, name)))
-        | `FModuleType (name, mt) ->
+        | `FModuleType (name, dmt) ->
+            let mt = Component.dget dmt in
             module_type_lookup_to_signature_lookup env
               (MT.of_component env mt
                  (Cpath.Mk.Resolved.ModuleType.module_type (parent_cp, name))
@@ -682,12 +689,14 @@ let resolve_reference_dot_sg env ~parent_path ~parent_ref ~parent_sg name =
   let parent_path = Tools.reresolve_parent env parent_path in
   let parent_sg = Tools.prefix_signature (parent_path, parent_sg) in
   find_ambiguous Find.any_in_sig parent_sg name >>= function
-  | `FModule (name, m) ->
+  | `FModule (name, dm) ->
+      let m = Component.dget dm in
       resolved3
         (M.of_component env m
            (Cpath.Mk.Resolved.Module.module_ (parent_path, name))
            (`Module (parent_ref, name)))
-  | `FModuleType (name, mt) ->
+  | `FModuleType (name, dmt) ->
+      let mt = Component.dget dmt in
       resolved3
         (MT.of_component env mt
            (Cpath.Mk.Resolved.ModuleType.module_type (parent_path, name))

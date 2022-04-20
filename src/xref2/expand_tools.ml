@@ -143,8 +143,9 @@ and aux_expansion_of_module_type_expr env expr :
   | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok (Signature sg)
   | TypeOf { t_desc; _ } -> Error (`UnexpandedTypeOf t_desc)
 
-and aux_expansion_of_module_type env mt =
+and aux_expansion_of_module_type env dmt =
   let open Component.ModuleType in
+  let mt = Component.dget dmt in
   match mt.expr with
   | None -> Error `OpaqueModule
   | Some expr -> aux_expansion_of_module_type_expr env expr
@@ -203,11 +204,11 @@ let expansion_of_module_type env id m =
   let open Paths.Identifier in
   aux_expansion_of_module_type env m
   >>= handle_expansion env (id : ModuleType.t :> Signature.t)
-  >>= fun (env, e) -> Ok (env, module_type_needs_recompile m, e)
+  >>= fun (env, e) -> Ok (env, false, e)
 
 let expansion_of_module_type_expr env id expr =
   aux_expansion_of_module_type_expr env expr >>= handle_expansion env id
-  >>= fun (env, e) -> Ok (env, module_type_expr_needs_recompile expr, e)
+  >>= fun (env, e) -> Ok (env, false, e)
 
 let expansion_of_u_module_type_expr env id expr =
   aux_expansion_of_u_module_type_expr env expr >>= fun sg ->

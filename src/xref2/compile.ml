@@ -227,7 +227,7 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
             (TypeSubstitution (type_decl env t) :: items, env')
         | ModuleType mt ->
             let m' = module_type env mt in
-            let ty = Component.Of_Lang.(module_type (empty ()) m') in
+            let ty = Component.Delayed.(OfLang (ModuleType, m', (Component.Of_Lang.empty ()))) in
             let env' = Env.update_module_type mt.id ty env in
             (ModuleType (module_type env mt) :: items, env')
         | ModuleTypeSubstitution mt ->
@@ -727,7 +727,8 @@ and type_expression_package env parent p =
   match
     Tools.resolve_module_type ~mark_substituted:true ~add_canonical:true env cp
   with
-  | Ok (path, mt) -> (
+  | Ok (path, dmt) -> (
+      let mt = Component.dget dmt in
       match Tools.signature_of_module_type env mt with
       | Error e ->
           Errors.report ~what:(`Package cp) ~tools_error:e `Lookup;

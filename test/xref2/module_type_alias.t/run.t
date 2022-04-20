@@ -46,7 +46,7 @@ as they are both referencing items that won't be expanded.
                           }
                         },
                         "key": [
-                          "49",
+                          "47",
                           "test.cmti"
                         ]
                       },
@@ -92,7 +92,7 @@ as they are both referencing items that won't be expanded.
                               }
                             },
                             "key": [
-                              "49",
+                              "47",
                               "test.cmti"
                             ]
                           },

@@ -27,10 +27,10 @@ resolve correctly. All of the 'Class' json objects should contain
                   "`ClassType": [ { "`Root": [ "None", "F" ] }, "u" ]
                 }
               },
-              "key": [ "40", "f.cmti" ]
+              "key": [ "38", "f.cmti" ]
             }
           },
-          "key": [ "42", "f.cmti" ]
+          "key": [ "40", "f.cmti" ]
         },
         []
       ]
@@ -50,15 +50,15 @@ resolve correctly. All of the 'Class' json objects should contain
                 "`ClassType": [
                   {
                     "v": { "`Identifier": { "`Root": [ "None", "B" ] } },
-                    "key": [ "45", "e.cmti" ]
+                    "key": [ "43", "e.cmti" ]
                   },
                   "u"
                 ]
               },
-              "key": [ "56", "e.cmti" ]
+              "key": [ "54", "e.cmti" ]
             }
           },
-          "key": [ "57", "e.cmti" ]
+          "key": [ "55", "e.cmti" ]
         },
         []
       ]
@@ -83,7 +83,7 @@ resolve correctly. All of the 'Class' json objects should contain
                     }
                   },
                   "key": [
-                    "45",
+                    "43",
                     "e.cmti"
                   ]
                 },
@@ -91,13 +91,13 @@ resolve correctly. All of the 'Class' json objects should contain
               ]
             },
             "key": [
-              "56",
+              "54",
               "e.cmti"
             ]
           }
         },
         "key": [
-          "57",
+          "55",
           "e.cmti"
         ]
       },
@@ -121,15 +121,15 @@ resolve correctly. All of the 'Class' json objects should contain
                     "`ClassType": [
                       {
                         "v": { "`Identifier": { "`Root": [ "None", "B" ] } },
-                        "key": [ "47", "c.cmt" ]
+                        "key": [ "45", "c.cmt" ]
                       },
                       "u"
                     ]
                   },
-                  "key": [ "59", "c.cmt" ]
+                  "key": [ "57", "c.cmt" ]
                 }
               },
-              "key": [ "60", "c.cmt" ]
+              "key": [ "58", "c.cmt" ]
             },
             []
           ]

@@ -325,9 +325,9 @@ let add_module identifier m docs env =
 let update_module identifier m docs env =
   remove identifier env |> add_module identifier m docs
 
-let add_type identifier t env =
+let add_type identifier dt env =
   let open Component in
-  let open_typedecl cs =
+  let open_typedecl t cs =
     let add_cons env (cons : TypeDecl.Constructor.t) =
       let ident =
         Paths.Identifier.Mk.constructor
@@ -352,25 +352,33 @@ let add_type identifier t env =
           List.map (fun t -> t.Field.doc) fields )
     | Some Extensible | None -> (cs, [])
   in
-  let env, docs = if env.linking then open_typedecl env else (env, []) in
-  let env = add_to_elts Kind_Type identifier (`Type (identifier, t)) env in
-  if env.linking then
-    add_cdocs identifier t.doc env
-    |> List.fold_right (add_cdocs identifier) docs
-  else env
+  let env =
+    if env.linking
+    then begin
+      let t = dget dt in
+      let env, docs = open_typedecl t env in
+      add_cdocs identifier t.doc env
+      |> List.fold_right (add_cdocs identifier) docs
+    end
+    else env in 
+  add_to_elts Kind_Type identifier (`Type (identifier, dt)) env
 
-let add_module_type identifier (t : Component.ModuleType.t) env =
+let add_module_type identifier (dt : Component.ModuleType.t Component.Delayed.t) env =
   let env' =
-    add_to_elts Kind_ModuleType identifier (`ModuleType (identifier, t)) env
+    add_to_elts Kind_ModuleType identifier (`ModuleType (identifier, dt)) env
   in
-  if env'.linking then add_cdocs identifier t.doc env' else env'
+  if env'.linking
+    then
+
+      let t = Component.dget dt in
+      add_cdocs identifier t.doc env' else env'
 
 let update_module_type identifier m env =
   remove identifier env |> add_module_type identifier m
 
-let add_value identifier (t : Component.Value.t) env =
-  add_to_elts Kind_Value identifier (`Value (identifier, t)) env
-  |> add_cdocs identifier t.doc
+let add_value identifier (dt : Component.Value.t Component.Delayed.t) env =
+  add_to_elts Kind_Value identifier (`Value (identifier, dt)) env
+  |> (let t = Component.dget dt in add_cdocs identifier t.doc)
 
 let add_class identifier (t : Component.Class.t) env =
   let env' = add_to_elts Kind_Class identifier (`Class (identifier, t)) env in
@@ -732,7 +740,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
       (fun env orig ->
         match ((orig : L.Signature.item), env.linking) with
         | Type (_, t), _ ->
-            let ty = type_decl ident_map t in
+            let ty = Component.Delayed.(OfLang (Type, t, ident_map)) in
             add_type t.L.TypeDecl.id ty env
         | Module (_, t), _ ->
             let ty = Component.Delayed.(OfLang (Module, t, ident_map)) in
@@ -742,7 +750,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
               (docs ident_map t.L.Module.doc)
               env
         | ModuleType t, _ ->
-            let ty = module_type ident_map t in
+            let ty = Component.Delayed.(OfLang (ModuleType, t, ident_map)) in
             add_module_type t.L.ModuleType.id ty env
         | ModuleTypeSubstitution _, _
         | L.Signature.TypeSubstitution _, _
@@ -772,7 +780,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
             let ty = exception_ ident_map e in
             add_exception e.L.Exception.id ty env
         | L.Signature.Value v, true ->
-            let ty = value ident_map v in
+            let ty = Component.Delayed.(OfLang (Value, v, ident_map)) in
             add_value v.L.Value.id ty env
         (* Skip when compiling *)
         | Exception _, false -> env
@@ -784,9 +792,8 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
 let open_type_substitution : Odoc_model.Lang.TypeDecl.t -> t -> t =
  fun t env ->
   let open Component in
-  let open Of_Lang in
   let module L = Odoc_model.Lang in
-  let ty = type_decl (empty ()) t in
+  let ty = Component.Delayed.(OfLang (Type, t, Of_Lang.empty ())) in
   add_type t.L.TypeDecl.id ty env
 
 let open_module_substitution : Odoc_model.Lang.ModuleSubstitution.t -> t -> t =
@@ -815,8 +822,7 @@ let open_module_type_substitution :
   let open Of_Lang in
   let module L = Odoc_model.Lang in
   let ty =
-    module_type (empty ())
-      { id = t.id; doc = t.doc; expr = Some t.manifest; canonical = None }
+    Component.Delayed.(OfLang (ModuleType,{ id = t.id; doc = t.doc; expr = Some t.manifest; canonical = None }, empty ()))
   in
   add_module_type t.L.ModuleTypeSubstitution.id ty env
 

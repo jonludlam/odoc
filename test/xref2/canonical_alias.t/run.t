@@ -21,7 +21,7 @@ The following should be resolved as identifier Test.A
         }
       },
       "key": [
-        "138",
+        "132",
         "test.odoc"
       ]
     }
@@ -49,7 +49,7 @@ The following should be resolved as Test.Wrapper.X
               }
             },
             "key": [
-              "169",
+              "167",
               "test.odoc"
             ]
           },
@@ -57,7 +57,7 @@ The following should be resolved as Test.Wrapper.X
         ]
       },
       "key": [
-        "183",
+        "181",
         "test.odoc"
       ]
     }
@@ -96,19 +96,19 @@ The following should be resolved as Test.Wrapper2.X
                                   }
                                 },
                                 "key": [
-                                  "148",
+                                  "141",
                                   "test.cmti"
                                 ]
                               }
                             },
                             "key": [
-                              "233",
+                              "231",
                               "test.odoc"
                             ]
                           }
                         },
                         "key": [
-                          "234",
+                          "232",
                           "test.odoc"
                         ]
                       },
@@ -133,7 +133,7 @@ The following should be resolved as Test.Wrapper2.X
                                 ]
                               },
                               "key": [
-                                "231",
+                                "229",
                                 "test.odoc"
                               ]
                             },
@@ -141,14 +141,14 @@ The following should be resolved as Test.Wrapper2.X
                           ]
                         },
                         "key": [
-                          "232",
+                          "230",
                           "test.odoc"
                         ]
                       }
                     ]
                   },
                   "key": [
-                    "235",
+                    "233",
                     "test.odoc"
                   ]
                 },
@@ -163,7 +163,7 @@ The following should be resolved as Test.Wrapper2.X
                                 "`Root": "Test"
                               },
                               "key": [
-                                "53",
+                                "51",
                                 "test.cmti"
                               ]
                             },
@@ -171,7 +171,7 @@ The following should be resolved as Test.Wrapper2.X
                           ]
                         },
                         "key": [
-                          "62",
+                          "60",
                           "test.cmti"
                         ]
                       },
@@ -179,14 +179,14 @@ The following should be resolved as Test.Wrapper2.X
                     ]
                   },
                   "key": [
-                    "63",
+                    "61",
                     "test.cmti"
                   ]
                 }
               ]
             },
             "key": [
-              "236",
+              "234",
               "test.odoc"
             ]
           },
@@ -210,7 +210,7 @@ The following should be resolved as Test.Wrapper2.X
                         }
                       },
                       "key": [
-                        "199",
+                        "197",
                         "test.odoc"
                       ]
                     },
@@ -218,20 +218,20 @@ The following should be resolved as Test.Wrapper2.X
                   ]
                 },
                 "key": [
-                  "245",
+                  "243",
                   "test.odoc"
                 ]
               }
             },
             "key": [
-              "247",
+              "245",
               "test.odoc"
             ]
           }
         ]
       },
       "key": [
-        "248",
+        "246",
         "test.odoc"
       ]
     }
@@ -261,7 +261,7 @@ This should probably not resolve at all, but that's a problem for another day. c
         }
       },
       "key": [
-        "287",
+        "263",
         "test.odoc"
       ]
     }
@@ -285,7 +285,7 @@ Should resolve as identifier Test.B
         }
       },
       "key": [
-        "313",
+        "308",
         "test.odoc"
       ]
     }
@@ -312,7 +312,7 @@ Should resove to be an alias!
               }
             },
             "key": [
-              "193",
+              "189",
               "test.cmti"
             ]
           },
@@ -333,20 +333,20 @@ Should resove to be an alias!
                   }
                 },
                 "key": [
-                  "338",
+                  "334",
                   "test.odoc"
                 ]
               }
             },
             "key": [
-              "346",
+              "344",
               "test.odoc"
             ]
           }
         ]
       },
       "key": [
-        "347",
+        "345",
         "test.odoc"
       ]
     }
