@@ -11,12 +11,6 @@ type expansion =
 
 let rec dget_impl : type a. a Component.Delayed.t -> a = function
   | Val x -> x
-  | General { v = Some x; _ } -> x
-  | General ({ v = None; get = Some f } as g) ->
-      let res = f () in
-      g.v <- Some res;
-      res
-  | General _ -> failwith "Bad general"
   | OfLang (Module, m, map) -> Component.Of_Lang.module_ map m
   | OfLang (ModuleType, m, map) -> Component.Of_Lang.module_type map m
   | OfLang (Type, m, map) -> Component.Of_Lang.type_decl map m
