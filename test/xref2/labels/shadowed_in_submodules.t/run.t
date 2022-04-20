@@ -3,7 +3,6 @@ Label in a submodule clashing with a previously defined label
 There should be no ambiguous labels in this example.
 
   $ compile test.mli
-  module: (root Test).X
 
 All the references should resolve and point to what's written in the text.
 
