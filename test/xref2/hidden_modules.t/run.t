@@ -39,14 +39,6 @@ aren't roots.
 This shouldn't cause any warnings:
 
   $ odoc link test.odoc -I .
-  module: (root Test).CanonicalTest
-  module: (root Test).CanonicalTest.{Base__List}1
-  module: (root Test).CanonicalTest.{Base__}2
-  module: (root Test).CanonicalTest.Base
-  module: (root Test).CanonicalTest.Base.List
-  module: (root Test).CanonicalTest.Base_Tests
-  module: (root Test).CanonicalTest.Base_Tests.C
-  module: (root Test).CanonicalTest.Base_Tests.L
   File "test.odoc":
   Warning: Failed to lookup type identifier((root Test).CanonicalTest, false).Base__.List.t Parent_module: Parent_module: Find failure
   File "test.mli", line 25, characters 8-17:
