@@ -3,7 +3,6 @@ We expect no warning for "good.mli". The code already ensures that either tags
 are handled of a warning is emitted.
 
   $ compile good.mli
-  module: (root Good).M
 
 We expect warnings to be emitted for each bad tags:
 

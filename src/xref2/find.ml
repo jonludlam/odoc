@@ -1,17 +1,17 @@
 open Odoc_model.Names
 open Component
 
-type module_ = [ `FModule of ModuleName.t * Module.t ]
+type module_ = [ `FModule of ModuleName.t * Module.t Delayed.t ]
 
-type module_type = [ `FModuleType of ModuleTypeName.t * ModuleType.t ]
+type module_type = [ `FModuleType of ModuleTypeName.t * ModuleType.t Delayed.t ]
 
-type datatype = [ `FType of TypeName.t * TypeDecl.t ]
+type datatype = [ `FType of TypeName.t * TypeDecl.t Delayed.t ]
 
 type class_ =
   [ `FClass of ClassName.t * Class.t
   | `FClassType of ClassTypeName.t * ClassType.t ]
 
-type value = [ `FValue of ValueName.t * Value.t ]
+type value = [ `FValue of ValueName.t * Value.t Delayed.t ]
 
 type label = [ `FLabel of Label.t ]
 
@@ -85,19 +85,19 @@ let filter_in_sig sg f =
 let module_in_sig sg name =
   find_in_sig sg (function
     | Signature.Module (id, _, m) when N.module_ id = name ->
-        Some (`FModule (N.typed_module id, dget m))
+        Some (`FModule (N.typed_module id, m))
     | _ -> None)
 
 let module_type_in_sig sg name =
   find_in_sig sg (function
     | Signature.ModuleType (id, mt) when N.module_type id = name ->
-        Some (`FModuleType (N.typed_module_type id, dget mt))
+        Some (`FModuleType (N.typed_module_type id, mt))
     | _ -> None)
 
 let type_in_sig sg name =
   find_in_sig sg (function
     | Signature.Type (id, _, m) when N.type_ id = name ->
-        Some (`FType (N.type' id, dget m))
+        Some (`FType (N.type' id, m))
     | Class (id, _, c) when N.class_ id = name ->
         Some (`FClass (N.class' id, c))
     | ClassType (id, _, c) when N.class_type id = name ->
@@ -165,7 +165,7 @@ let careful_class_in_sig sg name =
 let datatype_in_sig sg name =
   find_in_sig sg (function
     | Signature.Type (id, _, t) when N.type_ id = name ->
-        Some (`FType (N.type' id, Component.dget t))
+        Some (`FType (N.type' id, t))
     | _ -> None)
 
 let class_in_sig sg name =
@@ -220,18 +220,17 @@ let any_in_comment d name =
 let any_in_sig sg name =
   filter_in_sig sg (function
     | Signature.Module (id, _, m) when N.module_ id = name ->
-        Some (`FModule (N.typed_module id, dget m))
+        Some (`FModule (N.typed_module id, m))
     | ModuleSubstitution (id, ms) when N.module_ id = name ->
         Some (`FModule_subst ms)
     | ModuleType (id, mt) when N.module_type id = name ->
-        Some (`FModuleType (N.typed_module_type id, dget mt))
-    | Type (id, _, t) when N.type_ id = name ->
-        Some (`FType (N.type' id, dget t))
+        Some (`FModuleType (N.typed_module_type id, mt))
+    | Type (id, _, t) when N.type_ id = name -> Some (`FType (N.type' id, t))
     | TypeSubstitution (id, ts) when N.type_ id = name -> Some (`FType_subst ts)
     | Exception (id, exc) when N.exception_ id = name ->
         Some (`FExn (N.typed_exception id, exc))
     | Value (id, v) when N.value id = name ->
-        Some (`FValue (N.typed_value id, dget v))
+        Some (`FValue (N.typed_value id, v))
     | Class (id, _, c) when N.class_ id = name ->
         Some (`FClass (N.class' id, c))
     | ClassType (id, _, ct) when N.class_type id = name ->
@@ -248,21 +247,21 @@ let any_in_sig sg name =
 let signature_in_sig sg name =
   filter_in_sig sg (function
     | Signature.Module (id, _, m) when N.module_ id = name ->
-        Some (`FModule (N.typed_module id, dget m))
+        Some (`FModule (N.typed_module id, m))
     | ModuleType (id, mt) when N.module_type id = name ->
-        Some (`FModuleType (N.typed_module_type id, dget mt))
+        Some (`FModuleType (N.typed_module_type id, mt))
     | _ -> None)
 
 let module_type_in_sig sg name =
   find_in_sig sg (function
     | Signature.ModuleType (id, m) when N.module_type id = name ->
-        Some (`FModuleType (N.typed_module_type id, dget m))
+        Some (`FModuleType (N.typed_module_type id, m))
     | _ -> None)
 
 let value_in_sig sg name =
   filter_in_sig sg (function
     | Signature.Value (id, m) when N.value id = name ->
-        Some (`FValue (N.typed_value id, dget m))
+        Some (`FValue (N.typed_value id, m))
     | _ -> None)
 
 let label_in_sig sg name =
@@ -289,11 +288,10 @@ let extension_in_sig sg name =
 let label_parent_in_sig sg name =
   filter_in_sig sg (function
     | Signature.Module (id, _, m) when N.module_ id = name ->
-        Some (`FModule (N.typed_module id, Component.dget m))
+        Some (`FModule (N.typed_module id, m))
     | ModuleType (id, mt) when N.module_type id = name ->
-        Some (`FModuleType (N.typed_module_type id, Component.dget mt))
-    | Type (id, _, t) when N.type_ id = name ->
-        Some (`FType (N.type' id, Component.dget t))
+        Some (`FModuleType (N.typed_module_type id, mt))
+    | Type (id, _, t) when N.type_ id = name -> Some (`FType (N.type' id, t))
     | Class (id, _, c) when N.class_ id = name ->
         Some (`FClass (N.class' id, c))
     | ClassType (id, _, c) when N.class_type id = name ->
