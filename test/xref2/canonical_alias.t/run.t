@@ -1,24 +1,6 @@
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
   $ odoc link test.odoc
-  module: (root Test).{A__}1
-  module: (root Test).A
-  module: (root Test).{Wrapped__X}2
-  module: (root Test).Wrapper
-  module: (root Test).Wrapper.X
-  module: (root Test).{Wrapped2__X}3
-  module: (root Test).{Wrapper2__}4
-  module: (root Test).Wrapper2
-  module: (root Test).Wrapper2.X
-  module: (root Test).{Wrapped3__X}5
-  module: (root Test).{Wrapper3__}6
-  module: (root Test).Wrapper3
-  module: (root Test).Wrapper3.X
-  module: (root Test).B_
-  module: (root Test).B
-  module: (root Test).C_
-  module: (root Test).C
-  module: (root Test).D
   $ odoc html-generate test.odocl -o html
   $ odoc support-files -o html
 

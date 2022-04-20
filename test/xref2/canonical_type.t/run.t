@@ -61,8 +61,6 @@ Now we can run odoc
 We only need to link `foo` as all the others are hidden
 
   $ odoc link -I . foo.odoc
-  module: (root Foo).Type
-  module: (root Foo).Type.Path
   $ odoc html-generate foo.odocl -o html
   $ odoc support-files -o html
 

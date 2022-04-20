@@ -1,7 +1,5 @@
 
   $ compile test.mli
-  module: (root Test).M
-  module: (root Test).N
   File "test.mli", line 27, characters 9-13:
   Warning: Multiple sections named 'B' found. Please alter one to ensure reference is unambiguous. Locations:
     File "test.mli", line 3, character 4

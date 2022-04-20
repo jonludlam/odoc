@@ -4,20 +4,6 @@ top-comment.
 The module Test_x is expected to be referenced as Test.X.
 
   $ compile test_x.mli test_y.ml test.ml
-  module: (root Test_x).Out
-  module: (root Test_x).In
-  module: (root Test_y).Out
-  module: (root Test_y).In
-  module: (root Test).X
-  module: (root Test).X.Out
-  module: (root Test).X.In
-  module: (root Test).X_out
-  module: (root Test).X_in
-  module: (root Test).Y
-  module: (root Test).Y.Out
-  module: (root Test).Y.In
-  module: (root Test).Y_out
-  module: (root Test).Y_in
 
 Test_x and Test_y have a 'canonical' field:
 
