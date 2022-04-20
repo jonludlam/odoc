@@ -496,11 +496,12 @@ module Element : sig
 
   type module_ = [ `Module of Identifier.Path.Module.t * Module.t Delayed.t ]
 
-  type module_type = [ `ModuleType of Identifier.ModuleType.t * ModuleType.t ]
+  type module_type =
+    [ `ModuleType of Identifier.ModuleType.t * ModuleType.t Delayed.t ]
 
-  type type_ = [ `Type of Identifier.Type.t * TypeDecl.t ]
+  type type_ = [ `Type of Identifier.Type.t * TypeDecl.t Delayed.t ]
 
-  type value = [ `Value of Identifier.Value.t * Value.t ]
+  type value = [ `Value of Identifier.Value.t * Value.t Delayed.t ]
 
   type label = [ `Label of Identifier.Label.t * Label.t ]
 

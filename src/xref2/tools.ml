@@ -114,7 +114,8 @@ let core_types =
   let open Odoc_model.Paths in
   List.map
     (fun decl ->
-      (Identifier.name decl.id, Component.Of_Lang.(type_decl (empty ()) decl)))
+      ( Identifier.name decl.id,
+        Component.Delayed.(OfLang (Type, decl, Component.Of_Lang.empty ())) ))
     Odoc_model.Predefined.core_types
 
 let prefix_substitution path sg =
@@ -262,7 +263,7 @@ type resolve_module_result =
   Result.result
 
 type resolve_module_type_result =
-  ( Cpath.Resolved.module_type * Component.ModuleType.t,
+  ( Cpath.Resolved.module_type * Component.ModuleType.t Component.Delayed.t,
     simple_module_type_lookup_error )
   Result.result
 
@@ -436,8 +437,10 @@ let rec handle_apply ~mark_substituted env func_path arg_path m =
           resolve_module_type ~mark_substituted:false ~add_canonical:true env
             p_path
         with
-        | Ok (_, { Component.ModuleType.expr = Some mty'; _ }) ->
-            find_functor mty'
+        | Ok (_, dt) -> (
+            match Component.dget dt with
+            | { Component.ModuleType.expr = Some mty'; _ } -> find_functor mty'
+            | _ -> Error `OpaqueModule)
         | _ -> Error `OpaqueModule)
     | _ -> Error `ApplyNotFunctor
   in
@@ -517,10 +520,11 @@ and get_module_type_path_modifiers :
       match alias_of e with Some e -> Some (`AliasModuleType e) | None -> None)
   | None -> None
 
-and process_module_type env ~add_canonical m p' =
+and process_module_type env ~add_canonical dm p' =
   let open Component.ModuleType in
   let open OptionMonad in
   (* Loop through potential chains of module_type equalities, looking for substitutions *)
+  let m = Component.dget dm in
   let substpath =
     m.expr >>= get_substituted_module_type env >>= fun p ->
     Some (`SubstT (p, p'))
@@ -577,7 +581,7 @@ and handle_module_lookup env ~add_canonical id rparent sg sub =
   match Find.careful_module_in_sig sg id with
   | Some (`FModule (name, m)) ->
       let rp' = simplify_module env (`Module (rparent, name)) in
-      let md' = Component.Delayed.(Subst (Module, Val m, sub)) in
+      let md' = Component.Delayed.(Subst (Module, m, sub)) in
       Ok (process_module_path env ~add_canonical md' rp', md')
   | Some (`FModule_removed p) ->
       lookup_module ~mark_substituted:false env p >>= fun m -> Ok (p, m)
@@ -586,7 +590,7 @@ and handle_module_lookup env ~add_canonical id rparent sg sub =
 and handle_module_type_lookup env ~add_canonical id p sg sub =
   let open OptionMonad in
   Find.module_type_in_sig sg id >>= fun (`FModuleType (name, mt)) ->
-  let mt = Subst.module_type sub mt in
+  let mt = Component.Delayed.(Subst (ModuleType, mt, sub)) in
   let p' = simplify_module_type env (`ModuleType (p, name)) in
   let p'' = process_module_type env ~add_canonical mt p' in
   Some (p'', mt)
@@ -631,7 +635,7 @@ and lookup_module_gpath :
         match Find.careful_module_in_sig sg (ModuleName.to_string name) with
         | None -> Error `Find_failure
         | Some (`FModule (_, m)) ->
-            Ok Component.Delayed.(Subst (Module, Val m, sub))
+            Ok Component.Delayed.(Subst (Module, m, sub))
         | Some (`FModule_removed p) -> lookup_module ~mark_substituted env p
       in
       lookup_parent_gpath ~mark_substituted env parent
@@ -669,7 +673,7 @@ and lookup_module :
           match Find.careful_module_in_sig sg (ModuleName.to_string name) with
           | None -> Error `Find_failure
           | Some (`FModule (_, m)) ->
-              Ok (Component.Delayed.Subst (Module, Val m, sub))
+              Ok (Component.Delayed.Subst (Module, m, sub))
           | Some (`FModule_removed p) -> lookup_module ~mark_substituted env p
         in
         lookup_parent ~mark_substituted env parent
@@ -690,7 +694,9 @@ and lookup_module_type_gpath :
     mark_substituted:bool ->
     Env.t ->
     Odoc_model.Paths.Path.Resolved.ModuleType.t ->
-    (Component.ModuleType.t, simple_module_type_lookup_error) Result.result =
+    ( Component.ModuleType.t Component.Delayed.t,
+      simple_module_type_lookup_error )
+    Result.result =
  fun ~mark_substituted env path ->
   match path with
   | `Identifier i ->
@@ -703,7 +709,8 @@ and lookup_module_type_gpath :
       let find_in_sg sg sub =
         match Find.module_type_in_sig sg (ModuleTypeName.to_string name) with
         | None -> Error `Find_failure
-        | Some (`FModuleType (_, mt)) -> Ok (Subst.module_type sub mt)
+        | Some (`FModuleType (_, mt)) ->
+            Ok Component.Delayed.(Subst (ModuleType, mt, sub))
       in
       lookup_parent_gpath ~mark_substituted env parent
       |> map_error (fun e -> (e :> simple_module_type_lookup_error))
@@ -716,7 +723,9 @@ and lookup_module_type :
     mark_substituted:bool ->
     Env.t ->
     Cpath.Resolved.module_type ->
-    (Component.ModuleType.t, simple_module_type_lookup_error) Result.result =
+    ( Component.ModuleType.t Component.Delayed.t,
+      simple_module_type_lookup_error )
+    Result.result =
  fun ~mark_substituted env path ->
   let lookup env =
     match path with
@@ -728,7 +737,8 @@ and lookup_module_type :
         let find_in_sg sg sub =
           match Find.module_type_in_sig sg (ModuleTypeName.to_string name) with
           | None -> Error `Find_failure
-          | Some (`FModuleType (_, mt)) -> Ok (Subst.module_type sub mt)
+          | Some (`FModuleType (_, mt)) ->
+              Ok Component.Delayed.(Subst (ModuleType, mt, sub))
         in
         lookup_parent ~mark_substituted:true env parent
         |> map_error (fun e -> (e :> simple_module_type_lookup_error))
@@ -760,7 +770,8 @@ and lookup_parent :
     | `ModuleType p ->
         lookup_module_type ~mark_substituted env p
         |> map_error (fun e -> `Parent (`Parent_module_type e))
-        >>= fun mt ->
+        >>= fun dmt ->
+        let mt = Component.dget dmt in
         expansion_of_module_type env mt
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
@@ -802,7 +813,8 @@ and lookup_type_gpath :
     | Some (`FClass (name, c)) -> Ok (`FClass (name, Subst.class_ sub c))
     | Some (`FClassType (name, ct)) ->
         Ok (`FClassType (name, Subst.class_type sub ct))
-    | Some (`FType (name, t)) -> Ok (`FType (name, Subst.type_ sub t))
+    | Some (`FType (name, t)) ->
+        Ok (`FType (name, Component.Delayed.(Subst (Type, t, sub))))
     | Some (`FType_removed (name, texpr, eq)) ->
         Ok (`FType_removed (name, Subst.type_expr sub texpr, eq))
     | None -> Error `Find_failure
@@ -880,7 +892,8 @@ and lookup_type :
       match t' with
       | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
       | `FClassType (name, ct) -> `FClassType (name, Subst.class_type sub ct)
-      | `FType (name, t) -> `FType (name, Subst.type_ sub t)
+      | `FType (name, t) ->
+          `FType (name, Component.Delayed.(Subst (Type, t, sub)))
       | `FType_removed (name, texpr, eq) ->
           `FType_removed (name, Subst.type_expr sub texpr, eq)
     in
@@ -1062,7 +1075,8 @@ and resolve_type :
           match t' with
           | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
           | `FClassType (name, ct) -> `FClassType (name, Subst.class_type sub ct)
-          | `FType (name, t) -> `FType (name, Subst.type_ sub t)
+          | `FType (name, t) ->
+              `FType (name, Component.Delayed.(Subst (Type, t, sub)))
           | `FType_removed (name, texpr, eq) ->
               `FType_removed (name, Subst.type_expr sub texpr, eq)
         in
@@ -1074,7 +1088,9 @@ and resolve_type :
         let result =
           match Find.datatype_in_sig parent_sig (TypeName.to_string id) with
           | Some (`FType (name, t)) ->
-              Some (`Type (parent, name), `FType (name, Subst.type_ sub t))
+              Some
+                ( `Type (parent, name),
+                  `FType (name, Component.Delayed.(Subst (Type, t, sub))) )
           | None -> None
         in
         of_option ~error:`Find_failure result
@@ -1100,7 +1116,8 @@ and resolve_type :
           match t' with
           | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
           | `FClassType (name, ct) -> `FClassType (name, Subst.class_type sub ct)
-          | `FType (name, t) -> `FType (name, Subst.type_ sub t)
+          | `FType (name, t) ->
+              `FType (name, Component.Delayed.(Subst (Type, t, sub)))
           | `FType_removed (name, texpr, eq) ->
               `FType_removed (name, Subst.type_expr sub texpr, eq)
         in
@@ -1115,10 +1132,14 @@ and resolve_type :
         Ok (`Substituted p, m)
   in
   result >>= fun (p, t) ->
-  match t with
-  | `FType (_, { canonical = Some c; _ }) ->
-      if add_canonical then Ok (`CanonicalType (p, c), t) else result
-  | _ -> result
+  if add_canonical then
+    match t with
+    | `FType (_, dt) -> (
+        match Component.dget dt with
+        | { canonical = Some c; _ } -> Ok (`CanonicalType (p, c), t)
+        | _ -> result)
+    | _ -> result
+  else result
 
 and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
     =
@@ -1547,7 +1568,9 @@ and signature_of_u_module_type_expr :
   match m with
   | Component.ModuleType.U.Path p -> (
       match resolve_module_type ~mark_substituted ~add_canonical:true env p with
-      | Ok (_, mt) -> expansion_of_module_type env mt >>= assert_not_functor
+      | Ok (_, dmt) ->
+          let mt = Component.dget dmt in
+          expansion_of_module_type env mt >>= assert_not_functor
       | Error e -> Error (`UnresolvedPath (`ModuleType (p, e))))
   | Signature s -> Ok s
   | With (subs, s) ->
@@ -1582,7 +1605,9 @@ and expansion_of_module_type_expr :
       match
         resolve_module_type ~mark_substituted ~add_canonical:true env p_path
       with
-      | Ok (_, mt) -> expansion_of_module_type env mt
+      | Ok (_, dmt) ->
+          let mt = Component.dget dmt in
+          expansion_of_module_type env mt
       | Error e -> Error (`UnresolvedPath (`ModuleType (p_path, e))))
   | Component.ModuleType.Signature s -> Ok (Signature s)
   (* | Component.ModuleType.With { w_expansion = Some e; _ } ->
@@ -2020,7 +2045,7 @@ and find_module_with_replacement :
     Result.result =
  fun env sg name ->
   match Find.careful_module_in_sig sg name with
-  | Some (`FModule (_, m)) -> Ok (Component.Delayed.Val m)
+  | Some (`FModule (_, m)) -> Ok m
   | Some (`FModule_removed path) ->
       lookup_module ~mark_substituted:false env path
   | None -> Error `Find_failure
@@ -2034,7 +2059,7 @@ and find_module_type_with_replacement :
     Result.result =
  fun _env sg name ->
   match Find.careful_module_type_in_sig sg name with
-  | Some (`FModuleType (_, m)) -> Ok (Component.Delayed.Val m)
+  | Some (`FModuleType (_, m)) -> Ok m
   | None -> Error `Find_failure
   | Some (`FModuleType_removed _mty) -> Error `Find_failure
 
@@ -2224,7 +2249,8 @@ let resolve_module_path env p =
 
 let resolve_module_type_path env p =
   resolve_module_type ~mark_substituted:true ~add_canonical:true env p
-  >>= fun (p, mt) ->
+  >>= fun (p, dmt) ->
+  let mt = Component.dget dmt in
   match expansion_of_module_type env mt with
   | Ok _ -> Ok p
   | Error `OpaqueModule -> Ok (`OpaqueModuleType p)
