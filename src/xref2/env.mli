@@ -53,12 +53,17 @@ val add_module :
   t ->
   t
 
-val add_type : Identifier.Type.t -> Component.TypeDecl.t -> t -> t
+val add_type :
+  Identifier.Type.t -> Component.TypeDecl.t Component.Delayed.t -> t -> t
 
 val add_module_type :
-  Identifier.Path.ModuleType.t -> Component.ModuleType.t -> t -> t
+  Identifier.Path.ModuleType.t ->
+  Component.ModuleType.t Component.Delayed.t ->
+  t ->
+  t
 
-val add_value : Identifier.Value.t -> Component.Value.t -> t -> t
+val add_value :
+  Identifier.Value.t -> Component.Value.t Component.Delayed.t -> t -> t
 
 val add_label : Identifier.Label.t -> Component.Label.t -> t -> t
 

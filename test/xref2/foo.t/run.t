@@ -3,15 +3,6 @@ Here's a little test
   $ ocamlc -c -bin-annot m.mli
   $ odoc compile m.cmti
   $ odoc link m.odoc
-  module: (root M).CanonicalTest
-  module: (root M).CanonicalTest.{Base__List}1
-  module: (root M).CanonicalTest.{Base__}2
-  module: (root M).CanonicalTest.Base
-  module: (root M).CanonicalTest.Base.List
-  module: (root M).CanonicalTest.Base_Tests
-  module: (root M).CanonicalTest.Base_Tests.C
-  module: (root M).CanonicalTest.Base_Tests.L
-  module: (root M).CanonicalTest.List_modif
   $ odoc html-generate -o html m.odocl
   $ odoc support-files -o html
   $ rsync -avz html /tmp/html/
@@ -37,7 +28,7 @@ Here's a little test
   sent 15237 bytes  received 266 bytes  31006.00 bytes/sec
   total size is 39340  speedup is 2.54
   $ odoc_print m.odo
-  odoc_print: PATH argument: no `m.odo' file or directory
-  Usage: odoc_print [OPTION]... PATH
-  Try `odoc_print --help' for more information.
+  odoc_print: PATH argument: no 'm.odo' file or directory
+  Usage: odoc_print [-r VAL] [OPTION]… PATH
+  Try 'odoc_print --help' for more information.
   [124]

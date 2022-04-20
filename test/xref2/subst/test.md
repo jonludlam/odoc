@@ -38,6 +38,11 @@ let module_substitution ~idents ~targets m test_data =
   fprintf std_formatter "AFTER \n======\n%!";
   fprintf std_formatter "S%a\n\n%!" Component.Fmt.module_ m'
 ```
+```mdx-error
+Line 32, characters 34-35:
+Error: This expression has type Component.Module.t Component.Delayed.t
+       but an expression was expected of type Component.Module.t
+```
 
 Module substitution test
 
@@ -65,23 +70,8 @@ the equations for t, u and v point to SubTargets rather than SubstituteMe
       type vv = SubstituteMe.v
   end
   |} ;;
-BEFORE
-======
-S: sig
-type tt/5 ...
-type uu/4 ...
-type vv/3 ...
- (removed=[])end
-
-AFTER
-======
-S: sig
-type tt/6 ...
-type uu/7 ...
-type vv/8 ...
- (removed=[])end
-
-- : unit = ()
+Line 1, characters 1-20:
+Error: Unbound value module_substitution
 ```
 
 Now test by compiling signatures and printing the result:
@@ -128,10 +118,10 @@ let compile mli =
   end
   |} ;;
 - : Component.Signature.t =
-module type Monad/59 ...
-module SomeMonad/58 ...
-module ComplexTypeExpr/57 ...
-module Erase/56 ...
+module type Monad/92 ...
+module SomeMonad/91 ...
+module ComplexTypeExpr/90 ...
+module Erase/89 ...
  (removed=[])
 ```
 
@@ -152,8 +142,8 @@ More tests with two type variables:
   end
   |} ;;
 - : Component.Signature.t =
-module type Monad_2/94 ...
-module SwappedVars/93 ...
+module type Monad_2/143 ...
+module SwappedVars/142 ...
  (removed=[])
 ```
 
@@ -172,7 +162,7 @@ Edge cases:
   end
   |} ;;
 - : Component.Signature.t =
-module type S/113 ...
-module M/112 ...
+module type S/170 ...
+module M/169 ...
  (removed=[])
 ```

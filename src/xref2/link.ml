@@ -459,9 +459,7 @@ and module_ : Env.t -> Module.t -> Module.t =
               >>= Expand_tools.handle_expansion env (m.id :> Id.Signature.t)
             with
             | Ok (_, e) ->
-                let le =
-                  Lang_of.(simple_expansion (empty ()) sg_id e)
-                in
+                let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
                 Alias (`Resolved p, Some (simple_expansion env sg_id le))
             | Error _ -> type_
           else type_
@@ -796,7 +794,8 @@ and type_decl : Env.t -> Id.Signature.t -> TypeDecl.t -> TypeDecl.t =
   | Some (p, params) -> (
       let p' = Component.Of_Lang.(resolved_type_path (empty ()) p) in
       match Tools.lookup_type env p' with
-      | Ok (`FType (_, t')) ->
+      | Ok (`FType (_, dt')) ->
+          let t' = Component.dget dt' in
           let equation =
             try
               Expand_tools.collapse_eqns default.equation
@@ -908,7 +907,8 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
       else
         let cp = Component.Of_Lang.(type_path (empty ()) path') in
         match Tools.resolve_type env ~add_canonical:true cp with
-        | Ok (cp', `FType (_, t)) ->
+        | Ok (cp', `FType (_, dt)) ->
+            let t = Component.dget dt in
             let cp' = Tools.reresolve_type env cp' in
             let p = Lang_of.(Path.resolved_type (empty ()) cp') in
             if List.mem p visited then raise Loop
