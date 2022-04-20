@@ -1,7 +1,6 @@
 The warning only shows up for explicitly defined labels.
 
   $ compile test.mli
-  module: (root Test).M
   File "test.mli", line 11, characters 4-14:
   Warning: Multiple sections named 'heading' found. Please alter one to ensure reference is unambiguous. Locations:
     File "test.mli", line 7, character 4
