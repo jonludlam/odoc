@@ -12,7 +12,9 @@ type lookup_page_result = Odoc_model.Lang.Page.t option
 
 type root =
   | Resolved of
-      (Root.t * Odoc_model.Paths.Identifier.Module.t * Component.Module.t)
+      (Root.t
+      * Odoc_model.Paths.Identifier.Module.t
+      * Component.Module.t Component.Delayed.t)
   | Forward
 
 type resolver = {
@@ -360,7 +362,9 @@ let add_extension_constructor identifier
   add_to_elts Kind_Extension identifier (`Extension (identifier, ec)) env
   |> add_cdocs identifier ec.doc
 
-let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
+let module_of_unit :
+    Odoc_model.Lang.Compilation_unit.t -> Component.Module.t Component.Delayed.t
+    =
  fun unit ->
   match unit.content with
   | Module s ->
@@ -374,7 +378,9 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty ()) m) in
+      let ty =
+        Component.Delayed.(OfLang (Module, m, Component.Of_Lang.empty ()))
+      in
       ty
   | Pack _p ->
       let m =
@@ -388,7 +394,9 @@ let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty ()) m) in
+      let ty =
+        Component.Delayed.(OfLang (Module, m, Component.Of_Lang.empty ()))
+      in
       ty
 
 let lookup_root_module name env =
@@ -489,7 +497,7 @@ let lookup_by_id (scope : 'a scope) id env : 'a option =
 let lookup_root_module_fallback name t =
   match lookup_root_module name t with
   | Some (Resolved (_, id, m)) ->
-      Some (`Module ((id :> Identifier.Path.Module.t), Component.Delayed.Val m))
+      Some (`Module ((id :> Identifier.Path.Module.t), m))
   | Some Forward | None -> None
 
 let lookup_page_or_root_module_fallback name t =
@@ -599,18 +607,19 @@ let add_functor_parameter : Odoc_model.Lang.FunctorParameter.t -> t -> t =
   | Unit -> t
   | Named n ->
       let m =
-        Component.Module.
+        Odoc_model.Lang.Module.
           {
+            id = (n.id :> Paths.Identifier.Module.t);
             doc = [];
-            type_ =
-              ModuleType Component.Of_Lang.(module_type_expr (empty ()) n.expr);
+            type_ = ModuleType n.expr;
             canonical = None;
             hidden = false;
           }
       in
       add_module
         (n.id :> Paths.Identifier.Path.Module.t)
-        (Component.Delayed.Val m) [] t
+        (Component.Delayed.OfLang (Module, m, Component.Of_Lang.empty ()))
+        [] t
 
 let add_functor_args' :
     Odoc_model.Paths.Identifier.Signature.t ->
@@ -801,9 +810,9 @@ let env_of_unit t ~linking resolver =
   let open Odoc_model.Lang.Compilation_unit in
   let initial_env =
     let m = module_of_unit t in
-    let dm = Component.Delayed.Val m in
+    let dm = m in
     let env = { empty with linking } in
-    env |> add_module (t.id :> Identifier.Path.Module.t) dm m.doc
+    env |> add_module (t.id :> Identifier.Path.Module.t) dm []
   in
   set_resolver initial_env resolver |> open_units resolver
 

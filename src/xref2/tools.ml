@@ -998,9 +998,8 @@ and resolve_module :
               `Gpath
                 (`Identifier (p :> Odoc_model.Paths.Identifier.Path.Module.t))
             in
-            let dm = Component.Delayed.Val m in
-            let p = process_module_path env ~add_canonical dm rp in
-            Ok (p, dm)
+            let p = process_module_path env ~add_canonical m rp in
+            Ok (p, m)
         | Some Env.Forward ->
             Error (`Parent (`Parent_sig `UnresolvedForwardPath))
         | None -> Error (`Lookup_failure_root r))
