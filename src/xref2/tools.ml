@@ -1067,10 +1067,10 @@ and resolve_module :
                 Odoc_model.Paths.(`Identifier (i :> Identifier.Path.Module.t))
             in
             let p =
-              process_module_path env ~add_canonical (Component.Delayed.Val m)
+              process_module_path env ~add_canonical m
                 rp
             in
-            Ok (p, Component.Delayed.Val m)
+            Ok (p, m)
         | Some Env.Forward ->
             Error (`Parent (`Parent_sig `UnresolvedForwardPath))
         | None -> Error (`Lookup_failure_root r))
