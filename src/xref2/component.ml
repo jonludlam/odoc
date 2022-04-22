@@ -4,8 +4,16 @@ module ModuleMap = Map.Make (struct
   type t = Ident.module_
 
   let compare a b =
-    let i1 = match a with `LRoot (_, i) | `LModule (_, i) -> i in
-    let i2 = match b with `LRoot (_, i) | `LModule (_, i) -> i in
+    let i1 =
+      match a with
+      | `LRoot (_, i) | `LModule (_, i) -> i
+      | `LParameter (_, i) -> i
+    in
+    let i2 =
+      match b with
+      | `LRoot (_, i) | `LModule (_, i) -> i
+      | `LParameter (_, i) -> i
+    in
     Int.compare i1 i2
 end)
 
@@ -141,19 +149,24 @@ end
 
 module rec Delayed : sig
   open Odoc_model
+
   type 'a general = { mutable v : 'a option; mutable get : (unit -> 'a) option }
- 
-    (* Lang type, Lang path, Component type, Component path *)
+
+  (* Lang type, Lang path, Component type, Component path *)
   type (_, _, _, _) ty =
     | Module : (Lang.Module.t, Paths.Path.Module.t, Module.t, Cpath.module_) ty
     | ModuleType
         : ( Lang.ModuleType.t,
             Odoc_model.Paths.Path.ModuleType.t,
             ModuleType.t,
-            Cpath.module_type
-             )
+            Cpath.module_type )
           ty
-    | Type : (Lang.TypeDecl.t, Odoc_model.Paths.Path.Type.t, TypeDecl.t, Cpath.type_) ty
+    | Type
+        : ( Lang.TypeDecl.t,
+            Odoc_model.Paths.Path.Type.t,
+            TypeDecl.t,
+            Cpath.type_ )
+          ty
     | Value : (Lang.Value.t, unit, Value.t, unit) ty
 
   type _ t =
@@ -558,21 +571,27 @@ end =
   Label
 
 type dget_impl_t = { dget : 'a. 'a Delayed.t -> 'a }
+
 let dget_impl : dget_impl_t option ref = ref None
 
-let dget : 'a. 'a Delayed.t -> 'a = fun v ->
-  match !dget_impl with Some x -> x.dget v | None -> match v with | Delayed.Val x -> x | _ -> failwith "dget_impl unset"
+let dget : 'a. 'a Delayed.t -> 'a =
+ fun v ->
+  match !dget_impl with
+  | Some x -> x.dget v
+  | None -> (
+      match v with Delayed.Val x -> x | _ -> failwith "dget_impl unset")
 
 module Element = struct
   open Odoc_model.Paths
 
   type module_ = [ `Module of Identifier.Path.Module.t * Module.t Delayed.t ]
 
-  type module_type = [ `ModuleType of Identifier.ModuleType.t * ModuleType.t Delayed.t ]
+  type module_type =
+    [ `ModuleType of Identifier.ModuleType.t * ModuleType.t Delayed.t ]
 
   type type_ = [ `Type of Identifier.Type.t * TypeDecl.t Delayed.t ]
 
-  type value = [ `Value of Identifier.Value.t * Value.t Delayed.t]
+  type value = [ `Value of Identifier.Value.t * Value.t Delayed.t ]
 
   type label = [ `Label of Identifier.Label.t * Label.t ]
 
@@ -1274,7 +1293,7 @@ module Fmt = struct
     | `Parameter (parent, name) ->
         Format.fprintf ppf "(param %a %s)" model_identifier
           (parent :> Odoc_model.Paths.Identifier.t)
-          (Odoc_model.Names.ParameterName.to_string name)
+          (Odoc_model.Names.ModuleName.to_string name)
     | `Result parent ->
         Format.fprintf ppf "%a.result" model_identifier
           (parent :> Odoc_model.Paths.Identifier.t)
@@ -1732,7 +1751,7 @@ module Of_Lang = struct
 
   let find_any_module i ident_map =
     match i with
-    | { Odoc_model.Paths.iv = #Paths.Identifier.Module.t_pv; _ } as id ->
+    | { Odoc_model.Paths.iv = `Root _ | `Module _; _ } as id ->
         (Maps.Module.find id ident_map.modules :> Ident.path_module)
     | { Odoc_model.Paths.iv = #Paths.Identifier.FunctorParameter.t_pv; _ } as id
       ->
