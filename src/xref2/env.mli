@@ -10,7 +10,10 @@ type lookup_unit_result =
 type lookup_page_result = Odoc_model.Lang.Page.t option
 
 type root =
-  | Resolved of (Odoc_model.Root.t * Identifier.Module.t * Component.Module.t)
+  | Resolved of
+      (Odoc_model.Root.t
+      * Identifier.Module.t
+      * Component.Module.t Component.Delayed.t)
   | Forward
 
 type resolver = {
@@ -105,7 +108,8 @@ val lookup_fragment_root : t -> (int * Component.Signature.t) option
 
 val lookup_page : string -> t -> Odoc_model.Lang.Page.t option
 
-val module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t
+val module_of_unit :
+  Odoc_model.Lang.Compilation_unit.t -> Component.Module.t Component.Delayed.t
 
 val lookup_root_module : string -> t -> root option
 
