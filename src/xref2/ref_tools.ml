@@ -177,7 +177,7 @@ module M = struct
       | Some (`Aliased cp) ->
           let cp = Tools.reresolve_module env cp in
           let p = Lang_of.(Path.resolved_module (empty ()) cp) in
-          (`Alias (cp, base_path), `Alias (p, base_ref))
+          (`AliasRD (cp, `Resolved base_path), `Alias (p, base_ref))
       | Some (`SubstMT cp) ->
           let cp = Tools.reresolve_module_type env cp in
           (`Subst (cp, base_path), base_ref)
@@ -708,6 +708,7 @@ let resolve_reference_dot_class env p name =
       MV.of_component env parent_ref name >>= resolved1
 
 let resolve_reference_dot env parent name =
+  Format.eprintf "resolve_reference_dot\n%!";
   resolve_label_parent_reference env parent >>= function
   | `S (parent_ref, parent_path, parent_sg) ->
       resolve_reference_dot_sg ~parent_path ~parent_ref ~parent_sg env name

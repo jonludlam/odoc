@@ -560,24 +560,31 @@ and get_module_path_modifiers :
       | Some s -> Some (`SubstMT s)
       | None -> None)
 
-and process_module_path env ~add_canonical m p =
-  let p = if m.Component.Module.hidden then `Hidden p else p in
-  let p' =
+and process_module_path env ~add_canonical m rp =
+  let rp = if m.Component.Module.hidden then `Hidden rp else rp in
+  let rp' =
     match get_module_path_modifiers env ~add_canonical m with
-    | None -> p
-    | Some (`Aliased p') -> `Alias (p', p)
-    | Some (`SubstMT p') -> `Subst (p', p)
+    | None -> rp
+    | Some (`Aliased rp') ->
+        let p' =
+          if Env.is_linking env then `Resolved rp
+            (* Keep resolved src when linking to correctly fixup canonical paths - see [handle_canonical_module.strip_alias] *)
+          else
+            try Cpath.unresolve_resolved_module_path rp with _ -> `Resolved rp
+        in
+        `AliasRD (rp', p')
+    | Some (`SubstMT p') -> `Subst (p', rp)
   in
-  let p'' = if add_canonical then add_canonical_path m p' else p' in
+  let p'' = if add_canonical then add_canonical_path m rp' else rp' in
   p''
 
-and handle_module_lookup env ~add_canonical id parent sg sub =
+and handle_module_lookup env ~add_canonical id rparent sg sub =
   match Find.careful_module_in_sig sg id with
   | Some (`FModule (name, m)) ->
-      let p' = simplify_module env (`Module (parent, name)) in
+      let rp' = simplify_module env (`Module (rparent, name)) in
       let m' = Subst.module_ sub m in
       let md' = Component.Delayed.put_val m' in
-      Ok (process_module_path env ~add_canonical m' p', md')
+      Ok (process_module_path env ~add_canonical m' rp', md')
   | Some (`FModule_removed p) ->
       lookup_module ~mark_substituted:false env p >>= fun m -> Ok (p, m)
   | None -> Error `Find_failure
@@ -639,7 +646,12 @@ and lookup_module :
         lookup_parent ~mark_substituted env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (sg, sub) -> find_in_sg sg sub
-    | `Alias (_, p) -> lookup_module ~mark_substituted env p
+    | `AliasRS (_, p) -> lookup_module ~mark_substituted env p
+    | `AliasRD (_, s) -> begin
+      match resolve_module ~mark_substituted ~add_canonical:false env s with
+      | Ok (_, r) -> Ok r
+      | Error e -> Error e
+      end
     | `Subst (_, p) -> lookup_module ~mark_substituted env p
     | `Hidden p -> lookup_module ~mark_substituted env p
     | `Canonical (p, _) -> lookup_module ~mark_substituted env p
@@ -811,12 +823,12 @@ and resolve_module :
         >>= fun parent_sig ->
         let sub = prefix_substitution (`Module p) parent_sig in
         handle_module_lookup env ~add_canonical id (`Module p) parent_sig sub
-    | `Module (parent, id) ->
-        lookup_parent ~mark_substituted env parent
+    | `Module (rparent, id) ->
+        lookup_parent ~mark_substituted env rparent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (parent_sig, sub) ->
-        handle_module_lookup env ~add_canonical (ModuleName.to_string id) parent
-          parent_sig sub
+        handle_module_lookup env ~add_canonical (ModuleName.to_string id)
+          rparent parent_sig sub
     | `Apply (m1, m2) -> (
         let func = resolve_module ~mark_substituted ~add_canonical env m1 in
         let arg = resolve_module ~mark_substituted ~add_canonical env m2 in
@@ -830,9 +842,10 @@ and resolve_module :
     | `Identifier (i, hidden) ->
         of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
         >>= fun (`Module (_, m)) ->
-        let p = if hidden then `Hidden (`Identifier i) else `Identifier i in
+        let rp = if hidden then `Hidden (`Identifier i) else `Identifier i in
         Ok
-          (process_module_path env ~add_canonical (Component.Delayed.get m) p, m)
+          ( process_module_path env ~add_canonical (Component.Delayed.get m) rp,
+            m )
     | `Local (p, _) -> Error (`Local (env, p))
     | `Resolved (`Identifier i as resolved_path) ->
         of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
@@ -844,11 +857,11 @@ and resolve_module :
         >>= fun (p, m) -> Ok (`Substituted p, m)
     | `Root r -> (
         match Env.lookup_root_module r env with
-        | Some (Env.Resolved (_, p, m)) ->
-            let p =
-              `Identifier (p :> Odoc_model.Paths.Identifier.Path.Module.t)
+        | Some (Env.Resolved (_, p', m)) ->
+            let rp =
+              `Identifier (p' :> Odoc_model.Paths.Identifier.Path.Module.t)
             in
-            let p = process_module_path env ~add_canonical m p in
+            let p = process_module_path env ~add_canonical m rp in
             Ok (p, Component.Delayed.put_val m)
         | Some Env.Forward ->
             Error (`Parent (`Parent_sig `UnresolvedForwardPath))
@@ -1044,7 +1057,23 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       `Apply
         (reresolve_module env functor_path, reresolve_module env argument_path)
   | `Module (parent, name) -> `Module (reresolve_parent env parent, name)
-  | `Alias (p1, p2) -> `Alias (reresolve_module env p1, reresolve_module env p2)
+  | `AliasRS (`Resolved p1, p2) ->
+      `AliasRS (`Resolved (reresolve_module env p1), reresolve_module env p2)
+  | `AliasRD (p1, `Resolved p2) ->
+      `AliasRD (reresolve_module env p1, `Resolved (reresolve_module env p2))
+  | `AliasRS (p1, p2) -> `AliasRS (p1, reresolve_module env p2)
+  | `AliasRD (p1, p2) ->
+      let dest' = reresolve_module env p1 in
+      let p2' =
+        if Cpath.is_resolved_module_hidden ~weak_canonical_test:false dest' then
+          match
+            resolve_module env ~mark_substituted:false ~add_canonical:true p2
+          with
+          | Ok (p2', _) -> `Resolved (reresolve_module env p2')
+          | Error _ -> p2
+        else p2
+      in
+      `AliasRD (dest', p2')
   | `Subst (p1, p2) ->
       `Subst (reresolve_module_type env p1, reresolve_module env p2)
   | `Hidden p ->
@@ -1052,13 +1081,16 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       `Hidden p'
   | `Canonical (p, `Resolved p2) ->
       `Canonical (reresolve_module env p, `Resolved p2)
-  | `Canonical (p, p2) ->
-      `Canonical (reresolve_module env p, handle_canonical_module env p2)
+  | `Canonical (p, p2) -> (
+      match handle_canonical_module env p2 with
+      | `Resolved _ as r -> `Canonical (p, r)
+      | r -> `Canonical (reresolve_module env p, r))
   | `OpaqueModule m -> `OpaqueModule (reresolve_module env m)
 
 and handle_canonical_module env p2 =
   let strip_alias : Cpath.Resolved.module_ -> Cpath.Resolved.module_ = function
-    | `Alias (_, p) -> p
+    | `AliasRS (_, p) -> p
+    | `AliasRD (_, `Resolved p) -> p
     | p -> p
   in
   let resolve env p =
@@ -1673,12 +1705,7 @@ and find_external_module_path :
   | `Canonical (x, y) ->
       find_external_module_path x >>= fun x -> Some (`Canonical (x, y))
   | `Hidden x -> find_external_module_path x >>= fun x -> Some (`Hidden x)
-  | `Alias (x, y) -> (
-      match (find_external_module_path x, find_external_module_path y) with
-      | Some x, Some y -> Some (`Alias (x, y))
-      | Some x, None -> Some x
-      | None, Some x -> Some x
-      | None, None -> None)
+  | `AliasRD _ | `AliasRS _ -> None
   | `Apply (x, y) ->
       find_external_module_path x >>= fun x ->
       find_external_module_path y >>= fun y -> Some (`Apply (x, y))
@@ -1804,7 +1831,8 @@ and resolve_signature_fragment :
       let cp', f' =
         match modifier with
         | None -> (new_path, new_frag)
-        | Some (`Aliased p') -> (`Alias (p', new_path), `Alias (p', new_frag))
+        | Some (`Aliased p') ->
+            (`AliasRD (p', `Resolved new_path), `Alias (p', new_frag))
         | Some (`SubstMT p') -> (`Subst (p', new_path), `Subst (p', new_frag))
       in
       (* Don't use the cached one - `FragmentRoot` is not unique *)

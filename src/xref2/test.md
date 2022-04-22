@@ -580,15 +580,16 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`Alias
+         (`AliasRD
             (`Module
                (`Identifier
                   (`Module (`Root (Some (`Page (None, None)), Root), A)),
                 M),
-             `Module
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                N)),
+             `Resolved
+               (`Module
+                  (`Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), A)),
+                   N))),
           t)),
    []))
 ```
@@ -618,20 +619,22 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`Alias
-            (`Alias
+         (`AliasRD
+            (`AliasRD
                (`Module
                   (`Identifier
                      (`Module (`Root (Some (`Page (None, None)), Root), A)),
                    M),
-                `Module
+                `Dot
+                  (`Identifier
+                     (`Module (`Root (Some (`Page (None, None)), Root), A),
+                      false),
+                   "N")),
+             `Resolved
+               (`Module
                   (`Identifier
                      (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                   N)),
-             `Module
-               (`Identifier
-                  (`Module (`Root (Some (`Page (None, None)), Root), A)),
-                O)),
+                   O))),
           t)),
    []))
 ```
@@ -1237,7 +1240,7 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`Alias
+         (`AliasRD
             (`Subst
                (`ModuleType
                   (`Identifier
@@ -1254,13 +1257,16 @@ Some
                               (`Root (Some (`Page (None, None)), Root), Dep1))),
                       A),
                    Y)),
-             `Module
-               (`Apply
-                  (`Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep2)),
-                   `Identifier
-                     (`Module (`Root (Some (`Page (None, None)), Root), Dep1))),
-                B)),
+             `Resolved
+               (`Module
+                  (`Apply
+                     (`Identifier
+                        (`Module
+                           (`Root (Some (`Page (None, None)), Root), Dep2)),
+                      `Identifier
+                        (`Module
+                           (`Root (Some (`Page (None, None)), Root), Dep1))),
+                   B))),
           c)),
    []))
 ```
@@ -1326,20 +1332,21 @@ Some
  (Odoc_model.Lang.TypeExpr.Constr
    (`Resolved
       (`Type
-         (`Alias
+         (`AliasRD
             (`Identifier
                (`Module (`Root (Some (`Page (None, None)), Root), Dep3)),
-             `Module
+             `Resolved
                (`Module
-                  (`Apply
-                     (`Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep5)),
-                      `Identifier
-                        (`Module
-                           (`Root (Some (`Page (None, None)), Root), Dep4))),
-                   Z),
-                Y)),
+                  (`Module
+                     (`Apply
+                        (`Identifier
+                           (`Module
+                              (`Root (Some (`Page (None, None)), Root), Dep5)),
+                         `Identifier
+                           (`Module
+                              (`Root (Some (`Page (None, None)), Root), Dep4))),
+                      Z),
+                   Y))),
           a)),
    []))
 ```
