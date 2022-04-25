@@ -481,8 +481,6 @@ module rec Path : sig
 
         val apply : t * t -> t
 
-        val aliasrs : Paths_types.Path.module_ * t -> t
-
         val aliasrd : t * Paths_types.Path.module_ -> t
 
         val opaquemodule : t -> t

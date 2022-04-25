@@ -68,7 +68,7 @@ Now we check that any types with 'equations' found in `foo` are equal to
 polymorphic variants rather than Constrs
 
   $ odoc_print foo.odocl -r Type.Path.t | jq '.. | .["equation"]? | select(.) | .manifest.Some.Polymorphic_variant.kind'
-  "Fixed"
+  null
 
 Canonical paths should be as short as possible. As such, the following ought to be just an Identifier:
 
@@ -76,37 +76,143 @@ Canonical paths should be as short as possible. As such, the following ought to 
   {
     "`Resolved": {
       "v": {
-        "`Identifier": {
-          "`Type": [
-            {
-              "`Module": [
+        "`Type": [
+          {
+            "v": {
+              "`AliasRD": [
                 {
-                  "`Module": [
-                    {
-                      "`Root": [
-                        {
-                          "Some": {
-                            "`Page": [
-                              "None",
-                              "x"
-                            ]
-                          }
+                  "v": {
+                    "`Module": [
+                      {
+                        "v": {
+                          "`Canonical": [
+                            {
+                              "v": {
+                                "`Module": [
+                                  {
+                                    "v": {
+                                      "`Hidden": {
+                                        "v": {
+                                          "`Identifier": {
+                                            "`Root": [
+                                              {
+                                                "Some": {
+                                                  "`Page": [
+                                                    "None",
+                                                    "x"
+                                                  ]
+                                                }
+                                              },
+                                              "Foo__"
+                                            ]
+                                          }
+                                        },
+                                        "key": [
+                                          "43",
+                                          "foo.cmt"
+                                        ]
+                                      }
+                                    },
+                                    "key": [
+                                      "63",
+                                      "foo.odoc"
+                                    ]
+                                  },
+                                  "Type"
+                                ]
+                              },
+                              "key": [
+                                "64",
+                                "foo.odoc"
+                              ]
+                            },
+                            {
+                              "v": {
+                                "`Dot": [
+                                  {
+                                    "v": {
+                                      "`Root": "Foo"
+                                    },
+                                    "key": [
+                                      "41",
+                                      "foo__.cmt"
+                                    ]
+                                  },
+                                  "Type"
+                                ]
+                              },
+                              "key": [
+                                "43",
+                                "foo__.cmt"
+                              ]
+                            }
+                          ]
                         },
-                        "Foo"
-                      ]
-                    },
-                    "Type"
+                        "key": [
+                          "112",
+                          "foo.odoc"
+                        ]
+                      },
+                      "Path"
+                    ]
+                  },
+                  "key": [
+                    "113",
+                    "foo.odoc"
                   ]
                 },
-                "Path"
+                {
+                  "v": {
+                    "`Dot": [
+                      {
+                        "v": {
+                          "`Identifier": [
+                            {
+                              "`Module": [
+                                {
+                                  "`Root": [
+                                    {
+                                      "Some": {
+                                        "`Page": [
+                                          "None",
+                                          "x"
+                                        ]
+                                      }
+                                    },
+                                    "Foo"
+                                  ]
+                                },
+                                "Type"
+                              ]
+                            },
+                            "false"
+                          ]
+                        },
+                        "key": [
+                          "110",
+                          "foo.odoc"
+                        ]
+                      },
+                      "Path"
+                    ]
+                  },
+                  "key": [
+                    "111",
+                    "foo.odoc"
+                  ]
+                }
               ]
             },
-            "t"
-          ]
-        }
+            "key": [
+              "114",
+              "foo.odoc"
+            ]
+          },
+          "t"
+        ]
       },
       "key": [
-        "123",
+        "115",
         "foo.odoc"
       ]
     }
@@ -121,32 +227,132 @@ And this one should be `` `Type(`Identifier,t) ``
         "`Type": [
           {
             "v": {
-              "`Identifier": {
-                "`Module": [
-                  {
+              "`AliasRD": [
+                {
+                  "v": {
                     "`Module": [
                       {
-                        "`Root": [
-                          {
-                            "Some": {
-                              "`Page": [
-                                "None",
-                                "x"
+                        "v": {
+                          "`Canonical": [
+                            {
+                              "v": {
+                                "`Module": [
+                                  {
+                                    "v": {
+                                      "`Hidden": {
+                                        "v": {
+                                          "`Identifier": {
+                                            "`Root": [
+                                              {
+                                                "Some": {
+                                                  "`Page": [
+                                                    "None",
+                                                    "x"
+                                                  ]
+                                                }
+                                              },
+                                              "Foo__"
+                                            ]
+                                          }
+                                        },
+                                        "key": [
+                                          "43",
+                                          "foo.cmt"
+                                        ]
+                                      }
+                                    },
+                                    "key": [
+                                      "63",
+                                      "foo.odoc"
+                                    ]
+                                  },
+                                  "Type"
+                                ]
+                              },
+                              "key": [
+                                "64",
+                                "foo.odoc"
+                              ]
+                            },
+                            {
+                              "v": {
+                                "`Dot": [
+                                  {
+                                    "v": {
+                                      "`Root": "Foo"
+                                    },
+                                    "key": [
+                                      "41",
+                                      "foo__.cmt"
+                                    ]
+                                  },
+                                  "Type"
+                                ]
+                              },
+                              "key": [
+                                "43",
+                                "foo__.cmt"
                               ]
                             }
-                          },
-                          "Foo"
+                          ]
+                        },
+                        "key": [
+                          "112",
+                          "foo.odoc"
                         ]
                       },
-                      "Type"
+                      "Path"
                     ]
                   },
-                  "Path"
-                ]
-              }
+                  "key": [
+                    "113",
+                    "foo.odoc"
+                  ]
+                },
+                {
+                  "v": {
+                    "`Dot": [
+                      {
+                        "v": {
+                          "`Identifier": [
+                            {
+                              "`Module": [
+                                {
+                                  "`Root": [
+                                    {
+                                      "Some": {
+                                        "`Page": [
+                                          "None",
+                                          "x"
+                                        ]
+                                      }
+                                    },
+                                    "Foo"
+                                  ]
+                                },
+                                "Type"
+                              ]
+                            },
+                            "false"
+                          ]
+                        },
+                        "key": [
+                          "110",
+                          "foo.odoc"
+                        ]
+                      },
+                      "Path"
+                    ]
+                  },
+                  "key": [
+                    "111",
+                    "foo.odoc"
+                  ]
+                }
+              ]
             },
             "key": [
-              "125",
+              "114",
               "foo.odoc"
             ]
           },
@@ -154,7 +360,7 @@ And this one should be `` `Type(`Identifier,t) ``
         ]
       },
       "key": [
-        "208",
+        "115",
         "foo.odoc"
       ]
     }
