@@ -999,10 +999,7 @@ module Fmt = struct
     | `Module (p, m) ->
         Format.fprintf ppf "%a.%s" resolved_parent_path p
           (Odoc_model.Names.ModuleName.to_string m)
-    | `AliasRS (p1, p2) ->
-        Format.fprintf ppf "aliasrs(%a,%a)" module_path p1 resolved_module_path
-          p2
-    | `AliasRD (p1, p2) ->
+    | `AliasRD (p1, p2, _) ->
         Format.fprintf ppf "aliasrd(%a,%a)" resolved_module_path p1 module_path
           p2
     | `Subst (p1, p2) ->
@@ -1196,11 +1193,6 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" model_resolved_path
           (parent :> t)
           (Odoc_model.Names.TypeName.to_string name)
-    | `AliasRS (dest, src) ->
-        Format.fprintf ppf "aliasrs(%a,%a)" model_path
-          (dest :> Odoc_model.Paths.Path.t)
-          model_resolved_path
-          (src :> t)
     | `AliasRD (dest, src) ->
         Format.fprintf ppf "aliasrd(%a,%a)" model_resolved_path
           (dest :> t)
@@ -1756,9 +1748,7 @@ module Of_Lang = struct
           M.Module.module_ (M.Parent.module_ (recurse p), name)
       | `Apply (p1, p2) -> M.Module.apply (recurse p1, recurse p2)
       | `AliasRD (p1, p2) ->
-          M.Module.aliasrd (recurse p1, module_path ident_map p2)
-      | `AliasRS (p1, p2) ->
-          M.Module.aliasrs (module_path ident_map p1, recurse p2)
+          M.Module.aliasrd (recurse p1, module_path ident_map p2, None)
       | `Subst (p1, p2) ->
           M.Module.subst (resolved_module_type_path ident_map p1, recurse p2)
       | `Canonical (p1, p2) -> M.Module.canonical (recurse p1, p2)

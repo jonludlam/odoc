@@ -602,14 +602,18 @@ and process_module_path env ~add_canonical md rp =
     match get_module_path_modifiers env ~add_canonical m with
     | None -> rp
     | Some (`Aliased rp') ->
-        let p' =
-          if Env.is_linking env then Cpath.Mk.Module.resolved rp
-            (* Keep resolved src when linking to correctly fixup canonical paths - see [handle_canonical_module.strip_alias] *)
-          else
-            try Cpath.unresolve_resolved_module_path rp
-            with _ -> Cpath.Mk.Module.resolved rp
-        in
-        Cpath.Mk.Resolved.Module.aliasrd (rp', p')
+        let dest_hidden =
+          Cpath.is_resolved_module_hidden ~weak_canonical_test:true rp' in
+        if dest_hidden
+        then rp
+        else begin
+          let unresolved_rp =
+              try Cpath.unresolve_resolved_module_path rp
+              with _ -> Cpath.Mk.Module.resolved rp
+          in
+          (* Keep the resolved path for the canonical processing below in handle_canonical_module.strip_alias *)
+          Cpath.Mk.Resolved.Module.aliasrd (rp', unresolved_rp, Some rp) 
+        end
     | Some (`SubstMT p') -> Cpath.Mk.Resolved.Module.subst (p', rp)
   in
   let p'' = if add_canonical then add_canonical_path m rp' else rp' in
@@ -692,8 +696,13 @@ and lookup_module_gpath :
       lookup_parent_gpath ~mark_substituted env parent
       |> map_error (fun e -> (e :> simple_module_lookup_error))
       >>= fun (sg, sub) -> find_in_sg sg sub
-  | `AliasRS (_, p) -> lookup_module_gpath ~mark_substituted env p
-  | `AliasRD (p, _) -> lookup_module_gpath ~mark_substituted env p
+  | `AliasRD (_, s) ->
+    begin
+                let cs = Component.Of_Lang.(module_path (empty ()) s) in
+                match resolve_module ~mark_substituted ~add_canonical:false env cs with
+                | Ok (_, r) -> Ok r
+                | Error e -> Error e
+                end
   | `Subst (_, p) -> lookup_module_gpath ~mark_substituted env p
   | `Hidden p -> lookup_module_gpath ~mark_substituted env p
   | `Canonical (p, _) -> lookup_module_gpath ~mark_substituted env p
@@ -731,8 +740,12 @@ and lookup_module :
         lookup_parent ~mark_substituted env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (sg, sub) -> find_in_sg sg sub
-    | `AliasRS (_, p) -> lookup_module ~mark_substituted env p
-    | `AliasRD (p, _) -> lookup_module ~mark_substituted env p
+    | `AliasRD (_, cs, _) ->
+      begin
+                  match resolve_module ~mark_substituted ~add_canonical:false env cs with
+                  | Ok (_, r) -> Ok r
+                  | Error e -> Error e
+                end
     | `Subst (_, p) -> lookup_module ~mark_substituted env p
     | `Hidden p -> lookup_module ~mark_substituted env p
     | `Canonical (p, _) -> lookup_module ~mark_substituted env p
@@ -1273,36 +1286,27 @@ and reresolve_module_gpath :
         ( reresolve_module_gpath env functor_path,
           reresolve_module_gpath env argument_path )
   | `Module (parent, name) -> module_ (reresolve_module_gpath env parent, name)
-  | `AliasRS ({ v = `Resolved p1; _ }, p2) ->
-      aliasrs
-        ( Odoc_model.Paths.Path.Module.Mk.resolved
-            (reresolve_module_gpath env p1),
-          reresolve_module_gpath env p2 )
   | `AliasRD (p1, { v = `Resolved p2; _ }) ->
       aliasrd
         ( reresolve_module_gpath env p1,
           Odoc_model.Paths.Path.Module.Mk.resolved
             (reresolve_module_gpath env p2) )
-  | `AliasRS (p1, p2) -> aliasrs (p1, reresolve_module_gpath env p2)
   | `AliasRD (p1, p2) ->
       let dest' = reresolve_module_gpath env p1 in
-      let p2' =
-        if
-          Odoc_model.Paths.Path.Resolved.Module.is_hidden
-            ~weak_canonical_test:false dest'
-        then
-          let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
-          match
-            resolve_module env ~mark_substituted:false ~add_canonical:true cp2
-          with
-          | Ok (p2', _) ->
+      if
+        Odoc_model.Paths.Path.Resolved.Module.is_hidden
+          ~weak_canonical_test:false dest'
+      then begin
+        let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
+        match
+          resolve_module env ~mark_substituted:false ~add_canonical:true cp2
+        with
+        | Ok (p2', _) ->
               Lang_of.(
-                Path.module_ (empty ())
-                  (Cpath.Mk.Module.resolved (reresolve_module env p2')))
-          | Error _ -> p2
-        else p2
-      in
-      aliasrd (dest', p2')
+                Path.resolved_module (empty ())
+                  (reresolve_module env p2'))
+          | Error _ -> aliasrd (dest', p2) end
+        else aliasrd (dest', p2)
   | `Subst (p1, p2) ->
       subst (reresolve_module_type_gpath env p1, reresolve_module_gpath env p2)
   | `Hidden p ->
@@ -1326,27 +1330,20 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       apply
         (reresolve_module env functor_path, reresolve_module env argument_path)
   | `Module (parent, name) -> module_ (reresolve_parent env parent, name)
-  | `AliasRS ({ v = `Resolved p1; _ }, p2) ->
-      aliasrs
-        ( Cpath.Mk.Module.resolved (reresolve_module env p1),
-          reresolve_module env p2 )
-  | `AliasRD (p1, { v = `Resolved p2; _ }) ->
+  | `AliasRD (p1, { v = `Resolved p2; _ }, p3) ->
       aliasrd
         ( reresolve_module env p1,
-          Cpath.Mk.Module.resolved (reresolve_module env p2) )
-  | `AliasRS (p1, p2) -> aliasrs (p1, reresolve_module env p2)
-  | `AliasRD (p1, p2) ->
+          Cpath.Mk.Module.resolved (reresolve_module env p2), p3 )
+  | `AliasRD (p1, p2, p3) ->
       let dest' = reresolve_module env p1 in
-      let p2' =
-        if Cpath.is_resolved_module_hidden ~weak_canonical_test:false dest' then
-          match
-            resolve_module env ~mark_substituted:false ~add_canonical:true p2
-          with
-          | Ok (p2', _) -> Cpath.Mk.Module.resolved (reresolve_module env p2')
-          | Error _ -> p2
-        else p2
-      in
-      aliasrd (dest', p2')
+      if Cpath.is_resolved_module_hidden ~weak_canonical_test:false dest' then
+        match
+          resolve_module env ~mark_substituted:false ~add_canonical:true p2
+        with
+        | Ok (p2', _) -> reresolve_module env p2'
+        | Error _ -> aliasrd (dest', p2, p3)
+      else
+      aliasrd (dest', p2, p3)
   | `Subst (p1, p2) ->
       subst (reresolve_module_type env p1, reresolve_module env p2)
   | `Hidden p ->
@@ -1364,8 +1361,7 @@ and handle_canonical_module env p2 =
   let strip_alias : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
    fun x ->
     match x.v with
-    | `AliasRS (_, p) -> p
-    | `AliasRD (_, { v = `Resolved p; _ }) -> p
+    | `AliasRD (_, _, Some p) -> p
     | _ -> x
   in
   let resolve env p =
@@ -2010,7 +2006,7 @@ and find_external_module_path :
   | `Canonical (x, y) ->
       find_external_module_path x >>= fun x -> Some (M.canonical (x, y))
   | `Hidden x -> find_external_module_path x >>= fun x -> Some (M.hidden x)
-  | `AliasRD _ | `AliasRS _ -> None
+  | `AliasRD _ -> None
   | `Apply (x, y) ->
       find_external_module_path x >>= fun x ->
       find_external_module_path y >>= fun y -> Some (M.apply (x, y))
@@ -2140,7 +2136,7 @@ and resolve_signature_fragment :
         | None -> (new_path, new_frag)
         | Some (`Aliased p') ->
             ( Cpath.Mk.Resolved.Module.aliasrd
-                (p', Cpath.Mk.Module.resolved new_path),
+                (p', Cpath.Mk.Module.resolved new_path, None),
               `Alias (p', new_frag) )
         | Some (`SubstMT p') ->
             ( Cpath.Mk.Resolved.Module.subst (p', new_path),

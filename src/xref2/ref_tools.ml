@@ -181,7 +181,7 @@ module M = struct
       | Some (`Aliased cp) ->
           let cp = Tools.reresolve_module env cp in
           let p = Lang_of.(Path.resolved_module (empty ()) cp) in
-          ( Module.aliasrd (cp, Cpath.Mk.Module.resolved base_path),
+          ( Module.aliasrd (cp, Cpath.Mk.Module.resolved base_path, None),
             `Alias (p, base_ref) )
       | Some (`SubstMT cp) ->
           let cp = Tools.reresolve_module_type env cp in

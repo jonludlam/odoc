@@ -21,7 +21,7 @@ The following should be resolved as identifier Test.A
         }
       },
       "key": [
-        "138",
+        "133",
         "test.odoc"
       ]
     }
@@ -49,7 +49,7 @@ The following should be resolved as Test.Wrapper.X
               }
             },
             "key": [
-              "169",
+              "167",
               "test.odoc"
             ]
           },
@@ -57,7 +57,7 @@ The following should be resolved as Test.Wrapper.X
         ]
       },
       "key": [
-        "183",
+        "179",
         "test.odoc"
       ]
     }
@@ -70,168 +70,31 @@ The following should be resolved as Test.Wrapper2.X
   {
     "`Resolved": {
       "v": {
-        "`AliasRD": [
+        "`Module": [
           {
             "v": {
-              "`Canonical": [
-                {
-                  "v": {
-                    "`AliasRD": [
-                      {
-                        "v": {
-                          "`Hidden": {
-                            "v": {
-                              "`Hidden": {
-                                "v": {
-                                  "`Identifier": {
-                                    "`Module": [
-                                      {
-                                        "`Root": [
-                                          "None",
-                                          "Test"
-                                        ]
-                                      },
-                                      "{Wrapped2__X}3"
-                                    ]
-                                  }
-                                },
-                                "key": [
-                                  "148",
-                                  "test.cmti"
-                                ]
-                              }
-                            },
-                            "key": [
-                              "233",
-                              "test.odoc"
-                            ]
-                          }
-                        },
-                        "key": [
-                          "234",
-                          "test.odoc"
-                        ]
-                      },
-                      {
-                        "v": {
-                          "`Dot": [
-                            {
-                              "v": {
-                                "`Identifier": [
-                                  {
-                                    "`Module": [
-                                      {
-                                        "`Root": [
-                                          "None",
-                                          "Test"
-                                        ]
-                                      },
-                                      "{Wrapper2__}4"
-                                    ]
-                                  },
-                                  "true"
-                                ]
-                              },
-                              "key": [
-                                "231",
-                                "test.odoc"
-                              ]
-                            },
-                            "X"
-                          ]
-                        },
-                        "key": [
-                          "232",
-                          "test.odoc"
-                        ]
-                      }
+              "`Identifier": {
+                "`Module": [
+                  {
+                    "`Root": [
+                      "None",
+                      "Test"
                     ]
                   },
-                  "key": [
-                    "235",
-                    "test.odoc"
-                  ]
-                },
-                {
-                  "v": {
-                    "`Dot": [
-                      {
-                        "v": {
-                          "`Dot": [
-                            {
-                              "v": {
-                                "`Root": "Test"
-                              },
-                              "key": [
-                                "53",
-                                "test.cmti"
-                              ]
-                            },
-                            "Wrapper2"
-                          ]
-                        },
-                        "key": [
-                          "62",
-                          "test.cmti"
-                        ]
-                      },
-                      "X"
-                    ]
-                  },
-                  "key": [
-                    "63",
-                    "test.cmti"
-                  ]
-                }
-              ]
-            },
-            "key": [
-              "236",
-              "test.odoc"
-            ]
-          },
-          {
-            "v": {
-              "`Resolved": {
-                "v": {
-                  "`Module": [
-                    {
-                      "v": {
-                        "`Identifier": {
-                          "`Module": [
-                            {
-                              "`Root": [
-                                "None",
-                                "Test"
-                              ]
-                            },
-                            "Wrapper2"
-                          ]
-                        }
-                      },
-                      "key": [
-                        "199",
-                        "test.odoc"
-                      ]
-                    },
-                    "X"
-                  ]
-                },
-                "key": [
-                  "245",
-                  "test.odoc"
+                  "Wrapper2"
                 ]
               }
             },
             "key": [
-              "247",
+              "195",
               "test.odoc"
             ]
-          }
+          },
+          "X"
         ]
       },
       "key": [
-        "248",
+        "238",
         "test.odoc"
       ]
     }
@@ -259,7 +122,7 @@ This should probably not resolve at all, but that's a problem for another day. c
               }
             },
             "key": [
-              "260",
+              "251",
               "test.odoc"
             ]
           },
@@ -267,19 +130,11 @@ This should probably not resolve at all, but that's a problem for another day. c
         ]
       },
       "key": [
-        "308",
+        "294",
         "test.odoc"
       ]
     }
   }
-
-Should resolve as identifier Test.B
-  $ odoc_print -r test4 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
-  null
-
-Should resove to be an alias!
-  $ odoc_print -r test5 test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'
-  null
 
 Should resolve as identifier Test.B
   $ odoc_print -r test4 test.odocl | jq '.equation.manifest.Some.Constr[0].v["`Resolved"].v["`Type"][0].v["`Canonical"][1].v'
@@ -299,7 +154,7 @@ Should resolve as identifier Test.B
         }
       },
       "key": [
-        "323",
+        "309",
         "test.odoc"
       ]
     }
@@ -326,41 +181,36 @@ Should resove to be an alias!
               }
             },
             "key": [
-              "193",
+              "190",
               "test.cmti"
             ]
           },
           {
             "v": {
-              "`Resolved": {
-                "v": {
-                  "`Identifier": {
-                    "`Module": [
-                      {
-                        "`Root": [
-                          "None",
-                          "Test"
-                        ]
-                      },
-                      "C"
-                    ]
-                  }
+              "`Identifier": [
+                {
+                  "`Module": [
+                    {
+                      "`Root": [
+                        "None",
+                        "Test"
+                      ]
+                    },
+                    "C"
+                  ]
                 },
-                "key": [
-                  "348",
-                  "test.odoc"
-                ]
-              }
+                "false"
+              ]
             },
             "key": [
-              "356",
+              "328",
               "test.odoc"
             ]
           }
         ]
       },
       "key": [
-        "357",
+        "329",
         "test.odoc"
       ]
     }
