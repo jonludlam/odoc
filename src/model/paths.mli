@@ -357,60 +357,8 @@ module Identifier : sig
 
   val label_parent : [< t_pv ] id -> LabelParent.t
 
-  module Sets : sig
-    module Signature : Set.S with type elt = Signature.t
-
-    module ClassSignature : Set.S with type elt = ClassSignature.t
-
-    module DataType : Set.S with type elt = DataType.t
-
-    module Parent : Set.S with type elt = Parent.t
-
-    module LabelParent : Set.S with type elt = LabelParent.t
-
-    module Module : Set.S with type elt = Module.t
-
-    module ModuleType : Set.S with type elt = ModuleType.t
-
-    module Type : Set.S with type elt = Type.t
-
-    module Constructor : Set.S with type elt = Constructor.t
-
-    module Field : Set.S with type elt = Field.t
-
-    module Extension : Set.S with type elt = Extension.t
-
-    module Exception : Set.S with type elt = Exception.t
-
-    module Value : Set.S with type elt = Value.t
-
-    module Class : Set.S with type elt = Class.t
-
-    module ClassType : Set.S with type elt = ClassType.t
-
-    module Method : Set.S with type elt = Method.t
-
-    module InstanceVariable : Set.S with type elt = InstanceVariable.t
-
-    module Label : Set.S with type elt = Label.t
-
-    module Page : Set.S with type elt = Page.t
-
-    module ContainerPage : Set.S with type elt = ContainerPage.t
-  end
-
   module Maps : sig
     module Any : Map.S with type key = Any.t
-
-    module Signature : Map.S with type key = Signature.t
-
-    module ClassSignature : Map.S with type key = ClassSignature.t
-
-    module DataType : Map.S with type key = DataType.t
-
-    module Parent : Map.S with type key = Parent.t
-
-    module LabelParent : Map.S with type key = LabelParent.t
 
     module FunctorParameter : Map.S with type key = FunctorParameter.t
 
@@ -420,35 +368,13 @@ module Identifier : sig
 
     module Type : Map.S with type key = Type.t
 
-    module Constructor : Map.S with type key = Constructor.t
-
-    module Field : Map.S with type key = Field.t
-
-    module Extension : Map.S with type key = Extension.t
-
-    module Exception : Map.S with type key = Exception.t
-
-    module Value : Map.S with type key = Value.t
-
     module Class : Map.S with type key = Class.t
 
     module ClassType : Map.S with type key = ClassType.t
 
-    module Method : Map.S with type key = Method.t
-
-    module InstanceVariable : Map.S with type key = InstanceVariable.t
-
     module Label : Map.S with type key = Label.t
 
-    module Page : Map.S with type key = Page.t
-
-    module ContainerPage : Map.S with type key = ContainerPage.t
-
     module Path : sig
-      module Module : Map.S with type key = Path.Module.t
-
-      module ModuleType : Map.S with type key = Path.ModuleType.t
-
       module Type : Map.S with type key = Path.Type.t
 
       module ClassType : Map.S with type key = Path.ClassType.t
@@ -538,9 +464,9 @@ module rec Path : sig
 
       val is_hidden : t -> weak_canonical_test:bool -> bool
 
-      val identifier : t -> Identifier.Path.Module.t
+      (* val identifier : t -> Identifier.Path.Module.t *)
 
-      val canonical_ident : t -> Identifier.Path.Module.t option
+      (* val canonical_ident : t -> Identifier.Path.Module.t option *)
 
       module Mk : sig
         val identifier : Identifier.Path.Module.t -> t
@@ -568,9 +494,9 @@ module rec Path : sig
 
       val is_hidden : t -> weak_canonical_test:bool -> bool
 
-      val identifier : t -> Identifier.Path.ModuleType.t
+      (* val identifier : t -> Identifier.Path.ModuleType.t *)
 
-      val canonical_ident : t -> Identifier.Path.ModuleType.t option
+      (* val canonical_ident : t -> Identifier.Path.ModuleType.t option *)
 
       module Mk : sig
         val identifier : Identifier.Path.ModuleType.t -> t
@@ -592,9 +518,9 @@ module rec Path : sig
 
       val is_hidden : t -> bool
 
-      val identifier : t -> Identifier.Path.Type.t
+      (* val identifier : t -> Identifier.Path.Type.t *)
 
-      val canonical_ident : t -> Identifier.Path.Type.t option
+      (* val canonical_ident : t -> Identifier.Path.Type.t option *)
 
       module Mk : sig
         val identifier : Identifier.Path.Type.t -> t
@@ -614,7 +540,7 @@ module rec Path : sig
 
       val is_hidden : t -> bool
 
-      val identifier : t -> Identifier.Path.ClassType.t
+      (* val identifier : t -> Identifier.Path.ClassType.t *)
 
       module Mk : sig
         val identifier : Identifier.Path.ClassType.t -> t
