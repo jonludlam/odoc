@@ -375,6 +375,8 @@ module Identifier : sig
     module Label : Map.S with type key = Label.t
 
     module Path : sig
+      module Module : Map.S with type key = Path.Module.t
+
       module Type : Map.S with type key = Path.Type.t
 
       module ClassType : Map.S with type key = Path.ClassType.t
@@ -462,12 +464,6 @@ module rec Path : sig
     module Module : sig
       type t = Paths_types.Resolved_path.module_
 
-      val is_hidden : t -> weak_canonical_test:bool -> bool
-
-      (* val identifier : t -> Identifier.Path.Module.t *)
-
-      (* val canonical_ident : t -> Identifier.Path.Module.t option *)
-
       module Mk : sig
         val identifier : Identifier.Path.Module.t -> t
 
@@ -481,22 +477,34 @@ module rec Path : sig
 
         val apply : t * t -> t
 
-        val aliasrs : Paths_types.Path.module_ * t -> t
-
-        val aliasrd : t * Paths_types.Path.module_ -> t
+        val aliasrd : t * Paths_types.Resolved_path.simple_module -> t
 
         val opaquemodule : t -> t
       end
     end
 
+    module SimpleModule : sig
+      type t = Paths_types.Resolved_path.simple_module
+
+      module Mk : sig
+        val identifier : Identifier.Path.Module.t -> t
+
+        val ssubst : Paths_types.Resolved_path.module_type * t -> t
+
+        val shidden : t -> t
+
+        val smodule_ : t * Names.ModuleName.t -> t
+
+        val scanonical : t * Paths_types.Path.module_ -> t
+
+        val sapply : t * t -> t
+
+        val sopaquemodule : t -> t
+      end
+    end
+
     module ModuleType : sig
       type t = Paths_types.Resolved_path.module_type
-
-      val is_hidden : t -> weak_canonical_test:bool -> bool
-
-      (* val identifier : t -> Identifier.Path.ModuleType.t *)
-
-      (* val canonical_ident : t -> Identifier.Path.ModuleType.t option *)
 
       module Mk : sig
         val identifier : Identifier.Path.ModuleType.t -> t
@@ -516,12 +524,6 @@ module rec Path : sig
     module Type : sig
       type t = Paths_types.Resolved_path.type_
 
-      val is_hidden : t -> bool
-
-      (* val identifier : t -> Identifier.Path.Type.t *)
-
-      (* val canonical_ident : t -> Identifier.Path.Type.t option *)
-
       module Mk : sig
         val identifier : Identifier.Path.Type.t -> t
 
@@ -538,10 +540,6 @@ module rec Path : sig
     module ClassType : sig
       type t = Paths_types.Resolved_path.class_type
 
-      val is_hidden : t -> bool
-
-      (* val identifier : t -> Identifier.Path.ClassType.t *)
-
       module Mk : sig
         val identifier : Identifier.Path.ClassType.t -> t
 
@@ -554,6 +552,9 @@ module rec Path : sig
     type t = Paths_types.Resolved_path.any
 
     type t_unhashed = Paths_types.Resolved_path.any_unhashed
+
+    val is_hidden :
+      ?weak_canonical_test:bool -> [< t_unhashed ] Hc.hashed -> bool
 
     val identifier : t -> Identifier.t
   end

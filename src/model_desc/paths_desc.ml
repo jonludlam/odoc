@@ -211,9 +211,20 @@ module General_paths = struct
             ( "`Subst",
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
+      | `SSubst (x1, x2) ->
+          C
+            ( "`SSubst",
+              ((x1 :> rp), (x2 :> rp)),
+              Pair (resolved_path, resolved_path) )
       | `Hidden x -> C ("`Hidden", (x :> rp), resolved_path)
+      | `SHidden x -> C ("`SHidden", (x :> rp), resolved_path)
       | `Module (x1, x2) ->
           C ("`Module", ((x1 :> rp), x2), Pair (resolved_path, Names.modulename))
+      | `SModule (x1, x2) ->
+          C
+            ( "`SModule",
+              ((x1 :> rp), x2),
+              Pair (resolved_path, Names.modulename) )
       | `Canonical (x1, x2) ->
           C ("`Canonical", ((x1 :> rp), (x2 :> p)), Pair (resolved_path, path))
       | `Apply (x1, x2) ->
@@ -221,10 +232,16 @@ module General_paths = struct
             ( "`Apply",
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
-      | `AliasRS (dest, src) ->
-          C ("`AliasRS", ((dest :> p), (src :> rp)), Pair (path, resolved_path))
+      | `SApply (x1, x2) ->
+          C
+            ( "`SApply",
+              ((x1 :> rp), (x2 :> rp)),
+              Pair (resolved_path, resolved_path) )
       | `AliasRD (dest, src) ->
-          C ("`AliasRD", ((dest :> rp), (src :> p)), Pair (resolved_path, path))
+          C
+            ( "`AliasRD",
+              ((dest :> rp), (src :> rp)),
+              Pair (resolved_path, resolved_path) )
       | `AliasModuleType (x1, x2) ->
           C
             ( "`AliasModuleType",

@@ -13,7 +13,7 @@ let functor_arg_pos : Odoc_model.Paths.Identifier.FunctorParameter.t -> int =
 
 let render_path : Odoc_model.Paths.Path.t -> string =
   let open Odoc_model.Paths.Path in
-  let rec render_resolved : Odoc_model.Paths.Path.Resolved.t -> string =
+  let rec render_resolved : Resolved.t -> string =
     let open Resolved in
     fun x ->
       match x.v with
@@ -22,28 +22,13 @@ let render_path : Odoc_model.Paths.Path.t -> string =
       | `OpaqueModuleType p -> render_resolved (p :> t)
       | `Subst (_, p) -> render_resolved (p :> t)
       | `SubstT (_, p) -> render_resolved (p :> t)
-      | `AliasRS ({ v = `Resolved dest; _ }, src)
-      | `AliasRD (dest, { v = `Resolved src; _ }) ->
-          if
-            Odoc_model.Paths.Path.Resolved.Module.is_hidden
-              ~weak_canonical_test:false src
-          then render_resolved (dest :> t)
-          else render_resolved (src :> t)
-      | `AliasRS (dest, src) ->
-          if
-            Odoc_model.Paths.Path.Resolved.Module.is_hidden
-              ~weak_canonical_test:false src
-          then render_path (dest :> Path.t)
-          else render_resolved (src :> t)
       | `AliasRD (dest, src) ->
-          if Odoc_model.Paths.Path.is_hidden (src :> Path.t) then
+          if is_hidden ~weak_canonical_test:false (src :> t) then
             render_resolved (dest :> t)
-          else render_path (src :> Path.t)
+          else render_resolved (src :> t)
       | `AliasModuleType (p1, p2) ->
-          if
-            Odoc_model.Paths.Path.Resolved.ModuleType.is_hidden
-              ~weak_canonical_test:false p2
-          then render_resolved (p1 :> t)
+          if is_hidden ~weak_canonical_test:false (p2 :> t) then
+            render_resolved (p1 :> t)
           else render_resolved (p2 :> t)
       | `Hidden p -> render_resolved (p :> t)
       | `Module (p, s) ->
@@ -56,16 +41,19 @@ let render_path : Odoc_model.Paths.Path.t -> string =
       | `CanonicalType (_, { v = `Resolved p; _ }) -> render_resolved (p :> t)
       | `CanonicalType (p, _) -> render_resolved (p :> t)
       | `Apply (rp, p) ->
-          render_resolved (rp :> t)
-          ^ "("
-          ^ render_resolved (p :> Odoc_model.Paths.Path.Resolved.t)
-          ^ ")"
+          render_resolved (rp :> t) ^ "(" ^ render_resolved (p :> t) ^ ")"
       | `ModuleType (p, s) ->
           render_resolved (p :> t) ^ "." ^ ModuleTypeName.to_string s
       | `Type (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
       | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ ClassName.to_string s
       | `ClassType (p, s) ->
           render_resolved (p :> t) ^ "." ^ ClassTypeName.to_string s
+      | `SSubst (_, p) -> render_resolved (p :> t)
+      | `SHidden p -> render_resolved (p :> t)
+      | `SModule (p, s) ->
+          render_resolved (p :> t) ^ "." ^ ModuleName.to_string s
+      | `SApply (rp, p) ->
+          render_resolved (rp :> t) ^ "(" ^ render_resolved (p :> t) ^ ")"
   and render_path : Odoc_model.Paths.Path.t -> string =
    fun x ->
     match x.v with

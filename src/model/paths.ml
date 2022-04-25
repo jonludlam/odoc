@@ -580,16 +580,9 @@ module Path = struct
       | `Type (p, _) -> inner (p : module_ :> any)
       | `Class (p, _) -> inner (p : module_ :> any)
       | `ClassType (p, _) -> inner (p : module_ :> any)
-      | `AliasRD (dest, { v = `Resolved src; _ }) ->
-          inner (dest : module_ :> any) && inner (src : module_ :> any)
-      | `AliasRS ({ v = `Resolved dest; _ }, src) ->
-          inner (src : module_ :> any) && inner (dest : module_ :> any)
       | `AliasRD (dest, src) ->
           inner (dest : module_ :> any)
-          && is_path_hidden (src :> Paths_types.Path.any)
-      | `AliasRS (dest, src) ->
-          inner (src : module_ :> any)
-          && is_path_hidden (dest :> Paths_types.Path.any)
+          && is_simple_hidden ~weak_canonical_test src
       | `AliasModuleType (p1, p2) ->
           inner (p1 : module_type :> any) && inner (p2 : module_type :> any)
       | `SubstT (p1, p2) -> inner (p1 :> any) || inner (p2 :> any)
@@ -599,7 +592,32 @@ module Path = struct
       | `CanonicalType (x, _) -> inner (x : type_ :> any)
       | `OpaqueModule m -> inner (m :> any)
       | `OpaqueModuleType mt -> inner (mt :> any)
+      | `SSubst (p1, p2) ->
+          is_resolved_hidden ~weak_canonical_test (p1 : module_type :> any)
+          || inner (p2 :> any)
+      | `SModule (p, _) -> inner (p :> any)
+      | `SApply (p, _) -> inner (p :> any)
+      | `SHidden _ -> true
     and inner x = inner_unhashed x.v in
+    inner x
+
+  and is_simple_hidden :
+      weak_canonical_test:bool ->
+      Paths_types.Resolved_path.simple_module ->
+      bool =
+   fun ~weak_canonical_test x ->
+    let open Paths_types.Resolved_path in
+    let rec inner : Paths_types.Resolved_path.simple_module -> bool = function
+      | { v = `Identifier _; _ } as x ->
+          is_resolved_hidden ~weak_canonical_test
+            (x :> Paths_types.Resolved_path.any)
+      | { v = `SSubst (p1, p2); _ } ->
+          is_resolved_hidden ~weak_canonical_test (p1 : module_type :> any)
+          || inner p2
+      | { v = `SModule (p, _); _ } -> inner p
+      | { v = `SApply (p, _); _ } -> inner p
+      | { v = `SHidden _; _ } -> true
+    in
     inner x
 
   and contains_double_underscore s =
@@ -659,23 +677,31 @@ module Path = struct
       | `Canonical (_, { v = `Resolved p; _ }) -> parent_module_identifier p
       | `Canonical (p, _) -> parent_module_identifier p
       | `Apply (m, _) -> parent_module_identifier m
-      | `AliasRS ({ v = `Resolved dest; _ }, src) ->
-          if is_resolved_hidden ~weak_canonical_test:false (src :> t) then
-            parent_module_identifier dest
-          else parent_module_identifier src
-      | `AliasRD (dest, { v = `Resolved src; _ }) ->
+      | `AliasRD (dest, src) ->
           if is_resolved_hidden ~weak_canonical_test:false (dest :> t) then
-            parent_module_identifier src
+            parent_simple_module_identifier src
           else parent_module_identifier dest
-      | `AliasRD (dest, _src) -> parent_module_identifier dest
-      | `AliasRS (_dest, src) -> parent_module_identifier src
       | `OpaqueModule m -> parent_module_identifier m
+
+    and parent_simple_module_identifier :
+        Paths_types.Resolved_path.simple_module -> Identifier.Signature.t =
+     fun x ->
+      match x.v with
+      | `Identifier id ->
+          (id : Identifier.Path.Module.t :> Identifier.Signature.t)
+      | `SSubst (sub, _) -> parent_module_type_identifier sub
+      | `SHidden p -> parent_simple_module_identifier p
+      | `SModule (m, n) ->
+          Identifier.Mk.module_ (parent_simple_module_identifier m, n)
+      | `SApply (m, _) -> parent_simple_module_identifier m
+
+    let is_hidden ?(weak_canonical_test = false) (m : [< t_unhashed ] Hc.hashed)
+        =
+      is_resolved_hidden ~weak_canonical_test
+        (m :> Paths_types.Resolved_path.any)
 
     module Module = struct
       type t = Paths_types.Resolved_path.module_
-
-      let is_hidden m =
-        is_resolved_hidden (m : t :> Paths_types.Resolved_path.any)
 
       module Mk = struct
         let identifier =
@@ -701,21 +727,33 @@ module Path = struct
 
         let apply : t * t -> t = Hc.gen2 (fun (x, y) -> `Apply (x, y))
 
-        let aliasrs : Paths_types.Path.module_ * t -> t =
-          Hc.gen2 (fun (x, y) -> `AliasRS (x, y))
-
-        let aliasrd : t * Paths_types.Path.module_ -> t =
+        let aliasrd : t * Paths_types.Resolved_path.simple_module -> t =
           Hc.gen2 (fun (x, y) -> `AliasRD (x, y))
 
         let opaquemodule : t -> t = Hc.gen1 (fun x -> `OpaqueModule x)
       end
     end
 
+    module SimpleModule = struct
+      type t = Paths_types.Resolved_path.simple_module
+
+      module Mk = struct
+        let identifier = Module.Mk.identifier
+
+        let ssubst : Paths_types.Resolved_path.module_type * t -> t =
+          Hc.gen2 (fun (x, y) -> `SSubst (x, y))
+
+        let shidden : t -> t = Hc.gen1 (fun x -> `SHidden x)
+
+        let smodule_ : t * ModuleName.t -> t =
+          Hc.gen_named ModuleName.to_string (fun (p, n) -> `SModule (p, n))
+
+        let sapply : t * t -> t = Hc.gen2 (fun (x, y) -> `SApply (x, y))
+      end
+    end
+
     module ModuleType = struct
       type t = Paths_types.Resolved_path.module_type
-
-      let is_hidden m =
-        is_resolved_hidden (m : t :> Paths_types.Resolved_path.any)
 
       module Mk = struct
         let identifier : Identifier.Path.ModuleType.t -> t =
@@ -747,10 +785,6 @@ module Path = struct
     module Type = struct
       type t = Paths_types.Resolved_path.type_
 
-      let is_hidden m =
-        is_resolved_hidden ~weak_canonical_test:false
-          (m : t :> Paths_types.Resolved_path.any)
-
       module Mk = struct
         let identifier : Identifier.Path.Type.t -> t =
           let module M = Identifier.Maps.Path.Type in
@@ -778,10 +812,6 @@ module Path = struct
 
     module ClassType = struct
       type t = Paths_types.Resolved_path.class_type
-
-      let is_hidden m =
-        is_resolved_hidden ~weak_canonical_test:false
-          (m : t :> Paths_types.Resolved_path.any)
 
       module Mk = struct
         let identifier : Identifier.Path.ClassType.t -> t =
@@ -818,16 +848,10 @@ module Path = struct
       | `Class (m, n) -> Identifier.Mk.class_ (parent_module_identifier m, n)
       | `ClassType (m, n) ->
           Identifier.Mk.class_type (parent_module_identifier m, n)
-      | `AliasRS ({ v = `Resolved dest; _ }, src) ->
-          if is_resolved_hidden ~weak_canonical_test:false (src :> t) then
-            identifier (dest :> t)
-          else identifier (src :> t)
-      | `AliasRD (dest, { v = `Resolved src; _ }) ->
+      | `AliasRD (dest, src) ->
           if is_resolved_hidden ~weak_canonical_test:false (dest :> t) then
             identifier (src :> t)
           else identifier (dest :> t)
-      | `AliasRS (_dest, src) -> identifier (src :> t)
-      | `AliasRD (dest, _src) -> identifier (dest :> t)
       | `AliasModuleType (sub, orig) ->
           if is_resolved_hidden ~weak_canonical_test:false (sub :> t) then
             identifier (orig :> t)
@@ -839,6 +863,11 @@ module Path = struct
       | `CanonicalType (p, _) -> identifier (p :> t)
       | `OpaqueModule m -> identifier (m :> t)
       | `OpaqueModuleType mt -> identifier (mt :> t)
+      | `SSubst (_, p) -> identifier (p :> t)
+      | `SHidden p -> identifier (p :> t)
+      | `SModule (m, n) ->
+          Identifier.Mk.module_ (parent_simple_module_identifier m, n)
+      | `SApply (m, _) -> identifier (m :> t)
   end
 
   module Module = struct
@@ -1185,13 +1214,17 @@ module Reference = struct
       | `Identifier id -> id
       | `Hidden s -> parent_signature_identifier (s :> signature)
       | `Alias (sub, orig) ->
-          if Path.Resolved.Module.is_hidden ~weak_canonical_test:false sub then
-            parent_signature_identifier (orig :> signature)
+          if
+            Path.Resolved.is_hidden ~weak_canonical_test:false
+              (sub :> Path.Resolved.t)
+          then parent_signature_identifier (orig :> signature)
           else
             (Path.Resolved.parent_module_identifier sub
               :> Identifier.Signature.t)
       | `AliasModuleType (sub, orig) ->
-          if Path.Resolved.ModuleType.is_hidden ~weak_canonical_test:false sub
+          if
+            Path.Resolved.is_hidden ~weak_canonical_test:false
+              (sub :> Path.Resolved.t)
           then parent_signature_identifier (orig :> signature)
           else
             (Path.Resolved.parent_module_type_identifier sub
