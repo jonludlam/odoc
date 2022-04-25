@@ -278,10 +278,18 @@ and Resolved_path : sig
     | `Module of module_ * ModuleName.t
     | `Canonical of module_ * Path.module_  (** [`Canonical (mod, canonical)] *)
     | `Apply of module_ * module_  (** [`Apply (functor, argument)] *)
-    | `AliasRS of Path.module_ * module_  (** Resolved source *)
-    | `AliasRD of module_ * Path.module_  (** Resolved dest *)
+    | `AliasRD of module_ * simple_module  (** Resolved dest *)
     | `OpaqueModule of module_ ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Module.t *)
+
+  and simple_module_unhashed =
+    [ `Identifier of Identifier.path_module
+    | `SSubst of module_type * simple_module
+    | `SHidden of simple_module
+    | `SModule of simple_module * ModuleName.t
+    | `SCanonical of simple_module * Path.module_  (** [`Canonical (mod, canonical)] *)
+    | `SApply of simple_module * simple_module  (** [`Apply (functor, argument)] *)
+    | `SOpaqueModule of simple_module ] 
 
   and module_type_unhashed =
     [ `Identifier of Identifier.path_module_type
@@ -294,6 +302,8 @@ and Resolved_path : sig
 
   and module_ = module_unhashed hashed
 
+  and simple_module = simple_module_unhashed hashed
+  
   and module_type = module_type_unhashed hashed
 
   type type_unhashed =
@@ -320,8 +330,7 @@ and Resolved_path : sig
     | `Module of module_ * ModuleName.t
     | `Canonical of module_ * Path.module_
     | `Apply of module_ * module_
-    | `AliasRS of Path.module_ * module_
-    | `AliasRD of module_ * Path.module_
+    | `AliasRD of module_ * simple_module
     | `AliasModuleType of module_type * module_type
     | `OpaqueModule of module_
     | `ModuleType of module_ * ModuleTypeName.t
@@ -333,7 +342,13 @@ and Resolved_path : sig
     | `Class of module_ * ClassName.t
     | `ClassType of module_ * ClassTypeName.t
     | `Class of module_ * ClassName.t
-    | `ClassType of module_ * ClassTypeName.t ]
+    | `ClassType of module_ * ClassTypeName.t
+    | `SSubst of module_type * simple_module
+    | `SHidden of simple_module
+    | `SModule of simple_module * ModuleName.t
+    | `SCanonical of simple_module * Path.module_  
+    | `SApply of simple_module * simple_module 
+    | `SOpaqueModule of simple_module  ]
 
   and any = any_unhashed hashed
   (** @canonical Odoc_model.Paths.Path.Resolved.t *)
