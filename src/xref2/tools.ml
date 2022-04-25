@@ -692,12 +692,8 @@ and lookup_module_gpath :
       lookup_parent_gpath ~mark_substituted env parent
       |> map_error (fun e -> (e :> simple_module_lookup_error))
       >>= fun (sg, sub) -> find_in_sg sg sub
-  | `AliasRD (_, s) ->  begin
-          let cs = Component.Of_Lang.(module_path (empty ()) s) in
-          match resolve_module ~mark_substituted ~add_canonical:false env cs with
-          | Ok (_, r) -> Ok r
-          | Error e -> Error e
-          end
+  | `AliasRS (_, p) -> lookup_module_gpath ~mark_substituted env p
+  | `AliasRD (p, _) -> lookup_module_gpath ~mark_substituted env p
   | `Subst (_, p) -> lookup_module_gpath ~mark_substituted env p
   | `Hidden p -> lookup_module_gpath ~mark_substituted env p
   | `Canonical (p, _) -> lookup_module_gpath ~mark_substituted env p
@@ -736,11 +732,8 @@ and lookup_module :
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (sg, sub) -> find_in_sg sg sub
     | `AliasRS (_, p) -> lookup_module ~mark_substituted env p
-    | `AliasRD (_, s) ->  begin
-      match resolve_module ~mark_substituted ~add_canonical:false env s with
-      | Ok (_, r) -> Ok r
-      | Error e -> Error e
-      end    | `Subst (_, p) -> lookup_module ~mark_substituted env p
+    | `AliasRD (p, _) -> lookup_module ~mark_substituted env p
+    | `Subst (_, p) -> lookup_module ~mark_substituted env p
     | `Hidden p -> lookup_module ~mark_substituted env p
     | `Canonical (p, _) -> lookup_module ~mark_substituted env p
     | `OpaqueModule m -> lookup_module ~mark_substituted env m
@@ -1280,11 +1273,17 @@ and reresolve_module_gpath :
         ( reresolve_module_gpath env functor_path,
           reresolve_module_gpath env argument_path )
   | `Module (parent, name) -> module_ (reresolve_module_gpath env parent, name)
-  | `AliasRD (p1, p2) ->
+  | `AliasRS ({ v = `Resolved p1; _ }, p2) ->
+      aliasrs
+        ( Odoc_model.Paths.Path.Module.Mk.resolved
+            (reresolve_module_gpath env p1),
+          reresolve_module_gpath env p2 )
+  | `AliasRD (p1, { v = `Resolved p2; _ }) ->
       aliasrd
         ( reresolve_module_gpath env p1,
           Odoc_model.Paths.Path.Module.Mk.resolved
             (reresolve_module_gpath env p2) )
+  | `AliasRS (p1, p2) -> aliasrs (p1, reresolve_module_gpath env p2)
   | `AliasRD (p1, p2) ->
       let dest' = reresolve_module_gpath env p1 in
       let p2' =

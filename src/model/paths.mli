@@ -555,33 +555,9 @@ module rec Path : sig
 
         val apply : t * t -> t
 
-        val aliasrd : t * Paths_types.Resolved_path.simple_module -> t
+        val aliasrs : Paths_types.Path.module_ * t -> t
 
-        val opaquemodule : t -> t
-      end
-    end
-
-    module SimpleModule : sig
-      type t = Paths_types.Resolved_path.simple_module
-
-      val is_hidden : t -> weak_canonical_test:bool -> bool
-
-      val identifier : t -> Identifier.Path.Module.t
-
-      val canonical_ident : t -> Identifier.Path.Module.t option
-
-      module Mk : sig
-        val identifier : Identifier.Path.Module.t -> t
-
-        val subst : Paths_types.Resolved_path.module_type * t -> t
-
-        val hidden : t -> t
-
-        val module_ : t * Names.ModuleName.t -> t
-
-        val canonical : t * Paths_types.Path.module_ -> t
-
-        val apply : t * t -> t
+        val aliasrd : t * Paths_types.Path.module_ -> t
 
         val opaquemodule : t -> t
       end

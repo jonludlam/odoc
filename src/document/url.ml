@@ -22,12 +22,23 @@ let render_path : Odoc_model.Paths.Path.t -> string =
       | `OpaqueModuleType p -> render_resolved (p :> t)
       | `Subst (_, p) -> render_resolved (p :> t)
       | `SubstT (_, p) -> render_resolved (p :> t)
-      | `AliasRD (dest, src) ->
+      | `AliasRS ({ v = `Resolved dest; _ }, src)
+      | `AliasRD (dest, { v = `Resolved src; _ }) ->
           if
             Odoc_model.Paths.Path.Resolved.Module.is_hidden
-              ~weak_canonical_test:false (src :> Odoc_model.Paths.Path.Resolved.Module.t)
+              ~weak_canonical_test:false src
           then render_resolved (dest :> t)
           else render_resolved (src :> t)
+      | `AliasRS (dest, src) ->
+          if
+            Odoc_model.Paths.Path.Resolved.Module.is_hidden
+              ~weak_canonical_test:false src
+          then render_path (dest :> Path.t)
+          else render_resolved (src :> t)
+      | `AliasRD (dest, src) ->
+          if Odoc_model.Paths.Path.is_hidden (src :> Path.t) then
+            render_resolved (dest :> t)
+          else render_path (src :> Path.t)
       | `AliasModuleType (p1, p2) ->
           if
             Odoc_model.Paths.Path.Resolved.ModuleType.is_hidden
