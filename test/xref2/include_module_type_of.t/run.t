@@ -38,4 +38,7 @@ error. If it doesn't here, that particular issue is fixed!
   $ ocamlc -c -bin-annot uwt_base.mli
   $ odoc compile uwt_base.cmti
   $ odoc link uwt_base.odoc
+  module: (root Uwt_base).Base
+  module: (root Uwt_base).Base.Fs_types
+  module: (root Uwt_base).Fs_types
 

@@ -27,6 +27,11 @@ _not_ been strengthened.
   $ ocamlc -bin-annot -c test.mli
   $ odoc compile --package x test.cmti
   $ odoc link test.odoc
+  module: (root Test).X.Y
+  module: (root Test).Z
+  module: (root Test).Z.Y
+  module: (root Test).ZZ
+  module: (root Test).ZZ.Y
   $ odoc html-generate test.odocl -o html
   $ find html/x/Test/ZZ
   html/x/Test/ZZ

@@ -18,6 +18,8 @@ its RHS correctly replaced with an `int`
   $ ocamlc -c -bin-annot m.mli
   $ odoc compile m.cmti
   $ odoc link m.odoc
+  module: (root M).S.M
+  module: (root M).T.M
   $ odoc html-generate m.odocl --indent -o .
   $ odoc_print m.odocl -r T.t
   {

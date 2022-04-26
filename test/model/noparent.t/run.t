@@ -3,6 +3,7 @@ We don't have to provide parents to modules now
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
   $ odoc link test.odoc
+  module: (root Test).M
   $ odoc html-generate test.odocl -o output --flat
   $ odoc latex-generate test.odocl -o output
   $ odoc man-generate test.odocl -o output

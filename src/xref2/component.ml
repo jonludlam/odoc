@@ -660,8 +660,10 @@ module Fmt = struct
     Format.fprintf ppf "@[<v>";
     List.iter
       (function
-        | Module (id, _, _m) ->
-            Format.fprintf ppf "@[<v 2>module %a ...@]@," Ident.fmt id
+        | Module (id, _, m) ->
+            let m = dget m in
+            Format.fprintf ppf "@[<v 2>module %a = %a@]@," Ident.fmt id module_
+              m
         | ModuleSubstitution (id, m) ->
             Format.fprintf ppf "@[<v 2>module %a := %a@]@," Ident.fmt id
               module_path m.ModuleSubstitution.manifest
