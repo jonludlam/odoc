@@ -59,6 +59,14 @@ See the comments on the types at the end of test.mli for the expectation.
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
   $ odoc link test.odoc
+  module: (root Test).A_nonhidden
+  module: (root Test).{B__hidden}1
+  module: (root Test).{C__hidden}2
+  module: (root Test).{D_hidden}3
+  module: (root Test).A
+  module: (root Test).B
+  module: (root Test).C
+  module: (root Test).D
   $ odoc html-generate test.odocl --indent -o .
   $ odoc support-files -o .
   $ find Test -type f | sort

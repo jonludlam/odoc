@@ -1,10 +1,26 @@
 # Testing {!modules:...} lists
 
   $ compile external.mli starts_with_open.mli main.mli
+  module: (root External).X
+  module: (root External).Resolve_synopsis
   File "main.mli", line 63, characters 22-43:
   Warning: Failed to resolve reference unresolvedroot(Resolve_synopsis).t Couldn't find "Resolve_synopsis"
   File "main.mli", line 63, characters 17-21:
   Warning: Failed to resolve reference unresolvedroot(t) Couldn't find "t"
+  module: (root Main).Internal
+  module: (root Main).Internal.Y
+  module: (root Main).Internal.C1
+  module: (root Main).Internal.C2
+  module: (root Main).Z
+  module: (root Main).F
+  module: (root Main).Type_of
+  module: (root Main).Type_of_str
+  module: (root Main).With_type
+  module: (root Main).Alias
+  module: (root Main).C1
+  module: (root Main).C2
+  module: (root Main).Inline_include
+  module: (root Main).Resolve_synopsis
   File "external.mli", line 9, characters 6-10:
   Warning: Failed to resolve reference unresolvedroot(t) Couldn't find "t"
   File "main.mli", line 63, characters 22-43:
@@ -28,7 +44,7 @@ Everything should resolve:
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Z"]}}}
   {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"for"},"`Space",{"`Code_span":"Z"},{"`Word":"."}]}
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"F"]}}}
-  {"Some":[{"`Word":"Doc"},"`Space",{"`Word":"for"},"`Space",{"`Code_span":"F ()"},{"`Word":"."}]}
+  "None"
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Type_of"]}}}
   "None"
   {"`Resolved":{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Main"]},"Type_of_str"]}}}

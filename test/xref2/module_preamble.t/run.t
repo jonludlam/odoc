@@ -18,6 +18,7 @@ and that "hidden" modules (eg. `A__b`, rendered to `html/A__b`) are not rendered
 
   $ odoc link -I . a__b.odoc
   $ odoc link -I . a.odoc
+  module: (root A).B
 
   $ odoc html-generate --indent -o html a.odocl
   $ odoc html-generate --indent -o html a__b.odocl
