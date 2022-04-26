@@ -1,8 +1,16 @@
 # Testing the scope of references
 
   $ compile a.mli shadowed.mli shadowed_through_open.mli
+  module: (root A).B
+  module: (root A).B.C
+  module: (root A).D
   File "a.mli", line 18, characters 6-24:
   Warning: Failed to resolve reference unresolvedroot(C) Couldn't find "C"
+  module: (root Shadowed).M
+  module: (root Shadowed).N
+  module: (root Shadowed_through_open).T
+  module: (root Shadowed_through_open).Through_open
+  module: (root Shadowed_through_open).Through_include
 
   $ jq_scan_references() { jq -c '.. | .["`Reference"]? | select(.)'; }
 

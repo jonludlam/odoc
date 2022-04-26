@@ -1,6 +1,8 @@
 Build the documentation of a simple Dune library.
 
   $ dune build @install @doc
+  module: (root Dune_odoc_test).Bar
+  module: (root Dune_odoc_test).Foo
 
   $ find _build/default/_doc/_html -name '*.html' | sort
   _build/default/_doc/_html/dune_odoc_test/Dune_odoc_test/Bar/index.html
