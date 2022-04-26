@@ -15,6 +15,7 @@ Imitate the way the stdlib is built and how its documentation should be built.
 
   $ odoc html --indent -o html main__x.odoc -I .
   $ odoc html --indent -o html main.odoc -I .
+  module: (root Main).X
 
 The page for Main should include the synopsis from X:
 

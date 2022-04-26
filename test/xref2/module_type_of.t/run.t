@@ -34,6 +34,8 @@ Compile
 -------
 
   $ compile m.mli
+  module: (root M).S.X
+  module: (root M).X1
 
 Tests
 -----
