@@ -15,13 +15,15 @@ let synopsis_from_comment (docs : Component.CComment.docs) =
       Comment.synopsis [ e ]
   | _ -> None
 
-let synopsis_of_module env (m : Component.Module.t) =
+let synopsis_of_module env id (m : Component.Module.t) =
+  let open Utils.ResultMonad in
   match synopsis_from_comment m.doc with
   | Some _ as s -> s
   | None -> (
       (* If there is no doc, look at the expansion. *)
-      match Tools.signature_of_module env m with
-      | Ok sg -> synopsis_from_comment (Component.extract_signature_doc sg)
+      match Tools.expansion_of_module env m >>= Expand_tools.handle_expansion env id with
+      | Ok (_, Signature sg) -> synopsis_from_comment (Component.extract_signature_doc sg)
+      | Ok (_, Functor _) -> None
       | Error _ -> None)
 
 let ambiguous_label_warning label_name labels =
@@ -229,11 +231,13 @@ and comment_nestable_block_element env parent ~loc:_
               Ref_tools.resolve_module_reference env r.module_reference
               |> Error.raise_warnings
             with
-            | Ok (r, _, m) ->
+            | Ok (r, p, m) ->
+                let p = Lang_of.(Path.resolved_module (empty ()) p) in
+                let id = Paths.Path.Resolved.Module.(identifier (p :> t)) in
                 let module_synopsis =
                   Opt.map
                     (resolve_external_synopsis env)
-                    (synopsis_of_module env m)
+                    (synopsis_of_module env (id :> Id.Signature.t) m)
                 in
                 { Comment.module_reference = `Resolved r; module_synopsis }
             | Error e ->
@@ -429,7 +433,9 @@ and simple_expansion :
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
+  let open Utils.ResultMonad in
   let sg_id = (m.id :> Id.Signature.t) in
+  Format.eprintf "module: %a\n%!" Component.Fmt.model_identifier (m.id :> Id.t);
   if m.hidden then m
   else
     let type_ = module_decl env sg_id m.type_ in
@@ -447,11 +453,17 @@ and module_ : Env.t -> Module.t -> Module.t =
           if expansion_needed then
             let cp = Component.Of_Lang.(resolved_module_path (empty ()) p) in
             match
-              Expand_tools.expansion_of_module_alias env m.id
-                (Cpath.Mk.Module.resolved cp)
+              Tools.expansion_of_module_path ~strengthen:false env 
+                (Cpath.Mk.Module.resolved cp) >>= Expand_tools.handle_expansion env (m.id :> Id.Signature.t)
             with
-            | Ok (_, _, e) ->
-                let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
+            | Ok (_, e) ->
+                let le =
+                  try
+                    Lang_of.(simple_expansion (empty ()) sg_id e)
+                  with exn ->
+                    Format.eprintf "Caught exception while trying to turn this into lang\n%!%a\n%!" (Component.Fmt.simple_expansion) e;
+                    raise exn
+                in
                 Alias
                   ( Odoc_model.Paths.Path.Module.Mk.resolved p,
                     Some (simple_expansion env sg_id le) )
@@ -681,6 +693,7 @@ and module_type_expr :
     Env.t -> Id.Signature.t -> ModuleType.expr -> ModuleType.expr =
  fun env id expr ->
   let open ModuleType in
+  let open Utils.ResultMonad in
   let do_expn cur (e : Paths.Path.ModuleType.t option) =
     match (cur, e) with
     | Some e, _ ->
@@ -700,12 +713,12 @@ and module_type_expr :
             Component.Of_Lang.(resolved_module_type_path (empty ()) p_path)
           in
           match
-            Expand_tools.expansion_of_module_type_expr env id
+            Tools.expansion_of_module_type_expr ~mark_substituted:false env
               (Path
                  {
                    p_path = Cpath.Mk.ModuleType.resolved cp;
                    p_expansion = None;
-                 })
+                 }) >>= Expand_tools.handle_expansion env (id :> Id.Signature.t)
           with
           | Ok (_, e) ->
               let le = Lang_of.(simple_expansion (empty ()) id e) in

@@ -11,6 +11,7 @@ module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
 
+
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
   match p.v with
@@ -318,10 +319,10 @@ and include_ : Env.t -> Include.t -> Include.t =
       let open Utils.ResultMonad in
       match decl with
       | Alias p ->
-          Expand_tools.aux_expansion_of_module_alias env ~strengthen:true p
-          >>= Expand_tools.assert_not_functor
+          Tools.expansion_of_module_path env ~strengthen:true p
+          >>= Tools.assert_not_functor
       | ModuleType mty ->
-          Expand_tools.aux_expansion_of_u_module_type_expr env mty
+          Tools.signature_of_u_module_type_expr ~mark_substituted:false env mty
     with
     | Error e ->
         Errors.report ~what:(`Include decl) ~tools_error:e `Expand;
@@ -600,12 +601,13 @@ and module_type_expr :
     ModuleType.expr ->
     ModuleType.expr =
  fun env id ?(expand_paths = true) expr ->
+  let open Utils.ResultMonad in
   let get_expansion cur e =
     match cur with
     | Some e -> Some (simple_expansion env id e)
     | None -> (
         let ce = Component.Of_Lang.(module_type_expr (empty ()) e) in
-        match Expand_tools.expansion_of_module_type_expr env id ce with
+        match Tools.expansion_of_module_type_expr ~mark_substituted:false env ce >>= Expand_tools.handle_expansion env id with
         | Ok (_, ce) ->
             let e = Lang_of.simple_expansion (Lang_of.empty ()) id ce in
             Some (simple_expansion env id e)
@@ -728,11 +730,13 @@ and type_expression_package env parent p =
     Tools.resolve_module_type ~mark_substituted:true ~add_canonical:true env cp
   with
   | Ok (path, mt) -> (
-      match Tools.signature_of_module_type env mt with
+      match Tools.expansion_of_module_type env mt with
       | Error e ->
           Errors.report ~what:(`Package cp) ~tools_error:e `Lookup;
           p
-      | Ok sg ->
+      | Ok (Functor _) ->
+       failwith "wtf"
+      | Ok (Signature sg) ->
           let substitution (frag, t) =
             let cfrag = Component.Of_Lang.(type_fragment (empty ()) frag) in
             let frag' =

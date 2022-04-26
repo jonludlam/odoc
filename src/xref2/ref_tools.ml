@@ -139,15 +139,15 @@ let find find sg name =
   | None -> Error (`Find_by_name (`Any, name))
 
 let module_lookup_to_signature_lookup env (ref, cp, m) =
-  Tools.signature_of_module env m
+  Tools.expansion_of_module env m
   |> map_error (fun e -> `Parent (`Parent_sig e))
-  >>= fun sg ->
+  >>= function | Functor _ -> assert false | Signature sg ->
   Ok ((ref :> Resolved.Signature.t), Cpath.Mk.Resolved.Parent.module_ cp, sg)
 
 let module_type_lookup_to_signature_lookup env (ref, cp, m) =
-  Tools.signature_of_module_type env m
+  Tools.expansion_of_module_type env m
   |> map_error (fun e -> `Parent (`Parent_sig e))
-  >>= fun sg ->
+  >>= function | Functor _ -> assert false | (Signature sg) ->
   Ok ((ref :> Resolved.Signature.t), Cpath.Mk.Resolved.Parent.module_type cp, sg)
 
 let type_lookup_to_class_signature_lookup =
