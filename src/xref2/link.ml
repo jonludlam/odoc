@@ -99,12 +99,16 @@ and should_resolve : Paths.Path.t -> bool =
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
+  Format.eprintf "type_path: %a\n%!" Component.Fmt.model_path (p :> Paths.Path.t);
   if not (should_resolve (p :> Paths.Path.t)) then p
-  else
+  else begin
+    Format.eprintf "Reresolving\n%!";
     let cp = Component.Of_Lang.(type_path (empty ()) p) in
+    Format.eprintf "p %a\n%!" Component.Fmt.type_path cp;
     match cp.v with
     | `Resolved p ->
         let result = Tools.reresolve_type env p in
+        Format.eprintf "Result: %a\n%!" Component.Fmt.resolved_type_path result;
         Lang_of.(Path.type_ (empty ()) (Cpath.Mk.Type.resolved result))
     | _ -> (
         match Tools.resolve_type_path env cp with
@@ -114,7 +118,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
         | Error e ->
             Errors.report ~what:(`Type_path cp) ~tools_error:e `Lookup;
             p)
-
+        end
 let class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
     =
  fun env p ->
@@ -430,6 +434,7 @@ and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
   let sg_id = (m.id :> Id.Signature.t) in
+  Format.eprintf "Handling module: %a\n%!" (Component.Fmt.model_identifier) (m.id :> Id.t);
   if m.hidden then m
   else
     let type_ = module_decl env sg_id m.type_ in

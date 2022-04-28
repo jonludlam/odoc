@@ -616,6 +616,7 @@ and process_module_path env ~add_canonical md rp =
         end
     | Some (`SubstMT p') -> Cpath.Mk.Resolved.Module.subst (p', rp)
   in
+  Format.eprintf "Processing module path %a - add canonical=%b\n%!" Component.Fmt.resolved_module_path rp' add_canonical;
   let p'' = if add_canonical then add_canonical_path m rp' else rp' in
   p''
 
@@ -1353,8 +1354,9 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       canonical (reresolve_module env p, p2')
   | `Canonical (p, p2) -> (
       match handle_canonical_module env p2 with
-      | { Odoc_model.Hc.v = `Resolved _; _ } as r -> canonical (p, r)
-      | r -> canonical (reresolve_module env p, r))
+      | { Odoc_model.Hc.v = `Resolved _; _ } as r -> Format.eprintf "1\n%!"; canonical (p, r)
+      | r -> Format.eprintf "2\n%!";
+      canonical (reresolve_module env p, r))
   | `OpaqueModule m -> opaquemodule (reresolve_module env m)
 
 and handle_canonical_module env p2 =
@@ -1362,19 +1364,25 @@ and handle_canonical_module env p2 =
    fun x ->
     match x.v with
     | `AliasRD (_, _, Some p) -> p
+    | `AliasRD (_, _, None) -> Format.eprintf "Erk!\n%!"; x
     | _ -> x
   in
   let resolve env p =
+    Format.eprintf "handle canonical module: resolving %a\n%!" (Component.Fmt.module_path) p;
     resolve_module env ~mark_substituted:false ~add_canonical:false p
-    >>= fun (p, m) -> Ok (strip_alias p, m)
+    >>= fun (p, m) ->
+    let p' = strip_alias p in
+    Format.eprintf "ok, got %a\n%!" (Component.Fmt.resolved_module_path) p';
+    Ok (p', m)
   in
   let lang_of cpath =
     (Lang_of.(Path.resolved_module (empty ()) cpath) :> RP.t)
   in
   let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
   match canonical_helper env resolve lang_of c_mod_poss cp2 with
-  | None -> p2
+  | None -> Format.eprintf "Failed to resolve canonical module: %a\n%!" Component.Fmt.model_path (p2 :> Odoc_model.Paths.Path.t); p2
   | Some (rp, dm) ->
+      Format.eprintf "Canonical helper says: %a\n%!" (Component.Fmt.resolved_module_path) rp;
       let m = Component.dget dm in
       (* Need to check if the module we're going to link to has been expanded.
          ModuleTypes are always expanded if possible, but Aliases are only expanded
@@ -1397,12 +1405,19 @@ and handle_canonical_module env p2 =
         match m.type_ with
         | Component.Module.Alias (_, Some _) -> true
         | Alias ({ v = `Resolved p; _ }, None) ->
+            Format.eprintf "in this test\n%!";
             (* we're an alias - check to see if we're marked as the canonical path.
                If not, check for an alias chain with us as canonical in it... *)
             let rec check m =
               match m.Component.Module.canonical with
               | Some p ->
-                  p = p2
+                  Format.eprintf "Checking %a against %a\n" Component.Fmt.model_path (p :> Odoc_model.Paths.Path.t) Component.Fmt.model_path (p2 :> Odoc_model.Paths.Path.t);
+                  if (p = p2) then begin
+                    Format.eprintf "equal!\n%!"; true end
+                  else begin
+                    Format.eprintf "They are not the same! (%d %s %d %s)\n%!" (fst p.key) (snd p.key) (fst p2.key) (snd p2.key);
+                    false
+                  end
                   (* The canonical path is the same one we're trying to resolve *)
               | None -> (
                   match m.type_ with
@@ -1422,6 +1437,7 @@ and handle_canonical_module env p2 =
         | Alias (_, _) -> false
         | ModuleType _ -> true
       in
+      Format.eprintf "Expanded is %b\n%!" expanded;
       let cpath =
         if expanded then rp
         else process_module_path env ~add_canonical:false dm rp
@@ -1502,12 +1518,24 @@ and reresolve_module_type :
         (reresolve_module_type env p1, reresolve_module_type env p2)
   | `OpaqueModuleType m -> opaquemoduletype (reresolve_module_type env m)
 
+and reresolve_type_gpath : Env.t -> Odoc_model.Paths.Path.Resolved.Type.t ->
+  Odoc_model.Paths.Path.Resolved.Type.t =
+  let open Odoc_model.Paths.Path.Resolved.Type.Mk in
+  fun env path ->
+    match path.v with
+    | `Identifier _ -> path
+  | `CanonicalType (p1, p2) ->
+      canonicaltype (reresolve_type_gpath env p1, handle_canonical_type env p2)
+  | `Type (p, n) -> type_ (reresolve_module_gpath env p, n)
+  | `Class (p, n) -> class_ (reresolve_module_gpath env p, n)
+  | `ClassType (p, n) -> class_type (reresolve_module_gpath env p, n)
+
 and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
  fun env path ->
   let open Cpath.Mk.Resolved.Type in
   let result =
     match path.v with
-    | `Gpath _ | `Local _ -> path
+    | `Gpath p -> gpath (reresolve_type_gpath env p) | `Local _ -> path
     | `Substituted s -> substituted (reresolve_type env s)
     | `CanonicalType (p1, p2) ->
         canonicaltype (reresolve_type env p1, handle_canonical_type env p2)

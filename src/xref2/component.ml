@@ -992,7 +992,7 @@ module Fmt = struct
         Format.fprintf ppf "%a(%a)" resolved_module_path p1 resolved_module_path
           p2
     | `Gpath p ->
-        Format.fprintf ppf "%a" model_resolved_path
+        Format.fprintf ppf "gp(%a)" model_resolved_path
           (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Substituted p ->
         Format.fprintf ppf "substituted(%a)" resolved_module_path p
