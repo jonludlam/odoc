@@ -42,34 +42,20 @@ and sig_items prefix ?canonical sg =
               | Some p -> Some (`Dot (p, name))
               | None -> None
             in
-            let m' =
-              Component.Delayed.(
-                Strengthen
-                  (Module, m, Cpath.Mk.Module.dot (prefix, name), canonical))
-            in
+            let m' = module_ ?canonical (Cpath.Mk.Module.dot (prefix, name)) m in
             (Module (id, r, m') :: items, id :: s)
         | ModuleType (id, mt) ->
             ( ModuleType
                 ( id,
-                  Component.Delayed.(
-                    Strengthen
-                      ( ModuleType,
-                        mt,
-                        Cpath.Mk.ModuleType.dot
-                          (prefix, Ident.Name.module_type id),
-                        None )) )
+                  module_type (Cpath.Mk.ModuleType.dot
+                  (prefix, Ident.Name.module_type id)) mt)
               :: items,
               s )
         | Type (id, r, t) ->
             ( Type
                 ( id,
                   r,
-                  Component.Delayed.(
-                    Strengthen
-                      ( Type,
-                        t,
-                        Cpath.Mk.Type.dot (prefix, Ident.Name.type_ id),
-                        None )) )
+                  type_decl ( Cpath.Mk.Type.dot (prefix, Ident.Name.type_ id)) t)
               :: items,
               s )
         | Include i ->
@@ -86,19 +72,25 @@ and sig_items prefix ?canonical sg =
 and module_ :
     ?canonical:Odoc_model.Paths.Path.Module.t ->
     Cpath.module_ ->
-    Component.Module.t ->
-    Component.Module.t =
- fun ?canonical prefix m -> { m with canonical; type_ = Alias (prefix, None) }
+    Component.Module.t Delayed.t ->
+    Component.Module.t Delayed.t =
+ fun ?canonical prefix m ->
+  let doc = Dhelpers.Module.doc m in
+  let hidden = Dhelpers.Module.hidden m in
+  Delayed.Val Component.Module.{ canonical; type_ = Alias (prefix, None); doc; hidden }
 
 (* nuke the expansion as this could otherwise lead to inconsistencies - e.g. 'AlreadyASig' *)
 and module_type :
-    Cpath.module_type -> Component.ModuleType.t -> Component.ModuleType.t =
+    Cpath.module_type -> Component.ModuleType.t Delayed.t -> Component.ModuleType.t Delayed.t =
  fun prefix m ->
+  let doc = Dhelpers.ModuleType.doc m in
+  let canonical = Dhelpers.ModuleType.canonical m in
   let expr = Some (ModuleType.Path { p_path = prefix; p_expansion = None }) in
-  { m with expr }
+  Delayed.Val { doc; canonical; expr }
 
-and type_decl : Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
+and type_decl : Cpath.type_ -> TypeDecl.t Delayed.t -> TypeDecl.t Delayed.t =
  fun path t ->
+  let t = Component.dget t in
   let equation =
     let e = t.TypeDecl.equation in
     let open TypeDecl.Equation in
@@ -122,7 +114,7 @@ and type_decl : Cpath.type_ -> TypeDecl.t -> TypeDecl.t =
       constraints = e.constraints;
     }
   in
-  { t with equation }
+  Delayed.Val { t with equation }
 
 and include_ : Cpath.module_ -> Include.t -> Include.t * Ident.module_ list =
  fun path i ->
