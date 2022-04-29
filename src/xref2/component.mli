@@ -120,7 +120,6 @@ module rec Delayed : sig
   type _ t =
     | Val : 'a -> 'a t
     | OfLang : ('a, _, 'b, _) ty * 'a * Of_Lang_types.map -> 'b t
-    | Strengthen : ('a, 'b, 'c, 'd) ty * 'c t * 'd * 'b option -> 'c t
     | Subst : ('a, 'b, 'c, 'd) ty * 'c t * Substitution.t -> 'c t
 end
 
