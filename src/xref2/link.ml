@@ -438,7 +438,6 @@ and module_ : Env.t -> Module.t -> Module.t =
   let open Module in
   let open Utils.ResultMonad in
   let sg_id = (m.id :> Id.Signature.t) in
-  Format.eprintf "module: %a\n%!" Component.Fmt.model_identifier (m.id :> Id.t);
   if m.hidden then m
   else
     let type_ = module_decl env sg_id m.type_ in
@@ -462,14 +461,7 @@ and module_ : Env.t -> Module.t -> Module.t =
             with
             | Ok (_, e) ->
                 let le =
-                  try Lang_of.(simple_expansion (empty ()) sg_id e)
-                  with exn ->
-                    Format.eprintf
-                      "Caught exception while trying to turn this into lang\n\
-                       %!%a\n\
-                       %!"
-                      Component.Fmt.simple_expansion e;
-                    raise exn
+                  Lang_of.(simple_expansion (empty ()) sg_id e)
                 in
                 Alias (`Resolved p, Some (simple_expansion env sg_id le))
             | Error _ -> type_
