@@ -370,8 +370,8 @@ let add_module_type identifier (dt : Component.ModuleType.t Component.Delayed.t)
     add_to_elts Kind_ModuleType identifier (`ModuleType (identifier, dt)) env
   in
   if env'.linking then
-    let t = Component.dget dt in
-    add_cdocs identifier t.doc env'
+    let docs = Dhelpers.ModuleType.doc dt in
+    add_cdocs identifier docs env'
   else env'
 
 let update_module_type identifier m env =
