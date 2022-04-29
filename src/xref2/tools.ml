@@ -14,11 +14,6 @@ let rec dget_impl : type a. a Component.Delayed.t -> a = function
   | OfLang (ModuleType, m, map) -> Component.Of_Lang.module_type map m
   | OfLang (Type, m, map) -> Component.Of_Lang.type_decl map m
   | OfLang (Value, v, map) -> Component.Of_Lang.value map v
-  | Strengthen (Module, m, p, canonical) ->
-      Strengthen.module_ ?canonical p (dget_impl m)
-  | Strengthen (ModuleType, m, p, _) -> Strengthen.module_type p (dget_impl m)
-  | Strengthen (Type, t, p, _) -> Strengthen.type_decl p (dget_impl t)
-  | Strengthen (_, v, _, _) -> dget_impl v
   | Subst (Module, m, sub) -> Subst.module_ sub (dget_impl m)
   | Subst (ModuleType, mt, sub) -> Subst.module_type sub (dget_impl mt)
   | Subst (Type, t, sub) -> Subst.type_ sub (dget_impl t)
