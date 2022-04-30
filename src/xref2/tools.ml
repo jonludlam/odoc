@@ -45,8 +45,8 @@ let c_mod_poss env p : Cpath.module_ list =
         let rest = List.map (fun p -> Cpath.Mk.Module.dot (p, n)) (inner p) in
         match Env.lookup_by_name Env.s_module n env with
         | Ok (`Module (id, m)) ->
-            let m = Component.dget m in
-            Cpath.Mk.Module.identifier (id, m.hidden) :: rest
+            let hidden = Dhelpers.Module.hidden m in
+            Cpath.Mk.Module.identifier (id, hidden) :: rest
         | Error _ -> rest)
     | _ -> [ x ]
   in
@@ -485,32 +485,30 @@ let rec handle_apply ~mark_substituted env func_path arg_path m =
   Ok (path, Subst.module_ subst new_module)
 
 and add_canonical_path :
-    Component.Module.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
+    Component.Module.t Component.Delayed.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun m p ->
   match p.v with
   | `Canonical _ -> p
   | _ -> (
-      match m.Component.Module.canonical with
+      match Dhelpers.Module.canonical m with
       | Some cp -> Cpath.Mk.Resolved.Module.canonical (p, cp)
       | None -> p)
 
 and add_canonical_path_mt :
-    Component.ModuleType.t ->
+    Component.ModuleType.t Component.Delayed.t ->
     Cpath.Resolved.module_type ->
     Cpath.Resolved.module_type =
  fun m p ->
   match p.v with
   | `CanonicalModuleType _ -> p
   | _ -> (
-      match m.canonical with
+      match Dhelpers.ModuleType.canonical m with
       | Some cp -> Cpath.Mk.Resolved.ModuleType.canonicalmoduletype (p, cp)
       | None -> p)
 
 and get_substituted_module_type :
-    Env.t -> Component.ModuleType.expr -> Cpath.Resolved.module_type option =
- fun env expr ->
-  match expr with
-  | Component.ModuleType.Path { p_path; _ } ->
+    Env.t -> Cpath.module_type -> Cpath.Resolved.module_type option =
+ fun env p_path ->
       if Cpath.is_module_type_substituted p_path then
         match
           resolve_module_type ~mark_substituted:true ~add_canonical:true env
@@ -519,73 +517,68 @@ and get_substituted_module_type :
         | Ok (resolved_path, _) -> Some resolved_path
         | Error _ -> None
       else None
-  | _ -> None
+
 
 and get_module_type_path_modifiers :
     Env.t ->
     add_canonical:bool ->
-    Component.ModuleType.t ->
+    Cpath.module_type option ->
     module_type_modifiers option =
- fun env ~add_canonical m ->
-  let alias_of expr =
-    match expr with
-    | Component.ModuleType.Path alias_path -> (
+ fun env ~add_canonical popt ->
+  let alias_of p =
         match
           resolve_module_type ~mark_substituted:true ~add_canonical env
-            alias_path.p_path
+            p
         with
         | Ok (resolved_alias_path, _) -> Some resolved_alias_path
-        | Error _ -> None)
-    (* | Functor (_arg, res) -> alias_of res *)
-    | _ -> None
+        | Error _ -> None
+  
   in
-  match m.expr with
+  match popt with
   | Some e -> (
       match alias_of e with Some e -> Some (`AliasModuleType e) | None -> None)
   | None -> None
 
 and process_module_type env ~add_canonical dm p' =
-  let open Component.ModuleType in
   let open OptionMonad in
+  let modifiers = Dhelpers.ModuleType.m_path_modifiers dm in
   (* Loop through potential chains of module_type equalities, looking for substitutions *)
-  let m = Component.dget dm in
   let substpath =
-    m.expr >>= get_substituted_module_type env >>= fun p ->
+    modifiers >>= get_substituted_module_type env >>= fun p ->
     Some (Cpath.Mk.Resolved.ModuleType.substt (p, p'))
   in
-
   let p' = match substpath with Some p -> p | None -> p' in
   let p'' =
-    match get_module_type_path_modifiers env ~add_canonical m with
+    match get_module_type_path_modifiers env ~add_canonical modifiers  with
     | Some (`AliasModuleType e) ->
         Cpath.Mk.Resolved.ModuleType.aliasmoduletype (e, p')
     | None -> p'
   in
-  let p''' = if add_canonical then add_canonical_path_mt m p'' else p'' in
+  let p''' = if add_canonical then add_canonical_path_mt dm p'' else p'' in
   p'''
 
 and get_module_path_modifiers :
-    Env.t -> add_canonical:bool -> Component.Module.t -> _ option =
+    Env.t -> add_canonical:bool -> Component.Module.t Component.Delayed.t -> _ option =
  fun env ~add_canonical m ->
-  match m.type_ with
-  | Alias (alias_path, _) -> (
+  match Dhelpers.Module.m_path_modifiers m with
+  | Some (AliasPath alias_path) -> (
       match
         resolve_module ~mark_substituted:true ~add_canonical env alias_path
       with
       | Ok (resolved_alias_path, _) -> Some (`Aliased resolved_alias_path)
       | Error _ -> None)
-  | ModuleType t -> (
-      match get_substituted_module_type env t with
+  | Some (ModuleTypePath p) -> (
+      match get_substituted_module_type env p with
       | Some s -> Some (`SubstMT s)
       | None -> None)
+  | None -> None
 
 and process_module_path env ~add_canonical md rp =
-  let m = Component.dget md in
   let rp =
-    if m.Component.Module.hidden then Cpath.Mk.Resolved.Module.hidden rp else rp
+    if (Dhelpers.Module.hidden md) then Cpath.Mk.Resolved.Module.hidden rp else rp
   in
   let rp' =
-    match get_module_path_modifiers env ~add_canonical m with
+    match get_module_path_modifiers env ~add_canonical md with
     | None -> rp
     | Some (`Aliased rp') ->
         let dest_hidden =
@@ -601,7 +594,7 @@ and process_module_path env ~add_canonical md rp =
           Cpath.Mk.Resolved.Module.alias (rp', unresolved_rp, Some rp)
     | Some (`SubstMT p') -> Cpath.Mk.Resolved.Module.subst (p', rp)
   in
-  let p'' = if add_canonical then add_canonical_path m rp' else rp' in
+  let p'' = if add_canonical then add_canonical_path md rp' else rp' in
   p''
 
 and handle_module_lookup env ~add_canonical id rparent sg sub =
@@ -2152,7 +2145,6 @@ and resolve_signature_fragment :
       let mname = ModuleName.make_std name in
       let new_path = Cpath.Mk.Resolved.Module.module_ (ppath, mname) in
       let new_frag = `Module (pfrag, mname) in
-      let m' = Component.dget m' in
       let modifier = get_module_path_modifiers env ~add_canonical:false m' in
       let cp', f' =
         match modifier with
@@ -2166,6 +2158,7 @@ and resolve_signature_fragment :
               `Subst (p', new_frag) )
       in
       (* Don't use the cached one - `FragmentRoot` is not unique *)
+      let m' = Component.dget m' in
       of_result ResultMonad.(expansion_of_module env m' >>= assert_not_functor)
       >>= fun parent_sg ->
       let sg =
@@ -2188,7 +2181,6 @@ and resolve_module_fragment :
       of_result (find_module_with_replacement env sg name) >>= fun m' ->
       let mname = ModuleName.make_std name in
       let new_frag = `Module (pfrag, mname) in
-      let m' = Component.dget m' in
       let modifier = get_module_path_modifiers env ~add_canonical:false m' in
       let f' =
         match modifier with
@@ -2197,6 +2189,7 @@ and resolve_module_fragment :
         | Some (`SubstMT p') -> `Subst (p', new_frag)
       in
       let f'' =
+        let m' = Component.dget m' in
         match expansion_of_module env m' with
         | Ok (_m : expansion) -> f'
         | Error `OpaqueModule -> `OpaqueModule f'

@@ -197,12 +197,12 @@ type module_modifiers =
 type module_type_modifiers = [ `AliasModuleType of Cpath.Resolved.module_type ]
 
 val get_module_path_modifiers :
-  Env.t -> add_canonical:bool -> Component.Module.t -> module_modifiers option
+  Env.t -> add_canonical:bool -> Component.Module.t Component.Delayed.t -> module_modifiers option
 
 val get_module_type_path_modifiers :
   Env.t ->
   add_canonical:bool ->
-  Component.ModuleType.t ->
+  Cpath.module_type option ->
   module_type_modifiers option
 
 val prefix_signature :

@@ -3,27 +3,60 @@
 (* Delayed helpers *)
 
 module Module = struct
-    let rec canonical : Component.Module.t Component.Delayed.t ->
+  type t = Component.Module.t Component.Delayed.t 
+    let rec canonical : t ->
          Odoc_model.Paths.Path.Module.t option =
         function
         | Val x -> x.Component.Module.canonical
         | OfLang (Module, x, _) -> x.canonical
         | Subst (Module, x, _) -> canonical x
     
-    let rec doc : Component.Module.t Component.Delayed.t ->
+    let rec doc : t ->
         Component.CComment.docs =
         function
         | Val x -> x.doc
         | OfLang (Module, x, map) -> Component.Of_Lang.docs map x.doc
         | Subst (Module, x, _) -> doc x
       
-    let rec hidden : Component.Module.t Component.Delayed.t ->
+    let rec hidden : t ->
         bool =
         function
         | Val x -> x.hidden
         | OfLang (Module, x, _) -> x.hidden
         | Subst (Module, x, _) -> hidden x
         
+
+    type modifiers =
+      | AliasPath of Cpath.module_
+      | ModuleTypePath of Cpath.module_type
+    let rec m_path_modifiers : t -> modifiers option =
+      function
+      | Val x -> begin
+        match x.type_ with
+        | Alias (p,_) -> Some (AliasPath p)
+        | ModuleType (Path { p_path; _}) -> Some (ModuleTypePath p_path)
+        | _ -> None
+      end
+      | OfLang (Module, x, map) -> begin
+        match x.type_ with
+        | Alias (p, _) -> Some (AliasPath (Component.Of_Lang.module_path map p))
+        | ModuleType (Path { p_path; _}) -> Some (ModuleTypePath (Component.Of_Lang.module_type_path map p_path))
+        | _ -> None
+      end
+      | Subst (Module, x, sub) -> begin
+        match m_path_modifiers x with
+        | Some (AliasPath p) -> Some (AliasPath (Subst.module_path sub p))
+        | Some (ModuleTypePath p) -> begin
+          match Subst.module_type_path sub p with
+          | Not_replaced p -> Some (ModuleTypePath p)
+          | Replaced (Path {p_path; _}) -> Some (ModuleTypePath p_path)
+          | _ -> None
+          end
+        | None -> None
+      end
+        
+      
+
 end
 
 module ModuleType = struct
@@ -40,6 +73,22 @@ module ModuleType = struct
      | Val x -> x.Component.ModuleType.canonical
      | OfLang (ModuleType, x, _) -> x.canonical
      | Subst (ModuleType, x, _) -> canonical x
+
+  let rec m_path_modifiers : Component.ModuleType.t Component.Delayed.t ->
+      Cpath.module_type option =
+      function
+      | Val x -> (match x.expr with | Some (Path {p_path; _}) -> Some p_path | _ -> None)
+      | OfLang (ModuleType, x, map) -> (match x.expr with | Some (Path {p_path; _}) -> Some (Component.Of_Lang.module_type_path map p_path) | _ -> None)
+      | Subst (ModuleType, x, sub) -> begin
+        match m_path_modifiers x with
+        | Some p ->  begin
+          match Subst.module_type_path sub p with
+          | Not_replaced p -> Some p
+          | Replaced (Path {p_path; _}) -> Some p_path
+          | _ -> None
+          end
+        | None -> None
+        end
 end
 
 
