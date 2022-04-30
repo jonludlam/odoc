@@ -3,6 +3,12 @@ open Component
 
 type t = Component.Substitution.t
 
+type ('a, 'b) or_replaced = Not_replaced of 'a | Replaced of 'b
+
+type 'a type_or_replaced = ('a, TypeExpr.t * TypeDecl.Equation.t) or_replaced
+
+type 'a module_type_or_replaced = ('a, ModuleType.expr) or_replaced
+
 val identity : t
 
 val unresolve_opaque_paths : t -> t
@@ -66,6 +72,10 @@ val class_decl : t -> Component.Class.decl -> Component.Class.decl
 val class_type : t -> Component.ClassType.t -> Component.ClassType.t
 
 val signature : t -> Component.Signature.t -> Component.Signature.t
+
+val module_path : t -> Cpath.module_ -> Cpath.module_
+
+val module_type_path : t -> Cpath.module_type -> Cpath.module_type module_type_or_replaced
 
 val apply_sig_map :
   t ->
