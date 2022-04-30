@@ -188,7 +188,7 @@ module M = struct
       else (base_path', base_ref')
     in
     let p, r =
-      match Tools.get_module_path_modifiers env ~add_canonical:true m with
+      match Tools.get_module_path_modifiers env ~add_canonical:true (Component.Delayed.Val m) with
       | None -> (base_path, base_ref)
       | Some (`Aliased cp) ->
           let cp = Tools.reresolve_module env cp in
@@ -231,7 +231,8 @@ module MT = struct
   type t = module_type_lookup_result
 
   let of_component env mt base_path base_ref : t =
-    match Tools.get_module_type_path_modifiers env ~add_canonical:true mt with
+    let modifiers = Dhelpers.ModuleType.m_path_modifiers (Component.Delayed.Val mt) in
+    match Tools.get_module_type_path_modifiers env ~add_canonical:true modifiers with
     | None -> (base_ref, base_path, mt)
     | Some (`AliasModuleType cp) ->
         let cp = Tools.reresolve_module_type env cp in
