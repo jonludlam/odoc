@@ -5,9 +5,9 @@ open Names
 module RM = Hashtbl.Make (struct
   type t = Cpath.Resolved.module_
 
-  let equal x y = x.Hc.key = y.Hc.key
+  let equal x y = x = y
 
-  let hash x = Hashtbl.hash x.Hc.key
+  let hash x = Hashtbl.hash x
 end)
 
 type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t }
