@@ -335,9 +335,7 @@ let add_module_type identifier (dt : Component.ModuleType.t Component.Delayed.t)
 
 let add_value identifier (dt : Component.Value.t Component.Delayed.t) env =
   add_to_elts Kind_Value identifier (`Value (identifier, dt)) env
-  |>
-  let t = Component.dget dt in
-  add_cdocs identifier t.doc
+  |> add_cdocs identifier (Dhelpers.Value.doc dt)
 
 let add_class identifier (t : Component.Class.t) env =
   let env' = add_to_elts Kind_Class identifier (`Class (identifier, t)) env in
