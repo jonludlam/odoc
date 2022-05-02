@@ -119,40 +119,27 @@ module Mk = struct
        | `Module of Resolved.parent * ModuleName.t (* Like dot, but typed *)
        | `Apply of module_ * module_ ] *)
 
-    let resolved : Resolved.module_ -> module_ = Hc.gen1 (fun x -> `Resolved x)
+    let resolved : Resolved.module_ -> module_ = fun x -> Hc.mk (`Resolved x)
 
-    let substituted : module_ -> module_ = Hc.gen1 (fun x -> `Substituted x)
+    let substituted : module_ -> module_ = fun x -> Hc.mk (`Substituted x)
 
     let local : Ident.path_module * bool -> module_ =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Local (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Local (x, b))
 
     let identifier : Identifier.Path.Module.t * bool -> module_ =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Identifier (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Identifier (x, b))
 
-    let root : string -> module_ = Hc.gen_str (fun x -> `Root x)
+    let root : string -> module_ = fun x -> Hc.mk (`Root x)
 
-    let forward : string -> module_ = Hc.gen_str (fun x -> `Forward x)
+    let forward : string -> module_ = fun x -> Hc.mk (`Forward x)
 
-    let dot : module_ * string -> module_ =
-      Hc.gen_named (fun x -> x) (fun (x, y) -> `Dot (x, y))
+    let dot : module_ * string -> module_ = fun (x, y) -> Hc.mk (`Dot (x, y))
 
     let apply : module_ * module_ -> module_ =
-      Hc.gen2 (fun (x, y) -> `Apply (x, y))
+     fun (x, y) -> Hc.mk (`Apply (x, y))
 
     let module_ : Resolved.parent * ModuleName.t -> module_ =
-      Hc.gen_named ModuleName.to_string (fun (x, y) -> `Module (x, y))
+     fun (x, y) -> Hc.mk (`Module (x, y))
   end
 
   module ModuleType = struct
@@ -165,34 +152,22 @@ module Mk = struct
     *)
 
     let resolved : Resolved.module_type -> module_type =
-      Hc.gen1 (fun x -> `Resolved x)
+     fun x -> Hc.mk (`Resolved x)
 
     let substituted : module_type -> module_type =
-      Hc.gen1 (fun x -> `Substituted x)
+     fun x -> Hc.mk (`Substituted x)
 
     let local : Ident.module_type * bool -> module_type =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Local (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Local (x, b))
 
     let identifier : Identifier.ModuleType.t * bool -> module_type =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Identifier (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Identifier (x, b))
 
     let dot : module_ * string -> module_type =
-      Hc.gen_named (fun x -> x) (fun (x, y) -> `Dot (x, y))
+     fun (x, y) -> Hc.mk (`Dot (x, y))
 
     let module_type : Resolved.parent * ModuleTypeName.t -> module_type =
-      Hc.gen_named ModuleTypeName.to_string (fun (x, y) -> `ModuleType (x, y))
+     fun (x, y) -> Hc.mk (`ModuleType (x, y))
   end
 
   module Type = struct
@@ -206,74 +181,47 @@ module Mk = struct
        | `ClassType of Resolved.parent * ClassTypeName.t ]
     *)
 
-    let resolved : Resolved.type_ -> type_ = Hc.gen1 (fun x -> `Resolved x)
+    let resolved : Resolved.type_ -> type_ = fun x -> Hc.mk (`Resolved x)
 
-    let substituted : type_ -> type_ = Hc.gen1 (fun x -> `Substituted x)
+    let substituted : type_ -> type_ = fun x -> Hc.mk (`Substituted x)
 
     let local : Ident.path_type * bool -> type_ =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Local (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Local (x, b))
 
     let identifier : Identifier.Path.Type.t * bool -> type_ =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Identifier (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Identifier (x, b))
 
-    let dot : module_ * string -> type_ =
-      Hc.gen_named (fun x -> x) (fun (x, y) -> `Dot (x, y))
+    let dot : module_ * string -> type_ = fun (x, y) -> Hc.mk (`Dot (x, y))
 
     let type_ : Resolved.parent * TypeName.t -> type_ =
-      Hc.gen_named TypeName.to_string (fun (x, y) -> `Type (x, y))
+     fun (x, y) -> Hc.mk (`Type (x, y))
 
     let class_type : Resolved.parent * ClassTypeName.t -> type_ =
-      Hc.gen_named ClassTypeName.to_string (fun (x, y) -> `ClassType (x, y))
+     fun (x, y) -> Hc.mk (`ClassType (x, y))
 
     let class_ : Resolved.parent * ClassName.t -> type_ =
-      Hc.gen_named ClassName.to_string (fun (x, y) -> `Class (x, y))
+     fun (x, y) -> Hc.mk (`Class (x, y))
   end
 
   module ClassType = struct
     let resolved : Resolved.class_type -> class_type =
-      Hc.gen1 (fun x -> `Resolved x)
+     fun x -> Hc.mk (`Resolved x)
 
-    let substituted : class_type -> class_type =
-      Hc.gen1 (fun x -> `Substituted x)
+    let substituted : class_type -> class_type = fun x -> Hc.mk (`Substituted x)
 
     let local : Ident.path_class_type * bool -> class_type =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Local (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Local (x, b))
 
     let identifier : Identifier.Path.ClassType.t * bool -> class_type =
-      let tbl = Hashtbl.create 255 in
-      fun (x, b) ->
-        if Hashtbl.mem tbl x then Hashtbl.find tbl x
-        else
-          let y = Hc.mk (`Identifier (x, b)) in
-          Hashtbl.add tbl x y;
-          y
+     fun (x, b) -> Hc.mk (`Identifier (x, b))
 
-    let dot : module_ * string -> class_type =
-      Hc.gen_named (fun x -> x) (fun (x, y) -> `Dot (x, y))
+    let dot : module_ * string -> class_type = fun (x, y) -> Hc.mk (`Dot (x, y))
 
     let class_type : Resolved.parent * ClassTypeName.t -> class_type =
-      Hc.gen_named ClassTypeName.to_string (fun (x, y) -> `ClassType (x, y))
+     fun (x, y) -> Hc.mk (`ClassType (x, y))
 
     let class_ : Resolved.parent * ClassName.t -> class_type =
-      Hc.gen_named ClassName.to_string (fun (x, y) -> `Class (x, y))
+     fun (x, y) -> Hc.mk (`Class (x, y))
   end
 
   module Resolved = struct
@@ -282,10 +230,10 @@ module Mk = struct
        *)
 
       let module_ : Resolved.module_ -> Resolved.parent =
-        Hc.gen1 (fun x -> `Module x)
+       fun x -> Hc.mk (`Module x)
 
       let module_type : Resolved.module_type -> Resolved.parent =
-        Hc.gen1 (fun x -> `ModuleType x)
+       fun x -> Hc.mk (`ModuleType x)
 
       let fragmentroot : Resolved.parent = Hc.mk `FragmentRoot
     end
@@ -304,48 +252,36 @@ module Mk = struct
          | `OpaqueModule of module_ ] *)
 
       let local : Ident.path_module -> Resolved.module_ =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Local x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Local x)
 
       let identifier : Identifier.Path.Module.t -> Resolved.module_ =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Identifier x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Identifier x)
 
       let substituted : Resolved.module_ -> Resolved.module_ =
-        Hc.gen1 (fun x -> `Substituted x)
+       fun x -> Hc.mk (`Substituted x)
 
       let subst : Resolved.module_type * Resolved.module_ -> Resolved.module_ =
-        Hc.gen2 (fun (x, y) -> `Subst (x, y))
+       fun (x, y) -> Hc.mk (`Subst (x, y))
 
       let hidden : Resolved.module_ -> Resolved.module_ =
-        Hc.gen1 (fun x -> `Hidden x)
+       fun x -> Hc.mk (`Hidden x)
 
       let module_ : Resolved.parent * Names.ModuleName.t -> Resolved.module_ =
-        Hc.gen_named Names.ModuleName.to_string (fun (x, y) -> `Module (x, y))
+       fun (x, y) -> Hc.mk (`Module (x, y))
 
       let canonical :
           Resolved.module_ * Odoc_model.Paths.Path.Module.t -> Resolved.module_
           =
-        Hc.gen2canonical_m (fun (x, y) -> `Canonical (x, y))
+       fun (x, y) -> Hc.mk (`Canonical (x, y))
 
       let apply : Resolved.module_ * Resolved.module_ -> Resolved.module_ =
-        Hc.gen2 (fun (x, y) -> `Apply (x, y))
+       fun (x, y) -> Hc.mk (`Apply (x, y))
 
       let alias : Resolved.module_ * Resolved.module_ -> Resolved.module_ =
-        Hc.gen2 (fun (x, y) -> `Alias (x, y))
+       fun (x, y) -> Hc.mk (`Alias (x, y))
 
       let opaquemodule : Resolved.module_ -> Resolved.module_ =
-        Hc.gen1 (fun x -> `OpaqueModule x)
+       fun x -> Hc.mk (`OpaqueModule x)
     end
 
     module ModuleType = struct
@@ -360,46 +296,33 @@ module Mk = struct
       *)
 
       let local : Ident.module_type -> Resolved.module_type =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Local x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Local x)
 
       let substituted : Resolved.module_type -> Resolved.module_type =
-        Hc.gen1 (fun x -> `Substituted x)
+       fun x -> Hc.mk (`Substituted x)
 
       let identifier : Identifier.Path.ModuleType.t -> Resolved.module_type =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Identifier x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Identifier x)
 
       let module_type :
           Resolved.parent * Names.ModuleTypeName.t -> Resolved.module_type =
-        Hc.gen_named Names.ModuleTypeName.to_string (fun (x, y) ->
-            `ModuleType (x, y))
+       fun (x, y) -> Hc.mk (`ModuleType (x, y))
 
       let substt :
           Resolved.module_type * Resolved.module_type -> Resolved.module_type =
-        Hc.gen2 (fun (x, y) -> `SubstT (x, y))
+       fun (x, y) -> Hc.mk (`SubstT (x, y))
 
       let aliasmoduletype :
           Resolved.module_type * Resolved.module_type -> Resolved.module_type =
-        Hc.gen2 (fun (x, y) -> `AliasModuleType (x, y))
+       fun (x, y) -> Hc.mk (`AliasModuleType (x, y))
 
       let canonicalmoduletype :
           Resolved.module_type * Odoc_model.Paths.Path.ModuleType.t ->
           Resolved.module_type =
-        Hc.gen2canonical_mt (fun (x, y) -> `CanonicalModuleType (x, y))
+       fun (x, y) -> Hc.mk (`CanonicalModuleType (x, y))
 
       let opaquemoduletype : Resolved.module_type -> Resolved.module_type =
-        Hc.gen1 (fun x -> `OpaqueModuleType x)
+       fun x -> Hc.mk (`OpaqueModuleType x)
     end
 
     module Type = struct
@@ -411,41 +334,27 @@ module Mk = struct
          | `Class of parent * ClassName.t
          | `ClassType of parent * ClassTypeName.t ]*)
 
-      let local : Ident.path_type -> Resolved.type_ =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Local x) in
-            Hashtbl.add tbl x y;
-            y
+      let local : Ident.path_type -> Resolved.type_ = fun x -> Hc.mk (`Local x)
 
       let substituted : Resolved.type_ -> Resolved.type_ =
-        Hc.gen1 (fun x -> `Substituted x)
+       fun x -> Hc.mk (`Substituted x)
 
       let identifier : Identifier.Path.Type.t -> Resolved.type_ =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Identifier x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Identifier x)
 
       let canonicaltype :
           Resolved.type_ * Odoc_model.Paths.Path.Type.t -> Resolved.type_ =
-        Hc.gen2canonical_t (fun (x, y) -> `CanonicalType (x, y))
+       fun (x, y) -> Hc.mk (`CanonicalType (x, y))
 
       let type_ : Resolved.parent * Names.TypeName.t -> Resolved.type_ =
-        Hc.gen_named Names.TypeName.to_string (fun (x, y) -> `Type (x, y))
+       fun (x, y) -> Hc.mk (`Type (x, y))
 
       let class_ : Resolved.parent * Names.ClassName.t -> Resolved.type_ =
-        Hc.gen_named Names.ClassName.to_string (fun (x, y) -> `Class (x, y))
+       fun (x, y) -> Hc.mk (`Class (x, y))
 
       let class_type : Resolved.parent * Names.ClassTypeName.t -> Resolved.type_
           =
-        Hc.gen_named Names.ClassTypeName.to_string (fun (x, y) ->
-            `ClassType (x, y))
+       fun (x, y) -> Hc.mk (`ClassType (x, y))
     end
 
     module ClassType = struct
@@ -456,33 +365,20 @@ module Mk = struct
          | `ClassType of parent * ClassTypeName.t ] *)
 
       let local : Ident.path_class_type -> Resolved.class_type =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Local x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Local x)
 
       let substituted : Resolved.class_type -> Resolved.class_type =
-        Hc.gen1 (fun x -> `Substituted x)
+       fun x -> Hc.mk (`Substituted x)
 
       let identifier : Identifier.Path.ClassType.t -> Resolved.class_type =
-        let tbl = Hashtbl.create 255 in
-        fun x ->
-          if Hashtbl.mem tbl x then Hashtbl.find tbl x
-          else
-            let y = Hc.mk (`Identifier x) in
-            Hashtbl.add tbl x y;
-            y
+       fun x -> Hc.mk (`Identifier x)
 
       let class_ : Resolved.parent * Names.ClassName.t -> Resolved.class_type =
-        Hc.gen_named Names.ClassName.to_string (fun (x, y) -> `Class (x, y))
+       fun (x, y) -> Hc.mk (`Class (x, y))
 
       let class_type :
           Resolved.parent * Names.ClassTypeName.t -> Resolved.class_type =
-        Hc.gen_named Names.ClassTypeName.to_string (fun (x, y) ->
-            `ClassType (x, y))
+       fun (x, y) -> Hc.mk (`ClassType (x, y))
     end
   end
 end
