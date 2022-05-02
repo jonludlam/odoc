@@ -22,6 +22,7 @@ module Module = struct
   type modifiers =
     | AliasPath of Cpath.module_
     | ModuleTypePath of Cpath.module_type
+
   let rec m_path_modifiers : t -> modifiers option = function
     | Val x -> (
         match x.type_ with
@@ -79,4 +80,13 @@ module ModuleType = struct
             | Replaced (Path { p_path; _ }) -> Some p_path
             | _ -> None)
         | None -> None)
+end
+
+module Value = struct
+  type t = Component.Value.t Component.Delayed.t
+
+  let rec doc : t -> Component.CComment.docs = function
+    | Val x -> x.doc
+    | OfLang (Value, x, map) -> Component.Of_Lang.docs map x.doc
+    | Subst (Value, x, _) -> doc x
 end
