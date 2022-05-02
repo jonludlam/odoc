@@ -350,9 +350,9 @@ module LookupModuleMemo = MakeMemo (struct
       simple_module_lookup_error )
     Result.result
 
-  let equal (x1, x2) (y1, y2) = x1 = y1 && x2.Hc.key = y2.Hc.key
+  let equal (x1, x2) (y1, y2) = x1 = y1 && x2 = y2
 
-  let hash (x, y) = Hashtbl.hash (x, y.Hc.key)
+  let hash (x, y) = Hashtbl.hash (x, y)
 end)
 
 module LookupParentMemo = MakeMemo (struct
@@ -363,9 +363,9 @@ module LookupParentMemo = MakeMemo (struct
       [ `Parent of parent_lookup_error ] )
     Result.result
 
-  let equal (x1, x2) (y1, y2) = x1 = y1 && x2.Hc.key = y2.Hc.key
+  let equal (x1, x2) (y1, y2) = x1 = y1 && x2 = y2
 
-  let hash (x, y) = Hashtbl.hash (x, y.Hc.key)
+  let hash (x, y) = Hashtbl.hash (x, y)
 end)
 
 module LookupAndResolveMemo = MakeMemo (struct
@@ -373,10 +373,9 @@ module LookupAndResolveMemo = MakeMemo (struct
 
   type result = resolve_module_result
 
-  let equal (x1, x2, x3) (y1, y2, y3) =
-    x1 = y1 && x2 = y2 && x3.Hc.key = y3.Hc.key
+  let equal (x1, x2, x3) (y1, y2, y3) = x1 = y1 && x2 = y2 && x3 = y3
 
-  let hash (x, x1, y) = Hashtbl.hash (x, x1, y.Hc.key)
+  let hash (x, x1, y) = Hashtbl.hash (x, x1, y)
 end)
 
 module SignatureOfModuleMemo = MakeMemo (struct
@@ -384,9 +383,9 @@ module SignatureOfModuleMemo = MakeMemo (struct
 
   type result = (Component.Signature.t, signature_of_module_error) Result.result
 
-  let equal x y = x.Hc.key = y.Hc.key
+  let equal x y = x = y
 
-  let hash x = Hashtbl.hash x.Hc.key
+  let hash x = Hashtbl.hash x
 end)
 
 let disable_all_caches () =
@@ -1299,8 +1298,7 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
         match
           resolve_module env ~mark_substituted:false ~add_canonical:true p2
         with
-        | Ok ({ v = `Alias (_, _, Some p3); _}, _) ->
-          reresolve_module env p3
+        | Ok ({ v = `Alias (_, _, Some p3); _ }, _) -> reresolve_module env p3
         | _ -> alias (dest', p2, p3)
       else alias (dest', p2, p3)
   | `Subst (p1, p2) ->

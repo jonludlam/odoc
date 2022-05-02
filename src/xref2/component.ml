@@ -1712,12 +1712,12 @@ module Of_Lang = struct
       | `Hidden p1 -> M.Module.hidden (recurse p1)
       | `OpaqueModule m -> M.Module.opaquemodule (recurse m)
     in
-    f()
-    (* try RM.find ident_map.memos.rmodpathmemo p
-    with Not_found ->
-      let res = f () in
-      RM.add ident_map.memos.rmodpathmemo p res;
-      res *)
+    f ()
+  (* try RM.find ident_map.memos.rmodpathmemo p
+     with Not_found ->
+       let res = f () in
+       RM.add ident_map.memos.rmodpathmemo p res;
+       res *)
 
   and resolved_module_type_path :
       _ ->
