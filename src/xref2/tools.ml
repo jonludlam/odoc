@@ -499,7 +499,9 @@ let rec handle_apply ~mark_substituted env func_path arg_path m =
   Ok (path, Subst.module_ subst new_module)
 
 and add_canonical_path :
-    Component.Module.t Component.Delayed.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
+    Component.Module.t Component.Delayed.t ->
+    Cpath.Resolved.module_ ->
+    Cpath.Resolved.module_ =
  fun m p ->
   match p.v with
   | `Canonical _ -> p
@@ -523,15 +525,13 @@ and add_canonical_path_mt :
 and get_substituted_module_type :
     Env.t -> Cpath.module_type -> Cpath.Resolved.module_type option =
  fun env p_path ->
-      if Cpath.is_module_type_substituted p_path then
-        match
-          resolve_module_type ~mark_substituted:true ~add_canonical:true env
-            p_path
-        with
-        | Ok (resolved_path, _) -> Some resolved_path
-        | Error _ -> None
-      else None
-
+  if Cpath.is_module_type_substituted p_path then
+    match
+      resolve_module_type ~mark_substituted:true ~add_canonical:true env p_path
+    with
+    | Ok (resolved_path, _) -> Some resolved_path
+    | Error _ -> None
+  else None
 
 and get_module_type_path_modifiers :
     Env.t ->
@@ -540,14 +540,11 @@ and get_module_type_path_modifiers :
     module_type_modifiers option =
  fun env ~add_canonical popt ->
   let alias_of p =
-        match
-          resolve_module_type ~mark_substituted:true ~add_canonical env
-            p
-        with
-        | Ok (resolved_alias_path, _) -> Some resolved_alias_path
-        | Error _ -> None
-  
+    match resolve_module_type ~mark_substituted:true ~add_canonical env p with
+    | Ok (resolved_alias_path, _) -> Some resolved_alias_path
+    | Error _ -> None
   in
+
   match popt with
   | Some e -> (
       match alias_of e with Some e -> Some (`AliasModuleType e) | None -> None)
@@ -563,7 +560,7 @@ and process_module_type env ~add_canonical dm p' =
   in
   let p' = match substpath with Some p -> p | None -> p' in
   let p'' =
-    match get_module_type_path_modifiers env ~add_canonical modifiers  with
+    match get_module_type_path_modifiers env ~add_canonical modifiers with
     | Some (`AliasModuleType e) ->
         Cpath.Mk.Resolved.ModuleType.aliasmoduletype (e, p')
     | None -> p'
@@ -572,7 +569,10 @@ and process_module_type env ~add_canonical dm p' =
   p'''
 
 and get_module_path_modifiers :
-    Env.t -> add_canonical:bool -> Component.Module.t Component.Delayed.t -> _ option =
+    Env.t ->
+    add_canonical:bool ->
+    Component.Module.t Component.Delayed.t ->
+    _ option =
  fun env ~add_canonical m ->
   match Dhelpers.Module.m_path_modifiers m with
   | Some (AliasPath alias_path) -> (
@@ -589,7 +589,7 @@ and get_module_path_modifiers :
 
 and process_module_path env ~add_canonical md rp =
   let rp =
-    if (Dhelpers.Module.hidden md) then Cpath.Mk.Resolved.Module.hidden rp else rp
+    if Dhelpers.Module.hidden md then Cpath.Mk.Resolved.Module.hidden rp else rp
   in
   let rp' =
     match get_module_path_modifiers env ~add_canonical md with
@@ -1054,10 +1054,7 @@ and resolve_module :
               Cpath.Mk.Resolved.Module.gpath
                 Odoc_model.Paths.(`Identifier (i :> Identifier.Path.Module.t))
             in
-            let p =
-              process_module_path env ~add_canonical m
-                rp
-            in
+            let p = process_module_path env ~add_canonical m rp in
             Ok (p, m)
         | Some Env.Forward ->
             Error (`Parent (`Parent_sig `UnresolvedForwardPath))
@@ -1651,17 +1648,16 @@ and signature_of_u_module_type_expr :
   | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok sg
   | TypeOf { t_desc; _ } -> Error (`UnexpandedTypeOf t_desc)
 
-(* and expansion_of_simple_expansion :
-     Component.ModuleType.simple_expansion -> expansion =
-     let rec helper :
-     Component.ModuleType.simple_expansion -> Component.ModuleType.expr =
-     function
-     | Signature sg -> Signature sg
-     | Functor (arg, e) -> Functor (arg, helper e)
-       in
-     function
-   | Signature sg -> Signature sg
-   | Functor (arg, e) -> Functor (arg, helper e) *)
+and expansion_of_simple_expansion :
+    Component.ModuleType.simple_expansion -> expansion =
+  let rec helper :
+      Component.ModuleType.simple_expansion -> Component.ModuleType.expr =
+    function
+    | Signature sg -> Signature sg
+    | Functor (arg, e) -> Functor (arg, helper e)
+  in
+  function
+  | Signature sg -> Signature sg | Functor (arg, e) -> Functor (arg, helper e)
 
 and expansion_of_module_type_expr :
     mark_substituted:bool ->
@@ -1670,8 +1666,8 @@ and expansion_of_module_type_expr :
     (expansion, expansion_of_module_error) Result.result =
  fun ~mark_substituted env m ->
   match m with
-  (* | Component.ModuleType.Path { p_expansion = Some e; _ } ->
-      Ok (expansion_of_simple_expansion e) *)
+  | Component.ModuleType.Path { p_expansion = Some e; _ } ->
+      Ok (expansion_of_simple_expansion e)
   | Component.ModuleType.Path { p_path; _ } -> (
       match
         resolve_module_type ~mark_substituted ~add_canonical:true env p_path
