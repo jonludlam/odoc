@@ -1566,17 +1566,16 @@ and signature_of_u_module_type_expr :
   | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok sg
   | TypeOf { t_desc; _ } -> Error (`UnexpandedTypeOf t_desc)
 
-(* and expansion_of_simple_expansion :
-     Component.ModuleType.simple_expansion -> expansion =
-     let rec helper :
-     Component.ModuleType.simple_expansion -> Component.ModuleType.expr =
-     function
-     | Signature sg -> Signature sg
-     | Functor (arg, e) -> Functor (arg, helper e)
-       in
-     function
-   | Signature sg -> Signature sg
-   | Functor (arg, e) -> Functor (arg, helper e) *)
+and expansion_of_simple_expansion :
+    Component.ModuleType.simple_expansion -> expansion =
+  let rec helper :
+      Component.ModuleType.simple_expansion -> Component.ModuleType.expr =
+    function
+    | Signature sg -> Signature sg
+    | Functor (arg, e) -> Functor (arg, helper e)
+  in
+  function
+  | Signature sg -> Signature sg | Functor (arg, e) -> Functor (arg, helper e)
 
 and expansion_of_module_type_expr :
     mark_substituted:bool ->
@@ -1585,8 +1584,8 @@ and expansion_of_module_type_expr :
     (expansion, expansion_of_module_error) Result.result =
  fun ~mark_substituted env m ->
   match m with
-  (* | Component.ModuleType.Path { p_expansion = Some e; _ } ->
-      Ok (expansion_of_simple_expansion e) *)
+  | Component.ModuleType.Path { p_expansion = Some e; _ } ->
+      Ok (expansion_of_simple_expansion e)
   | Component.ModuleType.Path { p_path; _ } -> (
       match
         resolve_module_type ~mark_substituted ~add_canonical:true env p_path
