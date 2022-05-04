@@ -139,12 +139,17 @@ let find find sg name =
   | None -> Error (`Find_by_name (`Any, name))
 
 let module_lookup_to_signature_lookup env (ref, cp, m) =
-  Tools.expansion_of_module env m
-  |> map_error (fun e -> `Parent (`Parent_sig e))
-  >>= function
-  | Functor _ -> assert false
+  let rec handle_expansion : Tools.expansion -> _ = function
+  | Functor (_, expr) -> begin
+    match Tools.expansion_of_module_type_expr ~mark_substituted:true env expr with
+    | Ok e -> handle_expansion e
+    | Error _ as e -> e
+    end
   | Signature sg ->
       Ok ((ref :> Resolved.Signature.t), Cpath.Mk.Resolved.Parent.module_ cp, sg)
+  in
+  Tools.expansion_of_module env m 
+  >>= handle_expansion  |> map_error (fun e -> `Parent (`Parent_sig e))
 
 let module_type_lookup_to_signature_lookup env (ref, cp, m) =
   Tools.expansion_of_module_type env m
