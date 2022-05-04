@@ -3055,3 +3055,19 @@ Exception: Failure "resolve_reference: Couldn't find \"X\"".
       ihash = 895481052; ikey = "m_X.r_Root.p_None"},
    Y)
 ```
+
+# Functor
+
+```ocaml
+let resolve_ref = resolve_ref_of_mli {|
+  module F (X : sig type t end) : sig
+    type t = X.t
+  end
+|}
+```
+
+Element in functor body:
+
+```ocaml
+# resolve_ref "F.t" ;;
+```
