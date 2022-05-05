@@ -788,12 +788,20 @@ and type_expression_package env parent p =
     Tools.resolve_module_type ~mark_substituted:true ~add_canonical:true env cp
   with
   | Ok (path, dmt) -> (
+      match p.substitutions with
+      | [] ->
+        (* No substitutions, don't need to try to resolve them *)
+        {
+          path = module_type_path env p.path;
+          substitutions = [];
+        }
+      | _ ->
       let mt = Component.dget dmt in
       match Tools.expansion_of_module_type env mt with
       | Error e ->
           Errors.report ~what:(`Package cp) ~tools_error:e `Lookup;
           p
-      | Ok (Functor _) -> failwith "wtf"
+      | Ok (Functor _) -> failwith "Type expression package of functor with substitutions!"
       | Ok (Signature sg) ->
           let substitution (frag, t) =
             let cfrag = Component.Of_Lang.(type_fragment (empty ()) frag) in
