@@ -330,9 +330,10 @@ and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
         doc = s.doc (* comments are ignored while compiling *);
       }
     in
-    let sg' = Component.Of_Lang.(signature (empty ()) sg) in
-    Lang_of.(signature (id :> Id.Signature.t) (empty ()) sg')
-
+    (* let sg' = Component.Of_Lang.(signature (empty ()) sg) in
+    Lang_of.(signature (id :> Id.Signature.t) (empty ()) sg') *)
+    sg
+    
 and module_ : Env.t -> Module.t -> Module.t =
  fun env m ->
   let open Module in
