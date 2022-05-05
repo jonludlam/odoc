@@ -28,7 +28,7 @@ Here's a little test
   sent 15237 bytes  received 266 bytes  31006.00 bytes/sec
   total size is 39340  speedup is 2.54
   $ odoc_print m.odo
-  odoc_print: PATH argument: no 'm.odo' file or directory
-  Usage: odoc_print [-r VAL] [OPTION]… PATH
-  Try 'odoc_print --help' for more information.
+  odoc_print: PATH argument: no `m.odo' file or directory
+  Usage: odoc_print [OPTION]... PATH
+  Try `odoc_print --help' for more information.
   [124]

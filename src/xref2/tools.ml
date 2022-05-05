@@ -307,29 +307,28 @@ module MakeMemo (X : MEMO) = struct
 
   let cache : (X.result * int * Env.LookupTypeSet.t) M.t = M.create 10000
 
-  let cache_hits : int M.t = M.create 10000
+  (* let cache_hits : int M.t = M.create 10000 *)
 
   let enabled = ref true
 
-  let bump_counter arg =
+  (* let bump_counter arg =
     try
       let new_val = M.find cache_hits arg + 1 in
       M.replace cache_hits arg new_val;
       new_val
     with _ ->
       M.add cache_hits arg 1;
-      1
+      1 *)
 
   let memoize f env arg =
     if not !enabled then f env arg
     else
       let env_id = Env.id env in
-      let n = bump_counter arg in
       let no_memo () =
         let lookups, result =
           Env.with_recorded_lookups env (fun env' -> f env' arg)
         in
-        if n > 1 then M.add cache arg (result, env_id, lookups);
+        M.add cache arg (result, env_id, lookups);
         result
       in
       match M.find_all cache arg with
@@ -337,7 +336,6 @@ module MakeMemo (X : MEMO) = struct
       | xs ->
           let rec find_fast = function
             | (result, env_id', _) :: _ when env_id' = env_id ->
-                M.replace cache_hits arg (M.find cache_hits arg + 1);
                 result
             | _ :: ys -> find_fast ys
             | [] -> find xs
@@ -349,8 +347,8 @@ module MakeMemo (X : MEMO) = struct
           find_fast xs
 
   let clear () =
-    M.clear cache;
-    M.clear cache_hits
+    M.clear cache
+    (* M.clear cache_hits *)
 end
 
 module LookupModuleMemo = MakeMemo (struct
@@ -389,6 +387,16 @@ module LookupAndResolveMemo = MakeMemo (struct
   let hash (x, x1, y) = Hashtbl.hash (x, x1, y)
 end)
 
+module HandleCanonicalModuleMemo = MakeMemo (struct
+  type t = Odoc_model.Paths.Path.Module.t
+
+  type result = Odoc_model.Paths.Path.Module.t
+
+  let equal x3 y3 = x3 = y3
+
+  let hash y = Hashtbl.hash y
+end)
+
 module ExpansionOfModuleMemo = MakeMemo (struct
   type t = Cpath.Resolved.module_
 
@@ -404,6 +412,11 @@ let disable_all_caches () =
   LookupAndResolveMemo.enabled := false;
   ExpansionOfModuleMemo.enabled := false;
   LookupParentMemo.enabled := false
+
+let _ = 
+  ExpansionOfModuleMemo.enabled := false
+  (* LookupParentMemo.enabled := false *)
+  (* LookupModuleMemo.enabled := false *)
 
 let reset_caches () =
   LookupModuleMemo.clear ();
@@ -1339,7 +1352,7 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       | r -> canonical (reresolve_module env p, r))
   | `OpaqueModule m -> opaquemodule (reresolve_module env m)
 
-and handle_canonical_module env p2 =
+and handle_canonical_module_real env p2 =
   let strip_alias : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
    fun x -> match x.v with `Alias (_, _, Some p) -> p | _ -> x
   in
@@ -1406,6 +1419,9 @@ and handle_canonical_module env p2 =
         else process_module_path env ~add_canonical:false dm rp
       in
       Lang_of.(Path.module_ (empty ()) (Cpath.Mk.Module.resolved cpath))
+and handle_canonical_module env p2 =
+  HandleCanonicalModuleMemo.memoize handle_canonical_module_real env p2
+
 
 and handle_canonical_module_type env p2 =
   let cp2 = Component.Of_Lang.(module_type_path (empty ()) p2) in
