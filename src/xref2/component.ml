@@ -93,7 +93,7 @@ module Of_Lang_types = struct
     let hash x = Hashtbl.hash x
   end)
 
-  type memos = { mutable rmodpathmemo : Cpath.Resolved.module_ RM.t }
+  (* type memos = { mutable rmodpathmemo : Cpath.Resolved.module_ RM.t } *)
 
   type map = {
     modules : Ident.module_ Paths.Identifier.Maps.Module.t;
@@ -106,7 +106,7 @@ module Of_Lang_types = struct
       Ident.path_class_type Paths.Identifier.Maps.Path.ClassType.t;
     classes : Ident.class_ Paths.Identifier.Maps.Class.t;
     class_types : Ident.class_type Paths.Identifier.Maps.ClassType.t;
-    memos : memos;
+    (* memos : memos; *)
   }
 end
 
@@ -122,7 +122,7 @@ module Lang_of_types = struct
     let hash x = Hashtbl.hash x
   end)
 
-  type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t }
+  (* type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t } *)
 
   type maps = {
     module_ : Identifier.Module.t ModuleMap.t;
@@ -137,7 +137,7 @@ module Lang_of_types = struct
     fragment_root : Cfrag.root option;
     (* Shadowed items *)
     shadowed : Lang.Include.shadowed;
-    memos : memos;
+    (* memos : memos; *)
   }
 end
 
@@ -1643,7 +1643,7 @@ module Of_Lang = struct
 
   let empty () =
     let open Paths.Identifier.Maps in
-    let memos = { rmodpathmemo = RM.create 255 } in
+    (* let memos = { rmodpathmemo = RM.create 255 } in *)
     {
       modules = Module.empty;
       module_types = ModuleType.empty;
@@ -1653,7 +1653,7 @@ module Of_Lang = struct
       path_class_types = Path.ClassType.empty;
       classes = Class.empty;
       class_types = ClassType.empty;
-      memos;
+      (* memos; *)
     }
 
   let map_of_idents ids map =
@@ -1722,7 +1722,7 @@ module Of_Lang = struct
     let path_types = path_types_new in
     let path_class_types = path_class_types_new in
     {
-      (empty ()) with
+      (* (empty ()) with *)
       modules;
       module_types;
       functor_parameters;
