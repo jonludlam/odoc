@@ -222,10 +222,11 @@ and comment_nestable_block_element env parent ~loc:_
   | `List (x, ys) ->
       `List
         ( x,
-          List.map
-            (List.map
-               (with_location (comment_nestable_block_element env parent)))
-            ys )
+          List.rev_map
+            (fun x ->
+              List.rev_map
+               (with_location (comment_nestable_block_element env parent)) x |> List.rev )
+            ys |> List.rev )
   | `Modules refs ->
       let refs =
         List.map
