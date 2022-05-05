@@ -229,7 +229,7 @@ and comment_nestable_block_element env parent ~loc:_
             ys |> List.rev )
   | `Modules refs ->
       let refs =
-        List.map
+        List.rev_map
           (fun (r : Comment.module_reference) ->
             match
               Ref_tools.resolve_module_reference env r.module_reference
@@ -249,7 +249,7 @@ and comment_nestable_block_element env parent ~loc:_
                   ~what:(`Reference (r.module_reference :> Paths.Reference.t))
                   ~tools_error:(`Reference e) `Resolve;
                 r)
-          refs
+          refs |> List.rev
       in
       `Modules refs
 
