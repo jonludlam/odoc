@@ -205,7 +205,7 @@ let dep_libraries_core = [
 
 let extra_deps = [
     "base";
-    "core_kernel";
+    "core";
     "bin_prot";
     "sexplib";
     "sexplib0";
