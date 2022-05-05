@@ -1529,8 +1529,8 @@ module LocalIdents = struct
 
   let rec signature_items s ids =
     let open Signature in
-    List.fold_right
-      (fun c ids ->
+    List.fold_left
+      (fun ids c ->
         match c with
         | Module (_, { Module.id; _ }) ->
             { ids with modules = id :: ids.modules }
@@ -1548,7 +1548,7 @@ module LocalIdents = struct
         | TypExt _ | Exception _ | Value _ | Comment _ -> ids
         | Include i -> signature i.Include.expansion.content ids
         | Open o -> signature o.Open.expansion ids)
-      s ids
+    ids s
 
   and signature s ids = signature_items s.items ids
 end
@@ -1695,7 +1695,7 @@ module Of_Lang = struct
    fun ident_map p ->
     let module M = Cpath.Mk.Resolved in
     let f () =
-      let recurse p = resolved_module_path ident_map p in
+      let recurse = resolved_module_path ident_map in
       match p with
       | `Identifier i -> (
           match identifier find_any_module ident_map i with
@@ -2368,7 +2368,7 @@ module Of_Lang = struct
 
   and apply_sig_map ident_map sg =
     let items =
-      List.map
+      List.rev_map
         (let open Odoc_model.Lang.Signature in
         let open Odoc_model.Paths in
         function
@@ -2423,7 +2423,7 @@ module Of_Lang = struct
             ClassType (id, r, class_type ident_map c)
         | Open o -> Open (open_ ident_map o)
         | Include i -> Include (include_ ident_map i))
-        sg.items
+        sg.items |> List.rev
     in
     { items; removed = []; compiled = sg.compiled; doc = docs ident_map sg.doc }
 
