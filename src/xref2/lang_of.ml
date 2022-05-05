@@ -175,12 +175,12 @@ module Path = struct
       | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2)
       | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
     in
-    try
-      let result = RM.find map.memos.rmodpathmemo p in
+    (* try *)
+      (* let result = RM.find map.memos.rmodpathmemo p in
       result
-    with Not_found ->
+    with Not_found -> *)
       let result = f () in
-      RM.add map.memos.rmodpathmemo p result;
+      (* RM.add map.memos.rmodpathmemo p result; *)
       result
 
   and resolved_parent map (p : Cpath.Resolved.parent) =

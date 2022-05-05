@@ -682,3 +682,4 @@ size.
     "hidden": "false"
   }
   $ find . -name chain.odocl -size +100000c 
+  ./chain.odocl
