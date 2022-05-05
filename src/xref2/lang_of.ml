@@ -15,7 +15,7 @@ let empty_shadow =
   }
 
 let empty () =
-  let memos = { rmodpathmemo = RM.create 255 } in
+  (* let memos = { rmodpathmemo = RM.create 255 } in *)
   {
     module_ = Component.ModuleMap.empty;
     module_type = Component.ModuleTypeMap.empty;
@@ -27,7 +27,7 @@ let empty () =
     path_class_type = Component.PathClassTypeMap.empty;
     fragment_root = None;
     shadowed = empty_shadow;
-    memos;
+    (* memos; *)
   }
 
 let with_fragment_root r = { (empty ()) with fragment_root = Some r }
@@ -150,12 +150,12 @@ module Path = struct
       | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2)
       | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
     in
-    try
-      let result = RM.find map.memos.rmodpathmemo p in
+    (* try *)
+      (* let result = RM.find map.memos.rmodpathmemo p in
       result
-    with Not_found ->
+    with Not_found -> *)
       let result = f () in
-      RM.add map.memos.rmodpathmemo p result;
+      (* RM.add map.memos.rmodpathmemo p result; *)
       result
 
   and resolved_parent map (p : Cpath.Resolved.parent) =

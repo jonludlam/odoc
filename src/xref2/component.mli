@@ -20,7 +20,7 @@ module Of_Lang_types : sig
 
   module RM : Hashtbl.S with type key = Paths.Path.Resolved.Module.t
 
-  type memos = { mutable rmodpathmemo : Cpath.Resolved.module_ RM.t }
+  (* type memos = { mutable rmodpathmemo : Cpath.Resolved.module_ RM.t } *)
 
   type map = {
     modules : Ident.module_ Paths.Identifier.Maps.Module.t;
@@ -33,7 +33,7 @@ module Of_Lang_types : sig
       Ident.path_class_type Paths.Identifier.Maps.Path.ClassType.t;
     classes : Ident.class_ Paths.Identifier.Maps.Class.t;
     class_types : Ident.class_type Paths.Identifier.Maps.ClassType.t;
-    memos : memos;
+    (* memos : memos; *)
   }
 end
 
@@ -43,7 +43,7 @@ module Lang_of_types : sig
 
   module RM : Hashtbl.S with type key = Cpath.Resolved.module_
 
-  type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t }
+  (* type memos = { rmodpathmemo : Path.Resolved.Module.t RM.t } *)
 
   type maps = {
     module_ : Identifier.Module.t ModuleMap.t;
@@ -58,7 +58,7 @@ module Lang_of_types : sig
     fragment_root : Cfrag.root option;
     (* Shadowed items *)
     shadowed : Lang.Include.shadowed;
-    memos : memos;
+    (* memos : memos; *)
   }
 end
 
