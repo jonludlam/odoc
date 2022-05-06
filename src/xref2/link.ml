@@ -272,9 +272,9 @@ and with_location :
   { value; location = loc }
 
 and comment_docs env parent d =
-  List.map
+  List.rev_map
     (with_location (comment_block_element env (parent :> Id.LabelParent.t)))
-    d
+    d |> List.rev
 
 and comment env parent = function
   | `Stop -> `Stop
