@@ -1662,32 +1662,32 @@ module Of_Lang = struct
        New classes go into [classes_new] and [path_class_types_new]
        New class_types go into [class_types_new], [path_types_new] and [path_class_types_new] *)
     let types_new, path_types_new =
-      List.fold_right
-        (fun i (types, path_types) ->
+      List.fold_left
+        (fun (types, path_types) i ->
           let id = Ident.Of_Identifier.type_ i in
           ( Maps.Type.add i id types,
             Maps.Path.Type.add
               (i :> Path.Type.t)
               (id :> Ident.path_type)
               path_types ))
-        ids.LocalIdents.types
         (map.types, map.path_types)
+        ids.LocalIdents.types
     in
     let classes_new, path_class_types_new =
-      List.fold_right
-        (fun i (classes, path_class_types) ->
+      List.fold_left
+        (fun (classes, path_class_types)i  ->
           let id = Ident.Of_Identifier.class_ i in
           ( Maps.Class.add i id classes,
             Maps.Path.ClassType.add
               (i :> Path.ClassType.t)
               (id :> Ident.path_class_type)
               path_class_types ))
-        ids.LocalIdents.classes
-        (map.classes, map.path_class_types)
+              (map.classes, map.path_class_types)
+              ids.LocalIdents.classes
     in
     let class_types_new, path_types_new, path_class_types_new =
-      List.fold_right
-        (fun i (class_types, path_types, path_class_types) ->
+      List.fold_left
+        (fun (class_types, path_types, path_class_types) i ->
           let id = Ident.Of_Identifier.class_type i in
           ( Maps.ClassType.add i id class_types,
             Maps.Path.Type.add
@@ -1698,20 +1698,21 @@ module Of_Lang = struct
               (i :> Path.ClassType.t)
               (id :> Ident.path_class_type)
               path_class_types ))
-        ids.LocalIdents.class_types
-        (map.class_types, path_types_new, path_class_types_new)
+              (map.class_types, path_types_new, path_class_types_new)
+              ids.LocalIdents.class_types
     in
     let modules_new =
-      List.fold_right
-        (fun i acc ->
+      List.fold_left
+        (fun acc i ->
           Maps.Module.add (i :> Module.t) (Ident.Of_Identifier.module_ i) acc)
-        ids.LocalIdents.modules map.modules
+          map.modules
+          ids.LocalIdents.modules
     in
     let module_types_new =
-      List.fold_right
-        (fun i acc ->
+      List.fold_left
+        (fun acc i ->
           Maps.ModuleType.add i (Ident.Of_Identifier.module_type i) acc)
-        ids.LocalIdents.module_types map.module_types
+          map.module_types ids.LocalIdents.module_types 
     in
     let modules = modules_new in
     let module_types = module_types_new in
