@@ -88,6 +88,8 @@ type kind =
   | Kind_Extension
   | Kind_Field
 
+exception RemoveFailure of string
+
 module ElementsByName : sig
   type t
 
@@ -123,9 +125,9 @@ end = struct
     let name = Identifier.name id in
     let l =
       try StringMap.find name t
-      with e ->
+      with _ ->
         Format.eprintf "Failed to find %s\n%!" name;
-        raise e
+        raise (RemoveFailure name)
     in
     match
       List.filter
@@ -256,12 +258,20 @@ let add_to_elts kind identifier component env =
   }
 
 let remove identifier env =
-  {
-    env with
-    id = unique_id ();
-    elts = ElementsByName.remove identifier env.elts;
-    ids = ElementsById.remove identifier env.ids;
-  }
+  try 
+    {
+      env with
+      id = unique_id ();
+      elts = ElementsByName.remove identifier env.elts;
+      ids = ElementsById.remove identifier env.ids;
+    }
+  with
+  | RemoveFailure x ->
+    Format.eprintf "Ignoring remove failure (failed to remove %s)\n%!" x;
+    env
+  | Not_found ->
+    Format.eprintf "Ignoring Not_found failure while removing identifier %a\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+    env
 
 let add_label identifier heading env =
   assert env.linking;
