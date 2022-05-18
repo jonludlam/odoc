@@ -5,13 +5,14 @@ open Component.Lang_of_types
 
 let empty_shadow =
   let open Lang.Include in
+  let e = Lang.SSet.empty in
   {
-    s_modules = [];
-    s_module_types = [];
-    s_values = [];
-    s_types = [];
-    s_classes = [];
-    s_class_types = [];
+    s_modules = e;
+    s_module_types = e;
+    s_values = e;
+    s_types = e;
+    s_classes = e;
+    s_class_types = e;
   }
 
 let empty () =
@@ -287,7 +288,7 @@ module ExtractIDs = struct
   let rec type_decl parent map id =
     let name = Ident.Name.unsafe_type id in
     let typed_name =
-      if List.mem name map.shadowed.s_types then
+      if Lang.SSet.mem name map.shadowed.s_types then
         Odoc_model.Names.TypeName.internal_of_string name
       else Ident.Name.typed_type id
     in
@@ -305,7 +306,7 @@ module ExtractIDs = struct
   and module_ parent map id =
     let name = Ident.Name.unsafe_module id in
     let typed_name =
-      if List.mem name map.shadowed.s_modules then
+      if Lang.SSet.mem name map.shadowed.s_modules then
         ModuleName.internal_of_string name
       else Ident.Name.typed_module id
     in
@@ -315,7 +316,7 @@ module ExtractIDs = struct
   and module_type parent map id =
     let name = Ident.Name.unsafe_module_type id in
     let typed_name =
-      if List.mem name map.shadowed.s_module_types then
+      if Lang.SSet.mem name map.shadowed.s_module_types then
         ModuleTypeName.internal_of_string name
       else Ident.Name.typed_module_type id
     in
@@ -328,7 +329,7 @@ module ExtractIDs = struct
   and class_ parent map id =
     let name = Ident.Name.unsafe_class id in
     let typed_name =
-      if List.mem name map.shadowed.s_classes then
+      if Lang.SSet.mem name map.shadowed.s_classes then
         ClassName.internal_of_string name
       else Ident.Name.typed_class id
     in
@@ -351,7 +352,7 @@ module ExtractIDs = struct
   and class_type parent map (id : Ident.class_type) =
     let name = Ident.Name.unsafe_class_type id in
     let typed_name =
-      if List.mem name map.shadowed.s_class_types then
+      if Lang.SSet.mem name map.shadowed.s_class_types then
         ClassTypeName.internal_of_string name
       else Ident.Name.typed_class_type id
     in
@@ -598,13 +599,14 @@ and simple_expansion :
 
 and combine_shadowed s1 s2 =
   let open Odoc_model.Lang.Include in
+  let u = Lang.SSet.union in
   {
-    s_modules = s1.s_modules @ s2.s_modules;
-    s_module_types = s1.s_module_types @ s2.s_module_types;
-    s_values = s1.s_values @ s2.s_values;
-    s_types = s1.s_types @ s2.s_types;
-    s_classes = s1.s_classes @ s2.s_classes;
-    s_class_types = s1.s_class_types @ s2.s_class_types;
+    s_modules = u s1.s_modules s2.s_modules;
+    s_module_types = u s1.s_module_types s2.s_module_types;
+    s_values = u s1.s_values s2.s_values;
+    s_types = u s1.s_types s2.s_types;
+    s_classes = u s1.s_classes s2.s_classes;
+    s_class_types = u s1.s_class_types s2.s_class_types;
   }
 
 and include_decl :
@@ -647,7 +649,7 @@ and value_ map parent id v =
   let open Component.Value in
   let name = Ident.Name.value id in
   let typed_name =
-    if List.mem name map.shadowed.s_values then
+    if Lang.SSet.mem name map.shadowed.s_values then
       ValueName.internal_of_string name
     else Ident.Name.typed_value id
   in

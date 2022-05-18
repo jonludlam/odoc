@@ -16,6 +16,8 @@
 
 open Paths
 
+module SSet = Set.Make(String)
+
 (** {3 Modules} *)
 
 module rec Module : sig
@@ -163,13 +165,14 @@ end =
 (** {3 Includes} *)
 
 and Include : sig
+
   type shadowed = {
-    s_modules : string list;
-    s_module_types : string list;
-    s_values : string list;
-    s_types : string list;
-    s_classes : string list;
-    s_class_types : string list;
+    s_modules : SSet.t;
+    s_module_types : SSet.t;
+    s_values : SSet.t;
+    s_types : SSet.t;
+    s_classes : SSet.t;
+    s_class_types : SSet.t;
   }
 
   type expansion = { shadowed : shadowed; content : Signature.t }

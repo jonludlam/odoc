@@ -35,6 +35,10 @@ val pp_lookup_type_list : Format.formatter -> lookup_type list -> unit
 
 type t
 
+val find_shadow : t -> Identifier.Signature.t -> Odoc_model.Lang.Include.shadowed
+
+val add_shadow : t -> Identifier.Signature.t -> Odoc_model.Lang.Include.shadowed -> t
+
 val is_linking : t -> bool
 
 val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a

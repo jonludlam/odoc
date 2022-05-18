@@ -193,6 +193,7 @@ type t = {
   resolver : resolver option;
   recorder : recorder option;
   fragmentroot : (int * Component.Signature.t) option;
+  shadowing : (Identifier.Signature.t * Odoc_model.Lang.Include.shadowed) list
 }
 
 let is_linking env = env.linking
@@ -200,6 +201,19 @@ let is_linking env = env.linking
 let set_resolver t resolver = { t with resolver = Some resolver }
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
+
+let find_shadow t id = try List.assoc id t.shadowing with _ -> Lang_of.empty_shadow
+
+let add_shadow t id shadow =
+  match List.partition (fun (id', _) -> id'=id) t.shadowing with
+  | [(_, s)],rest ->
+    let shadowing = Lang_of.combine_shadowed s shadow in
+    { t with shadowing = (id, shadowing) :: rest }
+  | [], _ ->
+    {t with shadowing = (id, shadow) :: t.shadowing }
+  | _ ->
+    assert false
+
 
 let id t = t.id
 
@@ -229,6 +243,7 @@ let empty =
     recorder = None;
     ambiguous_labels = Identifier.Maps.Label.empty;
     fragmentroot = None;
+    shadowing = [];
   }
 
 let add_fragment_root sg env =

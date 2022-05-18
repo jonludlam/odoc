@@ -249,14 +249,15 @@ and open_t =
 
 and include_shadowed =
   let open Lang.Include in
+  let l s = Lang.SSet.elements s in
   Record
     [
-      F ("s_modules", (fun t -> t.s_modules), List string);
-      F ("s_module_types", (fun t -> t.s_module_types), List string);
-      F ("s_values", (fun t -> t.s_values), List string);
-      F ("s_types", (fun t -> t.s_types), List string);
-      F ("s_classes", (fun t -> t.s_classes), List string);
-      F ("s_class_types", (fun t -> t.s_class_types), List string);
+      F ("s_modules", (fun t -> l t.s_modules), List string);
+      F ("s_module_types", (fun t -> l t.s_module_types), List string);
+      F ("s_values", (fun t -> l t.s_values), List string);
+      F ("s_types", (fun t -> l t.s_types), List string);
+      F ("s_classes", (fun t -> l t.s_classes), List string);
+      F ("s_class_types", (fun t -> l t.s_class_types), List string);
     ]
 
 and include_expansion =

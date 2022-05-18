@@ -2,6 +2,8 @@
 open Odoc_model.Paths
 open Component.Lang_of_types
 
+val empty_shadow : Odoc_model.Lang.Include.shadowed
+
 val empty : unit -> maps
 
 val with_fragment_root : Cfrag.root -> maps
@@ -50,6 +52,10 @@ module Path : sig
     maps -> Cfrag.resolved_type -> Fragment.Resolved.Type.t
 end
 
+val combine_shadowed : Odoc_model.Lang.Include.shadowed ->
+  Odoc_model.Lang.Include.shadowed ->
+    Odoc_model.Lang.Include.shadowed
+     
 val signature_items :
   Identifier.Signature.t ->
   maps ->

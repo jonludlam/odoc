@@ -69,7 +69,9 @@ and module_type_expr env (id : Id.Signature.t) expr =
   | TypeOf t -> (
       match module_type_expr_typeof env id t with
       | Ok e ->
-          let se = Lang_of.(simple_expansion (empty ()) id e) in
+          let shadow = Env.find_shadow env id in
+          let map = Lang_of.with_shadowed shadow in
+          let se = Lang_of.(simple_expansion map id e) in
           TypeOf { t with t_expansion = Some (simple_expansion env se) }
       | Error e
         when Errors.is_unexpanded_module_type_of (e :> Errors.Tools_error.any)
@@ -86,8 +88,10 @@ and u_module_type_expr env id expr =
   | TypeOf t -> (
       match module_type_expr_typeof env id t with
       | Ok e ->
-          let se = Lang_of.(simple_expansion (empty ()) id e) in
-          TypeOf { t with t_expansion = Some (simple_expansion env se) }
+        let shadow = Env.find_shadow env id in
+        let map = Lang_of.with_shadowed shadow in
+        let se = Lang_of.(simple_expansion map id e) in
+        TypeOf { t with t_expansion = Some (simple_expansion env se) }
       | Error e
         when Errors.is_unexpanded_module_type_of (e :> Errors.Tools_error.any)
         ->
@@ -107,6 +111,7 @@ and simple_expansion :
   | Functor (Unit, sg) -> Functor (Unit, simple_expansion env sg)
 
 and include_ env i =
+  let env = Env.add_shadow env i.parent i.expansion.shadowed in
   let decl =
     let env = Env.close_signature i.expansion.content env in
     match i.decl with

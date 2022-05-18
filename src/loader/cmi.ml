@@ -983,7 +983,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
         let vd = read_value_description env parent id v in
         let shadowed =
           if Env.is_shadowed env id
-          then { shadowed with s_values = Ident.name id :: shadowed.s_values }
+          then { shadowed with s_values = Odoc_model.Lang.SSet.add (Ident.name id) shadowed.s_values }
           else shadowed
         in
           loop (vd :: acc, shadowed) rest
@@ -994,7 +994,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
         let decl = read_type_declaration env parent id decl in
         let shadowed =
           if Env.is_shadowed env id
-          then { shadowed with s_types = Ident.name id :: shadowed.s_types }
+          then { shadowed with s_types = Odoc_model.Lang.SSet.add (Ident.name id) shadowed.s_types }
           else shadowed
         in
         loop (Type (read_type_rec_status rec_status, decl)::acc, shadowed) rest
@@ -1019,7 +1019,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
           let md = read_module_declaration env parent id md in
           let shadowed =
             if Env.is_shadowed env id
-            then { shadowed with s_modules = Ident.name id :: shadowed.s_modules }
+            then { shadowed with s_modules = Odoc_model.Lang.SSet.add (Ident.name id) shadowed.s_modules }
             else shadowed
           in
             loop (Module (read_module_rec_status rec_status, md)::acc, shadowed) rest
@@ -1027,7 +1027,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
           let mtd = read_module_type_declaration env parent id mtd in
           let shadowed =
             if Env.is_shadowed env id
-            then { shadowed with s_module_types = Ident.name id :: shadowed.s_module_types }
+            then { shadowed with s_module_types = Odoc_model.Lang.SSet.add (Ident.name id) shadowed.s_module_types }
             else shadowed
           in
             loop (ModuleType mtd :: acc, shadowed) rest
@@ -1036,7 +1036,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
           let cl = read_class_declaration env parent id cl in
           let shadowed =
             if Env.is_shadowed env id
-            then { shadowed with s_classes = Ident.name id :: shadowed.s_classes }
+            then { shadowed with s_classes = Odoc_model.Lang.SSet.add (Ident.name id) shadowed.s_classes }
             else shadowed
           in
             loop (Class (read_type_rec_status rec_status, cl)::acc, shadowed) rest
@@ -1044,7 +1044,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
         let cltyp = read_class_type_declaration env parent id cltyp in
         let shadowed =
           if Env.is_shadowed env id
-          then { shadowed with s_class_types = Ident.name id :: shadowed.s_class_types }
+          then { shadowed with s_class_types = Odoc_model.Lang.SSet.add (Ident.name id) shadowed.s_class_types }
           else shadowed
         in
         loop (ClassType (read_type_rec_status rec_status, cltyp)::acc, shadowed) rest
@@ -1058,7 +1058,8 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
 
     | [] -> ({items = List.rev acc; compiled=false; doc = [] }, shadowed)
   in
-    loop ([],{s_modules=[]; s_module_types=[]; s_values=[];s_types=[]; s_classes=[]; s_class_types=[]}) items
+  let e = Odoc_model.Lang.SSet.empty in
+    loop ([],{s_modules=e; s_module_types=e; s_values=e; s_types=e; s_classes=e; s_class_types=e}) items
 
 and read_signature env parent (items : Odoc_model.Compat.signature) =
   let env = Env.handle_signature_type_items parent items env in
