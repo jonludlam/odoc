@@ -127,6 +127,7 @@ end = struct
       try StringMap.find name t
       with _ ->
         Format.eprintf "Failed to find %s\n%!" name;
+        Format.eprintf "Env contains: [%s]\n" (StringMap.bindings t |> List.map fst |> String.concat ",");
         raise (RemoveFailure name)
     in
     match
@@ -260,8 +261,8 @@ let add_to_elts kind identifier component env =
     let other = ElementsById.find_by_id identifier env.ids in
     match other with
     | Some _ ->
-        (* Format.eprintf "Overriding duplicate env entry: %s\n%!" (Identifier.name identifier); *)
-        ()
+        Format.eprintf "Overriding duplicate env entry: %a\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+        failwith "duplicate"
     | None -> ()
   in
   let name = Identifier.name identifier in
@@ -273,20 +274,20 @@ let add_to_elts kind identifier component env =
   }
 
 let remove identifier env =
-  try 
+  (* try  *)
     {
       env with
       id = unique_id ();
       elts = ElementsByName.remove identifier env.elts;
       ids = ElementsById.remove identifier env.ids;
     }
-  with
+  (* with
   | RemoveFailure x ->
     Format.eprintf "Ignoring remove failure (failed to remove %s)\n%!" x;
     env
   | Not_found ->
     Format.eprintf "Ignoring Not_found failure while removing identifier %a\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
-    env
+    env *)
 
 let add_label identifier heading env =
   assert env.linking;

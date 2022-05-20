@@ -10,23 +10,34 @@ let again = ref false
 
 let rec signature : Env.t -> Signature.t -> Signature.t =
  fun env sg ->
-  let env = Env.open_signature sg env in
-  signature_items env sg
+  let sg', _ = signature_items env sg in
+  sg'
 
-and signature_items : Env.t -> Signature.t -> Signature.t =
+and signature_items : Env.t -> Signature.t -> (Signature.t * Env.t) =
  fun env s ->
   let open Signature in
-  let items =
-    List.map
-      (fun item ->
+  let items, env' =
+    List.fold_left
+      (fun (items, env) item ->
         match item with
-        | Module (r, m) -> Module (r, module_ env m)
-        | ModuleType mt -> ModuleType (module_type env mt)
-        | Include i -> Include (include_ env i)
-        | item -> item)
-      s.items
+        | Module (r, m) ->
+          let m' = module_ env m in
+          let item' = Module (r, m') in
+          let ty =
+            Component.Delayed.(
+              OfLang (Module, m', Component.Of_Lang.empty ()))
+          in
+          let env' = Env.add_module (m.id :> Odoc_model.Paths.Identifier.Path.Module.t) ty [] env in
+          (item' :: items, env')
+        | ModuleType mt ->
+          (ModuleType (module_type env mt) :: items, env)
+        | Include i ->
+          let (item', env) = include_ env i in
+          (Include item' :: items, env)
+        | item -> (item :: items, env))
+      ([], env) s.items
   in
-  { s with items }
+  { s with items = List.rev items }, env'
 
 and module_ env m =
   match m.type_ with
@@ -110,19 +121,18 @@ and simple_expansion :
       Functor (Named (functor_parameter env n), simple_expansion env sg)
   | Functor (Unit, sg) -> Functor (Unit, simple_expansion env sg)
 
-and include_ env i =
-  let env = Env.add_shadow env i.parent i.expansion.shadowed in
+and include_ : Env.t -> Odoc_model.Lang.Include.t -> Odoc_model.Lang.Include.t * Env.t = fun env i ->
+  let shadow_env = Env.add_shadow env i.parent i.expansion.shadowed in
   let decl =
-    let env = Env.close_signature i.expansion.content env in
     match i.decl with
     | Alias _ -> i.decl
-    | ModuleType t -> ModuleType (u_module_type_expr env i.parent t)
+    | ModuleType t -> ModuleType (u_module_type_expr shadow_env i.parent t)
   in
-  let content =
+  let content, env' =
     let { Include.content; _ } = i.expansion in
     signature_items env content
   in
-  { i with expansion = { i.expansion with content }; decl }
+  { i with expansion = { i.expansion with content }; decl }, env'
 
 let signature env =
   let rec loop sg =

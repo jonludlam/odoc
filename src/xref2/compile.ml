@@ -196,36 +196,45 @@ and module_substitution env m =
   let open ModuleSubstitution in
   { m with manifest = module_path env m.manifest }
 
-and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
- fun env id s ->
+and signature_items : Env.t -> Env.t -> Id.Signature.t -> Signature.item list -> _ =
+ fun env env_for_includes id s ->
   let open Signature in
-  let items, _ =
+  let items, _, _ =
     List.fold_left
-      (fun (items, env) item ->
-        let std i = (i :: items, env) in
+      (fun (items, env, env_for_includes) item ->
+        let std i = (i :: items, env, env_for_includes) in
         match item with
         | Module (r, m) ->
             let m' = module_ env m in
-            if m == m' then (item :: items, env)
-            else
-              let ty =
-                Component.Delayed.(
-                  OfLang (Module, m', Component.Of_Lang.empty ()))
-              in
-              let docs = [] in
-              let env' =
-                Env.update_module
-                  (m.id :> Paths.Identifier.Path.Module.t)
-                  ty docs env
-              in
-              (Module (r, m') :: items, env')
+            let ty =
+              Component.Delayed.(
+                OfLang (Module, m', Component.Of_Lang.empty ()))
+            in
+            let docs = [] in
+            let env' =
+              Env.update_module
+                (m.id :> Paths.Identifier.Path.Module.t)
+                ty docs env
+            in
+            let env_for_includes' =
+              Env.add_module
+                (m.id :> Paths.Identifier.Path.Module.t)
+                ty docs env_for_includes
+            in
+            (Module (r, m') :: items, env', env_for_includes')
         | ModuleSubstitution m ->
             let env' = Env.open_module_substitution m env in
-            (ModuleSubstitution (module_substitution env m) :: items, env')
-        | Type (r, t) -> std @@ Type (r, type_decl env t)
+            let env_for_includes' = Env.open_module_substitution m env_for_includes in
+            (ModuleSubstitution (module_substitution env m) :: items, env', env_for_includes')
+        | Type (r, t) ->
+            let ty' = type_decl env t in
+            let cty = Component.Delayed.(OfLang (Type, ty', Component.Of_Lang.empty ())) in
+            let env_for_includes' = Env.add_type t.id cty env_for_includes in
+            (Type (r, ty') :: items, env, env_for_includes')
         | TypeSubstitution t ->
             let env' = Env.open_type_substitution t env in
-            (TypeSubstitution (type_decl env t) :: items, env')
+            let env_for_includes' = Env.open_type_substitution t env_for_includes in            
+            (TypeSubstitution (type_decl env t) :: items, env', env_for_includes')
         | ModuleType mt ->
             let m' = module_type env mt in
             let ty =
@@ -233,11 +242,13 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
                 OfLang (ModuleType, m', Component.Of_Lang.empty ()))
             in
             let env' = Env.update_module_type mt.id ty env in
-            (ModuleType (module_type env mt) :: items, env')
+            let env_for_includes' = Env.add_module_type mt.id ty env_for_includes in
+            (ModuleType (module_type env mt) :: items, env', env_for_includes')
         | ModuleTypeSubstitution mt ->
             let env' = Env.open_module_type_substitution mt env in
+            let env_for_includes' = Env.open_module_type_substitution mt env_for_includes in
             ( ModuleTypeSubstitution (module_type_substitution env mt) :: items,
-              env' )
+              env', env_for_includes' )
         | Value v -> std @@ Value (value_ env id v)
         | Comment c -> std @@ Comment c
         | TypExt t -> std @@ TypExt (extension env id t)
@@ -245,17 +256,16 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
         | Class (r, c) -> std @@ Class (r, class_ env id c)
         | ClassType (r, c) -> std @@ ClassType (r, class_type env c)
         | Include i ->
-            let i' = include_ env i in
-            if i'.expansion == i.expansion then std @@ Include i'
-            else
-              (* Expansion has changed, let's put the content into the environment *)
-              let env' = Env.close_signature i.Include.expansion.content env in
-              let env'' =
+            let i' = include_ env_for_includes i in
+            (* Expansion has changed, let's put the content into the environment *)
+            let env' = Env.close_signature i.Include.expansion.content env in
+            let env'' =
                 Env.open_signature i'.Include.expansion.content env'
-              in
-              (Include i' :: items, env'')
+            in
+            let env_for_includes' = Env.open_signature i'.expansion.content env_for_includes in
+              (Include i' :: items, env'', env_for_includes')
         | Open o -> std @@ Open o)
-      ([], env) s
+      ([], env, env_for_includes) s
   in
   List.rev items
 
@@ -271,8 +281,9 @@ and signature : Env.t -> Id.Signature.t -> Signature.t -> _ =
   if s.compiled then s
   else
     let sg =
+      let env_for_includes = env in
       let env = Env.open_signature s env in
-      let items = signature_items env id s.items in
+      let items = signature_items env env_for_includes id s.items in
       {
         Signature.items;
         compiled = true;
@@ -349,7 +360,6 @@ and include_ : Env.t -> Include.t -> Include.t =
               failwith "Expansion shouldn't be anything other than a signature"
         in
         let content =
-          let env = Env.close_signature i.expansion.content env in
           signature env i.parent expansion_sg
         in
         { shadowed = i.expansion.shadowed; content }
