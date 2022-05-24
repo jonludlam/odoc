@@ -260,8 +260,14 @@ let add_to_elts kind identifier component env =
   let _ =
     let other = ElementsById.find_by_id identifier env.ids in
     match other with
-    | Some _ ->
+    | Some e ->
         Format.eprintf "Overriding duplicate env entry: %a\n%!" Component.Fmt.model_identifier (identifier :> Odoc_model.Paths.Identifier.t);
+        let print_elt : Format.formatter -> Component.Element.any -> unit = fun ppf -> function
+        | `Module (_id, m) -> Format.fprintf ppf "Module %a\n%!" Component.Fmt.module_ (Component.dget m)
+        | _ -> Format.fprintf ppf "Unknown"
+        in
+        Format.eprintf "Previous entry: %a\n%!" print_elt e;
+        Format.eprintf "New entry: %a\n%!" print_elt component;
         failwith "duplicate"
     | None -> ()
   in

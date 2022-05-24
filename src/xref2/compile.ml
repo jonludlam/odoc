@@ -328,6 +328,9 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
 and include_ : Env.t -> Include.t -> Include.t =
  fun env i ->
   let open Include in
+  let env = Env.add_shadow env i.parent i.expansion.shadowed in
+  let shadow = Env.find_shadow env i.parent in
+  let map = Lang_of.with_shadowed shadow in 
   let decl = Component.Of_Lang.(include_decl (empty ()) i.decl) in
   let get_expansion () =
     match
@@ -343,7 +346,6 @@ and include_ : Env.t -> Include.t -> Include.t =
         Errors.report ~what:(`Include decl) ~tools_error:e `Expand;
         i.expansion
     | Ok sg ->
-        let map = Lang_of.with_shadowed i.expansion.shadowed in
         let sg' =
           match i.strengthened with
           | Some p ->
@@ -360,7 +362,12 @@ and include_ : Env.t -> Include.t -> Include.t =
               failwith "Expansion shouldn't be anything other than a signature"
         in
         let content =
-          signature env i.parent expansion_sg
+          try
+            signature env i.parent expansion_sg
+          with e ->
+            Format.eprintf "Error handling content\n%!";
+            Format.eprintf "%a\n%!" Component.Fmt.signature (Component.Of_Lang.(signature (empty ()) expansion_sg));
+raise e
         in
         { shadowed = i.expansion.shadowed; content }
   in
@@ -626,8 +633,15 @@ and module_type_expr :
           >>= Expand_tools.handle_expansion env id
         with
         | Ok (_, ce) ->
-            let e = Lang_of.simple_expansion (Lang_of.empty ()) id ce in
-            Some (simple_expansion env id e)
+            let shadow = Env.find_shadow env id in
+            let map = Lang_of.with_shadowed shadow in
+            let e = Lang_of.simple_expansion map id ce in
+            (* begin try *)
+              Some (simple_expansion env id e)
+            (* with e ->
+              Format.eprintf "Failed to handle simple expansion\n%a\n%!" Component.Fmt.simple_expansion ce;
+              raise e
+            end *)
         | Error `OpaqueModule -> None
         | Error e ->
             Errors.report ~what:(`Module_type_expr ce) ~tools_error:e `Expand;

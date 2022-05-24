@@ -649,9 +649,10 @@ and value_ map parent id v =
   let open Component.Value in
   let name = Ident.Name.value id in
   let typed_name =
-    if Lang.SSet.mem name map.shadowed.s_values then
+    if Lang.SSet.mem name map.shadowed.s_values then begin
+      Format.eprintf "%s is shadowed\n%!" name;
       ValueName.internal_of_string name
-    else Ident.Name.typed_value id
+    end else Ident.Name.typed_value id
   in
   let identifier = Identifier.Mk.value (parent, typed_name) in
   {

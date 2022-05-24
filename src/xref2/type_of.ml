@@ -95,13 +95,15 @@ and u_module_type_expr env id expr =
   match expr with
   | Path _ -> expr
   | Signature sg -> Signature (signature env sg)
-  | With (subs, w) -> With (subs, u_module_type_expr env id w)
+  | With (subs, w) -> 
+    With (subs, u_module_type_expr env id w)
   | TypeOf t -> (
-      match module_type_expr_typeof env id t with
+      let fake_parent = (Paths.Identifier.Mk.module_ (id, Names.ModuleName.internal_of_string "__FAKE__")) in
+      match module_type_expr_typeof env fake_parent t with
       | Ok e ->
         let shadow = Env.find_shadow env id in
         let map = Lang_of.with_shadowed shadow in
-        let se = Lang_of.(simple_expansion map id e) in
+        let se = Lang_of.(simple_expansion map fake_parent e) in
         TypeOf { t with t_expansion = Some (simple_expansion env se) }
       | Error e
         when Errors.is_unexpanded_module_type_of (e :> Errors.Tools_error.any)
@@ -124,9 +126,19 @@ and simple_expansion :
 and include_ : Env.t -> Odoc_model.Lang.Include.t -> Odoc_model.Lang.Include.t * Env.t = fun env i ->
   let shadow_env = Env.add_shadow env i.parent i.expansion.shadowed in
   let decl =
-    match i.decl with
-    | Alias _ -> i.decl
-    | ModuleType t -> ModuleType (u_module_type_expr shadow_env i.parent t)
+    (* try  *)
+      match i.decl with
+      | Alias _ -> i.decl
+      | ModuleType t -> ModuleType (u_module_type_expr shadow_env i.parent t)
+    (* with e ->
+      Format.eprintf "Failed to handle include: u_module_type_expr=\n%!";
+      begin
+        match i.decl with
+        | Alias _ -> ()
+        | ModuleType t ->
+        Format.eprintf "%a\n%!" Component.Fmt.u_module_type_expr (Component.Of_Lang.(u_module_type_expr (empty ()) t));
+        end;
+      raise e *)
   in
   let content, env' =
     let { Include.content; _ } = i.expansion in

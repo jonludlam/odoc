@@ -545,7 +545,7 @@ and read_module_type env parent label_parent mty =
         Functor( f_parameter, res)
 #endif
     | Tmty_with(body, subs) -> (
-      let body = read_module_type env parent label_parent body in
+      let body = read_module_type env (Identifier.Mk.module_ (parent, ModuleName.internal_of_string "__FAKE__")) label_parent body in
       let subs = List.map (read_with_constraint env parent label_parent) subs in
       match Odoc_model.Lang.umty_of_mty body with
       | Some w_expr ->
@@ -746,7 +746,7 @@ and read_include env parent incl =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc, status = Doc_attr.attached Odoc_model.Semantics.Expect_status container incl.incl_attributes in
   let content, shadowed = Cmi.read_signature_noenv env parent (Odoc_model.Compat.signature incl.incl_type) in
-  let expr = read_module_type env parent container incl.incl_mod in
+  let expr = read_module_type env (Identifier.Mk.module_ (parent, ModuleName.internal_of_string "__FAKE__")) container incl.incl_mod in
   let umty = Odoc_model.Lang.umty_of_mty expr in 
   let expansion = { content; shadowed; } in
   match umty with
