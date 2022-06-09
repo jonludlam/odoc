@@ -91,3 +91,98 @@ module Value = struct
     | OfLang (Value, x, map) -> Component.Of_Lang.docs map x.doc
     | Subst (Value, x, _) -> doc x
 end
+
+module Signature = struct
+  type t = Component.Signature.t Component.Delayed.t
+
+  type ident =
+    | IType of Ident.datatype
+    | IModule of Ident.module_
+    | IModuleType of Ident.module_type
+    | IClass of Ident.class_
+    | IClassType of Ident.class_type
+  
+  let rec get_idents : t -> ident list = function
+    | Val sg ->
+      let rec inner sg =
+        List.fold_left (fun acc t ->
+          match t with
+          | Component.Signature.Type (id, _, _)
+          | Component.Signature.TypeSubstitution (id, _) -> IType id :: acc
+          | Module (id, _, _)
+          | ModuleSubstitution (id, _) -> IModule id :: acc
+          | ModuleType (id, _)
+          | ModuleTypeSubstitution (id, _) -> IModuleType id :: acc
+          | Class (id, _, _) -> IClass id :: acc
+          | ClassType (id, _, _) -> IClassType id :: acc
+          | Exception _
+          | TypExt _
+          | Value _
+          | Comment _ -> acc
+          | Include i -> acc @ (inner i.expansion_.items)
+          | Open o -> acc @ (inner o.expansion.items)) [] sg
+        in inner sg.items
+    | OfLang (Signature, sg, map) ->
+      let open Odoc_model.Paths.Identifier in
+      let rec inner sg =
+        List.fold_left (fun acc t ->
+          match t with
+          | Odoc_model.Lang.Signature.Type (_, t) ->
+            let id = Maps.Type.find t.id map.types in
+            IType id :: acc
+          | Odoc_model.Lang.Signature.TypeSubstitution t ->
+            let id = Maps.Type.find t.id map.types in
+            IType id :: acc
+          | Module (_, m) ->
+            let id =
+              Maps.Module.find
+                (m.id :> Module.t)
+                map.modules
+            in
+            IModule id :: acc
+          | ModuleSubstitution m ->
+            let id =
+              Maps.Module.find
+                (m.id :> Module.t)
+                map.modules
+            in
+            IModule id :: acc
+          | ModuleType m ->
+            let id =
+              Maps.ModuleType.find
+                m.id
+                map.module_types
+            in
+            IModuleType id :: acc
+          | ModuleTypeSubstitution m -> 
+            let id =
+              Maps.ModuleType.find
+                m.id
+                map.module_types
+            in
+            IModuleType id :: acc
+          | Class (_, c) ->
+            let id =
+              Maps.Class.find
+              c.id
+              map.classes
+            in
+            IClass id :: acc
+          | ClassType (_, c) ->
+            let id =
+              Maps.ClassType.find
+              c.id
+              map.class_types
+            in
+            IClassType id :: acc
+          | Exception _
+          | TypExt _
+          | Value _
+          | Comment _ -> acc
+          | Include i -> acc @ (inner i.expansion.content.items)
+          | Open o -> acc @ (inner o.expansion.items)) [] sg
+        in inner sg.items
+      | Subst (Signature, _, _) -> failwith "Can't do it"
+      | AddDoc (sg, _) -> get_idents sg
+    
+end

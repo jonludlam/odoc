@@ -8,7 +8,7 @@
 open Errors.Tools_error
 
 type expansion =
-  | Signature of Component.Signature.t
+  | Signature of Component.Signature.t Component.Delayed.t
   | Functor of Component.FunctorParameter.t * Component.ModuleType.expr
 
 (** {2 Lookup and resolve functions} *)

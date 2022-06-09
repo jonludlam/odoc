@@ -153,26 +153,25 @@ module rec Delayed : sig
   type 'a general = { mutable v : 'a option; mutable get : (unit -> 'a) option }
 
   (* Lang type, Lang path, Component type, Component path *)
-  type (_, _, _, _) ty =
-    | Module : (Lang.Module.t, Paths.Path.Module.t, Module.t, Cpath.module_) ty
+  type (_, _) ty =
+    | Module : (Lang.Module.t, Module.t) ty
     | ModuleType
         : ( Lang.ModuleType.t,
-            Odoc_model.Paths.Path.ModuleType.t,
-            ModuleType.t,
-            Cpath.module_type )
+            ModuleType.t )
           ty
     | Type
         : ( Lang.TypeDecl.t,
-            Odoc_model.Paths.Path.Type.t,
-            TypeDecl.t,
-            Cpath.type_ )
+            TypeDecl.t)
           ty
-    | Value : (Lang.Value.t, unit, Value.t, unit) ty
+    | Value : (Lang.Value.t, Value.t) ty
+    | Signature : (Lang.Signature.t, Signature.t) ty
 
   type _ t =
     | Val : 'a -> 'a t
-    | OfLang : ('a, _, 'b, _) ty * 'a * Of_Lang_types.map -> 'b t
-    | Subst : ('a, 'b, 'c, 'd) ty * 'c t * Substitution.t -> 'c t
+    | OfLang : ('a, 'b) ty * 'a * Of_Lang_types.map -> 'b t
+    | Subst : ('a, 'b) ty * 'b t * Substitution.t -> 'b t
+    | AddDoc : Signature.t t * CComment.docs -> Signature.t t
+
 end =
   Delayed
 
@@ -299,7 +298,7 @@ and ModuleType : sig
     | StructInclude of Cpath.module_
 
   type simple_expansion =
-    | Signature of Signature.t
+    | Signature of Signature.t Delayed.t
     | Functor of FunctorParameter.t * simple_expansion
 
   type typeof_t = {
@@ -310,7 +309,7 @@ and ModuleType : sig
   module U : sig
     type expr =
       | Path of Cpath.module_type
-      | Signature of Signature.t
+      | Signature of Signature.t Delayed.t
       | With of substitution list * expr
       | TypeOf of typeof_t
   end
@@ -328,7 +327,7 @@ and ModuleType : sig
 
   type expr =
     | Path of path_t
-    | Signature of Signature.t
+    | Signature of Signature.t Delayed.t
     | With of with_t
     | Functor of FunctorParameter.t * expr
     | TypeOf of typeof_t
@@ -807,7 +806,7 @@ module Fmt = struct
 
   and simple_expansion ppf (m : ModuleType.simple_expansion) =
     match m with
-    | ModuleType.Signature sg -> Format.fprintf ppf "sig: %a" signature sg
+    | ModuleType.Signature sg -> Format.fprintf ppf "sig: %a" signature (dget sg)
     | Functor (arg, sg) ->
         Format.fprintf ppf "functor: (%a) -> %a" functor_parameter arg
           simple_expansion sg
@@ -828,7 +827,7 @@ module Fmt = struct
     let open ModuleType.U in
     match mt with
     | Path p -> module_type_path ppf p
-    | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
+    | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature (dget sg)
     | With (subs, e) ->
         Format.fprintf ppf "%a with [%a]" u_module_type_expr e substitution_list
           subs
@@ -838,7 +837,7 @@ module Fmt = struct
     let open ModuleType in
     match mt with
     | Path { p_path; _ } -> module_type_path ppf p_path
-    | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
+    | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature (dget sg)
     | With { w_substitutions = subs; w_expr; _ } ->
         Format.fprintf ppf "%a with [%a]" u_module_type_expr w_expr
           substitution_list subs
@@ -2122,7 +2121,7 @@ module Of_Lang = struct
     let open Odoc_model.Lang.ModuleType in
     let open Odoc_model.Lang.FunctorParameter in
     match f with
-    | Signature t -> Signature (signature ident_map t)
+    | Signature t -> Signature (Delayed.(OfLang (Signature, t, ident_map)))
     | Functor (arg, sg) -> (
         match arg with
         | Named arg ->
@@ -2209,7 +2208,7 @@ module Of_Lang = struct
     let open Odoc_model in
     match m with
     | Lang.ModuleType.U.Signature s ->
-        let s = signature ident_map s in
+        let s = Delayed.(OfLang (Signature, s, ident_map)) in
         ModuleType.U.Signature s
     | Path p ->
         let p' = module_type_path ident_map p in
@@ -2231,7 +2230,7 @@ module Of_Lang = struct
     let open Paths in
     match m with
     | Lang.ModuleType.Signature s ->
-        let s = signature ident_map s in
+        let s = Delayed.(OfLang (Signature, s, ident_map)) in
         ModuleType.Signature s
     | Lang.ModuleType.Path p ->
         let p' =

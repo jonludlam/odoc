@@ -95,32 +95,27 @@ end
     to be able to optimize the calculation *)
 module rec Delayed : sig
   open Odoc_model
-  (** If [eager] is true then no delaying is done. Most useful for testing and
-            documentation *)
 
-  type 'a general = { mutable v : 'a option; mutable get : (unit -> 'a) option }
-
-  (* Lang type, Lang path, Component type, Component path *)
-  type (_, _, _, _) ty =
-    | Module : (Lang.Module.t, Paths.Path.Module.t, Module.t, Cpath.module_) ty
-    | ModuleType
-        : ( Lang.ModuleType.t,
-            Odoc_model.Paths.Path.ModuleType.t,
-            ModuleType.t,
-            Cpath.module_type )
-          ty
-    | Type
-        : ( Lang.TypeDecl.t,
-            Odoc_model.Paths.Path.Type.t,
-            TypeDecl.t,
-            Cpath.type_ )
-          ty
-    | Value : (Lang.Value.t, unit, Value.t, unit) ty
+  (* Lang type, Component type *)
+  type (_, _) ty =
+  | Module : (Lang.Module.t, Module.t) ty
+  | ModuleType
+      : ( Lang.ModuleType.t,
+          ModuleType.t )
+        ty
+  | Type
+      : ( Lang.TypeDecl.t,
+          TypeDecl.t)
+        ty
+  | Value : (Lang.Value.t, Value.t) ty
+  | Signature : (Lang.Signature.t, Signature.t) ty
 
   type _ t =
-    | Val : 'a -> 'a t
-    | OfLang : ('a, _, 'b, _) ty * 'a * Of_Lang_types.map -> 'b t
-    | Subst : ('a, 'b, 'c, 'd) ty * 'c t * Substitution.t -> 'c t
+  | Val : 'a -> 'a t
+  | OfLang : ('a, 'b) ty * 'a * Of_Lang_types.map -> 'b t
+  | Subst : ('a, 'b) ty * 'b t * Substitution.t -> 'b t
+  | AddDoc : Signature.t t * CComment.docs -> Signature.t t  
+
 end
 
 and Module : sig
@@ -239,7 +234,7 @@ and ModuleType : sig
     | StructInclude of Cpath.module_
 
   type simple_expansion =
-    | Signature of Signature.t
+    | Signature of Signature.t Delayed.t
     | Functor of FunctorParameter.t * simple_expansion
 
   type typeof_t = {
@@ -250,7 +245,7 @@ and ModuleType : sig
   module U : sig
     type expr =
       | Path of Cpath.module_type
-      | Signature of Signature.t
+      | Signature of Signature.t Delayed.t
       | With of substitution list * expr
       | TypeOf of typeof_t
   end
@@ -268,7 +263,7 @@ and ModuleType : sig
 
   type expr =
     | Path of path_t
-    | Signature of Signature.t
+    | Signature of Signature.t Delayed.t
     | With of with_t
     | Functor of FunctorParameter.t * expr
     | TypeOf of typeof_t

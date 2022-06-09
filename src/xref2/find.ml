@@ -61,7 +61,7 @@ let rec find_map f = function
   | hd :: tl -> ( match f hd with Some _ as x -> x | None -> find_map f tl)
   | [] -> None
 
-let find_in_sig sg f =
+let find_in_sig (sg : Signature.t Delayed.t) f =
   let rec inner f = function
     | Signature.Include i :: tl -> (
         match inner f i.Include.expansion_.items with

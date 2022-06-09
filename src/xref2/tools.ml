@@ -6,21 +6,9 @@ open ResultMonad
 module RP = Odoc_model.Paths.Path.Resolved
 
 type expansion =
-  | Signature of Component.Signature.t
+  | Signature of Component.Signature.t Component.Delayed.t
   | Functor of Component.FunctorParameter.t * Component.ModuleType.expr
 
-let rec dget_impl : type a. a Component.Delayed.t -> a = function
-  | Val x -> x
-  | OfLang (Module, m, map) -> Component.Of_Lang.module_ map m
-  | OfLang (ModuleType, m, map) -> Component.Of_Lang.module_type map m
-  | OfLang (Type, m, map) -> Component.Of_Lang.type_decl map m
-  | OfLang (Value, v, map) -> Component.Of_Lang.value map v
-  | Subst (Module, m, sub) -> Subst.module_ sub (dget_impl m)
-  | Subst (ModuleType, mt, sub) -> Subst.module_type sub (dget_impl mt)
-  | Subst (Type, t, sub) -> Subst.type_ sub (dget_impl t)
-  | Subst (Value, v, sub) -> Subst.value sub (dget_impl v)
-
-let _ = Component.dget_impl := Some { Component.dget = dget_impl }
 
 type ('a, 'b) either = Left of 'a | Right of 'b
 
@@ -119,14 +107,14 @@ let core_types =
         Component.Delayed.(OfLang (Type, decl, Component.Of_Lang.empty ())) ))
     Odoc_model.Predefined.core_types
 
-let prefix_substitution path sg =
+let prefix_substitution : Cpath.Resolved.parent -> Component.Signature.t Component.Delayed.t -> Subst.t = fun path sg ->
   let open Component.Signature in
   let module M = Cpath.Mk in
   let module RM = Cpath.Mk.Resolved in
   let rec get_sub sub' is =
     match is with
     | [] -> sub'
-    | Type (id, _, _) :: rest ->
+    | Dhelpers.Signature.IType id :: rest ->
         let name = Ident.Name.typed_type id in
         get_sub
           (Subst.add_type id
@@ -134,7 +122,7 @@ let prefix_substitution path sg =
              (RM.Type.type_ (path, name))
              sub')
           rest
-    | Module (id, _, _) :: rest ->
+    | IModule id :: rest ->
         let name = Ident.Name.typed_module id in
         get_sub
           (Subst.add_module
@@ -143,7 +131,7 @@ let prefix_substitution path sg =
              (RM.Module.module_ (path, name))
              sub')
           rest
-    | ModuleType (id, _) :: rest ->
+    | IModuleType id :: rest ->
         let name = Ident.Name.typed_module_type id in
         get_sub
           (Subst.add_module_type id
@@ -151,56 +139,24 @@ let prefix_substitution path sg =
              (RM.ModuleType.module_type (path, name))
              sub')
           rest
-    | ModuleTypeSubstitution (id, _) :: rest ->
-        let name = Ident.Name.typed_module_type id in
-        get_sub
-          (Subst.add_module_type id
-             (M.ModuleType.module_type (path, name))
-             (RM.ModuleType.module_type (path, name))
-             sub')
-          rest
-    | ModuleSubstitution (id, _) :: rest ->
-        let name = Ident.Name.typed_module id in
-        get_sub
-          (Subst.add_module
-             (id :> Ident.path_module)
-             (M.Module.module_ (path, name))
-             (RM.Module.module_ (path, name))
-             sub')
-          rest
-    | TypeSubstitution (id, _) :: rest ->
-        let name = Ident.Name.typed_type id in
-        get_sub
-          (Subst.add_type id
-             (M.Type.type_ (path, name))
-             (RM.Type.type_ (path, name))
-             sub')
-          rest
-    | Exception _ :: rest
-    | TypExt _ :: rest
-    | Value (_, _) :: rest
-    | Comment _ :: rest ->
-        get_sub sub' rest
-    | Class (id, _, _) :: rest ->
+    | IClass id :: rest ->
         let name = Ident.Name.typed_class id in
         get_sub
           (Subst.add_class id
-             (M.ClassType.class_ (path, name))
-             (RM.ClassType.class_ (path, name))
-             sub')
+              (M.ClassType.class_ (path, name))
+              (RM.ClassType.class_ (path, name))
+              sub')
           rest
-    | ClassType (id, _, _) :: rest ->
+    | IClassType id :: rest ->
         let name = Ident.Name.typed_class_type id in
         get_sub
           (Subst.add_class_type id
-             (M.ClassType.class_type (path, name))
-             (RM.ClassType.class_type (path, name))
-             sub')
+              (M.ClassType.class_type (path, name))
+              (RM.ClassType.class_type (path, name))
+              sub')
           rest
-    | Include i :: rest -> get_sub (get_sub sub' i.expansion_.items) rest
-    | Open o :: rest -> get_sub (get_sub sub' o.expansion.items) rest
   in
-  let extend_sub_removed removed sub =
+  (* let extend_sub_removed removed sub =
     List.fold_right
       (fun item map ->
         match item with
@@ -225,8 +181,9 @@ let prefix_substitution path sg =
               (RM.Type.type_ (path, name))
               map)
       removed sub
-  in
-  get_sub Subst.identity sg.items |> extend_sub_removed sg.removed
+  in *)
+  get_sub Subst.identity (Dhelpers.Signature.get_idents sg) 
+  (* |> extend_sub_removed sg.removed *)
 
 let prefix_signature (path, sg) =
   let open Component.Signature in
@@ -795,7 +752,7 @@ and lookup_parent :
     mark_substituted:bool ->
     Env.t ->
     Cpath.Resolved.parent ->
-    ( Component.Signature.t * Component.Substitution.t,
+    ( Component.Signature.t Component.Delayed.t * Component.Substitution.t,
       [ `Parent of parent_lookup_error ] )
     Result.result =
  fun ~mark_substituted:m env' parent' ->
@@ -1586,12 +1543,14 @@ and expansion_of_module_path :
           let sg' =
             match m.doc with
             | [] -> sg
-            | docs -> { sg with items = Comment (`Docs docs) :: sg.items }
+            | docs -> AddDoc (sg, docs)
           in
           if strengthen then
+            let sg'' = Component.dget sg in
             Ok
               (Signature
-                 (Strengthen.signature (Cpath.Mk.Module.resolved p') sg'))
+                (Component.Delayed.Val
+                 (Strengthen.signature (Cpath.Mk.Module.resolved p') sg'')))
           else Ok (Signature sg')
       | Functor _ as f -> Ok f)
   | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
@@ -1600,18 +1559,19 @@ and expansion_of_module_path :
 and handle_signature_with_subs :
     mark_substituted:bool ->
     Env.t ->
-    Component.Signature.t ->
+    Component.Signature.t Component.Delayed.t ->
     Component.ModuleType.substitution list ->
     (Component.Signature.t, expansion_of_module_error) Result.result =
  fun ~mark_substituted env sg subs ->
   let open ResultMonad in
+  let sg = Component.dget sg in
   List.fold_left
     (fun sg_opt sub ->
       sg_opt >>= fun sg -> fragmap ~mark_substituted env sub sg)
     (Ok sg) subs
 
 and assert_not_functor :
-    type err. expansion -> (Component.Signature.t, err) Result.t = function
+    type err. expansion -> (Component.Signature.t Component.Delayed.t, err) Result.t = function
   | Signature sg -> Ok sg
   | _ -> assert false
 
@@ -1630,7 +1590,7 @@ and signature_of_u_module_type_expr :
     mark_substituted:bool ->
     Env.t ->
     Component.ModuleType.U.expr ->
-    (Component.Signature.t, expansion_of_module_error) Result.result =
+    (Component.Signature.t Component.Delayed.t, expansion_of_module_error) Result.result =
  fun ~mark_substituted env m ->
   match m with
   | Component.ModuleType.U.Path p -> (
@@ -1643,7 +1603,8 @@ and signature_of_u_module_type_expr :
   | With (subs, s) ->
       signature_of_u_module_type_expr ~mark_substituted env s >>= fun sg ->
       let subs = unresolve_subs subs in
-      handle_signature_with_subs ~mark_substituted env sg subs
+      handle_signature_with_subs ~mark_substituted env sg subs >>= fun sg ->
+      Ok (Component.Delayed.Val sg) 
   | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok sg
   | TypeOf { t_desc; _ } -> Error (`UnexpandedTypeOf t_desc)
 
@@ -1686,7 +1647,7 @@ and expansion_of_module_type_expr :
       signature_of_u_module_type_expr ~mark_substituted env w_expr >>= fun sg ->
       let subs = unresolve_subs w_substitutions in
       handle_signature_with_subs ~mark_substituted env sg subs >>= fun sg ->
-      Ok (Signature sg)
+      Ok (Signature (Component.Delayed.Val sg))
   | Component.ModuleType.Functor (arg, expr) -> Ok (Functor (arg, expr))
   | Component.ModuleType.TypeOf { t_expansion = Some (Signature sg); _ } ->
       Ok (Signature sg)
@@ -1702,23 +1663,17 @@ and expansion_of_module_type :
   | None -> Error `OpaqueModule
   | Some expr -> expansion_of_module_type_expr ~mark_substituted:false env expr
 
-and expansion_of_module_decl :
-    Env.t ->
-    Component.Module.decl ->
-    (expansion, expansion_of_module_error) Result.result =
- fun env decl ->
-  match decl with
-  (* | Component.Module.Alias (_, Some e) -> Ok (expansion_of_simple_expansion e) *)
-  | Component.Module.Alias (p, _) ->
-      expansion_of_module_path env ~strengthen:true p
-  | Component.Module.ModuleType expr ->
-      expansion_of_module_type_expr ~mark_substituted:false env expr
-
 and expansion_of_module :
     Env.t ->
-    Component.Module.t ->
+    Component.Module.t  ->
     (expansion, expansion_of_module_error) Result.result =
- fun env m -> expansion_of_module_decl env m.type_
+ fun env m ->
+  match m.type_ with
+  | Component.Module.Alias (p, _) ->
+    expansion_of_module_path env ~strengthen:true p
+| Component.Module.ModuleType expr ->
+    expansion_of_module_type_expr ~mark_substituted:false env expr
+
 
 and expansion_of_module_cached :
     Env.t ->
@@ -1784,8 +1739,9 @@ and fragmap :
     | Alias p ->
         expansion_of_module_path env ~strengthen:true p >>= assert_not_functor
         >>= fun sg ->
+        let sg = Component.dget sg in
         fragmap ~mark_substituted env subst sg >>= fun sg ->
-        Ok (ModuleType (Signature sg))
+        Ok (ModuleType (Signature (Component.Delayed.Val sg)))
     | ModuleType mty' -> Ok (ModuleType (With ([ subst ], mty')))
   in
   let map_module m new_subst =
