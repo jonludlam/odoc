@@ -70,19 +70,13 @@ size.
                                                                 ]
                                                               },
                                                               {
-                                                                "`Resolved": {
-                                                                  "`Identifier": {
-                                                                    "`Module": [
-                                                                      {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                "`Dot": [
+                                                                  {
+                                                                    "`Root":
                                                                       "Chain"
-                                                                      ]
-                                                                      },
-                                                                      "M1"
-                                                                    ]
-                                                                  }
-                                                                }
+                                                                  },
+                                                                  "M1"
+                                                                ]
                                                               }
                                                             ]
                                                           },
@@ -119,18 +113,10 @@ size.
                                                     ]
                                                   },
                                                   {
-                                                    "`Resolved": {
-                                                      "`Identifier": {
-                                                        "`Module": [
-                                                          {
-                                                            "`Root": [
-                                                              "None", "Chain"
-                                                            ]
-                                                          },
-                                                          "M2"
-                                                        ]
-                                                      }
-                                                    }
+                                                    "`Dot": [
+                                                      { "`Root": "Chain" },
+                                                      "M2"
+                                                    ]
                                                   }
                                                 ]
                                               },
@@ -165,14 +151,7 @@ size.
                                         ]
                                       },
                                       {
-                                        "`Resolved": {
-                                          "`Identifier": {
-                                            "`Module": [
-                                              { "`Root": [ "None", "Chain" ] },
-                                              "M3"
-                                            ]
-                                          }
-                                        }
+                                        "`Dot": [ { "`Root": "Chain" }, "M3" ]
                                       }
                                     ]
                                   },
@@ -198,16 +177,7 @@ size.
                               }
                             ]
                           },
-                          {
-                            "`Resolved": {
-                              "`Identifier": {
-                                "`Module": [
-                                  { "`Root": [ "None", "Chain" ] },
-                                  "M4"
-                                ]
-                              }
-                            }
-                          }
+                          { "`Dot": [ { "`Root": "Chain" }, "M4" ] }
                         ]
                       },
                       {
@@ -472,19 +442,13 @@ size.
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M1"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                       }
                                                                       ]
                                                                     },
@@ -587,19 +551,13 @@ size.
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M1"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                       }
                                                                       ]
                                                                     },
@@ -721,19 +679,13 @@ size.
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M1"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                       }
                                                                       ]
                                                                       },
@@ -770,19 +722,13 @@ size.
                                                                   ]
                                                                 },
                                                                 {
-                                                                  "`Resolved": {
-                                                                    "`Identifier": {
-                                                                      "`Module": [
-                                                                      {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                  "`Dot": [
+                                                                    {
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
-                                                                      },
-                                                                      "M2"
-                                                                      ]
-                                                                    }
-                                                                  }
+                                                                    },
+                                                                    "M2"
+                                                                  ]
                                                                 }
                                                               ]
                                                             },
@@ -890,19 +836,13 @@ size.
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M1"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                       }
                                                                       ]
                                                                       },
@@ -939,19 +879,13 @@ size.
                                                                   ]
                                                                 },
                                                                 {
-                                                                  "`Resolved": {
-                                                                    "`Identifier": {
-                                                                      "`Module": [
-                                                                      {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                  "`Dot": [
+                                                                    {
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
-                                                                      },
-                                                                      "M2"
-                                                                      ]
-                                                                    }
-                                                                  }
+                                                                    },
+                                                                    "M2"
+                                                                  ]
                                                                 }
                                                               ]
                                                             },
@@ -1077,19 +1011,13 @@ size.
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M1"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                       }
                                                                       ]
                                                                       },
@@ -1126,19 +1054,13 @@ size.
                                                                       ]
                                                                     },
                                                                     {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M2"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                     }
                                                                   ]
                                                                 },
@@ -1175,19 +1097,12 @@ size.
                                                           ]
                                                         },
                                                         {
-                                                          "`Resolved": {
-                                                            "`Identifier": {
-                                                              "`Module": [
-                                                                {
-                                                                  "`Root": [
-                                                                    "None",
-                                                                    "Chain"
-                                                                  ]
-                                                                },
-                                                                "M3"
-                                                              ]
-                                                            }
-                                                          }
+                                                          "`Dot": [
+                                                            {
+                                                              "`Root": "Chain"
+                                                            },
+                                                            "M3"
+                                                          ]
                                                         }
                                                       ]
                                                     },
@@ -1299,19 +1214,13 @@ size.
                                                                       ]
                                                                       },
                                                                       {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M1"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                       }
                                                                       ]
                                                                       },
@@ -1348,19 +1257,13 @@ size.
                                                                       ]
                                                                     },
                                                                     {
-                                                                      "`Resolved": {
-                                                                      "`Identifier": {
-                                                                      "`Module": [
+                                                                      "`Dot": [
                                                                       {
-                                                                      "`Root": [
-                                                                      "None",
+                                                                      "`Root":
                                                                       "Chain"
-                                                                      ]
                                                                       },
                                                                       "M2"
                                                                       ]
-                                                                      }
-                                                                      }
                                                                     }
                                                                   ]
                                                                 },
@@ -1397,19 +1300,12 @@ size.
                                                           ]
                                                         },
                                                         {
-                                                          "`Resolved": {
-                                                            "`Identifier": {
-                                                              "`Module": [
-                                                                {
-                                                                  "`Root": [
-                                                                    "None",
-                                                                    "Chain"
-                                                                  ]
-                                                                },
-                                                                "M3"
-                                                              ]
-                                                            }
-                                                          }
+                                                          "`Dot": [
+                                                            {
+                                                              "`Root": "Chain"
+                                                            },
+                                                            "M3"
+                                                          ]
                                                         }
                                                       ]
                                                     },
