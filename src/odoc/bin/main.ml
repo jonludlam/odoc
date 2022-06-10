@@ -762,6 +762,7 @@ module Odoc_error = struct
 end
 
 let () =
+  let _ = Odoc_xref2.Tools.disable_all_caches () in
   Printexc.record_backtrace true;
   let subcommands =
     [
