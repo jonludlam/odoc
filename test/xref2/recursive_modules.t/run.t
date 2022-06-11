@@ -52,29 +52,6 @@ All of the paths should be resolved after just the compile step
   [
     {
       "`Resolved": {
-        "`Type": [
-          {
-            "`Identifier": {
-              "`Module": [
-                {
-                  "`Root": [
-                    "None",
-                    "M"
-                  ]
-                },
-                "A"
-              ]
-            }
-          },
-          "t"
-        ]
-      }
-    },
-    []
-  ]
-  [
-    {
-      "`Resolved": {
         "`Identifier": {
           "`Type": [
             {
@@ -85,7 +62,7 @@ All of the paths should be resolved after just the compile step
                     "M"
                   ]
                 },
-                "B"
+                "A"
               ]
             },
             "t"
@@ -108,12 +85,35 @@ All of the paths should be resolved after just the compile step
                     "M"
                   ]
                 },
-                "A"
+                "B"
               ]
             }
           },
           "t"
         ]
+      }
+    },
+    []
+  ]
+  [
+    {
+      "`Resolved": {
+        "`Identifier": {
+          "`Type": [
+            {
+              "`Module": [
+                {
+                  "`Root": [
+                    "None",
+                    "M"
+                  ]
+                },
+                "A"
+              ]
+            },
+            "t"
+          ]
+        }
       }
     },
     []

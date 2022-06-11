@@ -111,9 +111,9 @@ And this one should be `` `Type(`Identifier,t) ``
   $ odoc_print foo.odocl -r Type.t | jq '.. | .["equation"]? | select(.) | .manifest.Some.Constr[0]["`Resolved"]["`CanonicalType"][1]'
   {
     "`Resolved": {
-      "`Type": [
-        {
-          "`Identifier": {
+      "`Identifier": {
+        "`Type": [
+          {
             "`Module": [
               {
                 "`Module": [
@@ -135,9 +135,9 @@ And this one should be `` `Type(`Identifier,t) ``
               },
               "Path"
             ]
-          }
-        },
-        "t"
-      ]
+          },
+          "t"
+        ]
+      }
     }
   }

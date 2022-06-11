@@ -856,7 +856,7 @@ now we can ask for the signature of this module:
 val sg : Tools.expansion =
   Odoc_xref2.Tools.Signature
    {Odoc_xref2.Component.Signature.items =
-     [Odoc_xref2.Component.Signature.Module (`LModule (M, 57),
+     [Odoc_xref2.Component.Signature.Module (`LModule (M, 55),
        Odoc_model.Lang.Signature.Ordinary,
        Odoc_xref2.Component.Delayed.Subst
         (Odoc_xref2.Component.Delayed.Module,
@@ -884,8 +884,8 @@ val sg : Tools.expansion =
          {Odoc_xref2.Component.Substitution.module_ = <abstr>;
           module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
           type_replacement = <abstr>; module_type_replacement = <abstr>;
-          path_invalidating_modules = [`LModule (M, 55)];
-          module_type_of_invalidating_modules = [`LModule (M, 55)];
+          path_invalidating_modules = [`LModule (M, 53)];
+          module_type_of_invalidating_modules = [`LModule (M, 53)];
           unresolve_opaque_paths = false}),
         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
@@ -893,7 +893,7 @@ val sg : Tools.expansion =
          path_invalidating_modules = [];
          module_type_of_invalidating_modules = [];
          unresolve_opaque_paths = false}));
-      Odoc_xref2.Component.Signature.Module (`LModule (N, 58),
+      Odoc_xref2.Component.Signature.Module (`LModule (N, 56),
        Odoc_model.Lang.Signature.Ordinary,
        Odoc_xref2.Component.Delayed.Subst
         (Odoc_xref2.Component.Delayed.Module,
@@ -908,8 +908,8 @@ val sg : Tools.expansion =
          {Odoc_xref2.Component.Substitution.module_ = <abstr>;
           module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
           type_replacement = <abstr>; module_type_replacement = <abstr>;
-          path_invalidating_modules = [`LModule (M, 55)];
-          module_type_of_invalidating_modules = [`LModule (M, 55)];
+          path_invalidating_modules = [`LModule (M, 53)];
+          module_type_of_invalidating_modules = [`LModule (M, 53)];
           unresolve_opaque_paths = false}),
         {Odoc_xref2.Component.Substitution.module_ = <abstr>;
          module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
@@ -939,8 +939,8 @@ val m : Component.Module.t Component.Delayed.t =
      {Odoc_xref2.Component.Substitution.module_ = <abstr>;
       module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
       type_replacement = <abstr>; module_type_replacement = <abstr>;
-      path_invalidating_modules = [`LModule (M, 60)];
-      module_type_of_invalidating_modules = [`LModule (M, 60)];
+      path_invalidating_modules = [`LModule (M, 58)];
+      module_type_of_invalidating_modules = [`LModule (M, 58)];
       unresolve_opaque_paths = false}),
     {Odoc_xref2.Component.Substitution.module_ = <abstr>;
      module_type = <abstr>; type_ = <abstr>; class_type = <abstr>;
@@ -957,7 +957,7 @@ val m : Component.Module.t Component.Delayed.t =
 - : Tools.expansion =
 Odoc_xref2.Tools.Signature
  {Odoc_xref2.Component.Signature.items =
-   [Odoc_xref2.Component.Signature.Type (`LType (t, 74),
+   [Odoc_xref2.Component.Signature.Type (`LType (t, 65),
      Odoc_model.Lang.Signature.Ordinary,
      Odoc_xref2.Component.Delayed.Subst (Odoc_xref2.Component.Delayed.Type,
       Odoc_xref2.Component.Delayed.OfLang (Odoc_xref2.Component.Delayed.Type,
@@ -972,7 +972,7 @@ Odoc_xref2.Tools.Signature
        path_invalidating_modules = [];
        module_type_of_invalidating_modules = [];
        unresolve_opaque_paths = false}))];
-  compiled = false; removed = []; doc = []}
+  compiled = true; removed = []; doc = []}
 ```
 
 where we've correctly identified that a type `t` exists in the signature. The path in

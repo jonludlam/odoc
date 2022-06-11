@@ -373,11 +373,51 @@ module ExpansionOfModuleMemo = MakeMemo (struct
   let hash = Hashtbl.hash
 end)
 
+module ResolveTypeMemo = MakeMemo (struct
+  type t = bool * Cpath.type_
+
+  type result = resolve_type_result
+
+  let equal (x1, x2) (y1, y2) = x1 = y1 && x2 = y2
+
+  let hash (x, y) = Hashtbl.hash (x, y)
+end)
+
 let disable_all_caches () =
+  (* LookupModuleMemo.enabled := false;
+     (*  LookupAndResolveMemo.enabled := false;*)
+       ExpansionOfModuleMemo.enabled := false;
+       LookupParentMemo.enabled := false*)
+  ()
+
+let _ =
+  ExpansionOfModuleMemo.enabled := true;
+
+  LookupParentMemo.enabled := true;
   LookupModuleMemo.enabled := false;
   LookupAndResolveMemo.enabled := false;
-  ExpansionOfModuleMemo.enabled := false;
-  LookupParentMemo.enabled := false
+  HandleCanonicalModuleMemo.enabled := true;
+  ()
+
+(* Exp Par Mod Res Time
+   f   f   f   f   3.976
+   t   f   f   f   1.794
+   f   t   f   f   2.263
+   t   t   f   f   0.080
+   f   f   t   f   4.020
+   t   f   t   f   1.766
+   f   t   t   f   2.256
+   t   t   t   f   0.080
+   f   f   f   t   3.941
+
+   f   f   f   f   8.848
+   t   t   t   t   3.812  5.0
+   t   f   f   f   8.078  0.8
+   f   t   f   f   5.454  3.4
+   f   f   t   f   6.905  2.0
+   f   f   f   t   6.681  2.2
+   f   f   t   t   5.188  3.6
+*)
 
 let reset_caches () =
   LookupModuleMemo.clear ();
@@ -1044,88 +1084,94 @@ and resolve_module_type :
 and resolve_type :
     Env.t -> add_canonical:bool -> Cpath.type_ -> resolve_type_result =
  fun env ~add_canonical p ->
-  let result =
-    match p with
-    | `Dot (parent, id) ->
-        resolve_module ~mark_substituted:true ~add_canonical:true env parent
-        |> map_error (fun e -> `Parent (`Parent_module e))
-        >>= fun (p, m) ->
-        let m = Component.dget m in
-        expansion_of_module_cached env p m
-        |> map_error (fun e -> `Parent (`Parent_sig e))
-        >>= assert_not_functor
-        >>= fun sg ->
-        let sub = prefix_substitution (`Module p) sg in
-        handle_type_lookup env id (`Module p) sg >>= fun (p', t') ->
-        let t =
-          match t' with
-          | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
-          | `FClassType (name, ct) -> `FClassType (name, Subst.class_type sub ct)
-          | `FType (name, t) ->
-              `FType (name, Component.Delayed.(Subst (Type, t, sub)))
-          | `FType_removed (name, texpr, eq) ->
-              `FType_removed (name, Subst.type_expr sub texpr, eq)
-        in
-        Ok (p', t)
-    | `Type (parent, id) ->
-        lookup_parent ~mark_substituted:true env parent
-        |> map_error (fun e -> (e :> simple_type_lookup_error))
-        >>= fun (parent_sig, sub) ->
-        let result =
-          match Find.datatype_in_sig parent_sig (TypeName.to_string id) with
-          | Some (`FType (name, t)) ->
-              Some
-                ( `Type (parent, name),
-                  `FType (name, Component.Delayed.(Subst (Type, t, sub))) )
-          | None -> None
-        in
-        of_option ~error:`Find_failure result
-    | `Class (parent, id) ->
-        lookup_parent ~mark_substituted:true env parent
-        |> map_error (fun e -> (e :> simple_type_lookup_error))
-        >>= fun (parent_sig, sub) ->
-        let t =
-          match Find.type_in_sig parent_sig (ClassName.to_string id) with
-          | Some (`FClass (name, t)) ->
-              Some (`Class (parent, name), `FClass (name, Subst.class_ sub t))
-          | Some _ -> None
-          | None -> None
-        in
-        of_option ~error:`Find_failure t
-    | `ClassType (parent, id) ->
-        lookup_parent ~mark_substituted:true env parent
-        |> map_error (fun e -> (e :> simple_type_lookup_error))
-        >>= fun (parent_sg, sub) ->
-        handle_type_lookup env (ClassTypeName.to_string id) parent parent_sg
-        >>= fun (p', t') ->
-        let t =
-          match t' with
-          | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
-          | `FClassType (name, ct) -> `FClassType (name, Subst.class_type sub ct)
-          | `FType (name, t) ->
-              `FType (name, Component.Delayed.(Subst (Type, t, sub)))
-          | `FType_removed (name, texpr, eq) ->
-              `FType_removed (name, Subst.type_expr sub texpr, eq)
-        in
-        Ok (p', t)
-    | `Identifier (i, _) ->
-        let i' = `Identifier i in
-        lookup_type env (`Gpath i') >>= fun t -> Ok (`Gpath i', t)
-    | `Resolved r -> lookup_type env r >>= fun t -> Ok (r, t)
-    | `Local (l, _) -> Error (`LocalType (env, l))
-    | `Substituted s ->
-        resolve_type env ~add_canonical s >>= fun (p, m) ->
-        Ok (`Substituted p, m)
+  let resolve : Env.t -> bool * Cpath.type_ -> _ =
+   fun env (add_canonical, p) ->
+    let result =
+      match p with
+      | `Dot (parent, id) ->
+          resolve_module ~mark_substituted:true ~add_canonical:true env parent
+          |> map_error (fun e -> `Parent (`Parent_module e))
+          >>= fun (p, m) ->
+          let m = Component.dget m in
+          expansion_of_module_cached env p m
+          |> map_error (fun e -> `Parent (`Parent_sig e))
+          >>= assert_not_functor
+          >>= fun sg ->
+          let sub = prefix_substitution (`Module p) sg in
+          handle_type_lookup env id (`Module p) sg >>= fun (p', t') ->
+          let t =
+            match t' with
+            | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
+            | `FClassType (name, ct) ->
+                `FClassType (name, Subst.class_type sub ct)
+            | `FType (name, t) ->
+                `FType (name, Component.Delayed.(Subst (Type, t, sub)))
+            | `FType_removed (name, texpr, eq) ->
+                `FType_removed (name, Subst.type_expr sub texpr, eq)
+          in
+          Ok (p', t)
+      | `Type (parent, id) ->
+          lookup_parent ~mark_substituted:true env parent
+          |> map_error (fun e -> (e :> simple_type_lookup_error))
+          >>= fun (parent_sig, sub) ->
+          let result =
+            match Find.datatype_in_sig parent_sig (TypeName.to_string id) with
+            | Some (`FType (name, t)) ->
+                Some
+                  ( `Type (parent, name),
+                    `FType (name, Component.Delayed.(Subst (Type, t, sub))) )
+            | None -> None
+          in
+          of_option ~error:`Find_failure result
+      | `Class (parent, id) ->
+          lookup_parent ~mark_substituted:true env parent
+          |> map_error (fun e -> (e :> simple_type_lookup_error))
+          >>= fun (parent_sig, sub) ->
+          let t =
+            match Find.type_in_sig parent_sig (ClassName.to_string id) with
+            | Some (`FClass (name, t)) ->
+                Some (`Class (parent, name), `FClass (name, Subst.class_ sub t))
+            | Some _ -> None
+            | None -> None
+          in
+          of_option ~error:`Find_failure t
+      | `ClassType (parent, id) ->
+          lookup_parent ~mark_substituted:true env parent
+          |> map_error (fun e -> (e :> simple_type_lookup_error))
+          >>= fun (parent_sg, sub) ->
+          handle_type_lookup env (ClassTypeName.to_string id) parent parent_sg
+          >>= fun (p', t') ->
+          let t =
+            match t' with
+            | `FClass (name, c) -> `FClass (name, Subst.class_ sub c)
+            | `FClassType (name, ct) ->
+                `FClassType (name, Subst.class_type sub ct)
+            | `FType (name, t) ->
+                `FType (name, Component.Delayed.(Subst (Type, t, sub)))
+            | `FType_removed (name, texpr, eq) ->
+                `FType_removed (name, Subst.type_expr sub texpr, eq)
+          in
+          Ok (p', t)
+      | `Identifier (i, _) ->
+          let i' = `Identifier i in
+          lookup_type env (`Gpath i') >>= fun t -> Ok (`Gpath i', t)
+      | `Resolved r -> lookup_type env r >>= fun t -> Ok (r, t)
+      | `Local (l, _) -> Error (`LocalType (env, l))
+      | `Substituted s ->
+          resolve_type env ~add_canonical s >>= fun (p, m) ->
+          Ok (`Substituted p, m)
+    in
+    result >>= fun (p, t) ->
+    if add_canonical then
+      match t with
+      | `FType (_, dt) -> (
+          match Component.dget dt with
+          | { canonical = Some c; _ } -> Ok (`CanonicalType (p, c), t)
+          | _ -> result)
+      | _ -> result
+    else result
   in
-  result >>= fun (p, t) ->
-  if add_canonical then
-    match t with
-    | `FType (_, dt) -> (
-        match Component.dget dt with
-        | { canonical = Some c; _ } -> Ok (`CanonicalType (p, c), t)
-        | _ -> result)
-    | _ -> result
-  else result
+  ResolveTypeMemo.memoize resolve env (add_canonical, p)
 
 and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
     =
