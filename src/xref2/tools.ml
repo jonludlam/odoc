@@ -408,16 +408,54 @@ module ExpansionOfModuleMemo = MakeMemo (struct
   let hash x = Hashtbl.hash x
 end)
 
+module ResolveTypeMemo = MakeMemo (struct
+  type t = bool * Cpath.type_
+
+  type result = resolve_type_result
+
+  let equal (x1, x2) (y1, y2) = x1 = y1 && x2 = y2
+
+  let hash (x, y) = Hashtbl.hash (x, y)
+end)
+
+
 let disable_all_caches () =
-  LookupModuleMemo.enabled := false;
-  LookupAndResolveMemo.enabled := false;
+(*  LookupModuleMemo.enabled := false;
+(*  LookupAndResolveMemo.enabled := false;*)
   ExpansionOfModuleMemo.enabled := false;
-  LookupParentMemo.enabled := false
+  LookupParentMemo.enabled := false*)
+  ()
 
 let _ = 
-  ExpansionOfModuleMemo.enabled := false
-  (* LookupParentMemo.enabled := false *)
-  (* LookupModuleMemo.enabled := false *)
+  ExpansionOfModuleMemo.enabled := true;
+
+  LookupParentMemo.enabled := true;
+  LookupModuleMemo.enabled := false;
+  LookupAndResolveMemo.enabled := false;
+  HandleCanonicalModuleMemo.enabled := true;
+  ()
+
+(* Exp Par Mod Res Time
+   f   f   f   f   3.976
+   t   f   f   f   1.794
+   f   t   f   f   2.263
+   t   t   f   f   0.080
+   f   f   t   f   4.020
+   t   f   t   f   1.766
+   f   t   t   f   2.256
+   t   t   t   f   0.080
+   f   f   f   t   3.941
+
+   f   f   f   f   8.848
+   t   t   t   t   3.812  5.0
+   t   f   f   f   8.078  0.8
+   f   t   f   f   5.454  3.4
+   f   f   t   f   6.905  2.0
+   f   f   f   t   6.681  2.2
+   f   f   t   t   5.188  3.6
+
+   *)
+
 
 let reset_caches () =
   LookupModuleMemo.clear ();
@@ -1117,6 +1155,8 @@ and resolve_module_type :
 and resolve_type :
     Env.t -> add_canonical:bool -> Cpath.type_ -> resolve_type_result =
  fun env ~add_canonical p ->
+
+  let resolve : Env.t -> bool * Cpath.type_ -> _ = fun env (add_canonical, p) ->
   let result =
     match p.v with
     | `Dot (parent, id) ->
@@ -1204,6 +1244,8 @@ and resolve_type :
         | _ -> result)
     | _ -> result
   else result
+  in
+  ResolveTypeMemo.memoize resolve env (add_canonical, p)
 
 and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
     =
