@@ -1243,12 +1243,13 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
   | `OpaqueModule m -> `OpaqueModule (reresolve_module env m)
 
 and handle_canonical_module env p2 =
+  Format.eprintf "Handle cacnonical module for %a\n%!" Component.Fmt.model_path (p2 :> Odoc_model.Paths.Path.t);
   let strip_alias : Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
    fun x -> match x with `Alias (_, _, Some p) -> p | _ -> x
   in
   let resolve env p =
     resolve_module env ~mark_substituted:false ~add_canonical:false p
-    >>= fun (p, m) -> Ok (strip_alias p, m)
+    >>= fun (p, m) -> Ok (reresolve_module env (strip_alias p), m)
   in
   let lang_of cpath =
     (Lang_of.(Path.resolved_module (empty ()) cpath)
@@ -1256,7 +1257,9 @@ and handle_canonical_module env p2 =
   in
   let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
   match canonical_helper env resolve lang_of c_mod_poss cp2 with
-  | None -> p2
+  | None ->
+    Format.eprintf "canonical helper returned nothing!\n%!";
+    p2
   | Some (rp, m) ->
       let m = Component.Delayed.get m in
       (* Need to check if the module we're going to link to has been expanded.
@@ -1305,6 +1308,7 @@ and handle_canonical_module env p2 =
         | Alias (_, _) -> false
         | ModuleType _ -> true
       in
+      Format.eprintf "expanded=%b (rp=%a)\n%!" expanded Component.Fmt.resolved_module_path rp; 
       let cpath =
         if expanded then rp
         else process_module_path env ~add_canonical:false m rp

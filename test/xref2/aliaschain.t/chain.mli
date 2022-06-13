@@ -1,3 +1,5 @@
+(* Test *)
+
 module A : sig
   module B : sig
     type t
