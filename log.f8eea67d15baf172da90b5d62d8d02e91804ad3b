@@ -1,0 +1,101 @@
+ .
+File "doc/driver.md", line 1, characters 0-0:
+------ doc/driver.md
+++++++ doc/driver.md.corrected
+File "doc/driver.md", line 873, characters 0-1:
+ | "odoc_model.odoc: Warning: Failed to resolve reference unresolvedroot(Make) Couldn't find \"Make\"";
+ | "'../src/odoc/bin/main.exe' 'link' 'odoc_examples.odoc' '-I' '.'";
+ | "odoc_examples.odoc: File \"set.mli\", line 208, characters 16-32:";
+ | "odoc_examples.odoc: Warning: Failed to resolve reference unresolvedroot(S).min_elt_opt Couldn't find \"S\"";
+ | "odoc_examples.odoc: File \"set.mli\", line 204, characters 16-28:";
+ | "odoc_examples.odoc: Warning: Failed to resolve reference unresolvedroot(S).min_elt Couldn't find \"S\"";
+ | "odoc_examples.odoc: File \"set.mli\", line 189, characters 16-23:";
+ | "odoc_examples.odoc: Warning: Failed to resolve reference unresolvedroot(Make) Couldn't find \"Make\"";
+ | "'../src/odoc/bin/main.exe' 'link' 'page-deps.odoc' '-I' '.'";
+ | "page-deps.odoc: File \"src/fmt.mli\", line 6, characters 4-13:";
+ | "page-deps.odoc: Warning: Failed to resolve reference unresolvedroot(Format) Couldn't find \"Format\"";
+ | "page-deps.odoc: File \"src/fpath.mli\", line 8, characters 8-20:";
+ | "page-deps.odoc: Warning: Failed to resolve reference unresolvedroot(Map) Couldn't find \"Map\"";
+ | "page-deps.odoc: File \"src/fpath.mli\", line 7, characters 59-71:";
+ | "page-deps.odoc: Warning: Failed to resolve reference unresolvedroot(Set) Couldn't find \"Set\"";
+ | "page-deps.odoc: File \"src/fpath.mli\", line 7, characters 28-52:";
+-| "page-deps.odoc: Warning: Failed to resolve reference unresolvedroot(file_exts) Couldn't find \"file_exts\""]
++| "page-deps.odoc: Warning: Failed to resolve reference unresolvedroot(file_exts) Couldn't find \"file_exts\"";
++| "'../src/odoc/bin/main.exe' 'link' 'page-stdlib.odoc' '-I' '.'";
++| "page-stdlib.odoc: File \"library_mlds/stdlib.mld\", line 199, characters 0-29:";
++| "page-stdlib.odoc: Warning: Failed to resolve reference unresolvedroot(Reg_with_debug_info) Parent_module: Lookup failure (root module): Reg_with_debug_info";
++| "page-stdlib.odoc: File \"library_mlds/stdlib.mld\", line 198, characters 0-30:";
++| "page-stdlib.odoc: Warning: Failed to resolve reference unresolvedroot(Reg_availability_set) Parent_module: Lookup failure (root module): Reg_availability_set";
++| "page-stdlib.odoc: File \"library_mlds/stdlib.mld\", line 76, characters 0-29:";
++| "page-stdlib.odoc: Warning: Failed to resolve reference unresolvedroot(Compute_ranges_intf) Parent_module: Lookup failure (root module): Compute_ranges_intf";
++| "page-stdlib.odoc: File \"library_mlds/stdlib.mld\", line 75, characters 0-24:";
++| "page-stdlib.odoc: Warning: Failed to resolve reference unresolvedroot(Compute_ranges) Parent_module: Lookup failure (root module): Compute_ranges";
++| "page-stdlib.odoc: File \"library_mlds/stdlib.mld\", line 21, characters 0-24:";
++| "page-stdlib.odoc: Warning: Failed to resolve reference unresolvedroot(Available_regs) Parent_module: Lookup failure (root module): Available_regs";
++| "'../src/odoc/bin/main.exe' 'link' 'page-core_kernel.odoc' '-I' '.'";
++| "page-core_kernel.odoc: File \"library_mlds/core_kernel.mld\", line 19, characters 0-15:";
++| "page-core_kernel.odoc: Warning: Failed to resolve reference unresolvedroot(Linked_stack) Couldn't find \"Linked_stack\"";
++| "page-core_kernel.odoc: File \"library_mlds/core_kernel.mld\", line 6, characters 0-17:";
++| "page-core_kernel.odoc: Warning: Failed to resolve reference unresolvedroot(Base_for_tests) Couldn't find \"Base_for_tests\""]
+ |# !generate_output;;
+ |- : string list =
+ |["";
+ | "'../src/odoc/bin/main.exe' 'html-generate' 'odoc_xref_test.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
+ | "odoc_xref_test.odocl: Warning, resolved hidden path: Odoc_model__Lang.Signature.t";
+ | "'../src/odoc/bin/main.exe' 'html-generate' 'odoc_document.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
+ | "odoc_document.odocl: Warning, resolved hidden path: Odoc_document__Types.Inline.one";
+-| "'../src/odoc/bin/main.exe' 'html-generate' 'odoc_examples.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
+-| "odoc_examples.odocl: Warning, resolved hidden path: Odoc_examples__Unexposed.t"]
++| "'../src/odoc/bin/main.exe' 'html-generate' 'base.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
++| "base.odocl: Warning, resolved hidden path: Base__Hash_set_intf.M_sexp_grammar";
++| "base.odocl: Warning, resolved hidden path: Base__Hash_set_intf.M_sexp_grammar";
++| "base.odocl: Warning, resolved hidden path: Base__Either0.t";
++| "base.odocl: Warning, resolved hidden path: Base__Either0.t";
++| "base.odocl: Warning, resolved hidden path: Base__Either0.t";
++| "base.odocl: Warning, resolved hidden path: Base__Either0.t";
++| "'../src/odoc/bin/main.exe' 'html-generate' 'odoc_examples.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
++| "odoc_examples.odocl: Warning, resolved hidden path: Odoc_examples__Unexposed.t";
++| "'../src/odoc/bin/main.exe' 'html-generate' 'sexplib.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib0__Sexp.t";
++| "sexplib.odocl: Warning, resolved hidden path: Sexplib__Src_pos.Relative.t";
++| "'../src/odoc/bin/main.exe' 'html-generate' 'base_quickcheck.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
++| "base_quickcheck.odocl: Warning, resolved hidden path: Base_quickcheck__Observer0.t";
++| "'../src/odoc/bin/main.exe' 'html-generate' 'iobuf.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
++| "iobuf.odocl: Warning, resolved hidden path: Iobuf__Iobuf_intf.no_seek";
++| "iobuf.odocl: Warning, resolved hidden path: Iobuf__Iobuf_intf.no_seek";
++| "iobuf.odocl: Warning, resolved hidden path: Iobuf__Iobuf_intf.no_seek";
++| "'../src/odoc/bin/main.exe' 'html-generate' 'ppx_sexp_conv_expander.odocl' '-o' 'html' '--theme-uri' 'odoc' '--support-uri' 'odoc'";
++| "ppx_sexp_conv_expander.odocl: Warning, resolved hidden path: Ppx_sexp_conv_expander__Lifted.t"]
+ |```
+       42.13 real        35.52 user         5.93 sys
+           223821824  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+             3118672  page reclaims
+                 494  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                6898  voluntary context switches
+                5400  involuntary context switches
+          1957813176  instructions retired
+           574570583  cycles elapsed
+            50840512  peak memory footprint
