@@ -8,7 +8,7 @@ type signature =
   [ `LRoot of ModuleName.t * int
   | `LModule of ModuleName.t * int
   | `LResult of signature * int
-  | `LParameter of ModuleName.t * int
+  | `LParameter of ParameterName.t * int
   | `LModuleType of ModuleTypeName.t * int ]
 
 type class_signature =
@@ -21,12 +21,9 @@ type parent = [ signature | datatype | class_signature ]
 type label_parent =
   [ parent | `LPage of PageName.t * int | `LLeafPage of PageName.t * int ]
 
-type module_ =
-  [ `LRoot of ModuleName.t * int
-  | `LModule of ModuleName.t * int
-  | `LParameter of ModuleName.t * int ]
+type module_ = [ `LRoot of ModuleName.t * int | `LModule of ModuleName.t * int ]
 
-type functor_parameter = [ `LParameter of ModuleName.t * int ]
+type functor_parameter = [ `LParameter of ParameterName.t * int ]
 
 type path_module = [ module_ | `LResult of signature * int | functor_parameter ]
 
@@ -148,13 +145,10 @@ module Of_Identifier = struct
     | { iv = `Page (_, n); _ } -> `LPage (n, fresh_int ())
     | { iv = `LeafPage (_, n); _ } -> `LLeafPage (n, fresh_int ())
 
-  let module_ : Odoc_model.Paths.Identifier.Module.t -> module_ = function
-    | { iv = `Module (_, n) | `Root (_, n); _ } ->
-        let i = fresh_int () in
-        `LModule (n, i)
-    | { iv = `Parameter (_, n); _ } ->
-        let i = fresh_int () in
-        `LParameter (n, i)
+  let module_ : Odoc_model.Paths.Identifier.Module.t -> module_ =
+   fun { iv = `Module (_, n) | `Root (_, n); _ } ->
+    let i = fresh_int () in
+    `LModule (n, i)
 
   let functor_parameter :
       Odoc_model.Paths.Identifier.FunctorParameter.t -> functor_parameter =
@@ -224,14 +218,14 @@ module Name = struct
     | `LRoot (n, _) -> ModuleName.to_string n
     | `LModule (n, _) -> ModuleName.to_string n
     | `LResult (x, _) -> signature x
-    | `LParameter (n, _) -> ModuleName.to_string n
+    | `LParameter (n, _) -> ParameterName.to_string n
     | `LModuleType (n, _) -> ModuleTypeName.to_string n
 
   let typed_module : module_ -> ModuleName.t = function
-    | `LRoot (n, _) | `LModule (n, _) | `LParameter (n, _) -> n
+    | `LRoot (n, _) | `LModule (n, _) -> n
 
   let module' : module_ -> ModuleName.t = function
-    | `LRoot (n, _) | `LModule (n, _) | `LParameter (n, _) -> n
+    | `LRoot (n, _) | `LModule (n, _) -> n
 
   let module_ m = ModuleName.to_string (module' m)
 
@@ -241,13 +235,13 @@ module Name = struct
     | `LRoot (n, _) -> ModuleName.to_string n
     | `LModule (n, _) -> ModuleName.to_string n
     | `LResult (x, _) -> signature x
-    | `LParameter (n, _) -> ModuleName.to_string n
+    | `LParameter (n, _) -> ParameterName.to_string n
 
-  let typed_functor_parameter : functor_parameter -> ModuleName.t =
+  let typed_functor_parameter : functor_parameter -> ParameterName.t =
    fun (`LParameter (n, _)) -> n
 
   let functor_parameter : functor_parameter -> string =
-   fun (`LParameter (n, _)) -> ModuleName.to_string n
+   fun (`LParameter (n, _)) -> ParameterName.to_string n
 
   let type' : type_ -> TypeName.t = function `LType (n, _) -> n
 
@@ -334,7 +328,6 @@ module Rename = struct
   let module_ : module_ -> module_ = function
     | `LRoot (n, _) -> `LRoot (n, fresh_int ())
     | `LModule (n, _) -> `LModule (n, fresh_int ())
-    | `LParameter (n, _) -> `LParameter (n, fresh_int ())
 
   let path_module : path_module -> path_module = function
     | `LRoot (n, _) -> `LRoot (n, fresh_int ())
@@ -392,7 +385,8 @@ let rec fmt_aux ppf (id : any) =
   match id with
   | `LRoot (n, i) -> Format.fprintf ppf "%s/%d" (ModuleName.to_string n) i
   | `LModule (n, i) -> Format.fprintf ppf "%s/%d" (ModuleName.to_string n) i
-  | `LParameter (n, i) -> Format.fprintf ppf "%s/%d" (ModuleName.to_string n) i
+  | `LParameter (n, i) ->
+      Format.fprintf ppf "%s/%d" (ParameterName.to_string n) i
   | `LResult (x, _) -> Format.fprintf ppf "result(%a)" fmt_aux (x :> any)
   | `LModuleType (n, i) ->
       Format.fprintf ppf "%s/%d" (ModuleTypeName.to_string n) i

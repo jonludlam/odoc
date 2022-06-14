@@ -70,6 +70,8 @@ end
 
 module ModuleName : Name
 
+module ParameterName : Name
+
 module ModuleTypeName : Name
 
 module TypeName : Name

@@ -401,8 +401,8 @@ module Identifier : sig
       [> `Module of Signature.t * ModuleName.t ] id
 
     val parameter :
-      Signature.t * ModuleName.t ->
-      [> `Parameter of Signature.t * ModuleName.t ] id
+      Signature.t * ParameterName.t ->
+      [> `Parameter of Signature.t * ParameterName.t ] id
 
     val result : Signature.t -> [> `Result of Signature.t ] id
 

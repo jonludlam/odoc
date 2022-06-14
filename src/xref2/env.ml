@@ -12,9 +12,7 @@ type lookup_page_result = Odoc_model.Lang.Page.t option
 
 type root =
   | Resolved of
-      (Root.t
-      * Odoc_model.Paths.Identifier.Module.t
-      * Component.Module.t Component.Delayed.t)
+      (Root.t * Odoc_model.Paths.Identifier.Module.t * Component.Module.t)
   | Forward
 
 type resolver = {
@@ -362,9 +360,7 @@ let add_extension_constructor identifier
   add_to_elts Kind_Extension identifier (`Extension (identifier, ec)) env
   |> add_cdocs identifier ec.doc
 
-let module_of_unit :
-    Odoc_model.Lang.Compilation_unit.t -> Component.Module.t Component.Delayed.t
-    =
+let module_of_unit : Odoc_model.Lang.Compilation_unit.t -> Component.Module.t =
  fun unit ->
   match unit.content with
   | Module s ->

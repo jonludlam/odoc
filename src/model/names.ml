@@ -128,6 +128,7 @@ module SimpleName : SimpleName = struct
 end
 
 module ModuleName = Name
+module ParameterName = Name
 module ModuleTypeName = Name
 module TypeName = Name
 module ConstructorName = SimpleName
