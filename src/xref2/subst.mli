@@ -75,6 +75,8 @@ val signature : t -> Component.Signature.t -> Component.Signature.t
 
 val module_path : t -> Cpath.module_ -> Cpath.module_
 
+val module_decl : t -> Component.Module.decl -> Component.Module.decl
+
 val module_type_path : t -> Cpath.module_type -> Cpath.module_type module_type_or_replaced
 
 val apply_sig_map :

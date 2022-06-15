@@ -70,6 +70,7 @@ let find_in_sig (sg : Signature.t Delayed.t) f =
     | hd :: tl -> ( match f hd with Some _ as x -> x | None -> inner f tl)
     | [] -> None
   in
+  let sg = Component.dget sg in
   inner f sg.Signature.items
 
 let filter_in_sig sg f =
@@ -132,7 +133,9 @@ let careful_module_in_sig sg name =
   in
   match module_in_sig sg name with
   | Some _ as x -> x
-  | None -> find_map removed_module sg.Signature.removed
+  | None ->
+    let sg = Component.dget sg in
+    find_map removed_module sg.Signature.removed
 
 let careful_module_type_in_sig sg name =
   let removed_module_type = function
@@ -142,7 +145,9 @@ let careful_module_type_in_sig sg name =
   in
   match module_type_in_sig sg name with
   | Some _ as x -> x
-  | None -> find_map removed_module_type sg.Signature.removed
+  | None ->
+    let sg = Component.dget sg in
+    find_map removed_module_type sg.Signature.removed
 
 let removed_type_in_sig sg name =
   let removed_type = function
@@ -155,12 +160,16 @@ let removed_type_in_sig sg name =
 let careful_type_in_sig sg name =
   match type_in_sig sg name with
   | Some _ as x -> x
-  | None -> removed_type_in_sig sg name
+  | None ->
+    let sg = Component.dget sg in
+    removed_type_in_sig sg name
 
 let careful_class_in_sig sg name =
   match class_in_sig sg name with
   | Some _ as x -> x
-  | None -> removed_type_in_sig sg name
+  | None ->
+    let sg = Component.dget sg in
+    removed_type_in_sig sg name
 
 let datatype_in_sig sg name =
   find_in_sig sg (function

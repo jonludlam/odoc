@@ -579,7 +579,7 @@ and simple_expansion :
  fun map id e ->
   let open Component.FunctorParameter in
   match e with
-  | Signature sg -> Signature (signature id map sg)
+  | Signature sg -> Signature (signature id map (Component.dget sg))
   | Functor (Named arg, sg) ->
       let identifier = Identifier.Mk.result id in
       let name = Ident.Name.typed_functor_parameter arg.id in
@@ -753,7 +753,7 @@ and u_module_type_expr map identifier = function
       Signature
         (signature
            (identifier :> Odoc_model.Paths.Identifier.Signature.t)
-           map s)
+           map (Component.dget s))
   | With (subs, expr) ->
       With
         ( List.map (mty_substitution map identifier) subs,
@@ -782,7 +782,7 @@ and module_type_expr map identifier = function
       Signature
         (signature
            (identifier :> Odoc_model.Paths.Identifier.Signature.t)
-           map s)
+           map (Component.dget s))
   | With { w_substitutions; w_expansion; w_expr } ->
       With
         {

@@ -625,7 +625,7 @@ and simple_expansion :
  fun s t ->
   let open Component.ModuleType in
   match t with
-  | Signature sg -> Signature (signature s sg)
+  | Signature sg -> Signature (Subst (Signature, sg, s))
   | Functor (arg, sg) -> Functor (functor_parameter s arg, simple_expansion s sg)
 
 and module_type s t =
@@ -708,7 +708,7 @@ and u_module_type_expr s t =
           | Functor _ ->
               (* non functor cannot be substituted away to a functor *)
               assert false))
-  | Signature sg -> Signature (signature s sg)
+  | Signature sg -> Signature (Subst (Signature, sg, s))
   | With (subs, e) ->
       With
         (List.map (with_module_type_substitution s) subs, u_module_type_expr s e)
@@ -739,7 +739,7 @@ and module_type_expr s t =
       | Not_replaced p_path ->
           Path { p_path; p_expansion = option_ simple_expansion s p_expansion }
       | Replaced s -> s)
-  | Signature sg -> Signature (signature s sg)
+  | Signature sg -> Signature (Subst (Signature, sg, s))
   | Functor (arg, expr) ->
       Functor (functor_parameter s arg, module_type_expr s expr)
   | With { w_substitutions; w_expansion; w_expr } ->
@@ -1041,12 +1041,12 @@ and removed_items s items =
       | x -> x)
     items
 
-and signature s sg =
+and signature : t -> Signature.t -> Signature.t = fun s sg ->
   let s, items = rename_bound_idents s [] sg.items in
   let items, removed, dont_recompile = apply_sig_map s items sg.removed in
   { sg with items; removed; compiled = sg.compiled && dont_recompile }
 
-and apply_sig_map_sg s (sg : Component.Signature.t) =
+and apply_sig_map_sg : t -> Signature.t -> Signature.t = fun s sg ->
   let items, removed, dont_recompile = apply_sig_map s sg.items sg.removed in
   { sg with items; removed; compiled = sg.compiled && dont_recompile }
 

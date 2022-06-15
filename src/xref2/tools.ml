@@ -185,7 +185,7 @@ let prefix_substitution : Cpath.Resolved.parent -> Component.Signature.t Compone
   get_sub Subst.identity (Dhelpers.Signature.get_idents sg) 
   (* |> extend_sub_removed sg.removed *)
 
-let prefix_signature (path, sg) =
+(* let prefix_signature (path, sg) =
   let open Component.Signature in
   let sub = prefix_substitution path sg in
   let items =
@@ -225,7 +225,7 @@ let prefix_signature (path, sg) =
         | Comment c -> Comment c)
       sg.items
   in
-  { sg with items }
+  { sg with items } *)
 
 open Errors.Tools_error
 
@@ -1502,8 +1502,8 @@ and module_type_expr_of_module_decl :
       lookup_module ~mark_substituted:false env r
       |> map_error (fun e -> `Parent (`Parent_module e))
       >>= fun m ->
-      let m = Component.dget m in
-      module_type_expr_of_module_decl env m.type_
+      let type_ = Dhelpers.Module.type_ m in
+      module_type_expr_of_module_decl env type_
   | Component.Module.Alias (path, _) -> (
       match
         resolve_module ~mark_substituted:false ~add_canonical:true env path
