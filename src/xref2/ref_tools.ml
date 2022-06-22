@@ -139,18 +139,17 @@ let find find sg name =
   | None -> Error (`Find_by_name (`Any, name))
 
 let module_lookup_to_signature_lookup env (ref, cp, m) =
-  let rec handle_expansion : Tools.expansion -> _ = function
-    | Functor (_, expr) -> (
-        match
-          Tools.expansion_of_module_type_expr ~mark_substituted:true env expr
-        with
-        | Ok e -> handle_expansion e
-        | Error _ as e -> e)
+  let p = Lang_of.(Path.resolved_module (empty ()) cp) in
+  let id = Odoc_model.Paths.Path.Resolved.Module.(identifier (p :> t)) in
+  let rec get_sg : Component.ModuleType.simple_expansion -> _ = function
+    | Functor (_, e) -> get_sg e
     | Signature sg -> Ok ((ref :> Resolved.Signature.t), `Module cp, sg)
   in
-  Tools.expansion_of_module env m
-  >>= handle_expansion
-  |> map_error (fun e -> `Parent (`Parent_sig e))
+  let r = (Tools.expansion_of_module env m
+  >>= Expand_tools.handle_expansion env (id :> Odoc_model.Paths.Identifier.Signature.t)
+  >>= fun (_, e) ->
+  get_sg e) in
+  map_error (fun e -> `Parent (`Parent_sig e)) r
 
 let module_type_lookup_to_signature_lookup env (ref, cp, m) =
   Tools.expansion_of_module_type env m
