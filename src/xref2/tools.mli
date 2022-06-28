@@ -55,7 +55,9 @@ val lookup_module_type :
   mark_substituted:bool ->
   Env.t ->
   Cpath.Resolved.module_type ->
-  (Component.ModuleType.t, simple_module_type_lookup_error) Result.result
+  ( Component.ModuleType.t Component.Delayed.t,
+    simple_module_type_lookup_error )
+  Result.result
 (** [lookup_module_type ~mark_substituted env p] takes a resolved module type
     cpath and an environment and returns a representation of the module type.
 *)
@@ -94,7 +96,7 @@ val resolve_module_type :
   add_canonical:bool ->
   Env.t ->
   Cpath.module_type ->
-  ( Cpath.Resolved.module_type * Component.ModuleType.t,
+  ( Cpath.Resolved.module_type * Component.ModuleType.t Component.Delayed.t,
     simple_module_type_lookup_error )
   Result.result
 (** [resolve_module_type ~mark_substituted ~add_canonical env p] takes an unresolved module
@@ -186,7 +188,8 @@ val handle_module_type_lookup :
   Cpath.Resolved.parent ->
   Component.Signature.t ->
   Component.Substitution.t ->
-  (Cpath.Resolved.module_type * Component.ModuleType.t) option
+  (Cpath.Resolved.module_type * Component.ModuleType.t Component.Delayed.t)
+  option
 
 type module_modifiers =
   [ `Aliased of Cpath.Resolved.module_ | `SubstMT of Cpath.Resolved.module_type ]
@@ -194,12 +197,15 @@ type module_modifiers =
 type module_type_modifiers = [ `AliasModuleType of Cpath.Resolved.module_type ]
 
 val get_module_path_modifiers :
-  Env.t -> add_canonical:bool -> Component.Module.t -> module_modifiers option
+  Env.t ->
+  add_canonical:bool ->
+  Component.Module.t Component.Delayed.t ->
+  module_modifiers option
 
 val get_module_type_path_modifiers :
   Env.t ->
   add_canonical:bool ->
-  Component.ModuleType.t ->
+  Cpath.module_type option ->
   module_type_modifiers option
 
 val prefix_signature :

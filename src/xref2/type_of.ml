@@ -26,7 +26,7 @@ and signature_items : Env.t -> Signature.item list -> _ =
             let add_to_env env m =
               let ty =
                 Component.Delayed.(
-                  put (fun () -> Component.Of_Lang.(module_ (empty ()) m)))
+                  OfLang (Module, m, Component.Of_Lang.empty ()))
               in
               Env.add_module (m.id :> Paths.Identifier.Path.Module.t) ty [] env
             in
@@ -58,7 +58,10 @@ and signature_items : Env.t -> Signature.item list -> _ =
             loop (item :: items) env' rest
         | ModuleType mt ->
             let m' = module_type env mt in
-            let ty = Component.Of_Lang.(module_type (empty ()) m') in
+            let ty =
+              Component.Delayed.(
+                OfLang (ModuleType, m', Component.Of_Lang.empty ()))
+            in
             let env' = Env.add_module_type mt.id ty env in
             loop (ModuleType (module_type env mt) :: items) env' rest
         | Include i ->
