@@ -42,35 +42,79 @@ module IdentMap = Map.Make (struct
   let compare = Ident.compare
 end)
 
-module Delayed = struct
-  let eager = ref false
+module Of_Lang_types = struct
+  open Odoc_model
 
-  type 'a t = { mutable v : 'a option; mutable get : (unit -> 'a) option }
+  type map = {
+    modules : Ident.module_ Paths.Identifier.Maps.Module.t;
+    module_types : Ident.module_type Paths.Identifier.Maps.ModuleType.t;
+    functor_parameters :
+      Ident.functor_parameter Paths.Identifier.Maps.FunctorParameter.t;
+    types : Ident.type_ Paths.Identifier.Maps.Type.t;
+    path_types : Ident.path_type Paths.Identifier.Maps.Path.Type.t;
+    path_class_types :
+      Ident.path_class_type Paths.Identifier.Maps.Path.ClassType.t;
+    classes : Ident.class_ Paths.Identifier.Maps.Class.t;
+    class_types : Ident.class_type Paths.Identifier.Maps.ClassType.t;
+  }
+end
 
-  let get : 'a t -> 'a =
-   fun x ->
-    match (x.v, x.get) with
-    | Some x, _ -> x
-    | None, Some get ->
-        let v = get () in
-        x.v <- Some v;
-        x.get <- None;
-        v
-    | _, _ -> failwith "bad delayed"
+module Lang_of_types = struct
+  open Odoc_model
+  open Paths
 
-  let put : (unit -> 'a) -> 'a t =
-   fun f ->
-    if !eager then { v = Some (f ()); get = None }
-    else { v = None; get = Some f }
-
-  let put_val : 'a -> 'a t = fun v -> { v = Some v; get = None }
+  type maps = {
+    module_ : Identifier.Module.t ModuleMap.t;
+    module_type : Identifier.ModuleType.t ModuleTypeMap.t;
+    functor_parameter :
+      (Ident.functor_parameter * Identifier.FunctorParameter.t) list;
+    type_ : Identifier.Type.t TypeMap.t;
+    path_type : Identifier.Path.Type.t PathTypeMap.t;
+    class_ : (Ident.class_ * Identifier.Class.t) list;
+    class_type : (Ident.class_type * Identifier.ClassType.t) list;
+    path_class_type : Identifier.Path.ClassType.t PathClassTypeMap.t;
+    fragment_root : Cfrag.root option;
+    (* Shadowed items *)
+    shadowed : Lang.Include.shadowed;
+  }
 end
 
 module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
 
-module rec Module : sig
+(* let eager = ref false *)
+
+module rec Delayed : sig
+  open Odoc_model
+
+  type 'a general = { mutable v : 'a option; mutable get : (unit -> 'a) option }
+
+  (* Lang type, Lang path, Component type, Component path *)
+  type (_, _, _, _) ty =
+    | Module : (Lang.Module.t, Paths.Path.Module.t, Module.t, Cpath.module_) ty
+    | ModuleType
+        : ( Lang.ModuleType.t,
+            Odoc_model.Paths.Path.ModuleType.t,
+            ModuleType.t,
+            Cpath.module_type )
+          ty
+    | Type
+        : ( Lang.TypeDecl.t,
+            Odoc_model.Paths.Path.Type.t,
+            TypeDecl.t,
+            Cpath.type_ )
+          ty
+    | Value : (Lang.Value.t, unit, Value.t, unit) ty
+
+  type _ t =
+    | Val : 'a -> 'a t
+    | OfLang : ('a, _, 'b, _) ty * 'a * Of_Lang_types.map -> 'b t
+    | Subst : ('a, 'b, 'c, 'd) ty * 'c t * Substitution.t -> 'c t
+end =
+  Delayed
+
+and Module : sig
   type decl =
     | Alias of Cpath.module_ * ModuleType.simple_expansion option
     | ModuleType of ModuleType.expr
@@ -463,16 +507,28 @@ and Label : sig
 end =
   Label
 
+type dget_impl_t = { dget : 'a. 'a Delayed.t -> 'a }
+
+let dget_impl : dget_impl_t option ref = ref None
+
+let dget : 'a. 'a Delayed.t -> 'a =
+ fun v ->
+  match !dget_impl with
+  | Some x -> x.dget v
+  | None -> (
+      match v with Delayed.Val x -> x | _ -> failwith "dget_impl unset")
+
 module Element = struct
   open Odoc_model.Paths
 
   type module_ = [ `Module of Identifier.Path.Module.t * Module.t Delayed.t ]
 
-  type module_type = [ `ModuleType of Identifier.ModuleType.t * ModuleType.t ]
+  type module_type =
+    [ `ModuleType of Identifier.ModuleType.t * ModuleType.t Delayed.t ]
 
-  type type_ = [ `Type of Identifier.Type.t * TypeDecl.t ]
+  type type_ = [ `Type of Identifier.Type.t * TypeDecl.t Delayed.t ]
 
-  type value = [ `Value of Identifier.Value.t * Value.t ]
+  type value = [ `Value of Identifier.Value.t * Value.t Delayed.t ]
 
   type label = [ `Label of Identifier.Label.t * Label.t ]
 
@@ -549,21 +605,18 @@ module Fmt = struct
     Format.fprintf ppf "@[<v>";
     List.iter
       (function
-        | Module (id, _, m) ->
-            Format.fprintf ppf "@[<v 2>module %a %a@]@," Ident.fmt id module_
-              (Delayed.get m)
+        | Module (id, _, _m) ->
+            Format.fprintf ppf "@[<v 2>module %a ...@]@," Ident.fmt id
         | ModuleSubstitution (id, m) ->
             Format.fprintf ppf "@[<v 2>module %a := %a@]@," Ident.fmt id
               module_path m.ModuleSubstitution.manifest
-        | ModuleType (id, mt) ->
-            Format.fprintf ppf "@[<v 2>module type %a %a@]@," Ident.fmt id
-              module_type (Delayed.get mt)
+        | ModuleType (id, _mt) ->
+            Format.fprintf ppf "@[<v 2>module type %a ...@]@," Ident.fmt id
         | ModuleTypeSubstitution (id, mts) ->
             Format.fprintf ppf "@[<v 2>module type %a := %a@]@," Ident.fmt id
               module_type_expr mts.ModuleTypeSubstitution.manifest
-        | Type (id, _, t) ->
-            Format.fprintf ppf "@[<v 2>type %a%a@]@," Ident.fmt id type_decl
-              (Delayed.get t)
+        | Type (id, _, _t) ->
+            Format.fprintf ppf "@[<v 2>type %a ...@]@," Ident.fmt id
         | TypeSubstitution (id, t) ->
             Format.fprintf ppf "@[<v 2>type %a :=%a@]@," Ident.fmt id type_decl
               t
@@ -572,9 +625,8 @@ module Fmt = struct
               exception_ e
         | TypExt e ->
             Format.fprintf ppf "@[<v 2>type_extension %a@]@," extension e
-        | Value (id, v) ->
-            Format.fprintf ppf "@[<v 2>val %a %a@]@," Ident.fmt id value
-              (Delayed.get v)
+        | Value (id, _v) ->
+            Format.fprintf ppf "@[<v 2>val %a ...@]@," Ident.fmt id
         | Class (id, _, c) ->
             Format.fprintf ppf "@[<v 2>class %a %a@]@," Ident.fmt id class_ c
         | ClassType (id, _, c) ->
@@ -687,7 +739,7 @@ module Fmt = struct
     | Alias (p, _) -> Format.fprintf ppf "= %a" module_path p
     | ModuleType mt -> Format.fprintf ppf ": %a" module_type_expr mt
 
-  and module_ ppf m = Format.fprintf ppf "%a" module_decl m.type_
+  and module_ ppf (m : Module.t) = Format.fprintf ppf "%a" module_decl m.type_
 
   and simple_expansion ppf (m : ModuleType.simple_expansion) =
     match m with
@@ -696,7 +748,7 @@ module Fmt = struct
         Format.fprintf ppf "functor: (%a) -> %a" functor_parameter arg
           simple_expansion sg
 
-  and module_type ppf mt =
+  and module_type ppf (mt : ModuleType.t) =
     match mt.expr with
     | Some x -> Format.fprintf ppf "= %a" module_type_expr x
     | None -> ()
@@ -1523,19 +1575,7 @@ end
 
 module Of_Lang = struct
   open Odoc_model
-
-  type map = {
-    modules : Ident.module_ Paths.Identifier.Maps.Module.t;
-    module_types : Ident.module_type Paths.Identifier.Maps.ModuleType.t;
-    functor_parameters :
-      Ident.functor_parameter Paths.Identifier.Maps.FunctorParameter.t;
-    types : Ident.type_ Paths.Identifier.Maps.Type.t;
-    path_types : Ident.path_type Paths.Identifier.Maps.Path.Type.t;
-    path_class_types :
-      Ident.path_class_type Paths.Identifier.Maps.Path.ClassType.t;
-    classes : Ident.class_ Paths.Identifier.Maps.Class.t;
-    class_types : Ident.class_type Paths.Identifier.Maps.ClassType.t;
-  }
+  open Of_Lang_types
 
   let empty () =
     let open Paths.Identifier.Maps in
@@ -2304,7 +2344,7 @@ module Of_Lang = struct
         function
         | Type (r, t) ->
             let id = Identifier.Maps.Type.find t.id ident_map.types in
-            let t' = Delayed.put (fun () -> type_decl ident_map t) in
+            let t' = Delayed.(OfLang (Type, t, ident_map)) in
             Signature.Type (id, r, t')
         | TypeSubstitution t ->
             let id = Identifier.Maps.Type.find t.id ident_map.types in
@@ -2316,7 +2356,7 @@ module Of_Lang = struct
                 (m.id :> Identifier.Module.t)
                 ident_map.modules
             in
-            let m' = Delayed.put (fun () -> module_ ident_map m) in
+            let m' = Delayed.(OfLang (Module, m, ident_map)) in
             Signature.Module (id, r, m')
         | ModuleSubstitution m ->
             let id = Identifier.Maps.Module.find m.id ident_map.modules in
@@ -2332,11 +2372,11 @@ module Of_Lang = struct
             let id =
               Identifier.Maps.ModuleType.find m.id ident_map.module_types
             in
-            let m' = Delayed.put (fun () -> module_type ident_map m) in
+            let m' = Delayed.(OfLang (ModuleType, m, ident_map)) in
             Signature.ModuleType (id, m')
         | Value v ->
             let id = Ident.Of_Identifier.value v.id in
-            let v' = Delayed.put (fun () -> value ident_map v) in
+            let v' = Delayed.(OfLang (Value, v, ident_map)) in
             Signature.Value (id, v')
         | Comment c -> Comment (docs_or_stop ident_map c)
         | TypExt e -> TypExt (extension ident_map e)

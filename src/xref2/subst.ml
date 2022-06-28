@@ -1042,44 +1042,24 @@ and apply_sig_map s items removed =
     | [] -> List.rev acc
     | Module (id, r, m) :: rest ->
         inner rest
-          (Module
-             ( id,
-               r,
-               Component.Delayed.put (fun () ->
-                   module_ s (Component.Delayed.get m)) )
-          :: acc)
+          (Module (id, r, Component.Delayed.(Subst (Module, m, s))) :: acc)
     | ModuleSubstitution (id, m) :: rest ->
         inner rest (ModuleSubstitution (id, module_substitution s m) :: acc)
     | ModuleType (id, mt) :: rest ->
         inner rest
-          (ModuleType
-             ( id,
-               Component.Delayed.put (fun () ->
-                   module_type s (Component.Delayed.get mt)) )
-          :: acc)
+          (ModuleType (id, Component.Delayed.(Subst (ModuleType, mt, s))) :: acc)
     | ModuleTypeSubstitution (id, mt) :: rest ->
         inner rest
           (ModuleTypeSubstitution (id, module_type_substitution s mt) :: acc)
     | Type (id, r, t) :: rest ->
-        inner rest
-          (Type
-             ( id,
-               r,
-               Component.Delayed.put (fun () ->
-                   type_ s (Component.Delayed.get t)) )
-          :: acc)
+        inner rest (Type (id, r, Component.Delayed.(Subst (Type, t, s))) :: acc)
     | TypeSubstitution (id, t) :: rest ->
         inner rest (TypeSubstitution (id, type_ s t) :: acc)
     | Exception (id, e) :: rest ->
         inner rest (Exception (id, exception_ s e) :: acc)
     | TypExt e :: rest -> inner rest (TypExt (extension s e) :: acc)
     | Value (id, v) :: rest ->
-        inner rest
-          (Value
-             ( id,
-               Component.Delayed.put (fun () ->
-                   value s (Component.Delayed.get v)) )
-          :: acc)
+        inner rest (Value (id, Component.Delayed.(Subst (Value, v, s))) :: acc)
     | Class (id, r, c) :: rest -> inner rest (Class (id, r, class_ s c) :: acc)
     | ClassType (id, r, c) :: rest ->
         inner rest (ClassType (id, r, class_type s c) :: acc)

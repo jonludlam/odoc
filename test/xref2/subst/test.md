@@ -30,11 +30,11 @@ let module_substitution ~idents ~targets m test_data =
     | None -> failwith "Error finding module!"
   in
 
-  let m' = Subst.module_ subst m in
+  let m' = Subst.module_ subst (Component.dget m) in
 
   let open Format in
   fprintf std_formatter "BEFORE\n======\n%!";
-  fprintf std_formatter "S%a\n\n%!" Component.Fmt.module_ m;
+  fprintf std_formatter "S%a\n\n%!" Component.Fmt.module_ (Component.dget m);
   fprintf std_formatter "AFTER \n======\n%!";
   fprintf std_formatter "S%a\n\n%!" Component.Fmt.module_ m'
 ```
@@ -68,17 +68,17 @@ the equations for t, u and v point to SubTargets rather than SubstituteMe
 BEFORE
 ======
 S: sig
-type tt/5 = local(SubstituteMe/2,false).t
-type uu/4 = local(SubstituteMe/2,false).u
-type vv/3 = local(SubstituteMe/2,false).v
+type tt/11 ...
+type uu/10 ...
+type vv/9 ...
  (removed=[])end
 
 AFTER
 ======
 S: sig
-type tt/6 = r(SubTargets/1).t
-type uu/7 = r(SubTargets/1).u
-type vv/8 = r(SubTargets/1).v
+type tt/6 ...
+type uu/7 ...
+type vv/8 ...
  (removed=[])end
 
 - : unit = ()
@@ -128,30 +128,10 @@ let compile mli =
   end
   |} ;;
 - : Component.Signature.t =
-module type Monad/30 = sig
-  type t/31
-  val map/32 : ([a] r(t/31)) -> ((a) -> b) -> [b] r(t/31)
-  val join/33 : ([[a] r(t/31)] r(t/31)) -> [a] r(t/31)
-   (removed=[])end
-module SomeMonad/29 : sig
-  type t/34
-  include : r(Monad/30) with [r(root(Monad/30).t) = [a] r(t/34)] (sig =
-    val map/35 : ([a] r(t/34)) -> ((a) -> b) -> [b] r(t/34)
-    val join/36 : ([[a] r(t/34)] r(t/34)) -> [a] r(t/34)
-     (removed=[]))
-   (removed=[])end
-module ComplexTypeExpr/28 : sig
-  type t/37
-  include : r(Monad/30) with [r(root(Monad/30).t) = ([r(int) * a] r(t/37) * [a * r(int)] r(t/37))] (sig =
-    val map/38 : (([r(int) * a] r(t/37) * [a * r(int)] r(t/37))) -> ((a) -> b) -> ([r(int) * b] r(t/37) * [b * r(int)] r(t/37))
-    val join/39 : (([r(int) * ([r(int) * a] r(t/37) * [a * r(int)] r(t/37))] r(t/37) * [([r(int) * a] r(t/37) * [a * r(int)] r(t/37)) * r(int)] r(t/37))) -> ([r(int) * a] r(t/37) * [a * r(int)] r(t/37))
-     (removed=[]))
-   (removed=[])end
-module Erase/27 : sig
-  include : r(Monad/30) with [r(root(Monad/30).t) = a] (sig = val map/40 : (a) -> ((a) -> b) -> b
-                                                              val join/41 : (a) -> a
-                                                               (removed=[]))
-   (removed=[])end
+module type Monad/75 ...
+module SomeMonad/74 ...
+module ComplexTypeExpr/73 ...
+module Erase/72 ...
  (removed=[])
 ```
 
@@ -172,20 +152,8 @@ More tests with two type variables:
   end
   |} ;;
 - : Component.Signature.t =
-module type Monad_2/54 = sig
-  type t/55
-  val map/56 : ([a * err] r(t/55)) -> f:((a) -> b) -> [b * err] r(t/55)
-  val join/57 : ([[a * e] r(t/55) * e] r(t/55)) -> [a * e] r(t/55)
-  val both/58 : ([a * e] r(t/55)) -> ([b * e] r(t/55)) -> [(a * b) * e] r(t/55)
-   (removed=[])end
-module SwappedVars/53 : sig
-  type t/59
-  include : r(Monad_2/54) with [r(root(Monad_2/54).t) = [b * a] r(t/59)] (sig =
-    val map/60 : ([err * a] r(t/59)) -> f:((a) -> b) -> [err * b] r(t/59)
-    val join/61 : ([e * [e * a] r(t/59)] r(t/59)) -> [e * a] r(t/59)
-    val both/62 : ([e * a] r(t/59)) -> ([e * b] r(t/59)) -> [e * (a * b)] r(t/59)
-     (removed=[]))
-   (removed=[])end
+module type Monad_2/104 ...
+module SwappedVars/103 ...
  (removed=[])
 ```
 
@@ -204,15 +172,7 @@ Edge cases:
   end
   |} ;;
 - : Component.Signature.t =
-module type S/69 = sig
-  type t/70
-  val map/71 : ([a] r(t/70)) -> ((a) -> b) -> [b] r(t/70)
-   (removed=[])end
-module M/68 : sig
-  type t/72
-  include : r(S/69) with [r(root(S/69).t) = [(alias (poly_var [ `A of (a * b) ]) b)] r(t/72)] (sig =
-    val map/73 : ([(alias (poly_var [ `A of (a * b) ]) b)] r(t/72)) -> ((a) -> b) -> [(alias (poly_var [ `A of (b * b) ]) b)] r(t/72)
-     (removed=[]))
-   (removed=[])end
+module type S/119 ...
+module M/118 ...
  (removed=[])
 ```
