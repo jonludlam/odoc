@@ -17,7 +17,7 @@ let handle_expansion env id expansion =
         in
         let m = Component.module_of_functor_argument arg in
         let env' =
-          Env.add_module identifier (Component.Delayed.put_val m) m.doc env
+          Env.add_module identifier (Component.Delayed.Val m) m.doc env
         in
         let rp = `Gpath (`Identifier identifier) in
         let p = `Resolved rp in
