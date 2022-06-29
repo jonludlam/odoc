@@ -81,6 +81,7 @@ let filter_in_sig sg f =
         match f hd with Some x -> x :: inner f tl | None -> inner f tl)
     | [] -> []
   in
+  let sg = Component.dget sg in
   inner f sg.Signature.items
 
 let module_in_sig sg name =

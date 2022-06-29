@@ -9,6 +9,23 @@ type expansion =
   | Signature of Component.Signature.t Component.Delayed.t
   | Functor of Component.FunctorParameter.t * Component.ModuleType.expr
 
+let rec dget_impl : type a. a Component.Delayed.t -> a = function
+  | Val x -> x
+  | OfLang (Module, m, map) -> Component.Of_Lang.module_ map m
+  | OfLang (ModuleType, m, map) -> Component.Of_Lang.module_type map m
+  | OfLang (Type, m, map) -> Component.Of_Lang.type_decl map m
+  | OfLang (Value, v, map) -> Component.Of_Lang.value map v
+  | OfLang (Signature, v, map) -> Component.Of_Lang.signature map v
+  | Subst (Module, m, sub) -> Subst.module_ sub (dget_impl m)
+  | Subst (ModuleType, mt, sub) -> Subst.module_type sub (dget_impl mt)
+  | Subst (Type, t, sub) -> Subst.type_ sub (dget_impl t)
+  | Subst (Value, v, sub) -> Subst.value sub (dget_impl v)
+  | Subst (Signature, v, sub) -> Subst.signature sub (dget_impl v)
+  | SubstNoRename (sg, sub) -> Subst.apply_sig_map_sg sub (dget_impl sg)
+  | AddDoc (sg, _) -> dget_impl sg
+
+let _ = Component.dget_impl := Some { Component.dget = dget_impl }
+ 
 
 type ('a, 'b) either = Left of 'a | Right of 'b
 

@@ -86,3 +86,8 @@ val apply_sig_map :
   Signature.item list * Signature.removed_item list * bool
 (** Apply substitutions. The third value is [false] if the corresponding
     signature needs to be compiled again and [true] otherwise. *)
+
+val apply_sig_map_sg :
+  t ->
+  Signature.t ->
+  Signature.t

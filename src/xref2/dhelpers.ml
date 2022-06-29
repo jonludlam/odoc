@@ -184,5 +184,6 @@ module Signature = struct
         in inner sg.items
       | Subst (Signature, _, _) -> failwith "Can't do it"
       | AddDoc (sg, _) -> get_idents sg
+      | SubstNoRename (_, _) -> failwith "Can't do it"
     
 end

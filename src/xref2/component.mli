@@ -114,6 +114,7 @@ module rec Delayed : sig
   | Val : 'a -> 'a t
   | OfLang : ('a, 'b) ty * 'a * Of_Lang_types.map -> 'b t
   | Subst : ('a, 'b) ty * 'b t * Substitution.t -> 'b t
+  | SubstNoRename : Signature.t t * Substitution.t -> Signature.t t
   | AddDoc : Signature.t t * CComment.docs -> Signature.t t  
 
 end

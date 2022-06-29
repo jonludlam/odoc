@@ -717,7 +717,7 @@ and u_module_type_expr s t =
         TypeOf
           {
             t_desc = module_type_type_of_desc s t_desc;
-            t_expansion = Some (Signature (apply_sig_map_sg s e));
+            t_expansion = Some (Signature (SubstNoRename (e, s)));
           }
       with MTOInvalidated -> u_module_type_expr s (Signature e))
   | TypeOf { t_expansion = Some (Functor _); _ } -> assert false

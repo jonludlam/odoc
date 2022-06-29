@@ -57,17 +57,17 @@ type any_in_class_sig = [ instance_variable | method_ ]
 
 (** Lookup by name, unambiguous *)
 
-val module_in_sig : Signature.t -> string -> module_ option
+val module_in_sig : Signature.t Delayed.t -> string -> module_ option
 
-val type_in_sig : Signature.t -> string -> type_ option
+val type_in_sig : Signature.t Delayed.t -> string -> type_ option
 
-val datatype_in_sig : Signature.t -> string -> datatype option
+val datatype_in_sig : Signature.t Delayed.t -> string -> datatype option
 
-val module_type_in_sig : Signature.t -> string -> module_type option
+val module_type_in_sig : Signature.t Delayed.t -> string -> module_type option
 
-val exception_in_sig : Signature.t -> string -> exception_ option
+val exception_in_sig : Signature.t Delayed.t -> string -> exception_ option
 
-val extension_in_sig : Signature.t -> string -> extension option
+val extension_in_sig : Signature.t Delayed.t -> string -> extension option
 
 val any_in_type : TypeDecl.t -> string -> any_in_type option
 
@@ -80,19 +80,19 @@ val instance_variable_in_class_signature :
 
 (** Maybe ambiguous *)
 
-val class_in_sig : Signature.t -> string -> class_ list
+val class_in_sig : Signature.t Delayed.t -> string -> class_ list
 
-val signature_in_sig : Signature.t -> string -> signature list
+val signature_in_sig : Signature.t Delayed.t -> string -> signature list
 
-val value_in_sig : Signature.t -> string -> value list
+val value_in_sig : Signature.t Delayed.t -> string -> value list
 
-val label_in_sig : Signature.t -> string -> label list
+val label_in_sig : Signature.t Delayed.t -> string -> label list
 
-val label_parent_in_sig : Signature.t -> string -> label_parent list
+val label_parent_in_sig : Signature.t Delayed.t -> string -> label_parent list
 
-val any_in_sig : Signature.t -> string -> any_in_sig list
+val any_in_sig : Signature.t Delayed.t -> string -> any_in_sig list
 
-val any_in_type_in_sig : Signature.t -> string -> any_in_type_in_sig list
+val any_in_type_in_sig : Signature.t Delayed.t -> string -> any_in_type_in_sig list
 
 val any_in_class_signature : ClassSignature.t -> string -> any_in_class_sig list
 
@@ -110,11 +110,11 @@ type careful_type = [ type_ | removed_type ]
 
 type careful_class = [ class_ | removed_type ]
 
-val careful_module_in_sig : Signature.t -> string -> careful_module option
+val careful_module_in_sig : Signature.t Delayed.t -> string -> careful_module option
 
 val careful_module_type_in_sig :
-  Signature.t -> string -> careful_module_type option
+  Signature.t Delayed.t -> string -> careful_module_type option
 
-val careful_type_in_sig : Signature.t -> string -> careful_type option
+val careful_type_in_sig : Signature.t Delayed.t -> string -> careful_type option
 
-val careful_class_in_sig : Signature.t -> string -> careful_class option
+val careful_class_in_sig : Signature.t Delayed.t -> string -> careful_class option
