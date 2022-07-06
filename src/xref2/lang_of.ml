@@ -564,7 +564,7 @@ and simple_expansion :
  fun map id e ->
   let open Component.FunctorParameter in
   match e with
-  | Signature sg -> Signature (signature id map sg)
+  | Signature sg -> Signature (signature id map (Component.dget sg))
   | Functor (Named arg, sg) ->
       let identifier = Identifier.Mk.result id in
       let name = Ident.Name.typed_functor_parameter arg.id in
@@ -733,6 +733,7 @@ and u_module_type_expr map identifier = function
   | Component.ModuleType.U.Path p_path ->
       Odoc_model.Lang.ModuleType.U.Path (Path.module_type map p_path)
   | Signature s ->
+      let s = Component.dget s in
       Signature
         (signature
            (identifier :> Odoc_model.Paths.Identifier.Signature.t)
@@ -762,6 +763,7 @@ and module_type_expr map identifier = function
           p_expansion = Opt.map (simple_expansion map identifier) p_expansion;
         }
   | Signature s ->
+      let s = Component.dget s in
       Signature
         (signature
            (identifier :> Odoc_model.Paths.Identifier.Signature.t)

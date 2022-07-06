@@ -32,7 +32,8 @@ let handle_expansion env id expansion =
   let rec expand id env expansion :
       (Env.t * Component.ModuleType.simple_expansion, _) Result.result =
     match expansion with
-    | Tools.Signature sg ->
+    | Tools.Signature dsg ->
+        let sg = Component.dget dsg in
         Ok
           ( env,
             (Component.ModuleType.Signature sg

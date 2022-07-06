@@ -96,6 +96,7 @@ module rec Delayed : sig
     | ModuleType : (Lang.ModuleType.t, ModuleType.t) ty
     | Type : (Lang.TypeDecl.t, TypeDecl.t) ty
     | Value : (Lang.Value.t, Value.t) ty
+    | Signature : (Lang.Signature.t, Signature.t) ty
 
   type _ t =
     | Val : 'a -> 'a t
@@ -219,7 +220,7 @@ and ModuleType : sig
     | StructInclude of Cpath.module_
 
   type simple_expansion =
-    | Signature of Signature.t
+    | Signature of Signature.t Delayed.t
     | Functor of FunctorParameter.t * simple_expansion
 
   type typeof_t = {
@@ -230,7 +231,7 @@ and ModuleType : sig
   module U : sig
     type expr =
       | Path of Cpath.module_type
-      | Signature of Signature.t
+      | Signature of Signature.t Delayed.t
       | With of substitution list * expr
       | TypeOf of typeof_t
   end
@@ -248,7 +249,7 @@ and ModuleType : sig
 
   type expr =
     | Path of path_t
-    | Signature of Signature.t
+    | Signature of Signature.t Delayed.t
     | With of with_t
     | Functor of FunctorParameter.t * expr
     | TypeOf of typeof_t
