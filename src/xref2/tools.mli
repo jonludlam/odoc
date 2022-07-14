@@ -42,6 +42,7 @@ type expansion =
 
 val lookup_module :
   mark_substituted:bool ->
+  shortcut_alias:bool ->
   Env.t ->
   Cpath.Resolved.module_ ->
   ( Component.Module.t Component.Delayed.t,

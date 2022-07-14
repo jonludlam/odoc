@@ -311,7 +311,7 @@ module MakeMemo (X : MEMO) = struct
 end
 
 module LookupModuleMemo = MakeMemo (struct
-  type t = bool * Cpath.Resolved.module_
+  type t = bool * bool * Cpath.Resolved.module_
 
   type result =
     ( Component.Module.t Component.Delayed.t,
@@ -324,7 +324,7 @@ module LookupModuleMemo = MakeMemo (struct
 end)
 
 module LookupParentMemo = MakeMemo (struct
-  type t = bool * Cpath.Resolved.parent
+  type t = bool * bool * Cpath.Resolved.parent
 
   type result =
     ( Component.Signature.t * Component.Substitution.t,
@@ -568,7 +568,7 @@ and handle_module_lookup env ~add_canonical id rparent sg sub =
       let md' = Component.Delayed.put_val m' in
       Ok (process_module_path env ~add_canonical m' rp', md')
   | Some (`FModule_removed p) ->
-      lookup_module ~mark_substituted:false env p >>= fun m -> Ok (p, m)
+      lookup_module ~mark_substituted:false ~shortcut_alias:false env p >>= fun m -> Ok (p, m)
   | None -> Error `Find_failure
 
 and handle_module_type_lookup env ~add_canonical id p sg sub =
@@ -620,7 +620,7 @@ and lookup_module_gpath :
         | None -> Error `Find_failure
         | Some (`FModule (_, m)) ->
             Ok (Component.Delayed.put_val (Subst.module_ sub m))
-        | Some (`FModule_removed p) -> lookup_module ~mark_substituted env p
+        | Some (`FModule_removed p) -> lookup_module ~mark_substituted ~shortcut_alias:false env p
       in
       lookup_parent_gpath ~mark_substituted env parent
       |> map_error (fun e -> (e :> simple_module_lookup_error))
@@ -633,19 +633,20 @@ and lookup_module_gpath :
 
 and lookup_module :
     mark_substituted:bool ->
+    shortcut_alias:bool ->
     Env.t ->
     Cpath.Resolved.module_ ->
     ( Component.Module.t Component.Delayed.t,
       simple_module_lookup_error )
     Result.result =
- fun ~mark_substituted:m env' path' ->
-  let lookup env (mark_substituted, (path : ExpansionOfModuleMemo.M.key)) =
+ fun ~mark_substituted:m ~shortcut_alias:s env' path' ->
+  let lookup env (mark_substituted, shortcut_alias, (path : ExpansionOfModuleMemo.M.key)) =
     match path with
     | `Local lpath -> Error (`Local (env, lpath))
     | `Gpath p -> lookup_module_gpath ~mark_substituted env p
-    | `Substituted x -> lookup_module ~mark_substituted env x
+    | `Substituted x -> lookup_module ~mark_substituted ~shortcut_alias env x
     | `Apply (functor_path, argument_path) ->
-        lookup_module ~mark_substituted env functor_path
+        lookup_module ~mark_substituted ~shortcut_alias env functor_path
         >>= fun functor_module ->
         let functor_module = Component.Delayed.get functor_module in
         handle_apply ~mark_substituted env functor_path argument_path
@@ -658,21 +659,22 @@ and lookup_module :
           | None -> Error `Find_failure
           | Some (`FModule (_, m)) ->
               Ok (Component.Delayed.put_val (Subst.module_ sub m))
-          | Some (`FModule_removed p) -> lookup_module ~mark_substituted env p
+          | Some (`FModule_removed p) -> lookup_module ~mark_substituted ~shortcut_alias env p
         in
-        lookup_parent ~mark_substituted env parent
+        lookup_parent ~mark_substituted ~shortcut_alias env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (sg, sub) -> find_in_sg sg sub
+    | `Alias (p, _, _) when shortcut_alias -> lookup_module ~mark_substituted ~shortcut_alias env p
     | `Alias (_, cs, _) -> (
         match resolve_module ~mark_substituted ~add_canonical:false env cs with
         | Ok (_, r) -> Ok r
         | Error e -> Error e)
-    | `Subst (_, p) -> lookup_module ~mark_substituted env p
-    | `Hidden p -> lookup_module ~mark_substituted env p
-    | `Canonical (p, _) -> lookup_module ~mark_substituted env p
-    | `OpaqueModule m -> lookup_module ~mark_substituted env m
+    | `Subst (_, p) -> lookup_module ~mark_substituted ~shortcut_alias env p
+    | `Hidden p -> lookup_module ~mark_substituted ~shortcut_alias env p
+    | `Canonical (p, _) -> lookup_module ~mark_substituted ~shortcut_alias env p
+    | `OpaqueModule m -> lookup_module ~mark_substituted ~shortcut_alias env m
   in
-  LookupModuleMemo.memoize lookup env' (m, path')
+  LookupModuleMemo.memoize lookup env' (m, s, path')
 
 and lookup_module_type_gpath :
     mark_substituted:bool ->
@@ -718,7 +720,7 @@ and lookup_module_type :
           | None -> Error `Find_failure
           | Some (`FModuleType (_, mt)) -> Ok (Subst.module_type sub mt)
         in
-        lookup_parent ~mark_substituted:true env parent
+        lookup_parent ~mark_substituted:true ~shortcut_alias:false env parent
         |> map_error (fun e -> (e :> simple_module_type_lookup_error))
         >>= fun (sg, sub) -> find_in_sg sg sub
     | `AliasModuleType (_, mt) -> lookup_module_type ~mark_substituted env mt
@@ -728,16 +730,17 @@ and lookup_module_type :
 
 and lookup_parent :
     mark_substituted:bool ->
+    shortcut_alias:bool ->
     Env.t ->
     Cpath.Resolved.parent ->
     ( Component.Signature.t * Component.Substitution.t,
       [ `Parent of parent_lookup_error ] )
     Result.result =
- fun ~mark_substituted:m env' parent' ->
-  let lookup env (mark_substituted, parent) =
+ fun ~mark_substituted:m ~shortcut_alias:s env' parent' ->
+  let lookup env (mark_substituted, shortcut_alias, parent) =
     match parent with
     | `Module p ->
-        lookup_module ~mark_substituted env p
+        lookup_module ~mark_substituted ~shortcut_alias env p
         |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun m ->
         let m = Component.Delayed.get m in
@@ -758,7 +761,7 @@ and lookup_parent :
         |> of_option ~error:(`Parent `Fragment_root)
         >>= fun (_, sg) -> Ok (sg, prefix_substitution parent sg)
   in
-  LookupParentMemo.memoize lookup env' (m, parent')
+  LookupParentMemo.memoize lookup env' (m, s, parent')
 
 and lookup_parent_gpath :
     mark_substituted:bool ->
@@ -860,7 +863,7 @@ and lookup_type :
     (Find.careful_type, simple_type_lookup_error) Result.result =
  fun env p ->
   let do_type p name =
-    lookup_parent ~mark_substituted:true env p
+    lookup_parent ~mark_substituted:true ~shortcut_alias:false env p
     |> map_error (fun e -> (e :> simple_type_lookup_error))
     >>= fun (sg, sub) ->
     handle_type_lookup env name p sg >>= fun (_, t') ->
@@ -892,7 +895,7 @@ and lookup_class_type :
     (Find.careful_class, simple_type_lookup_error) Result.result =
  fun env p ->
   let do_type p name =
-    lookup_parent ~mark_substituted:true env p
+    lookup_parent ~mark_substituted:true ~shortcut_alias:false env p
     |> map_error (fun e -> (e :> simple_type_lookup_error))
     >>= fun (sg, sub) ->
     handle_class_type_lookup name p sg >>= fun (_, t') ->
@@ -937,7 +940,7 @@ and resolve_module :
         let sub = prefix_substitution (`Module p) parent_sig in
         handle_module_lookup env ~add_canonical id (`Module p) parent_sig sub
     | `Module (parent, id) ->
-        lookup_parent ~mark_substituted env parent
+        lookup_parent ~mark_substituted ~shortcut_alias:false env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (parent_sig, sub) ->
         handle_module_lookup env ~add_canonical (ModuleName.to_string id) parent
@@ -963,7 +966,7 @@ and resolve_module :
           ( process_module_path env ~add_canonical (Component.Delayed.get m) rp,
             m )
     | `Local (p, _) -> Error (`Local (env, p))
-    | `Resolved r -> lookup_module ~mark_substituted env r >>= fun m -> Ok (r, m)
+    | `Resolved r -> lookup_module ~mark_substituted ~shortcut_alias:false env r >>= fun m -> Ok (r, m)
     | `Substituted s ->
         resolve_module ~mark_substituted ~add_canonical env s
         |> map_error (fun e -> `Parent (`Parent_module e))
@@ -1009,7 +1012,7 @@ and resolve_module_type :
            sub)
       >>= fun (p', mt) -> Ok (p', mt)
   | `ModuleType (parent, id) ->
-      lookup_parent ~mark_substituted env parent
+      lookup_parent ~mark_substituted ~shortcut_alias:false env parent
       |> map_error (fun e -> (e :> simple_module_type_lookup_error))
       >>= fun (parent_sig, sub) ->
       handle_module_type_lookup env ~add_canonical
@@ -1057,7 +1060,7 @@ and resolve_type :
         in
         Ok (p', t)
     | `Type (parent, id) ->
-        lookup_parent ~mark_substituted:true env parent
+        lookup_parent ~mark_substituted:true ~shortcut_alias:false env parent
         |> map_error (fun e -> (e :> simple_type_lookup_error))
         >>= fun (parent_sig, sub) ->
         let result =
@@ -1068,7 +1071,7 @@ and resolve_type :
         in
         of_option ~error:`Find_failure result
     | `Class (parent, id) ->
-        lookup_parent ~mark_substituted:true env parent
+        lookup_parent ~mark_substituted:true ~shortcut_alias:false env parent
         |> map_error (fun e -> (e :> simple_type_lookup_error))
         >>= fun (parent_sig, sub) ->
         let t =
@@ -1080,7 +1083,7 @@ and resolve_type :
         in
         of_option ~error:`Find_failure t
     | `ClassType (parent, id) ->
-        lookup_parent ~mark_substituted:true env parent
+        lookup_parent ~mark_substituted:true ~shortcut_alias:false env parent
         |> map_error (fun e -> (e :> simple_type_lookup_error))
         >>= fun (parent_sg, sub) ->
         handle_type_lookup env (ClassTypeName.to_string id) parent parent_sg
@@ -1141,7 +1144,7 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
   | `Substituted s ->
       resolve_class_type env s >>= fun (p, m) -> Ok (`Substituted p, m)
   | `Class (parent, id) ->
-      lookup_parent ~mark_substituted:true env parent
+      lookup_parent ~mark_substituted:true ~shortcut_alias:false env parent
       |> map_error (fun e -> (e :> simple_type_lookup_error))
       >>= fun (parent_sig, sub) ->
       let t =
@@ -1153,7 +1156,7 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
       in
       of_option ~error:`Find_failure t
   | `ClassType (parent, id) ->
-      lookup_parent ~mark_substituted:true env parent
+      lookup_parent ~mark_substituted:true ~shortcut_alias:false env parent
       |> map_error (fun e -> (e :> simple_type_lookup_error))
       >>= fun (parent_sg, sub) ->
       handle_class_type_lookup (ClassTypeName.to_string id) parent parent_sg
@@ -1295,7 +1298,7 @@ and handle_canonical_module_real env p2 =
               | None -> (
                   match m.type_ with
                   | Component.Module.Alias (`Resolved p, _) -> (
-                      match lookup_module ~mark_substituted:false env p with
+                      match lookup_module ~mark_substituted:false ~shortcut_alias:false env p with
                       | Error _ -> false
                       | Ok m ->
                           let m = Component.Delayed.get m in
@@ -1445,7 +1448,7 @@ and module_type_expr_of_module_decl :
  fun env decl ->
   match decl with
   | Component.Module.Alias (`Resolved r, _) ->
-      lookup_module ~mark_substituted:false env r
+      lookup_module ~mark_substituted:false ~shortcut_alias:false env r
       |> map_error (fun e -> `Parent (`Parent_module e))
       >>= fun m ->
       let m = Component.Delayed.get m in
@@ -1476,27 +1479,40 @@ and expansion_of_module_path :
     Cpath.module_ ->
     (expansion, expansion_of_module_error) Result.result =
  fun env ~strengthen path ->
-  match resolve_module ~mark_substituted:true ~add_canonical:true env path with
-  | Ok (p', m) -> (
-      let m = Component.Delayed.get m in
-      (* p' is the path to the aliased module *)
-      let strengthen =
-        strengthen
-        && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p')
-      in
-      expansion_of_module_cached env p' m >>= function
-      | Signature sg ->
-          let sg' =
-            match m.doc with
-            | [] -> sg
-            | docs -> { sg with items = Comment (`Docs docs) :: sg.items }
-          in
-          if strengthen then
-            Ok (Signature (Strengthen.signature (`Resolved p') sg'))
-          else Ok (Signature sg')
-      | Functor _ as f -> Ok f)
-  | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
-  | Error e -> Error (`UnresolvedPath (`Module (path, e)))
+  let expand (p', m) =
+    let m = Component.Delayed.get m in
+    (* p' is the path to the aliased module *)
+    let strengthen =
+      strengthen
+      && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p')
+    in
+    expansion_of_module_cached env p' m >>= function
+    | Signature sg ->
+        let sg' =
+          match m.doc with
+          | [] -> sg
+          | docs -> { sg with items = Comment (`Docs docs) :: sg.items }
+        in
+        if strengthen then
+          Ok (Signature (Strengthen.signature (`Resolved p') sg'))
+        else Ok (Signature sg')
+    | Functor _ as f -> Ok f
+  in
+  let handle_unresolved path =
+    match resolve_module ~mark_substituted:true ~add_canonical:true env path with
+    | Ok (p', m) -> expand (p', m)
+    | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
+    | Error e -> Error (`UnresolvedPath (`Module (path, e)))
+  in
+  let handle_resolved rp =
+    match lookup_module ~mark_substituted:true ~shortcut_alias:true env rp with
+    | Ok m -> expand (rp, m)
+    | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
+    | Error e -> Error (`UnresolvedPath (`Module (path, e)))
+  in
+  match path with
+  | `Resolved rp -> handle_resolved rp
+  | _ -> handle_unresolved path
 
 and handle_signature_with_subs :
     mark_substituted:bool ->
@@ -2014,7 +2030,7 @@ and find_module_with_replacement :
   match Find.careful_module_in_sig sg name with
   | Some (`FModule (_, m)) -> Ok (Component.Delayed.put_val m)
   | Some (`FModule_removed path) ->
-      lookup_module ~mark_substituted:false env path
+      lookup_module ~mark_substituted:false ~shortcut_alias:false env path
   | None -> Error `Find_failure
 
 and find_module_type_with_replacement :
