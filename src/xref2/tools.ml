@@ -14,11 +14,12 @@ let rec dget_impl : type a. a Component.Delayed.t -> a = function
   | OfLang (ModuleType, m, map) -> Component.Of_Lang.module_type map m
   | OfLang (Type, m, map) -> Component.Of_Lang.type_decl map m
   | OfLang (Value, v, map) -> Component.Of_Lang.value map v
+  | OfLang (Signature, sg, map) -> Component.Of_Lang.signature map sg
   | Subst (Module, m, sub) -> Subst.module_ sub (dget_impl m)
   | Subst (ModuleType, mt, sub) -> Subst.module_type sub (dget_impl mt)
   | Subst (Type, t, sub) -> Subst.type_ sub (dget_impl t)
   | Subst (Value, v, sub) -> Subst.value sub (dget_impl v)
-
+  | Subst (Signature, sg, sub) -> dget_impl (Subst.signature sub sg)
 let _ = Component.dget_impl := Some { Component.dget = dget_impl }
 
 type ('a, 'b) either = Left of 'a | Right of 'b
@@ -1510,7 +1511,7 @@ and expansion_of_module_path :
             | docs -> { sg with items = Comment (`Docs docs) :: sg.items }
           in
           if strengthen then
-            Ok (Signature (Strengthen.signature (`Resolved p') sg'))
+            Ok (Signature (Component.dget (Strengthen.signature (`Resolved p') (Val sg'))))
           else Ok (Signature sg')
       | Functor _ as f -> Ok f)
   | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
@@ -1558,12 +1559,12 @@ and signature_of_u_module_type_expr :
           let mt = Component.dget dmt in
           expansion_of_module_type env mt >>= assert_not_functor
       | Error e -> Error (`UnresolvedPath (`ModuleType (p, e))))
-  | Signature s -> Ok s
+  | Signature s -> Ok (Component.dget s)
   | With (subs, s) ->
       signature_of_u_module_type_expr ~mark_substituted env s >>= fun sg ->
       let subs = unresolve_subs subs in
       handle_signature_with_subs ~mark_substituted env sg subs
-  | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok sg
+  | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok (Component.dget sg)
   | TypeOf { t_desc; _ } -> Error (`UnexpandedTypeOf t_desc)
 
 (* and expansion_of_simple_expansion :
@@ -1595,7 +1596,7 @@ and expansion_of_module_type_expr :
           let mt = Component.dget dmt in
           expansion_of_module_type env mt
       | Error e -> Error (`UnresolvedPath (`ModuleType (p_path, e))))
-  | Component.ModuleType.Signature s -> Ok (Signature s)
+  | Component.ModuleType.Signature s -> Ok (Signature (Component.dget s))
   (* | Component.ModuleType.With { w_expansion = Some e; _ } ->
       Ok (signature_of_simple_expansion e)
 
@@ -1609,7 +1610,7 @@ and expansion_of_module_type_expr :
       Ok (Signature sg)
   | Component.ModuleType.Functor (arg, expr) -> Ok (Functor (arg, expr))
   | Component.ModuleType.TypeOf { t_expansion = Some (Signature sg); _ } ->
-      Ok (Signature sg)
+      Ok (Signature (Component.dget sg))
   | Component.ModuleType.TypeOf { t_desc; _ } ->
       Error (`UnexpandedTypeOf t_desc)
 
@@ -1685,7 +1686,7 @@ and fragmap :
                     TypeOf
                       {
                         t_desc = StructInclude path;
-                        t_expansion = Some (Signature sg);
+                        t_expansion = Some (Signature (Val sg));
                       };
                 }))
     | ModuleType mty' ->
@@ -1705,7 +1706,7 @@ and fragmap :
         expansion_of_module_path env ~strengthen:true p >>= assert_not_functor
         >>= fun sg ->
         fragmap ~mark_substituted env subst sg >>= fun sg ->
-        Ok (ModuleType (Signature sg))
+        Ok (ModuleType (Signature (Val sg)))
     | ModuleType mty' -> Ok (ModuleType (With ([ subst ], mty')))
   in
   let map_module m new_subst =
@@ -1923,14 +1924,14 @@ and fragmap :
 
   let res =
     Subst.signature sub
-      {
+      (Val {
         Component.Signature.items;
         removed = removed @ sg.removed;
         compiled = false;
         doc = sg.doc;
-      }
+      })
   in
-  Ok res
+  Ok (Component.dget res)
 
 and find_external_module_path :
     Cpath.Resolved.module_ -> Cpath.Resolved.module_ option =

@@ -71,7 +71,7 @@ val class_decl : t -> Component.Class.decl -> Component.Class.decl
 
 val class_type : t -> Component.ClassType.t -> Component.ClassType.t
 
-val signature : t -> Component.Signature.t -> Component.Signature.t
+val signature : t -> Component.Signature.t Delayed.t -> Component.Signature.t Delayed.t
 
 val module_path : t -> Cpath.module_ -> Cpath.module_
 

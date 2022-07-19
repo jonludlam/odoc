@@ -830,12 +830,12 @@ and include_ s i =
     i with
     decl = include_decl s i.decl;
     strengthened = option_ module_path s i.strengthened;
-    expansion_ = apply_sig_map_sg s i.expansion_;
+    expansion_ = Component.dget (apply_sig_map_sg s (Val i.expansion_));
   }
 
 and open_ s o =
   let open Component.Open in
-  { expansion = apply_sig_map_sg s o.expansion; doc = o.doc }
+  { expansion = Component.dget (apply_sig_map_sg s (Val o.expansion)); doc = o.doc }
 
 and value s v =
   let open Component.Value in
@@ -1026,14 +1026,16 @@ and removed_items s items =
       | x -> x)
     items
 
-and signature s sg =
+and signature : t -> Signature.t Delayed.t -> Signature.t Delayed.t = fun s dsg ->
+  let sg = Component.dget dsg in
   let s, items = rename_bound_idents s [] sg.items in
   let items, removed, dont_recompile = apply_sig_map s items sg.removed in
-  { sg with items; removed; compiled = sg.compiled && dont_recompile }
+  Val { sg with items; removed; compiled = sg.compiled && dont_recompile }
 
-and apply_sig_map_sg s (sg : Component.Signature.t) =
+and apply_sig_map_sg : t -> Signature.t Delayed.t -> Signature.t Delayed.t = fun s (dsg : Component.Signature.t Delayed.t) ->
+  let sg = Component.dget dsg in
   let items, removed, dont_recompile = apply_sig_map s sg.items sg.removed in
-  { sg with items; removed; compiled = sg.compiled && dont_recompile }
+  Val { sg with items; removed; compiled = sg.compiled && dont_recompile }
 
 and apply_sig_map s items removed =
   let open Component.Signature in

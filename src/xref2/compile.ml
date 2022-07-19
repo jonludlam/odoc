@@ -378,10 +378,11 @@ and include_ : Env.t -> Include.t -> Include.t * Env.t =
           match i.strengthened with
           | Some p ->
               let cp = Component.Of_Lang.(module_path (empty ()) p) in
-              Strengthen.signature cp sg
+              let dsg = Strengthen.signature cp (Val sg) in
+              Component.dget dsg
           | None -> sg
         in
-        let e = Lang_of.(simple_expansion map i.parent (Signature sg')) in
+        let e = Lang_of.(simple_expansion map i.parent (Signature (Val sg'))) in
 
         let expansion_sg =
           match e with

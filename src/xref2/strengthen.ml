@@ -18,9 +18,10 @@ open Component
 let rec signature :
     Cpath.module_ ->
     ?canonical:Odoc_model.Paths.Path.Module.t ->
-    Signature.t ->
-    Signature.t =
- fun prefix ?canonical sg ->
+    Signature.t Delayed.t ->
+    Signature.t Delayed.t =
+ fun prefix ?canonical dsg ->
+  let sg = Component.dget dsg in
   let sg', strengthened_modules = sig_items prefix ?canonical sg in
   let substs =
     List.fold_left
@@ -62,7 +63,7 @@ and sig_items prefix ?canonical sg =
             (item :: items, s))
       ([], []) sg.items
   in
-  ({ sg with items = List.rev items }, ids)
+  (Val { sg with items = List.rev items }, ids)
 
 and module_ :
     ?canonical:Odoc_model.Paths.Path.Module.t ->
@@ -117,4 +118,4 @@ and type_decl : Cpath.type_ -> TypeDecl.t Delayed.t -> TypeDecl.t Delayed.t =
 and include_ : Cpath.module_ -> Include.t -> Include.t * Ident.module_ list =
  fun path i ->
   let expansion_, strengthened = sig_items path i.expansion_ in
-  ({ i with expansion_; strengthened = Some path }, strengthened)
+  ({ i with expansion_ = Component.dget expansion_; strengthened = Some path }, strengthened)
