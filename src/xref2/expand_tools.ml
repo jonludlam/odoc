@@ -35,7 +35,7 @@ let handle_expansion env id expansion =
     | Tools.Signature sg ->
         Ok
           ( env,
-            (Component.ModuleType.Signature (Val sg)
+            (Component.ModuleType.Signature sg
               : Component.ModuleType.simple_expansion) )
     | Functor (arg, expr) ->
         let env', expr' = handle_argument id arg expr env in

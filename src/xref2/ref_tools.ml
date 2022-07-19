@@ -146,7 +146,7 @@ let module_lookup_to_signature_lookup env (ref, cp, m) =
         with
         | Ok e -> handle_expansion e
         | Error _ as e -> e)
-    | Signature sg -> Ok ((ref :> Resolved.Signature.t), `Module cp, sg)
+    | Signature sg -> Ok ((ref :> Resolved.Signature.t), `Module cp, Component.dget sg)
   in
   Tools.expansion_of_module env m
   >>= handle_expansion
@@ -156,7 +156,9 @@ let module_type_lookup_to_signature_lookup env (ref, cp, m) =
   Tools.expansion_of_module_type env m
   |> map_error (fun e -> `Parent (`Parent_sig e))
   >>= Tools.assert_not_functor
-  >>= fun sg -> Ok ((ref :> Resolved.Signature.t), `ModuleType cp, sg)
+  >>= fun dsg ->
+  let sg = Component.dget dsg in
+  Ok ((ref :> Resolved.Signature.t), `ModuleType cp, sg)
 
 let type_lookup_to_class_signature_lookup =
   let resolved p' cs = Ok ((p' :> Resolved.ClassSignature.t), cs) in

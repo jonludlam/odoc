@@ -365,7 +365,8 @@ and include_ : Env.t -> Include.t -> Include.t * Env.t =
       match decl with
       | Alias p ->
           Tools.expansion_of_module_path env ~strengthen:true p
-          >>= Tools.assert_not_functor
+          >>= Tools.assert_not_functor >>= fun dsg ->
+          Ok (Component.dget dsg)
       | ModuleType mty ->
           Tools.signature_of_u_module_type_expr ~mark_substituted:false env mty
     with
@@ -793,7 +794,8 @@ and type_expression_package env parent p =
               p
           | Ok (Functor _) ->
               failwith "Type expression package of functor with substitutions!"
-          | Ok (Signature sg) ->
+          | Ok (Signature dsg) ->
+              let sg = Component.dget dsg in
               let substitution (frag, t) =
                 let cfrag = Component.Of_Lang.(type_fragment (empty ()) frag) in
                 let frag' =

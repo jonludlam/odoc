@@ -5,7 +5,7 @@ open Utils
 open ResultMonad
 
 type expansion =
-  | Signature of Component.Signature.t
+  | Signature of Component.Signature.t Component.Delayed.t
   | Functor of Component.FunctorParameter.t * Component.ModuleType.expr
 
 let rec dget_impl : type a. a Component.Delayed.t -> a = function
@@ -754,7 +754,9 @@ and lookup_parent :
         expansion_of_module env m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
-        >>= fun sg -> Ok (sg, prefix_substitution parent sg)
+        >>= fun dsg ->
+        let sg = Component.dget dsg in
+        Ok (sg, prefix_substitution parent sg)
     | `ModuleType p ->
         lookup_module_type ~mark_substituted env p
         |> map_error (fun e -> `Parent (`Parent_module_type e))
@@ -763,7 +765,9 @@ and lookup_parent :
         expansion_of_module_type env mt
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
-        >>= fun sg -> Ok (sg, prefix_substitution parent sg)
+        >>= fun dsg ->
+        let sg = Component.dget dsg in
+        Ok (sg, prefix_substitution parent sg)
     | `FragmentRoot ->
         Env.lookup_fragment_root env
         |> of_option ~error:(`Parent `Fragment_root)
@@ -786,7 +790,9 @@ and lookup_parent_gpath :
   expansion_of_module env m
   |> map_error (fun e -> `Parent (`Parent_sig e))
   >>= assert_not_functor
-  >>= fun sg -> Ok (sg, prefix_substitution (`Module (`Gpath parent)) sg)
+  >>= fun dsg ->
+  let sg = Component.dget dsg in
+  Ok (sg, prefix_substitution (`Module (`Gpath parent)) sg)
 
 and lookup_type_gpath :
     Env.t ->
@@ -946,7 +952,8 @@ and resolve_module :
         expansion_of_module_cached env p m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
-        >>= fun parent_sig ->
+        >>= fun parent_dsig ->
+        let parent_sig = Component.dget parent_dsig in
         let sub = prefix_substitution (`Module p) parent_sig in
         handle_module_lookup env ~add_canonical id (`Module p) parent_sig sub
     | `Module (parent, id) ->
@@ -1013,7 +1020,8 @@ and resolve_module_type :
       expansion_of_module_cached env p m
       |> map_error (fun e -> `Parent (`Parent_sig e))
       >>= assert_not_functor
-      >>= fun parent_sg ->
+      >>= fun parent_dsg ->
+      let parent_sg = Component.dget parent_dsg in
       let sub = prefix_substitution (`Module p) parent_sg in
       of_option ~error:`Find_failure
         (handle_module_type_lookup env ~add_canonical id (`Module p) parent_sg
@@ -1055,7 +1063,8 @@ and resolve_type :
         expansion_of_module_cached env p m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
-        >>= fun sg ->
+        >>= fun dsg ->
+        let sg = Component.dget dsg in
         let sub = prefix_substitution (`Module p) sg in
         handle_type_lookup env id (`Module p) sg >>= fun (p', t') ->
         let t =
@@ -1140,7 +1149,8 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
       expansion_of_module_cached env p m
       |> map_error (fun e -> `Parent (`Parent_sig e))
       >>= assert_not_functor
-      >>= fun sg ->
+      >>= fun dsg ->
+      let sg = Component.dget dsg in
       let sub = prefix_substitution (`Module p) sg in
       handle_class_type_lookup id (`Module p) sg >>= fun (p', t') ->
       let t =
@@ -1504,15 +1514,16 @@ and expansion_of_module_path :
         && not (Cpath.is_resolved_module_hidden ~weak_canonical_test:true p')
       in
       expansion_of_module_cached env p' m >>= function
-      | Signature sg ->
+      | Signature dsg ->
+          let sg = Component.dget dsg in
           let sg' =
             match m.doc with
             | [] -> sg
             | docs -> { sg with items = Comment (`Docs docs) :: sg.items }
           in
           if strengthen then
-            Ok (Signature (Component.dget (Strengthen.signature (`Resolved p') (Val sg'))))
-          else Ok (Signature sg')
+            Ok (Signature (Strengthen.signature (`Resolved p') (Val sg')))
+          else Ok (Signature (Val sg'))
       | Functor _ as f -> Ok f)
   | Error _ when Cpath.is_module_forward path -> Error `UnresolvedForwardPath
   | Error e -> Error (`UnresolvedPath (`Module (path, e)))
@@ -1531,7 +1542,7 @@ and handle_signature_with_subs :
     (Ok sg) subs
 
 and assert_not_functor :
-    type err. expansion -> (Component.Signature.t, err) Result.t = function
+    type err. expansion -> (Component.Signature.t Component.Delayed.t, err) Result.t = function
   | Signature sg -> Ok sg
   | _ -> assert false
 
@@ -1557,7 +1568,8 @@ and signature_of_u_module_type_expr :
       match resolve_module_type ~mark_substituted ~add_canonical:true env p with
       | Ok (_, dmt) ->
           let mt = Component.dget dmt in
-          expansion_of_module_type env mt >>= assert_not_functor
+          expansion_of_module_type env mt >>= assert_not_functor >>= fun dsg ->
+          Ok (Component.dget dsg)
       | Error e -> Error (`UnresolvedPath (`ModuleType (p, e))))
   | Signature s -> Ok (Component.dget s)
   | With (subs, s) ->
@@ -1596,7 +1608,7 @@ and expansion_of_module_type_expr :
           let mt = Component.dget dmt in
           expansion_of_module_type env mt
       | Error e -> Error (`UnresolvedPath (`ModuleType (p_path, e))))
-  | Component.ModuleType.Signature s -> Ok (Signature (Component.dget s))
+  | Component.ModuleType.Signature s -> Ok (Signature s)
   (* | Component.ModuleType.With { w_expansion = Some e; _ } ->
       Ok (signature_of_simple_expansion e)
 
@@ -1607,10 +1619,10 @@ and expansion_of_module_type_expr :
       signature_of_u_module_type_expr ~mark_substituted env w_expr >>= fun sg ->
       let subs = unresolve_subs w_substitutions in
       handle_signature_with_subs ~mark_substituted env sg subs >>= fun sg ->
-      Ok (Signature sg)
+      Ok (Signature (Val sg))
   | Component.ModuleType.Functor (arg, expr) -> Ok (Functor (arg, expr))
   | Component.ModuleType.TypeOf { t_expansion = Some (Signature sg); _ } ->
-      Ok (Signature (Component.dget sg))
+      Ok (Signature sg)
   | Component.ModuleType.TypeOf { t_desc; _ } ->
       Error (`UnexpandedTypeOf t_desc)
 
@@ -1686,7 +1698,7 @@ and fragmap :
                     TypeOf
                       {
                         t_desc = StructInclude path;
-                        t_expansion = Some (Signature (Val sg));
+                        t_expansion = Some (Signature sg);
                       };
                 }))
     | ModuleType mty' ->
@@ -1704,7 +1716,8 @@ and fragmap :
     match decl with
     | Alias p ->
         expansion_of_module_path env ~strengthen:true p >>= assert_not_functor
-        >>= fun sg ->
+        >>= fun dsg ->
+        let sg = Component.dget dsg in
         fragmap ~mark_substituted env subst sg >>= fun sg ->
         Ok (ModuleType (Signature (Val sg)))
     | ModuleType mty' -> Ok (ModuleType (With ([ subst ], mty')))
@@ -2081,7 +2094,8 @@ and resolve_signature_fragment :
       (* Don't use the cached one - `FragmentRoot` is not unique *)
       let m' = Component.dget m' in
       of_result ResultMonad.(expansion_of_module env m' >>= assert_not_functor)
-      >>= fun parent_sg ->
+      >>= fun parent_dsg ->
+      let parent_sg = Component.dget parent_dsg in
       let sg = prefix_signature (`Module cp', parent_sg) in
       Some (f', `Module cp', sg)
 

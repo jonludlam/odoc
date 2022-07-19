@@ -8,7 +8,7 @@
 open Errors.Tools_error
 
 type expansion =
-  | Signature of Component.Signature.t
+  | Signature of Component.Signature.t Component.Delayed.t
   | Functor of Component.FunctorParameter.t * Component.ModuleType.expr
 
 (** {2 Lookup and resolve functions} *)
@@ -211,7 +211,7 @@ val get_module_type_path_modifiers :
 val prefix_signature :
   Cpath.Resolved.parent * Component.Signature.t -> Component.Signature.t
 
-val assert_not_functor : expansion -> (Component.Signature.t, 'err) result
+val assert_not_functor : expansion -> (Component.Signature.t Component.Delayed.t, 'err) result
 
 val expansion_of_module_path :
   Env.t ->

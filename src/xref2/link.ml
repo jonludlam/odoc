@@ -32,7 +32,7 @@ let synopsis_of_module env (m : Component.Module.t) =
       in
       (* If there is no doc, look at the expansion. *)
       match Tools.expansion_of_module env m >>= handle_expansion with
-      | Ok sg -> synopsis_from_comment (Component.extract_signature_doc sg)
+      | Ok sg -> synopsis_from_comment (Component.extract_signature_doc (Component.dget sg))
       | Error _ -> None)
 
 let ambiguous_label_warning label_name labels =
