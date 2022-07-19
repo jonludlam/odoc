@@ -1635,23 +1635,17 @@ and expansion_of_module_type :
   | None -> Error `OpaqueModule
   | Some expr -> expansion_of_module_type_expr ~mark_substituted:false env expr
 
-and expansion_of_module_decl :
+and expansion_of_module :
     Env.t ->
-    Component.Module.decl ->
+    Component.Module.t ->
     (expansion, expansion_of_module_error) Result.result =
- fun env decl ->
-  match decl with
+ fun env m ->
+  match m.type_ with
   (* | Component.Module.Alias (_, Some e) -> Ok (expansion_of_simple_expansion e) *)
   | Component.Module.Alias (p, _) ->
       expansion_of_module_path env ~strengthen:true p
   | Component.Module.ModuleType expr ->
       expansion_of_module_type_expr ~mark_substituted:false env expr
-
-and expansion_of_module :
-    Env.t ->
-    Component.Module.t ->
-    (expansion, expansion_of_module_error) Result.result =
- fun env m -> expansion_of_module_decl env m.type_
 
 and expansion_of_module_cached :
     Env.t ->
