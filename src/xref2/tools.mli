@@ -215,6 +215,8 @@ val prefix_signature :
 val assert_not_functor :
   expansion -> (Component.Signature.t, 'err) Result.result
 
+val get_substituted_module_type : Env.t -> Cpath.module_type -> Cpath.Resolved.module_type option
+
 val expansion_of_module_path :
   Env.t ->
   strengthen:bool ->
@@ -223,12 +225,12 @@ val expansion_of_module_path :
 
 val expansion_of_module :
   Env.t ->
-  Component.Module.t ->
+  Component.Module.t Component.Delayed.t ->
   (expansion, expansion_of_module_error) Result.result
 
 val expansion_of_module_type :
   Env.t ->
-  Component.ModuleType.t ->
+  Component.ModuleType.t Component.Delayed.t ->
   (expansion, expansion_of_module_error) Result.result
 
 val class_signature_of_class_type :

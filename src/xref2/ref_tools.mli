@@ -1,7 +1,7 @@
 open Odoc_model.Paths.Reference
 
 type module_lookup_result =
-  Resolved.Module.t * Cpath.Resolved.module_ * Component.Module.t
+  Resolved.Module.t * Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t
 
 type 'a ref_result =
   ('a, Errors.Tools_error.reference_lookup_error) Result.result

@@ -46,6 +46,8 @@ val module_ : t -> Component.Module.t -> Component.Module.t
 
 val module_type : t -> Component.ModuleType.t -> Component.ModuleType.t
 
+val module_decl : t -> Component.Module.decl -> Component.Module.decl
+
 val module_type_substitution :
   t -> Component.ModuleTypeSubstitution.t -> Component.ModuleTypeSubstitution.t
 

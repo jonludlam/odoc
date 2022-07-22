@@ -794,9 +794,7 @@ and type_expression_package env parent p =
           (* No substitutions, don't need to try to resolve them *)
           { path = module_type_path env p.path; substitutions = [] }
       | _ -> (
-          let mt = Component.dget dmt in
-
-          match Tools.expansion_of_module_type env mt with
+          match Tools.expansion_of_module_type env dmt with
           | Error e ->
               Errors.report ~what:(`Package cp) ~tools_error:e `Lookup;
               p

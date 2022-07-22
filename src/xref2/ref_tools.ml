@@ -4,10 +4,10 @@ open Reference
 open Utils.ResultMonad
 
 type module_lookup_result =
-  Resolved.Module.t * Cpath.Resolved.module_ * Component.Module.t
+  Resolved.Module.t * Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t
 
 type module_type_lookup_result =
-  Resolved.ModuleType.t * Cpath.Resolved.module_type * Component.ModuleType.t
+  Resolved.ModuleType.t * Cpath.Resolved.module_type * Component.ModuleType.t Component.Delayed.t
 
 type signature_lookup_result =
   Resolved.Signature.t * Cpath.Resolved.parent * Component.Signature.t
@@ -152,8 +152,8 @@ let module_lookup_to_signature_lookup env (ref, cp, m) =
   >>= handle_expansion
   |> map_error (fun e -> `Parent (`Parent_sig e))
 
-let module_type_lookup_to_signature_lookup env (ref, cp, m) =
-  Tools.expansion_of_module_type env m
+let module_type_lookup_to_signature_lookup env (ref, cp, dm) =
+  Tools.expansion_of_module_type env dm
   |> map_error (fun e -> `Parent (`Parent_sig e))
   >>= Tools.assert_not_functor
   >>= fun sg -> Ok ((ref :> Resolved.Signature.t), `ModuleType cp, sg)
@@ -178,22 +178,34 @@ module M = struct
 
   let of_component env m base_path' base_ref' : t =
     let base_path, base_ref =
-      if m.Component.Module.hidden then (`Hidden base_path', `Hidden base_ref')
+      if Dhelpers.Module.hidden m then (`Hidden base_path', `Hidden base_ref')
       else (base_path', base_ref')
     in
     let p, r =
       match
-        Tools.get_module_path_modifiers env ~add_canonical:true
-          (Component.Delayed.Val m)
+        Dhelpers.Module.m_path_modifiers m
       with
       | None -> (base_path, base_ref)
-      | Some (`Aliased cp) ->
-          let cp = Tools.reresolve_module env cp in
-          let p = Lang_of.(Path.resolved_module (empty ()) cp) in
-          (`Alias (cp, `Resolved base_path, None), `Alias (p, base_ref))
-      | Some (`SubstMT cp) ->
-          let cp = Tools.reresolve_module_type env cp in
-          (`Subst (cp, base_path), base_ref)
+      | Some (AliasPath p) -> begin
+          match
+            Tools.resolve_module ~mark_substituted:true ~add_canonical:true env p
+          with
+          | Ok (cp, _) ->
+            let cp = Tools.reresolve_module env cp in
+            let p = Lang_of.(Path.resolved_module (empty ()) cp) in
+            (`Alias (cp, `Resolved base_path, None), `Alias (p, base_ref))
+          | Error _ ->
+            (base_path, base_ref)
+          end
+      | Some (ModuleTypePath p) -> begin
+          match Tools.get_substituted_module_type env p with
+          | Some cp -> 
+            let cp = Tools.reresolve_module_type env cp in
+            (`Subst (cp, base_path), base_ref)
+          | None -> 
+            (base_path, base_ref)
+
+          end
     in
     (r, p, m)
 
@@ -202,11 +214,9 @@ module M = struct
     let parent_cp = Tools.reresolve_parent env parent_cp in
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find Find.module_in_sig sg name >>= fun (`FModule (name, dm)) ->
-    let m = Component.dget dm in
-    Ok (of_component env m (`Module (parent_cp, name)) (`Module (parent, name)))
+    Ok (of_component env dm (`Module (parent_cp, name)) (`Module (parent, name)))
 
   let of_element env (`Module (id, m)) : t =
-    let m = Component.dget m in
     let id = (id :> Identifier.Path.Module.t) in
     of_component env m (`Gpath (`Identifier id)) (`Identifier id)
 
@@ -221,32 +231,30 @@ module MT = struct
 
   type t = module_type_lookup_result
 
-  let of_component env mt base_path base_ref : t =
+  let of_component env dmt base_path base_ref : t =
     let modifiers =
-      Dhelpers.ModuleType.m_path_modifiers (Component.Delayed.Val mt)
+      Dhelpers.ModuleType.m_path_modifiers dmt
     in
     match
       Tools.get_module_type_path_modifiers env ~add_canonical:true modifiers
     with
-    | None -> (base_ref, base_path, mt)
+    | None -> (base_ref, base_path, dmt)
     | Some (`AliasModuleType cp) ->
         let cp = Tools.reresolve_module_type env cp in
         let p = Lang_of.(Path.resolved_module_type (empty ()) cp) in
-        (`AliasModuleType (p, base_ref), `AliasModuleType (cp, base_path), mt)
+        (`AliasModuleType (p, base_ref), `AliasModuleType (cp, base_path), dmt)
 
   let in_signature env ((parent', parent_cp, sg) : signature_lookup_result) name
       =
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find Find.module_type_in_sig sg name >>= fun (`FModuleType (name, dmt)) ->
-    let mt = Component.dget dmt in
     Ok
-      (of_component env mt
+      (of_component env dmt
          (`ModuleType (parent_cp, name))
          (`ModuleType (parent', name)))
 
   let of_element env (`ModuleType (id, dmt)) : t =
-    let mt = Component.dget dmt in
-    of_component env mt (`Gpath (`Identifier id)) (`Identifier id)
+    of_component env dmt (`Gpath (`Identifier id)) (`Identifier id)
 
   let in_env env name =
     env_lookup_by_name Env.s_module_type name env >>= fun e ->
@@ -541,16 +549,14 @@ module LP = struct
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find_ambiguous Find.label_parent_in_sig sg name >>= function
     | `FModule (name, dm) ->
-        let m = Component.dget dm in
         module_lookup_to_signature_lookup env
-          (M.of_component env m
+          (M.of_component env dm
              (`Module (parent_cp, name))
              (`Module (parent', name)))
         >>= fun s -> Ok (`S s)
     | `FModuleType (name, dmt) ->
-        let mt = Component.dget dmt in
         module_type_lookup_to_signature_lookup env
-          (MT.of_component env mt
+          (MT.of_component env dmt
              (`ModuleType (parent_cp, name))
              (`ModuleType (parent', name)))
         >>= fun s -> Ok (`S s)
@@ -633,15 +639,13 @@ and resolve_signature_reference :
         let sg = Tools.prefix_signature (parent_cp, sg) in
         find_ambiguous ~kind:`S Find.signature_in_sig sg name >>= function
         | `FModule (name, dm) ->
-            let m = Component.dget dm in
             module_lookup_to_signature_lookup env
-              (M.of_component env m
+              (M.of_component env dm
                  (`Module (parent_cp, name))
                  (`Module (parent, name)))
         | `FModuleType (name, dmt) ->
-            let mt = Component.dget dmt in
             module_type_lookup_to_signature_lookup env
-              (MT.of_component env mt
+              (MT.of_component env dmt
                  (`ModuleType (parent_cp, name))
                  (`ModuleType (parent, name))))
   in
@@ -699,15 +703,13 @@ let resolve_reference_dot_sg env ~parent_path ~parent_ref ~parent_sg name =
   let parent_sg = Tools.prefix_signature (parent_path, parent_sg) in
   find_ambiguous Find.any_in_sig parent_sg name >>= function
   | `FModule (name, dm) ->
-      let m = Component.dget dm in
       resolved3
-        (M.of_component env m
+        (M.of_component env dm
            (`Module (parent_path, name))
            (`Module (parent_ref, name)))
   | `FModuleType (name, dmt) ->
-      let mt = Component.dget dmt in
       resolved3
-        (MT.of_component env mt
+        (MT.of_component env dmt
            (`ModuleType (parent_path, name))
            (`ModuleType (parent_ref, name)))
   | `FType (name, t) -> DT.of_component env t ~parent_ref name >>= resolved2

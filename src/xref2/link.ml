@@ -15,9 +15,9 @@ let synopsis_from_comment (docs : Component.CComment.docs) =
       Comment.synopsis [ e ]
   | _ -> None
 
-let synopsis_of_module env (m : Component.Module.t) =
+let synopsis_of_module env (m : Component.Module.t Component.Delayed.t) =
   let open Utils.ResultMonad in
-  match synopsis_from_comment m.doc with
+  match synopsis_from_comment (Dhelpers.Module.doc m) with
   | Some _ as s -> s
   | None -> (
       let rec handle_expansion : Tools.expansion -> _ = function
