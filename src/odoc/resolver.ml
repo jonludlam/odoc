@@ -77,9 +77,6 @@ let build_imports_map m =
 
 let root_name root = Odoc_model.Root.Odoc_file.name root.Odoc_model.Root.file
 
-let unit_name (Odoc_file.Unit_content { root; _ } | Page_content { root; _ }) =
-  root_name root
-
 (** TODO: Propagate warnings instead of printing. *)
 let load_units_from_files paths =
   let safe_read file acc =
@@ -94,20 +91,13 @@ let load_units_from_files paths =
   in
   List.fold_right safe_read paths []
 
-let unit_cache = Hashtbl.create 42
-
 (** Load every units matching a given name. Cached. *)
 let load_units_from_name =
   let do_load ap target_name =
     let paths = Accessible_paths.find ap target_name in
     load_units_from_files paths
   in
-  fun ap target_name ->
-    try Hashtbl.find unit_cache target_name
-    with Not_found ->
-      let units = do_load ap target_name in
-      Hashtbl.add unit_cache target_name units;
-      units
+  fun ap target_name -> do_load ap target_name
 
 let rec find_map f = function
   | [] -> None
@@ -188,10 +178,6 @@ let lookup_page ap target_name =
   let units = load_units_from_name ap target_name in
   match find_map is_page units with Some (p, _) -> Some p | None -> None
 
-(** Add the current unit to the cache. No need to load other units with the same
-    name. *)
-let add_unit_to_cache u = Hashtbl.add unit_cache (unit_name u) [ u ]
-
 type t = {
   important_digests : bool;
   ap : Accessible_paths.t;
@@ -203,21 +189,20 @@ let create ~important_digests ~directories ~open_modules =
   { important_digests; ap; open_modules }
 
 (** [important_digests] and [imports_map] only apply to modules. *)
-let build ?u { important_digests; ap; open_modules } ~imports_map =
-  (match u with Some u -> add_unit_to_cache u | None -> ());
+let build { important_digests; ap; open_modules } ~imports_map =
   let lookup_unit = lookup_unit ~important_digests ~imports_map ap
   and lookup_page = lookup_page ap in
   { Odoc_xref2.Env.open_units = open_modules; lookup_unit; lookup_page }
 
 let build_env_for_unit t ~linking m =
   let imports_map = build_imports_map m in
-  let resolver = build ~u:(Odoc_file.Unit_content m) t ~imports_map in
+  let resolver = build t ~imports_map in
   Odoc_xref2.Env.env_of_unit m ~linking resolver
 
 let build_env_for_page t p =
   let imports_map = StringMap.empty in
   let t = { t with important_digests = false } in
-  let resolver = build ~u:(Odoc_file.Page_content p) t ~imports_map in
+  let resolver = build t ~imports_map in
   Odoc_xref2.Env.env_of_page p resolver
 
 let build_env_for_reference t =

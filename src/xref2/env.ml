@@ -160,6 +160,9 @@ type t = {
       (** Elements mapped by their name. Queried with {!find_by_name}. *)
   ids : ElementsById.t;
       (** Elements mapped by their identifier. Queried with {!find_by_id}. *)
+  roots : (string, root option) Hashtbl.t;
+  pages : (string, lookup_page_result) Hashtbl.t;
+
   ambiguous_labels : Component.Element.label amb_err Identifier.Maps.Label.t;
   resolver : resolver option;
   recorder : recorder option;
@@ -198,6 +201,8 @@ let empty =
     ids = ElementsById.empty;
     resolver = None;
     recorder = None;
+    roots = Hashtbl.create 100;
+    pages = Hashtbl.create 100;
     ambiguous_labels = Identifier.Maps.Label.empty;
     fragmentroot = None;
   }
@@ -392,15 +397,23 @@ let lookup_root_module name env =
     match env.resolver with
     | None -> None
     | Some r -> (
-        match r.lookup_unit name with
-        | Forward_reference -> Some Forward
-        | Not_found -> None
-        | Found u ->
-            let ({ Odoc_model.Paths.Identifier.iv = `Root _; _ } as id) =
-              u.id
-            in
-            let m = module_of_unit u in
-            Some (Resolved (u.root, id, m)))
+        try Hashtbl.find env.roots name
+        with | Not_found -> (
+          match r.lookup_unit name with
+          | Forward_reference ->
+            Hashtbl.add env.roots name (Some Forward);
+            Some Forward
+          | Not_found ->
+            Hashtbl.add env.roots name None;
+            None
+          | Found u ->
+              let ({ Odoc_model.Paths.Identifier.iv = `Root _; _ } as id) =
+                u.id
+              in
+              let m = module_of_unit u in
+              let r = Some (Resolved (u.root, id, m)) in
+              Hashtbl.add env.roots name r;
+              r))
   in
   (match (env.recorder, result) with
   | Some r, Some Forward ->
@@ -416,8 +429,26 @@ let lookup_root_module name env =
   | None, _ -> ());
   result
 
+let add_root_module (u : Odoc_model.Lang.Compilation_unit.t) env =
+  let ({ Odoc_model.Paths.Identifier.iv = `Root (_, name); _ } as id) =
+    u.id
+  in
+  let unit_name = Odoc_model.Names.ModuleName.to_string name in
+  let m = module_of_unit u in
+  let r = Resolved (u.root, id, m) in
+  Hashtbl.add env.roots unit_name (Some r)
+
+let add_page (p : Odoc_model.Lang.Page.t) env =
+  let name = match p.name with | { iv=`Page (_, name); _ } | { iv=`LeafPage (_, name); _ } -> Names.PageName.to_string name in
+  Hashtbl.add env.pages name (Some p)
+
 let lookup_page name env =
-  match env.resolver with None -> None | Some r -> r.lookup_page name
+  match env.resolver with None -> None | Some r ->
+    try Hashtbl.find env.pages name with
+    | Not_found ->
+      let p = r.lookup_page name in
+      Hashtbl.add env.pages name p;
+      p
 
 type 'a scope = {
   filter : Component.Element.any -> ([< Component.Element.any ] as 'a) option;
@@ -784,29 +815,37 @@ let inherit_resolver env =
 
 let open_units resolver env =
   List.fold_left
-    (fun env m ->
-      match resolver.lookup_unit m with
-      | Found unit -> (
-          match unit.content with
+    (fun env name ->
+      match resolver.lookup_unit name with
+      | Found u -> (
+          let ({ Odoc_model.Paths.Identifier.iv = `Root _; _ } as id) =
+                u.id
+              in
+              let m = module_of_unit u in
+              let r = Resolved (u.root, id, m) in
+              Hashtbl.add env.roots name (Some r);
+          match u.content with
           | Module sg -> open_signature sg env
           | _ -> env)
       | _ -> env)
     env resolver.open_units
 
-let env_of_unit t ~linking resolver =
+let env_of_unit unit ~linking resolver =
   let open Odoc_model.Lang.Compilation_unit in
   let initial_env =
-    let m = module_of_unit t in
+    let m = module_of_unit unit in
     let dm = Component.Delayed.put (fun () -> m) in
     let env = { empty with linking } in
-    env |> add_module (t.id :> Identifier.Path.Module.t) dm m.doc
+    env |> add_module (unit.id :> Identifier.Path.Module.t) dm m.doc
   in
+  add_root_module unit initial_env;
   set_resolver initial_env resolver |> open_units resolver
 
 let open_page page env = add_docs page.Odoc_model.Lang.Page.content env
 
 let env_of_page page resolver =
   let initial_env = open_page page empty in
+  add_page page initial_env;
   set_resolver initial_env resolver |> open_units resolver
 
 let env_for_reference resolver =
@@ -827,17 +866,14 @@ let verify_lookups env lookups =
         let actual_result =
           match env.resolver with
           | None -> None
-          | Some r -> (
-              match r.lookup_unit name with
-              | Forward_reference -> Some `Forward
-              | Not_found -> None
-              | Found u -> Some (`Resolved u.root.digest))
+          | Some _ -> (
+              try Hashtbl.find env.roots name with _ -> None)
         in
         match (res, actual_result) with
         | None, None -> false
-        | Some `Forward, Some `Forward -> false
-        | Some (`Resolved digest1), Some (`Resolved digest2) ->
-            digest1 <> digest2
+        | Some `Forward, Some Forward -> false
+        | Some (`Resolved digest1), Some (Resolved (root, _, _)) ->
+            digest1 <> root.digest
         | _ -> true)
     | ModuleType id ->
         let actually_found =
