@@ -18,6 +18,7 @@ let rec dget_impl : type a. a Component.Delayed.t -> a = function
   | Subst (ModuleType, mt, sub) -> Subst.module_type sub (dget_impl mt)
   | Subst (Type, t, sub) -> Subst.type_ sub (dget_impl t)
   | Subst (Value, v, sub) -> Subst.value sub (dget_impl v)
+  | ResolveFilter x -> dget_impl x
 
 let _ = Component.dget_impl := Some { Component.dget = dget_impl }
 
@@ -939,7 +940,7 @@ and resolve_module :
         resolve_module ~mark_substituted ~add_canonical env parent
         |> map_error (fun e' -> `Parent (`Parent_module e'))
         >>= fun (p, m) ->
-        expansion_of_module_cached env p m
+        expansion_of_module_cached env p (ResolveFilter m)
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
         >>= fun parent_sig ->
@@ -1045,7 +1046,7 @@ and resolve_type :
         resolve_module ~mark_substituted:true ~add_canonical:true env parent
         |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun (p, m) ->
-        expansion_of_module_cached env p m
+        expansion_of_module_cached env p (ResolveFilter m)
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
         >>= fun sg ->
@@ -1641,7 +1642,8 @@ and expansion_of_module_cached :
  fun env' path m ->
   let id = path in
   let run env _id = expansion_of_module env m in
-  ExpansionOfModuleMemo.memoize run env' id
+  (* ExpansionOfModuleMemo.memoize run env' id *)
+  run env' id
 
 and umty_of_mty : Component.ModuleType.expr -> Component.ModuleType.U.expr =
   function

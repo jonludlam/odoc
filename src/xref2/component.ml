@@ -111,6 +111,7 @@ module rec Delayed : sig
     | Val : 'a -> 'a t
     | OfLang : ('a, _, 'b, _) ty * 'a * Of_Lang_types.map -> 'b t
     | Subst : ('a, 'b, 'c, 'd) ty * 'c t * Substitution.t -> 'c t
+    | ResolveFilter : 'a t -> 'a t
 end =
   Delayed
 
