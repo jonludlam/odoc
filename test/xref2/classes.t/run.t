@@ -42,8 +42,7 @@ resolve correctly. All of the 'Class' json objects should contain
         {
           "`Resolved": {
             "`ClassType": [
-              { "`Identifier": { "`Root": [ "None", "B" ] } },
-              "u"
+              { "`Identifier": { "`Root": [ "None", "B" ] } }, "u"
             ]
           }
         },
@@ -76,40 +75,30 @@ resolve correctly. All of the 'Class' json objects should contain
 
   $ odoc_print c.odoc -r g | jq '.type_'
   {
-    "Arrow": [
-      "None",
-      {
-        "Class": [
-          {
-            "`Resolved": {
-              "`ClassType": [
-                {
-                  "`Identifier": {
-                    "`Root": [
-                      "None",
-                      "B"
-                    ]
-                  }
-                },
-                "u"
-              ]
-            }
-          },
-          []
-        ]
-      },
-      {
-        "Constr": [
-          {
-            "`Resolved": {
-              "`Identifier": {
-                "`CoreType": "unit"
+    "id": { "`Value": [ { "`Root": [ "None", "C" ] }, "g" ] },
+    "doc": [],
+    "type_": {
+      "Arrow": [
+        "None",
+        {
+          "Class": [
+            {
+              "`Resolved": {
+                "`ClassType": [
+                  { "`Identifier": { "`Root": [ "None", "B" ] } }, "u"
+                ]
               }
-            }
-          },
-          []
-        ]
-      }
-    ]
+            },
+            []
+          ]
+        },
+        {
+          "Constr": [
+            { "`Resolved": { "`Identifier": { "`CoreType": "unit" } } }, []
+          ]
+        }
+      ]
+    },
+    "value": "Abstract"
   }
 

@@ -297,3 +297,14 @@ Some modules to support references\.
 \f[CB]module\fR X : \f[CB]sig\fR \.\.\. \f[CB]end\fR
 .sp 
 \f[CB]module\fR Y : \f[CB]sig\fR \.\.\. \f[CB]end\fR
+.sp 
+.fi 
+Code blocks
+.sp 
+.EX 
+let code_block_example () =
+  ()
+.EE 
+.sp 
+.nf 
+
