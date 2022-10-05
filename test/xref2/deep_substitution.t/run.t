@@ -23,8 +23,7 @@ its RHS correctly replaced with an `int`
   {
     "id": {
       "`Type": [
-        { "`ModuleType": [ { "`Root": [ "None", "M" ] }, "T" ] },
-        "t"
+        { "`ModuleType": [ { "`Root": [ "None", "M" ] }, "T" ] }, "t"
       ]
     },
     "doc": [],
@@ -34,8 +33,7 @@ its RHS correctly replaced with an `int`
       "manifest": {
         "Some": {
           "Constr": [
-            { "`Resolved": { "`Identifier": { "`CoreType": "int" } } },
-            []
+            { "`Resolved": { "`Identifier": { "`CoreType": "int" } } }, []
           ]
         }
       },
