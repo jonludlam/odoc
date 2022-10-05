@@ -33,6 +33,8 @@ module LookupTypeSet : Set.S with type elt = lookup_type
 
 val pp_lookup_type_list : Format.formatter -> lookup_type list -> unit
 
+type phase = | TypeOf | Compile | Link
+
 type t
 
 val is_linking : t -> bool
@@ -168,7 +170,7 @@ val open_page : Odoc_model.Lang.Page.t -> t -> t
 (** Add a page content to the env. *)
 
 val env_of_unit :
-  Odoc_model.Lang.Compilation_unit.t -> linking:bool -> resolver -> t
+  Odoc_model.Lang.Compilation_unit.t -> phase:phase -> resolver -> t
 (** Create a new env with a module initially opened. *)
 
 val env_of_page : Odoc_model.Lang.Page.t -> resolver -> t
@@ -177,7 +179,7 @@ val env_of_page : Odoc_model.Lang.Page.t -> resolver -> t
 val env_for_reference : resolver -> t
 (** Create a new env for a reference. *)
 
-val env_for_testing : linking:bool -> t
+val env_for_testing : phase:phase -> t
 (** Create a new env for testing purposes *)
 
 val inherit_resolver : t -> t

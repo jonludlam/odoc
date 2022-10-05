@@ -153,8 +153,10 @@ end
 
 type 'a amb_err = [ `Ambiguous of 'a * 'a list ]
 
+type phase = | TypeOf | Compile | Link
+
 type t = {
-  linking : bool;
+  phase : phase;
   (* True if this is a linking environment - if not,
      we only put in modules, module types, types, classes and class types *)
   id : int;
@@ -171,7 +173,7 @@ type t = {
   fragmentroot : (int * Component.Signature.t) option;
 }
 
-let is_linking env = env.linking
+let is_linking env = env.phase = Link
 
 let set_resolver t resolver = { t with resolver = Some resolver }
 
@@ -197,7 +199,7 @@ let with_recorded_lookups env f =
 
 let empty =
   {
-    linking = true;
+    phase = Link;
     id = 0;
     elts = ElementsByName.empty;
     ids = ElementsById.empty;
@@ -215,7 +217,7 @@ let add_fragment_root sg env =
 
 (** Implements most [add_*] functions. *)
 let add_to_elts kind identifier component env =
-  if not env.linking then
+  if not (is_linking env) then
     assert (
       List.mem kind
         [ Kind_Module; Kind_ModuleType; Kind_Type; Kind_Class; Kind_ClassType ]);
@@ -236,7 +238,7 @@ let add_to_elts kind identifier component env =
   }
 
 let add_label identifier heading env =
-  assert env.linking;
+  assert (is_linking env);
   let comp = `Label (identifier, heading) in
   let name = Identifier.name identifier in
   let ambiguous_labels =
@@ -267,7 +269,7 @@ let add_label identifier heading env =
   }
 
 let add_docs (docs : Odoc_model.Comment.docs) env =
-  assert env.linking;
+  assert (is_linking env);
   List.fold_left
     (fun env -> function
       | { Odoc_model.Location_.value = `Heading (attrs, id, text); location } ->
@@ -294,7 +296,7 @@ let add_cdocs p (docs : Component.CComment.docs) env =
 
 let add_module identifier m docs env =
   let env' = add_to_elts Kind_Module identifier (`Module (identifier, m)) env in
-  if env.linking then add_cdocs identifier docs env' else env'
+  if is_linking env then add_cdocs identifier docs env' else env'
 
 let add_type identifier dt env =
   let open Component in
@@ -324,7 +326,7 @@ let add_type identifier dt env =
     | Some Extensible | None -> (cs, [])
   in
   let env =
-    if env.linking then
+    if is_linking env then
       let t = dget dt in
       let env, docs = open_typedecl t env in
       add_cdocs identifier t.doc env
@@ -338,7 +340,7 @@ let add_module_type identifier (dt : Component.ModuleType.t Component.Delayed.t)
   let env' =
     add_to_elts Kind_ModuleType identifier (`ModuleType (identifier, dt)) env
   in
-  if env'.linking then
+  if is_linking env' then
     let docs = Dhelpers.ModuleType.doc dt in
     add_cdocs identifier docs env'
   else env'
@@ -349,13 +351,13 @@ let add_value identifier (dt : Component.Value.t Component.Delayed.t) env =
 
 let add_class identifier (t : Component.Class.t) env =
   let env' = add_to_elts Kind_Class identifier (`Class (identifier, t)) env in
-  if env'.linking then add_cdocs identifier t.doc env' else env'
+  if is_linking env' then add_cdocs identifier t.doc env' else env'
 
 let add_class_type identifier (t : Component.ClassType.t) env =
   let env' =
     add_to_elts Kind_ClassType identifier (`ClassType (identifier, t)) env
   in
-  if env'.linking then add_cdocs identifier t.doc env' else env'
+  if is_linking env' then add_cdocs identifier t.doc env' else env'
 
 let add_method _identifier _t env =
   (* TODO *)
@@ -735,7 +737,7 @@ let rec open_signature : Odoc_model.Lang.Signature.t -> t -> t =
     let ident_map = empty () in
     List.fold_left
       (fun env orig ->
-        match ((orig : L.Signature.item), env.linking) with
+        match ((orig : L.Signature.item), is_linking env) with
         | Type (_, t), _ ->
             let ty = Component.Delayed.(OfLang (Type, t, ident_map)) in
             add_type t.L.TypeDecl.id ty env
@@ -848,12 +850,12 @@ let open_units resolver env =
       | _ -> env)
     env resolver.open_units
 
-let env_of_unit unit ~linking resolver =
+let env_of_unit unit ~phase resolver =
   let open Odoc_model.Lang.Compilation_unit in
   let initial_env =
     let m = module_of_unit unit in
     let dm = m in
-    let env = { empty with linking } in
+    let env = { empty with phase } in
     env |> add_module (unit.id :> Identifier.Path.Module.t) dm []
   in
   add_root_module unit initial_env;
@@ -869,7 +871,7 @@ let env_of_page page resolver =
 let env_for_reference resolver =
   set_resolver empty resolver |> open_units resolver
 
-let env_for_testing ~linking = { empty with linking }
+let env_for_testing ~phase = { empty with phase }
 
 let verify_lookups env lookups =
   let bad_lookup = function

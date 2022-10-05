@@ -194,10 +194,10 @@ let build { important_digests; ap; open_modules } ~imports_map =
   and lookup_page = lookup_page ap in
   { Odoc_xref2.Env.open_units = open_modules; lookup_unit; lookup_page }
 
-let build_env_for_unit t ~linking m =
+let build_env_for_unit t ~phase m =
   let imports_map = build_imports_map m in
   let resolver = build t ~imports_map in
-  Odoc_xref2.Env.env_of_unit m ~linking resolver
+  Odoc_xref2.Env.env_of_unit m ~phase resolver
 
 let build_env_for_page t p =
   let imports_map = StringMap.empty in
