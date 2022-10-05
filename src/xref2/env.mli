@@ -39,6 +39,8 @@ type t
 
 val is_linking : t -> bool
 
+val is_typeof : t -> bool
+
 val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t

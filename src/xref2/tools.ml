@@ -1565,8 +1565,15 @@ and signature_of_u_module_type_expr :
       let subs = unresolve_subs subs in
       handle_signature_with_subs ~mark_substituted env sg subs
   | TypeOf { t_expansion = Some (Signature sg); _ } -> Ok sg
-  | TypeOf { t_desc; _ } -> Error (`UnexpandedTypeOf t_desc)
-
+  | TypeOf { t_desc; _ } ->
+    if Env.is_typeof env
+    then Error (`UnexpandedTypeOf t_desc)
+    else begin
+      let p, strengthen =
+        match t_desc with ModPath p -> (p, false) | StructInclude p -> (p, true)
+      in
+      expansion_of_module_path env ~strengthen p >>= assert_not_functor
+    end
 (* and expansion_of_simple_expansion :
      Component.ModuleType.simple_expansion -> expansion =
      let rec helper :
@@ -1611,8 +1618,14 @@ and expansion_of_module_type_expr :
   | Component.ModuleType.TypeOf { t_expansion = Some (Signature sg); _ } ->
       Ok (Signature sg)
   | Component.ModuleType.TypeOf { t_desc; _ } ->
-      Error (`UnexpandedTypeOf t_desc)
-
+      if Env.is_typeof env
+      then Error (`UnexpandedTypeOf t_desc)
+      else begin
+        let p, strengthen =
+          match t_desc with ModPath p -> (p, false) | StructInclude p -> (p, true)
+        in
+        expansion_of_module_path env ~strengthen p
+      end
 and expansion_of_module_type :
     Env.t ->
     Component.ModuleType.t Component.Delayed.t ->

@@ -175,6 +175,8 @@ type t = {
 
 let is_linking env = env.phase = Link
 
+let is_typeof env = env.phase = TypeOf
+
 let set_resolver t resolver = { t with resolver = Some resolver }
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
