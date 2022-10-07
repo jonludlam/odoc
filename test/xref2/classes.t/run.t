@@ -40,8 +40,7 @@ resolve correctly. All of the 'Class' json objects should contain
         {
           "`Resolved": {
             "`ClassType": [
-              { "`Identifier": { "`Root": [ "None", "B" ] } },
-              "u"
+              { "`Identifier": { "`Root": [ "None", "B" ] } }, "u"
             ]
           }
         },
@@ -84,8 +83,7 @@ resolve correctly. All of the 'Class' json objects should contain
             {
               "`Resolved": {
                 "`ClassType": [
-                  { "`Identifier": { "`Root": [ "None", "B" ] } },
-                  "u"
+                  { "`Identifier": { "`Root": [ "None", "B" ] } }, "u"
                 ]
               }
             },
@@ -94,8 +92,7 @@ resolve correctly. All of the 'Class' json objects should contain
         },
         {
           "Constr": [
-            { "`Resolved": { "`Identifier": { "`CoreType": "unit" } } },
-            []
+            { "`Resolved": { "`Identifier": { "`CoreType": "unit" } } }, []
           ]
         }
       ]
