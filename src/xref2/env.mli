@@ -45,6 +45,8 @@ val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t
 
+val unset_resolver : t -> t
+
 val has_resolver : t -> bool
 
 val id : t -> int

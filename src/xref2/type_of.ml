@@ -168,6 +168,7 @@ and include_ env i =
     env' )
 
 let signature env =
+  let env = Env.unset_resolver env in
   let rec loop sg =
     again := false;
     let sg' = signature env sg in

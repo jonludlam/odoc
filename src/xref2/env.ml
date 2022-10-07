@@ -179,6 +179,8 @@ let is_typeof env = env.phase = TypeOf
 
 let set_resolver t resolver = { t with resolver = Some resolver }
 
+let unset_resolver t = { t with resolver = None }
+
 let has_resolver t = match t.resolver with None -> false | _ -> true
 
 let id t = t.id
