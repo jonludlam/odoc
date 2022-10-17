@@ -4,7 +4,7 @@
 ; (action (run ocaml-crunch . -e js -e css -e woff2 -o %{target} -m plain)))
 
 (rule
- (alias runcrunchtest)
+ (alias runtest)
  (deps
   (:x odoc_vendor.ml)
   (glob_files *.js)
@@ -12,7 +12,8 @@
   (glob_files_rec *.woff2))
  (action
   (progn
-   (run ocaml-crunch . -e js -e css -e woff2 -o %{x}.corrected -m plain)
+   (setenv SOURCE_DATE_EPOCH 0
+   (run ocaml-crunch . -e js -e css -e woff2 -o %{x}.corrected -m plain))
    (diff? %{x} %{x}.corrected))))
 
 (library
