@@ -12,8 +12,10 @@
   (glob_files_rec *.woff2))
  (action
   (progn
-   (setenv SOURCE_DATE_EPOCH 0
-   (run ocaml-crunch . -e js -e css -e woff2 -o %{x}.corrected -m plain))
+   (setenv
+    SOURCE_DATE_EPOCH
+    0
+    (run ocaml-crunch . -e js -e css -e woff2 -o %{x}.corrected -m plain))
    (diff? %{x} %{x}.corrected))))
 
 (library
