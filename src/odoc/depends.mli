@@ -35,3 +35,5 @@ val for_rendering_step :
 (** Takes the directory where the .odoc files of a given package are stored and
     returns the list of roots that need to be in odoc's load path to
     render these .odoc files. *)
+
+val for_compile_dir_step : Fpath.t -> (Fs.File.t * Compile.t list) list

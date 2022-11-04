@@ -80,3 +80,30 @@ let for_rendering_step pkg_dir =
   let add_deps () file = deps_of_odoc_file ~deps file in
   Fs.Directory.fold_files_rec_result ~ext:".odoc" add_deps () pkg_dir
   >>= fun () -> Ok (Hash_set.elements deps)
+
+let for_compile_dir_step obj_dir =
+  let dir = Sys.readdir (Fpath.to_string obj_dir) in
+  let files = Array.to_list dir |> List.map ~f:(fun x -> Fpath.of_string x |> Result.get_ok |> Fpath.append obj_dir) in
+  let results = List.fold_left ~init:[] ~f:(fun l fpath ->
+    match Fs.File.get_ext fpath with
+    | ".cmt" | ".cmti" | ".cmi" as ext ->
+      let module_name = Filename.chop_extension (Fpath.basename fpath) in
+      (module_name, fpath, ext, for_compile_step fpath) :: l
+    | _ ->
+      l) files in
+ 
+    let modules = List.map ~f:(fun (n, _, _, _) -> n) results |> List.sort_uniq ~cmp:compare in
+    let filtered = List.filter_map ~f:(fun name ->
+      let find_ty ty =
+        List.find_opt ~f:(fun (n, _, ext, _) -> n=name && ty=ext) results in
+      match find_ty ".cmti" with
+      | Some (_, fpath, _, deps) -> Some (fpath, deps)
+      | None ->
+          match find_ty ".cmt" with
+          | Some (_, fpath, _, deps) -> Some (fpath, deps)
+          | None ->
+            match find_ty ".cmi" with
+            | Some (_, fpath, _, deps) -> Some (fpath, deps)
+            | None -> failwith "Can't happen") modules
+    in
+    filtered

@@ -673,6 +673,40 @@ module Depends = struct
            reported in the output."
   end
 
+  module Compile_dir = struct
+    let list_dependencies input_dir =
+      let dir = Fpath.of_string input_dir |> Result.get_ok in
+      let all = Depends.for_compile_dir_step dir in
+      List.iter
+        ~f:(fun (p, deps) ->
+          let modfname = Fpath.basename p in
+          let modname = Filename.chop_extension modfname |> String.capitalize_ascii in
+          Format.printf "%s\n" modname;
+          Format.printf "%s\n" modfname;
+          List.iter deps ~f:(fun t ->
+          Format.printf "%s %s\n" (Depends.Compile.name t)
+            (Digest.to_hex @@ Depends.Compile.digest t));
+          Format.printf "\n")
+        all;
+      flush stdout
+
+    let cmd =
+      let input =
+        let doc = "Input dir" in
+        Arg.(
+          required
+          & pos 0 (some file) None
+          & info ~doc ~docv:"directory" [])
+      in
+      Term.(const list_dependencies $ input)
+
+    let info =
+      Term.info "compile-deps-dir"
+        ~doc:
+          "List compilation dependencies of all cmt/cmti/cmi files \
+           within a directory."
+
+  end
   module Link = struct
     let rec fmt_page pp page =
       match page.Odoc_model.Paths.Identifier.iv with
@@ -802,6 +836,7 @@ let () =
       Support_files_command.(cmd, info);
       Css.(cmd, info);
       Depends.Compile.(cmd, info);
+      Depends.Compile_dir.(cmd, info);
       Depends.Link.(cmd, info);
       Depends.Odoc_html.(cmd, info);
       Targets.Compile.(cmd, info);
