@@ -84,7 +84,7 @@ The parent page must exist before the child page is created, and it must have ha
 {1 Document Generation Phases}
 
 Using [odoc] is a three-phase process:
-{ol {+ Compilation: [odoc compile]
+{ol {- Compilation: odoc compile
 }}
 
 This takes as input either [.mld] files containing pure odoc markup, or the output from the compiler in the form of [.cmti], [.cmt], or [.cmi] files (in order of preference). For [.mld] files, this step simply translates them into [odoc]'s internal format and writes the corresponding file. For example, given the input [foobar.mld], [odoc] will output [page-foobar.odoc]. There are no dependencies for compiling [.mld] files beyond the parent as outlined above.
@@ -103,7 +103,7 @@ Odoc_xref2__Compile e0d620d652a724705f7ed620dfe07be0
 ]}
 
 From this, we see it's necessary to run [odoc compile] against several [Stdlib] modules before we can compile [odoc_xref2__Compile.cmti]
-{ol {+ Linking: [odoc link]
+{ol {- Linking: odoc link
 }}
 
 This takes the [odoc] files produced during the compilation step and performs the final steps of resolution for both pages and modules, and expansion for modules only. It is during this phase that all the references in the documentation comments are resolved. In order for these to be resolved, everything that is referenced must have been compiled already, and their [odoc] files must be on the
@@ -111,7 +111,7 @@ include path as specified by the [-I] arguments to [odoc link]. In this example,
 link step is an [odocl] file, which is in the same path as the original [odoc] file by default.
 
 Please note: it's only necessary to link the non-hidden modules (i.e., without a double underscore).
-{ol {+ Generation: [odoc html-generate]
+{ol {- Generation: odoc html-generate
 }}
 
 Once the compile and link phases are complete, the resulting [odocl] files may be rendered in a variety of formats. In this example we output HTML.
@@ -119,8 +119,8 @@ Once the compile and link phases are complete, the resulting [odocl] files may b
 {1 [odoc] Documentation}
 
 In this section [odoc] is used to generate the documentation of [odoc] and some of its dependent packages. We can make a few simplifying assumptions here:
-{ol {+ Since we're working with one leaf package, we can assume that there can be no module name clashes in the dependencies. As such, we can afford to put all of our [.odoc] files into one directory and then hard-code the include path to be this directory. When using [odoc] in a context where there may be module name clashes, it requires more careful partitioning of output directories.
-}{+ We'll do all of the compiling before any linking.
+{ol {- Since we're working with one leaf package, we can assume that there can be no module name clashes in the dependencies. As such, we can afford to put all of our [.odoc] files into one directory and then hard-code the include path to be this directory. When using [odoc] in a context where there may be module name clashes, it requires more careful partitioning of output directories.
+}{- We'll do all of the compiling before any linking.
 }}
 
 Let's start with some functions to execute the three phases of [odoc].
