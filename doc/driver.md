@@ -54,24 +54,24 @@ The file `deps.mld` which corresponds with the sub-directory `odoc/deps/`, will 
 
 <!-- $MDX skip -->
 ```sh
-odoc compile deps.mld -I . --parent `odoc` --child page-stdlib --child page-astring ...
+odoc compile deps.mld -I . --parent page-odoc --child page-stdlib --child page-astring ...
 ```
 
 The file `odoc_model.mld` will have a child module `Odoc_model`. It will be compiled as follows:
 
 <!-- $MDX skip -->
 ```sh
-odoc compile odoc_model.mld -I . --parent `odoc` --child module-Odoc_model
+odoc compile odoc_model.mld -I . --parent page-odoc --child module-Odoc_model
 ```
 
 The last type of page contains a list of paths to the source files that should be rendered as HTML. The output will be found as a tree underneath this page. This will be compiled in the following way:
 
 <!-- $MDX skip -->
 ```sh
-odoc source-tree -I . --parent page-\"odoc\" -o src-source.odoc source_tree.map
+odoc source-tree -I . --parent page-odoc -o src-source.odoc source.map
 ```
 
-where the first few lines of `source_tree.map` are:
+where the first few lines of `source.map` are:
 
 ```
 src/xref2/utils.ml
@@ -443,7 +443,7 @@ let compile_source_tree units =
   let sources =
     List.filter_map (fun (_, _, _, file) -> Option.map Fpath.to_string file) units
   in
-  let source_map = Fpath.v "source_tree.map" in
+  let source_map = Fpath.v "source.map" in
   let () = Bos.OS.File.write_lines source_map sources |> get_ok in
   let () = source_tree ~parent:"odoc" ~output:odoc_source_tree source_map in
   (odoc_source_tree, false, None)
@@ -756,7 +756,7 @@ $ '../src/odoc/bin/main.exe' 'compile' 'library_mlds/odoc_latex.mld' '-I' '.' '-
 $ '../src/odoc/bin/main.exe' 'compile' 'library_mlds/odoc_html.mld' '-I' '.' '-o' './page-odoc_html.odoc' '--child' 'module-Odoc_html' '--child' 'module-Odoc_html__' '--child' 'module-Odoc_html__Config' '--child' 'module-Odoc_html__Generator' '--child' 'module-Odoc_html__Html_fragment_json' '--child' 'module-Odoc_html__Html_page' '--child' 'module-Odoc_html__Html_source' '--child' 'module-Odoc_html__Link' '--child' 'module-Odoc_html__Types' '--child' 'module-Odoc_html__Utils' '--child' 'module-Odoc_html_support_files' '--parent' 'page-"odoc"'
 $ '../src/odoc/bin/main.exe' 'compile' 'library_mlds/odoc_document.mld' '-I' '.' '-o' './page-odoc_document.odoc' '--child' 'module-Odoc_document' '--child' 'module-Odoc_document__Codefmt' '--child' 'module-Odoc_document__Comment' '--child' 'module-Odoc_document__Compat' '--child' 'module-Odoc_document__Doctree' '--child' 'module-Odoc_document__Generator' '--child' 'module-Odoc_document__Generator_signatures' '--child' 'module-Odoc_document__ML' '--child' 'module-Odoc_document__Reason' '--child' 'module-Odoc_document__Renderer' '--child' 'module-Odoc_document__Targets' '--child' 'module-Odoc_document__Types' '--child' 'module-Odoc_document__Url' '--child' 'module-Odoc_document__Utils' '--parent' 'page-"odoc"'
 $ '../src/odoc/bin/main.exe' 'compile' 'library_mlds/odoc_examples.mld' '-I' '.' '-o' './page-odoc_examples.odoc' '--child' 'module-Odoc_examples' '--child' 'module-Odoc_examples__' '--child' 'module-Odoc_examples__Expansion' '--child' 'module-Odoc_examples__Markup' '--child' 'module-Odoc_examples__Resolution' '--child' 'module-Odoc_examples__Unexposed' '--child' 'module-Odoc_examples__Wrapping' '--parent' 'page-"odoc"'
-$ '../src/odoc/bin/main.exe' 'source-tree' '-I' '.' '--parent' 'page-"odoc"' '-o' 'src-source.odoc' 'source_tree.map'
+$ '../src/odoc/bin/main.exe' 'source-tree' '-I' '.' '--parent' 'page-"odoc"' '-o' 'src-source.odoc' 'source.map'
 $ '../src/odoc/bin/main.exe' 'compile-deps' '../test/xref2/lib/.odoc_xref_test.objs/byte/odoc_xref_test__Common.cmt'
 $ '../src/odoc/bin/main.exe' 'compile-deps' '../../../_opam/lib/ocaml/compiler-libs/warnings.cmti'
 $ '../src/odoc/bin/main.exe' 'compile-deps' '../../../_opam/lib/ocaml/camlinternalFormatBasics.cmti'
