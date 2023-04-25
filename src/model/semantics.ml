@@ -224,14 +224,14 @@ let rec nestable_block_element :
   match element with
   | { value = `Paragraph content; location } ->
       Location.at location (`Paragraph (inline_elements status content))
-  | { value = `Code_block (metadata, code, outputs); location } ->
+  | { value = `Code_block { meta; delimiter = _; content; output }; location } ->
       let lang_tag =
-        match metadata with
-        | Some ({ Location.value; _ }, _) -> Some value
+        match meta with
+        | Some ({ language = { value; _ }; _ }) -> Some value
         | None -> None
       in
-      let outputs = Option.map (List.map (nestable_block_element status)) outputs in
-      Location.at location (`Code_block (lang_tag, code, outputs))
+      let outputs = Option.map (List.map (nestable_block_element status)) output in
+      Location.at location (`Code_block (lang_tag, content, outputs))
   | { value = `Math_block s; location } -> Location.at location (`Math_block s)
   | { value = `Verbatim _; _ } as element -> element
   | { value = `Modules modules; location } ->
@@ -253,6 +253,7 @@ let rec nestable_block_element :
   | { value = `List (kind, _syntax, items); location } ->
       `List (kind, List.map (nestable_block_elements status) items)
       |> Location.at location
+  | { value = `Table _; location } -> Location.at location (`Verbatim "")
 
 and nestable_block_elements status elements =
   List.map (nestable_block_element status) elements
@@ -477,7 +478,7 @@ let strip_internal_tags ast : internal_tags_removed with_location list * _ =
       -> (
         let next tag = loop ({ wloc with value = tag } :: tags) ast' tl in
         match tag with
-        | (`Inline | `Open | `Closed) as tag -> next tag
+        | (`Inline | `Open | `Closed ) as tag -> next tag
         | `Canonical { Location.value = s; location = r_location } -> (
             match
               Error.raise_warnings (Reference.read_path_longident r_location s)
@@ -485,7 +486,8 @@ let strip_internal_tags ast : internal_tags_removed with_location list * _ =
             | Result.Ok path -> next (`Canonical path)
             | Result.Error e ->
                 Error.raise_warning e;
-                loop tags ast' tl))
+                loop tags ast' tl)
+        | `Hidden -> loop tags ast' tl)
     | ({
          value =
            `Tag #Ast.ocamldoc_tag | `Heading _ | #Ast.nestable_block_element;
