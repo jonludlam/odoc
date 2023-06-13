@@ -53,13 +53,10 @@ type 'a abstract_table = {
 }
 
 type nestable_block_element =
-  [ `Paragraph of paragraph
-  | `Code_block of
-    string option
-    * string with_location
-    * nestable_block_element with_location list option
-  | `Math_block of string
-  | `Verbatim of string
+  [ `Paragraph of Identifier.Label.t * paragraph
+  | `Code_block of Identifier.Label.t * string option * string with_location * nestable_block_element with_location list option
+  | `Math_block of Identifier.Label.t * string
+  | `Verbatim of Identifier.Label.t * string
   | `Modules of module_reference list
   | `Table of nestable_block_element abstract_table
   | `List of
@@ -101,8 +98,7 @@ type heading_attrs = {
 
 type block_element =
   [ nestable_block_element
-  | `Heading of
-    heading_attrs * Identifier.Label.t * inline_element with_location list
+  | `Heading of heading_attrs * Identifier.Label.t * paragraph
   | `Tag of tag ]
 
 type docs = block_element with_location list
@@ -112,7 +108,7 @@ type docs_or_stop = [ `Docs of docs | `Stop ]
 (** The synopsis is the first element of a comment if it is a paragraph.
     Otherwise, there is no synopsis. *)
 let synopsis = function
-  | { Location_.value = `Paragraph p; _ } :: _ -> Some p
+  | { Location_.value = `Paragraph (_, p); _ } :: _ -> Some p
   | _ -> None
 
 let rec link_content_of_inline_element :
