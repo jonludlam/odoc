@@ -435,7 +435,10 @@ and CComment : sig
   type nestable_block_element =
     [ `Paragraph of Label.t * Odoc_model.Comment.paragraph
     | `Code_block of
-    Label.t * string option * string Odoc_model.Comment.with_location * nestable_block_element Odoc_model.Comment.with_location list option
+      Label.t
+      * string option
+      * string Odoc_model.Comment.with_location
+      * nestable_block_element Odoc_model.Comment.with_location list option
     | `Math_block of Label.t * string
     | `Verbatim of Label.t * string
     | `Modules of Odoc_model.Comment.module_reference list

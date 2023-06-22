@@ -1060,7 +1060,11 @@ and nestable_block_element parent
         `Paragraph (label, text)
     | `Code_block (h, l, s, o) ->
         let label = mk_label h in
-        let o' = match o with | None -> None | Some l -> Some (List.map (nestable_block_element parent) l) in
+        let o' =
+          match o with
+          | None -> None
+          | Some l -> Some (List.map (nestable_block_element parent) l)
+        in
         `Code_block (label, l, s, o')
     | `Math_block (h, s) ->
         let label = mk_label h in
@@ -1075,12 +1079,17 @@ and nestable_block_element parent
         `List (ord, li)
     | `Modules _ as n -> n
     | `Table tbl ->
-      let data' = List.map (List.map (fun (content, ty) -> (List.map (nestable_block_element parent) content, ty))) tbl.data in
-      let tbl' : Comment.nestable_block_element Odoc_model.Comment.abstract_table = {
-        align = tbl.align;
-        data = data'
-      } in
-      `Table tbl'
+        let data' =
+          List.map
+            (List.map (fun (content, ty) ->
+                 (List.map (nestable_block_element parent) content, ty)))
+            tbl.data
+        in
+        let tbl' :
+            Comment.nestable_block_element Odoc_model.Comment.abstract_table =
+          { align = tbl.align; data = data' }
+        in
+        `Table tbl'
   in
   { d with Odoc_model.Location_.value }
 

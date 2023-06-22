@@ -465,7 +465,10 @@ and CComment : sig
   type nestable_block_element =
     [ `Paragraph of Label.t * Odoc_model.Comment.paragraph
     | `Code_block of
-      Label.t * string option * string Odoc_model.Comment.with_location * nestable_block_element Odoc_model.Comment.with_location list option
+      Label.t
+      * string option
+      * string Odoc_model.Comment.with_location
+      * nestable_block_element Odoc_model.Comment.with_location list option
     | `Math_block of Label.t * string
     | `Verbatim of Label.t * string
     | `Modules of Odoc_model.Comment.module_reference list
@@ -2440,7 +2443,8 @@ module Of_Lang = struct
     { items; removed = []; compiled = sg.compiled; doc = docs ident_map sg.doc }
 
   and nestable_block_element map
-      (b : Odoc_model.Comment.nestable_block_element Comment.with_location) : CComment.nestable_block_element Comment.with_location =
+      (b : Odoc_model.Comment.nestable_block_element Comment.with_location) :
+      CComment.nestable_block_element Comment.with_location =
     let mk_label label location =
       {
         Label.label = Ident.Of_Identifier.label label;
@@ -2455,7 +2459,11 @@ module Of_Lang = struct
         Odoc_model.Location_.same b para
     | { value = `Code_block (label, l, s, o); location } ->
         let label = mk_label label location in
-        let o' = match o with | None -> None | Some x -> Some (List.map (nestable_block_element map) x) in
+        let o' =
+          match o with
+          | None -> None
+          | Some x -> Some (List.map (nestable_block_element map) x)
+        in
         let cb = `Code_block (label, l, s, o') in
         Odoc_model.Location_.same b cb
     | { value = `Math_block (label, s); location } ->
@@ -2473,11 +2481,16 @@ module Of_Lang = struct
     | { value = `Modules _; _ } as n -> n
     | { value = `Table tbl; _ } ->
         (* This is fine *)
-        let data' = List.map (List.map (fun (content, ty) -> (List.map (nestable_block_element map) content, ty))) tbl.data in
-        let tbl' : CComment.nestable_block_element Odoc_model.Comment.abstract_table = {
-          align = tbl.align;
-          data = data'
-        } in
+        let data' =
+          List.map
+            (List.map (fun (content, ty) ->
+                 (List.map (nestable_block_element map) content, ty)))
+            tbl.data
+        in
+        let tbl' :
+            CComment.nestable_block_element Odoc_model.Comment.abstract_table =
+          { align = tbl.align; data = data' }
+        in
         let l = `Table tbl' in
         Odoc_model.Location_.same b l
 

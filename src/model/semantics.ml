@@ -246,7 +246,8 @@ let rec nestable_block_element :
       let content = inline_elements status content in
       let label = generate_label `Paragraph status in
       Location.at location (`Paragraph (label, content))
-  | { value = `Code_block { meta; delimiter = _; content; output }; location } ->
+  | { value = `Code_block { meta; delimiter = _; content; output }; location }
+    ->
       let lang_tag =
         match meta with
         | Some { language = { Location.value; _ }; _ } -> Some value
@@ -259,12 +260,12 @@ let rec nestable_block_element :
       in
       let label = generate_label `Code_block status in
       Location.at location (`Code_block (label, lang_tag, content, outputs))
-      | { value = `Math_block s; location } ->
-        let label = generate_label `Verbatim status in
-        Location.at location (`Math_block (label, s))
-    | { value = `Verbatim v; location } ->
-        let label = generate_label `Math_block status in
-        Location.at location (`Verbatim (label, v))
+  | { value = `Math_block s; location } ->
+      let label = generate_label `Verbatim status in
+      Location.at location (`Math_block (label, s))
+  | { value = `Verbatim v; location } ->
+      let label = generate_label `Math_block status in
+      Location.at location (`Verbatim (label, v))
   | { value = `Modules modules; location } ->
       let modules =
         List.fold_left
