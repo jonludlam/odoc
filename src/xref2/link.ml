@@ -112,6 +112,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `AliasModuleType (x, y) ->
       should_reresolve (x :> t) || should_reresolve (y :> t)
   | `Type (p, _)
+  | `Value (p, _)
   | `Class (p, _)
   | `ClassType (p, _)
   | `ModuleType (p, _)
