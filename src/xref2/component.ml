@@ -2459,11 +2459,7 @@ module Of_Lang = struct
         Odoc_model.Location_.same b para
     | { value = `Code_block (label, l, s, o); location } ->
         let label = mk_label label location in
-        let o' =
-          match o with
-          | None -> None
-          | Some x -> Some (List.map (nestable_block_element map) x)
-        in
+        let o' = Opt.map (List.map (nestable_block_element map)) o in
         let cb = `Code_block (label, l, s, o') in
         Odoc_model.Location_.same b cb
     | { value = `Math_block (label, s); location } ->

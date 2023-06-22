@@ -1060,11 +1060,7 @@ and nestable_block_element parent
         `Paragraph (label, text)
     | `Code_block (h, l, s, o) ->
         let label = mk_label h in
-        let o' =
-          match o with
-          | None -> None
-          | Some l -> Some (List.map (nestable_block_element parent) l)
-        in
+        let o' = Opt.map (List.map (nestable_block_element parent)) o in
         `Code_block (label, l, s, o')
     | `Math_block (h, s) ->
         let label = mk_label h in
