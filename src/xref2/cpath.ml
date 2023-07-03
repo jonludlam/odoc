@@ -36,8 +36,7 @@ module rec Resolved : sig
     | `Class of parent * ClassName.t
     | `ClassType of parent * ClassTypeName.t ]
 
-  and value =
-    [ `Gpath of Path.Resolved.Value.t | `Value of parent * ValueName.t ]
+  and value = [ `Value of parent * ValueName.t ]
 
   and class_type =
     [ `Local of Ident.path_class_type
@@ -80,7 +79,6 @@ and Cpath : sig
 
   and value =
     [ `Resolved of Resolved.value
-    | `Identifier of Odoc_model.Paths.Identifier.Path.Value.t * bool
     | `Dot of module_ * string
     | `Value of Resolved.parent * ValueName.t ]
 

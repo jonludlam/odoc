@@ -1031,9 +1031,6 @@ module Fmt = struct
   and resolved_value_path : Format.formatter -> Cpath.Resolved.value -> unit =
    fun ppf p ->
     match p with
-    | `Gpath p ->
-        Format.fprintf ppf "%a" model_resolved_path
-          (p :> Odoc_model.Paths.Path.Resolved.t)
     | `Value (p, t) ->
         Format.fprintf ppf "%a.%s" resolved_parent_path p
           (Odoc_model.Names.ValueName.to_string t)
@@ -1070,10 +1067,6 @@ module Fmt = struct
    fun ppf p ->
     match p with
     | `Resolved r -> Format.fprintf ppf "r(%a)" resolved_value_path r
-    | `Identifier (id, b) ->
-        Format.fprintf ppf "identifier(%a, %b)" model_identifier
-          (id :> Odoc_model.Paths.Identifier.t)
-          b
     | `Dot (m, s) -> Format.fprintf ppf "%a.%s" module_path m s
     | `Value (p, t) ->
         Format.fprintf ppf "%a.%s" resolved_parent_path p
@@ -1783,11 +1776,8 @@ module Of_Lang = struct
 
   and resolved_value_path :
       _ -> Odoc_model.Paths.Path.Resolved.Value.t -> Cpath.Resolved.value =
-   fun ident_map p ->
-    match p with
-    | `Identifier _ -> `Gpath p
-    | `Value (p, name) ->
-        `Value (`Module (resolved_module_path ident_map p), name)
+   fun ident_map (`Value (p, name)) ->
+    `Value (`Module (resolved_module_path ident_map p), name)
 
   and resolved_class_type_path :
       _ ->
@@ -1845,7 +1835,6 @@ module Of_Lang = struct
    fun ident_map p ->
     match p with
     | `Resolved r -> `Resolved (resolved_value_path ident_map r)
-    | `Identifier (i, b) -> `Identifier (i, b)
     | `Dot (path', x) -> `Dot (module_path ident_map path', x)
 
   and class_type_path :
