@@ -177,10 +177,13 @@ module Path = struct
         let name = ClassTypeName.to_string name in
         mk ~parent kind name
     | { iv = `Result p; _ } -> from_identifier (p :> source)
-    | { iv = `SourceDir (parent, name); _ }
-    | { iv = `SourcePage (parent, name); _ } ->
+    | { iv = `SourceDir (parent, name); _ } ->
         let parent = from_identifier (parent :> source) in
         let kind = `Page in
+        mk ~parent kind name
+    | { iv = `SourcePage (parent, name); _ } ->
+        let parent = from_identifier (parent :> source) in
+        let kind = `SourcePage in
         mk ~parent kind name
 
   let from_identifier p =
