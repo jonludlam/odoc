@@ -605,6 +605,9 @@ module Path = struct
       (* TODO remove this hack once the fix for PR#6650
          is in the OCaml release *)
 
+  let read_value_ident env id : Paths.Path.Value.t =
+    `Identifier (find_value_identifier env id, false)
+
   (*  When a type is a classtype path (with a #), the # is stripped off because
       each ident is mapped to the identifier named for the ident without a
       hash. e.g. in the following, we take the name of the identifier from
@@ -675,6 +678,18 @@ module Path = struct
     | Path.Pextra_ty (p,_) -> read_type env p
 #endif
 
+  let read_value env = function
+    | Path.Pident id -> read_value_ident env id
+#if OCAML_VERSION >= (4,8,0)
+    | Path.Pdot(p, s) -> `Dot(read_module env p, s)
+#else
+    | Path.Pdot(p, s, _) -> `Dot(read_module env p, s)
+#endif
+    | Path.Papply(_, _) -> assert false
+#if OCAML_VERSION >= (5,1,0)
+    | Path.Pextra_ty _ -> assert false
+#endif
+  
 end
 
 module Fragment = struct

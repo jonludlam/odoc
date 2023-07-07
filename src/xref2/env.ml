@@ -19,6 +19,7 @@ type resolver = {
   lookup_unit : string -> lookup_unit_result;
   lookup_page : string -> lookup_page_result;
   lookup_def : Identifier.NonSrc.t -> Identifier.SourceLocation.t option;
+  lookup_value_path : Path.Value.t -> Identifier.SourceLocation.t option;
 }
 
 let unique_id =
@@ -427,6 +428,10 @@ let lookup_root_module name env =
 let lookup_def id env =
   let id = (id :> Paths.Identifier.NonSrc.t) in
   match env.resolver with Some r -> r.lookup_def id | None -> None
+
+let lookup_value_path path env =
+  match env.resolver with Some r -> r.lookup_value_path path | None -> None
+
 
 let lookup_page name env =
   match env.resolver with None -> None | Some r -> r.lookup_page name

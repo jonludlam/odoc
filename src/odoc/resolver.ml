@@ -228,24 +228,35 @@ let build_compile_env_for_unit
     { important_digests; ap; open_modules = open_units } impl_shape m =
   add_unit_to_cache (Odoc_file.Unit_content (m, impl_shape));
   let imports_map = build_imports_map m in
+  let lookup x =
+    match lookup_unit_by_name ap x with
+        | Some (m, Some shape) -> Some (m, shape)
+        | _ -> None
+  in
   let lookup_unit = lookup_unit ~important_digests ~imports_map ap
   and lookup_page = lookup_page ap
-  and lookup_def _ = failwith "Cannot lookup definition" in
-  let resolver = { Env.open_units; lookup_unit; lookup_page; lookup_def } in
+  and lookup_def = Odoc_loader.Local_jmp.lookup_def lookup
+  and lookup_value_path = Odoc_loader.Local_jmp.lookup_value_path lookup in  
+  let resolver = { Env.open_units; lookup_unit; lookup_page; lookup_def; lookup_value_path } in
   Env.env_of_unit m ~linking:false resolver
 
 (** [important_digests] and [imports_map] only apply to modules. *)
 let build ?(imports_map = StringMap.empty)
     { important_digests; ap; open_modules = open_units } =
-  let lookup_def =
-    Odoc_loader.Lookup_def.lookup_def (fun x ->
-        match lookup_unit_by_name ap x with
+  let lookup x =
+    match lookup_unit_by_name ap x with
         | Some (m, Some shape) -> Some (m, shape)
-        | _ -> None)
+        | _ -> None
+  in
+  let lookup_def =
+    Odoc_loader.Local_jmp.lookup_def lookup
+  in
+  let lookup_value_path =
+    Odoc_loader.Local_jmp.lookup_value_path lookup
   in
   let lookup_unit = lookup_unit ~important_digests ~imports_map ap
   and lookup_page = lookup_page ap in
-  { Env.open_units; lookup_unit; lookup_page; lookup_def }
+  { Env.open_units; lookup_unit; lookup_page; lookup_def; lookup_value_path }
 
 let build_link_env_for_unit t m impl_shape =
   add_unit_to_cache (Odoc_file.Unit_content (m, impl_shape));

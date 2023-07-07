@@ -3,7 +3,7 @@ resolve correctly. All of the 'Class' json objects should contain
 'Resolved'
 
   $ ocamlc -c -bin-annot b.ml
-  $ ocamlc -c -bin-annot c.ml -dtypedtree
+  $ ocamlc -c -bin-annot c.ml
   $ ocamlc -c -bin-annot d.mli
   $ ocamlc -c -bin-annot e.mli
   $ ocamlc -c -bin-annot f.mli

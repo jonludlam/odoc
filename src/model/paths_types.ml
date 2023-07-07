@@ -321,7 +321,10 @@ module rec Path : sig
     | `Dot of module_ * string ]
   (** @canonical Odoc_model.Paths.Path.Type.t *)
 
-  type value = [ `Resolved of Resolved_path.value | `Dot of module_ * string ]
+  type value =
+    [ `Resolved of Resolved_path.value
+    | `Identifier of Identifier.path_value * bool
+    | `Dot of module_ * string ]
   (** @canonical Odoc_model.Paths.Path.Value.t *)
 
   type class_type =
@@ -370,7 +373,9 @@ and Resolved_path : sig
     | `ClassType of module_ * ClassTypeName.t ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Type.t *)
 
-  type value = [ `Value of module_ * ValueName.t ]
+  type value =
+    [ `Identifier of Identifier.path_value
+    | `Value of module_ * ValueName.t ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Value.t *)
 
   type class_type =
@@ -379,7 +384,7 @@ and Resolved_path : sig
     | `ClassType of module_ * ClassTypeName.t ]
 
   type any =
-    [ `Identifier of Identifier.any
+    [ `Identifier of Identifier.non_src
     | `Subst of module_type * module_
     | `Hidden of module_
     | `Module of module_ * ModuleName.t

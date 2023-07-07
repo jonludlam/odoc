@@ -726,7 +726,7 @@ module Path = struct
     end
 
     let rec identifier : t -> Identifier.t = function
-      | `Identifier id -> id
+      | `Identifier id -> (id :> Identifier.t)
       | `Subst (sub, _) -> identifier (sub :> t)
       | `Hidden p -> identifier (p :> t)
       | `Module (m, n) -> Identifier.Mk.module_ (parent_module_identifier m, n)

@@ -898,12 +898,15 @@ and lookup_value :
     Env.t ->
     Cpath.Resolved.value ->
     (_, simple_value_lookup_error) Result.result =
- fun env (`Value (p, id)) ->
-  lookup_parent ~mark_substituted:true env p
-  |> map_error (fun e -> (e :> simple_value_lookup_error))
-  >>= fun (sg, sub) ->
-  handle_value_lookup env (ValueName.to_string id) p sg
-  >>= fun (_, `FValue (name, c)) -> Ok (`FValue (name, Subst.value sub c))
+ fun env p ->
+  match p with
+  | `Value (p, id) ->
+    lookup_parent ~mark_substituted:true env p
+    |> map_error (fun e -> (e :> simple_value_lookup_error))
+    >>= fun (sg, sub) ->
+    handle_value_lookup env (ValueName.to_string id) p sg
+    >>= fun (_, `FValue (name, c)) -> Ok (`FValue (name, Subst.value sub c))
+  | `Gpath _p -> failwith "unimplemented"
 
 and lookup_class_type :
     Env.t ->
@@ -1158,6 +1161,9 @@ and resolve_value : Env.t -> Cpath.value -> resolve_value_result =
         in
         of_option ~error:`Find_failure result
     | `Resolved r -> lookup_value env r >>= fun t -> Ok (r, t)
+    | `Identifier (i, _) ->
+        let i' = `Identifier i in
+        lookup_value env (`Gpath i') >>= fun t -> Ok (`Gpath i', t)
   in
   result
 
@@ -1552,7 +1558,10 @@ and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
   result
 
 and reresolve_value : Env.t -> Cpath.Resolved.value -> Cpath.Resolved.value =
- fun env (`Value (p, n)) -> `Value (reresolve_parent env p, n)
+ fun env p ->
+  match p with
+  | `Value (p, n) -> `Value (reresolve_parent env p, n)
+  | `Gpath _ -> p
 
 and reresolve_class_type :
     Env.t -> Cpath.Resolved.class_type -> Cpath.Resolved.class_type =

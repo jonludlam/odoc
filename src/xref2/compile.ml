@@ -55,8 +55,26 @@ and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
 
 let rec unit env t =
   let open Compilation_unit in
-  { t with content = content env t.id t.content }
+  let source_info = match t.source_info with | Some si -> Some (source_info env si) | None -> None in
+  { t with content = content env t.id t.content; source_info }
 
+and source_info env si =
+  { si with infos = source_info_infos env si.infos }
+
+and source_info_infos env infos =
+    List.filter_map (function
+      | Odoc_model.Lang.Source_info.Unresolved p, x -> (
+        (* Format.eprintf "looking up path %a@." Component.Fmt.model_path (p :> Paths.Path.t); *)
+        match Env.lookup_value_path p env with
+        | Some p ->
+          (* Format.eprintf "Found it!\n%!"; *)
+          Some (Odoc_model.Lang.Source_info.Value p, x)
+        | None ->
+          (* Format.eprintf "Failed!\n%!"; *)
+          None)
+      | x -> Some x) infos
+
+  
 and content env id =
   let open Compilation_unit in
   function

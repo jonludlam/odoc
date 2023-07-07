@@ -2,6 +2,8 @@ type t = string
 
 let x = 2
 let y = x + 1
+let z = x
+
 let z a = if x = 1 || true then x + y else 0
 
 module A = struct end
@@ -18,3 +20,14 @@ exception Exn
 class cls = object end
 class cls' = cls
 class type ct = object end
+
+module T = struct
+  let x = 1
+end
+
+let zz = T.x
+
+let f x y z =
+  let foo = x + y + T.x in
+  foo + z
+  

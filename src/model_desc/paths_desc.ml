@@ -212,7 +212,7 @@ module General_paths = struct
   and resolved_path : rp t =
     Variant
       (function
-      | `Identifier x -> C ("`Identifier", x, identifier)
+      | `Identifier x -> C ("`Identifier", (x :> Paths.Identifier.t), identifier)
       | `Subst (x1, x2) ->
           C
             ( "`Subst",
