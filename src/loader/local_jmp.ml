@@ -1,6 +1,6 @@
-#if OCAML_VERSION >= (4, 14, 0)
+(* #if OCAML_VERSION >= (4, 14, 0) *)
 
-open Odoc_model.Lang.Source_info
+(* open Odoc_model.Lang.Source_info *)
 
 let pos_of_loc loc = (loc.Location.loc_start.pos_cnum, loc.loc_end.pos_cnum)
 
@@ -19,14 +19,14 @@ module Analysis = struct
     | _ -> None
 
   (** Generate the anchors that will be pointed to by [lookup_def]. *)
-  let init poses uid_to_loc =
+  let _init poses uid_to_loc =
     Shape.Uid.Tbl.iter
       (fun uid t ->
         let= s = anchor_of_uid uid in
         poses := (Def s, pos_of_loc t) :: !poses)
       uid_to_loc
 
-  let pat poses (type a) : a Typedtree.general_pattern -> unit = function
+  let _pat poses (type a) : a Typedtree.general_pattern -> unit = function
     | {
         pat_desc = Tpat_var (id, _stringloc) | Tpat_alias (_, id, _stringloc);
         pat_loc;
@@ -38,7 +38,7 @@ module Analysis = struct
           poses := (LocalDef (uniq, name), pos_of_loc pat_loc) :: !poses
     | _ -> ()
   
-  let expr poses uid_to_loc expr =
+  let _expr poses uid_to_loc expr =
     match expr with
     | { Typedtree.exp_desc = Texp_ident (p, _, value_description); exp_loc; _ }
       -> (
@@ -58,43 +58,177 @@ module Analysis = struct
     | _ -> ()
 end
 
-let postprocess_poses poses =
-  let local_def_anchors =
-    List.filter_map (function
-      | LocalDef (uniq,name), (start,_) ->
-        Some (uniq, Odoc_model.Names.LocalName.make_std (Printf.sprintf "local_%s_%d" name start))
-      | _ -> None) poses in
-  List.filter_map (function
-    | LocalDef (uniq,_), loc -> Some (Odoc_model.Lang.Source_info.LocalDef (List.assoc uniq local_def_anchors), loc)
-    | LocalJmp uniq, loc -> (
-      match List.assoc_opt uniq local_def_anchors with
-      | Some anchor -> Some (LocalOccurence anchor, loc)
-      | None -> None)
-    | Def x, loc -> Some (Def x, loc)
-    | DefJmp x, loc -> Some (Occurence x, loc)) poses 
 
-let of_cmt (cmt : Cmt_format.cmt_infos) =
+module Analysis2 = struct
+  open Typedtree
+  open Odoc_model.Paths
+
+  let rec structure env parent str =
+    let items = Ident_env.extract_structure_tree_items false str.str_items |> Ident_env.flatten_extracted in
+    List.iter (fun item ->
+      let id, loc =
+        match item with
+        | `Module (id, _, loc) -> id, loc
+        | `ModuleType (id, _, loc) -> id, loc
+        | `Type (id, _, loc) -> id, loc
+        | `Value (id, _, loc) -> id, loc
+        | `Class (id, _, _, _, _, loc) -> id, loc
+        | `ClassType (id, _, _, _, loc) -> id, loc
+      in
+      let (s,e) = match loc with | Some l -> pos_of_loc l | None -> (0,0) in
+      Format.eprintf "id: %a loc: (%d,%d)\n%!" Ident.print id s e
+    ) items;
+      
+      let env = Ident_env.env_of_items parent items env in
+    List.fold_left
+      (fun items item ->
+        List.rev_append (structure_item env parent item) items)
+      [] str.str_items
+    |> List.rev
+  
+  and signature env parent sg =
+    let items = Ident_env.extract_signature_tree_items false sg |> Ident_env.flatten_extracted in
+    List.iter (fun item ->
+      let id, loc =
+        match item with
+        | `Module (id, _, loc) -> id, loc
+        | `ModuleType (id, _, loc) -> id, loc
+        | `Type (id, _, loc) -> id, loc
+        | `Value (id, _, loc) -> id, loc
+        | `Class (id, _, _, _, _, loc) -> id, loc
+        | `ClassType (id, _, _, _, loc) -> id, loc
+      in
+      let (s,e) = match loc with | Some l -> pos_of_loc l | None -> (0,0) in
+      Format.eprintf "id: %a loc: (%d,%d)\n%!" Ident.print id s e
+    ) items;
+    let _env' = Ident_env.env_of_items (parent :> Identifier.Signature.t) items env in
+    []
+
+  and structure_item env parent item =
+    match item.str_desc with
+    | Tstr_eval _ -> []
+    | Tstr_value(_, vbs) ->
+        value_bindings env parent vbs
+    | Tstr_module mb -> begin
+        match module_binding env parent mb with
+        | Some mb ->
+          [mb]
+        | None -> []
+        end
+    | Tstr_recmodule mbs ->
+        module_bindings env parent mbs
+    | Tstr_modtype mtd ->
+        module_type_decl env parent mtd
+    | _ -> []
+
+  and value_bindings env parent vbs =
+    let items =
+      List.fold_left
+        (fun acc vb ->
+           let vb = value_binding env parent vb in
+            List.rev_append vb acc)
+        [] vbs
+    in
+      List.rev items
+  
+  and value_binding _env _parent _vb =
+    []
+  
+  and module_type_decl env _parent mtd =
+    let id = Ident_env.find_module_type env mtd.mtd_id in
+    match mtd.mtd_type with
+    | None -> []
+    | Some mty -> module_type env id mty
+
+  and module_type env parent mty =
+    match mty.mty_desc with
+    | Tmty_signature sg -> signature env parent sg.sig_items
+    | Tmty_with (mty, _) -> module_type env parent mty
+    | Tmty_ident _ -> []
+    | Tmty_functor (_, t) -> module_type env parent t 
+    | Tmty_alias _ -> []
+    | Tmty_typeof _ -> []
+
+  and module_bindings env parent mbs =
+    let items =
+      List.fold_left
+        (fun acc vb ->
+           match module_binding env parent vb with
+           | Some mb -> mb :: acc
+           | None -> acc)
+        [] mbs
+    in
+      List.rev items
+  and module_binding env _parent mb =
+    match mb.mb_id with
+    | None -> None
+    | Some id ->
+      let id = Ident_env.find_module_identifier env id in
+      let id = (id :> Identifier.Module.t) in
+      let _inner =
+        match unwrap_module_expr_desc mb.mb_expr.mod_desc with
+        | Tmod_ident (_p, _) -> []
+        | _ ->
+            let id = (id :> Identifier.Signature.t) in
+            module_expr env id mb.mb_expr
+      in
+      None
+
+  and module_expr env parent mexpr =
+    let open Odoc_model.Names in
+    match mexpr.mod_desc with
+    | Tmod_ident _ ->
+      []
+    | Tmod_structure str ->
+        let sg = structure env parent str in
+        sg
+    | Tmod_functor(parameter, res) ->
+        let _f_parameter, env =
+          match parameter with
+          | Unit -> [], env
+          | Named (id_opt, _, _arg) ->
+              let name, env =
+                match id_opt with
+                | Some id -> Ident.name id, Ident_env.add_parameter parent id (ModuleName.of_ident id) env
+                | None -> "_", env
+              in
+              let _id = Odoc_model.Paths.Identifier.Mk.parameter (parent, Odoc_model.Names.ModuleName.make_std name) in
+              [], env
+          in
+        let res = module_expr env (Odoc_model.Paths.Identifier.Mk.result parent) res in
+        res
+    | _ ->
+      []
+
+  and unwrap_module_expr_desc = function
+    | Tmod_constraint(mexpr, _, Tmodtype_implicit, _) ->
+      unwrap_module_expr_desc mexpr.mod_desc
+    | desc -> desc
+
+end
+
+
+
+
+let of_cmt (id : Odoc_model.Paths.Identifier.RootModule.t) (cmt : Cmt_format.cmt_infos) =
   let ttree = cmt.cmt_annots in
   match ttree with
   | Cmt_format.Implementation structure ->
       let uid_to_loc = cmt.cmt_uid_to_loc in
-      let poses = ref [] in
-      Analysis.init poses uid_to_loc;
-      let expr iterator expr =
-        Analysis.expr poses uid_to_loc expr;
-        Tast_iterator.default_iterator.expr iterator expr
-      in
-      let pat iterator pat =
-        Analysis.pat poses pat;
-        Tast_iterator.default_iterator.pat iterator pat
-      in
-      let iterator = { Tast_iterator.default_iterator with expr; pat } in
-      iterator.structure iterator structure;
-      postprocess_poses !poses
+      let env = Ident_env.empty () in 
+      let _ = Analysis2.structure env (id :> Odoc_model.Paths.Identifier.Signature.t) structure in
+      Shape.Uid.Tbl.iter (fun shape loc ->
+        let id = Ident_env.identifier_of_loc env loc in
+        let name = match id with
+          | Some id -> Odoc_model.Paths.Identifier.name id
+          | None -> let (x,y) = pos_of_loc loc in Format.asprintf "unknown (%d,%d)" x y
+        in
+        Format.eprintf "%a: %s\n%!" Shape.Uid.print shape name) uid_to_loc;
+        []
   | _ -> []
 
-#else
+(* #else
 
 let of_cmt _ = []
 
-#endif
+#endif *)

@@ -16,6 +16,7 @@ val read_string :
   (Comment.docs_or_stop, Error.t) result Error.with_warnings
 
 val read_cmt_infos :
+  Odoc_model.Paths.Identifier.RootModule.t ->
   filename:string ->
   ((Lookup_def.t * Lang.Source_info.infos) option, Error.t) result
   Error.with_warnings

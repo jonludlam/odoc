@@ -33,11 +33,11 @@ let check_is_none msg = function None -> Ok () | Some _ -> Error (`Msg msg)
 let check_is_empty msg = function [] -> Ok () | _ :: _ -> Error (`Msg msg)
 
 (** Raises warnings and errors. *)
-let lookup_implementation_of_cmti intf_file =
+let lookup_implementation_of_cmti id intf_file =
   let input_file = Fs.File.set_ext ".cmt" intf_file in
   if Fs.File.exists input_file then
     let filename = Fs.File.to_string input_file in
-    Odoc_loader.read_cmt_infos ~filename |> Error.raise_errors_and_warnings
+    Odoc_loader.read_cmt_infos id ~filename |> Error.raise_errors_and_warnings
   else (
     Error.raise_warning ~non_fatal:true
       (Error.filename_only
@@ -121,10 +121,10 @@ let resolve_and_substitute ~resolver ~make_root ~source ~hidden
     | `Cmti ->
         let unit =
           Odoc_loader.read_cmti ~make_root ~parent ~filename
-          |> Error.raise_errors_and_warnings
-        and cmt_infos =
+          |> Error.raise_errors_and_warnings in
+        let cmt_infos =
           if should_read_impl_shape then
-            lookup_implementation_of_cmti input_file
+            lookup_implementation_of_cmti unit.id input_file
           else None
         in
         (unit, cmt_infos)
