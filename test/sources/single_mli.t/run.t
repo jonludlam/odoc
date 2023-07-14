@@ -10,10 +10,39 @@ Similar to Astring library.
   $ ocamlc -c a.ml -bin-annot -I .
 
   $ odoc compile --hidden --source-name a_x.ml --source-parent-file src-source.odoc -I . a_x.cmt
+  Shape: {<A_x>
+          "Y"[module] -> {<A_x.1>
+                          "z"[value] -> <A_x.0>;
+                          };
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-1' at loc (0,33)
+  Adding a 'Def' for 'def-0' at loc (22,23)
+  uids (2 calculated vs 2 expected): [module-Y.val-z,module-Y]Adding a 'Def' for 'z_268' at loc (22,23)
   $ odoc compile --source-name a.ml --source-parent-file src-source.odoc -I . a.cmti
+  Shape: {<A>
+          "X"[module] -> CU A_x;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (0,14)
+  uids (0 calculated vs 1 expected): []
 
   $ odoc link -I . a_x.odoc
   $ odoc link -I . a.odoc
+  Found shape: <A_x.0>
+  
+  Found shape: {<A_x.1>
+                "z"[value] -> <A_x.0>;
+                }
+  
+  Found shape: {<A_x>
+                "Y"[module] -> {<A_x.1>
+                                "z"[value] -> <A_x.0>;
+                                };
+                }
+  
 
   $ odoc html-generate --source a_x.ml --indent -o html a_x.odocl
   $ odoc html-generate --source a.ml --indent -o html a.odocl

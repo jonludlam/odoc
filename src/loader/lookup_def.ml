@@ -5,6 +5,13 @@ open Odoc_model.Paths
 open Odoc_model.Names
 module Kind = Shape.Sig_component_kind
 
+let unpack_uid uid =
+  match uid with
+  | Shape.Uid.Compilation_unit s -> Some (s, None)
+  | Item { comp_unit; id } -> Some (comp_unit, Some (string_of_int id))
+  | Predef _ -> None
+  | Internal -> None
+  
 let ( >>= ) m f = match m with Some x -> f x | None -> None
 
 type t = Shape.t
@@ -65,8 +72,9 @@ let lookup_def lookup_unit id =
       end) in
       let result = try Some (Reduce.reduce () query) with Not_found -> None in
       result >>= fun result ->
+      Format.eprintf "Found shape: %a\n%!" Shape.print result;
       result.uid >>= fun uid ->
-      Uid.unpack_uid (Uid.of_shape_uid uid) >>= fun (unit_name, id) ->
+      unpack_uid uid >>= fun (unit_name, id) ->
       lookup_unit unit_name >>= fun (unit, _) ->
       unit.Lang.Compilation_unit.source_info >>= fun sources ->
       let anchor_opt = id >>= fun id -> Some (Uid.anchor_of_id id) in

@@ -14,12 +14,39 @@ Compile the modules:
 Now, compile the pages with the --source option. The source-name must be included in the source-children of the source-parent:
 
   $ odoc compile -I . --source-name lib/a/a.ml --source-parent-file src-source.odoc a.cmt
+  Shape: {<A>
+          "y"[value] -> <A.0>;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (4,5)
+  uids (1 calculated vs 1 expected): [val-y]Adding a 'Def' for 'y_268' at loc (4,5)
   $ odoc compile -I . --source-name lib/b/b.ml --source-parent-file src-source.odoc b.cmt
+  Shape: {<B>
+          "x"[value] -> <B.0>;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (4,5)
+  uids (1 calculated vs 1 expected): [val-x]Adding a 'Def' for 'x_268' at loc (4,5)
   $ odoc compile -I . --source-name lib/main.ml --source-parent-file src-source.odoc c.cmt
+  Shape: {<C>
+          "w"[value] -> <C.0>;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (4,5)
+  uids (1 calculated vs 1 expected): [val-w]Adding a 'Def' for 'w_268' at loc (4,5)
   $ odoc link -I . page-root.odoc
   $ odoc link -I . a.odoc
+  Found shape: <A.0>
+  
   $ odoc link -I . b.odoc
+  Found shape: <B.0>
+  
   $ odoc link -I . c.odoc
+  Found shape: <C.0>
+  
   $ odoc link -I . src-source.odoc
   $ odoc html-generate --indent -o html page-root.odocl
   $ odoc html-generate --indent -o html src-source.odocl

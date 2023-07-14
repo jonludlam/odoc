@@ -5,15 +5,211 @@ Verify the behavior on functors.
   $ printf "s.ml\na.ml\nb.ml\n" > source_tree.map
   $ odoc source-tree -I . --parent page-root -o src-source.odoc source_tree.map
 
-  $ ocamlc -c -o s.cmo s.ml -bin-annot -I .
-  $ ocamlc -c -o a.cmo a.ml -bin-annot -I .
-  $ ocamlc -c -o b.cmo b.ml -bin-annot -I .
+  $ ocamlc -c -o s.cmo s.ml -dtypedtree -bin-annot -I .
+  [
+    structure_item (s.ml[1,0+0]..s.ml[4,41+3])
+      Tstr_modtype "S/270"
+        module_type (s.ml[1,0+16]..s.ml[4,41+3])
+          Tmty_signature
+          [
+            signature_item (s.ml[2,20+2]..s.ml[2,20+8])
+              Tsig_type Rec
+              [
+                type_declaration t/268 (s.ml[2,20+2]..s.ml[2,20+8])
+                  ptype_params =
+                    []
+                  ptype_cstrs =
+                    []
+                  ptype_kind =
+                    Ttype_abstract
+                  ptype_private = Public
+                  ptype_manifest =
+                    None
+              ]
+            signature_item (s.ml[3,29+2]..s.ml[3,29+11])
+              Tsig_value
+              value_description x/269 (s.ml[3,29+2]..s.ml[3,29+11])
+                core_type (s.ml[3,29+10]..s.ml[3,29+11])
+                  Ttyp_constr "t/268"
+                  []
+                []
+          ]
+  ]
+  
+  $ ocamlc -c -o a.cmo a.ml -dtypedtree -dshape -bin-annot -I .
+  [
+    structure_item (a.ml[1,0+0]..a.ml[4,57+3])
+      Tstr_module
+      F/274
+        module_expr (a.ml[1,0+9]..a.ml[4,57+3])
+          Tmod_functor "S/271"
+          module_type (a.ml[1,0+14]..a.ml[1,0+17])
+            Tmty_ident "S!.S"
+          module_expr (a.ml[1,0+21]..a.ml[4,57+3])
+            Tmod_structure
+            [
+              structure_item (a.ml[2,28+2]..a.ml[2,28+14])
+                Tstr_type Rec
+                [
+                  type_declaration t/272 (a.ml[2,28+2]..a.ml[2,28+14])
+                    ptype_params =
+                      []
+                    ptype_cstrs =
+                      []
+                    ptype_kind =
+                      Ttype_abstract
+                    ptype_private = Public
+                    ptype_manifest =
+                      Some
+                        core_type (a.ml[2,28+11]..a.ml[2,28+14])
+                          Ttyp_constr "S/271.t"
+                          []
+                ]
+              structure_item (a.ml[3,43+2]..a.ml[3,43+13])
+                Tstr_value Nonrec
+                [
+                  <def>
+                    pattern (a.ml[3,43+6]..a.ml[3,43+7])
+                      Tpat_var "y/273"
+                    expression (a.ml[3,43+10]..a.ml[3,43+13])
+                      Texp_ident "S/271.x"
+                ]
+            ]
+  ]
+  
+  {<A>
+   "F"[module] -> Abs<A.3>(S/271, {
+                                   "t"[type] -> <A.1>;
+                                   "y"[value] -> <A.2>;
+                                   });
+   }
+  
+  $ ocamlc -c -o b.cmo b.ml -dtypedtree -bin-annot -I .
+  [
+    structure_item (b.ml[1,0+0]..b.ml[5,46+3])
+      Tstr_module
+      S/270
+        module_expr (b.ml[1,0+11]..b.ml[5,46+3])
+          Tmod_structure
+          [
+            structure_item (b.ml[2,18+2]..b.ml[2,18+14])
+              Tstr_type Rec
+              [
+                type_declaration t/268 (b.ml[2,18+2]..b.ml[2,18+14])
+                  ptype_params =
+                    []
+                  ptype_cstrs =
+                    []
+                  ptype_kind =
+                    Ttype_abstract
+                  ptype_private = Public
+                  ptype_manifest =
+                    Some
+                      core_type (b.ml[2,18+11]..b.ml[2,18+14])
+                        Ttyp_constr "int/1!"
+                        []
+              ]
+            structure_item (b.ml[4,34+2]..b.ml[4,34+11])
+              Tstr_value Nonrec
+              [
+                <def>
+                  pattern (b.ml[4,34+6]..b.ml[4,34+7])
+                    Tpat_var "x/269"
+                  expression (b.ml[4,34+10]..b.ml[4,34+11])
+                    Texp_constant Const_int 2
+              ]
+          ]
+    structure_item (b.ml[7,51+0]..b.ml[7,51+18])
+      Tstr_module
+      R/281
+        module_expr (b.ml[7,51+11]..b.ml[7,51+18])
+          Tmod_apply
+          module_expr (b.ml[7,51+11]..b.ml[7,51+14])
+            Tmod_ident "A!.F"
+          module_expr (b.ml[7,51+16]..b.ml[7,51+17])
+            Tmod_ident "S/270"
+  ]
+  
   $ odoc compile --source-name s.ml --source-parent-file src-source.odoc -I . s.cmt
+  Shape: {<S>
+          "S"[module type] -> <S.2>;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-1' at loc (31,40)
+  Adding a 'Def' for 'def-0' at loc (22,28)
+  Adding a 'Def' for 'def-2' at loc (0,44)
+  uids (1 calculated vs 3 expected): [module-type-S]
   $ odoc compile --source-name a.ml --source-parent-file src-source.odoc -I . a.cmt
+  Shape: {<A>
+          "F"[module] ->
+              Abs<A.3>(S/271, {
+                               "t"[type] -> <A.1>;
+                               "y"[value] -> <A.2>;
+                               });
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-2' at loc (49,50)
+  Adding a 'Def' for 'def-1' at loc (30,42)
+  Adding a 'Def' for 'def-3' at loc (0,60)
+  uids (1 calculated vs 3 expected): [module-F]Adding a 'Def' for 'y_273' at loc (49,50)
   $ odoc compile --source-name b.ml --source-parent-file src-source.odoc -I . b.cmt
+  Shape: {<B>
+          "R"[module] ->
+              CU A . "F"[module](
+              {<B.2>
+               "t"[type] -> <B.0>;
+               "x"[value] -> <B.1>;
+               })<B.3>;
+          "S"[module] -> {<B.2>
+                          "t"[type] -> <B.0>;
+                          "x"[value] -> <B.1>;
+                          };
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-2' at loc (0,49)
+  Adding a 'Def' for 'def-1' at loc (40,41)
+  Adding a 'Def' for 'def-0' at loc (20,32)
+  Adding a 'Def' for 'def-3' at loc (51,69)
+  uids (4 calculated vs 4 expected): [module-S.val-x,module-S.type-t,module-S,module-R]Adding a 'Def' for 'x_269' at loc (40,41)
   $ odoc link -I . s.odoc
+  Found shape: <S.2>
+  
+  Found shape: <S.2>
+  
+  Found shape: <S.2>
+  
   $ odoc link -I . a.odoc
+  Found shape: <A.1>
+  
+  Found shape: <A.2>
+  
+  Found shape: Abs<A.3>(S/271, {
+                                "t"[type] -> <A.1>;
+                                "y"[value] -> <A.2>;
+                                })
+  
   $ odoc link -I . b.odoc
+  Found shape: <B.0>
+  
+  Found shape: <B.1>
+  
+  Found shape: {<B.2>
+                "t"[type] -> <B.0>;
+                "x"[value] -> <B.1>;
+                }
+  
+  Found shape: <A.1>
+  
+  Found shape: <A.2>
+  
+  Found shape: {<B.3>
+                "t"[type] -> <A.1>;
+                "y"[value] -> <A.2>;
+                }
+  
   $ odoc html-generate --source s.ml --indent -o html s.odocl
   $ odoc html-generate --source a.ml --indent -o html a.odocl
   $ odoc html-generate --source b.ml --indent -o html b.odocl

@@ -11,10 +11,37 @@ Similar to the lookup_def_wrapped test.
   $ ocamlc -c -open Main__ main.ml -bin-annot -I .
 
   $ odoc compile --source-name a.ml --source-parent-file src-source.odoc -I . main__A.cmt
+  Shape: {<Main__A>
+          "x"[value] -> <Main__A.0>;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (4,5)
+  uids (1 calculated vs 1 expected): [val-x]Adding a 'Def' for 'x_268' at loc (4,5)
   $ odoc compile -I . main__.cmt
+  Shape: {<Main__>
+          "A"[module] -> CU Main__A;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (35,53)
+  uids (0 calculated vs 1 expected): []
   $ odoc compile --source-name main.ml --source-parent-file src-source.odoc -I . main.cmt
+  Shape: {<Main>
+          "A"[module] -> (CU Main__ . "A"[module])<Main.0>;
+          }
+  
+  Struct
+  Adding a 'Def' for 'def-0' at loc (37,49)
+  uids (1 calculated vs 1 expected): [module-A]
 
   $ odoc link -I . main.odoc
+  Found shape: <Main__A.0>
+  
+  Found shape: {<Main__A>
+                "x"[value] -> <Main__A.0>;
+                }
+  
   $ odoc link -I . main__A.odoc
   $ odoc link -I . main__.odoc
 
