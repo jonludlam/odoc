@@ -64,22 +64,7 @@ module Analysis2 = struct
   open Odoc_model.Paths
 
   let rec structure env parent str =
-    let items = Ident_env.extract_structure_tree_items false str.str_items |> Ident_env.flatten_extracted in
-    List.iter (fun item ->
-      let id, loc =
-        match item with
-        | `Module (id, _, loc) -> id, loc
-        | `ModuleType (id, _, loc) -> id, loc
-        | `Type (id, _, loc) -> id, loc
-        | `Value (id, _, loc) -> id, loc
-        | `Class (id, _, _, _, _, loc) -> id, loc
-        | `ClassType (id, _, _, _, loc) -> id, loc
-      in
-      let (s,e) = match loc with | Some l -> pos_of_loc l | None -> (0,0) in
-      Format.eprintf "id: %a loc: (%d,%d)\n%!" Ident.print id s e
-    ) items;
-      
-      let env = Ident_env.env_of_items parent items env in
+    let env = Ident_env.add_structure_tree_items parent str env in
     List.fold_left
       (fun items item ->
         List.rev_append (structure_item env parent item) items)
@@ -87,21 +72,69 @@ module Analysis2 = struct
     |> List.rev
   
   and signature env parent sg =
-    let items = Ident_env.extract_signature_tree_items false sg |> Ident_env.flatten_extracted in
-    List.iter (fun item ->
-      let id, loc =
-        match item with
-        | `Module (id, _, loc) -> id, loc
-        | `ModuleType (id, _, loc) -> id, loc
-        | `Type (id, _, loc) -> id, loc
-        | `Value (id, _, loc) -> id, loc
-        | `Class (id, _, _, _, _, loc) -> id, loc
-        | `ClassType (id, _, _, _, loc) -> id, loc
-      in
-      let (s,e) = match loc with | Some l -> pos_of_loc l | None -> (0,0) in
-      Format.eprintf "id: %a loc: (%d,%d)\n%!" Ident.print id s e
-    ) items;
-    let _env' = Ident_env.env_of_items (parent :> Identifier.Signature.t) items env in
+    let env = Ident_env.add_signature_tree_items parent sg env in
+    List.fold_left
+      (fun items item ->
+        List.rev_append (signature_item env parent item) items)
+      [] sg.sig_items
+    |> List.rev
+
+  and signature_item env parent item =
+    match item.sig_desc with
+    | Tsig_value vd ->
+      value_description env parent vd
+    | Tsig_type (_, tds) ->
+      type_declarations env parent tds
+    | Tsig_typesubst tds ->
+      type_declarations env parent tds
+    | Tsig_typext _ -> []
+    | Tsig_exception e -> type_exception env parent e
+    | Tsig_module mb -> module_declaration env parent mb
+    | Tsig_modsubst ms -> module_substitution env parent ms
+    | Tsig_recmodule mbs -> module_declarations env parent mbs
+    | Tsig_modtype mtd -> module_type_declaration env parent mtd
+    | Tsig_modtypesubst mtd -> module_type_declaration env parent mtd
+    | Tsig_open _ -> []
+    | Tsig_include _ -> []
+    | Tsig_class cd -> class_description env parent cd
+    | Tsig_class_type ctd -> class_type_declaration env parent ctd
+    | Tsig_attribute _ -> []
+
+  and value_description _env _parent _vd =
+    []
+
+  and type_declaration _env _parent _td = []
+
+  and type_declarations _env _parent _tds = []
+
+  and type_exception _env _parent _e = []
+
+  and module_declaration env _parent md =
+    match md.md_id with
+    | None -> []
+    | Some mb_id ->
+      let id = Ident_env.find_module_identifier env mb_id in
+      module_type env (id :> Identifier.Signature.t) md.md_type
+
+  and module_declarations env parent mds =
+    List.fold_left
+      (fun items md ->
+        List.rev_append (module_declaration env parent md) items)
+      [] mds |> List.rev
+    
+  and module_substitution _env _parent _ms =
+    []
+
+  and module_type_declaration env _parent mtd =
+    let id = Ident_env.find_module_type env mtd.mtd_id in
+    match mtd.mtd_type with
+    | None -> []
+    | Some mty -> module_type env (id :> Identifier.Signature.t) mty
+      
+  and class_description _env _parent _cd =
+    []
+  
+  and class_type_declaration _env _parent _ctd =
     []
 
   and structure_item env parent item =
@@ -121,6 +154,7 @@ module Analysis2 = struct
         module_type_decl env parent mtd
     | _ -> []
 
+  
   and value_bindings env parent vbs =
     let items =
       List.fold_left
@@ -131,18 +165,18 @@ module Analysis2 = struct
     in
       List.rev items
   
-  and value_binding _env _parent _vb =
-    []
+  and value_binding env parent vb =
+    expression env parent vb.vb_expr
   
   and module_type_decl env _parent mtd =
     let id = Ident_env.find_module_type env mtd.mtd_id in
     match mtd.mtd_type with
     | None -> []
-    | Some mty -> module_type env id mty
+    | Some mty -> module_type env (id :> Identifier.Signature.t) mty
 
-  and module_type env parent mty =
+  and module_type env (parent : Identifier.Signature.t) mty =
     match mty.mty_desc with
-    | Tmty_signature sg -> signature env parent sg.sig_items
+    | Tmty_signature sg -> signature env (parent : Identifier.Signature.t) sg
     | Tmty_with (mty, _) -> module_type env parent mty
     | Tmty_ident _ -> []
     | Tmty_functor (_, t) -> module_type env parent t 
@@ -158,7 +192,8 @@ module Analysis2 = struct
            | None -> acc)
         [] mbs
     in
-      List.rev items
+    List.rev items
+
   and module_binding env _parent mb =
     match mb.mb_id with
     | None -> None
