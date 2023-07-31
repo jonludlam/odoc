@@ -70,7 +70,7 @@ and source_info_infos env infos =
           (* Format.eprintf "Found it!\n%!"; *)
           Some (Odoc_model.Lang.Source_info.Value p, x)
         | None ->
-          (* Format.eprintf "Failed!\n%!"; *)
+          Format.eprintf "Failed to resolve %a!\n%!" Component.Fmt.model_path (p :> Paths.Path.t); 
           None)
       | x -> Some x) infos
 
