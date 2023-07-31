@@ -128,16 +128,12 @@ let lookup_value_path : (string -> (Lang.Compilation_unit.t * t) option) ->
   | None -> None
   | Some query -> lookup_shape lookup_unit query
 
-
 let anchor_of_uid ((_, uid_to_anchor) : t) (uid :Shape.Uid.t) =
   Shape.Uid.Map.find_opt uid uid_to_anchor
-
-[@@@ocaml.warning "-37"]
 
 type annotations =
   | LocalDefinition of Ident.t
   | LocalValue of Ident.t
-  | Definition of Shape.Uid.t
   | DefJmp of Shape.Uid.t
   | UnresolvedJmp of Odoc_model.Paths.Path.Value.t
 
@@ -465,10 +461,6 @@ let postprocess_poses source_id poses uid_to_id uid_to_loc =
       | LocalValue uniq, loc -> (
         match List.assoc_opt uniq local_def_anchors with
         | Some anchor -> Some (Value anchor, loc)
-        | None -> None)
-      | Definition x, loc -> (
-        match Shape.Uid.Map.find_opt x uid_to_id with
-        | Some id -> Some (Definition id, loc)
         | None -> None)
       | DefJmp x, loc -> (
         match Shape.Uid.Map.find_opt x uid_to_id with
