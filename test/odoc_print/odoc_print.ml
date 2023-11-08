@@ -237,12 +237,6 @@ module Print_short = struct
           (Odoc_model.Names.ClassTypeName.to_string name)
     | `OpaqueModule m -> resolved_path ppf (m :> rpath)
     | `OpaqueModuleType m -> resolved_path ppf (m :> rpath)
-    | `CanonicalDataType (_t1, t2) -> path ppf (t2 :> path)
-    | `Constructor (_parent, name) ->
-        Format.fprintf ppf "%s"
-          (Odoc_model.Names.ConstructorName.to_string name)
-    | `Value (_parent, name) ->
-        Format.fprintf ppf "%s" (Odoc_model.Names.ValueName.to_string name)
 
   and fragment ppf (f : frag) =
     match f with
@@ -345,7 +339,7 @@ module Print_short = struct
     | With (subs, e) ->
         Format.fprintf ppf "%a with [%a]" u_module_type_expr e substitution_list
           subs
-    | TypeOf { t_desc; _ } -> module_type_type_of_desc ppf t_desc
+    | TypeOf (t_desc, _t_original_path) -> module_type_type_of_desc ppf t_desc
 
   and module_type_type_of_desc ppf t =
     match t with
