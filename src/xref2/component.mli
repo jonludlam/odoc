@@ -186,6 +186,7 @@ and ModuleType : sig
 
   type typeof_t = {
     t_desc : type_of_desc;
+    t_original_path : Odoc_model.Paths.Path.Module.t;
     t_expansion : simple_expansion option;
   }
 
@@ -194,7 +195,7 @@ and ModuleType : sig
       | Path of Cpath.module_type
       | Signature of Signature.t
       | With of substitution list * expr
-      | TypeOf of typeof_t
+      | TypeOf of type_of_desc * Odoc_model.Paths.Path.Module.t
   end
 
   type path_t = {
