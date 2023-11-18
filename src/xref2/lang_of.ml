@@ -794,9 +794,9 @@ and u_module_type_expr map identifier = function
         ( List.map (mty_substitution map identifier) subs,
           u_module_type_expr map identifier expr )
   | TypeOf (ModPath p, original_path) ->
-      TypeOf (ModPath (Path.module_ map p), original_path)
+      TypeOf (ModPath (Path.module_ map p), Path.module_ map original_path)
   | TypeOf (StructInclude p, original_path) ->
-      TypeOf (StructInclude (Path.module_ map p), original_path)
+      TypeOf (StructInclude (Path.module_ map p), Path.module_ map original_path)
 
 and module_type_expr map identifier = function
   | Component.ModuleType.Path { p_path; p_expansion } ->
@@ -836,14 +836,14 @@ and module_type_expr map identifier = function
       TypeOf
         {
           t_desc = ModPath (Path.module_ map p);
-          t_original_path;
+          t_original_path = Path.module_ map t_original_path;
           t_expansion = Opt.map (simple_expansion map identifier) t_expansion;
         }
   | TypeOf { t_desc = StructInclude p; t_original_path; t_expansion } ->
       TypeOf
         {
           t_desc = StructInclude (Path.module_ map p);
-          t_original_path;
+          t_original_path = Path.module_ map t_original_path;
           t_expansion = Opt.map (simple_expansion map identifier) t_expansion;
         }
 

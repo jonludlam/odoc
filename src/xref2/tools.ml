@@ -113,7 +113,7 @@ let core_types =
     Odoc_model.Predefined.core_types
 
 let prefix_substitution path sg =
-  let open Component.Signature in
+  let open Component.Signature in 
   let rec get_sub sub' is =
     match is with
     | [] -> sub'
@@ -1926,24 +1926,25 @@ and unresolve_subs subs =
     subs
 
 and signature_of_module_type_of :
-  mark_substituted:bool ->
   Env.t ->
   Component.ModuleType.type_of_desc ->
-  original_path:Odoc_model.Paths.Path.Module.t ->
+  original_path:Cpath.module_ ->
   (expansion, expansion_of_module_error) Result.result =
- fun ~mark_substituted env desc ~original_path ->
+ fun env desc ~original_path ->
   let p, strengthen =
     match desc with ModPath p -> (p, false) | StructInclude p -> (p, true)
   in
+  match Cpath.original_path_cpath original_path with
+  | None -> Error (`UnresolvedOriginalPath (original_path, `Find_failure))
+  | Some cp ->
   expansion_of_module_path env ~strengthen p >>= fun exp ->
-  match resolve_module env ~mark_substituted ~add_canonical:false
-          (Component.Of_Lang.(module_path (empty ()) original_path))
-  with
-  | Ok orig_exp ->
-    ignore orig_exp;
-    Ok exp
-  | Error lookup_error -> Error (`UnresolvedOriginalPath (original_path, lookup_error))
-
+  match expansion_of_module_path env ~strengthen:false cp with
+  | Ok _orig_exp -> ignore(ascribe); Ok (exp)
+  
+    (* Ok (ascribe env ~expansion:exp ~original_expansion:orig_exp) *)
+  | Error lookup_error ->
+    Format.eprintf "Here we are!\n%!";
+    Error lookup_error
   (*
   match original_path with
   | `Resolved p ->
@@ -1975,7 +1976,7 @@ and signature_of_u_module_type_expr :
       let subs = unresolve_subs subs in
       handle_signature_with_subs ~mark_substituted env sg subs
   | TypeOf (desc, original_path) ->
-      signature_of_module_type_of ~mark_substituted env desc ~original_path >>= assert_not_functor
+      signature_of_module_type_of env desc ~original_path >>= assert_not_functor
 
 (* and expansion_of_simple_expansion :
      Component.ModuleType.simple_expansion -> expansion =
@@ -2062,6 +2063,32 @@ and expansion_of_module_cached :
   let run env _id = expansion_of_module env m in
   ExpansionOfModuleMemo.memoize run env' id
 
+and ascribe _env ~expansion ~original_expansion =
+  match expansion, original_expansion with
+  | Functor _, _ -> expansion
+  | Signature sg, Signature sg' ->
+    let items = List.fold_right (fun item acc ->
+      match item with
+      | Component.Signature.Module (id, _r, _m) ->
+        if Find.module_in_sig sg' (Ident.Name.module_ id) = None
+        then acc
+        else item :: acc
+      | Component.Signature.ModuleType (id, _m) ->
+        if Find.module_type_in_sig sg' (Ident.Name.module_type id) = None
+        then acc
+        else item :: acc
+      | Component.Signature.Type (id, _r, _t) ->
+        if Find.type_in_sig sg' (Ident.Name.type_ id) = None
+        then acc
+        else item :: acc
+      | Component.Signature.Value (id, _v) ->
+        if Find.value_in_sig sg' (Ident.Name.value id) = []
+        then acc
+        else item :: acc
+      | _ -> item :: acc) sg.items [] in
+    Signature {sg with items}
+  | _ -> expansion
+
 and umty_of_mty : Component.ModuleType.expr -> Component.ModuleType.U.expr =
   function
   | Signature sg -> Signature sg
@@ -2086,7 +2113,7 @@ and fragmap :
     | Alias (path, _) ->
         expansion_of_module_path env ~strengthen:true path
         >>= assert_not_functor
-        >>= fun sg ->
+        >>= fun _sg ->
         Ok
           (ModuleType
              (With
@@ -2094,7 +2121,7 @@ and fragmap :
                   w_substitutions = [ subst ];
                   w_expansion = None;
                   w_expr =
-                    Signature sg;
+                  TypeOf (StructInclude path, Cpath.unresolve_module_path path);
                 }))
     | ModuleType mty' ->
         Ok

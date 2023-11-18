@@ -140,6 +140,7 @@ and moduletype_typeof_t =
   Record
     [
       F ("t_desc", (fun t -> t.t_desc), moduletype_type_of_desc);
+      F ("t_original_path", (fun t -> (t.t_original_path :> Odoc_model.Paths.Path.t)), path);
       F ("t_expansion", (fun t -> t.t_expansion), Option simple_expansion);
     ]
 
