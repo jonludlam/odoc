@@ -239,9 +239,10 @@ let rec block ~config ~resolve (l : Block.t) : flow Html.elt list =
         mk_block Html.ul (List.map item l)
     | Raw_markup r -> raw_markup r
     | Verbatim s -> mk_block Html.pre [ Html.txt s ]
-    | Source (lang_tag, c) ->
-        let extra_class = [ "language-" ^ lang_tag ] in
-        mk_block ~extra_class Html.pre (source (inline ~config ~resolve) c)
+    | Source (lang_tag, othertags, c) ->
+        let extra_class = [ "language-" ^ lang_tag ] @ othertags in
+
+        mk_block Html.div (mk_block ~extra_class Html.pre (source (inline ~config ~resolve) c))
     | Math s -> mk_block Html.div [ block_math s ]
   in
   Utils.list_concat_map l ~f:one
@@ -363,8 +364,15 @@ and items ~config ~resolve l : item Html.elt list =
         in
         let content = flow_to_item @@ block ~config ~resolve text in
         (continue_with [@tailcall]) rest content
-    | Heading h :: rest ->
-        (continue_with [@tailcall]) rest [ heading ~config ~resolve h ]
+    | Heading h :: foo ->
+        let x, _, othersections =
+          Doctree.Take.until foo ~classify:(function
+            | Item.Heading h' when h'.level<=h.level -> Stop_and_keep
+            | x -> Accum [x])
+        in
+        let result = (heading ~config ~resolve h) :: (items x) in
+        let a = match h.label with | Some id -> [Html.a_id ("section-" ^ id)] | None -> [] in
+        (continue_with [@tailcall]) othersections [Html.section ~a (result :> Html_types.section_content Html.elt list)]
     | Include
         {
           attr;

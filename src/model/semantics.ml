@@ -231,17 +231,22 @@ let rec nestable_block_element :
       Location.at location (`Paragraph (inline_elements status content))
   | { value = `Code_block { meta; delimiter = _; content; output }; location }
     ->
-      let lang_tag =
+      let lang_tag, other_tags =
         match meta with
-        | Some { language = { Location.value; _ }; _ } -> Some value
-        | None -> None
+        | Some { language = { Location.value; _ }; tags } -> (Some value, tags)
+        | None -> (None, None)
       in
       let outputs =
         match output with
         | None -> None
         | Some l -> Some (List.map (nestable_block_element status) l)
       in
-      Location.at location (`Code_block (lang_tag, content, outputs))
+      let tags = match other_tags with
+        | None -> []
+        | Some { Location.value; _ } -> Astring.String.cuts ~sep:" " value
+      in
+      Format.eprintf "other_tags: [%s]\n%!" (String.concat "," tags);
+      Location.at location (`Code_block (lang_tag, content, tags, outputs))
   | { value = `Math_block s; location } -> Location.at location (`Math_block s)
   | { value = `Verbatim _; _ } as element -> element
   | { value = `Modules modules; location } ->

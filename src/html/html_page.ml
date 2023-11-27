@@ -158,6 +158,8 @@ let search_urls = %s;
           ();
         Html.script ~a:[ Html.a_src highlight_js_uri ] (Html.txt "");
         Html.script (Html.txt "hljs.initHighlightingOnLoad();");
+        Html.script ~a:[ Html.a_src "src/main.ts"; Html.a_script_type `Module ]
+          (Html.txt "");
       ]
     in
     let meta_elements =

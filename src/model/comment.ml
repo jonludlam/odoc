@@ -57,6 +57,7 @@ type nestable_block_element =
   | `Code_block of
     string option
     * string with_location
+    * string list
     * nestable_block_element with_location list option
   | `Math_block of string
   | `Verbatim of string

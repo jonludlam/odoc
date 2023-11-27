@@ -135,7 +135,7 @@ and entries_of_doc id d =
       list_concat_map (entries_of_docs id) (ds :> Odoc_model.Comment.docs list)
   | `Heading (_, lbl, _) -> [ entry ~id:lbl ~doc:[ d ] ~kind:(Doc Heading) ]
   | `Modules _ -> []
-  | `Code_block (_, _, o) ->
+  | `Code_block (_, _, _, o) ->
       let o =
         match o with
         | None -> []

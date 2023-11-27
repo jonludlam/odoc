@@ -200,7 +200,7 @@ let rec nestable_block_element :
  fun content ->
   match content with
   | `Paragraph p -> [ paragraph p ]
-  | `Code_block (lang_tag, code, outputs) ->
+  | `Code_block (lang_tag, code, tags, outputs) ->
       let lang_tag =
         match lang_tag with None -> default_lang_tag | Some t -> t
       in
@@ -211,7 +211,7 @@ let rec nestable_block_element :
       in
       [
         block
-        @@ Source (lang_tag, source_of_code (Odoc_model.Location_.value code));
+        @@ Source (lang_tag, tags, source_of_code (Odoc_model.Location_.value code));
       ]
       @ rest
   | `Math_block s -> [ block @@ Math s ]

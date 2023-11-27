@@ -85,7 +85,7 @@ and Block : sig
     | Paragraph of Inline.t
     | List of list_type * t list
     | Description of Description.t
-    | Source of lang_tag * Source.t
+    | Source of lang_tag * string list * Source.t
     | Math of Math.t
     | Verbatim of string
     | Raw_markup of Raw_markup.t
