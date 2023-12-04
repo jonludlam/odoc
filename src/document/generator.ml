@@ -1717,7 +1717,10 @@ module Make (Syntax : SYNTAX) = struct
       in
       let status = if decl_hidden then `Inline else t.status in
 
-      let _, content = signature t.expansion.content in
+      let content =
+        match t.expansion.content with
+        | Some sg -> snd (signature sg)
+        | None -> [] in
       let summary =
         if decl_hidden then O.render (O.keyword "include" ++ O.txt " ...")
         else

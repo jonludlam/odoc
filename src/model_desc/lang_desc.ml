@@ -278,7 +278,7 @@ and include_expansion =
   Record
     [
       F ("shadowed", (fun t -> t.shadowed), include_shadowed);
-      F ("content", (fun t -> t.content), signature_t);
+      F ("content", (fun t -> t.content), Option signature_t);
     ]
 
 and include_t =

@@ -179,7 +179,8 @@ let prefix_substitution path sg =
              (`ClassType (path, name))
              sub')
           rest
-    | Include i :: rest -> get_sub (get_sub sub' i.expansion_.items) rest
+    | Include { expansion_ = Some e; _ } :: rest -> get_sub (get_sub sub' e.items) rest
+    | Include _ :: rest -> get_sub sub' rest
     | Open o :: rest -> get_sub (get_sub sub' o.expansion.items) rest
   in
   let extend_sub_removed removed sub =
@@ -1942,9 +1943,10 @@ and signature_of_module_type_of :
   | Ok _orig_exp -> ignore(ascribe); Ok (exp)
   
     (* Ok (ascribe env ~expansion:exp ~original_expansion:orig_exp) *)
-  | Error lookup_error ->
-    Format.eprintf "Here we are!\n%!";
-    Error lookup_error
+  | Error _lookup_error ->
+    (* Format.eprintf "Here we are!\n%!"; *)
+    Ok (exp)
+    (* Error lookup_error *)
   (*
   match original_path with
   | `Resolved p ->
@@ -2187,16 +2189,16 @@ and fragmap :
                     true,
                     subbed_modules,
                     Component.Signature.RModule (id, y) :: removed ))
-        | Component.Signature.Include ({ expansion_; _ } as i), _ ->
-            map_signature map expansion_.items
+        | Component.Signature.Include ({ expansion_=Some e; _ } as i), _ ->
+            map_signature map e.items
             >>= fun (items', handled', subbed_modules', removed') ->
             let component =
               if handled' then
                 map_include_decl i.decl sub >>= fun decl ->
-                let expansion_ =
+                let e =
                   Component.Signature.
                     {
-                      expansion_ with
+                      e with
                       items = items';
                       removed = removed';
                       compiled = false;
@@ -2204,7 +2206,7 @@ and fragmap :
                 in
                 Ok
                   (Component.Signature.Include
-                     { i with decl; expansion_; strengthened = None })
+                     { i with decl; expansion_=Some e; strengthened = None })
               else Ok item
             in
             component >>= fun c ->
