@@ -534,13 +534,12 @@ module Path = struct
     let open Paths_types.Resolved_path in
     let rec inner : Paths_types.Resolved_path.any -> bool = function
       | `Identifier { iv = `ModuleType (_, m); _ }
-        when Names.ModuleTypeName.is_internal m ->
+        when Names.ModuleTypeName.is_hidden m ->
           true
-      | `Identifier { iv = `Type (_, t); _ } when Names.TypeName.is_internal t
+      | `Identifier { iv = `Type (_, t); _ } when Names.TypeName.is_hidden t ->
+          true
+      | `Identifier { iv = `Module (_, m); _ } when Names.ModuleName.is_hidden m
         ->
-          true
-      | `Identifier { iv = `Module (_, m); _ }
-        when Names.ModuleName.is_internal m ->
           true
       | `Identifier _ -> false
       | `Canonical (_, `Resolved _) -> false
@@ -551,9 +550,9 @@ module Path = struct
           inner (p1 : module_type :> any) || inner (p2 : module_ :> any)
       | `Module (p, _) -> inner (p : module_ :> any)
       | `Apply (p, _) -> inner (p : module_ :> any)
-      | `ModuleType (_, m) when Names.ModuleTypeName.is_internal m -> true
+      | `ModuleType (_, m) when Names.ModuleTypeName.is_hidden m -> true
       | `ModuleType (p, _) -> inner (p : module_ :> any)
-      | `Type (_, t) when Names.TypeName.is_internal t -> true
+      | `Type (_, t) when Names.TypeName.is_hidden t -> true
       | `Type (p, _) -> inner (p : module_ :> any)
       | `Class (p, _) -> inner (p : module_ :> any)
       | `ClassType (p, _) -> inner (p : module_ :> any)
