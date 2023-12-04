@@ -542,9 +542,14 @@ module Print_short = struct
     | Alias p -> Format.fprintf ppf "= %a" path (p :> path)
     | ModuleType mt -> Format.fprintf ppf ": %a" u_module_type_expr mt
 
+  and content_option ppf =
+    function
+    | None -> ()
+    | Some content -> Format.fprintf ppf " (sig=%a)" signature content
+
   and include_ ppf i =
     let open Include in
-    Format.fprintf ppf "%a (sig = %a)" include_decl i.decl signature
+    Format.fprintf ppf "%a (sig = %a)" include_decl i.decl content_option
       i.expansion.content
 
   and signature ppf sg =
