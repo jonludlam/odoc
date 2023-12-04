@@ -18,7 +18,7 @@ let rec shape_of_id env :
     | None -> None
   in
   fun id ->
-    if Identifier.is_internal id then None else 
+    if Identifier.is_hidden id then None else 
     match id.iv with
     | `Root (_, name) -> begin
         match Env.lookup_unit (ModuleName.to_string_unsafe name) env with
