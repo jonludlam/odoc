@@ -604,6 +604,12 @@ module Print_short = struct
         | Open o -> Format.fprintf ppf "open [ %a ]" signature o.expansion
         | Comment _c -> ())
       sg.items
+    
+    and compilation_unit ppf u =
+      match u.Compilation_unit.content with
+      | Module m ->
+          signature ppf m
+      | Pack _ -> ()
 end
 
 let print_short elt =
@@ -629,7 +635,9 @@ let run inp short ref =
   | Unit_content u -> (
       match ref with
       | None ->
-          print_json_desc Lang_desc.compilation_unit_t u;
+          if short
+          then Format.printf "%a\n%!" Print_short.compilation_unit u
+          else print_json_desc Lang_desc.compilation_unit_t u;
           Ok ()
       | Some r -> (
           let r = Odoc_model.Semantics.parse_reference r in
