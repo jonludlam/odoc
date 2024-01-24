@@ -28,10 +28,7 @@ let synopsis_of_module env (m : Component.Module.t) =
   | None -> (
       let rec handle_expansion : Tools.expansion -> _ = function
         | Functor (_, expr) -> (
-            match
-              Tools.expansion_of_module_type_expr env
-                expr
-            with
+            match Tools.expansion_of_module_type_expr env expr with
             | Ok e -> handle_expansion e
             | Error _ as e -> e)
         | Signature sg -> Ok sg
@@ -127,7 +124,6 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `SubstitutedMT m -> should_reresolve (m :> t)
   | `SubstitutedT m -> should_reresolve (m :> t)
   | `SubstitutedCT m -> should_reresolve (m :> t)
-
 
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true
@@ -606,21 +602,22 @@ and module_ : Env.t -> Module.t -> Module.t =
     Component.debug := true;
     Format.eprintf "Debug on!\n%!"
   in
-  let debug_off () =
-    Component.debug := false;
-  in
+  let debug_off () = Component.debug := false in
 
-  let str = Format.asprintf "%a" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t) in
+  let str =
+    Format.asprintf "%a" Component.Fmt.model_identifier
+      (m.id :> Odoc_model.Paths.Identifier.t)
+  in
   (* if str = "(root Core).Time_float" then
-    Format.eprintf "Here we are!";
-  if str = "(root Core).Time_float.{Ofday}2" then
-    debug_on ();
-  if str = "(root Core).Time_float.{Ofday}2.Map" then
-    Format.eprintf "Here we are!";
-  if str = "(root Core).Time_float.Ofday.Map.Key" then
-    Format.eprintf "Here we are!";
-  if !Component.debug then
-    Format.eprintf "Handling module %a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t); *)
+       Format.eprintf "Here we are!";
+     if str = "(root Core).Time_float.{Ofday}2" then
+       debug_on ();
+     if str = "(root Core).Time_float.{Ofday}2.Map" then
+       Format.eprintf "Here we are!";
+     if str = "(root Core).Time_float.Ofday.Map.Key" then
+       Format.eprintf "Here we are!";
+     if !Component.debug then
+       Format.eprintf "Handling module %a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t); *)
   if m.hidden then m
   else
     let type_ = module_decl env sg_id m.type_ in
@@ -636,13 +633,17 @@ and module_ : Env.t -> Module.t -> Module.t =
             with
             | Ok (_, e) ->
                 if !Component.debug then
-                  Format.eprintf "%a original path: %a expansion=\n%!%a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t)
+                  Format.eprintf "%a original path: %a expansion=\n%!%a\n%!"
+                    Component.Fmt.model_identifier
+                    (m.id :> Odoc_model.Paths.Identifier.t)
                     Component.Fmt.resolved_module_path cp
-                  Component.Fmt.simple_expansion e;
+                    Component.Fmt.simple_expansion e;
                 let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
-                if (!Component.debug) then
-                  Format.eprintf "Success with module %a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t);
-                
+                if !Component.debug then
+                  Format.eprintf "Success with module %a\n%!"
+                    Component.Fmt.model_identifier
+                    (m.id :> Odoc_model.Paths.Identifier.t);
+
                 Alias (`Resolved p, Some (simple_expansion env sg_id le))
             | Error _e ->
                 (* Format.eprintf "Error with module %a\n%!" Errors.Tools_error.pp (e :> Errors.Tools_error.any); *)
@@ -652,9 +653,8 @@ and module_ : Env.t -> Module.t -> Module.t =
     in
     let locs = locations env m.id m.locs in
     let doc = comment_docs env sg_id m.doc in
-    if str = "(root Core).Time_float.{Ofday}2" then
-      debug_off ();
-  
+    if str = "(root Core).Time_float.{Ofday}2" then debug_off ();
+
     { m with locs; doc; type_ }
 
 and module_decl : Env.t -> Id.Signature.t -> Module.decl -> Module.decl =
@@ -863,9 +863,7 @@ and u_module_type_expr :
   | Path p -> Path (module_type_path env p)
   | With (subs, expr) as unresolved -> (
       let cexpr = Component.Of_Lang.(u_module_type_expr (empty ()) expr) in
-      match
-        Tools.signature_of_u_module_type_expr env cexpr
-      with
+      match Tools.signature_of_u_module_type_expr env cexpr with
       | Ok sg ->
           With (handle_fragments env id sg subs, u_module_type_expr env id expr)
       | Error e ->
@@ -909,9 +907,7 @@ and module_type_expr :
       Path { p_path; p_expansion = do_expn p_expansion (Some p_path) }
   | With { w_substitutions; w_expansion; w_expr } as unresolved -> (
       let cexpr = Component.Of_Lang.(u_module_type_expr (empty ()) w_expr) in
-      match
-        Tools.signature_of_u_module_type_expr env cexpr
-      with
+      match Tools.signature_of_u_module_type_expr env cexpr with
       | Ok sg ->
           With
             {

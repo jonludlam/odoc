@@ -409,8 +409,7 @@ and include_ : Env.t -> Include.t -> Include.t * Env.t =
       | Alias p ->
           Tools.expansion_of_module_path env ~strengthen:true p >>= fun exp ->
           Tools.assert_not_functor exp
-      | ModuleType mty ->
-          Tools.signature_of_u_module_type_expr env mty
+      | ModuleType mty -> Tools.signature_of_u_module_type_expr env mty
     with
     | Error e ->
         Errors.report ~what:(`Include decl) ~tools_error:e `Expand;
@@ -498,8 +497,7 @@ and module_type_expr_sub id ~fragment_root (sg_res, env, subs) lsub =
             let resolved_csub =
               Component.ModuleType.ModuleEq (cfrag', cdecl')
             in
-            Tools.fragmap env resolved_csub sg
-            >>= fun sg' ->
+            Tools.fragmap env resolved_csub sg >>= fun sg' ->
             Ok (sg', Odoc_model.Lang.ModuleType.ModuleEq (frag', decl'))
         | TypeEq (frag, eqn) ->
             let cfrag = Component.Of_Lang.(type_fragment (empty ()) frag) in
@@ -518,9 +516,7 @@ and module_type_expr_sub id ~fragment_root (sg_res, env, subs) lsub =
             in
             let eqn' = type_decl_equation env (id :> Id.LabelParent.t) eqn in
             let ceqn' = Component.Of_Lang.(type_equation (empty ()) eqn') in
-            Tools.fragmap env
-              (Component.ModuleType.TypeEq (cfrag', ceqn'))
-              sg
+            Tools.fragmap env (Component.ModuleType.TypeEq (cfrag', ceqn')) sg
             >>= fun sg' ->
             Ok (sg', Odoc_model.Lang.ModuleType.TypeEq (frag', eqn'))
         | ModuleSubst (frag, mpath) ->
@@ -588,8 +584,7 @@ and module_type_expr_sub id ~fragment_root (sg_res, env, subs) lsub =
             let resolved_csub =
               Component.ModuleType.ModuleTypeEq (cfrag', mty')
             in
-            Tools.fragmap env resolved_csub sg
-            >>= fun sg' ->
+            Tools.fragmap env resolved_csub sg >>= fun sg' ->
             Ok (sg', Odoc_model.Lang.ModuleType.ModuleTypeEq (frag', mty))
         | Odoc_model.Lang.ModuleType.ModuleTypeSubst (frag, mty) ->
             let cfrag =
@@ -613,8 +608,7 @@ and module_type_expr_sub id ~fragment_root (sg_res, env, subs) lsub =
             let resolved_csub =
               Component.ModuleType.ModuleTypeSubst (cfrag', mty')
             in
-            Tools.fragmap env resolved_csub sg
-            >>= fun sg' ->
+            Tools.fragmap env resolved_csub sg >>= fun sg' ->
             Ok (sg', Odoc_model.Lang.ModuleType.ModuleTypeSubst (frag', mty))
       in
 
@@ -638,9 +632,7 @@ and module_type_map_subs env id cexpr subs =
   match find_parent cexpr with
   | None -> None
   | Some parent -> (
-      match
-        Tools.signature_of_u_module_type_expr env cexpr
-      with
+      match Tools.signature_of_u_module_type_expr env cexpr with
       | Error e ->
           Errors.report ~what:(`Module_type id) ~tools_error:e `Lookup;
           None
@@ -722,17 +714,17 @@ and module_type_expr :
         | Signature _ -> true
         | _ -> false
       in
-      begin
-        match all_withs w_expr, w_expansion with
-        | true, Some (Signature e) -> Signature e
-        | _ ->
+      match (all_withs w_expr, w_expansion) with
+      | true, Some (Signature e) -> Signature e
+      | _ -> (
           let w_expr = u_module_type_expr env id w_expr in
-          let cexpr = Component.Of_Lang.(u_module_type_expr (empty ()) w_expr) in
+          let cexpr =
+            Component.Of_Lang.(u_module_type_expr (empty ()) w_expr)
+          in
           let subs' = module_type_map_subs env id cexpr w_substitutions in
           match subs' with
           | None -> With { w_substitutions; w_expansion; w_expr }
-          | Some s -> With { w_substitutions = s; w_expansion; w_expr }
-      end)
+          | Some s -> With { w_substitutions = s; w_expansion; w_expr }))
   | Functor (param, res) ->
       let param' = functor_parameter env param in
       let env' = Env.add_functor_parameter param env in
@@ -831,9 +823,7 @@ and type_expression_object env parent o =
 and type_expression_package env parent p =
   let open TypeExpr.Package in
   let cp = Component.Of_Lang.(module_type_path (empty ()) p.path) in
-  match
-    Tools.resolve_module_type ~add_canonical:true env cp
-  with
+  match Tools.resolve_module_type ~add_canonical:true env cp with
   | Ok (path, mt) -> (
       match p.substitutions with
       | [] ->

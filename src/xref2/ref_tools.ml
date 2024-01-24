@@ -146,9 +146,7 @@ let find find sg name =
 let module_lookup_to_signature_lookup env (ref, cp, m) =
   let rec handle_expansion : Tools.expansion -> _ = function
     | Functor (_, expr) -> (
-        match
-          Tools.expansion_of_module_type_expr env expr
-        with
+        match Tools.expansion_of_module_type_expr env expr with
         | Ok e -> handle_expansion e
         | Error _ as e -> e)
     | Signature sg -> Ok ((ref :> Resolved.Signature.t), `Module cp, sg)

@@ -403,10 +403,7 @@ let rec handle_apply env func_path arg_path m =
     | Component.ModuleType.Functor (Named arg, expr) ->
         Ok (arg.Component.FunctorParameter.id, expr)
     | Component.ModuleType.Path { p_path; _ } -> (
-        match
-          resolve_module_type ~add_canonical:true env
-            p_path
-        with
+        match resolve_module_type ~add_canonical:true env p_path with
         | Ok (_, { Component.ModuleType.expr = Some mty'; _ }) ->
             find_functor mty'
         | _ -> Error `OpaqueModule)
@@ -415,9 +412,7 @@ let rec handle_apply env func_path arg_path m =
   module_type_expr_of_module env m >>= fun mty' ->
   find_functor mty' >>= fun (arg_id, result) ->
   let new_module = { m with Component.Module.type_ = ModuleType result } in
-  let substitution =
-    `Substituted arg_path
-  in
+  let substitution = `Substituted arg_path in
 
   let path = `Apply (func_path, arg_path) in
   let subst =
@@ -456,10 +451,7 @@ and get_substituted_module_type :
   match expr with
   | Component.ModuleType.Path { p_path; _ } ->
       if Cpath.is_module_type_substituted p_path then
-        match
-          resolve_module_type ~add_canonical:true env
-            p_path
-        with
+        match resolve_module_type ~add_canonical:true env p_path with
         | Ok (resolved_path, _) -> Some resolved_path
         | Error _ -> None
       else None
@@ -474,10 +466,7 @@ and get_module_type_path_modifiers :
   let alias_of expr =
     match expr with
     | Component.ModuleType.Path alias_path -> (
-        match
-          resolve_module_type ~add_canonical env
-            alias_path.p_path
-        with
+        match resolve_module_type ~add_canonical env alias_path.p_path with
         | Ok (resolved_alias_path, _) -> Some resolved_alias_path
         | Error _ -> None)
     (* | Functor (_arg, res) -> alias_of res *)
@@ -511,9 +500,7 @@ and get_module_path_modifiers :
  fun env ~add_canonical m ->
   match m.type_ with
   | Alias (alias_path, _) -> (
-      match
-        resolve_module ~add_canonical env alias_path
-      with
+      match resolve_module ~add_canonical env alias_path with
       | Ok (resolved_alias_path, _) -> Some (`Aliased resolved_alias_path)
       | Error _ -> None)
   | ModuleType t -> (
@@ -549,8 +536,7 @@ and handle_module_lookup env ~add_canonical id rparent sg sub =
       let m' = Subst.module_ sub m in
       let md' = Component.Delayed.put_val m' in
       Ok (process_module_path env ~add_canonical m' rp', md')
-  | Some (`FModule_removed p) ->
-      resolve_module ~add_canonical:true env p
+  | Some (`FModule_removed p) -> resolve_module ~add_canonical:true env p
   | None -> Error `Find_failure
 
 and handle_module_type_lookup env ~add_canonical id p sg sub =
@@ -593,11 +579,10 @@ and lookup_module_gpath :
       of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
       >>= fun (`Module (_, m)) -> Ok m
   | `Apply (functor_path, argument_path) ->
-      lookup_module_gpath env functor_path
-      >>= fun functor_module ->
+      lookup_module_gpath env functor_path >>= fun functor_module ->
       let functor_module = Component.Delayed.get functor_module in
-      handle_apply env (`Gpath functor_path)
-        (`Gpath argument_path) functor_module
+      handle_apply env (`Gpath functor_path) (`Gpath argument_path)
+        functor_module
       |> map_error (fun e -> `Parent (`Parent_expr e))
       >>= fun (_, m) -> Ok (Component.Delayed.put_val m)
   | `Module (parent, name) ->
@@ -607,7 +592,7 @@ and lookup_module_gpath :
         | Some (`FModule (_, m)) ->
             Ok (Component.Delayed.put_val (Subst.module_ sub m))
         | Some (`FModule_removed p) ->
-          resolve_module ~add_canonical:true env p >>= fun (_, m) -> Ok m
+            resolve_module ~add_canonical:true env p >>= fun (_, m) -> Ok m
       in
       lookup_parent_gpath env parent
       |> map_error (fun e -> (e :> simple_module_lookup_error))
@@ -632,11 +617,9 @@ and lookup_module :
     | `Gpath p -> lookup_module_gpath env p
     | `Substituted x -> lookup_module env x
     | `Apply (functor_path, argument_path) ->
-        lookup_module env functor_path
-        >>= fun functor_module ->
+        lookup_module env functor_path >>= fun functor_module ->
         let functor_module = Component.Delayed.get functor_module in
-        handle_apply env functor_path argument_path
-          functor_module
+        handle_apply env functor_path argument_path functor_module
         |> map_error (fun e -> `Parent (`Parent_expr e))
         >>= fun (_, m) -> Ok (Component.Delayed.put_val m)
     | `Module (parent, name) ->
@@ -645,7 +628,8 @@ and lookup_module :
           | None -> Error `Find_failure
           | Some (`FModule (_, m)) ->
               Ok (Component.Delayed.put_val (Subst.module_ sub m))
-          | Some (`FModule_removed p) -> resolve_module ~add_canonical:true env p >>= fun (_, m) -> Ok m
+          | Some (`FModule_removed p) ->
+              resolve_module ~add_canonical:true env p >>= fun (_, m) -> Ok m
         in
         lookup_parent env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
@@ -659,7 +643,7 @@ and lookup_module :
     | `Canonical (p, _) -> lookup_module env p
     | `OpaqueModule m -> lookup_module env m
   in
-  LookupModuleMemo.memoize lookup env' (path')
+  LookupModuleMemo.memoize lookup env' path'
 
 and lookup_module_type_gpath :
     Env.t ->
@@ -682,8 +666,7 @@ and lookup_module_type_gpath :
       lookup_parent_gpath env parent
       |> map_error (fun e -> (e :> simple_module_type_lookup_error))
       >>= fun (sg, sub) -> find_in_sg sg sub
-  | `AliasModuleType (_, mt) ->
-      lookup_module_type_gpath env mt
+  | `AliasModuleType (_, mt) -> lookup_module_type_gpath env mt
   | `OpaqueModuleType m -> lookup_module_type_gpath env m
   | `SubstitutedMT m -> lookup_module_type_gpath env m
 
@@ -719,11 +702,10 @@ and lookup_parent :
       [ `Parent of parent_lookup_error ] )
     Result.result =
  fun env' parent' ->
-  let lookup env (parent) =
+  let lookup env parent =
     match parent with
     | `Module p ->
-        lookup_module env p
-        |> map_error (fun e -> `Parent (`Parent_module e))
+        lookup_module env p |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun m ->
         let m = Component.Delayed.get m in
         expansion_of_module env m
@@ -743,7 +725,7 @@ and lookup_parent :
         |> of_option ~error:(`Parent `Fragment_root)
         >>= fun (_, sg) -> Ok (sg, prefix_substitution parent sg)
   in
-  LookupParentMemo.memoize lookup env' (parent')
+  LookupParentMemo.memoize lookup env' parent'
 
 and lookup_parent_gpath :
     Env.t ->
@@ -804,7 +786,8 @@ and lookup_type_gpath :
     | `Class (p, id) -> do_type p (ClassName.to_string id)
     | `ClassType (p, id) -> do_type p (ClassTypeName.to_string id)
     | `SubstitutedT t -> lookup_type_gpath env t
-    | `SubstitutedCT t -> lookup_type_gpath env (t :> Odoc_model.Paths.Path.Resolved.Type.t)
+    | `SubstitutedCT t ->
+        lookup_type_gpath env (t :> Odoc_model.Paths.Path.Resolved.Type.t)
   in
   res
 
@@ -871,8 +854,7 @@ and lookup_type :
     (Find.careful_type, simple_type_lookup_error) Result.result =
  fun env p ->
   let do_type p name =
-    lookup_parent env p
-    |> map_error (fun e -> (e :> simple_type_lookup_error))
+    lookup_parent env p |> map_error (fun e -> (e :> simple_type_lookup_error))
     >>= fun (sg, sub) ->
     handle_type_lookup env name p sg >>= fun (_, t') ->
     let t =
@@ -917,8 +899,7 @@ and lookup_class_type :
     (Find.careful_class, simple_type_lookup_error) Result.result =
  fun env p ->
   let do_type p name =
-    lookup_parent env p
-    |> map_error (fun e -> (e :> simple_type_lookup_error))
+    lookup_parent env p |> map_error (fun e -> (e :> simple_type_lookup_error))
     >>= fun (sg, sub) ->
     handle_class_type_lookup name p sg >>= fun (_, t') ->
     let t =
@@ -941,10 +922,7 @@ and lookup_class_type :
   res
 
 and resolve_module :
-    add_canonical:bool ->
-    Env.t ->
-    Cpath.module_ ->
-    resolve_module_result =
+    add_canonical:bool -> Env.t -> Cpath.module_ -> resolve_module_result =
  fun ~add_canonical env' path ->
   let id = (add_canonical, path) in
   let resolve env (add_canonical, p) =
@@ -1048,8 +1026,7 @@ and resolve_module_type :
       let p' = process_module_type env ~add_canonical mt p in
       Ok (p', mt)
   | `Local (l, _) -> Error (`LocalMT (env, l))
-  | `Resolved r ->
-      lookup_module_type env r >>= fun m -> Ok (r, m)
+  | `Resolved r -> lookup_module_type env r >>= fun m -> Ok (r, m)
   | `Substituted s ->
       resolve_module_type ~add_canonical env s
       |> map_error (fun e -> `Parent (`Parent_module_type e))
@@ -1245,9 +1222,7 @@ and reresolve_module_gpath :
           ~weak_canonical_test:false dest'
       then
         let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
-        match
-          resolve_module env ~add_canonical:true cp2
-        with
+        match resolve_module env ~add_canonical:true cp2 with
         | Ok (`Alias (_, _, Some p3), _) ->
             let p = reresolve_module env p3 in
             Lang_of.(Path.resolved_module (empty ()) p)
@@ -1314,9 +1289,7 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
         match p3opt with
         | Some p3 -> reresolve_module env p3
         | None -> (
-            match
-              resolve_module env ~add_canonical:true p2
-            with
+            match resolve_module env ~add_canonical:true p2 with
             | Ok (`Alias (_, _, Some p3), _) -> reresolve_module env p3
             | _ -> `Alias (dest', p2, None))
       else `Alias (dest', p2, p3opt)
@@ -1382,8 +1355,8 @@ and handle_canonical_module_real env p2 =
   (* Resolve the path, then 'reresolve', making sure to strip off the
      top-level alias and canonicals to avoid looping forever *)
   let resolve env p =
-    resolve_module env ~add_canonical:false p
-    >>= fun (p, m) -> Ok (reresolve_module env (strip p), m)
+    resolve_module env ~add_canonical:false p >>= fun (p, m) ->
+    Ok (reresolve_module env (strip p), m)
   in
 
   let lang_of cpath =
@@ -1417,9 +1390,7 @@ and handle_canonical_module_real env p2 =
         match m.type_ with
         | Component.Module.Alias (_, Some _) -> true
         | Alias (p, None) -> (
-            match
-              resolve_module ~add_canonical:false env p
-            with
+            match resolve_module ~add_canonical:false env p with
             | Ok (rp, _) ->
                 (* we're an alias - check to see if we're marked as the canonical path.
                    If not, check for an alias chain with us as canonical in it... *)
@@ -1431,14 +1402,9 @@ and handle_canonical_module_real env p2 =
                   | None -> (
                       match m.type_ with
                       | Component.Module.Alias (p, _) -> (
-                          match
-                            resolve_module
-                              ~add_canonical:false env p
-                          with
+                          match resolve_module ~add_canonical:false env p with
                           | Ok (rp, _) -> (
-                              match
-                                lookup_module env rp
-                              with
+                              match lookup_module env rp with
                               | Error _ -> false
                               | Ok m ->
                                   let m = Component.Delayed.get m in
@@ -1471,8 +1437,7 @@ and handle_canonical_module_type env p2 =
     | p -> p
   in
   let resolve env p =
-    resolve_module_type env ~add_canonical:false p
-    >>= fun (p, m) ->
+    resolve_module_type env ~add_canonical:false p >>= fun (p, m) ->
     (* Note, we reresolve here in case any parent module has a canonical
        constructor to deal with - we know there's no canonicalmoduletype as we've
        explicitly asked for it not to be added *)
@@ -1596,15 +1561,12 @@ and module_type_expr_of_module_decl :
  fun env decl ->
   match decl with
   | Component.Module.Alias (`Resolved r, _) ->
-      lookup_module env r
-      |> map_error (fun e -> `Parent (`Parent_module e))
+      lookup_module env r |> map_error (fun e -> `Parent (`Parent_module e))
       >>= fun m ->
       let m = Component.Delayed.get m in
       module_type_expr_of_module_decl env m.type_
   | Component.Module.Alias (path, _) -> (
-      match
-        resolve_module ~add_canonical:true env path
-      with
+      match resolve_module ~add_canonical:true env path with
       | Ok (_, m) ->
           let m = Component.Delayed.get m in
           module_type_expr_of_module env m
@@ -1657,8 +1619,7 @@ and handle_signature_with_subs :
  fun env sg subs ->
   let open ResultMonad in
   List.fold_left
-    (fun sg_opt sub ->
-      sg_opt >>= fun sg -> fragmap env sub sg)
+    (fun sg_opt sub -> sg_opt >>= fun sg -> fragmap env sub sg)
     (Ok sg) subs
 
 and assert_not_functor :
@@ -1717,16 +1678,15 @@ and signature_of_u_module_type_expr :
       signature_of_module_type_of env desc ~original_path >>= assert_not_functor
 
 and expansion_of_simple_expansion :
-     Component.ModuleType.simple_expansion -> expansion =
-     let rec helper :
-     Component.ModuleType.simple_expansion -> Component.ModuleType.expr =
-     function
-     | Signature sg -> Signature sg
-     | Functor (arg, e) -> Functor (arg, helper e)
-       in
-     function
-   | Signature sg -> Signature sg
-   | Functor (arg, e) -> Functor (arg, helper e)
+    Component.ModuleType.simple_expansion -> expansion =
+  let rec helper :
+      Component.ModuleType.simple_expansion -> Component.ModuleType.expr =
+    function
+    | Signature sg -> Signature sg
+    | Functor (arg, e) -> Functor (arg, helper e)
+  in
+  function
+  | Signature sg -> Signature sg | Functor (arg, e) -> Functor (arg, helper e)
 
 and expansion_of_module_type_expr :
     Env.t ->
@@ -1737,9 +1697,7 @@ and expansion_of_module_type_expr :
   | Component.ModuleType.Path { p_expansion = Some e; _ } ->
       Ok (expansion_of_simple_expansion e)
   | Component.ModuleType.Path { p_path; _ } -> (
-      match
-        resolve_module_type ~add_canonical:true env p_path
-      with
+      match resolve_module_type ~add_canonical:true env p_path with
       | Ok (_, mt) -> expansion_of_module_type env mt
       | Error e -> Error (`UnresolvedPath (`ModuleType (p_path, e))))
   | Component.ModuleType.Signature s -> Ok (Signature s)
@@ -1748,8 +1706,7 @@ and expansion_of_module_type_expr :
   | Component.ModuleType.With { w_substitutions; w_expr; _ } ->
       signature_of_u_module_type_expr env w_expr >>= fun sg ->
       let subs = unresolve_subs w_substitutions in
-      handle_signature_with_subs env sg subs >>= fun sg ->
-      Ok (Signature sg)
+      handle_signature_with_subs env sg subs >>= fun sg -> Ok (Signature sg)
   | Component.ModuleType.Functor (arg, expr) -> Ok (Functor (arg, expr))
   | Component.ModuleType.TypeOf { t_expansion = Some (Signature sg); _ } ->
       Ok (Signature sg)
@@ -1779,8 +1736,7 @@ and expansion_of_module_decl :
   (* | Component.Module.Alias (_, Some e) -> Ok (expansion_of_simple_expansion e) *)
   | Component.Module.Alias (p, _) ->
       expansion_of_module_path env ~strengthen:true p
-  | Component.Module.ModuleType expr ->
-      expansion_of_module_type_expr env expr
+  | Component.Module.ModuleType expr -> expansion_of_module_type_expr env expr
 
 and expansion_of_module :
     Env.t ->
@@ -1876,8 +1832,7 @@ and fragmap :
     | Alias p ->
         expansion_of_module_path env ~strengthen:true p >>= assert_not_functor
         >>= fun sg ->
-        fragmap env subst sg >>= fun sg ->
-        Ok (ModuleType (Signature sg))
+        fragmap env subst sg >>= fun sg -> Ok (ModuleType (Signature sg))
     | ModuleType mty' -> Ok (ModuleType (With ([ subst ], mty')))
   in
   let map_module m new_subst =
@@ -1886,7 +1841,8 @@ and fragmap :
     Ok (Left { m with type_ })
   in
   let map_removed = function
-    | `RModule (id, p) -> Component.Signature.RModule (Ident.Name.typed_module id, `Resolved p)
+    | `RModule (id, p) ->
+        Component.Signature.RModule (Ident.Name.typed_module id, `Resolved p)
     | `RType (id, x, y) -> RType (Ident.Name.typed_type id, x, y)
     | `RModuleType (id, x) -> RModuleType (Ident.Name.typed_module_type id, x)
   in
@@ -1925,11 +1881,7 @@ and fragmap :
                     id :: subbed_modules,
                     removed )
             | Right y ->
-                Ok
-                  ( items,
-                    true,
-                    subbed_modules,
-                    `RModule (id, y) :: removed ))
+                Ok (items, true, subbed_modules, `RModule (id, y) :: removed))
         | Component.Signature.Include ({ expansion_ = Some e; _ } as i), _ ->
             map_signature map e.items
             >>= fun (items', handled', subbed_modules', removed') ->
@@ -1969,11 +1921,8 @@ and fragmap :
                     subbed_modules,
                     removed )
             | Right y ->
-                Ok
-                  ( items,
-                    true,
-                    subbed_modules,
-                    `RModuleType (id, y) :: removed ))
+                Ok (items, true, subbed_modules, `RModuleType (id, y) :: removed)
+            )
         | x, _ -> Ok (x :: items, handled, subbed_modules, removed))
       items
       (Ok ([], false, [], []))
@@ -1995,9 +1944,7 @@ and fragmap :
                 let open Component.Module in
                 match type_ with
                 | Alias (`Resolved p, _) ->
-                    let new_p =
-                      `Substituted p
-                    in
+                    let new_p = `Substituted p in
                     Alias (`Resolved new_p, None)
                 | Alias _ | ModuleType _ -> type_
               in
@@ -2011,9 +1958,7 @@ and fragmap :
             handle_intermediate name new_subst
         | name, None ->
             let mapfn _ =
-              match
-                resolve_module ~add_canonical:false env p
-              with
+              match resolve_module ~add_canonical:false env p with
               | Ok (p, _) -> Ok (Right p)
               | Error e -> Error (`UnresolvedPath (`Module (p, e)))
             in
@@ -2075,9 +2020,7 @@ and fragmap :
         Subst.add_module_type_replacement (id :> Ident.module_type) e sub
   in
 
-
   let sub = List.fold_right sub_of_removed removed Subst.identity in
-
 
   (* Invalidate resolved paths containing substituted idents - See the `With11`
      test for an example of why this is necessary *)
@@ -2397,8 +2340,7 @@ and class_signature_of_class_type :
  fun env c -> class_signature_of_class_type_expr env c.expr
 
 let resolve_module_path env p =
-  resolve_module ~add_canonical:true env p
-  >>= fun (p, m) ->
+  resolve_module ~add_canonical:true env p >>= fun (p, m) ->
   match p with
   | `Gpath (`Identifier { iv = `Root _; _ })
   | `Hidden (`Gpath (`Identifier { iv = `Root _; _ })) ->
@@ -2415,8 +2357,7 @@ let resolve_module_path env p =
       | Error (`UnexpandedTypeOf _) -> Ok p)
 
 let resolve_module_type_path env p =
-  resolve_module_type ~add_canonical:true env p
-  >>= fun (p, mt) ->
+  resolve_module_type ~add_canonical:true env p >>= fun (p, mt) ->
   match expansion_of_module_type env mt with
   | Ok _ -> Ok p
   | Error `OpaqueModule -> Ok (`OpaqueModuleType p)

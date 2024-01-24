@@ -179,7 +179,7 @@ and Signature : sig
     | RModule of Names.ModuleName.t * Path.Module.t
     | RType of Names.TypeName.t * TypeExpr.t * TypeDecl.Equation.t
     | RModuleType of Names.ModuleTypeName.t * ModuleType.expr
-  
+
   type t = {
     items : item list;
     compiled : bool;

@@ -1021,7 +1021,8 @@ and removed_items s items =
   List.map
     (function
       | RModule (id, p) -> RModule (id, module_path s p)
-      | RType (id, exp, eqn) -> RType (id, type_expr s exp, type_decl_equation s eqn)
+      | RType (id, exp, eqn) ->
+          RType (id, type_expr s exp, type_decl_equation s eqn)
       | RModuleType (id, mty) -> RModuleType (id, module_type_expr s mty))
     items
 

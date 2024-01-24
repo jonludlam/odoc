@@ -1,5 +1,5 @@
-(** Component module *)
 val debug : bool ref
+(** Component module *)
 
 module ModuleMap : Map.S with type key = Ident.module_
 

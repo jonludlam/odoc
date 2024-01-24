@@ -388,7 +388,6 @@ and Resolved_path : sig
     | `OpaqueModuleType of module_type ]
   (** @canonical Odoc_model.Paths.Path.Resolved.ModuleType.t *)
 
-
   type value =
     [ `Identifier of Identifier.path_value | `Value of module_ * ValueName.t ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Value.t *)

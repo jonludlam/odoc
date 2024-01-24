@@ -63,8 +63,8 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `SubstitutedMT m -> render_path (m :> t)
     | `SubstitutedT m -> render_path (m :> t)
     | `SubstitutedCT m -> render_path (m :> t)
-
   in
+
   render_path
 
 module Error = struct

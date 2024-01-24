@@ -470,8 +470,7 @@ and signature :
  fun id map sg ->
   let open Component.Signature in
   let map = ExtractIDs.signature_items id map sg.items in
-  let removed = 
-    List.map (removed_item map id) sg.removed in
+  let removed = List.map (removed_item map id) sg.removed in
   {
     items = signature_items id map sg.items;
     compiled = sg.compiled;
@@ -480,15 +479,19 @@ and signature :
   }
 
 and removed_item :
-  maps ->
-  Identifier.Id.signature ->
-  Component.Signature.removed_item ->
-  Lang.Signature.removed_item =
-  fun map parent item ->
-    match item with
-    | RModule (id, m) -> RModule (id, Path.module_ map m)
-    | RType (id, texpr, eqn) -> RType (id, type_expr map (parent :> Identifier.LabelParent.t) texpr, type_decl_equation map (parent :> Identifier.FieldParent.t) eqn  )
-    | RModuleType (id, m) -> RModuleType (id, module_type_expr map parent m)
+    maps ->
+    Identifier.Id.signature ->
+    Component.Signature.removed_item ->
+    Lang.Signature.removed_item =
+ fun map parent item ->
+  match item with
+  | RModule (id, m) -> RModule (id, Path.module_ map m)
+  | RType (id, texpr, eqn) ->
+      RType
+        ( id,
+          type_expr map (parent :> Identifier.LabelParent.t) texpr,
+          type_decl_equation map (parent :> Identifier.FieldParent.t) eqn )
+  | RModuleType (id, m) -> RModuleType (id, module_type_expr map parent m)
 
 and class_ map parent id c =
   let open Component.Class in

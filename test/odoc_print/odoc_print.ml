@@ -52,15 +52,11 @@ and signature_of_module_type :
 
 let rec find_sg_map fn (sg : Odoc_model.Lang.Signature.t) =
   let rec inner = function
-    | Odoc_model.Lang.Signature.Include i :: xs -> begin
-      match i.expansion.content with
-      | Some sg' -> begin
-        match find_sg_map fn sg' with
-        | None ->
-        inner xs
-        | Some y -> Some y end
-      | None -> inner xs
-    end
+    | Odoc_model.Lang.Signature.Include i :: xs -> (
+        match i.expansion.content with
+        | Some sg' -> (
+            match find_sg_map fn sg' with None -> inner xs | Some y -> Some y)
+        | None -> inner xs)
     | x :: xs -> ( match fn x with Some y -> Some y | None -> inner xs)
     | [] -> None
   in

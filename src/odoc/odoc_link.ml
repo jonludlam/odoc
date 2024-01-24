@@ -41,7 +41,12 @@ let link_unit ~resolver ~filename m =
         m with
         content =
           Module
-            { items = content_for_hidden_modules; compiled = false; removed = []; doc = [] };
+            {
+              items = content_for_hidden_modules;
+              compiled = false;
+              removed = [];
+              doc = [];
+            };
         expansion = None;
       }
     else m
