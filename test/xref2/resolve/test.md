@@ -142,7 +142,7 @@ Simplest possible resolution:
               []));
           constraints = []};
         representation = None})];
-    compiled = true; doc = []};
+    compiled = true; removed = []; doc = []};
  expansion = None; linked = false; canonical = None; source_info = None;
  shape_info = None}
 ```
@@ -276,7 +276,7 @@ Basic resolution 2, environment lookup:
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})];
-             compiled = true; doc = []});
+             compiled = true; removed = []; doc = []});
         canonical = None; hidden = false});
       Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.TypeDecl.id =
@@ -316,7 +316,7 @@ Basic resolution 2, environment lookup:
               []));
           constraints = []};
         representation = None})];
-    compiled = true; doc = []};
+    compiled = true; removed = []; doc = []};
  expansion = None; linked = false; canonical = None; source_info = None;
  shape_info = None}
 ```
@@ -423,7 +423,7 @@ Basic resolution 3, module type:
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
          {Odoc_model__Paths_types.iv =
@@ -469,7 +469,7 @@ Basic resolution 3, module type:
                        {Odoc_model.Lang.TypeDecl.Equation.params = [];
                         private_ = false; manifest = None; constraints = []};
                       representation = None})];
-                  compiled = true; doc = []});
+                  compiled = true; removed = []; doc = []});
              p_path =
               `Resolved
                 (`Identifier
@@ -510,8 +510,8 @@ Basic resolution 3, module type:
                     (`Identifier
                        {Odoc_model__Paths_types.iv =
                          `Module
-                           ({Odoc_model__Paths_types.iv = `Root (...);
-                             ihash = ...; ikey = ...},
+                           ({Odoc_model__Paths_types.iv = ...; ihash = ...;
+                             ikey = ...},
                             ...);
                         ihash = ...; ikey = ...},
                      ...)),
@@ -519,7 +519,7 @@ Basic resolution 3, module type:
           constraints = ...};
         representation = ...});
       ...];
-    compiled = ...; doc = ...};
+    compiled = ...; removed = ...; doc = ...};
  expansion = ...; linked = ...; canonical = ...; source_info = ...;
  shape_info = ...}
 ```
@@ -638,9 +638,9 @@ Basic resolution 4, module type:
                             private_ = false; manifest = None;
                             constraints = []};
                           representation = None})];
-                      compiled = true; doc = []});
+                      compiled = true; removed = []; doc = []});
                  canonical = None; hidden = false})];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
          {Odoc_model__Paths_types.iv =
@@ -706,8 +706,8 @@ Basic resolution 4, module type:
                                                 ihash = 818126955;
                                                 ikey =
                                                  "r_Root.p"... (* string length 13; truncated *)},
-                                               A);
-                                           ihash = 353272258; ikey = ...},
+                                               ...);
+                                           ihash = ...; ikey = ...},
                                           ...);
                                       ihash = ...; ikey = ...},
                                      ...);
@@ -715,14 +715,14 @@ Basic resolution 4, module type:
                                locs = ...; doc = ...; canonical = ...;
                                equation = ...; representation = ...});
                              ...];
-                           compiled = ...; doc = ...});
+                           compiled = ...; removed = ...; doc = ...});
                       canonical = ...; hidden = ...});
                     ...];
-                  compiled = ...; doc = ...});
+                  compiled = ...; removed = ...; doc = ...});
              p_path = ...});
         canonical = ...; hidden = ...});
       ...];
-    compiled = ...; doc = ...};
+    compiled = ...; removed = ...; doc = ...};
  expansion = ...; linked = ...; canonical = ...; source_info = ...;
  shape_info = ...}
 ```
@@ -876,7 +876,7 @@ and then we can look up the type `t`.
                             private_ = false; manifest = None;
                             constraints = []};
                           representation = None})];
-                      compiled = true; doc = []})};
+                      compiled = true; removed = []; doc = []})};
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
                 {Odoc_model.Lang.Module.id =
@@ -939,7 +939,7 @@ and then we can look up the type `t`.
                                  private_ = false; manifest = None;
                                  constraints = []};
                                representation = None})];
-                           compiled = true; doc = []});
+                           compiled = true; removed = []; doc = []});
                       p_path =
                        `Resolved
                          (`Identifier
@@ -948,17 +948,16 @@ and then we can look up the type `t`.
                                 ({Odoc_model__Paths_types.iv =
                                    `ModuleType
                                      ({Odoc_model__Paths_types.iv =
-                                        `Root (Some ...); ihash = ...;
-                                        ikey = ...},
+                                        `Root ...; ihash = ...; ikey = ...},
                                        ...);
                                    ihash = ...; ikey = ...},
                                   ...);
                               ihash = ...; ikey = ...})});
                   canonical = ...; hidden = ...});
                 ...];
-              compiled = ...; doc = ...})};
+              compiled = ...; removed = ...; doc = ...})};
        ...];
-     compiled = ...; doc = ...};
+     compiled = ...; removed = ...; doc = ...};
   expansion = ...; linked = ...; canonical = ...; source_info = ...;
   shape_info = ...}
 ```
@@ -1065,7 +1064,7 @@ and then we can look up the type `t`.
                             private_ = false; manifest = None;
                             constraints = []};
                           representation = None})];
-                      compiled = true; doc = []})};
+                      compiled = true; removed = []; doc = []})};
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
                 {Odoc_model.Lang.Module.id =
@@ -1140,34 +1139,34 @@ and then we can look up the type `t`.
                                                           =
                                                           `ModuleType
                                                             ({Odoc_model__Paths_types.iv
-                                                               = `Root ...;
-                                                               ihash = ...;
-                                                               ikey = ...},
-                                                              ...);
-                                                          ihash = ...;
-                                                          ikey = ...},
-                                                         ...);
-                                                     ihash = ...; ikey = ...},
-                                                    ...);
-                                                ihash = ...; ikey = ...},
-                                               ...);
-                                           ihash = ...; ikey = ...};
-                                         locs = ...; doc = ...;
-                                         canonical = ...; equation = ...;
-                                         representation = ...});
-                                       ...];
-                                     compiled = ...; doc = ...});
-                                p_path = ...});
-                           canonical = ...; hidden = ...});
-                         ...];
-                       compiled = ...; doc = ...});
-                  canonical = ...; hidden = ...});
-                ...];
-              compiled = ...; doc = ...})};
-       ...];
-     compiled = ...; doc = ...};
-  expansion = ...; linked = ...; canonical = ...; source_info = ...;
-  shape_info = ...}
+                                                               = ...;
+                                                              ihash = ...;
+                                                              ikey = ...},
+                                                             ...);
+                                                         ihash = ...;
+                                                         ikey = ...},
+                                                        ...);
+                                                    ihash = ...; ikey = ...},
+                                                   ...);
+                                               ihash = ...; ikey = ...},
+                                              ...);
+                                          ihash = ...; ikey = ...};
+                                        locs = ...; doc = ...;
+                                        canonical = ...; equation = ...;
+                                        representation = ...});
+                                      ...];
+                                    compiled = ...; removed = ...; doc = ...});
+                               p_path = ...});
+                          canonical = ...; hidden = ...});
+                        ...];
+                      compiled = ...; removed = ...; doc = ...});
+                 canonical = ...; hidden = ...});
+               ...];
+             compiled = ...; removed = ...; doc = ...})};
+      ...];
+    compiled = ...; removed = ...; doc = ...};
+ expansion = ...; linked = ...; canonical = ...; source_info = ...;
+ shape_info = ...}
 ```
 
 Ensure a substitution is taken into account during resolution:
@@ -1270,7 +1269,7 @@ Ensure a substitution is taken into account during resolution:
                             ikey = "mt_S.m_M.mt_A.r_Root.p_None"};
                           locs = None; doc = []; canonical = None;
                           expr = None}];
-                      compiled = true; doc = []});
+                      compiled = true; removed = []; doc = []});
                  canonical = None; hidden = false});
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
@@ -1323,7 +1322,7 @@ Ensure a substitution is taken into account during resolution:
                                    ikey = "m_M.mt_A.r_Root.p_None"},
                                 S)))});
                  canonical = None; hidden = false})];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
          {Odoc_model__Paths_types.iv =
@@ -1335,7 +1334,7 @@ Ensure a substitution is taken into account during resolution:
                      ihash = 236059787; ikey = "p_None"},
                    Root);
                ihash = 818126955;
-               ikey = "r_Root.p_No"... (* string length 13; truncated *)},
+               ikey = "r_Root.p_"... (* string length 13; truncated *)},
               B);
           ihash = 814134997;
           ikey = "m_B.r_Ro"... (* string length 17; truncated *)};
@@ -1343,14 +1342,13 @@ Ensure a substitution is taken into account during resolution:
         type_ =
          Odoc_model.Lang.Module.ModuleType
           (Odoc_model.Lang.ModuleType.Signature
-            {Odoc_model.Lang.Signature.items =
-              [Odoc_model.Lang.Signature.ModuleType ...]; compiled = ...;
-              doc = ...});
-         canonical = ...; hidden = ...});
-       ...];
-     compiled = ...; doc = ...};
-  expansion = ...; linked = ...; canonical = ...; source_info = ...;
-  shape_info = ...}
+            {Odoc_model.Lang.Signature.items = ...; compiled = ...;
+             removed = ...; doc = ...});
+        canonical = ...; hidden = ...});
+      ...];
+    compiled = ...; removed = ...; doc = ...};
+ expansion = ...; linked = ...; canonical = ...; source_info = ...;
+ shape_info = ...}
 ```
 
 Ensure a destructive substitution is taken into account during resolution:
@@ -1453,7 +1451,7 @@ Ensure a destructive substitution is taken into account during resolution:
                             ikey = "mt_S.m_M.mt_A.r_Root.p_None"};
                           locs = None; doc = []; canonical = None;
                           expr = None}];
-                      compiled = true; doc = []});
+                      compiled = true; removed = []; doc = []});
                  canonical = None; hidden = false});
                Odoc_model.Lang.Signature.Module
                 (Odoc_model.Lang.Signature.Ordinary,
@@ -1506,7 +1504,7 @@ Ensure a destructive substitution is taken into account during resolution:
                                    ikey = "m_M.mt_A.r_Root.p_None"},
                                 S)))});
                  canonical = None; hidden = false})];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
          {Odoc_model__Paths_types.iv =
@@ -1518,7 +1516,7 @@ Ensure a destructive substitution is taken into account during resolution:
                      ihash = 236059787; ikey = "p_None"},
                    Root);
                ihash = 818126955;
-               ikey = "r_Root.p_No"... (* string length 13; truncated *)},
+               ikey = "r_Root.p_"... (* string length 13; truncated *)},
               B);
           ihash = 814134997;
           ikey = "m_B.r_Ro"... (* string length 17; truncated *)};
@@ -1526,14 +1524,13 @@ Ensure a destructive substitution is taken into account during resolution:
         type_ =
          Odoc_model.Lang.Module.ModuleType
           (Odoc_model.Lang.ModuleType.Signature
-            {Odoc_model.Lang.Signature.items =
-              [Odoc_model.Lang.Signature.ModuleType ...]; compiled = ...;
-              doc = ...});
-         canonical = ...; hidden = ...});
-       ...];
-     compiled = ...; doc = ...};
-  expansion = ...; linked = ...; canonical = ...; source_info = ...;
-  shape_info = ...}
+            {Odoc_model.Lang.Signature.items = ...; compiled = ...;
+             removed = ...; doc = ...});
+        canonical = ...; hidden = ...});
+      ...];
+    compiled = ...; removed = ...; doc = ...};
+ expansion = ...; linked = ...; canonical = ...; source_info = ...;
+ shape_info = ...}
 ```
 
 Resolve a module alias:
@@ -1602,7 +1599,7 @@ Resolve a module alias:
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})];
-             compiled = true; doc = []});
+             compiled = true; removed = []; doc = []});
         canonical = None; hidden = false});
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
@@ -1682,7 +1679,7 @@ Resolve a module alias:
                                      Root);
                                  ihash = 818126955;
                                  ikey =
-                                  "r_Root.p_"... (* string length 13; truncated *)},
+                                  "r_Root.p"... (* string length 13; truncated *)},
                                 B);
                             ihash = 814134997;
                             ikey =
@@ -1692,7 +1689,7 @@ Resolve a module alias:
               []));
           constraints = []};
         representation = None})];
-    compiled = true; doc = ...};
+    compiled = ...; removed = ...; doc = ...};
  expansion = ...; linked = ...; canonical = ...; source_info = ...;
  shape_info = ...}
 ```
@@ -1764,7 +1761,7 @@ Resolve a module alias:
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})];
-             compiled = true; doc = []});
+             compiled = true; removed = []; doc = []});
         canonical = None; hidden = false});
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
@@ -1842,19 +1839,19 @@ Resolve a module alias:
                          B);
                      ihash = 814134997;
                      ikey =
-                      "m_B.r_Root.p_"... (* string length 17; truncated *)},
+                      "m_B.r_Root.p"... (* string length 17; truncated *)},
                     false))),
            None);
         canonical = None; hidden = false});
       Odoc_model.Lang.Signature.Type (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.TypeDecl.id =
-         {Odoc_model__Paths_types.iv = `Type (...); ihash = ...; ikey = ...};
-        locs = ...; doc = ...; canonical = ...; equation = ...;
-        representation = ...});
-      ...];
-    compiled = ...; doc = ...};
- expansion = ...; linked = ...; canonical = ...; source_info = ...;
- shape_info = ...}
+         {Odoc_model__Paths_types.iv = `Type ...; ihash = ...; ikey = ...};
+         locs = ...; doc = ...; canonical = ...; equation = ...;
+         representation = ...});
+       ...];
+     compiled = ...; removed = ...; doc = ...};
+  expansion = ...; linked = ...; canonical = ...; source_info = ...;
+  shape_info = ...}
 ```
 
 Resolve a functor:
@@ -1927,7 +1924,7 @@ Resolve a functor:
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
          {Odoc_model__Paths_types.iv =
@@ -2003,7 +2000,7 @@ Resolve a functor:
                              private_ = false; manifest = None;
                              constraints = []};
                            representation = None})];
-                       compiled = true; doc = []});
+                       compiled = true; removed = []; doc = []});
                   p_path =
                    `Resolved
                      (`Identifier
@@ -2020,23 +2017,23 @@ Resolve a functor:
                              S);
                          ihash = 527535255;
                          ikey =
-                          "mt_S.r_Root.p"... (* string length 18; truncated *)})}},
+                          "mt_S.r_Root"... (* string length 18; truncated *)})}},
             Odoc_model.Lang.ModuleType.Functor
              (Odoc_model.Lang.FunctorParameter.Named
                {Odoc_model.Lang.FunctorParameter.id =
                  {Odoc_model__Paths_types.iv =
                    `Parameter
-                     ({Odoc_model__Paths_types.iv = `Result ...; ihash = ...;
-                        ikey = ...},
-                       ...);
-                   ihash = ...; ikey = ...};
-                 expr = ...},
-               ...)));
-         canonical = ...; hidden = ...});
-       ...];
-     compiled = ...; doc = ...};
-  expansion = ...; linked = ...; canonical = ...; source_info = ...;
-  shape_info = ...}
+                     ({Odoc_model__Paths_types.iv = ...; ihash = ...;
+                       ikey = ...},
+                      ...);
+                  ihash = ...; ikey = ...};
+                expr = ...},
+             ...)));
+        canonical = ...; hidden = ...});
+      ...];
+    compiled = ...; removed = ...; doc = ...};
+ expansion = ...; linked = ...; canonical = ...; source_info = ...;
+ shape_info = ...}
 ```
 
 Resolve a functor:
@@ -2131,7 +2128,7 @@ Resolve a functor:
                   {Odoc_model.Lang.TypeDecl.Equation.params = [];
                    private_ = false; manifest = None; constraints = []};
                  representation = None})];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.ModuleType
        {Odoc_model.Lang.ModuleType.id =
          {Odoc_model__Paths_types.iv =
@@ -2207,7 +2204,7 @@ Resolve a functor:
                              private_ = false; manifest = None;
                              constraints = []};
                            representation = None})];
-                       compiled = true; doc = []});
+                       compiled = true; removed = []; doc = []});
                   p_path =
                    `Resolved
                      (`Identifier
@@ -2224,7 +2221,7 @@ Resolve a functor:
                              S);
                          ihash = 527535255;
                          ikey =
-                          "mt_S.r_Root.p"... (* string length 18; truncated *)})}},
+                          "mt_S.r_Root"... (* string length 18; truncated *)})}},
             Odoc_model.Lang.ModuleType.Path
              {Odoc_model.Lang.ModuleType.p_expansion =
                Some
@@ -2232,16 +2229,14 @@ Resolve a functor:
                   {Odoc_model.Lang.Signature.items =
                     [Odoc_model.Lang.Signature.Type
                       (Odoc_model.Lang.Signature.Ordinary,
-                      {Odoc_model.Lang.TypeDecl.id =
-                        {Odoc_model__Paths_types.iv = ...; ihash = ...;
-                         ikey = ...};
-                       locs = ...; doc = ...; canonical = ...;
-                       equation = ...; representation = ...});
+                      {Odoc_model.Lang.TypeDecl.id = ...; locs = ...;
+                       doc = ...; canonical = ...; equation = ...;
+                       representation = ...});
                      ...];
-                   compiled = ...; doc = ...});
+                   compiled = ...; removed = ...; doc = ...});
               p_path = ...}))};
       ...];
-    compiled = ...; doc = ...};
+    compiled = ...; removed = ...; doc = ...};
  expansion = ...; linked = ...; canonical = ...; source_info = ...;
  shape_info = ...}
 ```
@@ -2351,7 +2346,7 @@ Functor app nightmare:
                        T);
                    ihash = 1011869183; ikey = "mt_T.mt_Type.r_Root.p_None"};
                  locs = None; doc = []; canonical = None; expr = None}];
-             compiled = true; doc = []})};
+             compiled = true; removed = []; doc = []})};
       Odoc_model.Lang.Signature.Module (Odoc_model.Lang.Signature.Ordinary,
        {Odoc_model.Lang.Module.id =
          {Odoc_model__Paths_types.iv =
@@ -2422,7 +2417,7 @@ Functor app nightmare:
                              ikey = "mt_T.p_T.m_App.r_Root.p_None"};
                            locs = None; doc = []; canonical = None;
                            expr = None}];
-                       compiled = true; doc = []});
+                       compiled = true; removed = []; doc = []});
                   p_path =
                    `Resolved
                      (`Identifier
@@ -2447,18 +2442,18 @@ Functor app nightmare:
                         `Result
                           {Odoc_model__Paths_types.iv =
                             `Module
-                              ({Odoc_model__Paths_types.iv =
-                                 `Root (Some ...); ihash = ...; ikey = ...},
-                                ...);
-                            ihash = ...; ikey = ...};
-                        ihash = ...; ikey = ...},
-                       ...);
-                   ihash = ...; ikey = ...};
-                 expr = ...},
-               ...)));
-         canonical = ...; hidden = ...});
-       ...];
-     compiled = ...; doc = ...};
-  expansion = ...; linked = ...; canonical = ...; source_info = ...;
-  shape_info = ...}
+                              ({Odoc_model__Paths_types.iv = `Root (...);
+                                ihash = ...; ikey = ...},
+                               ...);
+                           ihash = ...; ikey = ...};
+                       ihash = ...; ikey = ...},
+                      ...);
+                  ihash = ...; ikey = ...};
+                expr = ...},
+             ...)));
+        canonical = ...; hidden = ...});
+      ...];
+    compiled = ...; removed = ...; doc = ...};
+ expansion = ...; linked = ...; canonical = ...; source_info = ...;
+ shape_info = ...}
 ```

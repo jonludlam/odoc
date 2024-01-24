@@ -50,36 +50,45 @@ and signature_of_module_type :
  fun m ->
   match m.expr with Some e -> signature_of_module_type_expr e | None -> None
 
-let find_map fn list =
+let rec find_sg_map fn (sg : Odoc_model.Lang.Signature.t) =
   let rec inner = function
+    | Odoc_model.Lang.Signature.Include i :: xs -> begin
+      match i.expansion.content with
+      | Some sg' -> begin
+        match find_sg_map fn sg' with
+        | None ->
+        inner xs
+        | Some y -> Some y end
+      | None -> inner xs
+    end
     | x :: xs -> ( match fn x with Some y -> Some y | None -> inner xs)
     | [] -> None
   in
-  inner list
+  inner sg.items
 
 let find_module name sg =
   let open Odoc_model.Lang.Signature in
-  find_map
+  find_sg_map
     (function
       | Module (_, ({ id; _ } as m))
         when Odoc_model.Paths.Identifier.name id = name ->
           Some (Element.Module m)
       | _ -> None)
-    sg.items
+    sg
 
 let find_module_type name sg =
   let open Odoc_model.Lang.Signature in
-  find_map
+  find_sg_map
     (function
       | ModuleType ({ id; _ } as m)
         when Odoc_model.Paths.Identifier.name id = name ->
           Some (Element.ModuleType m)
       | _ -> None)
-    sg.items
+    sg
 
 let find_type name sg =
   let open Odoc_model.Lang.Signature in
-  find_map
+  find_sg_map
     (function
       | Type (_, ({ id; _ } as m))
         when Odoc_model.Paths.Identifier.name id = name ->
@@ -91,17 +100,17 @@ let find_type name sg =
         when Odoc_model.Paths.Identifier.name id = name ->
           Some (Element.Class m)
       | _ -> None)
-    sg.items
+    sg
 
 let find_value name sg =
   let open Odoc_model.Lang.Signature in
-  find_map
+  find_sg_map
     (function
       | Value ({ id; _ } as m) when Odoc_model.Paths.Identifier.name id = name
         ->
           Some (Element.Value m)
       | _ -> None)
-    sg.items
+    sg
 
 (* Really cut-down reference lookup! *)
 let rec handle_ref :
@@ -287,7 +296,7 @@ module Print_short = struct
         Format.fprintf ppf "%a.%s" resolved_fragment
           (p :> rfrag)
           (Odoc_model.Names.ClassTypeName.to_string n)
-    | `Root _ -> Format.fprintf ppf "rot"
+    | `Root _ -> Format.fprintf ppf "root"
 
   let rec module_decl ppf d =
     let open Module in

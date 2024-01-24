@@ -5,23 +5,18 @@ Tests for `weak_canonical_test`. When calling `is_resolved_module_hidden`, we no
 In the following test, we create a path with an unresolved canonical 
 ```ocaml env=e1
 # let m = `Hidden (`Local (`LModule (Odoc_model.Names.ModuleName.internal_of_string "M", 1)));;
-val m :
-  [> `Hidden of
-       [> `Local of [> `LModule of Odoc_model.Names.ModuleName.t * int ] ] ] =
-  `Hidden (`Local (`LModule ({M}1, 1)))
+Line 1, characters 36-82:
+Error: Unbound value Odoc_model.Names.ModuleName.internal_of_string
 # let cm = `Root "Foo";;
 val cm : [> `Root of string ] = `Root "Foo"
 # let p = `Canonical(m, cm);;
-val p :
-  [> `Canonical of
-       [> `Hidden of
-            [> `Local of [> `LModule of Odoc_model.Names.ModuleName.t * int ]
-            ] ] *
-       [> `Root of string ] ] =
-  `Canonical (`Hidden (`Local (`LModule ({M}1, 1))), `Root "Foo")
+Line 1, characters 20-21:
+Error: Unbound value m
 # let r1 = Cpath.is_resolved_module_hidden ~weak_canonical_test:false p;;
-val r1 : bool = true
+Line 1, characters 69-70:
+Error: Unbound value p
 # let r2 = Cpath.is_resolved_module_hidden ~weak_canonical_test:true p;;
-val r2 : bool = false
+Line 1, characters 68-69:
+Error: Unbound value p
 ```
 

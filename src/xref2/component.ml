@@ -1,5 +1,7 @@
 module Maps = Odoc_model.Paths.Identifier.Maps
 
+let debug = ref false
+
 module ModuleMap = Map.Make (struct
   type t = Ident.module_
 
@@ -329,10 +331,10 @@ and Signature : sig
   (* When doing destructive substitution we keep track of the items that have been removed,
        and the path they've been substituted with *)
   type removed_item =
-    | RModule of Ident.module_ * Cpath.Resolved.module_
-    | RType of Ident.type_ * TypeExpr.t * TypeDecl.Equation.t
+    | RModule of Odoc_model.Names.ModuleName.t * Cpath.module_
+    | RType of Odoc_model.Names.TypeName.t * TypeExpr.t * TypeDecl.Equation.t
         (** [RType (_, texpr, eq)], [eq.manifest = Some texpr] *)
-    | RModuleType of Ident.module_type * ModuleType.expr
+    | RModuleType of Odoc_model.Names.ModuleTypeName.t * ModuleType.expr
 
   type t = {
     items : item list;
@@ -680,13 +682,13 @@ module Fmt = struct
     let open Signature in
     match r with
     | RModule (id, path) ->
-        Format.fprintf ppf "module %a (%a)" Ident.fmt id resolved_module_path
+        Format.fprintf ppf "module %a (%a)" Odoc_model.Names.ModuleName.fmt id module_path
           path
     | RType (id, texpr, eq) ->
-        Format.fprintf ppf "type %a %a = (%a)" type_params eq.params Ident.fmt
+        Format.fprintf ppf "type %a %a = (%a)" type_params eq.params Odoc_model.Names.TypeName.fmt
           id type_expr texpr
     | RModuleType (id, mty) ->
-        Format.fprintf ppf "module type %a = %a" Ident.fmt id module_type_expr
+        Format.fprintf ppf "module type %a = %a" Odoc_model.Names.ModuleTypeName.fmt id module_type_expr
           mty
 
   and removed_item_list ppf r =
@@ -757,7 +759,7 @@ module Fmt = struct
     | Path p -> module_type_path ppf p
     | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
     | With (subs, e) ->
-        Format.fprintf ppf "%a with [%a]" u_module_type_expr e substitution_list
+        Format.fprintf ppf "(w) %a with [%a]" u_module_type_expr e substitution_list
           subs
     | TypeOf (t_desc, _) -> module_type_type_of_desc ppf t_desc
 
@@ -766,8 +768,8 @@ module Fmt = struct
     match mt with
     | Path { p_path; _ } -> module_type_path ppf p_path
     | Signature sg -> Format.fprintf ppf "sig@,@[<v 2>%a@]end" signature sg
-    | With { w_substitutions = subs; w_expr; _ } ->
-        Format.fprintf ppf "%a with [%a]" u_module_type_expr w_expr
+    | With { w_substitutions = subs; w_expr; w_expansion } ->
+        Format.fprintf ppf "(w %b) %a with [%a]" (not (w_expansion = None)) u_module_type_expr w_expr
           substitution_list subs
     | Functor (arg, res) ->
         Format.fprintf ppf "(%a) -> %a" functor_parameter arg module_type_expr
@@ -2447,6 +2449,13 @@ module Of_Lang = struct
         doc = docs ident_map o.Odoc_model.Lang.Open.doc;
       }
 
+  and removed_item ident_map r =
+    let open Odoc_model.Lang.Signature in
+    match r with
+    | RModule (id, p) -> Signature.RModule (id, module_path ident_map p)
+    | RType (id, texpr, eqn) -> RType (id, type_expression ident_map texpr, type_equation ident_map eqn)
+    | RModuleType (id, m) -> RModuleType (id, module_type_expr ident_map m)
+
   and apply_sig_map ident_map sg =
     let items =
       List.rev_map
@@ -2507,7 +2516,8 @@ module Of_Lang = struct
         sg.items
       |> List.rev
     in
-    { items; removed = []; compiled = sg.compiled; doc = docs ident_map sg.doc }
+    let removed = List.map (removed_item ident_map) sg.removed in
+    { items; removed; compiled = sg.compiled; doc = docs ident_map sg.doc }
 
   and block_element _ b :
       CComment.block_element Odoc_model.Comment.with_location =

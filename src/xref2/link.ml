@@ -596,6 +596,25 @@ and module_ : Env.t -> Module.t -> Module.t =
   let open Module in
   let open Utils.ResultMonad in
   let sg_id = (m.id :> Id.Signature.t) in
+  let _debug_on () =
+    Component.debug := true;
+    Format.eprintf "Debug on!\n%!"
+  in
+  let debug_off () =
+    Component.debug := false;
+  in
+
+  let str = Format.asprintf "%a" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t) in
+  (* if str = "(root Core).Time_float" then
+    Format.eprintf "Here we are!";
+  if str = "(root Core).Time_float.{Ofday}2" then
+    debug_on ();
+  if str = "(root Core).Time_float.{Ofday}2.Map" then
+    Format.eprintf "Here we are!";
+  if str = "(root Core).Time_float.Ofday.Map.Key" then
+    Format.eprintf "Here we are!";
+  if !Component.debug then
+    Format.eprintf "Handling module %a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t); *)
   if m.hidden then m
   else
     let type_ = module_decl env sg_id m.type_ in
@@ -610,14 +629,26 @@ and module_ : Env.t -> Module.t -> Module.t =
               >>= Expand_tools.handle_expansion env (m.id :> Id.Signature.t)
             with
             | Ok (_, e) ->
+                if !Component.debug then
+                  Format.eprintf "%a original path: %a expansion=\n%!%a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t)
+                    Component.Fmt.resolved_module_path cp
+                  Component.Fmt.simple_expansion e;
                 let le = Lang_of.(simple_expansion (empty ()) sg_id e) in
+                if (!Component.debug) then
+                  Format.eprintf "Success with module %a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t);
+                
                 Alias (`Resolved p, Some (simple_expansion env sg_id le))
-            | Error _ -> type_
+            | Error _e ->
+                (* Format.eprintf "Error with module %a\n%!" Errors.Tools_error.pp (e :> Errors.Tools_error.any); *)
+                type_
           else type_
       | Alias _ | ModuleType _ -> type_
     in
     let locs = locations env m.id m.locs in
     let doc = comment_docs env sg_id m.doc in
+    if str = "(root Core).Time_float.{Ofday}2" then
+      debug_off ();
+  
     { m with locs; doc; type_ }
 
 and module_decl : Env.t -> Id.Signature.t -> Module.decl -> Module.decl =
