@@ -202,6 +202,14 @@ module Print_short = struct
     | `Dot (parent, s) -> Format.fprintf ppf "%a.%s" path (parent :> path) s
     | `Apply (func, arg) ->
         Format.fprintf ppf "%a(%a)" path (func :> path) path (arg :> path)
+    | `Substituted m -> Format.fprintf ppf "substituted(%a)" path (m :> path)
+    | `SubstitutedMT m ->
+        Format.fprintf ppf "substitutedmt(%a)" path (m :> path)
+    | `SubstitutedT m -> Format.fprintf ppf "substitutedt(%a)" path (m :> path)
+    | `SubstitutedDT m ->
+        Format.fprintf ppf "substituteddt(%a)" path (m :> path)
+    | `SubstitutedCT m ->
+        Format.fprintf ppf "substitutedct(%a)" path (m :> path)
 
   and resolved_path ppf (p : rpath) =
     match p with
@@ -248,6 +256,16 @@ module Print_short = struct
           (Odoc_model.Names.ConstructorName.to_string name)
     | `Value (_parent, name) ->
         Format.fprintf ppf "%s" (Odoc_model.Names.ValueName.to_string name)
+    | `Substituted m ->
+        Format.fprintf ppf "substituted(%a)" resolved_path (m :> rpath)
+    | `SubstitutedMT m ->
+        Format.fprintf ppf "substitutedmt(%a)" resolved_path (m :> rpath)
+    | `SubstitutedT m ->
+        Format.fprintf ppf "substitutedt(%a)" resolved_path (m :> rpath)
+    | `SubstitutedDT m ->
+        Format.fprintf ppf "substituteddt(%a)" resolved_path (m :> rpath)
+    | `SubstitutedCT m ->
+        Format.fprintf ppf "substitutedct(%a)" resolved_path (m :> rpath)
 
   and fragment ppf (f : frag) =
     match f with
