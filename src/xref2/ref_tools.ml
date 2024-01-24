@@ -147,7 +147,7 @@ let module_lookup_to_signature_lookup env (ref, cp, m) =
   let rec handle_expansion : Tools.expansion -> _ = function
     | Functor (_, expr) -> (
         match
-          Tools.expansion_of_module_type_expr ~mark_substituted:true env expr
+          Tools.expansion_of_module_type_expr env expr
         with
         | Ok e -> handle_expansion e
         | Error _ as e -> e)

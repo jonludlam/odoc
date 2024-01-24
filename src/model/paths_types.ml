@@ -316,6 +316,7 @@ module rec Path : sig
   type module_ =
     [ `Resolved of Resolved_path.module_
     | `Identifier of Identifier.path_module * bool
+    | `Substituted of module_
     | `Root of string
     | `Forward of string
     | `Dot of module_ * string
@@ -324,12 +325,14 @@ module rec Path : sig
 
   type module_type =
     [ `Resolved of Resolved_path.module_type
+    | `SubstitutedMT of module_type
     | `Identifier of Identifier.path_module_type * bool
     | `Dot of module_ * string ]
   (** @canonical Odoc_model.Paths.Path.ModuleType.t *)
 
   type type_ =
     [ `Resolved of Resolved_path.type_
+    | `SubstitutedT of type_
     | `Identifier of Identifier.path_type * bool
     | `Dot of module_ * string ]
   (** @canonical Odoc_model.Paths.Path.Type.t *)
@@ -342,12 +345,17 @@ module rec Path : sig
 
   type class_type =
     [ `Resolved of Resolved_path.class_type
+    | `SubstitutedCT of class_type
     | `Identifier of Identifier.path_class_type * bool
     | `Dot of module_ * string ]
   (** @canonical Odoc_model.Paths.Path.ClassType.t *)
 
   type any =
     [ `Resolved of Resolved_path.any
+    | `SubstitutedT of type_
+    | `SubstitutedMT of module_type
+    | `Substituted of module_
+    | `SubstitutedCT of class_type
     | `Identifier of Identifier.path_any * bool
     | `Root of string
     | `Forward of string
@@ -361,6 +369,7 @@ and Resolved_path : sig
   type module_ =
     [ `Identifier of Identifier.path_module
     | `Subst of module_type * module_
+    | `Substituted of module_
     | `Hidden of module_
     | `Module of module_ * ModuleName.t
     | `Canonical of module_ * Path.module_  (** [`Canonical (mod, canonical)] *)
@@ -372,19 +381,13 @@ and Resolved_path : sig
   and module_type =
     [ `Identifier of Identifier.path_module_type
     | `SubstT of module_type * module_type
+    | `SubstitutedMT of module_type
     | `CanonicalModuleType of module_type * Path.module_type
     | `AliasModuleType of module_type * module_type
     | `ModuleType of module_ * ModuleTypeName.t
     | `OpaqueModuleType of module_type ]
   (** @canonical Odoc_model.Paths.Path.Resolved.ModuleType.t *)
 
-  type type_ =
-    [ `Identifier of Identifier.path_type
-    | `CanonicalType of type_ * Path.type_
-    | `Type of module_ * TypeName.t
-    | `Class of module_ * ClassName.t
-    | `ClassType of module_ * ClassTypeName.t ]
-  (** @canonical Odoc_model.Paths.Path.Resolved.Type.t *)
 
   type value =
     [ `Identifier of Identifier.path_value | `Value of module_ * ValueName.t ]
@@ -392,11 +395,26 @@ and Resolved_path : sig
 
   type class_type =
     [ `Identifier of Identifier.path_class_type
+    | `SubstitutedCT of class_type
     | `Class of module_ * ClassName.t
     | `ClassType of module_ * ClassTypeName.t ]
 
+  type type_ =
+    [ `Identifier of Identifier.path_type
+    | `SubstitutedT of type_
+    | `SubstitutedCT of class_type
+    | `CanonicalType of type_ * Path.type_
+    | `Type of module_ * TypeName.t
+    | `Class of module_ * ClassName.t
+    | `ClassType of module_ * ClassTypeName.t ]
+  (** @canonical Odoc_model.Paths.Path.Resolved.Type.t *)
+
   type any =
     [ `Identifier of Identifier.any
+    | `SubstitutedCT of class_type
+    | `SubstitutedT of type_
+    | `SubstitutedMT of module_type
+    | `Substituted of module_
     | `Subst of module_type * module_
     | `Hidden of module_
     | `Module of module_ * ModuleName.t

@@ -112,7 +112,15 @@ module Make (Syntax : SYNTAX) = struct
       match path with
       | `Identifier (id, _) ->
           unresolved [ inline @@ Text (Identifier.name id) ]
-      | `Root root -> unresolved [ inline @@ Text root ]
+      | `Substituted m ->
+        from_path (m :> Path.t)
+        | `SubstitutedMT m ->
+          from_path (m :> Path.t)
+          | `SubstitutedT m ->
+            from_path (m :> Path.t)
+              | `SubstitutedCT m ->
+                from_path (m :> Path.t)
+                          | `Root root -> unresolved [ inline @@ Text root ]
       | `Forward root -> unresolved [ inline @@ Text root ] (* FIXME *)
       | `Dot (prefix, suffix) ->
           let link = from_path (prefix :> Path.t) in
