@@ -130,6 +130,7 @@ and should_resolve : Paths.Path.t -> bool =
 
 let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
  fun env p ->
+  if !Component.debug then Format.eprintf "type_path: %a\n%!" Component.Fmt.model_path (p :> Paths.Path.t);
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
     let cp = Component.Of_Lang.(type_path (empty ()) p) in
@@ -587,6 +588,7 @@ and simple_expansion :
     ModuleType.simple_expansion ->
     ModuleType.simple_expansion =
  fun env id m ->
+  if !Component.debug then Format.eprintf "handling simple expansion";
   match m with
   | Signature sg -> Signature (signature env id sg)
   | Functor (arg, sg) ->
@@ -608,9 +610,9 @@ and module_ : Env.t -> Module.t -> Module.t =
     Format.asprintf "%a" Component.Fmt.model_identifier
       (m.id :> Odoc_model.Paths.Identifier.t)
   in
-  (* if str = "(root Core).Time_float" then
-       Format.eprintf "Here we are!";
-     if str = "(root Core).Time_float.{Ofday}2" then
+  if str = "(root Core).Time_float.Span.Table.Provide_of_sexp" then
+       _debug_on ();
+  (*   if str = "(root Core).Time_float.{Ofday}2" then
        debug_on ();
      if str = "(root Core).Time_float.{Ofday}2.Map" then
        Format.eprintf "Here we are!";
@@ -620,6 +622,8 @@ and module_ : Env.t -> Module.t -> Module.t =
        Format.eprintf "Handling module %a\n%!" Component.Fmt.model_identifier (m.id :> Odoc_model.Paths.Identifier.t); *)
   if m.hidden then m
   else
+    begin
+      if !Component.debug then Format.eprintf "Module isn't hidden\n%!";
     let type_ = module_decl env sg_id m.type_ in
     let type_ =
       match type_ with
@@ -653,16 +657,20 @@ and module_ : Env.t -> Module.t -> Module.t =
     in
     let locs = locations env m.id m.locs in
     let doc = comment_docs env sg_id m.doc in
-    if str = "(root Core).Time_float.{Ofday}2" then debug_off ();
+    if str = "(root Core).Time_float.Span.Table.Provide_of_sexp" then debug_off ();
 
     { m with locs; doc; type_ }
+  end
 
 and module_decl : Env.t -> Id.Signature.t -> Module.decl -> Module.decl =
  fun env id decl ->
   let open Module in
   match decl with
-  | ModuleType expr -> ModuleType (module_type_expr env id expr)
+  | ModuleType expr ->
+    if !Component.debug then Format.eprintf "Its a module type\n%!";
+    ModuleType (module_type_expr env id expr)
   | Alias (p, e) ->
+    if !Component.debug then Format.eprintf "Its an alias\n%!";
       Alias (module_path env p, Opt.map (simple_expansion env id) e)
 
 and include_decl : Env.t -> Id.Signature.t -> Include.decl -> Include.decl =
