@@ -206,8 +206,6 @@ module Print_short = struct
     | `SubstitutedMT m ->
         Format.fprintf ppf "substitutedmt(%a)" path (m :> path)
     | `SubstitutedT m -> Format.fprintf ppf "substitutedt(%a)" path (m :> path)
-    | `SubstitutedDT m ->
-        Format.fprintf ppf "substituteddt(%a)" path (m :> path)
     | `SubstitutedCT m ->
         Format.fprintf ppf "substitutedct(%a)" path (m :> path)
 
@@ -250,10 +248,6 @@ module Print_short = struct
           (Odoc_model.Names.ClassTypeName.to_string name)
     | `OpaqueModule m -> resolved_path ppf (m :> rpath)
     | `OpaqueModuleType m -> resolved_path ppf (m :> rpath)
-    | `CanonicalDataType (_t1, t2) -> path ppf (t2 :> path)
-    | `Constructor (_parent, name) ->
-        Format.fprintf ppf "%s"
-          (Odoc_model.Names.ConstructorName.to_string name)
     | `Value (_parent, name) ->
         Format.fprintf ppf "%s" (Odoc_model.Names.ValueName.to_string name)
     | `Substituted m ->
@@ -262,8 +256,6 @@ module Print_short = struct
         Format.fprintf ppf "substitutedmt(%a)" resolved_path (m :> rpath)
     | `SubstitutedT m ->
         Format.fprintf ppf "substitutedt(%a)" resolved_path (m :> rpath)
-    | `SubstitutedDT m ->
-        Format.fprintf ppf "substituteddt(%a)" resolved_path (m :> rpath)
     | `SubstitutedCT m ->
         Format.fprintf ppf "substitutedct(%a)" resolved_path (m :> rpath)
 
