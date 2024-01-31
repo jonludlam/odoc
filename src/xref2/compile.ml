@@ -823,7 +823,7 @@ and type_expression_object env parent o =
 and type_expression_package env parent p =
   let open TypeExpr.Package in
   let cp = Component.Of_Lang.(module_type_path (empty ()) p.path) in
-  match Tools.resolve_module_type ~add_canonical:true env cp with
+  match Tools.resolve_module_type env cp with
   | Ok (path, mt) -> (
       match p.substitutions with
       | [] ->
@@ -871,7 +871,7 @@ and type_expression : Env.t -> Id.LabelParent.t -> _ -> _ =
   | Constr (path, ts') -> (
       let cp = Component.Of_Lang.(type_path (empty ()) path) in
       let ts = List.map (type_expression env parent) ts' in
-      match Tools.resolve_type env ~add_canonical:true cp with
+      match Tools.resolve_type env cp with
       | Ok (cp, (`FType _ | `FClass _ | `FClassType _)) ->
           let p = Lang_of.(Path.resolved_type (empty ()) cp) in
           Constr (`Resolved p, ts)

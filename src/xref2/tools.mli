@@ -76,7 +76,6 @@ val lookup_class_type :
     or a class. *)
 
 val resolve_module :
-  add_canonical:bool ->
   Env.t ->
   Cpath.module_ ->
   ( Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t,
@@ -87,7 +86,6 @@ val resolve_module :
     path alongside a representation of the module itself. *)
 
 val resolve_module_type :
-  add_canonical:bool ->
   Env.t ->
   Cpath.module_type ->
   ( Cpath.Resolved.module_type * Component.ModuleType.t,
@@ -99,7 +97,6 @@ val resolve_module_type :
 
 val resolve_type :
   Env.t ->
-  add_canonical:bool ->
   Cpath.type_ ->
   ( Cpath.Resolved.type_ * Find.careful_type,
     simple_type_lookup_error )
@@ -184,7 +181,6 @@ val reresolve_parent : Env.t -> Cpath.Resolved.parent -> Cpath.Resolved.parent
 
 val handle_module_type_lookup :
   Env.t ->
-  add_canonical:bool ->
   string ->
   Cpath.Resolved.parent ->
   Component.Signature.t ->
@@ -197,11 +193,10 @@ type module_modifiers =
 type module_type_modifiers = [ `AliasModuleType of Cpath.Resolved.module_type ]
 
 val get_module_path_modifiers :
-  Env.t -> add_canonical:bool -> Component.Module.t -> module_modifiers option
+  Env.t -> Component.Module.t -> module_modifiers option
 
 val get_module_type_path_modifiers :
   Env.t ->
-  add_canonical:bool ->
   Component.ModuleType.t ->
   module_type_modifiers option
 
