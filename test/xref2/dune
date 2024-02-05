@@ -12,6 +12,11 @@
 (cram
  (deps %{bin:odoc} %{bin:odoc_print} %{bin:compile}))
 
+(cram
+ (applies_to module_type_of_size hidden_modules)
+ (enabled_if
+  (>= %{ocaml_version} 4.04.0)))
+
 ; 4.06.0 and above
 
 (cram
@@ -29,7 +34,7 @@
 ; 4.08.0 and above
 
 (cram
- (applies_to github_issue_587 shadow)
+ (applies_to github_issue_587 shadow shadow2 shadow4 expansion)
  (enabled_if
   (>= %{ocaml_version} 4.08.0)))
 
@@ -43,6 +48,6 @@
 ; 4.14.0 and above
 
 (cram
- (applies_to lookup_def)
+ (applies_to lookup_def shadow3)
  (enabled_if
   (>= %{ocaml_version} 4.14.0)))
