@@ -81,8 +81,10 @@ let rec shape_of_module_path env : _ -> Shape.t option =
         Some (Shape.app parent ~arg)
     | `Identifier (id, _) ->
         shape_of_id env (id :> Odoc_model.Paths.Identifier.NonSrc.t)
+    | `Substituted m ->
+        shape_of_module_path env m
 
-let shape_of_kind_path env kind :
+let rec shape_of_kind_path env kind :
     _ -> Shape.t option =
   let proj parent kind name =
     let item = Shape.Item.make name kind in
@@ -94,6 +96,9 @@ let shape_of_kind_path env kind :
     match path with
     | `Resolved _ -> None
     | `Dot (parent, name) -> proj parent kind name
+    | `SubstitutedT t -> shape_of_kind_path env kind t
+    | `SubstitutedMT t -> shape_of_kind_path env kind t
+    | `SubstitutedCT t -> shape_of_kind_path env kind t
     | `Identifier (id, _) -> shape_of_id env (id :> Odoc_model.Paths.Identifier.NonSrc.t)
 
 module MkId = Identifier.Mk
@@ -163,7 +168,7 @@ let lookup_kind_path = fun kind env path ->
 
 let lookup_value_path = lookup_kind_path Kind.Value
 
-let lookup_type_path = lookup_kind_path Kind.Type
+let lookup_type_path : Env.t -> Odoc_model.Paths.Path.Type.t -> _ = lookup_kind_path Kind.Type
 
 let lookup_module_type_path = lookup_kind_path Kind.Module_type
 
