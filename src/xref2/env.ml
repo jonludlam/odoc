@@ -391,7 +391,9 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             locs;
             doc = [];
             type_ =
-              ModuleType (Signature { items = []; compiled = true; doc = [] });
+              ModuleType
+                (Signature
+                   { items = []; compiled = true; removed = []; doc = [] });
             canonical = unit.canonical;
             hidden = unit.hidden;
           }
