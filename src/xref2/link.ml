@@ -73,11 +73,12 @@ let check_ambiguous_label ~loc env
 
 let expansion_needed self target =
   let self = (self :> Paths.Path.Resolved.t) in
+  let i = Paths.Path.Resolved.identifier self in
   let hidden_alias = Paths.Path.Resolved.is_hidden self
   and self_canonical =
-    let i = Paths.Path.Resolved.identifier self in
     i = (target :> Paths.Identifier.t)
   in
+  Format.eprintf "self_canonical=%b (i=%a target=%a) hidden_alias=%b\n%!" self_canonical Component.Fmt.(model_identifier default) (target :> Paths.Identifier.t) Component.Fmt.(model_identifier default) i hidden_alias;
   self_canonical || hidden_alias
 
 exception Loop
@@ -599,11 +600,13 @@ and module_ : Env.t -> Module.t -> Module.t =
   let open Utils.ResultMonad in
   let sg_id = (m.id :> Id.Signature.t) in
   if m.hidden then m
-  else
+  else begin
+    Format.eprintf "Doing something with module %a\n%!" Component.Fmt.(model_identifier default) (m.id :> Id.t);
     let type_ = module_decl env sg_id m.type_ in
     let type_ =
       match type_ with
       | Alias (`Resolved p, _) ->
+          Format.eprintf "expansion_needed=%b (%a)\n%!" (expansion_needed p m.id) Component.Fmt.(model_resolved_path default) (p :> Paths.Path.Resolved.t);
           if expansion_needed p m.id then
             let cp = Component.Of_Lang.(resolved_module_path (empty ()) p) in
             match
@@ -623,6 +626,7 @@ and module_ : Env.t -> Module.t -> Module.t =
     let locs = locations env m.id m.locs in
     let doc = comment_docs env sg_id m.doc in
     { m with locs; doc; type_ }
+  end
 
 and module_decl : Env.t -> Id.Signature.t -> Module.decl -> Module.decl =
  fun env id decl ->
