@@ -97,10 +97,31 @@ end =
 
 include Cpath
 
+let rec is_module_path_local : module_ -> bool = function
+  | `Local _ -> true
+  | `Identifier _ -> false
+  | `Substituted x -> is_module_path_local x
+  | `Resolved `Gpath _ -> false
+  | `Resolved _ -> true
+  | `Root _ -> false
+  | `Forward _ -> false
+  | `Dot (p, _) -> is_module_path_local p
+  | `Module (`Module (`Gpath _), _) -> false
+  | `Apply (p1, p2) -> (is_module_path_local p1) || (is_module_path_local p2)
+  | `Module (_, _) -> true
+
+let rec is_resolved_gpath_module_substituted : Odoc_model.Paths.Path.Resolved.Module.t -> bool = function
+  | `Identifier _ -> false
+  | `Hidden a | `Apply (a, _) | `Alias (a, _) | `Canonical (a, _)
+  | `Module (a, _)
+  | `OpaqueModule a -> is_resolved_gpath_module_substituted a
+  | `Substituted _ -> true
+  | `Subst (_, _) -> false
+
 let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
   | `Local _ -> false
   | `Substituted _ -> true
-  | `Gpath _ -> false
+  | `Gpath p -> is_resolved_gpath_module_substituted p
   | `Subst (_a, _) -> false (* is_resolved_module_type_substituted a*)
   | `Hidden a | `Apply (a, _) | `Alias (a, _, _) | `Canonical (a, _) ->
       is_resolved_module_substituted a

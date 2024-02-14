@@ -1310,7 +1310,7 @@ and handle_canonical_module_real env p2 =
      However, we first need to strip off any alias/canonical paths
      in the resolved module, as we want the identifier for the
      module itself, not any aliased module, and the canonical path
-     _ought_ to be the same as the one we're _currently_ resolving
+     _ought_ to gitbe the same as the one we're _currently_ resolving
      anyway, so we'd end up looping forever. Note that it's not
      sufficient to simply ask not to add on the canonical paths
      at this point (ie, ~add_canonical=false) as the alias chain
@@ -1492,11 +1492,29 @@ and reresolve_module_type :
         (reresolve_module_type env p1, reresolve_module_type env p2)
   | `OpaqueModuleType m -> `OpaqueModuleType (reresolve_module_type env m)
 
+and reresolve_type_gpath : Env.t -> Odoc_model.Paths.Path.Resolved.Type.t ->
+  Odoc_model.Paths.Path.Resolved.Type.t =
+  fun env path ->
+    let result =
+      match path with
+      | `Identifier _ -> path
+      | `SubstitutedT s -> `SubstitutedT (reresolve_type_gpath env s)
+      | `CanonicalType (p1, p2) ->
+        `CanonicalType (reresolve_type_gpath env p1, handle_canonical_type env p2)
+      | `Type (p, n) -> `Type (reresolve_module_gpath env p, n)
+      | `Class (p, n) -> `Class (reresolve_module_gpath env p, n)
+      | `ClassType (p, n) -> `ClassType (reresolve_module_gpath env p, n)
+      | `SubstitutedCT _ -> path
+    in
+    result    
+
+
 and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
  fun env path ->
   let result =
     match path with
-    | `Gpath _ | `Local _ -> path
+    | `Gpath p -> `Gpath (reresolve_type_gpath env p)
+    | `Local _ -> path
     | `Substituted s -> `Substituted (reresolve_type env s)
     | `CanonicalType (p1, p2) ->
         `CanonicalType (reresolve_type env p1, handle_canonical_type env p2)

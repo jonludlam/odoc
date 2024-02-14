@@ -1898,15 +1898,45 @@ module Of_Lang = struct
         match identifier find_any_module ident_map i with
         | `Local l -> `Local l
         | `Identifier _ -> `Gpath p)
-    | `Module (p, name) -> `Module (`Module (recurse p), name)
-    | `Apply (p1, p2) -> `Apply (recurse p1, recurse p2)
-    | `Alias (p1, p2) -> `Alias (recurse p1, module_path ident_map p2, None)
-    | `Subst (p1, p2) ->
-        `Subst (resolved_module_type_path ident_map p1, recurse p2)
-    | `Canonical (p1, p2) -> `Canonical (recurse p1, p2)
-    | `Hidden p1 -> `Hidden (recurse p1)
-    | `OpaqueModule m -> `OpaqueModule (recurse m)
-    | `Substituted m -> `Substituted (recurse m)
+    | `Module (p1, name) -> (
+      match recurse p1 with
+      | `Gpath _ -> `Gpath p
+      | x -> 
+      `Module (`Module x, name))
+    | `Apply (p1, p2) -> (
+      match recurse p1, recurse p2 with
+      | `Gpath _, `Gpath _ -> `Gpath p
+      | p1', p2' -> 
+      `Apply (p1', p2'))
+    | `Alias (p1, p2) -> (
+      match recurse p1, module_path ident_map p2 with
+      | `Gpath _, p2' when (not (Cpath.is_module_path_local p2')) ->
+        `Gpath p
+      | p1', p2' ->
+      `Alias (p1', p2', None))
+    | `Subst (p1, p2) -> (
+        match resolved_module_type_path ident_map p1, recurse p2 with
+        | `Gpath _, `Gpath _ -> `Gpath p
+        | p1', p2' ->
+        `Subst (p1', p2'))
+    | `Canonical (p1, p2) -> (
+      match recurse p1 with
+      | `Gpath _ -> `Gpath p
+      | p1' ->
+      `Canonical (p1', p2))
+    | `Hidden p1 -> (
+      match recurse p1 with
+      | `Gpath _ -> `Gpath p
+      | p1' -> `Hidden p1')
+    | `OpaqueModule p1 -> (
+      match recurse p1 with
+      | `Gpath _ -> `Gpath p
+      | p1' -> 
+      `OpaqueModule p1')
+    | `Substituted p1 -> (
+      match recurse p1 with
+      | `Gpath _ -> `Gpath p
+      | p1' -> `Substituted p1')
 
   and resolved_module_type_path :
       _ ->
@@ -1944,7 +1974,11 @@ module Of_Lang = struct
         | `Identifier _ -> `Gpath p)
     | `CanonicalType (p1, p2) ->
         `CanonicalType (resolved_type_path ident_map p1, p2)
-    | `Type (p, name) -> `Type (`Module (resolved_module_path ident_map p), name)
+    | `Type (p1, name) -> (
+      match resolved_module_path ident_map p1 with
+      | `Gpath _ -> `Gpath p
+      | p1' ->  
+      `Type (`Module (p1'), name))
     | `Class (p, name) ->
         `Class (`Module (resolved_module_path ident_map p), name)
     | `ClassType (p, name) ->
