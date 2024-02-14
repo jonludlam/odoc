@@ -13,27 +13,260 @@ Module `C` then includes them both, causing further shadowing.
   $ odoc compile b.cmti
   $ odoc compile -I . c.cmti
  
-  $ odoc_print --short --show-include-expansions c.odoc 
-  include module type of struct include A end
-    (sig :
-      module type {B}1 = A.B
-      include {B}1 (sig : module {A}3 = A.A end)
-      module type {B1}2 = A.B1
-      include {B1}2 (sig : module {A}3 = A.A end)
-     end)
-  include module type of struct include B end
-    (sig :
-      module type B = B.B
-      include B (sig : module {A}4 = B.A end)
-      module type B1 = B.B1
-      include B1 (sig : module {A}4 = B.A end)
-     end)
-  module A : 
-    sig
-      include module type of struct include {A}4 end
-        (sig :
-          include module type of struct include B.{A}1 end
-            (sig : type t = {A}4.t end)
-          type b = B.A.b
-         end)
-    end
+  $ odoc_print -r A --show-include-expansions c.odoc 
+  {
+    "id": { "`Module": [ { "`Root": [ "None", "C" ] }, "A" ] },
+    "locs": "None",
+    "doc": [],
+    "type_": {
+      "ModuleType": {
+        "Signature": {
+          "items": [
+            {
+              "Include": {
+                "parent": { "`Module": [ { "`Root": [ "None", "C" ] }, "A" ] },
+                "doc": [],
+                "decl": {
+                  "ModuleType": {
+                    "TypeOf": [
+                      {
+                        "StructInclude": {
+                          "`Resolved": {
+                            "`Alias": [
+                              {
+                                "`Module": [
+                                  {
+                                    "`Identifier": { "`Root": [ "None", "B" ] }
+                                  },
+                                  "A"
+                                ]
+                              },
+                              {
+                                "`Identifier": [
+                                  {
+                                    "`Module": [
+                                      { "`Root": [ "None", "C" ] }, "{A}4"
+                                    ]
+                                  },
+                                  "true"
+                                ]
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "`Identifier": [
+                          {
+                            "`Module": [ { "`Root": [ "None", "C" ] }, "{A}4" ]
+                          },
+                          "true"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "status": "`Default",
+                "expansion": {
+                  "shadowed": {
+                    "s_modules": [],
+                    "s_module_types": [],
+                    "s_values": [],
+                    "s_types": [],
+                    "s_classes": [],
+                    "s_class_types": []
+                  },
+                  "content": {
+                    "items": [
+                      {
+                        "Include": {
+                          "parent": {
+                            "`Module": [ { "`Root": [ "None", "C" ] }, "A" ]
+                          },
+                          "doc": [],
+                          "decl": {
+                            "ModuleType": {
+                              "TypeOf": [
+                                {
+                                  "StructInclude": {
+                                    "`Resolved": {
+                                      "`Hidden": {
+                                        "`Module": [
+                                          {
+                                            "`Identifier": {
+                                              "`Root": [ "None", "B" ]
+                                            }
+                                          },
+                                          "{A}1"
+                                        ]
+                                      }
+                                    }
+                                  }
+                                },
+                                {
+                                  "`Identifier": [
+                                    {
+                                      "`Module": [
+                                        { "`Root": [ "None", "B" ] }, "{A}1"
+                                      ]
+                                    },
+                                    "true"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
+                          "status": "`Default",
+                          "expansion": {
+                            "shadowed": {
+                              "s_modules": [],
+                              "s_module_types": [],
+                              "s_values": [],
+                              "s_types": [],
+                              "s_classes": [],
+                              "s_class_types": []
+                            },
+                            "content": {
+                              "items": [
+                                {
+                                  "Type": [
+                                    "Ordinary",
+                                    {
+                                      "id": {
+                                        "`Type": [
+                                          {
+                                            "`Module": [
+                                              { "`Root": [ "None", "C" ] }, "A"
+                                            ]
+                                          },
+                                          "t"
+                                        ]
+                                      },
+                                      "locs": "None",
+                                      "doc": [],
+                                      "equation": {
+                                        "params": [],
+                                        "private_": "false",
+                                        "manifest": {
+                                          "Some": {
+                                            "Constr": [
+                                              {
+                                                "`Resolved": {
+                                                  "`Type": [
+                                                    {
+                                                      "`Alias": [
+                                                        {
+                                                          "`Module": [
+                                                            {
+                                                              "`Identifier": {
+                                                                "`Root": [
+                                                                  "None", "B"
+                                                                ]
+                                                              }
+                                                            },
+                                                            "A"
+                                                          ]
+                                                        },
+                                                        {
+                                                          "`Identifier": [
+                                                            {
+                                                              "`Module": [
+                                                                {
+                                                                  "`Root": [
+                                                                    "None", "C"
+                                                                  ]
+                                                                },
+                                                                "{A}4"
+                                                              ]
+                                                            },
+                                                            "true"
+                                                          ]
+                                                        }
+                                                      ]
+                                                    },
+                                                    "t"
+                                                  ]
+                                                }
+                                              },
+                                              []
+                                            ]
+                                          }
+                                        },
+                                        "constraints": []
+                                      },
+                                      "representation": "None"
+                                    }
+                                  ]
+                                }
+                              ],
+                              "compiled": "true",
+                              "doc": []
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "Type": [
+                          "Ordinary",
+                          {
+                            "id": {
+                              "`Type": [
+                                {
+                                  "`Module": [
+                                    { "`Root": [ "None", "C" ] }, "A"
+                                  ]
+                                },
+                                "b"
+                              ]
+                            },
+                            "locs": "None",
+                            "doc": [],
+                            "equation": {
+                              "params": [],
+                              "private_": "false",
+                              "manifest": {
+                                "Some": {
+                                  "Constr": [
+                                    {
+                                      "`Resolved": {
+                                        "`Type": [
+                                          {
+                                            "`Module": [
+                                              {
+                                                "`Identifier": {
+                                                  "`Root": [ "None", "B" ]
+                                                }
+                                              },
+                                              "A"
+                                            ]
+                                          },
+                                          "b"
+                                        ]
+                                      }
+                                    },
+                                    []
+                                  ]
+                                }
+                              },
+                              "constraints": []
+                            },
+                            "representation": "None"
+                          }
+                        ]
+                      }
+                    ],
+                    "compiled": "true",
+                    "doc": []
+                  }
+                }
+              }
+            }
+          ],
+          "compiled": "true",
+          "doc": []
+        }
+      }
+    },
+    "canonical": "None",
+    "hidden": "false"
+  }
