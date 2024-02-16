@@ -416,8 +416,24 @@ let rec read_type_expr env typ =
             if Btype.is_optional lbl then
               match Compat.get_desc (Compat.repr arg) with
               | Tconstr(_option, [arg], _) -> read_type_expr env arg
-              | _ -> assert false
+              | Tconstr (a, [], _) ->
+                let p = Env.Path.read_type env a in
+                Constr (p, [])
+              | Tvar _ -> assert false
+              | Tarrow _ -> assert false
+              | Ttuple _ -> assert false
+              | Tvariant _ -> assert false
+              | Tobject _ -> assert false
+              | Tnil -> assert false
+              | Tfield _ -> assert false
+              | Tpoly _ -> assert false
+              | Tunivar _ -> assert false
+              | Tpackage _ -> assert false
+              | Tconstr (_, _, _) -> assert false
+              | Tlink _ -> assert false
+              | Tsubst _ -> assert false
             else read_type_expr env arg
+            
           in
           let lbl = read_label lbl in
           let res = read_type_expr env res in
