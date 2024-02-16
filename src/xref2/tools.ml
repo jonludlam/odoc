@@ -368,7 +368,8 @@ let simplify_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
  fun env m ->
   let open Odoc_model.Paths.Identifier in
   match m with
-  | `Module (`Module (`Gpath (`Identifier p)), name) -> (
+  | `Module (`Module (`Gpath (`Identifier p)), name)
+  | `Gpath (`Module (`Identifier p, name)) -> (
       let ident = (Mk.module_ ((p :> Signature.t), name) : Path.Module.t) in
       match Env.(lookup_by_id s_module (ident :> Signature.t) env) with
       | Some _ -> `Gpath (`Identifier ident)
