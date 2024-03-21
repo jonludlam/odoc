@@ -896,7 +896,13 @@ and lookup_datatype_gpath :
     | `Identifier { iv = `CoreType name; _ } ->
         (* CoreTypes aren't put into the environment, so they can't be handled by the
               next clause. We just look them up here in the list of core types *)
-        Ok (`FType (name, List.assoc (TypeName.to_string name) core_types))
+        Ok
+          (`FType
+            ( name,
+              Component.Of_Lang.(
+                type_decl (empty ())
+                  (Odoc_model.Predefined.type_of_core_type
+                     (TypeName.to_string name))) ))
     | `Identifier ({ iv = `Type _; _ } as i) ->
         of_option ~error:(`Lookup_failureT i)
           (Env.(lookup_by_id s_datatype) i env)
