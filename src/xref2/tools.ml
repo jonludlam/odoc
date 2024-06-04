@@ -587,6 +587,7 @@ and lookup_module_gpath :
   | `Canonical (p, _) -> lookup_module_gpath env p
   | `OpaqueModule m -> lookup_module_gpath env m
   | `Substituted m -> lookup_module_gpath env m
+  | `LocalMod (`Na _) -> .
 
 and lookup_module :
     Env.t ->
@@ -653,6 +654,7 @@ and lookup_module_type_gpath :
   | `AliasModuleType (_, mt) -> lookup_module_type_gpath env mt
   | `OpaqueModuleType m -> lookup_module_type_gpath env m
   | `SubstitutedMT m -> lookup_module_type_gpath env m
+  | `LocalModTy (`Na _) -> .
 
 and lookup_module_type :
     Env.t ->
@@ -778,6 +780,8 @@ and lookup_type_gpath :
     | `SubstitutedT t -> lookup_type_gpath env t
     | `SubstitutedCT t ->
         lookup_type_gpath env (t :> Odoc_model.Paths.Path.Resolved.Type.t)
+    | `LocalTy (`Na _) -> .
+    | `LocalCty (`Na _) -> .
   in
   res
 
@@ -801,6 +805,7 @@ and lookup_value_gpath :
         >>= fun (`Value ({ iv = `Value (_, name); _ }, t)) ->
         Ok (`FValue (name, t))
     | `Value (p, id) -> do_value p id
+    | `LocalVal (`Na _) -> .
   in
   res
 
@@ -835,6 +840,7 @@ and lookup_class_type_gpath :
     | `Class (p, id) -> do_type p id
     | `ClassType (p, id) -> do_type p id
     | `SubstitutedCT c -> lookup_class_type_gpath env c
+    | `LocalCty (`Na _) -> .
   in
   res
 
@@ -863,6 +869,7 @@ and lookup_type :
     | `Gpath p -> lookup_type_gpath env p
     | `CanonicalType (t1, _) -> lookup_type env t1
     | `Substituted s -> lookup_type env s
+    | `SubstitutedCT s -> (lookup_class_type env s :> (Find.careful_type, simple_type_lookup_error) Result.result)
     | `Type (p, id) -> do_type p id
     | `Class (p, id) -> do_type p id
     | `ClassType (p, id) -> do_type p id
@@ -905,7 +912,7 @@ and lookup_class_type :
     match p with
     | `Local id -> Error (`LocalType (env, (id :> Ident.path_type)))
     | `Gpath p -> lookup_class_type_gpath env p
-    | `Substituted s -> lookup_class_type env s
+    | `SubstitutedCT s -> lookup_class_type env s
     | `Class (p, id) -> do_type p id
     | `ClassType (p, id) -> do_type p id
   in
@@ -1141,7 +1148,7 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
   | `Resolved r -> lookup_class_type env r >>= fun t -> Ok (r, t)
   | `Local (l, _) -> Error (`LocalType (env, (l :> Ident.path_type)))
   | `Substituted s ->
-      resolve_class_type env s >>= fun (p, m) -> Ok (`Substituted p, m)
+      resolve_class_type env s >>= fun (p, m) -> Ok (`SubstitutedCT p, m)
   | `Class (parent, id) ->
       lookup_parent env parent
       |> map_error (fun e -> (e :> simple_type_lookup_error))
@@ -1206,6 +1213,7 @@ and reresolve_module_gpath :
       `Canonical (reresolve_module_gpath env p, handle_canonical_module env p2)
   | `OpaqueModule m -> `OpaqueModule (reresolve_module_gpath env m)
   | `Substituted m -> `Substituted (reresolve_module_gpath env m)
+  | `LocalMod (`Na _) -> .
 
 and strip_canonical :
     c:Odoc_model.Paths.Path.Module.t ->
@@ -1237,6 +1245,7 @@ and strip_canonical_gpath :
   | `OpaqueModule x -> `OpaqueModule (strip_canonical_gpath ~c x)
   | `Apply _ | `Module _ | `Identifier _ -> path
   | `Substituted x -> `Substituted (strip_canonical_gpath ~c x)
+  | `LocalMod (`Na _) -> .
 
 and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
     =
@@ -1468,6 +1477,7 @@ and reresolve_module_type_gpath :
         (reresolve_module_type_gpath env p1, reresolve_module_type_gpath env p2)
   | `OpaqueModuleType m -> `OpaqueModuleType (reresolve_module_type_gpath env m)
   | `SubstitutedMT m -> `SubstitutedMT (reresolve_module_type_gpath env m)
+  | `LocalModTy (`Na _) -> .
 
 and reresolve_module_type :
     Env.t -> Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
@@ -1495,6 +1505,7 @@ and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
     match path with
     | `Gpath _ | `Local _ -> path
     | `Substituted s -> `Substituted (reresolve_type env s)
+    | `SubstitutedCT s -> `SubstitutedCT (reresolve_class_type env s)
     | `CanonicalType (p1, p2) ->
         `CanonicalType (reresolve_type env p1, handle_canonical_type env p2)
     | `Type (p, n) -> `Type (reresolve_parent env p, n)
@@ -1515,7 +1526,7 @@ and reresolve_class_type :
   let result =
     match path with
     | `Gpath _ | `Local _ -> path
-    | `Substituted s -> `Substituted (reresolve_class_type env s)
+    | `SubstitutedCT s -> `SubstitutedCT (reresolve_class_type env s)
     | `Class (p, n) -> `Class (reresolve_parent env p, n)
     | `ClassType (p, n) -> `ClassType (reresolve_parent env p, n)
   in
