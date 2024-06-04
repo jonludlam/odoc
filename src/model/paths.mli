@@ -17,6 +17,10 @@
 module Ocaml_ident = Ident
 module Ocaml_env = Env
 
+
+type na_ty = |
+type na = [ `Na of na_ty ]
+
 (** Identifiers for definitions *)
 
 module Identifier : sig
@@ -341,8 +345,8 @@ end
 module rec Path : sig
   module Resolved : sig
     module Module : sig
-      type t = Paths_types.Resolved_path.module_
-
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_path.module_
+      type t = (na, na) gen
       val is_hidden : t -> weak_canonical_test:bool -> bool
 
       (* val identifier : t -> Identifier.Path.Module.t *)
@@ -351,16 +355,16 @@ module rec Path : sig
     end
 
     module ModuleType : sig
-      type t = Paths_types.Resolved_path.module_type
-
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_path.module_type
+      type t = (na, na) gen
       (* val is_hidden : t -> weak_canonical_test:bool -> bool *)
 
       (* val identifier : t -> Identifier.Path.ModuleType.t *)
     end
 
     module Type : sig
-      type t = Paths_types.Resolved_path.type_
-
+      type ('lmod, 'lmodty, 'lcty, 'lty) gen = ('lmod, 'lmodty, 'lcty, 'lty) Paths_types.Resolved_path.type_
+      type t = (na, na, na, na) gen
       (* val of_ident : Identifier.Path.Type.t -> t *)
 
       (* val is_hidden : t -> bool *)
@@ -369,47 +373,50 @@ module rec Path : sig
     end
 
     module Value : sig
-      type t = Paths_types.Resolved_path.value
+      type ('lmod, 'lmodty, 'lval) gen = ('lmod, 'lmodty, 'lval) Paths_types.Resolved_path.value
+      type t = (na, na, na) gen
     end
 
     module ClassType : sig
-      type t = Paths_types.Resolved_path.class_type
-
-      (* val of_ident : Identifier.Path.ClassType.t -> t *)
-
-      (* val is_hidden : t -> bool *)
+      type ('lmod, 'lmodty, 'lval) gen = ('lmod, 'lmodty, 'lval) Paths_types.Resolved_path.class_type
+      type t = (na, na, na) gen
     end
 
-    type t = Paths_types.Resolved_path.any
-
+    type ('lmod, 'lmodty, 'lcty, 'lty, 'lval) gen = ('lmod, 'lmodty, 'lcty, 'lty, 'lval) Paths_types.Resolved_path.any
+    type t = (na, na, na, na, na) gen
     val identifier : t -> Identifier.t
 
     val is_hidden : t -> bool
   end
 
   module Module : sig
-    type t = Paths_types.Path.module_
-
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Path.module_
+    type t = (na, na) gen
     (* val root : t -> string option *)
   end
 
   module ModuleType : sig
-    type t = Paths_types.Path.module_type
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Path.module_type
+    type t = (na, na) gen
   end
 
   module Type : sig
-    type t = Paths_types.Path.type_
+    type ('lmod, 'lmodty, 'lcty, 'lty) gen = ('lmod, 'lmodty, 'lcty, 'lty) Paths_types.Path.type_
+    type t = (na, na, na, na) gen
   end
 
   module Value : sig
-    type t = Paths_types.Path.value
+    type ('lmod, 'lmodty, 'lval) gen = ('lmod, 'lmodty, 'lval) Paths_types.Path.value
+    type t = (na, na, na) gen
   end
 
   module ClassType : sig
-    type t = Paths_types.Path.class_type
+    type ('lmod, 'lmodty, 'lcty) gen = ('lmod, 'lmodty, 'lcty) Paths_types.Path.class_type
+    type t = (na, na, na) gen
   end
 
-  type t = Paths_types.Path.any
+  type ('lmod, 'lmodty, 'lcty, 'lty, 'lval) gen = ('lmod, 'lmodty, 'lcty, 'lty, 'lval) Paths_types.Path.any
+  type t = (na, na, na, na, na) gen
 
   val is_hidden : t -> bool
 end
@@ -418,26 +425,34 @@ end
 module Fragment : sig
   module Resolved : sig
     module Signature : sig
-      type t = Paths_types.Resolved_fragment.signature
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.signature
+      type t = (na, na) gen
     end
 
     module Module : sig
-      type t = Paths_types.Resolved_fragment.module_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.module_
+      type t = (na, na) gen
     end
 
     module ModuleType : sig
-      type t = Paths_types.Resolved_fragment.module_type
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.module_type
+      type t = (na, na) gen
     end
 
     module Type : sig
-      type t = Paths_types.Resolved_fragment.type_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.type_
+      type t = (na, na) gen
     end
 
-    type leaf = Paths_types.Resolved_fragment.leaf
+    type ('lmod, 'lmodty) leaf_gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.leaf
+    type leaf = (na, na) leaf_gen
 
-    type root = Paths_types.Resolved_fragment.root
+    type ('lmod, 'lmodty) root_gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.root
+    type root = (na, na) root_gen
 
-    type t = Paths_types.Resolved_fragment.any
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_fragment.any
+
+    type t = (na, na) gen
 
     val identifier : t -> Identifier.t
 
@@ -445,195 +460,243 @@ module Fragment : sig
   end
 
   module Signature : sig
-    type t = Paths_types.Fragment.signature
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Fragment.signature
+    type t = (na, na) gen
   end
 
   module Module : sig
-    type t = Paths_types.Fragment.module_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Fragment.module_
+    type t = (na, na) gen
   end
 
   module ModuleType : sig
-    type t = Paths_types.Fragment.module_type
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Fragment.module_type
+    type t = (na, na) gen
   end
 
   module Type : sig
-    type t = Paths_types.Fragment.type_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Fragment.type_
+    type t = (na, na) gen
   end
 
-  type leaf = Paths_types.Fragment.leaf
+  type ('lmod, 'lmodty) leaf_gen = ('lmod, 'lmodty) Paths_types.Fragment.leaf
+  type leaf = (na, na) leaf_gen
 
-  type t = Paths_types.Fragment.any
+  type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Fragment.any
+  
+  type t = (na, na) gen
 end
 
 (** References present in documentation comments ([{!Foo.Bar}]) *)
 module rec Reference : sig
   module Resolved : sig
     module Signature : sig
-      type t = Paths_types.Resolved_reference.signature
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.signature
+      type t = (na, na) gen
     end
 
     module ClassSignature : sig
-      type t = Paths_types.Resolved_reference.class_signature
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.class_signature
+      type t = (na, na) gen
     end
 
     module DataType : sig
-      type t = Paths_types.Resolved_reference.datatype
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.datatype
+      type t = (na, na) gen
     end
 
     module FieldParent : sig
-      type t = Paths_types.Resolved_reference.field_parent
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.field_parent
+      type t = (na, na) gen
     end
 
     module LabelParent : sig
-      type t = Paths_types.Resolved_reference.label_parent
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.label_parent
+      type t = (na, na) gen
     end
 
     module Module : sig
-      type t = Paths_types.Resolved_reference.module_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.module_
+      type t = (na, na) gen
     end
 
     module ModuleType : sig
-      type t = Paths_types.Resolved_reference.module_type
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.module_type
+      type t = (na, na) gen
     end
 
     module Type : sig
-      type t = Paths_types.Resolved_reference.type_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.type_
+      type t = (na, na) gen
     end
 
     module Constructor : sig
-      type t = Paths_types.Resolved_reference.constructor
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.constructor
+      type t = (na, na) gen
     end
 
     module Field : sig
-      type t = Paths_types.Resolved_reference.field
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.field
+      type t = (na, na) gen
     end
 
     module Extension : sig
-      type t = Paths_types.Resolved_reference.extension
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.extension
+      type t = (na, na) gen
     end
 
     module ExtensionDecl : sig
-      type t = Paths_types.Resolved_reference.extension_decl
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.extension_decl
+      type t = (na, na) gen
     end
 
     module Exception : sig
-      type t = Paths_types.Resolved_reference.exception_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.exception_
+      type t = (na, na) gen
     end
 
     module Value : sig
-      type t = Paths_types.Resolved_reference.value
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.value
+      type t = (na, na) gen
     end
 
     module Class : sig
-      type t = Paths_types.Resolved_reference.class_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.class_
+      type t = (na, na) gen
     end
 
     module ClassType : sig
-      type t = Paths_types.Resolved_reference.class_type
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.class_type
+      type t = (na, na) gen
     end
 
     module Method : sig
-      type t = Paths_types.Resolved_reference.method_
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.method_
+      type t = (na, na) gen
     end
 
     module InstanceVariable : sig
-      type t = Paths_types.Resolved_reference.instance_variable
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.instance_variable
+      type t = (na, na) gen
     end
 
     module Label : sig
-      type t = Paths_types.Resolved_reference.label
+      type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.label
+      type t = (na, na) gen
     end
 
     module Page : sig
       type t = Paths_types.Resolved_reference.page
     end
 
-    type t = Paths_types.Resolved_reference.any
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Resolved_reference.any
+    type t = (na, na) gen
 
     val identifier : t -> Identifier.t
   end
 
   module Signature : sig
-    type t = Paths_types.Reference.signature
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.signature
+    type t = (na, na) gen
   end
 
   module ClassSignature : sig
-    type t = Paths_types.Reference.class_signature
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.class_signature
+    type t = (na, na) gen
   end
 
   module DataType : sig
-    type t = Paths_types.Reference.datatype
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.datatype
+    type t = (na, na) gen
   end
 
   module FragmentTypeParent : sig
-    type t = Paths_types.Reference.fragment_type_parent
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.fragment_type_parent
+    type t = (na, na) gen
   end
 
   module LabelParent : sig
-    type t = Paths_types.Reference.label_parent
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.label_parent
+    type t = (na, na) gen
   end
 
   module Module : sig
-    type t = Paths_types.Reference.module_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.module_
+    type t = (na, na) gen
   end
 
   module ModuleType : sig
-    type t = Paths_types.Reference.module_type
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.module_type
+    type t = (na, na) gen
   end
 
   module Type : sig
-    type t = Paths_types.Reference.type_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.type_
+    type t = (na, na) gen
   end
 
   module Constructor : sig
-    type t = Paths_types.Reference.constructor
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.constructor
+    type t = (na, na) gen
   end
 
   module Field : sig
-    type t = Paths_types.Reference.field
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.field
+    type t = (na, na) gen
   end
 
   module Extension : sig
-    type t = Paths_types.Reference.extension
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.extension
+    type t = (na, na) gen
   end
 
   module ExtensionDecl : sig
-    type t = Paths_types.Reference.extension_decl
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.extension_decl
+    type t = (na, na) gen
   end
 
   module Exception : sig
-    type t = Paths_types.Reference.exception_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.exception_
+    type t = (na, na) gen
   end
 
   module Value : sig
-    type t = Paths_types.Reference.value
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.value
+    type t = (na, na) gen
   end
 
   module Class : sig
-    type t = Paths_types.Reference.class_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.class_
+    type t = (na, na) gen
   end
 
   module ClassType : sig
-    type t = Paths_types.Reference.class_type
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.class_type
+    type t = (na, na) gen
   end
 
   module Method : sig
-    type t = Paths_types.Reference.method_
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.method_
+    type t = (na, na) gen
   end
 
   module InstanceVariable : sig
-    type t = Paths_types.Reference.instance_variable
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.instance_variable
+    type t = (na, na) gen
   end
 
   module Label : sig
-    type t = Paths_types.Reference.label
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.label
+    type t = (na, na) gen
   end
 
   module Page : sig
-    type t = Paths_types.Reference.page
+    type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.page
+    type t = (na, na) gen
   end
 
-  type t = Paths_types.Reference.any
+  type ('lmod, 'lmodty) gen = ('lmod, 'lmodty) Paths_types.Reference.any
+  type t = (na, na) gen
 
   type tag_any = Paths_types.Reference.tag_any
 end

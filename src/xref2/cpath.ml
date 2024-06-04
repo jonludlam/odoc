@@ -31,6 +31,7 @@ module rec Resolved : sig
     [ `Local of Ident.path_type
     | `Gpath of Path.Resolved.Type.t
     | `Substituted of type_
+    | `SubstitutedCT of class_type
     | `CanonicalType of type_ * Path.Type.t
     | `Type of parent * TypeName.t
     | `Class of parent * TypeName.t

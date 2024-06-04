@@ -88,6 +88,8 @@ let rec is_forward : Paths.Path.Module.t -> bool = function
   | `Dot (p, _) -> is_forward p
   | `Apply (p1, p2) -> is_forward p1 || is_forward p2
   | `Substituted s -> is_forward s
+  | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+
 
 let rec should_reresolve : Paths.Path.Resolved.t -> bool =
  fun p ->
@@ -122,6 +124,8 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `SubstitutedMT m -> should_reresolve (m :> t)
   | `SubstitutedT m -> should_reresolve (m :> t)
   | `SubstitutedCT m -> should_reresolve (m :> t)
+  | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+
 
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true

@@ -1354,6 +1354,8 @@ module Fmt = struct
         wrap c "substitutedt" model_path ppf (m :> Odoc_model.Paths.Path.t)
     | `SubstitutedCT m ->
         wrap c "substitutedct" model_path ppf (m :> Odoc_model.Paths.Path.t)
+    | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+
 
   and model_resolved_path (c : config) ppf (p : rpath) =
     let open Odoc_model.Paths.Path.Resolved in
@@ -1426,6 +1428,8 @@ module Fmt = struct
     | `SubstitutedT m -> wrap c "substitutedt" model_resolved_path ppf (m :> t)
     | `SubstitutedCT m ->
         wrap c "substitutedct" model_resolved_path ppf (m :> t)
+    | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+
 
   and model_fragment c ppf (f : Odoc_model.Paths.Fragment.t) =
     match f with
@@ -1923,6 +1927,8 @@ module Of_Lang = struct
     | `Hidden p1 -> `Hidden (recurse p1)
     | `OpaqueModule m -> `OpaqueModule (recurse m)
     | `Substituted m -> `Substituted (recurse m)
+    | `LocalMod (`Na _) -> .
+
 
   and resolved_module_type_path :
       _ ->
@@ -1949,6 +1955,7 @@ module Of_Lang = struct
           ( resolved_module_type_path ident_map p1,
             resolved_module_type_path ident_map p2 )
     | `SubstitutedMT m -> `Substituted (resolved_module_type_path ident_map m)
+    | `LocalModTy (`Na _) -> .
 
   and resolved_type_path :
       _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =
@@ -1967,8 +1974,9 @@ module Of_Lang = struct
         `ClassType (`Module (resolved_module_path ident_map p), name)
     | `SubstitutedT m -> `Substituted (resolved_type_path ident_map m)
     | `SubstitutedCT m ->
-        `Substituted
-          (resolved_class_type_path ident_map m :> Cpath.Resolved.type_)
+        `SubstitutedCT
+          (resolved_class_type_path ident_map m :> Cpath.Resolved.class_type)
+    | `LocalTy (`Na _) -> .
 
   and resolved_value_path :
       _ -> Odoc_model.Paths.Path.Resolved.Value.t -> Cpath.Resolved.value =
@@ -1977,6 +1985,7 @@ module Of_Lang = struct
     | `Value (p, name) ->
         `Value (`Module (resolved_module_path ident_map p), name)
     | `Identifier _ -> `Gpath p
+    | `LocalVal (`Na _) -> .
 
   and resolved_class_type_path :
       _ ->
