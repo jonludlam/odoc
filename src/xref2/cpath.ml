@@ -42,7 +42,7 @@ module rec Resolved : sig
 
   and class_type =
     [ `Local of Ident.path_class_type
-    | `Substituted of class_type
+    | `SubstitutedCT of class_type
     | `Gpath of Path.Resolved.ClassType.t
     | `Class of parent * TypeName.t
     | `ClassType of parent * TypeName.t ]
@@ -127,6 +127,7 @@ and is_resolved_module_type_substituted : Resolved.module_type -> bool =
 and is_resolved_type_substituted : Resolved.type_ -> bool = function
   | `Local _ -> false
   | `Substituted _ -> true
+  | `SubstitutedCT _ -> true
   | `Gpath _ -> false
   | `CanonicalType (t, _) -> is_resolved_type_substituted t
   | `Type (a, _) | `Class (a, _) | `ClassType (a, _) ->
@@ -134,7 +135,7 @@ and is_resolved_type_substituted : Resolved.type_ -> bool = function
 
 and is_resolved_class_type_substituted : Resolved.class_type -> bool = function
   | `Local _ -> false
-  | `Substituted _ -> true
+  | `SubstitutedCT _ -> true
   | `Gpath _ -> false
   | `Class (a, _) | `ClassType (a, _) -> is_resolved_parent_substituted a
 
@@ -257,6 +258,7 @@ and is_resolved_type_hidden : Resolved.type_ -> bool = function
   | `Local _ -> false
   | `Gpath p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
   | `Substituted p -> is_resolved_type_hidden p
+  | `SubstitutedCT p -> is_resolved_class_type_hidden p
   | `CanonicalType (_, `Resolved _) -> false
   | `CanonicalType (p, _) -> is_resolved_type_hidden p
   | `Type (p, _) | `Class (p, _) | `ClassType (p, _) ->
@@ -265,7 +267,7 @@ and is_resolved_type_hidden : Resolved.type_ -> bool = function
 and is_resolved_class_type_hidden : Resolved.class_type -> bool = function
   | `Local _ -> false
   | `Gpath p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `Substituted p -> is_resolved_class_type_hidden p
+  | `SubstitutedCT p -> is_resolved_class_type_hidden p
   | `Class (p, _) | `ClassType (p, _) ->
       is_resolved_parent_hidden ~weak_canonical_test:false p
 
@@ -369,6 +371,7 @@ and unresolve_resolved_parent_path : Resolved.parent -> module_ = function
 and unresolve_resolved_type_path : Resolved.type_ -> type_ = function
   | (`Gpath _ | `Local _) as p -> `Resolved p
   | `Substituted x -> unresolve_resolved_type_path x
+  | `SubstitutedCT _x -> failwith "unhandled"
   | `CanonicalType (t1, _) -> unresolve_resolved_type_path t1
   | `Type (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
   | `Class (p, n) ->
@@ -379,7 +382,7 @@ and unresolve_resolved_type_path : Resolved.type_ -> type_ = function
 and unresolve_resolved_class_type_path : Resolved.class_type -> class_type =
   function
   | (`Local _ | `Gpath _) as p -> `Resolved p
-  | `Substituted x -> unresolve_resolved_class_type_path x
+  | `SubstitutedCT x -> unresolve_resolved_class_type_path x
   | `Class (p, n) ->
       `DotT (unresolve_resolved_parent_path p,n)
   | `ClassType (p, n) ->

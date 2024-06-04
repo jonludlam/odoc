@@ -346,6 +346,9 @@ and resolved_type_path :
   | `Gpath _ -> Not_replaced p
   | `Substituted p ->
       resolved_type_path s p |> map_replaced (fun p -> `Substituted p)
+  | `SubstitutedCT p ->
+      Not_replaced (`SubstitutedCT (resolved_class_type_path s p))
+  
   | `Type (p, n) -> Not_replaced (`Type (resolved_parent_path s p, n))
   | `ClassType (p, n) -> Not_replaced (`ClassType (resolved_parent_path s p, n))
   | `Class (p, n) -> Not_replaced (`Class (resolved_parent_path s p, n))
@@ -387,7 +390,7 @@ and resolved_class_type_path :
       | Some (`Renamed x) -> `Local x
       | None -> `Local id)
   | `Gpath _ -> p
-  | `Substituted p -> `Substituted (resolved_class_type_path s p)
+  | `SubstitutedCT p -> `SubstitutedCT (resolved_class_type_path s p)
   | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
   | `Class (p, n) -> `Class (resolved_parent_path s p, n)
 

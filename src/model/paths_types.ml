@@ -356,7 +356,7 @@ module rec Path : sig
     | `LocalCty of 'lmod
     | `SubstitutedCT of ('lmod, 'lmodty, 'lcty) class_type
     | `Identifier of Identifier.path_class_type * bool
-    | `DotCT of ('lmod, 'lmodty) module_ * TypeName.t ]
+    | `DotT of ('lmod, 'lmodty) module_ * TypeName.t ]
   (** @canonical Odoc_model.Paths.Path.ClassType.t *)
 
   type ('lmod, 'lmodty, 'lcty, 'lty, 'lval) any =
@@ -424,6 +424,7 @@ and Resolved_path : sig
   type ('lmod, 'lmodty, 'lcty, 'lty) type_ =
     [ `Identifier of Identifier.path_type
     | `LocalTy of 'lty
+    | `LocalCty of 'lcty
     | `SubstitutedT of ('lmod, 'lmodty, 'lcty, 'lty) type_
     | `SubstitutedCT of ('lmod, 'lcty, 'lmodty) class_type
     | `CanonicalType of ('lmod, 'lmodty, 'lcty, 'lty) type_ * ('lmod, 'lmodty, 'lcty, 'lty) Path.type_

@@ -197,6 +197,7 @@ module Path = struct
     | `Class (p, name) -> `Class (resolved_parent map p, name)
     | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
     | `Substituted s -> `SubstitutedT (resolved_type map s)
+    | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)
 
   and resolved_value map (p : Cpath.Resolved.value) :
       Odoc_model.Paths.Path.Resolved.Value.t =
@@ -212,7 +213,7 @@ module Path = struct
         `Identifier (Component.PathClassTypeMap.find id map.path_class_type)
     | `Class (p, name) -> `Class (resolved_parent map p, name)
     | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
-    | `Substituted s -> `SubstitutedCT (resolved_class_type map s)
+    | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)
 
   let rec module_fragment :
       maps -> Cfrag.module_ -> Odoc_model.Paths.Fragment.Module.t =

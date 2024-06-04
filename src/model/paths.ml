@@ -654,6 +654,7 @@ module Path = struct
 
   type t = (na, na, na, na, na) gen
   type rt = (na, na, na, na, na) Paths_types.Resolved_path.any
+  type module_ = (na, na) Paths_types.Path.module_
 
   let rec is_resolved_hidden :
       weak_canonical_test:bool -> rt -> bool =
@@ -714,16 +715,16 @@ module Path = struct
     function
     | `Resolved r -> is_resolved_hidden ~weak_canonical_test:false r
     | `Identifier (_, hidden) -> hidden
-    | `Substituted r -> is_path_hidden (r :> any)
-    | `SubstitutedMT r -> is_path_hidden (r :> any)
-    | `SubstitutedT r -> is_path_hidden (r :> any)
-    | `SubstitutedCT r -> is_path_hidden (r :> any)
+    | `Substituted r -> is_path_hidden (r :> t)
+    | `SubstitutedMT r -> is_path_hidden (r :> t)
+    | `SubstitutedT r -> is_path_hidden (r :> t)
+    | `SubstitutedCT r -> is_path_hidden (r :> t)
     | `Root s -> ModuleName.is_hidden s
     | `Forward _ -> false
-    | `Dot (p, n) -> ModuleName.is_hidden n || is_path_hidden (p : module_ :> any)
-    | `DotMT (p, n) -> ModuleTypeName.is_hidden n || is_path_hidden (p : module_ :> any)
-    | `DotT (p, n) -> TypeName.is_hidden n || is_path_hidden (p : module_ :> any)
-    | `DotV (p, n) -> ValueName.is_hidden n || is_path_hidden (p : module_ :> any)
+    | `Dot (p, n) -> ModuleName.is_hidden n || is_path_hidden (p : module_ :> t)
+    | `DotMT (p, n) -> ModuleTypeName.is_hidden n || is_path_hidden (p : module_ :> t)
+    | `DotT (p, n) -> TypeName.is_hidden n || is_path_hidden (p : module_ :> t)
+    | `DotV (p, n) -> ValueName.is_hidden n || is_path_hidden (p : module_ :> t)
     | `Apply (p1, p2) ->
         is_path_hidden (p1 :> t)
         || is_path_hidden (p2 :> t)
