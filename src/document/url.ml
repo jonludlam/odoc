@@ -49,7 +49,13 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
     | `ClassType (p, s) ->
         render_resolved (p :> t) ^ "." ^ TypeName.to_string s
+    | `LocalMod (`Na _) -> .
+    | `LocalModTy (`Na _) -> .
+    | `LocalTy (`Na _) -> .
+    | `LocalCty (`Na _) -> .
+    | `LocalVal (`Na _) -> .
   and dot p s = render_path (p : Odoc_model.Paths.Path.Module.t :> Odoc_model.Paths.Path.t) ^ "." ^ s
+
   and render_path : Odoc_model.Paths.Path.t -> string =
    fun x ->
     match x with
@@ -67,6 +73,11 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `SubstitutedMT m -> render_path (m :> t)
     | `SubstitutedT m -> render_path (m :> t)
     | `SubstitutedCT m -> render_path (m :> t)
+    | `LocalMod (`Na _) -> .
+    | `LocalModTy (`Na _) -> .
+    | `LocalTy (`Na _) -> .
+    | `LocalCty (`Na _) -> .
+    | `LocalVal (`Na _) -> .
   in
 
   render_path

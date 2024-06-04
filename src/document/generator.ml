@@ -100,11 +100,13 @@ let make_expansion_page ~source_anchor url comments items =
 include Generator_signatures
 
 module Make (Syntax : SYNTAX) = struct
-  module Link : sig
+  module Link
+   (* : sig
     val from_path : Paths.Path.t -> text
 
     val from_fragment : Paths.Fragment.leaf -> text
-  end = struct
+  end  *)
+  = struct
     open Paths
 
     let rec from_path : Path.t -> text =
@@ -155,6 +157,11 @@ module Make (Syntax : SYNTAX) = struct
           | Error exn ->
               Printf.eprintf "Id.href failed: %S\n%!" (Url.Error.to_string exn);
               O.txt txt)
+      | `LocalMod (`Na _)
+      | `LocalModTy (`Na _)
+      | `LocalTy (`Na _)
+      | `LocalCty (`Na _)
+      | `LocalVal (`Na _) -> .
 
     let dot prefix suffix = prefix ^ "." ^ suffix
 

@@ -220,7 +220,9 @@ module General_paths = struct
       | `Substituted m -> C ("`Substituted", (m :> p), path)
       | `SubstitutedMT m -> C ("`SubstitutedMT", (m :> p), path)
       | `SubstitutedT m -> C ("`SubstitutedT", (m :> p), path)
-      | `SubstitutedCT m -> C ("`SubstitutedCT", (m :> p), path))
+      | `SubstitutedCT m -> C ("`SubstitutedCT", (m :> p), path)
+      | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+      )
 
   and resolved_path : rp t =
     Variant
@@ -284,7 +286,8 @@ module General_paths = struct
       | `Substituted c -> C ("`Substituted", (c :> rp), resolved_path)
       | `SubstitutedMT c -> C ("`SubstitutedMT", (c :> rp), resolved_path)
       | `SubstitutedT c -> C ("`SubstitutedT", (c :> rp), resolved_path)
-      | `SubstitutedCT c -> C ("`SubstitutedCT", (c :> rp), resolved_path))
+      | `SubstitutedCT c -> C ("`SubstitutedCT", (c :> rp), resolved_path)
+      | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .)
 
   and reference : r t =
     Variant
