@@ -181,7 +181,7 @@ let search_urls = %s;
               (Html.cdata_script
                  {|
           document.addEventListener("DOMContentLoaded", function () {
-            var elements = Array.from(document.getElementsByClassName("odoc-katex-math"));
+            var elements = Array.from(document.getElementsByTypeName("odoc-katex-math"));
             for (var i = 0; i < elements.length; i++) {
               var el = elements[i];
               var content = el.textContent;
