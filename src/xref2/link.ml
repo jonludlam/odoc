@@ -1119,7 +1119,7 @@ let page env page =
             check_resolves ~what:(`Child_page page) Env.lookup_page page
         | Page.Module_child mod_ ->
             check_resolves ~what:(`Child_module mod_) Env.lookup_root_module
-              mod_)
+              (Odoc_model.Names.ModuleName.make_std mod_))
       page.Lang.Page.children
   in
   {
