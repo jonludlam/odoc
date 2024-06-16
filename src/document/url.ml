@@ -26,7 +26,7 @@ let render_path : Odoc_model.Paths.Path.t -> string =
           render_resolved (p1 :> t)
         else render_resolved (p2 :> t)
     | `Hidden p -> render_resolved (p :> t)
-    | `Module (p, s) -> render_resolved (p :> t) ^ "." ^ ModuleName.to_string s
+    | `Module (p, s) -> render_parent p ^ "." ^ ModuleName.to_string s
     | `Canonical (_, `Resolved p) -> render_resolved (p :> t)
     | `Canonical (p, _) -> render_resolved (p :> t)
     | `CanonicalModuleType (_, `Resolved p) -> render_resolved (p :> t)
@@ -43,17 +43,24 @@ let render_path : Odoc_model.Paths.Path.t -> string =
         ^ render_resolved (p :> Odoc_model.Paths.Path.Resolved.t)
         ^ ")"
     | `ModuleType (p, s) ->
-        render_resolved (p :> t) ^ "." ^ ModuleTypeName.to_string s
-    | `Type (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
-    | `Value (p, s) -> render_resolved (p :> t) ^ "." ^ ValueName.to_string s
-    | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
+      render_parent p ^ "." ^ ModuleTypeName.to_string s
+    | `Type (p, s) -> render_parent p ^ "." ^ TypeName.to_string s
+    | `Value (p, s) -> render_parent p ^ "." ^ ValueName.to_string s
+    | `Class (p, s) -> render_parent p ^ "." ^ TypeName.to_string s
     | `ClassType (p, s) ->
-        render_resolved (p :> t) ^ "." ^ TypeName.to_string s
+      render_parent p ^ "." ^ TypeName.to_string s
     | `LocalMod (`Na _) -> .
     | `LocalModTy (`Na _) -> .
     | `LocalTy (`Na _) -> .
     | `LocalCty (`Na _) -> .
     | `LocalVal (`Na _) -> .
+
+  and render_parent : Odoc_model.Paths.Path.Resolved.parent -> string =
+    function
+    | `Module m -> render_resolved (m :> Odoc_model.Paths.Path.Resolved.t)
+    | `ModuleType (_, `Na _) -> .
+    | `FragmentRoot (`Na _) -> .
+
   and dot p s = render_path (p : Odoc_model.Paths.Path.Module.t :> Odoc_model.Paths.Path.t) ^ "." ^ s
 
   and render_path : Odoc_model.Paths.Path.t -> string =
