@@ -234,7 +234,7 @@ module General_paths = struct
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
       | `Hidden x -> C ("`Hidden", (x :> rp), resolved_path)
-      | `Module (x1, x2) ->
+      | `Module (`Module x1, x2) ->
           C ("`Module", ((x1 :> rp), x2), Pair (resolved_path, Names.modulename))
       | `Canonical (x1, x2) ->
           C ("`Canonical", ((x1 :> rp), (x2 :> p)), Pair (resolved_path, path))
@@ -251,7 +251,7 @@ module General_paths = struct
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
       | `OpaqueModule x -> C ("`OpaqueModule", (x :> rp), resolved_path)
-      | `ModuleType (x1, x2) ->
+      | `ModuleType (`Module x1, x2) ->
           C
             ( "`ModuleType",
               ((x1 :> rp), x2),
@@ -272,13 +272,13 @@ module General_paths = struct
               ((x1 :> rp), (x2 :> p)),
               Pair (resolved_path, path) )
       | `OpaqueModuleType x -> C ("`OpaqueModuleType", (x :> rp), resolved_path)
-      | `Type (x1, x2) ->
+      | `Type (`Module x1, x2) ->
           C ("`Type", ((x1 :> rp), x2), Pair (resolved_path, Names.typename))
-      | `Value (x1, x2) ->
+      | `Value (`Module x1, x2) ->
           C ("`Value", ((x1 :> rp), x2), Pair (resolved_path, Names.valuename))
-      | `Class (x1, x2) ->
+      | `Class (`Module x1, x2) ->
           C ("`Class", ((x1 :> rp), x2), Pair (resolved_path, Names.classname))
-      | `ClassType (x1, x2) ->
+      | `ClassType (`Module x1, x2) ->
           C
             ( "`ClassType",
               ((x1 :> rp), x2),
@@ -287,7 +287,14 @@ module General_paths = struct
       | `SubstitutedMT c -> C ("`SubstitutedMT", (c :> rp), resolved_path)
       | `SubstitutedT c -> C ("`SubstitutedT", (c :> rp), resolved_path)
       | `SubstitutedCT c -> C ("`SubstitutedCT", (c :> rp), resolved_path)
-      | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .)
+      | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _)
+      | `Module (`ModuleType (_, `Na _), _) | `Module (`FragmentRoot (`Na _), _)
+      | `ModuleType (`ModuleType (_, `Na _), _) | `ModuleType (`FragmentRoot (`Na _), _) -> .
+      | `Type (`ModuleType (_, `Na _), _) | `Type (`FragmentRoot (`Na _), _)
+      | `ClassType (`ModuleType (_, `Na _), _) | `ClassType (`FragmentRoot (`Na _), _) -> .
+      | `Class (`ModuleType (_, `Na _), _) | `Class (`FragmentRoot (`Na _), _)
+      | `Value (`ModuleType (_, `Na _), _) | `Value (`FragmentRoot (`Na _), _) -> .)
+  
 
   and reference : r t =
     Variant

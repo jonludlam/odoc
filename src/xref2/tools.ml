@@ -715,19 +715,23 @@ and lookup_parent :
 
 and lookup_parent_gpath :
     Env.t ->
-    Odoc_model.Paths.Path.Resolved.Module.t ->
+    Odoc_model.Paths.Path.Resolved.parent ->
     ( Component.Signature.t * Component.Substitution.t,
       [ `Parent of parent_lookup_error ] )
     Result.result =
  fun env parent ->
-  lookup_module_gpath env parent
-  |> map_error (fun e -> `Parent (`Parent_module e))
-  >>= fun m ->
-  let m = Component.Delayed.get m in
-  expansion_of_module env m
-  |> map_error (fun e -> `Parent (`Parent_sig e))
-  >>= assert_not_functor
-  >>= fun sg -> Ok (sg, prefix_substitution (`Module (`Gpath parent)) sg)
+  match parent with
+  | `Module parent -> 
+    lookup_module_gpath env parent
+    |> map_error (fun e -> `Parent (`Parent_module e))
+    >>= fun m ->
+    let m = Component.Delayed.get m in
+    expansion_of_module env m
+    |> map_error (fun e -> `Parent (`Parent_sig e))
+    >>= assert_not_functor
+    >>= fun sg -> Ok (sg, prefix_substitution (`Module (`Gpath parent)) sg)
+  | `ModuleType (_, `Na _) -> .
+  | `FragmentRoot (`Na _) -> .
 
 and lookup_type_gpath :
     Env.t ->
@@ -1176,6 +1180,16 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
       in
       Ok (p', t)
 
+and reresolve_parent_gpath :
+      Env.t ->
+      Odoc_model.Paths.Path.Resolved.parent ->
+        Odoc_model.Paths.Path.Resolved.parent =
+    fun env path ->
+      match path with
+      | `Module m -> `Module (reresolve_module_gpath env m)
+      | `ModuleType (_, `Na _) -> .
+      | `FragmentRoot (`Na _) -> .
+
 and reresolve_module_gpath :
     Env.t ->
     Odoc_model.Paths.Path.Resolved.Module.t ->
@@ -1187,7 +1201,7 @@ and reresolve_module_gpath :
       `Apply
         ( reresolve_module_gpath env functor_path,
           reresolve_module_gpath env argument_path )
-  | `Module (parent, name) -> `Module (reresolve_module_gpath env parent, name)
+  | `Module (parent, name) -> `Module (reresolve_parent_gpath env parent, name)
   | `Alias (p1, p2) ->
       let dest' = reresolve_module_gpath env p1 in
       if
@@ -1463,7 +1477,7 @@ and reresolve_module_type_gpath :
   match path with
   | `Identifier _ -> path
   | `ModuleType (parent, name) ->
-      `ModuleType (reresolve_module_gpath env parent, name)
+      `ModuleType (reresolve_parent_gpath env parent, name)
   | `CanonicalModuleType (p1, (`Resolved _ as p2)) ->
       `CanonicalModuleType (reresolve_module_type_gpath env p1, p2)
   | `CanonicalModuleType (p1, p2) ->

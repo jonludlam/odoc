@@ -158,9 +158,9 @@ module Path = struct
     | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2)
     | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
 
-  and resolved_parent map (p : Cpath.Resolved.parent) =
+  and resolved_parent map (p : Cpath.Resolved.parent) : Odoc_model.Paths.Path.Resolved.parent =
     match p with
-    | `Module m -> resolved_module map m
+    | `Module m -> `Module (resolved_module map m)
     | `ModuleType _ -> failwith "Invalid"
     | `FragmentRoot -> (
         match map.fragment_root with

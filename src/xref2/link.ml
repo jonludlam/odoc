@@ -117,7 +117,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `ClassType (p, _)
   | `ModuleType (p, _)
   | `Module (p, _) ->
-      should_reresolve (p :> t)
+      should_reresolve_parent p
   | `OpaqueModule m -> should_reresolve (m :> t)
   | `OpaqueModuleType m -> should_reresolve (m :> t)
   | `Substituted m -> should_reresolve (m :> t)
@@ -126,6 +126,11 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `SubstitutedCT m -> should_reresolve (m :> t)
   | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
 
+and should_reresolve_parent : Paths.Path.Resolved.parent -> bool =
+  function
+  | `Module m -> should_reresolve (m :> Paths.Path.Resolved.t)
+  | `ModuleType (_, `Na _) -> .
+  | `FragmentRoot (`Na _) -> .
 
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true

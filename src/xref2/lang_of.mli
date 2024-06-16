@@ -22,7 +22,7 @@ module Path : sig
 
   val resolved_module : maps -> Cpath.Resolved.module_ -> Path.Resolved.Module.t
 
-  val resolved_parent : maps -> Cpath.Resolved.parent -> Path.Resolved.Module.t
+  val resolved_parent : maps -> Cpath.Resolved.parent -> Path.Resolved.parent
 
   val resolved_module_type :
     maps -> Cpath.Resolved.module_type -> Path.Resolved.ModuleType.t

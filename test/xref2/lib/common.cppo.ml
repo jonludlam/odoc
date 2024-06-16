@@ -558,6 +558,12 @@ module LangUtils = struct
             | Constr (p,_args) -> path ppf (p :> Odoc_model.Paths.Path.t)
             | _ -> Format.fprintf ppf "unhandled type_expr"
 
+        and resolved_parent : Format.formatter -> Odoc_model.Paths.Path.Resolved.parent -> unit = fun ppf p ->
+            match p with
+            | `Module m -> resolved_path ppf (m :> Odoc_model.Paths.Path.Resolved.t)
+            | `ModuleType (_, `Na _) -> .
+            | `FragmentRoot (`Na _) -> .
+
         and resolved_path : Format.formatter -> Odoc_model.Paths.Path.Resolved.t -> unit = fun ppf p ->
             let cast p = (p :> Odoc_model.Paths.Path.Resolved.t) in 
             match p with
@@ -566,10 +572,10 @@ module LangUtils = struct
             | `Alias (dest, src) -> Format.fprintf ppf "(%a -> %a)" path (src :> Odoc_model.Paths.Path.t) resolved_path (cast dest)
             | `AliasModuleType (path, realpath) -> Format.fprintf ppf "(%a -> %a)" resolved_path (cast path) resolved_path (cast realpath)
             | `Subst (modty, m) -> Format.fprintf ppf "(%a subst-> %a)" resolved_path (cast modty) resolved_path (cast m)
-            | `Module (p, m) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (ModuleName.to_string m)
-            | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (ModuleTypeName.to_string mt)
-            | `Type (p, t) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (TypeName.to_string t)
-            | `Value (p, t) -> Format.fprintf ppf "%a.%s" resolved_path (cast p) (ValueName.to_string t)
+            | `Module (p, m) -> Format.fprintf ppf "%a.%s" resolved_parent p (ModuleName.to_string m)
+            | `ModuleType (p, mt) -> Format.fprintf ppf "%a.%s" resolved_parent p (ModuleTypeName.to_string mt)
+            | `Type (p, t) -> Format.fprintf ppf "%a.%s" resolved_parent p (TypeName.to_string t)
+            | `Value (p, t) -> Format.fprintf ppf "%a.%s" resolved_parent p (ValueName.to_string t)
             | `OpaqueModule m -> Format.fprintf ppf "opaquemodule(%a)" resolved_path (cast m)
             | `OpaqueModuleType m -> Format.fprintf ppf "opaquemoduletype(%a)" resolved_path (cast m)
             | `SubstT (_, _)
