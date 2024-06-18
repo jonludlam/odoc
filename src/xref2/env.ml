@@ -645,7 +645,7 @@ let add_functor_args' :
           ( arg.Component.FunctorParameter.id,
             Paths.Identifier.Mk.parameter
               ( parent,
-                Ident.Name.typed_functor_parameter
+                Ident.Name.typed_module
                   arg.Component.FunctorParameter.id ),
             mk_functor_parameter arg.expr )
           :: find_args (Paths.Identifier.Mk.result parent) res
@@ -659,7 +659,7 @@ let add_functor_args' :
        themselves *)
     let fold_fn (env, subst) (ident, identifier, m) =
       let ident, identifier =
-        ((ident, identifier) :> Ident.path_module * Identifier.Path.Module.t)
+        ((ident, identifier) :> Ident.module_ * Identifier.Path.Module.t)
       in
       let doc = m.Component.Module.doc in
       let m = Component.Delayed.put_val (Subst.module_ subst m) in
