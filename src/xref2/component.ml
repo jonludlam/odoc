@@ -1729,7 +1729,10 @@ module Of_Lang = struct
       _ -> Odoc_model.Paths.Path.Resolved.parent -> Cpath.Resolved.parent =
    fun ident_map p ->
     match p with
-    | `Module m -> `Module (resolved_module_path ident_map m)
+    | `Module m ->
+        let m' = resolved_module_path ident_map m in
+        if m' == (m :> Cpath.Resolved.module_) then (p :> Cpath.Resolved.parent)
+        else `Module m'
     | `ModuleType (_, `Na _) -> .
     | `FragmentRoot (`Na _) -> .
 
@@ -1741,15 +1744,53 @@ module Of_Lang = struct
     | `Identifier i -> (
         try `LocalMod (find_any_module i ident_map :> Cpath.lmod)
         with Not_found -> (p :> Cpath.Resolved.module_))
-    | `Module (p, name) -> `Module (resolved_parent ident_map p, name)
-    | `Apply (p1, p2) -> `Apply (recurse p1, recurse p2)
-    | `Alias (p1, p2, _) -> `Alias (recurse p1, module_path ident_map p2, None)
+    | `Module (p1, name) ->
+        let p1' = resolved_parent ident_map p1 in
+        if p1' == (p1 :> Cpath.Resolved.parent) then
+          (p :> Cpath.Resolved.module_)
+        else `Module (p1', name)
+    | `Apply (p1, p2) ->
+        let p1' = recurse p1 in
+        let p2' = recurse p2 in
+        if
+          p1' == (p1 :> Cpath.Resolved.module_)
+          && p2' == (p2 :> Cpath.Resolved.module_)
+        then (p :> Cpath.Resolved.module_)
+        else `Apply (p1', p2')
+    | `Alias (p1, p2, _) ->
+        let p1' = recurse p1 in
+        let p2' = module_path ident_map p2 in
+        if p1' == (p1 :> Cpath.Resolved.module_) && p2' == (p2 :> Cpath.module_)
+        then (p :> Cpath.Resolved.module_)
+        else `Alias (p1', p2', None)
     | `Subst (p1, p2) ->
-        `Subst (resolved_module_type_path ident_map p1, recurse p2)
-    | `Canonical (p1, p2) -> `Canonical (recurse p1, module_path ident_map p2)
-    | `Hidden p1 -> `Hidden (recurse p1)
-    | `OpaqueModule m -> `OpaqueModule (recurse m)
-    | `Substituted m -> `Substituted (recurse m)
+        let p1' = resolved_module_type_path ident_map p1 in
+        let p2' = recurse p2 in
+        if
+          p1' == (p1 :> Cpath.Resolved.module_type)
+          && p2' == (p2 :> Cpath.Resolved.module_)
+        then (p :> Cpath.Resolved.module_)
+        else `Subst (p1', p2')
+    | `Canonical (p1, p2) ->
+        let p1' = recurse p1 in
+        if p1' == (p1 :> Cpath.Resolved.module_) then
+          (p :> Cpath.Resolved.module_)
+        else `Canonical (p1', (p2 :> Cpath.module_))
+    | `Hidden p1 ->
+        let p1' = recurse p1 in
+        if p1' == (p1 :> Cpath.Resolved.module_) then
+          (p :> Cpath.Resolved.module_)
+        else `Hidden p1'
+    | `OpaqueModule m ->
+        let m' = recurse m in
+        if m' == (p :> Cpath.Resolved.module_) then
+          (p :> Cpath.Resolved.module_)
+        else `OpaqueModule m'
+    | `Substituted m ->
+        let m' = recurse m in
+        if m' == (p :> Cpath.Resolved.module_) then
+          (p :> Cpath.Resolved.module_)
+        else `Substituted m'
     | `LocalMod (`Na _) -> .
 
   and resolved_module_type_path :
@@ -1789,13 +1830,27 @@ module Of_Lang = struct
         with Not_found -> (p :> Cpath.Resolved.type_))
     | `CanonicalType (p1, p2) ->
         `CanonicalType (resolved_type_path ident_map p1, type_path ident_map p2)
-    | `Type (p, name) -> `Type (resolved_parent ident_map p, name)
-    | `Class (p, name) -> `Class (resolved_parent ident_map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent ident_map p, name)
-    | `SubstitutedT m -> `SubstitutedT (resolved_type_path ident_map m)
+    | `Type (p1, name) ->
+        let p1' = resolved_parent ident_map p1 in
+        if p1' == (p1 :> Cpath.Resolved.parent) then (p :> Cpath.Resolved.type_)
+        else `Type (p1', name)
+    | `Class (p1, name) ->
+        let p1' = resolved_parent ident_map p1 in
+        if p1' == (p1 :> Cpath.Resolved.parent) then (p :> Cpath.Resolved.type_)
+        else `Class (p1', name)
+    | `ClassType (p1, name) ->
+        let p1' = resolved_parent ident_map p1 in
+        if p1' == (p1 :> Cpath.Resolved.parent) then (p :> Cpath.Resolved.type_)
+        else `ClassType (p1', name)
+    | `SubstitutedT m ->
+        let m' = resolved_type_path ident_map m in
+        if m' == (m :> Cpath.Resolved.type_) then (p :> Cpath.Resolved.type_)
+        else `SubstitutedT m'
     | `SubstitutedCT m ->
-        `SubstitutedCT
-          (resolved_class_type_path ident_map m :> Cpath.Resolved.class_type)
+        let m' = resolved_class_type_path ident_map m in
+        if m' == (m :> Cpath.Resolved.class_type) then
+          (p :> Cpath.Resolved.type_)
+        else `SubstitutedCT m'
     | `LocalTy (`Na _) -> .
 
   and resolved_value_path :
