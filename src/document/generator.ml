@@ -163,7 +163,6 @@ module Make (Syntax : SYNTAX) = struct
       | `LocalMod (`Na _)
       | `LocalModTy (`Na _)
       | `LocalTy (`Na _)
-      | `LocalCty (`Na _)
       | `LocalVal (`Na _) ->
           .
 

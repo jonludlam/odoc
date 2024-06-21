@@ -347,22 +347,21 @@ module rec Path : sig
     pty : 'pty -> 'a;
   }
 
-  type ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval, 'a) genfn6 = {
+  type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'a) genfn5 = {
     g : ('lmod, 'lmodty, 'pty, 'a) genfn3;
-    lcty : 'lcty -> 'a;
     lty : 'lty -> 'a;
     lval : 'lval -> 'a;
   }
 
   val is_resolved_hidden_gen :
     weak_canonical_test:bool ->
-    ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval, bool) genfn6 ->
-    ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) Paths_types.Resolved_path.any ->
+    ('lmod, 'lmodty, 'pty, 'lty, 'lval, bool) genfn5 ->
+    ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Resolved_path.any ->
     bool
 
   val is_path_hidden_gen :
-    ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval, bool) genfn6 ->
-    ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) Paths_types.Path.any ->
+    ('lmod, 'lmodty, 'pty, 'lty, 'lval, bool) genfn5 ->
+    ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Path.any ->
     bool
 
   module Resolved : sig
@@ -387,9 +386,9 @@ module rec Path : sig
     end
 
     module Type : sig
-      type ('lmod, 'lmodty, 'pty, 'lcty, 'lty) gen =
-        ('lmod, 'lmodty, 'pty, 'lcty, 'lty) Paths_types.Resolved_path.type_
-      type t = (na, na, na, na, na) gen
+      type ('lmod, 'lmodty, 'pty, 'lty) gen =
+        ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Resolved_path.type_
+      type t = (na, na, na, na) gen
       (* val of_ident : Identifier.Path.Type.t -> t *)
 
       (* val is_hidden : t -> bool *)
@@ -409,9 +408,9 @@ module rec Path : sig
       type t = (na, na, na, na) gen
     end
 
-    type ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) gen =
-      ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) Paths_types.Resolved_path.any
-    type t = (na, na, na, na, na, na) gen
+    type ('lmod, 'lmodty, 'pty, 'lty, 'lval) gen =
+      ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Resolved_path.any
+    type t = (na, na, na, na, na) gen
     type parent = (na, na, na) Paths_types.Resolved_path.parent
     type ('lmod, 'lmodty, 'pty) parent_gen =
       ('lmod, 'lmodty, 'pty) Paths_types.Resolved_path.parent
@@ -434,9 +433,9 @@ module rec Path : sig
   end
 
   module Type : sig
-    type ('lmod, 'lmodty, 'pty, 'lcty, 'lty) gen =
-      ('lmod, 'lmodty, 'pty, 'lcty, 'lty) Paths_types.Path.type_
-    type t = (na, na, na, na, na) gen
+    type ('lmod, 'lmodty, 'pty, 'lty) gen =
+      ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Path.type_
+    type t = (na, na, na, na) gen
   end
 
   module Value : sig
@@ -446,14 +445,14 @@ module rec Path : sig
   end
 
   module ClassType : sig
-    type ('lmod, 'lmodty, 'pty, 'lcty) gen =
-      ('lmod, 'lmodty, 'pty, 'lcty) Paths_types.Path.class_type
+    type ('lmod, 'lmodty, 'pty, 'lty) gen =
+      ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Path.class_type
     type t = (na, na, na, na) gen
   end
 
-  type ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) gen =
-    ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) Paths_types.Path.any
-  type t = (na, na, na, na, na, na) gen
+  type ('lmod, 'lmodty, 'pty, 'lty, 'lval) gen =
+    ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Path.any
+  type t = (na, na, na, na, na) gen
 
   val is_hidden : t -> bool
 end

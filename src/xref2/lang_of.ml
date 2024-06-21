@@ -110,12 +110,6 @@ module Path = struct
         `Identifier
           (Component.TypeMap.find id map.path_type, TypeName.is_hidden n)
     | `LocalTy (`Na _) -> .
-    | `LocalCty (`LType (n, _) as id) ->
-        `Identifier
-          ( (Component.TypeMap.find id map.path_class_type
-              :> Odoc_model.Paths.Identifier.Path.Type.t),
-            TypeName.is_hidden n )
-    | `LocalCty (`Na _) -> .
     | `SubstitutedCT x -> `SubstitutedCT (class_type map x)
     | `Resolved x -> `Resolved (resolved_type map x)
     | `DotT (p, n) -> `DotT (module_ map p, n)
@@ -131,10 +125,10 @@ module Path = struct
         (({ iv = #Odoc_model.Paths.Identifier.Path.ClassType.t_pv; _ } as y), b)
       ->
         `Identifier (y, b)
-    | `LocalCty (`LType (n, _) as id) ->
+    | `LocalTy (`LType (n, _) as id) ->
         `Identifier
           (Component.TypeMap.find id map.path_class_type, TypeName.is_hidden n)
-    | `LocalCty (`Na _) -> .
+    | `LocalTy (`Na _) -> .
     | `Resolved x -> `Resolved (resolved_class_type map x)
     | `DotT (p, n) -> `DotT (module_ map p, n)
     | `Type (_, `Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
@@ -202,9 +196,6 @@ module Path = struct
     | `LocalTy (`LType _ as id) ->
         `Identifier (Component.TypeMap.find id map.path_type)
     | `LocalTy (`Na _) -> .
-    | `LocalCty (`LType _ as id) ->
-        `Identifier (Component.TypeMap.find id map.path_type)
-    | `LocalCty (`Na _) -> .
     | `CanonicalType (t1, t2) ->
         `CanonicalType (resolved_type map t1, type_ map t2)
     | `SubstitutedT s -> `SubstitutedT (resolved_type map s)
@@ -221,9 +212,9 @@ module Path = struct
       Odoc_model.Paths.Path.Resolved.ClassType.t =
     match p with
     | `Identifier y -> `Identifier y
-    | `LocalCty (`LType _ as id) ->
+    | `LocalTy (`LType _ as id) ->
         `Identifier (Component.TypeMap.find id map.path_class_type)
-    | `LocalCty (`Na _) -> .
+    | `LocalTy (`Na _) -> .
     | `Class (p, n) -> `Class (resolved_parent map p, n)
     | `ClassType (p, n) -> `ClassType (resolved_parent map p, n)
     | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)

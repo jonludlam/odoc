@@ -328,12 +328,6 @@ and resolved_type_path :
         | Some (`Renamed x) -> Not_replaced (`LocalTy (x :> Cpath.lty))
         | None -> Not_replaced p)
   | `LocalTy (`Na _) -> .
-  | `LocalCty (`LType _ as id) -> (
-      match try Some (TypeMap.find id s.class_type) with _ -> None with
-      | Some (`Prefixed (_p, rp)) -> Not_replaced (rp :> Cpath.Resolved.type_)
-      | Some (`Renamed x) -> Not_replaced (`LocalCty (x :> Cpath.lcty))
-      | None -> Not_replaced (`LocalCty id))
-  | `LocalCty (`Na _) -> .
   | `CanonicalType (t1, t2) -> (
       match resolved_type_path s t1 with
       | Not_replaced t1' -> Not_replaced (`CanonicalType (t1', t2))
@@ -366,12 +360,6 @@ and type_path : t -> Cpath.type_ -> Cpath.type_ type_or_replaced =
         | Some (`Renamed x) -> Not_replaced (`LocalTy (x :> Cpath.lty))
         | None -> Not_replaced p)
   | `LocalTy (`Na _) -> .
-  | `LocalCty (`LType _ as id) -> (
-      match try Some (TypeMap.find id s.class_type) with _ -> None with
-      | Some (`Prefixed (p, _rp)) -> Not_replaced (p :> Cpath.type_)
-      | Some (`Renamed x) -> Not_replaced (`LocalCty (x :> Cpath.lcty))
-      | None -> Not_replaced p)
-  | `LocalCty (`Na _) -> .
   | `Identifier _ -> Not_replaced p
   | `DotT (p, n) -> Not_replaced (`DotT (module_path s p, n))
   | `Type (x, p, n) -> Not_replaced (`Type (x, resolved_parent_path s p, n))
@@ -380,12 +368,12 @@ and resolved_class_type_path :
     t -> Cpath.Resolved.class_type -> Cpath.Resolved.class_type =
  fun s p ->
   match p with
-  | `LocalCty (`LType _ as id) -> (
+  | `LocalTy (`LType _ as id) -> (
       match try Some (TypeMap.find id s.class_type) with _ -> None with
       | Some (`Prefixed (_p, rp)) -> rp
-      | Some (`Renamed x) -> `LocalCty (x :> Cpath.lcty)
-      | None -> `LocalCty id)
-  | `LocalCty (`Na _) -> .
+      | Some (`Renamed x) -> `LocalTy (x :> Cpath.lty)
+      | None -> `LocalTy id)
+  | `LocalTy (`Na _) -> .
   | `Identifier _ -> p
   | `SubstitutedCT p -> `SubstitutedCT (resolved_class_type_path s p)
   | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
@@ -399,12 +387,12 @@ and class_type_path : t -> Cpath.class_type -> Cpath.class_type =
       with Invalidated ->
         let path' = Cpath.unresolve_resolved_class_type_path r in
         class_type_path s path')
-  | `LocalCty (`LType _ as id) -> (
+  | `LocalTy (`LType _ as id) -> (
       match try Some (TypeMap.find id s.class_type) with _ -> None with
       | Some (`Prefixed (p, _rp)) -> p
-      | Some (`Renamed x) -> `LocalCty (x :> Cpath.lcty)
+      | Some (`Renamed x) -> `LocalTy (x :> Cpath.lty)
       | None -> p)
-  | `LocalCty (`Na _) -> .
+  | `LocalTy (`Na _) -> .
   | `Identifier _ -> p
   | `SubstitutedCT p -> `SubstitutedCT (class_type_path s p)
   | `DotT (p, n) -> `DotT (module_path s p, n)

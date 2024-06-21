@@ -231,7 +231,6 @@ module General_paths = struct
       | `LocalMod (`Na _)
       | `LocalModTy (`Na _)
       | `LocalTy (`Na _)
-      | `LocalCty (`Na _)
       | `LocalVal (`Na _) ->
           .)
 
@@ -301,7 +300,6 @@ module General_paths = struct
       | `LocalMod (`Na _)
       | `LocalModTy (`Na _)
       | `LocalTy (`Na _)
-      | `LocalCty (`Na _)
       | `LocalVal (`Na _)
       | `Module (`ModuleType (_, `Na _), _)
       | `Module (`FragmentRoot (`Na _), _)

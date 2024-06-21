@@ -340,22 +340,21 @@ module rec Path : sig
       'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * ModuleTypeName.t ]
   (** @canonical Odoc_model.Paths.Path.ModuleType.t *)
 
-  type ('lmod, 'lmodty, 'pty, 'lcty) class_type =
-    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lcty) Resolved_path.class_type
-    | `LocalCty of 'lcty
-    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lcty) class_type
+  type ('lmod, 'lmodty, 'pty, 'lty) class_type =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty) Resolved_path.class_type
+    | `LocalTy of 'lty
+    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lty) class_type
     | `Identifier of Identifier.path_class_type * bool
     | `DotT of ('lmod, 'lmodty, 'pty) module_ * TypeName.t
     | `Type of 'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * TypeName.t
     ]
   (** @canonical Odoc_model.Paths.Path.ClassType.t *)
 
-  type ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_ =
-    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lcty, 'lty) Resolved_path.type_
+  type ('lmod, 'lmodty, 'pty, 'lty) type_ =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty) Resolved_path.type_
     | `LocalTy of 'lty
-    | `LocalCty of 'lcty
-    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_
-    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lcty) class_type
+    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lty) type_
+    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lty) class_type
     | `Identifier of Identifier.path_type * bool
     | `DotT of ('lmod, 'lmodty, 'pty) module_ * TypeName.t
     | `Type of 'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * TypeName.t
@@ -369,12 +368,12 @@ module rec Path : sig
     | `DotV of ('lmod, 'lmodty, 'pty) module_ * ValueName.t ]
   (** @canonical Odoc_model.Paths.Path.Value.t *)
 
-  type ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) any =
-    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) Resolved_path.any
-    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_
+  type ('lmod, 'lmodty, 'pty, 'lty, 'lval) any =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty, 'lval) Resolved_path.any
+    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lty) type_
     | `SubstitutedMT of ('lmod, 'lmodty, 'pty) module_type
     | `Substituted of ('lmod, 'lmodty, 'pty) module_
-    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lcty) class_type
+    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lty) class_type
     | `Identifier of Identifier.path_any * bool
     | `Root of ModuleName.t
     | `Forward of string
@@ -391,8 +390,7 @@ module rec Path : sig
     | `LocalMod of 'lmod
     | `LocalModTy of 'lmodty
     | `LocalVal of 'lval
-    | `LocalTy of 'lty
-    | `LocalCty of 'lcty ]
+    | `LocalTy of 'lty ]
   (** @canonical Odoc_model.Paths.Path.t *)
 end =
   Path
@@ -445,31 +443,30 @@ and Resolved_path : sig
     | `Value of ('lmod, 'lmodty, 'pty) parent * ValueName.t ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Value.t *)
 
-  type ('lmod, 'lmodty, 'pty, 'lcty) class_type =
+  type ('lmod, 'lmodty, 'pty, 'lty) class_type =
     [ `Identifier of Identifier.path_class_type
-    | `LocalCty of 'lcty
-    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lcty) class_type
+    | `LocalTy of 'lty
+    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lty) class_type
     | `Class of ('lmod, 'lmodty, 'pty) parent * TypeName.t
     | `ClassType of ('lmod, 'lmodty, 'pty) parent * TypeName.t ]
 
-  type ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_ =
+  type ('lmod, 'lmodty, 'pty, 'lty) type_ =
     [ `Identifier of Identifier.path_type
     | `LocalTy of 'lty
-    | `LocalCty of 'lcty
-    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_
-    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lcty) class_type
+    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lty) type_
+    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lty) class_type
     | `CanonicalType of
-      ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_
-      * ('lmod, 'lmodty, 'pty, 'lcty, 'lty) Path.type_
+      ('lmod, 'lmodty, 'pty, 'lty) type_
+      * ('lmod, 'lmodty, 'pty, 'lty) Path.type_
     | `Type of ('lmod, 'lmodty, 'pty) parent * TypeName.t
     | `Class of ('lmod, 'lmodty, 'pty) parent * TypeName.t
     | `ClassType of ('lmod, 'lmodty, 'pty) parent * TypeName.t ]
   (** @canonical Odoc_model.Paths.Path.Resolved.Type.t *)
 
-  type ('lmod, 'lmodty, 'pty, 'lcty, 'lty, 'lval) any =
+  type ('lmod, 'lmodty, 'pty, 'lty, 'lval) any =
     [ `Identifier of Identifier.any
-    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lcty) class_type
-    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_
+    | `SubstitutedCT of ('lmod, 'lmodty, 'pty, 'lty) class_type
+    | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lty) type_
     | `SubstitutedMT of ('lmod, 'lmodty, 'pty) module_type
     | `Substituted of ('lmod, 'lmodty, 'pty) module_
     | `Subst of
@@ -494,8 +491,8 @@ and Resolved_path : sig
       ('lmod, 'lmodty, 'pty) module_type * ('lmod, 'lmodty, 'pty) module_type
     | `OpaqueModuleType of ('lmod, 'lmodty, 'pty) module_type
     | `CanonicalType of
-      ('lmod, 'lmodty, 'pty, 'lcty, 'lty) type_
-      * ('lmod, 'lmodty, 'pty, 'lcty, 'lty) Path.type_
+      ('lmod, 'lmodty, 'pty, 'lty) type_
+      * ('lmod, 'lmodty, 'pty, 'lty) Path.type_
     | `Type of ('lmod, 'lmodty, 'pty) parent * TypeName.t
     | `Class of ('lmod, 'lmodty, 'pty) parent * TypeName.t
     | `ClassType of ('lmod, 'lmodty, 'pty) parent * TypeName.t
@@ -505,8 +502,7 @@ and Resolved_path : sig
     | `LocalMod of 'lmod
     | `LocalModTy of 'lmodty
     | `LocalVal of 'lval
-    | `LocalTy of 'lty
-    | `LocalCty of 'lcty ]
+    | `LocalTy of 'lty ]
   (** @canonical Odoc_model.Paths.Path.Resolved.t *)
 end =
   Resolved_path
