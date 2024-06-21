@@ -50,7 +50,6 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `LocalMod (`Na _) -> .
     | `LocalModTy (`Na _) -> .
     | `LocalTy (`Na _) -> .
-    | `LocalCty (`Na _) -> .
     | `LocalVal (`Na _) -> .
   and render_parent : Odoc_model.Paths.Path.Resolved.parent -> string = function
     | `Module m -> render_resolved (m :> Odoc_model.Paths.Path.Resolved.t)
@@ -82,7 +81,6 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `LocalMod (`Na _) -> .
     | `LocalModTy (`Na _) -> .
     | `LocalTy (`Na _) -> .
-    | `LocalCty (`Na _) -> .
     | `LocalVal (`Na _) -> .
   in
 

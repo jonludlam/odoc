@@ -127,7 +127,6 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `LocalMod (`Na _)
   | `LocalModTy (`Na _)
   | `LocalTy (`Na _)
-  | `LocalCty (`Na _)
   | `LocalVal (`Na _) ->
       .
 

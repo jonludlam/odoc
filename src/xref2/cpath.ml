@@ -4,7 +4,6 @@ open Odoc_model.Names
 type lmod = [ Ident.module_ | Odoc_model.Paths.na ]
 type lmodty = [ Ident.module_type | Odoc_model.Paths.na ]
 type lty = [ Ident.type_ | Odoc_model.Paths.na ]
-type lcty = lty
 type lval = [ Ident.value | Odoc_model.Paths.na ]
 type pty = [ `U | Odoc_model.Paths.na ]
 
@@ -17,16 +16,16 @@ module rec Resolved : sig
     (lmod, lmodty, pty) Odoc_model.Paths.Path.Resolved.ModuleType.gen
 
   type type_ =
-    (lmod, lmodty, pty, lcty, lty) Odoc_model.Paths.Path.Resolved.Type.gen
+    (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Resolved.Type.gen
 
   type class_type =
-    (lmod, lmodty, pty, lcty) Odoc_model.Paths.Path.Resolved.ClassType.gen
+    (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Resolved.ClassType.gen
 
   type value =
     (lmod, lmodty, pty, lval) Odoc_model.Paths.Path.Resolved.Value.gen
 
   type any =
-    (lmod, lmodty, pty, lcty, lty, lval) Odoc_model.Paths.Path.Resolved.gen
+    (lmod, lmodty, pty, lty, lval) Odoc_model.Paths.Path.Resolved.gen
 end =
   Resolved
 
@@ -34,21 +33,21 @@ and Cpath : sig
   type module_ = (lmod, lmodty, pty) Odoc_model.Paths.Path.Module.gen
 
   type module_type = (lmod, lmodty, pty) Odoc_model.Paths.Path.ModuleType.gen
-  type type_ = (lmod, lmodty, pty, lcty, lty) Odoc_model.Paths.Path.Type.gen
+  type type_ = (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Type.gen
 
   type class_type =
-    (lmod, lmodty, pty, lcty) Odoc_model.Paths.Path.ClassType.gen
+    (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.ClassType.gen
 
   type value = (lmod, lmodty, pty, lval) Odoc_model.Paths.Path.Value.gen
 
-  type any = (lmod, lmodty, pty, lcty, lty, lval) Odoc_model.Paths.Path.gen
+  type any = (lmod, lmodty, pty, lty, lval) Odoc_model.Paths.Path.gen
 end =
   Cpath
 
 include Cpath
 
 let hidden_fns :
-    (lmod, lmodty, pty, lcty, lty, lval, bool) Odoc_model.Paths.Path.genfn6 =
+    (lmod, lmodty, pty, lty, lval, bool) Odoc_model.Paths.Path.genfn5 =
   {
     g =
       {
@@ -60,7 +59,6 @@ let hidden_fns :
         pty = (function _ -> false);
       };
     lty = (function `LType (n, _) -> TypeName.is_hidden n | `Na _ -> .);
-    lcty = (function `LType (n, _) -> TypeName.is_hidden n | `Na _ -> .);
     lval = (function `LValue (n, _) -> ValueName.is_hidden n | `Na _ -> .);
   }
 
@@ -100,7 +98,6 @@ and is_resolved_module_type_substituted : Resolved.module_type -> bool =
 
 and is_resolved_type_substituted : Resolved.type_ -> bool = function
   | `LocalTy _ -> false
-  | `LocalCty _ -> false
   | `SubstitutedT _ -> true
   | `SubstitutedCT _ -> true
   | `Identifier _ -> false
@@ -109,7 +106,7 @@ and is_resolved_type_substituted : Resolved.type_ -> bool = function
       is_resolved_parent_substituted a
 
 and is_resolved_class_type_substituted : Resolved.class_type -> bool = function
-  | `LocalCty _ -> false
+  | `LocalTy _ -> false
   | `SubstitutedCT _ -> true
   | `Identifier _ -> false
   | `Class (a, _) | `ClassType (a, _) -> is_resolved_parent_substituted a
@@ -136,7 +133,6 @@ let is_type_substituted : type_ -> bool = function
   | `Resolved a -> is_resolved_type_substituted a
   | `Identifier _ -> false
   | `LocalTy _ -> false
-  | `LocalCty _ -> false
   | `SubstitutedT _ -> true
   | `SubstitutedCT _ -> true
   | `DotT (a, _) -> is_module_substituted a
@@ -145,9 +141,9 @@ let is_type_substituted : type_ -> bool = function
 let is_class_type_substituted : class_type -> bool = function
   | `Resolved a -> is_resolved_class_type_substituted a
   | `Identifier _ -> false
-  | `LocalCty _ -> false
   | `SubstitutedCT _ -> true
   | `DotT (a, _) -> is_module_substituted a
+  | `LocalTy _ -> false
   | `Type (_, p, _) -> is_resolved_parent_substituted p
 
 let rec is_module_forward : module_ -> bool = function
@@ -244,7 +240,7 @@ and unresolve_resolved_parent_path : Resolved.parent -> module_ = function
   | `FragmentRoot _ | `ModuleType _ -> assert false
 
 and unresolve_resolved_type_path : Resolved.type_ -> type_ = function
-  | (`LocalTy _ | `LocalCty _ | `Identifier _) as p -> `Resolved p
+  | (`LocalTy _ | `Identifier _) as p -> `Resolved p
   | `SubstitutedT x -> unresolve_resolved_type_path x
   | `SubstitutedCT _x -> failwith "unhandled"
   | `CanonicalType (t1, _) -> unresolve_resolved_type_path t1
@@ -254,7 +250,7 @@ and unresolve_resolved_type_path : Resolved.type_ -> type_ = function
 
 and unresolve_resolved_class_type_path : Resolved.class_type -> class_type =
   function
-  | (`LocalCty _ | `Identifier _) as p -> `Resolved p
+  | (`LocalTy _ | `Identifier _) as p -> `Resolved p
   | `SubstitutedCT x -> unresolve_resolved_class_type_path x
   | `Class (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
   | `ClassType (p, n) -> `DotT (unresolve_resolved_parent_path p, n)

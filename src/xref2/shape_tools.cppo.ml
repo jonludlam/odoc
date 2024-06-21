@@ -117,7 +117,6 @@ let rec shape_of_kind_path env kind :
     | `LocalMod (`Na _) -> .
     | `LocalTy (`Na _) -> .
     | `LocalModTy (`Na _) -> .
-    | `LocalCty (`Na _) -> .
     | `LocalVal (`Na _) -> .
 
 module MkId = Identifier.Mk

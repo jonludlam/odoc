@@ -712,8 +712,6 @@ and lookup_type :
     | `SubstitutedCT t -> lookup_type env (t :> Cpath.Resolved.type_)
     | `LocalTy (`Na _) -> .
     | `LocalTy (`LType _ as id) -> Error (`LocalType (env, id))
-    | `LocalCty (`Na _) -> .
-    | `LocalCty (`LType _ as id) -> Error (`LocalType (env, id))
   in
 
   res
@@ -772,8 +770,8 @@ and lookup_class_type :
     | `Class (p, id) -> do_type p id
     | `ClassType (p, id) -> do_type p id
     | `SubstitutedCT c -> lookup_class_type env c
-    | `LocalCty (`Na _) -> .
-    | `LocalCty (`LType _ as id) -> Error (`LocalType (env, id))
+    | `LocalTy (`Na _) -> .
+    | `LocalTy (`LType _ as id) -> Error (`LocalType (env, id))
   in
   res
 
@@ -911,9 +909,9 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
         let i' = `Identifier i in
         lookup_type env i' >>= fun t -> Ok (i', t)
     | `Resolved r -> lookup_type env r >>= fun t -> Ok (r, t)
-    | `LocalTy (`LType _ as l) | `LocalCty (`LType _ as l) ->
+    | `LocalTy (`LType _ as l) ->
         Error (`LocalType (env, l))
-    | `LocalTy (`Na _) | `LocalCty (`Na _) -> .
+    | `LocalTy (`Na _) -> .
     | `SubstitutedT s ->
         resolve_type env s >>= fun (p, m) -> Ok (`SubstitutedT p, m)
     | `SubstitutedCT s ->
@@ -973,8 +971,8 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
       let i' = `Identifier i in
       lookup_class_type env i' >>= fun t -> Ok (i', t)
   | `Resolved r -> lookup_class_type env r >>= fun t -> Ok (r, t)
-  | `LocalCty (`LType _ as l) -> Error (`LocalType (env, l))
-  | `LocalCty (`Na _) -> .
+  | `LocalTy (`LType _ as l) -> Error (`LocalType (env, l))
+  | `LocalTy (`Na _) -> .
   | `SubstitutedCT s ->
       resolve_class_type env s >>= fun (p, m) -> Ok (`SubstitutedCT p, m)
   | `Type (_, parent, id) ->
@@ -1234,7 +1232,7 @@ and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
  fun env path ->
   let result =
     match path with
-    | `Identifier _ | `LocalTy _ | `LocalCty _ -> path
+    | `Identifier _ | `LocalTy _ -> path
     | `SubstitutedT s -> `SubstitutedT (reresolve_type env s)
     | `SubstitutedCT s -> `SubstitutedCT (reresolve_class_type env s)
     | `CanonicalType (p1, p2) ->
@@ -1256,7 +1254,7 @@ and reresolve_class_type :
  fun env path ->
   let result =
     match path with
-    | `Identifier _ | `LocalCty _ -> path
+    | `Identifier _ | `LocalTy _ -> path
     | `SubstitutedCT s -> `SubstitutedCT (reresolve_class_type env s)
     | `Class (p, n) -> `Class (reresolve_parent env p, n)
     | `ClassType (p, n) -> `ClassType (reresolve_parent env p, n)
