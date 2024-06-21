@@ -1,107 +1,79 @@
 open Odoc_model.Paths
 open Odoc_model.Names
 
+type lmod = [ Ident.module_ | Odoc_model.Paths.na ]
+type lmodty = [ Ident.module_type | Odoc_model.Paths.na ]
+type lty = [ Ident.type_ | Odoc_model.Paths.na ]
+type lcty = lty
+type lval = [ Ident.value | Odoc_model.Paths.na ]
+type pty = [ `U | Odoc_model.Paths.na ]
+
 module rec Resolved : sig
-  type parent =
-    [ `Module of module_ | `ModuleType of module_type | `FragmentRoot ]
+  type parent = (lmod, lmodty, pty) Odoc_model.Paths.Path.Resolved.parent_gen
 
-  and module_ =
-    [ `Local of Ident.module_
-    | `Gpath of Path.Resolved.Module.t
-    | `Substituted of module_
-    | `Subst of module_type * module_
-    | `Hidden of module_
-    | `Module of parent * ModuleName.t
-    | `Canonical of module_ * Path.Module.t
-    | `Apply of module_ * module_
-    | `Alias of module_ * Cpath.module_ * module_ option
-    | `OpaqueModule of module_ ]
+  type module_ = (lmod, lmodty, pty) Odoc_model.Paths.Path.Resolved.Module.gen
 
-  and module_type =
-    [ `Local of Ident.module_type
-    | `Substituted of module_type
-    | `Gpath of Path.Resolved.ModuleType.t
-    | `ModuleType of parent * ModuleTypeName.t
-    | `SubstT of module_type * module_type
-    | `AliasModuleType of module_type * module_type
-    | `CanonicalModuleType of module_type * Path.ModuleType.t
-    | `OpaqueModuleType of module_type ]
+  type module_type =
+    (lmod, lmodty, pty) Odoc_model.Paths.Path.Resolved.ModuleType.gen
 
-  and type_ =
-    [ `Local of Ident.type_
-    | `Gpath of Path.Resolved.Type.t
-    | `Substituted of type_
-    | `SubstitutedCT of class_type
-    | `CanonicalType of type_ * Path.Type.t
-    | `Type of parent * TypeName.t
-    | `Class of parent * TypeName.t
-    | `ClassType of parent * TypeName.t ]
+  type type_ =
+    (lmod, lmodty, pty, lcty, lty) Odoc_model.Paths.Path.Resolved.Type.gen
 
-  and value =
-    [ `Value of parent * ValueName.t | `Gpath of Path.Resolved.Value.t ]
+  type class_type =
+    (lmod, lmodty, pty, lcty) Odoc_model.Paths.Path.Resolved.ClassType.gen
 
-  and class_type =
-    [ `Local of Ident.type_
-    | `SubstitutedCT of class_type
-    | `Gpath of Path.Resolved.ClassType.t
-    | `Class of parent * TypeName.t
-    | `ClassType of parent * TypeName.t ]
+  type value =
+    (lmod, lmodty, pty, lval) Odoc_model.Paths.Path.Resolved.Value.gen
+
+  type any =
+    (lmod, lmodty, pty, lcty, lty, lval) Odoc_model.Paths.Path.Resolved.gen
 end =
   Resolved
 
 and Cpath : sig
-  type module_ =
-    [ `Resolved of Resolved.module_
-    | `Substituted of module_
-    | `Local of Ident.module_ * bool
-    | `Identifier of Identifier.Path.Module.t * bool
-    | `Root of ModuleName.t
-    | `Forward of string
-    | `Dot of module_ * ModuleName.t
-    | `Module of Resolved.parent * ModuleName.t (* Like dot, but typed *)
-    | `Apply of module_ * module_ ]
+  type module_ = (lmod, lmodty, pty) Odoc_model.Paths.Path.Module.gen
 
-  and module_type =
-    [ `Resolved of Resolved.module_type
-    | `Substituted of module_type
-    | `Local of Ident.module_type * bool
-    | `Identifier of Identifier.ModuleType.t * bool
-    | `DotMT of module_ * ModuleTypeName.t
-    | `ModuleType of Resolved.parent * ModuleTypeName.t ]
+  type module_type = (lmod, lmodty, pty) Odoc_model.Paths.Path.ModuleType.gen
+  type type_ = (lmod, lmodty, pty, lcty, lty) Odoc_model.Paths.Path.Type.gen
 
-  and type_ =
-    [ `Resolved of Resolved.type_
-    | `Substituted of type_
-    | `Local of Ident.type_ * bool
-    | `Identifier of Odoc_model.Paths.Identifier.Path.Type.t * bool
-    | `DotT of module_ * TypeName.t
-    | `Type of Resolved.parent * TypeName.t
-    | `Class of Resolved.parent * TypeName.t
-    | `ClassType of Resolved.parent * TypeName.t ]
+  type class_type =
+    (lmod, lmodty, pty, lcty) Odoc_model.Paths.Path.ClassType.gen
 
-  and value =
-    [ `Resolved of Resolved.value
-    | `DotV of module_ * ValueName.t
-    | `Value of Resolved.parent * ValueName.t
-    | `Identifier of Identifier.Value.t * bool ]
+  type value = (lmod, lmodty, pty, lval) Odoc_model.Paths.Path.Value.gen
 
-  and class_type =
-    [ `Resolved of Resolved.class_type
-    | `Substituted of class_type
-    | `Local of Ident.type_ * bool
-    | `Identifier of Odoc_model.Paths.Identifier.Path.ClassType.t * bool
-    | `DotT of module_ * TypeName.t
-    | `Class of Resolved.parent * TypeName.t
-    | `ClassType of Resolved.parent * TypeName.t ]
+  type any = (lmod, lmodty, pty, lcty, lty, lval) Odoc_model.Paths.Path.gen
 end =
   Cpath
 
 include Cpath
 
+let hidden_fns :
+    (lmod, lmodty, pty, lcty, lty, lval, bool) Odoc_model.Paths.Path.genfn6 =
+  {
+    g =
+      {
+        lmod =
+          (function `LModule (n, _) -> ModuleName.is_hidden n | `Na _ -> .);
+        lmodty =
+          (function
+          | `LModuleType (n, _) -> ModuleTypeName.is_hidden n | `Na _ -> .);
+        pty = (function _ -> false);
+      };
+    lty = (function `LType (n, _) -> TypeName.is_hidden n | `Na _ -> .);
+    lcty = (function `LType (n, _) -> TypeName.is_hidden n | `Na _ -> .);
+    lval = (function `LValue (n, _) -> ValueName.is_hidden n | `Na _ -> .);
+  }
+
+let is_hidden : any -> bool =
+  Odoc_model.Paths.Path.is_path_hidden_gen hidden_fns
+
+let is_resolved_hidden : weak_canonical_test:bool -> Resolved.any -> bool =
+  Odoc_model.Paths.Path.is_resolved_hidden_gen hidden_fns
+
 let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
-  | `Local _ -> false
+  | `LocalMod _ -> false
   | `Substituted _ -> true
-  | `Gpath _ -> false
+  | `Identifier _ -> false
   | `Subst (_a, _) -> false (* is_resolved_module_type_substituted a*)
   | `Hidden a | `Apply (a, _) | `Alias (a, _, _) | `Canonical (a, _) ->
       is_resolved_module_substituted a
@@ -110,14 +82,16 @@ let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
 
 and is_resolved_parent_substituted = function
   | `Module m -> is_resolved_module_substituted m
-  | `ModuleType m -> is_resolved_module_type_substituted m
-  | `FragmentRoot -> false
+  | `ModuleType (m, `U) -> is_resolved_module_type_substituted m
+  | `FragmentRoot `U -> false
+  | `ModuleType (_, `Na _) -> .
+  | `FragmentRoot (`Na _) -> .
 
 and is_resolved_module_type_substituted : Resolved.module_type -> bool =
   function
-  | `Local _ -> false
-  | `Substituted _ -> true
-  | `Gpath _ -> false
+  | `LocalModTy _ -> false
+  | `SubstitutedMT _ -> true
+  | `Identifier _ -> false
   | `ModuleType (a, _) -> is_resolved_parent_substituted a
   | `SubstT _ -> false
   | `AliasModuleType (m1, _) -> is_resolved_module_type_substituted m1
@@ -125,174 +99,78 @@ and is_resolved_module_type_substituted : Resolved.module_type -> bool =
       is_resolved_module_type_substituted m
 
 and is_resolved_type_substituted : Resolved.type_ -> bool = function
-  | `Local _ -> false
-  | `Substituted _ -> true
+  | `LocalTy _ -> false
+  | `LocalCty _ -> false
+  | `SubstitutedT _ -> true
   | `SubstitutedCT _ -> true
-  | `Gpath _ -> false
+  | `Identifier _ -> false
   | `CanonicalType (t, _) -> is_resolved_type_substituted t
   | `Type (a, _) | `Class (a, _) | `ClassType (a, _) ->
       is_resolved_parent_substituted a
 
 and is_resolved_class_type_substituted : Resolved.class_type -> bool = function
-  | `Local _ -> false
+  | `LocalCty _ -> false
   | `SubstitutedCT _ -> true
-  | `Gpath _ -> false
+  | `Identifier _ -> false
   | `Class (a, _) | `ClassType (a, _) -> is_resolved_parent_substituted a
 
 let rec is_module_substituted : module_ -> bool = function
   | `Resolved a -> is_resolved_module_substituted a
   | `Identifier _ -> false
-  | `Local _ -> false
+  | `LocalMod _ -> false
   | `Substituted _ -> true
   | `Dot (a, _) | `Apply (a, _) -> is_module_substituted a
+  | `Module (_, p, _) -> is_resolved_parent_substituted p
   | `Forward _ -> false
   | `Root _ -> false
-  | `Module (a, _) -> is_resolved_parent_substituted a
 
 let is_module_type_substituted : module_type -> bool = function
   | `Resolved a -> is_resolved_module_type_substituted a
   | `Identifier _ -> false
-  | `Local _ -> false
-  | `Substituted _ -> true
+  | `LocalModTy _ -> false
+  | `SubstitutedMT _ -> true
   | `DotMT (a, _) -> is_module_substituted a
-  | `ModuleType (a, _) -> is_resolved_parent_substituted a
+  | `ModuleType (_, p, _) -> is_resolved_parent_substituted p
 
 let is_type_substituted : type_ -> bool = function
   | `Resolved a -> is_resolved_type_substituted a
   | `Identifier _ -> false
-  | `Local _ -> false
-  | `Substituted _ -> true
+  | `LocalTy _ -> false
+  | `LocalCty _ -> false
+  | `SubstitutedT _ -> true
+  | `SubstitutedCT _ -> true
   | `DotT (a, _) -> is_module_substituted a
-  | `Type (a, _) | `Class (a, _) | `ClassType (a, _) ->
-      is_resolved_parent_substituted a
+  | `Type (_, p, _) -> is_resolved_parent_substituted p
 
 let is_class_type_substituted : class_type -> bool = function
   | `Resolved a -> is_resolved_class_type_substituted a
   | `Identifier _ -> false
-  | `Local _ -> false
-  | `Substituted _ -> true
+  | `LocalCty _ -> false
+  | `SubstitutedCT _ -> true
   | `DotT (a, _) -> is_module_substituted a
-  | `Class (a, _) | `ClassType (a, _) -> is_resolved_parent_substituted a
+  | `Type (_, p, _) -> is_resolved_parent_substituted p
 
 let rec is_module_forward : module_ -> bool = function
   | `Forward _ -> true
   | `Resolved _ -> false
   | `Root _ -> false
   | `Identifier _ -> false
-  | `Local _ -> false
+  | `LocalMod _ -> false
   | `Substituted p | `Dot (p, _) | `Apply (p, _) -> is_module_forward p
-  | `Module (_, _) -> false
-
-let rec is_module_hidden : module_ -> bool = function
-  | `Resolved r -> is_resolved_module_hidden ~weak_canonical_test:false r
-  | `Substituted p | `Dot (p, _) | `Apply (p, _) -> is_module_hidden p
-  | `Identifier (_, b) -> b
-  | `Local (_, b) -> b
-  | `Forward _ -> false
-  | `Root _ -> false
-  | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test:false p
-
-and is_resolved_module_hidden :
-    weak_canonical_test:bool -> Resolved.module_ -> bool =
- fun ~weak_canonical_test ->
-  let rec inner = function
-    | `Local _ -> false
-    | `Gpath p ->
-        Odoc_model.Paths.Path.Resolved.Module.is_hidden ~weak_canonical_test p
-    | `Hidden _ -> true
-    | `Canonical (_, `Resolved _) -> false
-    | `Canonical (p, _) -> (not weak_canonical_test) && inner p
-    | `Substituted p -> inner p
-    | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
-    | `Subst (p1, p2) -> is_resolved_module_type_hidden p1 || inner p2
-    | `Alias (p1, `Resolved p2, _) -> inner p1 && inner p2
-    | `Alias (p1, _p2, _) -> inner p1
-    | `Apply (p1, p2) -> inner p1 || inner p2
-    | `OpaqueModule m -> inner m
-  in
-  inner
-
-and is_resolved_parent_hidden :
-    weak_canonical_test:bool -> Resolved.parent -> bool =
- fun ~weak_canonical_test -> function
-  | `Module m -> is_resolved_module_hidden ~weak_canonical_test m
-  | `ModuleType m -> is_resolved_module_type_hidden m
-  | `FragmentRoot -> false
-
-and is_module_type_hidden : module_type -> bool = function
-  | `Resolved r -> is_resolved_module_type_hidden r
-  | `Identifier ({ iv = `ModuleType (_, t); _ }, b) ->
-      b || ModuleTypeName.is_hidden t
-  | `Local (_, b) -> b
-  | `Substituted p -> is_module_type_hidden p
-  | `DotMT (p, _) -> is_module_hidden p
-  | `ModuleType (p, _) -> is_resolved_parent_hidden ~weak_canonical_test:false p
-
-and is_resolved_module_type_hidden : Resolved.module_type -> bool = function
-  | `Local _ -> false
-  | `Gpath p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `Substituted p -> is_resolved_module_type_hidden p
-  | `ModuleType (p, _) -> is_resolved_parent_hidden ~weak_canonical_test:false p
-  | `SubstT (p1, p2) ->
-      is_resolved_module_type_hidden p1 || is_resolved_module_type_hidden p2
-  | `AliasModuleType (p1, p2) ->
-      is_resolved_module_type_hidden p1 || is_resolved_module_type_hidden p2
-  | `CanonicalModuleType (_, `Resolved _) -> false
-  | `CanonicalModuleType (p, _) -> is_resolved_module_type_hidden p
-  | `OpaqueModuleType m -> is_resolved_module_type_substituted m
-
-and is_type_hidden : type_ -> bool = function
-  | `Resolved r -> is_resolved_type_hidden r
-  | `Identifier ({ iv = `Type (_, t); _ }, b) -> b || TypeName.is_hidden t
-  | `Identifier ({ iv = `ClassType (_, t); _ }, b) ->
-      b || TypeName.is_hidden t
-  | `Identifier ({ iv = `Class (_, t); _ }, b) -> b || TypeName.is_hidden t
-  | `Identifier ({ iv = `CoreType _; _ }, b) -> b
-  | `Local (_, b) -> b
-  | `Substituted p -> is_type_hidden p
-  | `DotT (p, _) -> is_module_hidden p
-  | `Type (p, _) | `Class (p, _) | `ClassType (p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
-
-and is_resolved_type_hidden : Resolved.type_ -> bool = function
-  | `Local _ -> false
-  | `Gpath p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `Substituted p -> is_resolved_type_hidden p
-  | `SubstitutedCT p -> is_resolved_class_type_hidden p
-  | `CanonicalType (_, `Resolved _) -> false
-  | `CanonicalType (p, _) -> is_resolved_type_hidden p
-  | `Type (p, _) | `Class (p, _) | `ClassType (p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
-
-and is_resolved_class_type_hidden : Resolved.class_type -> bool = function
-  | `Local _ -> false
-  | `Gpath p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `SubstitutedCT p -> is_resolved_class_type_hidden p
-  | `Class (p, _) | `ClassType (p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
-
-and is_class_type_hidden : class_type -> bool = function
-  | `Resolved r -> is_resolved_class_type_hidden r
-  | `Identifier (_, b) -> b
-  | `Local (_, b) -> b
-  | `Substituted p -> is_class_type_hidden p
-  | `DotT (p, _) -> is_module_hidden p
-  | `Class (p, _) | `ClassType (p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
+  | `Module (_, _, _) -> false
 
 let rec resolved_module_of_resolved_module_reference :
     Reference.Resolved.Module.t -> Resolved.module_ = function
   | `Module (parent, name) ->
       `Module
         (`Module (resolved_module_of_resolved_signature_reference parent), name)
-  | `Identifier x -> `Gpath (`Identifier x)
+  | `Identifier x -> `Identifier x
   | `Alias (_m1, _m2) -> failwith "gah"
   | `Hidden s -> `Hidden (resolved_module_of_resolved_module_reference s)
 
 and resolved_module_of_resolved_signature_reference :
     Reference.Resolved.Signature.t -> Resolved.module_ = function
-  | `Identifier ({ iv = #Identifier.Module.t_pv; _ } as i) ->
-      `Gpath (`Identifier i)
+  | `Identifier ({ iv = #Identifier.Module.t_pv; _ } as i) -> `Identifier i
   | (`Alias _ | `Module _ | `Hidden _) as r' ->
       resolved_module_of_resolved_module_reference r'
   | `ModuleType (_, n) ->
@@ -318,22 +196,20 @@ and module_of_module_reference : Reference.Module.t -> module_ = function
   | _ -> failwith "Not a module reference"
 
 let rec unresolve_resolved_module_path : Resolved.module_ -> module_ = function
-  | `Hidden (`Gpath (`Identifier x)) -> `Identifier (x, true)
-  | `Gpath (`Identifier x) ->
+  | `Hidden (`Identifier x) -> `Identifier (x, true)
+  | `Identifier x ->
       let hidden =
         match x.iv with
         | `Module (_, n) -> Odoc_model.Names.ModuleName.is_hidden n
         | _ -> false
       in
       `Identifier (x, hidden)
-  | `Gpath _ as x -> `Resolved x
-  | `Hidden (`Local x) -> `Local (x, true)
-  | `Local x -> `Local (x, false)
+  | `Hidden (`LocalMod x) -> `LocalMod x
+  | `LocalMod x -> `LocalMod x
   | `Substituted x -> unresolve_resolved_module_path x
   | `Subst (_, x) -> unresolve_resolved_module_path x
   | `Hidden x -> unresolve_resolved_module_path x (* should assert false here *)
-  | `Module (p, m) ->
-      `Dot (unresolve_resolved_parent_path p, m)
+  | `Module (p, m) -> `Dot (unresolve_resolved_parent_path p, m)
   | `Canonical (m, _) -> unresolve_resolved_module_path m
   | `Apply (m, a) ->
       `Apply (unresolve_resolved_module_path m, unresolve_resolved_module_path a)
@@ -344,21 +220,20 @@ let rec unresolve_resolved_module_path : Resolved.module_ -> module_ = function
 and unresolve_module_path : module_ -> module_ = function
   | `Resolved x -> unresolve_resolved_module_path x
   | `Substituted x -> unresolve_module_path x
-  | `Local (_, _) as x -> x
+  | `LocalMod _ as x -> x
   | `Identifier _ as x -> x
   | `Root _ as x -> x
   | `Forward _ as x -> x
   | `Dot (p, x) -> `Dot (unresolve_module_path p, x)
-  | `Module (p, x) ->
-      `Dot (unresolve_resolved_parent_path p, x)
+  | `Module (_, p, x) -> `Dot (unresolve_resolved_parent_path p, x)
   | `Apply (x, y) -> `Apply (unresolve_module_path x, unresolve_module_path y)
 
 and unresolve_resolved_module_type_path : Resolved.module_type -> module_type =
   function
-  | (`Local _ | `Gpath _) as p -> `Resolved p
-  | `Substituted x -> unresolve_resolved_module_type_path x
-  | `ModuleType (p, n) ->
-      `DotMT (unresolve_resolved_parent_path p, n)
+  | `LocalModTy _ as p -> p
+  | `Identifier x -> `Identifier (x, false)
+  | `SubstitutedMT x -> unresolve_resolved_module_type_path x
+  | `ModuleType (p, n) -> `DotMT (unresolve_resolved_parent_path p, n)
   | `SubstT (_, m) -> unresolve_resolved_module_type_path m
   | `AliasModuleType (_, m2) -> unresolve_resolved_module_type_path m2
   | `CanonicalModuleType (p, _) -> unresolve_resolved_module_type_path p
@@ -366,27 +241,23 @@ and unresolve_resolved_module_type_path : Resolved.module_type -> module_type =
 
 and unresolve_resolved_parent_path : Resolved.parent -> module_ = function
   | `Module m -> unresolve_resolved_module_path m
-  | `FragmentRoot | `ModuleType _ -> assert false
+  | `FragmentRoot _ | `ModuleType _ -> assert false
 
 and unresolve_resolved_type_path : Resolved.type_ -> type_ = function
-  | (`Gpath _ | `Local _) as p -> `Resolved p
-  | `Substituted x -> unresolve_resolved_type_path x
+  | (`LocalTy _ | `LocalCty _ | `Identifier _) as p -> `Resolved p
+  | `SubstitutedT x -> unresolve_resolved_type_path x
   | `SubstitutedCT _x -> failwith "unhandled"
   | `CanonicalType (t1, _) -> unresolve_resolved_type_path t1
   | `Type (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
-  | `Class (p, n) ->
-      `DotT (unresolve_resolved_parent_path p, n)
-  | `ClassType (p, n) ->
-      `DotT (unresolve_resolved_parent_path p, n)
+  | `Class (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
+  | `ClassType (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
 
 and unresolve_resolved_class_type_path : Resolved.class_type -> class_type =
   function
-  | (`Local _ | `Gpath _) as p -> `Resolved p
+  | (`LocalCty _ | `Identifier _) as p -> `Resolved p
   | `SubstitutedCT x -> unresolve_resolved_class_type_path x
-  | `Class (p, n) ->
-      `DotT (unresolve_resolved_parent_path p,n)
-  | `ClassType (p, n) ->
-      `DotT (unresolve_resolved_parent_path p, n)
+  | `Class (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
+  | `ClassType (p, n) -> `DotT (unresolve_resolved_parent_path p, n)
 
 and unresolve_module_type_path : module_type -> module_type = function
   | `Resolved m -> unresolve_resolved_module_type_path m

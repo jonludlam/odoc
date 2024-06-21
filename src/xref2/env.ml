@@ -52,7 +52,8 @@ let pp_lookup_type fmt =
       Format.fprintf fmt "ModuleType %a"
         (Component.Fmt.model_identifier c)
         (r :> Identifier.t)
-  | RootModule (n, res) -> Format.fprintf fmt "RootModule %a %a" ModuleName.fmt n fmtrm res
+  | RootModule (n, res) ->
+      Format.fprintf fmt "RootModule %a %a" ModuleName.fmt n fmtrm res
   | ModuleByName (n, r) ->
       Format.fprintf fmt "ModuleByName %s, %a" n
         (Component.Fmt.model_identifier c)
@@ -644,9 +645,7 @@ let add_functor_args' :
       | ModuleType.Functor (Named arg, res) ->
           ( arg.Component.FunctorParameter.id,
             Paths.Identifier.Mk.parameter
-              ( parent,
-                Ident.Name.typed_module
-                  arg.Component.FunctorParameter.id ),
+              (parent, Ident.Name.typed_module arg.Component.FunctorParameter.id),
             mk_functor_parameter arg.expr )
           :: find_args (Paths.Identifier.Mk.result parent) res
       | ModuleType.Functor (Unit, res) ->
@@ -663,7 +662,7 @@ let add_functor_args' :
       in
       let doc = m.Component.Module.doc in
       let m = Component.Delayed.put_val (Subst.module_ subst m) in
-      let rp = `Gpath (`Identifier identifier) in
+      let rp = `Identifier identifier in
       let p = `Resolved rp in
       let env' = add_module identifier m doc env in
       (env', Subst.add_module ident p rp subst)

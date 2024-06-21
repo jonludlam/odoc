@@ -59,7 +59,9 @@ and sig_items prefix ?canonical sg =
                 ( id,
                   r,
                   put (fun () ->
-                      type_decl (`DotT (prefix, Ident.Name.typed_type id)) (get t)) )
+                      type_decl
+                        (`DotT (prefix, Ident.Name.typed_type id))
+                        (get t)) )
               :: items,
               s )
         | Include i ->

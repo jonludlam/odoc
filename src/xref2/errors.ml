@@ -137,16 +137,20 @@ module Tools_error = struct
     | `OpaqueClass -> Format.fprintf fmt "Class is abstract"
     | `UnresolvedForwardPath -> Format.fprintf fmt "Unresolved forward path"
     | `UnresolvedPath (`Module (p, e)) ->
-        Format.fprintf fmt "Unresolved module path %a (%a)" (module_path c) p pp
+        Format.fprintf fmt "Unresolved module path %a (%a)" (path c)
+          (p :> Cpath.any)
+          pp
           (e :> any)
     | `UnresolvedPath (`ModuleType (p, e)) ->
-        Format.fprintf fmt "Unresolved module type path %a (%a)"
-          (module_type_path c) p pp
+        Format.fprintf fmt "Unresolved module type path %a (%a)" (path c)
+          (p :> Cpath.any)
+          pp
           (e :> any)
     | `UnresolvedOriginalPath (p, e) ->
         Format.fprintf fmt "Unresolved original module path %a (%a)"
-          Component.Fmt.(module_path default)
-          p pp
+          Component.Fmt.(path default)
+          (p :> Cpath.any)
+          pp
           (e :> any)
     | `LocalMT (_, id) -> Format.fprintf fmt "Local id found: %a" Ident.fmt id
     | `Local (_, id) -> Format.fprintf fmt "Local id found: %a" Ident.fmt id
@@ -208,7 +212,7 @@ let rec kind_of_module_cpath = function
   | _ -> None
 
 let rec kind_of_module_type_cpath = function
-  | `Substituted p' -> kind_of_module_type_cpath p'
+  | `SubstitutedMT p' -> kind_of_module_type_cpath p'
   | `DotMT (p', _) -> kind_of_module_cpath p'
   | _ -> None
 
@@ -305,16 +309,15 @@ let report ~(what : what) ?tools_error action =
     | `Class_type id -> r "class type" fmt_id id
     | `Module id -> r "module" fmt_id id
     | `Module_type id -> r "module type" fmt_id id
-    | `Module_path path -> r "module path" (module_path c) path
-    | `Module_type_path path -> r "module type path" (module_type_path c) path
+    | `Module_path p -> r "module path" (path c) (p :> Cpath.any)
+    | `Module_type_path p -> r "module type path" (path c) (p :> Cpath.any)
     | `Module_type_U expr -> r "module type expr" (u_module_type_expr c) expr
     | `Include decl -> r "include" (include_decl c) decl
-    | `Package path ->
-        r "module package" (module_type_path c) (path :> Cpath.module_type)
+    | `Package p -> r "module package" (path c) (p :> Cpath.any)
     | `Type cfrag -> r "type" (type_fragment c) cfrag
-    | `Type_path path -> r "type" (type_path c) path
-    | `Value_path path -> r "value" (value_path c) path
-    | `Class_type_path path -> r "class_type" (class_type_path c) path
+    | `Type_path p -> r "type" (path c) (p :> Cpath.any)
+    | `Value_path p -> r "value" (path c) (p :> Cpath.any)
+    | `Class_type_path p -> r "class_type" (path c) (p :> Cpath.any)
     | `With_module frag -> r "module substitution" (module_fragment c) frag
     | `With_module_type frag ->
         r "module type substitution" (module_type_fragment c) frag

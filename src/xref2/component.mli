@@ -407,12 +407,11 @@ and Substitution : sig
     | `Renamed of Ident.module_type ]
 
   type subst_type =
-    [ `Prefixed of Cpath.type_ * Cpath.Resolved.type_
-    | `Renamed of Ident.type_ ]
+    [ `Prefixed of Cpath.type_ * Cpath.Resolved.type_ | `Renamed of Ident.type_ ]
 
   type subst_class_type =
     [ `Prefixed of Cpath.class_type * Cpath.Resolved.class_type
-    | `Renamed of Ident.type_] 
+    | `Renamed of Ident.type_ ]
 
   type t = {
     module_ : subst_module ModuleMap.t;
@@ -586,38 +585,9 @@ module Fmt : sig
 
   val type_expr : config -> Format.formatter -> TypeExpr.t -> unit
 
-  val resolved_module_path :
-    config -> Format.formatter -> Cpath.Resolved.module_ -> unit
+  val path : config -> Format.formatter -> Cpath.any -> unit
 
-  val module_path : config -> Format.formatter -> Cpath.module_ -> unit
-
-  val resolved_module_type_path :
-    config -> Format.formatter -> Cpath.Resolved.module_type -> unit
-
-  val module_type_path : config -> Format.formatter -> Cpath.module_type -> unit
-
-  val resolved_type_path :
-    config -> Format.formatter -> Cpath.Resolved.type_ -> unit
-
-  val resolved_value_path :
-    config -> Format.formatter -> Cpath.Resolved.value -> unit
-
-  val resolved_parent_path :
-    config -> Format.formatter -> Cpath.Resolved.parent -> unit
-
-  val type_path : config -> Format.formatter -> Cpath.type_ -> unit
-
-  val value_path : config -> Format.formatter -> Cpath.value -> unit
-
-  val resolved_class_type_path :
-    config -> Format.formatter -> Cpath.Resolved.class_type -> unit
-
-  val class_type_path : config -> Format.formatter -> Cpath.class_type -> unit
-
-  val model_path : config -> Format.formatter -> Odoc_model.Paths.Path.t -> unit
-
-  val model_resolved_path :
-    config -> Format.formatter -> Odoc_model.Paths.Path.Resolved.t -> unit
+  val resolved_path : config -> Format.formatter -> Cpath.Resolved.any -> unit
 
   val model_identifier :
     config -> Format.formatter -> Odoc_model.Paths.Identifier.t -> unit

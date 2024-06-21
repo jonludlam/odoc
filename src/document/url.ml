@@ -13,11 +13,11 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `OpaqueModuleType p -> render_resolved (p :> t)
     | `Subst (_, p) -> render_resolved (p :> t)
     | `SubstT (_, p) -> render_resolved (p :> t)
-    | `Alias (dest, `Resolved src) ->
+    | `Alias (dest, `Resolved src, _) ->
         if Odoc_model.Paths.Path.Resolved.(is_hidden (src :> t)) then
           render_resolved (dest :> t)
         else render_resolved (src :> t)
-    | `Alias (dest, src) ->
+    | `Alias (dest, src, _) ->
         if Odoc_model.Paths.Path.is_hidden (src :> Path.t) then
           render_resolved (dest :> t)
         else render_path (src :> Path.t)
@@ -42,27 +42,23 @@ let render_path : Odoc_model.Paths.Path.t -> string =
         ^ "("
         ^ render_resolved (p :> Odoc_model.Paths.Path.Resolved.t)
         ^ ")"
-    | `ModuleType (p, s) ->
-      render_parent p ^ "." ^ ModuleTypeName.to_string s
+    | `ModuleType (p, s) -> render_parent p ^ "." ^ ModuleTypeName.to_string s
     | `Type (p, s) -> render_parent p ^ "." ^ TypeName.to_string s
     | `Value (p, s) -> render_parent p ^ "." ^ ValueName.to_string s
     | `Class (p, s) -> render_parent p ^ "." ^ TypeName.to_string s
-    | `ClassType (p, s) ->
-      render_parent p ^ "." ^ TypeName.to_string s
+    | `ClassType (p, s) -> render_parent p ^ "." ^ TypeName.to_string s
     | `LocalMod (`Na _) -> .
     | `LocalModTy (`Na _) -> .
     | `LocalTy (`Na _) -> .
     | `LocalCty (`Na _) -> .
     | `LocalVal (`Na _) -> .
-
-  and render_parent : Odoc_model.Paths.Path.Resolved.parent -> string =
-    function
+  and render_parent : Odoc_model.Paths.Path.Resolved.parent -> string = function
     | `Module m -> render_resolved (m :> Odoc_model.Paths.Path.Resolved.t)
     | `ModuleType (_, `Na _) -> .
     | `FragmentRoot (`Na _) -> .
-
-  and dot p s = render_path (p : Odoc_model.Paths.Path.Module.t :> Odoc_model.Paths.Path.t) ^ "." ^ s
-
+  and dot p s =
+    render_path (p : Odoc_model.Paths.Path.Module.t :> Odoc_model.Paths.Path.t)
+    ^ "." ^ s
   and render_path : Odoc_model.Paths.Path.t -> string =
    fun x ->
     match x with
@@ -73,6 +69,9 @@ let render_path : Odoc_model.Paths.Path.t -> string =
     | `DotT (p, s) -> dot p (TypeName.to_string s)
     | `DotMT (p, s) -> dot p (ModuleTypeName.to_string s)
     | `DotV (p, s) -> dot p (ValueName.to_string s)
+    | `Type (`Na _, _, _) -> .
+    | `Module (`Na _, _, _) -> .
+    | `ModuleType (`Na _, _, _) -> .
     | `Apply (p1, p2) ->
         render_path (p1 :> t) ^ "(" ^ render_path (p2 :> t) ^ ")"
     | `Resolved rp -> render_resolved rp

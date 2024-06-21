@@ -9,8 +9,7 @@ type module_type = [ `FModuleType of ModuleTypeName.t * ModuleType.t ]
 type datatype = [ `FType of TypeName.t * TypeDecl.t ]
 
 type class_ =
-  [ `FClass of TypeName.t * Class.t
-  | `FClassType of TypeName.t * ClassType.t ]
+  [ `FClass of TypeName.t * Class.t | `FClassType of TypeName.t * ClassType.t ]
 
 type value = [ `FValue of ValueName.t * Value.t ]
 
@@ -75,7 +74,8 @@ val any_in_typext : Extension.t -> string -> extension option
 
 val value_in_sig : Signature.t -> ValueName.t -> value option
 
-val method_in_class_signature : ClassSignature.t -> MethodName.t -> method_ option
+val method_in_class_signature :
+  ClassSignature.t -> MethodName.t -> method_ option
 
 val instance_variable_in_class_signature :
   ClassSignature.t -> InstanceVariableName.t -> instance_variable option
