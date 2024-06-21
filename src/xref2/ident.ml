@@ -4,8 +4,7 @@ open Odoc_model.Paths
 (* For simplicity keep a global counter *)
 let counter = ref 0
 
-type module_ =
-  [ `LModule of ModuleName.t * int ]
+type module_ = [ `LModule of ModuleName.t * int ]
 
 type module_type = [ `LModuleType of ModuleTypeName.t * int ]
 
@@ -81,8 +80,7 @@ module Of_Identifier = struct
         let i = fresh_int () in
         `LModule (n, i)
 
-  let functor_parameter :
-      FunctorParameter.t -> module_ =
+  let functor_parameter : FunctorParameter.t -> module_ =
    fun { iv = `Parameter (_, n); _ } -> `LModule (n, fresh_int ())
 
   let module_type : ModuleType.t -> module_type =
@@ -121,8 +119,7 @@ module Of_Identifier = struct
 end
 
 module Name = struct
-  let typed_module : module_ -> ModuleName.t = function
-    | `LModule (n, _) -> n
+  let typed_module : module_ -> ModuleName.t = function `LModule (n, _) -> n
   let module_ m = ModuleName.to_string (typed_module m)
 
   let unsafe_module m = ModuleName.to_string_unsafe (typed_module m)
@@ -132,7 +129,6 @@ module Name = struct
 
   let unsafe_type : type_ -> string = function
     | `LType (n, _) -> TypeName.to_string_unsafe n
-
 
   let module_type : module_type -> string = function
     | `LModuleType (n, _) -> ModuleTypeName.to_string n

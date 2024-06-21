@@ -569,7 +569,7 @@ module LangUtils = struct
             match p with
             | `Apply (p1, p2) -> Format.fprintf ppf "%a(%a)" resolved_path (cast p1) resolved_path (cast p2)
             | `Identifier p -> Format.fprintf ppf "global(%a)" identifier p
-            | `Alias (dest, src) -> Format.fprintf ppf "(%a -> %a)" path (src :> Odoc_model.Paths.Path.t) resolved_path (cast dest)
+            | `Alias (dest, src, _) -> Format.fprintf ppf "(%a -> %a)" path (src :> Odoc_model.Paths.Path.t) resolved_path (cast dest)
             | `AliasModuleType (path, realpath) -> Format.fprintf ppf "(%a -> %a)" resolved_path (cast path) resolved_path (cast realpath)
             | `Subst (modty, m) -> Format.fprintf ppf "(%a subst-> %a)" resolved_path (cast modty) resolved_path (cast m)
             | `Module (p, m) -> Format.fprintf ppf "%a.%s" resolved_parent p (ModuleName.to_string m)
@@ -609,6 +609,7 @@ module LangUtils = struct
             | `Apply (func,arg) -> Format.fprintf ppf "%a(%a)" path (func :> Odoc_model.Paths.Path.t) path (arg :> Odoc_model.Paths.Path.t)
             | `SubstitutedT _|`SubstitutedMT _|`Substituted _|`SubstitutedCT _ -> Format.fprintf ppf "Unimplemented path"
             | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+            | `Module (_, _, _) | `ModuleType (_, _, _) | `Type (_, _, _) -> ()
 
         and model_fragment ppf (f : Odoc_model.Paths.Fragment.t) =
             match f with

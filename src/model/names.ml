@@ -96,7 +96,7 @@ module Name : Name = struct
   let shadowed_of_ident id = shadowed_of_string (Ident.name id)
 
   let equal_modulo_shadowing (x : t) (y : t) =
-    match x, y with
+    match (x, y) with
     | Std x, Std y -> x = y
     | Hidden x, Std y -> x = y
     | Std x, Hidden y -> x = y

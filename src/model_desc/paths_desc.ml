@@ -211,18 +211,29 @@ module General_paths = struct
           C ("`Identifier", ((x1 :> id_t), x2), Pair (identifier, bool))
       | `Root x -> C ("`Root", x, Names.modulename)
       | `Forward x -> C ("`Forward", x, string)
-      | `Dot (x1, x2) -> C ("`Dot", ((x1 :> p), x2), Pair (path, Names.modulename))
-      | `DotT (x1, x2) -> C ("`DotT", ((x1 :> p), x2), Pair (path, Names.typename))
-      | `DotMT (x1, x2) -> C ("`DotMT", ((x1 :> p), x2), Pair (path, Names.moduletypename))
-      | `DotV (x1, x2) -> C ("`DotV", ((x1 :> p), x2), Pair (path, Names.valuename))
+      | `Dot (x1, x2) ->
+          C ("`Dot", ((x1 :> p), x2), Pair (path, Names.modulename))
+      | `DotT (x1, x2) ->
+          C ("`DotT", ((x1 :> p), x2), Pair (path, Names.typename))
+      | `DotMT (x1, x2) ->
+          C ("`DotMT", ((x1 :> p), x2), Pair (path, Names.moduletypename))
+      | `DotV (x1, x2) ->
+          C ("`DotV", ((x1 :> p), x2), Pair (path, Names.valuename))
       | `Apply (x1, x2) ->
           C ("`Apply", ((x1 :> p), (x2 :> p)), Pair (path, path))
       | `Substituted m -> C ("`Substituted", (m :> p), path)
       | `SubstitutedMT m -> C ("`SubstitutedMT", (m :> p), path)
       | `SubstitutedT m -> C ("`SubstitutedT", (m :> p), path)
       | `SubstitutedCT m -> C ("`SubstitutedCT", (m :> p), path)
-      | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
-      )
+      | `Module (`Na _, _, _)
+      | `Type (`Na _, _, _)
+      | `ModuleType (`Na _, _, _)
+      | `LocalMod (`Na _)
+      | `LocalModTy (`Na _)
+      | `LocalTy (`Na _)
+      | `LocalCty (`Na _)
+      | `LocalVal (`Na _) ->
+          .)
 
   and resolved_path : rp t =
     Variant
@@ -243,7 +254,7 @@ module General_paths = struct
             ( "`Apply",
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
-      | `Alias (dest, src) ->
+      | `Alias (dest, src, _) ->
           C ("`Alias", ((dest :> rp), (src :> p)), Pair (resolved_path, path))
       | `AliasModuleType (x1, x2) ->
           C
@@ -287,14 +298,26 @@ module General_paths = struct
       | `SubstitutedMT c -> C ("`SubstitutedMT", (c :> rp), resolved_path)
       | `SubstitutedT c -> C ("`SubstitutedT", (c :> rp), resolved_path)
       | `SubstitutedCT c -> C ("`SubstitutedCT", (c :> rp), resolved_path)
-      | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _)
-      | `Module (`ModuleType (_, `Na _), _) | `Module (`FragmentRoot (`Na _), _)
-      | `ModuleType (`ModuleType (_, `Na _), _) | `ModuleType (`FragmentRoot (`Na _), _) -> .
-      | `Type (`ModuleType (_, `Na _), _) | `Type (`FragmentRoot (`Na _), _)
-      | `ClassType (`ModuleType (_, `Na _), _) | `ClassType (`FragmentRoot (`Na _), _) -> .
-      | `Class (`ModuleType (_, `Na _), _) | `Class (`FragmentRoot (`Na _), _)
-      | `Value (`ModuleType (_, `Na _), _) | `Value (`FragmentRoot (`Na _), _) -> .)
-  
+      | `LocalMod (`Na _)
+      | `LocalModTy (`Na _)
+      | `LocalTy (`Na _)
+      | `LocalCty (`Na _)
+      | `LocalVal (`Na _)
+      | `Module (`ModuleType (_, `Na _), _)
+      | `Module (`FragmentRoot (`Na _), _)
+      | `ModuleType (`ModuleType (_, `Na _), _)
+      | `ModuleType (`FragmentRoot (`Na _), _) ->
+          .
+      | `Type (`ModuleType (_, `Na _), _)
+      | `Type (`FragmentRoot (`Na _), _)
+      | `ClassType (`ModuleType (_, `Na _), _)
+      | `ClassType (`FragmentRoot (`Na _), _) ->
+          .
+      | `Class (`ModuleType (_, `Na _), _)
+      | `Class (`FragmentRoot (`Na _), _)
+      | `Value (`ModuleType (_, `Na _), _)
+      | `Value (`FragmentRoot (`Na _), _) ->
+          .)
 
   and reference : r t =
     Variant

@@ -101,12 +101,12 @@ include Generator_signatures
 
 module Make (Syntax : SYNTAX) = struct
   module Link
-   (* : sig
-    val from_path : Paths.Path.t -> text
+  (* : sig
+       val from_path : Paths.Path.t -> text
 
-    val from_fragment : Paths.Fragment.leaf -> text
-  end  *)
-  = struct
+       val from_fragment : Paths.Fragment.leaf -> text
+     end *) =
+  struct
     open Paths
 
     let rec from_path : Path.t -> text =
@@ -122,16 +122,16 @@ module Make (Syntax : SYNTAX) = struct
       | `Forward root -> unresolved [ inline @@ Text root ] (* FIXME *)
       | `Dot (prefix, suffix) ->
           let link = from_path (prefix :> Path.t) in
-          link ++ O.txt ("." ^ (ModuleName.to_string suffix))
+          link ++ O.txt ("." ^ ModuleName.to_string suffix)
       | `DotT (prefix, suffix) ->
-        let link = from_path (prefix :> Path.t) in
-        link ++ O.txt ("." ^ (TypeName.to_string suffix))
+          let link = from_path (prefix :> Path.t) in
+          link ++ O.txt ("." ^ TypeName.to_string suffix)
       | `DotMT (prefix, suffix) ->
-        let link = from_path (prefix :> Path.t) in
-        link ++ O.txt ("." ^ (ModuleTypeName.to_string suffix))
+          let link = from_path (prefix :> Path.t) in
+          link ++ O.txt ("." ^ ModuleTypeName.to_string suffix)
       | `DotV (prefix, suffix) ->
-        let link = from_path (prefix :> Path.t) in
-        link ++ O.txt ("." ^ (ValueName.to_string suffix))
+          let link = from_path (prefix :> Path.t) in
+          link ++ O.txt ("." ^ ValueName.to_string suffix)
       | `Apply (p1, p2) ->
           let link1 = from_path (p1 :> Path.t) in
           let link2 = from_path (p2 :> Path.t) in
@@ -157,11 +157,15 @@ module Make (Syntax : SYNTAX) = struct
           | Error exn ->
               Printf.eprintf "Id.href failed: %S\n%!" (Url.Error.to_string exn);
               O.txt txt)
+      | `Module (`Na _, _, _)
+      | `ModuleType (`Na _, _, _)
+      | `Type (`Na _, _, _)
       | `LocalMod (`Na _)
       | `LocalModTy (`Na _)
       | `LocalTy (`Na _)
       | `LocalCty (`Na _)
-      | `LocalVal (`Na _) -> .
+      | `LocalVal (`Na _) ->
+          .
 
     let dot prefix suffix = prefix ^ "." ^ suffix
 

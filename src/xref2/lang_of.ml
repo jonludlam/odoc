@@ -5,8 +5,7 @@ open Names
 type maps = {
   module_ : Identifier.Module.t Component.ModuleMap.t;
   module_type : Identifier.ModuleType.t Component.ModuleTypeMap.t;
-  functor_parameter :
-    (Ident.module_ * Identifier.FunctorParameter.t) list;
+  functor_parameter : (Ident.module_ * Identifier.FunctorParameter.t) list;
   type_ : Identifier.Type.t Component.TypeMap.t;
   path_type : Identifier.Path.Type.t Component.TypeMap.t;
   class_ : (Ident.type_ * Identifier.Class.t) list;
@@ -57,159 +56,176 @@ module Path = struct
   let rec module_ map (p : Cpath.module_) : Odoc_model.Paths.Path.Module.t =
     match p with
     | `Substituted x -> `Substituted (module_ map x)
-    | `Local (id, b) ->
+    | `LocalMod (`LModule _ as id) ->
         let m =
           try lookup_module map id
           with Not_found ->
             failwith (Format.asprintf "Not_found: %a" Ident.fmt id)
         in
         let hidden =
-          b
-          ||
           match m.iv with
           | `Module (_, n) -> Odoc_model.Names.ModuleName.is_hidden n
           | _ -> false
         in
         `Identifier (m, hidden)
+    | `LocalMod (`Na _) -> .
     | `Identifier (i, b) -> `Identifier (i, b)
     | `Resolved x -> `Resolved (resolved_module map x)
     | `Root x -> `Root x
     | `Dot (p, s) -> `Dot (module_ map p, s)
     | `Forward s -> `Forward s
     | `Apply (m1, m2) -> `Apply (module_ map m1, module_ map m2)
-    | `Module (`Module p, n) ->
-        `Dot (`Resolved (resolved_module map p), n)
-    | `Module (_, _) -> failwith "Probably shouldn't happen"
+    | `Module (_, `Module p, n) -> `Dot (`Resolved (resolved_module map p), n)
+    | `Module (_, _, _) ->
+        failwith "Can't convert non-module parent to model path"
 
   and module_type map (p : Cpath.module_type) :
       Odoc_model.Paths.Path.ModuleType.t =
     match p with
-    | `Substituted x -> `SubstitutedMT (module_type map x)
+    | `SubstitutedMT x -> `SubstitutedMT (module_type map x)
     | `Identifier
         (({ iv = #Odoc_model.Paths.Identifier.ModuleType.t_pv; _ } as y), b) ->
         `Identifier (y, b)
-    | `Local (id, b) ->
+    | `LocalModTy (`LModuleType (n, _) as id) ->
         `Identifier
           ( (try Component.ModuleTypeMap.find id map.module_type
              with Not_found ->
                failwith (Format.asprintf "Not_found: %a" Ident.fmt id)),
-            b )
+            ModuleTypeName.is_hidden n )
+    | `LocalModTy (`Na _) -> .
     | `Resolved x -> `Resolved (resolved_module_type map x)
     | `DotMT (p, n) -> `DotMT (module_ map p, n)
-    | `ModuleType (`Module p, n) ->
+    | `ModuleType (_, `Module p, n) ->
         `DotMT (`Resolved (resolved_module map p), n)
-    | `ModuleType (_, _) -> failwith "Probably shouldn't happen"
+    | `ModuleType (_, _, _) ->
+        failwith "Can't convert non-module parent to model path"
 
   and type_ map (p : Cpath.type_) : Odoc_model.Paths.Path.Type.t =
     match p with
-    | `Substituted x -> `SubstitutedT (type_ map x)
+    | `SubstitutedT x -> `SubstitutedT (type_ map x)
     | `Identifier
         (({ iv = #Odoc_model.Paths.Identifier.Path.Type.t_pv; _ } as y), b) ->
         `Identifier (y, b)
-    | `Local (id, b) ->
-        `Identifier (Component.TypeMap.find id map.path_type, b)
+    | `LocalTy (`LType (n, _) as id) ->
+        `Identifier
+          (Component.TypeMap.find id map.path_type, TypeName.is_hidden n)
+    | `LocalTy (`Na _) -> .
+    | `LocalCty (`LType (n, _) as id) ->
+        `Identifier
+          ( (Component.TypeMap.find id map.path_class_type
+              :> Odoc_model.Paths.Identifier.Path.Type.t),
+            TypeName.is_hidden n )
+    | `LocalCty (`Na _) -> .
+    | `SubstitutedCT x -> `SubstitutedCT (class_type map x)
     | `Resolved x -> `Resolved (resolved_type map x)
     | `DotT (p, n) -> `DotT (module_ map p, n)
-    | `Type (`Module p, n) ->
-        `DotT (`Resolved (resolved_module map p), n)
-    | `Class (`Module p, n) ->
-        `DotT (`Resolved (resolved_module map p), n)
-    | `ClassType (`Module p, n) ->
-        `DotT (`Resolved (resolved_module map p), n)
-    | `Type _ | `Class _ | `ClassType _ -> failwith "Probably shouldn't happen"
+    | `Type (_, `Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `Type (_, _, _) ->
+        failwith "Can't convert non-module parent to model path"
 
   and class_type map (p : Cpath.class_type) : Odoc_model.Paths.Path.ClassType.t
       =
     match p with
-    | `Substituted x -> `SubstitutedCT (class_type map x)
+    | `SubstitutedCT x -> `SubstitutedCT (class_type map x)
     | `Identifier
         (({ iv = #Odoc_model.Paths.Identifier.Path.ClassType.t_pv; _ } as y), b)
       ->
         `Identifier (y, b)
-    | `Local (id, b) ->
-        `Identifier (Component.TypeMap.find id map.path_class_type, b)
+    | `LocalCty (`LType (n, _) as id) ->
+        `Identifier
+          (Component.TypeMap.find id map.path_class_type, TypeName.is_hidden n)
+    | `LocalCty (`Na _) -> .
     | `Resolved x -> `Resolved (resolved_class_type map x)
     | `DotT (p, n) -> `DotT (module_ map p, n)
-    | `Class (`Module p, n) ->
-        `DotT (`Resolved (resolved_module map p), n)
-    | `ClassType (`Module p, n) ->
-        `DotT (`Resolved (resolved_module map p), n)
-    | `Class _ | `ClassType _ -> failwith "Probably shouldn't happen"
+    | `Type (_, `Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `Type (_, _, _) ->
+        failwith "Can't convert non-module parent to model path"
 
   and resolved_module map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     match p with
-    | `Local id ->
+    | `LocalMod (`LModule _ as id) ->
         `Identifier
           (try lookup_module map id
            with Not_found ->
              failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
+    | `LocalMod (`Na _) -> .
     | `Substituted x -> `Substituted (resolved_module map x)
-    | `Gpath y -> y
+    | `Identifier y -> `Identifier y
     | `Subst (mty, m) ->
         `Subst (resolved_module_type map mty, resolved_module map m)
     | `Hidden h -> `Hidden (resolved_module map h)
     | `Module (p, n) -> `Module (resolved_parent map p, n)
-    | `Canonical (r, m) -> `Canonical (resolved_module map r, m)
+    | `Canonical (r, m) -> `Canonical (resolved_module map r, module_ map m)
     | `Apply (m1, m2) -> `Apply (resolved_module map m1, resolved_module map m2)
-    | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2)
+    | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2, None)
     | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
 
-  and resolved_parent map (p : Cpath.Resolved.parent) : Odoc_model.Paths.Path.Resolved.parent =
+  and resolved_parent map (p : Cpath.Resolved.parent) :
+      Odoc_model.Paths.Path.Resolved.parent =
     match p with
     | `Module m -> `Module (resolved_module map m)
     | `ModuleType _ -> failwith "Invalid"
-    | `FragmentRoot -> (
+    | `FragmentRoot _ -> (
         match map.fragment_root with
-        | Some r -> resolved_parent map (r :> Cpath.Resolved.parent)
-        | None -> failwith "Invalid")
+        | Some (`Module m) -> `Module (resolved_module map m)
+        | Some (`ModuleType _) | None -> failwith "Invalid")
 
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     match p with
-    | `Gpath y -> y
-    | `Local id ->
+    | `Identifier y -> `Identifier y
+    | `LocalModTy (`LModuleType _ as id) ->
         `Identifier
           (try Component.ModuleTypeMap.find id map.module_type
            with Not_found ->
              failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
+    | `LocalModTy (`Na _) -> .
     | `ModuleType (p, name) -> `ModuleType (resolved_parent map p, name)
-    | `Substituted s -> `SubstitutedMT (resolved_module_type map s)
+    | `SubstitutedMT s -> `SubstitutedMT (resolved_module_type map s)
     | `SubstT (p1, p2) ->
         `SubstT (resolved_module_type map p1, resolved_module_type map p2)
     | `AliasModuleType (p1, p2) ->
         `AliasModuleType
           (resolved_module_type map p1, resolved_module_type map p2)
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type map p1, p2)
+        `CanonicalModuleType (resolved_module_type map p1, module_type map p2)
     | `OpaqueModuleType m -> `OpaqueModuleType (resolved_module_type map m)
 
   and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =
     match p with
-    | `Gpath y -> y
-    | `Local id -> `Identifier (Component.TypeMap.find id map.path_type)
-    | `CanonicalType (t1, t2) -> `CanonicalType (resolved_type map t1, t2)
-    | `Type (p, name) -> `Type (resolved_parent map p, name)
-    | `Class (p, name) -> `Class (resolved_parent map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
-    | `Substituted s -> `SubstitutedT (resolved_type map s)
+    | `Identifier y -> `Identifier y
+    | `Type (p, n) -> `Type (resolved_parent map p, n)
+    | `Class (p, n) -> `Class (resolved_parent map p, n)
+    | `ClassType (p, n) -> `ClassType (resolved_parent map p, n)
+    | `LocalTy (`LType _ as id) ->
+        `Identifier (Component.TypeMap.find id map.path_type)
+    | `LocalTy (`Na _) -> .
+    | `LocalCty (`LType _ as id) ->
+        `Identifier (Component.TypeMap.find id map.path_type)
+    | `LocalCty (`Na _) -> .
+    | `CanonicalType (t1, t2) ->
+        `CanonicalType (resolved_type map t1, type_ map t2)
+    | `SubstitutedT s -> `SubstitutedT (resolved_type map s)
     | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)
 
   and resolved_value map (p : Cpath.Resolved.value) :
       Odoc_model.Paths.Path.Resolved.Value.t =
     match p with
     | `Value (p, name) -> `Value (resolved_parent map p, name)
-    | `Gpath y -> y
+    | `Identifier y -> `Identifier y
+    | `LocalVal _ -> failwith "Unhandled"
 
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
       Odoc_model.Paths.Path.Resolved.ClassType.t =
     match p with
-    | `Gpath y -> y
-    | `Local id ->
+    | `Identifier y -> `Identifier y
+    | `LocalCty (`LType _ as id) ->
         `Identifier (Component.TypeMap.find id map.path_class_type)
-    | `Class (p, name) -> `Class (resolved_parent map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
+    | `LocalCty (`Na _) -> .
+    | `Class (p, n) -> `Class (resolved_parent map p, n)
+    | `ClassType (p, n) -> `ClassType (resolved_parent map p, n)
     | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)
 
   let rec module_fragment :
@@ -622,6 +638,7 @@ and simple_expansion :
           map with
           functor_parameter =
             (arg.id, param_identifier) :: map.functor_parameter;
+          module_ = Component.ModuleMap.add arg.id param_identifier map.module_;
         }
       in
       let arg = functor_parameter map arg in
@@ -747,7 +764,9 @@ and module_ map parent id m =
   with e ->
     let bt = Printexc.get_backtrace () in
     Format.fprintf Format.err_formatter
-      "Exception handling module: %a\nbacktrace:\n%s\n%!" Ident.fmt id bt;
+      "Exception handling module: %a\nty: %a\n%!backtrace:\n%s\n%!" Ident.fmt id
+      Component.Fmt.(module_decl default)
+      m.type_ bt;
     raise e
 
 and module_substitution map parent id m =
@@ -836,6 +855,7 @@ and module_type_expr map identifier = function
         {
           map with
           functor_parameter = (arg.id, identifier') :: map.functor_parameter;
+          module_ = Component.ModuleMap.add arg.id identifier' map.module_;
         }
       in
       Functor

@@ -8,8 +8,7 @@ type module_type = [ `FModuleType of ModuleTypeName.t * ModuleType.t ]
 type datatype = [ `FType of TypeName.t * TypeDecl.t ]
 
 type class_ =
-  [ `FClass of TypeName.t * Class.t
-  | `FClassType of TypeName.t * ClassType.t ]
+  [ `FClass of TypeName.t * Class.t | `FClassType of TypeName.t * ClassType.t ]
 
 type value = [ `FValue of ValueName.t * Value.t ]
 
@@ -91,23 +90,29 @@ let rec disambiguate = function
 
 let module_in_sig sg name =
   find_in_sig sg (function
-    | Signature.Module (id, _, m) when ModuleName.equal_modulo_shadowing (N.typed_module id) name ->
+    | Signature.Module (id, _, m)
+      when ModuleName.equal_modulo_shadowing (N.typed_module id) name ->
         Some (`FModule (N.typed_module id, Delayed.get m))
     | _ -> None)
 
 let module_type_in_sig sg name =
   find_in_sig sg (function
-    | Signature.ModuleType (id, mt) when ModuleTypeName.equal_modulo_shadowing (N.typed_module_type id) name ->
+    | Signature.ModuleType (id, mt)
+      when ModuleTypeName.equal_modulo_shadowing (N.typed_module_type id) name
+      ->
         Some (`FModuleType (N.typed_module_type id, Delayed.get mt))
     | _ -> None)
 
 let type_in_sig sg name =
   find_in_sig sg (function
-    | Signature.Type (id, _, m) when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
+    | Signature.Type (id, _, m)
+      when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
         Some (`FType (N.typed_type id, Delayed.get m))
-    | Class (id, _, c) when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
+    | Class (id, _, c)
+      when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
         Some (`FClass (N.typed_type id, c))
-    | ClassType (id, _, c) when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
+    | ClassType (id, _, c)
+      when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
         Some (`FClassType (N.typed_type id, c))
     | _ -> None)
 
@@ -125,7 +130,8 @@ type careful_class = [ class_ | removed_type ]
 
 let careful_module_in_sig sg name =
   let removed_module = function
-    | Signature.RModule (id, p) when ModuleName.equal_modulo_shadowing id name ->
+    | Signature.RModule (id, p) when ModuleName.equal_modulo_shadowing id name
+      ->
         Some (`FModule_removed p)
     | _ -> None
   in
@@ -135,7 +141,8 @@ let careful_module_in_sig sg name =
 
 let careful_module_type_in_sig sg name =
   let removed_module_type = function
-    | Signature.RModuleType (id, p) when ModuleTypeName.equal_modulo_shadowing id name ->
+    | Signature.RModuleType (id, p)
+      when ModuleTypeName.equal_modulo_shadowing id name ->
         Some (`FModuleType_removed p)
     | _ -> None
   in
@@ -158,15 +165,18 @@ let careful_type_in_sig sg name =
 
 let datatype_in_sig sg name =
   find_in_sig sg (function
-    | Signature.Type (id, _, t) when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
+    | Signature.Type (id, _, t)
+      when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
         Some (`FType (N.typed_type id, Component.Delayed.get t))
     | _ -> None)
 
 let class_in_sig sg name =
   filter_in_sig sg (function
-    | Signature.Class (id, _, c) when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
+    | Signature.Class (id, _, c)
+      when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
         Some (`FClass (N.typed_type id, c))
-    | Signature.ClassType (id, _, c) when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
+    | Signature.ClassType (id, _, c)
+      when TypeName.equal_modulo_shadowing (N.typed_type id) name ->
         Some (`FClassType (N.typed_type id, c))
     | _ -> None)
 
@@ -256,14 +266,18 @@ let signature_in_sig sg name =
 
 let module_type_in_sig sg name =
   find_in_sig sg (function
-    | Signature.ModuleType (id, m) when ModuleTypeName.equal_modulo_shadowing (N.typed_module_type id) name ->
+    | Signature.ModuleType (id, m)
+      when ModuleTypeName.equal_modulo_shadowing (N.typed_module_type id) name
+      ->
         Some (`FModuleType (N.typed_module_type id, Delayed.get m))
     | _ -> None)
 
 let value_in_sig sg name =
   find_in_sig sg (function
     | Signature.Value (id, m)
-      when ValueName.equal_modulo_shadowing (N.typed_value id) name || ValueName.to_string (N.typed_value id) = "(" ^ ValueName.to_string name ^ ")" ->
+      when ValueName.equal_modulo_shadowing (N.typed_value id) name
+           || ValueName.to_string (N.typed_value id)
+              = "(" ^ ValueName.to_string name ^ ")" ->
         (* For operator, the value will have name [(<op>)]. We match that even
            with name [<op>]. *)
         Some (`FValue (N.typed_value id, Delayed.get m))
@@ -282,7 +296,9 @@ let exception_in_sig sg name =
 
 let extension_in_sig sg name =
   let rec inner t = function
-    | ec :: _ when ec.Extension.Constructor.name = ExtensionName.to_string name -> Some (`FExt (t, ec))
+    | ec :: _ when ec.Extension.Constructor.name = ExtensionName.to_string name
+      ->
+        Some (`FExt (t, ec))
     | _ :: tl -> inner t tl
     | [] -> None
   in

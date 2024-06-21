@@ -89,7 +89,7 @@ let rec is_forward : Paths.Path.Module.t -> bool = function
   | `Apply (p1, p2) -> is_forward p1 || is_forward p2
   | `Substituted s -> is_forward s
   | `LocalMod (`Na _) -> .
-
+  | `Module (`Na _, _, _) -> .
 
 let rec should_reresolve : Paths.Path.Resolved.t -> bool =
  fun p ->
@@ -107,7 +107,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `Apply (x, y) ->
       should_reresolve (x :> t) || should_reresolve (y :> Paths.Path.Resolved.t)
   | `SubstT (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
-  | `Alias (y, x) ->
+  | `Alias (y, x, _) ->
       should_resolve (x :> Paths.Path.t) || should_reresolve (y :> t)
   | `AliasModuleType (x, y) ->
       should_reresolve (x :> t) || should_reresolve (y :> t)
@@ -124,10 +124,14 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `SubstitutedMT m -> should_reresolve (m :> t)
   | `SubstitutedT m -> should_reresolve (m :> t)
   | `SubstitutedCT m -> should_reresolve (m :> t)
-  | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) | `LocalCty (`Na _) | `LocalVal (`Na _) -> .
+  | `LocalMod (`Na _)
+  | `LocalModTy (`Na _)
+  | `LocalTy (`Na _)
+  | `LocalCty (`Na _)
+  | `LocalVal (`Na _) ->
+      .
 
-and should_reresolve_parent : Paths.Path.Resolved.parent -> bool =
-  function
+and should_reresolve_parent : Paths.Path.Resolved.parent -> bool = function
   | `Module m -> should_reresolve (m :> Paths.Path.Resolved.t)
   | `ModuleType (_, `Na _) -> .
   | `FragmentRoot (`Na _) -> .
@@ -1055,7 +1059,10 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
             let cp' = Tools.reresolve_type env cp' in
             let p = Lang_of.(Path.resolved_type (empty ()) cp') in
             if List.mem p visited then raise Loop
-            else if Cpath.is_resolved_type_hidden cp' then
+            else if
+              Odoc_model.Paths.Path.Resolved.is_hidden
+                (p :> Odoc_model.Paths.Path.Resolved.t)
+            then
               match t.Component.TypeDecl.equation with
               | { manifest = Some expr; params; _ } -> (
                   try

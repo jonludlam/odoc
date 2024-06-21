@@ -49,8 +49,7 @@ module Reference = struct
         render_resolved (r :> t) ^ "." ^ ExceptionName.to_string s
     | `Value (r, s) -> render_resolved (r :> t) ^ "." ^ ValueName.to_string s
     | `Class (r, s) -> render_resolved (r :> t) ^ "." ^ TypeName.to_string s
-    | `ClassType (r, s) ->
-        render_resolved (r :> t) ^ "." ^ TypeName.to_string s
+    | `ClassType (r, s) -> render_resolved (r :> t) ^ "." ^ TypeName.to_string s
     | `Method (r, s) ->
         (* CR trefis: do we really want to print anything more than [s] here?  *)
         render_resolved (r :> t) ^ "." ^ MethodName.to_string s

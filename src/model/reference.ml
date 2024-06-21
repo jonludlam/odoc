@@ -423,7 +423,6 @@ let parse whole_reference_location s :
           should_not_be_empty ~what:"Reference target" whole_reference_location
           |> Error.raise_exception)
 
-
 let read_path_longident location s =
   let rec loop : string -> int -> path option =
    fun s pos ->
