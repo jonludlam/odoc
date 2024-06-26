@@ -5,6 +5,7 @@ type request = {
   description : string;
   request : Bos.Cmd.t;
   output_file : Fpath.t option;
+  input_file : Fpath.t option;
 }
 
 type response = (string list, exn) result
@@ -14,23 +15,25 @@ type t = (request * resolver) Eio.Stream.t
 
 let stream : t = Eio.Stream.create 0
 
-let handle_job env request output_file = Run.run env request output_file
+let handle_job env request input_file output_file =
+  Run.run env request input_file output_file
 
 let rec run_worker env id : unit =
-  let { request; output_file; description = _ }, reply =
+  let { request; output_file; description = _; input_file }, reply =
     Eio.Stream.take stream
   in
   Atomic.incr Stats.stats.processes;
   (try
-     let result = handle_job env request output_file in
+     let result = handle_job env request input_file output_file in
      Atomic.decr Stats.stats.processes;
      Promise.resolve reply (Ok result)
    with e -> Promise.resolve_error reply e);
   run_worker env id
 
-let submit description request output_file =
+let submit description request input_file output_file =
   let reply, resolve_reply = Promise.create () in
-  Eio.Stream.add stream ({ description; request; output_file }, resolve_reply);
+  Eio.Stream.add stream
+    ({ description; request; output_file; input_file }, resolve_reply);
   Promise.await reply
 
 let start_workers env sw n =

@@ -909,8 +909,7 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
         let i' = `Identifier i in
         lookup_type env i' >>= fun t -> Ok (i', t)
     | `Resolved r -> lookup_type env r >>= fun t -> Ok (r, t)
-    | `LocalTy (`LType _ as l) ->
-        Error (`LocalType (env, l))
+    | `LocalTy (`LType _ as l) -> Error (`LocalType (env, l))
     | `LocalTy (`Na _) -> .
     | `SubstitutedT s ->
         resolve_type env s >>= fun (p, m) -> Ok (`SubstitutedT p, m)

@@ -359,7 +359,7 @@ module rec Path : sig
     ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Resolved_path.any ->
     bool
 
-  val is_path_hidden_gen :
+  val is_hidden_gen :
     ('lmod, 'lmodty, 'pty, 'lty, 'lval, bool) genfn5 ->
     ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Path.any ->
     bool

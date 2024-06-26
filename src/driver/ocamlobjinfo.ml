@@ -22,7 +22,7 @@ let source_possibilities file =
 let get_source file =
   let cmd = Cmd.(ocamlobjinfo % p file) in
   let lines_res =
-    Worker_pool.submit ("Ocamlobjinfo " ^ Fpath.to_string file) cmd None
+    Worker_pool.submit ("Ocamlobjinfo " ^ Fpath.to_string file) cmd None None
   in
   let lines =
     match lines_res with

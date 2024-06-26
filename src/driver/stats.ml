@@ -66,10 +66,14 @@ let k_longest_commands cmd k =
 
 let dump () =
   let open Run in
-  List.iter print_cmd (List.rev !commands);
-  List.iter print_cmd (k_longest_commands "compile" 5);
-  List.iter print_cmd (k_longest_commands "link" 5);
-  List.iter print_cmd (k_longest_commands "html-generate" 5)
+  let oc = open_out "cmds.txt" in
+  List.iter (print_cmd oc) (List.rev !commands);
+  close_out oc;
+  let oc = open_out "longest.txt" in
+  List.iter (print_cmd oc) (k_longest_commands "compile" 5);
+  List.iter (print_cmd oc) (k_longest_commands "link" 5);
+  List.iter (print_cmd oc) (k_longest_commands "html-generate" 5);
+  close_out oc
 
 let rec compute_min_max_avg min_ max_ total count = function
   | [] -> (min_, max_, total /. float count, count)
@@ -209,3 +213,36 @@ let total_time () =
   let open Run in
   let cmds = !commands in
   List.fold_left (fun acc c -> acc +. c.time) 0.0 cmds
+
+let scatter ppf ty =
+  let open Run in
+  let cmds = filter_commands ty in
+  List.iter
+    (fun (e : executed_command) ->
+      match e.input_file with
+      | None -> ()
+      | Some f -> (
+          match Bos.OS.Path.stat f with
+          | Error _ -> ()
+          | Ok st -> (
+              let size = float st.Unix.st_size in
+              match e.output_file with
+              | None -> ()
+              | Some o -> (
+                  match Bos.OS.Path.stat o with
+                  | Error _ -> ()
+                  | Ok st2 ->
+                      let out_size = float st2.Unix.st_size in
+                      Format.fprintf ppf "%f %f %f %a\n%!" size out_size e.time
+                        Fpath.pp f))))
+    cmds
+
+let plots () =
+  let oc = open_out "compile.data" in
+  let ppf = Format.formatter_of_out_channel oc in
+  scatter ppf "compile";
+  close_out oc;
+  let oc = open_out "link.data" in
+  let ppf = Format.formatter_of_out_channel oc in
+  scatter ppf "link";
+  close_out oc

@@ -1870,8 +1870,7 @@ module Of_Lang = struct
     | `Identifier i -> (
         try
           `LocalTy
-            (Maps.Path.ClassType.find i ident_map.path_class_types
-              :> Cpath.lty)
+            (Maps.Path.ClassType.find i ident_map.path_class_types :> Cpath.lty)
         with Not_found -> (p :> Cpath.Resolved.class_type))
     | `Class (p, name) -> `Class (resolved_parent ident_map p, name)
     | `ClassType (p, name) -> `ClassType (resolved_parent ident_map p, name)
@@ -1939,8 +1938,7 @@ module Of_Lang = struct
     | `Identifier (i, _) -> (
         try
           `LocalTy
-            (Maps.Path.ClassType.find i ident_map.path_class_types
-              :> Cpath.lty)
+            (Maps.Path.ClassType.find i ident_map.path_class_types :> Cpath.lty)
         with Not_found -> (p :> Cpath.class_type))
     | `DotT (path', x) -> `DotT (module_path ident_map path', x)
     | `LocalTy (`Na _) -> .

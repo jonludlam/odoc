@@ -522,7 +522,10 @@ let run libs verbose odoc_dir html_dir stats nb_workers =
 
   Format.eprintf "Final stats: %a@.%!" Stats.pp_stats Stats.stats;
   Format.eprintf "Total time: %f@.%!" (Stats.total_time ());
-  if stats then Stats.bench_results html_dir;
+  if stats then (
+    Stats.bench_results html_dir;
+    Stats.plots ();
+    Stats.dump ());
   let indexes = Util.StringMap.map (fun _i pkg -> Indexes.package pkg) all in
 
   ignore indexes

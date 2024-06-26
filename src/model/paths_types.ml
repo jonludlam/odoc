@@ -328,7 +328,7 @@ module rec Path : sig
       'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * ModuleName.t
     | `Apply of ('lmod, 'lmodty, 'pty) module_ * ('lmod, 'lmodty, 'pty) module_
     ]
-  (** @canonical Odoc_model.Paths.Path.Module.t *)
+  (** @canonical Odoc_model.Paths.Path.Module.gen *)
 
   type ('lmod, 'lmodty, 'pty) module_type =
     [ `Resolved of ('lmod, 'lmodty, 'pty) Resolved_path.module_type
@@ -338,7 +338,7 @@ module rec Path : sig
     | `DotMT of ('lmod, 'lmodty, 'pty) module_ * ModuleTypeName.t
     | `ModuleType of
       'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * ModuleTypeName.t ]
-  (** @canonical Odoc_model.Paths.Path.ModuleType.t *)
+  (** @canonical Odoc_model.Paths.Path.ModuleType.gen *)
 
   type ('lmod, 'lmodty, 'pty, 'lty) class_type =
     [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty) Resolved_path.class_type
@@ -348,7 +348,7 @@ module rec Path : sig
     | `DotT of ('lmod, 'lmodty, 'pty) module_ * TypeName.t
     | `Type of 'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * TypeName.t
     ]
-  (** @canonical Odoc_model.Paths.Path.ClassType.t *)
+  (** @canonical Odoc_model.Paths.Path.ClassType.gen *)
 
   type ('lmod, 'lmodty, 'pty, 'lty) type_ =
     [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty) Resolved_path.type_
@@ -359,14 +359,14 @@ module rec Path : sig
     | `DotT of ('lmod, 'lmodty, 'pty) module_ * TypeName.t
     | `Type of 'pty * ('lmod, 'lmodty, 'pty) Resolved_path.parent * TypeName.t
     ]
-  (** @canonical Odoc_model.Paths.Path.Type.t *)
+  (** @canonical Odoc_model.Paths.Path.Type.gen *)
 
   type ('lmod, 'lmodty, 'pty, 'lval) value =
     [ `Resolved of ('lmod, 'lmodty, 'pty, 'lval) Resolved_path.value
     | `LocalVal of 'lval
     | `Identifier of Identifier.path_value * bool
     | `DotV of ('lmod, 'lmodty, 'pty) module_ * ValueName.t ]
-  (** @canonical Odoc_model.Paths.Path.Value.t *)
+  (** @canonical Odoc_model.Paths.Path.Value.gen *)
 
   type ('lmod, 'lmodty, 'pty, 'lty, 'lval) any =
     [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty, 'lval) Resolved_path.any
@@ -391,7 +391,7 @@ module rec Path : sig
     | `LocalModTy of 'lmodty
     | `LocalVal of 'lval
     | `LocalTy of 'lty ]
-  (** @canonical Odoc_model.Paths.Path.t *)
+  (** @canonical Odoc_model.Paths.Path.gen *)
 end =
   Path
 

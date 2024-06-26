@@ -15,8 +15,7 @@ module rec Resolved : sig
   type module_type =
     (lmod, lmodty, pty) Odoc_model.Paths.Path.Resolved.ModuleType.gen
 
-  type type_ =
-    (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Resolved.Type.gen
+  type type_ = (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Resolved.Type.gen
 
   type class_type =
     (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Resolved.ClassType.gen
@@ -24,8 +23,7 @@ module rec Resolved : sig
   type value =
     (lmod, lmodty, pty, lval) Odoc_model.Paths.Path.Resolved.Value.gen
 
-  type any =
-    (lmod, lmodty, pty, lty, lval) Odoc_model.Paths.Path.Resolved.gen
+  type any = (lmod, lmodty, pty, lty, lval) Odoc_model.Paths.Path.Resolved.gen
 end =
   Resolved
 
@@ -35,8 +33,7 @@ and Cpath : sig
   type module_type = (lmod, lmodty, pty) Odoc_model.Paths.Path.ModuleType.gen
   type type_ = (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.Type.gen
 
-  type class_type =
-    (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.ClassType.gen
+  type class_type = (lmod, lmodty, pty, lty) Odoc_model.Paths.Path.ClassType.gen
 
   type value = (lmod, lmodty, pty, lval) Odoc_model.Paths.Path.Value.gen
 
@@ -63,7 +60,7 @@ let hidden_fns :
   }
 
 let is_hidden : any -> bool =
-  Odoc_model.Paths.Path.is_path_hidden_gen hidden_fns
+  Odoc_model.Paths.Path.is_hidden_gen hidden_fns
 
 let is_resolved_hidden : weak_canonical_test:bool -> Resolved.any -> bool =
   Odoc_model.Paths.Path.is_resolved_hidden_gen hidden_fns
