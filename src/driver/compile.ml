@@ -72,14 +72,12 @@ let compile output_dir all =
   let pkg_args =
     let docs, libs =
       Util.StringMap.fold
-        (fun pkgname pkg (docs, libs) ->
-          let ( / ) = Fpath.( / ) in
-          let doc = (pkgname, output_dir / pkgname / "doc") in
+        (fun pkgname (pkg : Packages.t) (docs, libs) ->
+          let doc = (pkgname, Fpath.(output_dir // pkg.mld_odoc_dir)) in
           let lib =
             List.map
               (fun lib ->
-                ( lib.Packages.lib_name,
-                  output_dir / pkgname / "lib" / lib.lib_name ))
+                ( lib.Packages.lib_name, Fpath.(output_dir // lib.Packages.odoc_dir )))
               pkg.Packages.libraries
           in
           let docs = doc :: docs and libs = List.rev_append lib libs in

@@ -2,10 +2,12 @@
 
 type dep = string * Digest.t
 
+type id = Odoc.id
+
 type intf = {
   mif_odoc_file : Fpath.t;
   mif_odocl_file : Fpath.t;
-  mif_parent_id : string;
+  mif_parent_id : id;
   mif_hash : string;
   mif_path : Fpath.t;
   mif_deps : dep list;
@@ -13,12 +15,12 @@ type intf = {
 
 let pp_intf fmt i = Format.fprintf fmt "intf: %a" Fpath.pp i.mif_path
 
-type src_info = { src_path : Fpath.t; src_id : string }
+type src_info = { src_path : Fpath.t; src_id : id }
 
 type impl = {
   mip_odoc_file : Fpath.t;
   mip_odocl_file : Fpath.t;
-  mip_parent_id : string;
+  mip_parent_id : id;
   mip_path : Fpath.t;
   mip_src_info : src_info option;
 }
@@ -35,7 +37,7 @@ type modulety = {
 type mld = {
   mld_odoc_file : Fpath.t;
   mld_odocl_file : Fpath.t;
-  mld_parent_id : string;
+  mld_parent_id : id;
   mld_path : Fpath.t;
   mld_deps : Fpath.t list;
 }
@@ -55,10 +57,25 @@ type t = {
   version : string;
   libraries : libty list;
   mlds : mld list;
+  mld_odoc_dir : Fpath.t;
   other_docs : Fpath.Set.t;
 }
 
-module Module = struct
+let maybe_prepend_top top_dir dir =
+  match top_dir with
+  | None -> dir
+  | Some d -> Fpath.(d // dir)
+
+let parent_of_lib top_dir pkg_name lib_name =
+  maybe_prepend_top top_dir Fpath.(v pkg_name / "lib" / lib_name)
+
+let parent_of_pkg top_dir pkg_name =
+  maybe_prepend_top top_dir Fpath.(v pkg_name / "doc")
+
+let parent_of_src top_dir pkg_name lib_name =
+  maybe_prepend_top top_dir Fpath.(v pkg_name / "src" / lib_name)
+
+  module Module = struct
   type t = modulety
 
   let pp ppf (t : t) =
@@ -67,7 +84,7 @@ module Module = struct
 
   let is_hidden name = Astring.String.is_infix ~affix:"__" name
 
-  let vs pkg_name lib_name dir modules =
+  let vs packages_dir pkg_name lib_name dir modules =
     let mk m_name =
       let exists ext =
         let p =
@@ -86,10 +103,10 @@ module Module = struct
             | _ -> None)
       in
       let mk_intf mif_path =
-        let mif_parent_id = Printf.sprintf "%s/lib/%s" pkg_name lib_name in
+        let mif_parent_id = parent_of_lib packages_dir pkg_name lib_name in
         let mif_odoc_file =
           Fpath.(
-            v mif_parent_id
+            mif_parent_id
             // set_ext "odoc" (v (String.uncapitalize_ascii m_name)))
         in
         let mif_odocl_file = Fpath.(set_ext "odocl" mif_odoc_file) in
@@ -98,7 +115,7 @@ module Module = struct
             {
               mif_odoc_file;
               mif_odocl_file;
-              mif_parent_id;
+              mif_parent_id = Odoc.id_of_fpath mif_parent_id;
               mif_hash = digest;
               mif_path;
               mif_deps = deps;
@@ -106,10 +123,10 @@ module Module = struct
         | Error _ -> failwith "bad deps"
       in
       let mk_impl mip_path =
-        let mip_parent_id = Printf.sprintf "%s/lib/%s" pkg_name lib_name in
+        let mip_parent_id = parent_of_lib packages_dir pkg_name lib_name in
         let mip_odoc_file =
           Fpath.(
-            v mip_parent_id
+            mip_parent_id
             // add_ext "odoc" (v ("impl-" ^ String.uncapitalize_ascii m_name)))
         in
         let mip_odocl_file = Fpath.(set_ext "odocl" mip_odoc_file) in
@@ -122,12 +139,10 @@ module Module = struct
               Logs.debug (fun m ->
                   m "Found source file %a for %s" Fpath.pp src_path m_name);
               let src_name = Fpath.filename src_path in
-              let src_id =
-                Printf.sprintf "%s/src/%s/%s" pkg_name lib_name src_name
-              in
+              let src_id = Fpath.(parent_of_src packages_dir pkg_name lib_name / src_name) |> Odoc.id_of_fpath in
               Some { src_path; src_id }
         in
-        { mip_odoc_file; mip_odocl_file; mip_parent_id; mip_src_info; mip_path }
+        { mip_odoc_file; mip_odocl_file; mip_parent_id = Odoc.id_of_fpath mip_parent_id; mip_src_info; mip_path }
       in
       let state = (exists "cmt", exists "cmti") in
 
@@ -154,7 +169,7 @@ end
 module Lib = struct
   exception Unknown_archive of string
 
-  let v libname_of_archive pkg_name dir =
+  let v packages_dir libname_of_archive pkg_name dir =
     Logs.debug (fun m ->
         m "Classifying dir %a for package %s" Fpath.pp dir pkg_name);
     let results = Odoc.classify dir in
@@ -165,10 +180,9 @@ module Lib = struct
             try Util.StringMap.find archive_name libname_of_archive
             with Not_found -> raise (Unknown_archive archive_name)
           in
-          let modules = Module.vs pkg_name lib_name dir modules in
+          let modules = Module.vs packages_dir pkg_name lib_name dir modules in
           let odoc_dir =
-            List.hd modules |> fun m ->
-            m.m_intf.mif_odoc_file |> Fpath.split_base |> fst
+            parent_of_lib packages_dir pkg_name lib_name
           in
           Some { lib_name; dir; odoc_dir; archive_name; modules }
         with
@@ -202,7 +216,7 @@ let pp ppf t =
     Fmt.(list ~sep:sp Lib.pp)
     t.libraries
 
-let of_libs libs =
+let of_libs packages_dir libs =
   let libs = Util.StringSet.to_seq libs |> List.of_seq in
   let results = List.map (fun x -> (x, Ocamlfind.deps [ x ])) libs in
   let all_libs_set =
@@ -304,21 +318,20 @@ let of_libs libs =
         match rel_path with
         | None -> acc
         | Some rel_path ->
-            let id = Fpath.(v pkg_name / "doc" // rel_path) in
+            let id = Fpath.(parent_of_pkg packages_dir pkg_name // rel_path) in
             let mld_parent_id =
-              Format.asprintf "%a" Fpath.pp
                 (id |> Fpath.parent |> Fpath.rem_empty_seg)
             in
             let page_name = Fpath.(rem_ext mld_path |> filename) in
             let odoc_file =
-              Fpath.(v mld_parent_id / ("page-" ^ page_name ^ ".odoc"))
+              Fpath.(mld_parent_id / ("page-" ^ page_name ^ ".odoc"))
             in
             let odocl_file = Fpath.(set_ext "odocl" odoc_file) in
             let mld_deps = List.map (fun l -> l.odoc_dir) libraries in
             {
               mld_odoc_file = odoc_file;
               mld_odocl_file = odocl_file;
-              mld_parent_id;
+              mld_parent_id = Odoc.id_of_fpath mld_parent_id;
               mld_path;
               mld_deps;
             }
@@ -339,7 +352,7 @@ let of_libs libs =
           Logs.debug (fun m -> m "No package for dir %a\n%!" Fpath.pp dir);
           acc
       | Some pkg ->
-          let libraries = Lib.v libname_of_archive pkg.name dir in
+          let libraries = Lib.v packages_dir libname_of_archive pkg.name dir in
           let libraries =
             List.filter
               (fun l -> Util.StringSet.mem l.archive_name archives)
@@ -369,12 +382,14 @@ let of_libs libs =
                       mlds = update_mlds pkg.mlds libraries;
                     }
               | None ->
+                  let mld_odoc_dir = parent_of_pkg packages_dir pkg.name in
                   Some
                     {
                       name = pkg.name;
                       version = pkg.version;
                       libraries;
                       mlds;
+                      mld_odoc_dir;
                       other_docs;
                     })
             acc)

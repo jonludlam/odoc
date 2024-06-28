@@ -4,10 +4,12 @@
 
 type dep = string * Digest.t
 
+type id = Odoc.id
+
 type intf = {
   mif_odoc_file : Fpath.t;
   mif_odocl_file : Fpath.t;
-  mif_parent_id : string;
+  mif_parent_id : id;
   mif_hash : string;
   mif_path : Fpath.t;
   mif_deps : dep list;
@@ -17,12 +19,12 @@ val pp_intf : Format.formatter -> intf -> unit
 
 (** {2 Implementation part} *)
 
-type src_info = { src_path : Fpath.t; src_id : string }
+type src_info = { src_path : Fpath.t; src_id : id }
 
 type impl = {
   mip_odoc_file : Fpath.t;
   mip_odocl_file : Fpath.t;
-  mip_parent_id : string;
+  mip_parent_id : id;
   mip_path : Fpath.t;
   mip_src_info : src_info option;
 }
@@ -43,7 +45,7 @@ type modulety = {
 type mld = {
   mld_odoc_file : Fpath.t;
   mld_odocl_file : Fpath.t;
-  mld_parent_id : string;
+  mld_parent_id : id;
   mld_path : Fpath.t;
   mld_deps : Fpath.t list;
 }
@@ -58,7 +60,7 @@ val pp_mld : Format.formatter -> mld -> unit
 type libty = {
   lib_name : string;
   dir : Fpath.t;
-  odoc_dir : Fpath.t;
+  odoc_dir : Fpath.t; (** Relative to dir where all odoc files are, e.g. [_odoc/] by default *)
   archive_name : string;
   modules : modulety list;
 }
@@ -68,6 +70,7 @@ type t = {
   version : string;
   libraries : libty list;
   mlds : mld list;
+  mld_odoc_dir : Fpath.t; (** Relative to dir where all odoc files are, e.g. [_odoc/] by default *)
   other_docs : Fpath.Set.t;
 }
 
@@ -75,5 +78,5 @@ val pp : Format.formatter -> t -> unit
 
 type set = t Util.StringMap.t
 
-val of_libs : Util.StringSet.t -> set
+val of_libs : Fpath.t option -> Util.StringSet.t -> set
 (** Turns a set of libraries into a map from library name to package *)

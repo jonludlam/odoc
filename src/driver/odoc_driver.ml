@@ -497,17 +497,22 @@ let render_stats env nprocs =
       in
       inner (0, 0, 0, 0, 0, 0, 0, 0))
 
-let run libs verbose odoc_dir html_dir stats nb_workers =
+let run libs verbose packages_dir odoc_dir html_dir stats nb_workers odoc_bin =
+  Odoc.odoc := Bos.Cmd.v odoc_bin;
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   if verbose then Logs.set_level (Some Logs.Debug);
+  let libs =
+    if libs = [] then Ocamlfind.all ()
+    else libs
+  in
   Logs.set_reporter (Logs_fmt.reporter ());
   let () = Worker_pool.start_workers env sw nb_workers in
   let libs =
     List.map Ocamlfind.sub_libraries libs
     |> List.fold_left Util.StringSet.union Util.StringSet.empty
   in
-  let all = Packages.of_libs libs in
+  let all = Packages.of_libs packages_dir libs in
   Compile.init_stats all;
   let () =
     Eio.Fiber.both
@@ -561,12 +566,20 @@ let nb_workers =
   let doc = "Number of workers." in
   Arg.(value & opt int 15 & info [ "j" ] ~doc)
 
+let odoc_bin =
+  let doc = "Odoc binary to use" in
+  Arg.(value & opt string Odoc.default & info [ "odoc" ] ~doc)
+
+let packages_dir =
+  let doc = "Packages directory under which packages should be output." in
+  Arg.(value & opt (some fpath_arg) None & info [ "packages-dir" ] ~doc)
+  
 let cmd =
   let doc = "Generate odoc documentation" in
   let info = Cmd.info "odoc_driver" ~doc in
   Cmd.v info
     Term.(
-      const run $ packages $ verbose $ odoc_dir $ html_dir $ stats $ nb_workers)
+      const run $ packages $ verbose $ packages_dir $ odoc_dir $ html_dir $ stats $ nb_workers $ odoc_bin)
 
 (* let map = Ocamlfind.package_to_dir_map () in
    let _dirs = List.map (fun lib -> List.assoc lib map) deps in
