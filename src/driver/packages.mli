@@ -80,3 +80,10 @@ type set = t Util.StringMap.t
 
 val of_libs : Fpath.t option -> Util.StringSet.t -> set
 (** Turns a set of libraries into a map from library name to package *)
+
+val parent_of_pkg : Fpath.t -> Fpath.t
+
+module Lib : sig
+
+  val v : Fpath.t -> string Util.StringMap.t -> string -> Fpath.t -> libty list
+end

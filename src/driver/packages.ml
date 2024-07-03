@@ -66,16 +66,19 @@ let maybe_prepend_top top_dir dir =
   | None -> dir
   | Some d -> Fpath.(d // dir)
 
-let parent_of_lib top_dir pkg_name lib_name =
-  maybe_prepend_top top_dir Fpath.(v pkg_name / "lib" / lib_name)
+let parent_of_lib pkg_dir lib_name =
+  Fpath.(pkg_dir / "lib" / lib_name)
 
-let parent_of_pkg top_dir pkg_name =
-  maybe_prepend_top top_dir Fpath.(v pkg_name / "doc")
+let parent_of_pkg pkg_dir =
+  Fpath.(pkg_dir / "doc")
 
-let parent_of_src top_dir pkg_name lib_name =
-  maybe_prepend_top top_dir Fpath.(v pkg_name / "src" / lib_name)
+let parent_of_src pkg_dir lib_name =
+  Fpath.(pkg_dir / "src" / lib_name)
 
-  module Module = struct
+let pkg_dir top_dir pkg_name =
+  maybe_prepend_top top_dir Fpath.(v pkg_name)
+
+module Module = struct
   type t = modulety
 
   let pp ppf (t : t) =
@@ -84,7 +87,7 @@ let parent_of_src top_dir pkg_name lib_name =
 
   let is_hidden name = Astring.String.is_infix ~affix:"__" name
 
-  let vs packages_dir pkg_name lib_name dir modules =
+  let vs pkg_dir lib_name dir modules =
     let mk m_name =
       let exists ext =
         let p =
@@ -103,7 +106,7 @@ let parent_of_src top_dir pkg_name lib_name =
             | _ -> None)
       in
       let mk_intf mif_path =
-        let mif_parent_id = parent_of_lib packages_dir pkg_name lib_name in
+        let mif_parent_id = parent_of_lib pkg_dir lib_name in
         let mif_odoc_file =
           Fpath.(
             mif_parent_id
@@ -123,7 +126,7 @@ let parent_of_src top_dir pkg_name lib_name =
         | Error _ -> failwith "bad deps"
       in
       let mk_impl mip_path =
-        let mip_parent_id = parent_of_lib packages_dir pkg_name lib_name in
+        let mip_parent_id = parent_of_lib pkg_dir lib_name in
         let mip_odoc_file =
           Fpath.(
             mip_parent_id
@@ -139,7 +142,7 @@ let parent_of_src top_dir pkg_name lib_name =
               Logs.debug (fun m ->
                   m "Found source file %a for %s" Fpath.pp src_path m_name);
               let src_name = Fpath.filename src_path in
-              let src_id = Fpath.(parent_of_src packages_dir pkg_name lib_name / src_name) |> Odoc.id_of_fpath in
+              let src_id = Fpath.(parent_of_src pkg_dir lib_name / src_name) |> Odoc.id_of_fpath in
               Some { src_path; src_id }
         in
         { mip_odoc_file; mip_odocl_file; mip_parent_id = Odoc.id_of_fpath mip_parent_id; mip_src_info; mip_path }
@@ -148,16 +151,16 @@ let parent_of_src top_dir pkg_name lib_name =
 
       let m_hidden = is_hidden m_name in
       try
-        let m_intf, m_impl =
-          match state with
-          | Some cmt, Some cmti -> (mk_intf cmti, Some (mk_impl cmt))
-          | Some cmt, None -> (mk_intf cmt, Some (mk_impl cmt))
-          | None, Some cmti -> (mk_intf cmti, None)
-          | None, None ->
-              Logs.err (fun m -> m "No files for module: %s" m_name);
-              failwith "no files"
+        let r (m_intf, m_impl) =
+          Some { m_name; m_intf; m_impl; m_hidden }
         in
-        Some { m_name; m_intf; m_impl; m_hidden }
+        match state with
+        | Some cmt, Some cmti -> r (mk_intf cmti, Some (mk_impl cmt))
+        | Some cmt, None -> r (mk_intf cmt, Some (mk_impl cmt))
+        | None, Some cmti -> r (mk_intf cmti, None)
+        | None, None ->
+            Logs.warn (fun m -> m "No files for module: %s" m_name);
+            None
       with _ ->
         Logs.err (fun m -> m "Error processing module %s. Ignoring." m_name);
         None
@@ -167,9 +170,8 @@ let parent_of_src top_dir pkg_name lib_name =
 end
 
 module Lib = struct
-  exception Unknown_archive of string
 
-  let v packages_dir libname_of_archive pkg_name dir =
+  let v pkg_dir libname_of_archive pkg_name dir =
     Logs.debug (fun m ->
         m "Classifying dir %a for package %s" Fpath.pp dir pkg_name);
     let results = Odoc.classify dir in
@@ -178,25 +180,27 @@ module Lib = struct
         try
           let lib_name =
             try Util.StringMap.find archive_name libname_of_archive
-            with Not_found -> raise (Unknown_archive archive_name)
-          in
-          let modules = Module.vs packages_dir pkg_name lib_name dir modules in
-          let odoc_dir =
-            parent_of_lib packages_dir pkg_name lib_name
-          in
-          Some { lib_name; dir; odoc_dir; archive_name; modules }
-        with
-        | Unknown_archive x ->
-            Logs.debug (fun m ->
+            with Not_found ->
+              Logs.debug (fun m ->
                 m
                   "Unable to determine library in package '%s' to which \
                    archive '%s' belongs"
-                  pkg_name x);
+                  pkg_name archive_name);
             Logs.debug (fun m ->
                 m "These are the archives I know about: [%a]"
                   Fmt.(list ~sep:sp string)
                   (Util.StringMap.bindings libname_of_archive |> List.map fst));
-            None
+            Logs.debug (fun m ->
+                m "Defaulting to name of library: %s" archive_name;
+                );
+            archive_name
+          in
+          let modules = Module.vs pkg_dir lib_name dir modules in
+          let odoc_dir =
+            parent_of_lib pkg_dir lib_name
+          in
+          Some { lib_name; dir; odoc_dir; archive_name; modules }
+        with
         | _ ->
             Logs.err (fun m ->
                 m "Error processing library %s. Ignoring." archive_name);
@@ -318,7 +322,7 @@ let of_libs packages_dir libs =
         match rel_path with
         | None -> acc
         | Some rel_path ->
-            let id = Fpath.(parent_of_pkg packages_dir pkg_name // rel_path) in
+            let id = Fpath.(parent_of_pkg (pkg_dir packages_dir pkg_name) // rel_path) in
             let mld_parent_id =
                 (id |> Fpath.parent |> Fpath.rem_empty_seg)
             in
@@ -352,7 +356,9 @@ let of_libs packages_dir libs =
           Logs.debug (fun m -> m "No package for dir %a\n%!" Fpath.pp dir);
           acc
       | Some pkg ->
-          let libraries = Lib.v packages_dir libname_of_archive pkg.name dir in
+          let pkg_dir = pkg_dir packages_dir pkg.name in
+
+          let libraries = Lib.v pkg_dir libname_of_archive pkg.name dir in
           let libraries =
             List.filter
               (fun l -> Util.StringSet.mem l.archive_name archives)
@@ -382,7 +388,7 @@ let of_libs packages_dir libs =
                       mlds = update_mlds pkg.mlds libraries;
                     }
               | None ->
-                  let mld_odoc_dir = parent_of_pkg packages_dir pkg.name in
+                  let mld_odoc_dir = parent_of_pkg pkg_dir in
                   Some
                     {
                       name = pkg.name;

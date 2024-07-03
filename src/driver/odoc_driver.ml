@@ -497,8 +497,9 @@ let render_stats env nprocs =
       in
       inner (0, 0, 0, 0, 0, 0, 0, 0))
 
-let run libs verbose packages_dir odoc_dir html_dir stats nb_workers odoc_bin =
+let run libs verbose packages_dir odoc_dir html_dir stats nb_workers odoc_bin voodoo package_name blessed =
   Odoc.odoc := Bos.Cmd.v odoc_bin;
+  let _ = Voodoo.find_universe_and_version "foo" in
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   if verbose then Logs.set_level (Some Logs.Debug);
@@ -512,12 +513,28 @@ let run libs verbose packages_dir odoc_dir html_dir stats nb_workers odoc_bin =
     List.map Ocamlfind.sub_libraries libs
     |> List.fold_left Util.StringSet.union Util.StringSet.empty
   in
-  let all = Packages.of_libs packages_dir libs in
+  let all =
+    if voodoo then
+      match package_name with
+      | Some p -> Voodoo.of_voodoo p blessed
+      | None -> failwith "Need a package name for voodoo"
+    else Packages.of_libs packages_dir libs in
+  let partial =
+    if voodoo
+    then
+      match Util.StringMap.to_list all with
+      | [ (_, p) ] -> 
+        let output_path = Fpath.(odoc_dir // p.mld_odoc_dir) in
+        Some output_path
+      | _ ->
+        failwith "Error, expecting singleton library in voodoo mode"
+    else None
+  in
   Compile.init_stats all;
   let () =
     Eio.Fiber.both
       (fun () ->
-        let compiled = Compile.compile odoc_dir all in
+        let compiled = Compile.compile partial odoc_dir all in
         let linked = Compile.link compiled in
         let () = Compile.html_generate html_dir linked in
         let _ = Odoc.support_files html_dir in
@@ -573,13 +590,25 @@ let odoc_bin =
 let packages_dir =
   let doc = "Packages directory under which packages should be output." in
   Arg.(value & opt (some fpath_arg) None & info [ "packages-dir" ] ~doc)
-  
+
+let voodoo =
+  let doc = "Process output from voodoo-prep" in
+  Arg.(value & flag & info [ "voodoo" ] ~doc)
+
+let package_name =
+  let doc = "Name of package to process with voodoo" in
+  Arg.(value & opt (some string) None & info ["package"] ~doc)
+
+let blessed =
+  let doc = "Blessed" in
+  Arg.(value & flag & info ["blessed"] ~doc)
+
 let cmd =
   let doc = "Generate odoc documentation" in
   let info = Cmd.info "odoc_driver" ~doc in
   Cmd.v info
     Term.(
-      const run $ packages $ verbose $ packages_dir $ odoc_dir $ html_dir $ stats $ nb_workers $ odoc_bin)
+      const run $ packages $ verbose $ packages_dir $ odoc_dir $ html_dir $ stats $ nb_workers $ odoc_bin $ voodoo $ package_name $ blessed)
 
 (* let map = Ocamlfind.package_to_dir_map () in
    let _dirs = List.map (fun lib -> List.assoc lib map) deps in

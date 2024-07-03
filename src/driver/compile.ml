@@ -66,9 +66,43 @@ let init_stats (pkgs : Packages.t Util.StringMap.t) =
 
 open Eio.Std
 
-let compile output_dir all =
+type partial = 
+  (string * compiled) list * Packages.modulety Util.StringMap.t
+
+let unmarshal filename =
+  let ic = open_in_bin (Fpath.to_string filename) in
+  let (v : partial) = Marshal.from_channel ic in
+  close_in ic;
+  v
+
+let marshal (v : partial) filename =
+  let p = Fpath.parent filename in
+  Util.mkdir_p p;
+  let oc = open_out_bin (Fpath.to_string filename) in
+  Marshal.to_channel oc v [];
+  close_out oc
+
+let find_partials odoc_dir =
+  let tbl = Hashtbl.create 1000 in
+  let hashes_result = Bos.OS.Dir.fold_contents ~dotfiles:false
+  (fun p hashes ->
+    if Fpath.filename p = "index.m"
+    then
+      let (tbl', hashes') = unmarshal p in
+      List.iter (fun (k,v) -> Hashtbl.replace tbl k (Promise.create_resolved (Ok v))) tbl';
+      Util.StringMap.union (fun _x o1 _o2 -> Some o1) hashes hashes'
+    else hashes) Util.StringMap.empty odoc_dir in
+  match hashes_result with
+  | Ok h -> h, tbl
+  | Error _ -> (* odoc_dir doesn't exist...? *) Util.StringMap.empty, tbl
+
+let compile partial output_dir all =
   let hashes = mk_byhash all in
-  let tbl = Hashtbl.create 10 in
+  let other_hashes, tbl =
+    match partial with
+    | Some _ -> find_partials output_dir
+    | None -> Util.StringMap.empty, Hashtbl.create 10 in
+  let all_hashes = Util.StringMap.union (fun _x o1 _o2 -> Some o1) hashes other_hashes in
   let pkg_args =
     let docs, libs =
       Util.StringMap.fold
@@ -88,7 +122,7 @@ let compile output_dir all =
   in
 
   let compile_one compile_other hash =
-    match Util.StringMap.find_opt hash hashes with
+    match Util.StringMap.find_opt hash all_hashes with
     | None ->
         Logs.debug (fun m -> m "Error locating hash: %s" hash);
         Error Not_found
@@ -149,20 +183,22 @@ let compile output_dir all =
   let rec compile : string -> (compiled, exn) Result.t =
    fun hash ->
     match Hashtbl.find_opt tbl hash with
-    | Some p -> Promise.await_exn p
+    | Some p -> Ok (Promise.await_exn p)
     | None ->
         let p, r = Promise.create () in
         Hashtbl.add tbl hash p;
         let result = compile_one compile hash in
-        Promise.resolve_ok r result;
+        Promise.resolve r result;
         result
   in
-  let all_hashes = Util.StringMap.bindings hashes |> List.map fst in
-  let mod_results = Fiber.List.map compile all_hashes in
+  let to_build = Util.StringMap.bindings hashes |> List.map fst in
+  let mod_results = Fiber.List.map compile to_build in
+  let zipped_res = List.map2 (fun a b -> (a,b)) to_build mod_results in
+  let zipped = List.filter_map (function (a, Ok b) -> Some (a,b) | _ -> None) zipped_res in
   let mods =
     List.filter_map (function Ok x -> Some x | Error _ -> None) mod_results
   in
-  Util.StringMap.fold
+  let result = Util.StringMap.fold
     (fun _ (pkg : Packages.t) acc ->
       Logs.debug (fun m ->
           m "Package %s mlds: [%a]" pkg.name
@@ -190,7 +226,12 @@ let compile output_dir all =
           }
           :: acc)
         acc pkg.mlds)
-    all mods
+    all mods in
+
+  (match partial with
+  | Some l -> marshal (zipped, hashes) Fpath.(l / "index.m")
+  | None -> ());
+  result
 
 type linked = { output_file : Fpath.t; src : Fpath.t option }
 
