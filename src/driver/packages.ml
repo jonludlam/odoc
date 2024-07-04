@@ -175,6 +175,8 @@ module Lib = struct
     Logs.debug (fun m ->
         m "Classifying dir %a for package %s" Fpath.pp dir pkg_name);
     let results = Odoc.classify dir in
+    Logs.debug (fun m ->
+      m "Got %d lines" (List.length results));
     List.filter_map
       (fun (archive_name, modules) ->
         try
