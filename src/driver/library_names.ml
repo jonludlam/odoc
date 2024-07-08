@@ -18,7 +18,7 @@ type library = {
 
 type t = { libraries : library list }
 
-let read_libraries_from_pkg_defs ~library_name pkg_defs =
+(* let read_libraries_from_pkg_defs ~library_name pkg_defs =
   try
     let cma_filename = Fl_metascanner.lookup "archive" [ "byte" ] pkg_defs in
     let dir = List.find_opt (fun d -> d.Fl_metascanner.def_var = "directory") pkg_defs in
@@ -31,11 +31,11 @@ let read_libraries_from_pkg_defs ~library_name pkg_defs =
     if String.length archive_name > 0 then
       [ { name = library_name; archive_name; modules = []; dir } ]
     else []
-  with Not_found -> []
+  with Not_found -> [] *)
 
 let process_meta_file file =
   let _ = Format.eprintf "process_meta_file: %s\n%!" (Fpath.to_string file) in
-  let ic = open_in (Fpath.to_string file) in
+  (* let ic = open_in (Fpath.to_string file) in
   let meta = Fl_metascanner.parse ic in
   let base_library_name =
     if Fpath.basename file = "META" then Fpath.parent file |> Fpath.basename
@@ -69,7 +69,7 @@ let process_meta_file file =
       |> List.flatten)
     |> List.filter is_not_private
   in
-  libraries
+  libraries *) []
 
 let process_ocamlobjinfo_file ~(libraries : library list) file =
   let _ =

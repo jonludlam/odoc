@@ -7,8 +7,6 @@
   progress
   fpath
   yojson
-  findlib
-  opam-format
   logs
   logs.fmt
   result

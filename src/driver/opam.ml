@@ -43,8 +43,8 @@ let all_opam_packages () =
   |> List.map deps_of_opam_result
   |> List.flatten
 
-let pkg_contents { name; _ } =
-  let prefix = Fpath.v (prefix ()) in
+let pkg_contents { name=_; _ } =
+  (* let prefix = Fpath.v (prefix ()) in
   let changes_file =
     Format.asprintf "%a/.opam-switch/install/%s.changes" Fpath.pp prefix name
   in
@@ -81,7 +81,7 @@ let pkg_contents { name; _ } =
         | _ -> acc)
       changed []
   in
-  List.map Fpath.v added
+  List.map Fpath.v added *) []
 
 (* let opam_file { name; version } = *)
 (*   let prefix = Fpath.v (prefix ()) in *)
