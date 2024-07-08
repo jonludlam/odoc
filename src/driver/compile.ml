@@ -64,7 +64,7 @@ let init_stats (pkgs : Packages.t Util.StringMap.t) =
   Atomic.set Stats.stats.non_hidden_units non_hidden;
   Atomic.set Stats.stats.total_mlds mlds
 
-open Eio.Std
+(* open Eio.Std *)
 
 type partial = 
   (string * compiled) list * Packages.modulety Util.StringMap.t
@@ -89,7 +89,7 @@ let find_partials odoc_dir =
     if Fpath.filename p = "index.m"
     then
       let (tbl', hashes') = unmarshal p in
-      List.iter (fun (k,v) -> Hashtbl.replace tbl k (Promise.create_resolved (Ok v))) tbl';
+      List.iter (fun (k,v) -> Hashtbl.replace tbl k (Ok v)) tbl';
       Util.StringMap.union (fun _x o1 _o2 -> Some o1) hashes hashes'
     else hashes) Util.StringMap.empty odoc_dir in
   match hashes_result with
@@ -130,7 +130,7 @@ let compile partial output_dir all =
         let deps = modty.m_intf.mif_deps in
         let output_file = Fpath.(output_dir // modty.m_intf.mif_odoc_file) in
         let fibers =
-          Fiber.List.map
+          List.map
             (fun (n, h) ->
               match compile_other h with
               | Ok r -> Some r
@@ -183,16 +183,14 @@ let compile partial output_dir all =
   let rec compile : string -> (compiled, exn) Result.t =
    fun hash ->
     match Hashtbl.find_opt tbl hash with
-    | Some p -> Ok (Promise.await_exn p)
+    | Some p -> p
     | None ->
-        let p, r = Promise.create () in
-        Hashtbl.add tbl hash p;
         let result = compile_one compile hash in
-        Promise.resolve r result;
+        Hashtbl.add tbl hash result;
         result
   in
   let to_build = Util.StringMap.bindings hashes |> List.map fst in
-  let mod_results = Fiber.List.map compile to_build in
+  let mod_results = List.map compile to_build in
   let zipped_res = List.map2 (fun a b -> (a,b)) to_build mod_results in
   let zipped = List.filter_map (function (a, Ok b) -> Some (a,b) | _ -> None) zipped_res in
   let mods =
@@ -264,7 +262,7 @@ let link : compiled list -> _ =
         { output_file = Fpath.(set_ext "odocl" c.output_file); src = None }
         :: impl
   in
-  Fiber.List.map link compiled |> List.concat
+  List.map link compiled |> List.concat
 
 let html_generate : Fpath.t -> linked list -> _ =
  fun output_dir linked ->
@@ -275,4 +273,4 @@ let html_generate : Fpath.t -> linked list -> _ =
       ~input_file:l.output_file ?source:l.src ();
     Atomic.incr Stats.stats.generated_units
   in
-  Fiber.List.iter html_generate linked
+  List.iter html_generate linked

@@ -21,17 +21,8 @@ let source_possibilities file =
 
 let get_source file =
   let cmd = Cmd.(ocamlobjinfo % p file) in
-  let lines_res =
-    Worker_pool.submit ("Ocamlobjinfo " ^ Fpath.to_string file) cmd None
-  in
   let lines =
-    match lines_res with
-    | Ok l -> l
-    | Error e ->
-        Logs.err (fun m ->
-            m "Error finding source for module %a: %s" Fpath.pp file
-              (Printexc.to_string e));
-        []
+    Run.run () cmd None
   in
   let f =
     List.filter_map

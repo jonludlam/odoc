@@ -23,33 +23,29 @@ type executed_command = {
 let commands = ref []
 
 (** Return the list of executed commands where the first argument was [cmd]. *)
-let run env cmd output_file =
-  let cmd = Bos.Cmd.to_list cmd in
-  let proc_mgr = Eio.Stdenv.process_mgr env in
+let run _env cmd output_file =
   let t_start = Unix.gettimeofday () in
   let env =
     let env = OS.Env.current () |> Result.get_ok in
     env
   in
-  let env =
+  let _env =
     Astring.String.Map.fold
       (fun k v env -> Astring.String.concat [ k; "="; v ] :: env)
       env []
     |> Array.of_list
   in
   let stderr = Buffer.create 1024 in
-  let err = Eio.Flow.buffer_sink stderr in
   (* Logs.debug (fun m -> m "Running cmd %a" Fmt.(list ~sep:sp string) cmd); *)
   let r =
-    Eio.Process.parse_out proc_mgr Eio.Buf_read.take_all ~env ~stderr:err cmd
+    OS.Cmd.(run_out ~err:err_null cmd |> to_lines) |> Result.get_ok
   in
   (* Logs.debug (fun m ->
       m "Finished running cmd %a" Fmt.(list ~sep:sp string) cmd); *)
   let t_end = Unix.gettimeofday () in
-  let r = String.split_on_char '\n' r in
   let time = t_end -. t_start in
   let errors = Buffer.contents stderr in
-  commands := { cmd; time; output_file; errors } :: !commands;
+  commands := { cmd = [Bos.Cmd.to_string cmd]; time; output_file; errors } :: !commands;
   r
 
 (** Print an executed command and its time. *)

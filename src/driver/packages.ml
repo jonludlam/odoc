@@ -166,7 +166,7 @@ module Module = struct
         None
     in
 
-    Eio.Fiber.List.filter_map mk modules
+    List.filter_map mk modules
 end
 
 module Lib = struct

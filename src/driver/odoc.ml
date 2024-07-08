@@ -12,10 +12,8 @@ type compile_deps = { digest : Digest.t; deps : (string * Digest.t) list }
 let default = "./_build/default/src/odoc/bin/main.exe"
 let odoc = ref (Cmd.v default)
 
-let submit desc cmd output_file =
-  match Worker_pool.submit desc cmd output_file with
-  | Ok x -> x
-  | Error exn -> raise exn
+let submit _desc cmd output_file =
+  Run.run () cmd output_file
 
 let compile_output = ref [ "" ]
 

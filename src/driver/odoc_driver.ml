@@ -440,7 +440,7 @@ let odoc_libraries =
 
 open Cmdliner
 
-let render_stats env nprocs =
+(* let render_stats env nprocs =
   let if_app f =
     match Logs.level () with Some (App | Warning) | None -> f () | _ -> ()
   in
@@ -495,22 +495,23 @@ let render_stats env nprocs =
         if g' < non_hidden + total_impls + total_mlds then
           inner (a', b', c', d', e', f', g', h')
       in
-      inner (0, 0, 0, 0, 0, 0, 0, 0))
+      inner (0, 0, 0, 0, 0, 0, 0, 0)) *)
 
-let run libs verbose packages_dir odoc_dir html_dir stats nb_workers odoc_bin voodoo package_name blessed =
+let run libs verbose packages_dir odoc_dir html_dir stats _nb_workers odoc_bin voodoo package_name blessed js =
   Odoc.odoc := Bos.Cmd.v odoc_bin;
-  let _ = Voodoo.find_universe_and_version "foo" in
-  Eio_main.run @@ fun env ->
-  Eio.Switch.run @@ fun sw ->
+  (* Eio_main.run @@ fun env ->
+  Eio.Switch.run @@ fun sw -> *)
   if verbose then Logs.set_level (Some Logs.Debug);
   Logs.set_reporter (Logs_fmt.reporter ());
-  let () = Worker_pool.start_workers env sw nb_workers in
+  (* let () = Worker_pool.start_workers env sw nb_workers in *)
  
   let all =
     if voodoo then
       match package_name with
       | Some p -> Voodoo.of_voodoo p blessed
       | None -> failwith "Need a package name for voodoo"
+    else if js then
+      Js.of_js libs
     else
       let libs =
         if libs = [] then Ocamlfind.all ()
@@ -534,14 +535,15 @@ let run libs verbose packages_dir odoc_dir html_dir stats nb_workers odoc_bin vo
   in
   Compile.init_stats all;
   let () =
-    Eio.Fiber.both
-      (fun () ->
+    (* Eio.Fiber.both
+      (fun () -> *)
         let compiled = Compile.compile partial odoc_dir all in
         let linked = Compile.link compiled in
         let () = Compile.html_generate html_dir linked in
         let _ = Odoc.support_files html_dir in
-        ())
-      (fun () -> render_stats env nb_workers)
+        ()
+        
+      (* (fun () -> render_stats env nb_workers) *)
   in
 
   Format.eprintf "Final stats: %a@.%!" Stats.pp_stats Stats.stats;
@@ -597,6 +599,10 @@ let voodoo =
   let doc = "Process output from voodoo-prep" in
   Arg.(value & flag & info [ "voodoo" ] ~doc)
 
+let js =
+  let doc = "Process output from jenga" in
+  Arg.(value & flag & info [ "js" ] ~doc)
+  
 let package_name =
   let doc = "Name of package to process with voodoo" in
   Arg.(value & opt (some string) None & info ["package"] ~doc)
@@ -610,7 +616,7 @@ let cmd =
   let info = Cmd.info "odoc_driver" ~doc in
   Cmd.v info
     Term.(
-      const run $ packages $ verbose $ packages_dir $ odoc_dir $ html_dir $ stats $ nb_workers $ odoc_bin $ voodoo $ package_name $ blessed)
+      const run $ packages $ verbose $ packages_dir $ odoc_dir $ html_dir $ stats $ nb_workers $ odoc_bin $ voodoo $ package_name $ blessed $ js)
 
 (* let map = Ocamlfind.package_to_dir_map () in
    let _dirs = List.map (fun lib -> List.assoc lib map) deps in
