@@ -38,18 +38,36 @@ let run env cmd output_file =
       env []
     |> Array.of_list
   in
-  let stderr = Buffer.create 1024 in
-  let err = Eio.Flow.buffer_sink stderr in
   (* Logs.debug (fun m -> m "Running cmd %a" Fmt.(list ~sep:sp string) cmd); *)
   let r =
-    Eio.Process.parse_out proc_mgr Eio.Buf_read.take_all ~env ~stderr:err cmd
+    Eio.Switch.run ~name:"Process.parse_out" @@ fun sw ->
+      let r, w = Eio.Process.pipe proc_mgr ~sw in
+      let re, we = Eio.Process.pipe proc_mgr ~sw in
+      try
+        let child = Eio.Process.spawn ~sw proc_mgr ~stdout:w ~stderr:we ~env cmd in
+        Eio.Flow.close w;
+        Eio.Flow.close we;
+        let output = Eio.Buf_read.parse_exn Eio.Buf_read.take_all r ~max_size:max_int in
+        let err = Eio.Buf_read.parse_exn Eio.Buf_read.take_all re ~max_size:max_int in
+        Eio.Flow.close r;
+        Eio.Flow.close re;
+        match Eio.Process.await child with
+        | `Exited 0 -> output
+        | `Exited n ->
+          Logs.err (fun m -> m "Process exitted %d: stderr=%s" n err);
+          failwith "Error"
+        | _ ->
+          failwith "Unexpected exit"
+      with Eio.Exn.Io _ as ex ->
+        let bt = Printexc.get_raw_backtrace () in
+        Eio.Exn.reraise_with_context ex bt "running command: %a" Eio.Process.pp_args cmd
   in
   (* Logs.debug (fun m ->
       m "Finished running cmd %a" Fmt.(list ~sep:sp string) cmd); *)
   let t_end = Unix.gettimeofday () in
   let r = String.split_on_char '\n' r in
   let time = t_end -. t_start in
-  let errors = Buffer.contents stderr in
+  let errors = "" in
   commands := { cmd; time; output_file; errors } :: !commands;
   r
 
