@@ -42,10 +42,12 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
     match linked_dir with None -> output_dir | Some dir -> dir
   in
   let index_dir = match index_dir with None -> output_dir | Some dir -> dir in
+
   (* This isn't a hashtable, but a table of hashes! Yay! *)
   let hashtable, lib_dirs =
     let open Packages in
     let h = Util.StringMap.empty in
+    let lds = Util.StringMap.empty in
     List.fold_left
       (fun (h, lds) pkg ->
         List.fold_left
@@ -56,12 +58,15 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
                   Util.StringMap.add mod_.m_intf.mif_hash (pkg, lib, mod_) h)
                 h lib.modules
             in
-            let lib_dir =
-              Fpath.(output_dir // pkg.Packages.pkg_dir / "lib" / lib.lib_name)
+            let lds' =
+              Util.StringMap.add lib.lib_name
+                Fpath.(
+                  output_dir // pkg.Packages.pkg_dir / "lib" / lib.lib_name)
+                lds
             in
-            (h', (lib.lib_name, lib_dir) :: lds))
+            (h', lds'))
           (h, lds) pkg.libraries)
-      (h, []) pkgs
+      (h, lds) pkgs
   in
   (* This one is a hashtable *)
   let cache = Hashtbl.create 10 in
@@ -73,14 +78,20 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
     in
     let libs =
       List.filter_map
-        (fun lib_name -> List.find_opt (fun (l, _) -> l = lib_name) lib_dirs)
-        lib_deps
+        (fun lib_name ->
+          match Util.StringMap.find_opt lib_name lib_dirs with
+          | Some x -> Some (lib_name, x)
+          | None -> None)
+        (Util.StringSet.to_list lib_deps)
     in
     { pages; libs }
   in
   let index_of pkg =
     let pkg_args =
-      pkg_args_of pkg (List.map (fun l -> l.Packages.lib_name) pkg.libraries)
+      pkg_args_of pkg
+        (List.fold_left
+           (fun acc l -> Util.StringSet.add l.Packages.lib_name acc)
+           Util.StringSet.empty pkg.libraries)
     in
     let output_file = Fpath.(index_dir / pkg.name / Odoc.index_filename) in
     { pkg_args; output_file; json = false; search_dir = pkg.pkg_dir }
@@ -114,8 +125,9 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
         match Util.StringMap.find_opt hash hashtable with
         | None -> None
         | Some (pkg, lib, mod_) ->
+            let lib_deps = Util.StringSet.add lib.lib_name lib.lib_deps in
             let result =
-              of_intf mod_.m_hidden pkg lib.lib_name lib.lib_deps mod_.m_intf
+              of_intf mod_.m_hidden pkg lib.lib_name lib_deps mod_.m_intf
             in
             Hashtbl.add cache mod_.m_intf.mif_hash result;
             Some result)
@@ -132,6 +144,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
           let kind = `Intf { hidden; hash = intf.mif_hash; deps } in
           (include_dirs, kind)
         in
+        if not @@ Util.StringSet.mem libname lib_deps then failwith "ERrorrr";
         let name = intf.mif_path |> Fpath.rem_ext |> Fpath.basename in
         make_unit ~name ~kind ~rel_dir ~input_file:intf.mif_path ~pkg
           ~include_dirs ~lib_deps
@@ -174,7 +187,8 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
     i :: m
   in
   let of_lib pkg (lib : Packages.libty) : [ impl | intf ] unit list =
-    List.concat_map (of_module pkg lib.lib_name lib.lib_deps) lib.modules
+    let lib_deps = Util.StringSet.add lib.lib_name lib.lib_deps in
+    List.concat_map (of_module pkg lib.lib_name lib_deps) lib.modules
   in
   let of_mld pkg (mld : Packages.mld) : mld unit list =
     let open Fpath in
@@ -194,7 +208,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
     let name = mld_path |> Fpath.rem_ext |> Fpath.basename |> ( ^ ) "page-" in
     let unit =
       make_unit ~name ~kind ~rel_dir ~input_file:mld_path ~pkg ~include_dirs
-        ~lib_deps:[]
+        ~lib_deps:Util.StringSet.empty
     in
     [ unit ]
   in
@@ -210,7 +224,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir (pkgs : Packages.t list) :
     let unit =
       let name = asset_path |> Fpath.basename |> ( ^ ) "asset-" in
       make_unit ~name ~kind ~rel_dir ~input_file:asset_path ~pkg ~include_dirs
-        ~lib_deps:[]
+        ~lib_deps:Util.StringSet.empty
     in
     [ unit ]
   in

@@ -36,7 +36,7 @@ let pp_asset fmt m = Format.fprintf fmt "%a" Fpath.pp m.asset_path
 type libty = {
   lib_name : string;
   archive_name : string;
-  lib_deps : string list;
+  lib_deps : Util.StringSet.t;
   modules : modulety list;
 }
 
@@ -209,7 +209,8 @@ let of_libs ~packages_dir libs =
     List.fold_right
       (fun lib_name acc ->
         match Ocamlfind.deps [ lib_name ] with
-        | Ok deps -> Util.StringMap.add lib_name deps acc
+        | Ok deps ->
+            Util.StringMap.add lib_name (Util.StringSet.of_list deps) acc
         | Error (`Msg msg) ->
             Logs.err (fun m ->
                 m
