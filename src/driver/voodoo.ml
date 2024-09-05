@@ -182,7 +182,7 @@ let process_package pkg =
           ~cmtidir:None ~all_lib_deps)
       libdirs_without_meta
   in
-  Printf.eprintf "Found %d metas" (List.length metas);
+  Logs.debug (fun m -> m "Found %d METAs\n%!" (List.length metas));
   let libraries = List.flatten libraries in
   let libraries = List.flatten extra_libraries @ libraries in
   {
@@ -240,3 +240,22 @@ let of_voodoo pkg_name ~blessed =
       let packages = List.filter_map (fun x -> x) (last :: packages) in
       let packages = List.map process_package packages in
       Util.StringMap.singleton pkg_name (List.hd packages)
+
+let extra_libs_paths compile_dir =
+  let contents =
+    Bos.OS.Dir.fold_contents ~dotfiles:true
+      (fun p acc -> p :: acc)
+      [] compile_dir
+  in
+  match contents with
+  | Error _ -> Util.StringMap.empty
+  | Ok c ->
+      List.fold_left
+        (fun acc path ->
+          match Fpath.segs path with
+          | [ _; "p"; _pkg; _version; "lib"; libname ] ->
+              Util.StringMap.add libname path acc
+          | [ _; "u"; _universe; _pkg; _version; "lib"; libname ] ->
+              Util.StringMap.add libname path acc
+          | _ -> acc)
+        Util.StringMap.empty c
