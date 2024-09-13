@@ -3,8 +3,7 @@ open Odoc_unit
 
 let fpf = Format.fprintf
 
-let make_rel dir l =
-  List.map (fun (x, y) -> (x, Fpath.(dir // y))) l
+let make_rel dir l = List.map (fun (x, y) -> (x, Fpath.(dir // y))) l
 
 let make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
     ?(include_dirs = Fpath.Set.empty) ~pkgname ~pkg_args () =
@@ -43,9 +42,14 @@ module PackageLanding = struct
   let page ~odoc_dir ~odocl_dir ~mld_dir ~output_dir ~pkg =
     let content = content pkg in
     let rel_path = pkg.pkg_dir in
-    let pages_rel = [pkg.name, rel_path] in
+    let pages_rel = [ (pkg.name, rel_path) ] in
     let pkg_args =
-      { pages = make_rel output_dir pages_rel; libs = []; pages_linked = make_rel odocl_dir pages_rel; libs_linked = [] }
+      {
+        pages = make_rel output_dir pages_rel;
+        libs = [];
+        pages_linked = make_rel odocl_dir pages_rel;
+        libs_linked = [];
+      }
     in
     make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
       ~pkgname:pkg.name ~pkg_args ()
@@ -66,9 +70,14 @@ module PackageList = struct
     let content = content all in
     let rel_path = Fpath.v "./" in
     let pkgname = "__driver" in
-    let pages_rel = [pkgname, rel_path] in
+    let pages_rel = [ (pkgname, rel_path) ] in
     let pkg_args =
-      { pages = make_rel odoc_dir pages_rel; libs = []; pages_linked = make_rel odocl_dir pages_rel; libs_linked = [] }
+      {
+        pages = make_rel odoc_dir pages_rel;
+        libs = [];
+        pages_linked = make_rel odocl_dir pages_rel;
+        libs_linked = [];
+      }
     in
     make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir ~content ~pkgname
       ~pkg_args rel_path ()
@@ -85,9 +94,14 @@ module LibraryLanding = struct
   let page ~pkg ~odoc_dir ~odocl_dir ~mld_dir ~output_dir ~pkg_dir lib =
     let content = content lib in
     let rel_path = Fpath.(pkg_dir / "lib" / lib.lib_name) in
-    let pages_rel = [pkg.name, rel_path] in
+    let pages_rel = [ (pkg.name, rel_path) ] in
     let pkg_args =
-      { pages = make_rel odoc_dir pages_rel; libs = []; pages_linked = make_rel odocl_dir pages_rel; libs_linked = [] }
+      {
+        pages = make_rel odoc_dir pages_rel;
+        libs = [];
+        pages_linked = make_rel odocl_dir pages_rel;
+        libs_linked = [];
+      }
     in
     let include_dirs = Fpath.Set.singleton Fpath.(odoc_dir // rel_path) in
     make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
@@ -105,9 +119,14 @@ module PackageLibLanding = struct
   let page ~pkg ~odoc_dir ~odocl_dir ~mld_dir ~output_dir =
     let content = content pkg in
     let rel_path = Fpath.(pkg.pkg_dir / "lib") in
-    let pages_rel = [ pkg.name, rel_path ] in
+    let pages_rel = [ (pkg.name, rel_path) ] in
     let pkg_args =
-      { pages = make_rel odoc_dir pages_rel; libs = []; pages_linked = make_rel odocl_dir pages_rel; libs_linked = [] }
+      {
+        pages = make_rel odoc_dir pages_rel;
+        libs = [];
+        pages_linked = make_rel odocl_dir pages_rel;
+        libs_linked = [];
+      }
     in
     make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
       ~pkgname:pkg.name ~pkg_args ()
@@ -116,7 +135,8 @@ end
 let of_package ~mld_dir ~odoc_dir ~odocl_dir ~output_dir pkg =
   let library_pages =
     List.map
-      (LibraryLanding.page ~pkg ~odoc_dir ~odocl_dir ~mld_dir ~pkg_dir:pkg.pkg_dir ~output_dir)
+      (LibraryLanding.page ~pkg ~odoc_dir ~odocl_dir ~mld_dir
+         ~pkg_dir:pkg.pkg_dir ~output_dir)
       pkg.libraries
   in
   let package_landing_page =

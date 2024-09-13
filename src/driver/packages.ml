@@ -153,7 +153,10 @@ module Lib = struct
         try
           let lib_name = Util.StringMap.find archive_name libname_of_archive in
           let modules = Module.vs dir cmtidir modules in
-          let lib_deps = try Util.StringMap.find lib_name all_lib_deps with _ -> Util.StringSet.empty in
+          let lib_deps =
+            try Util.StringMap.find lib_name all_lib_deps
+            with _ -> Util.StringSet.empty
+          in
           Some { lib_name; archive_name; modules; lib_deps; dir }
         with e ->
           Logs.err (fun m ->
