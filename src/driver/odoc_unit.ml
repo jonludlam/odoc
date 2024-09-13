@@ -118,8 +118,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
                 h lib.modules
             in
             let lds' =
-              Util.StringMap.add
-                lib.lib_name
+              Util.StringMap.add lib.lib_name
                 Fpath.(pkg.Packages.pkg_dir / "lib" / lib.lib_name)
                 lds
             in
@@ -131,9 +130,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
   let cache = Hashtbl.create 10 in
   let pkg_args_of pkg lib_deps : pkg_args =
     let pages_rel =
-      [
-        (pkg.Packages.name, Fpath.(pkg.Packages.pkg_dir / "doc"));
-      ]
+      [ (pkg.Packages.name, Fpath.(pkg.Packages.pkg_dir / "doc")) ]
     in
     let libs_rel =
       List.filter_map
