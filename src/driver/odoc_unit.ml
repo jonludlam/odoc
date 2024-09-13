@@ -1,6 +1,8 @@
 type pkg_args = {
   pages : (string * Fpath.t) list;
   libs : (string * Fpath.t) list;
+  pages_linked : (string * Fpath.t) list;
+  libs_linked : (string * Fpath.t) list;
 }
 
 let pp_pkg_args fmt x =
@@ -116,9 +118,9 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
                 h lib.modules
             in
             let lds' =
-              Util.StringMap.add lib.lib_name
-                Fpath.(
-                  output_dir // pkg.Packages.pkg_dir / "lib" / lib.lib_name)
+              Util.StringMap.add
+                lib.lib_name
+                Fpath.(pkg.Packages.pkg_dir / "lib" / lib.lib_name)
                 lds
             in
             (h', lds'))
@@ -128,12 +130,12 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
   (* This one is a hashtable *)
   let cache = Hashtbl.create 10 in
   let pkg_args_of pkg lib_deps : pkg_args =
-    let pages =
+    let pages_rel =
       [
-        (pkg.Packages.name, Fpath.(output_dir // pkg.Packages.pkg_dir / "doc"));
+        (pkg.Packages.name, Fpath.(pkg.Packages.pkg_dir / "doc"));
       ]
     in
-    let libs =
+    let libs_rel =
       List.filter_map
         (fun lib_name ->
           match Util.StringMap.find_opt lib_name lib_dirs with
@@ -141,7 +143,12 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
           | None -> None)
         (Util.StringSet.to_list lib_deps)
     in
-    { pages; libs }
+    let map_rel dir = List.map (fun (a, b) -> (a, Fpath.(dir // b))) in
+    let pages = map_rel output_dir pages_rel in
+    let libs = map_rel output_dir libs_rel in
+    let pages_linked = map_rel linked_dir pages_rel in
+    let libs_linked = map_rel linked_dir libs_rel in
+    { pages; libs; pages_linked; libs_linked }
   in
   let index_of pkg =
     let pkg_args =
