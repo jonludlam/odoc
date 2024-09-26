@@ -11,7 +11,7 @@ let pp_pkg_args fmt x =
       list ~sep:comma (fun fmt (a, b) ->
           Format.fprintf fmt "(%s, %a)" a Fpath.pp b))
   in
-  Format.fprintf fmt "@[hov pages: [%a]@;libs: [%a]@]" sfp_pp x.pages sfp_pp
+  Format.fprintf fmt "@[<hov>pages: [%a]@;libs: [%a]@]" sfp_pp x.pages sfp_pp
     x.libs
 
 type index = {
