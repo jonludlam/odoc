@@ -152,16 +152,20 @@ module Lib = struct
       (fun (archive_name, modules) ->
         match Fpath.Map.find Fpath.(dir / archive_name) libname_of_archive with
         | Some lib_name ->
-          let modules = Module.vs dir cmtidir modules in
-          let lib_deps =
-            try Util.StringMap.find lib_name all_lib_deps
-            with _ -> Util.StringSet.empty
-          in
-          Some { lib_name; archive_name; modules; lib_deps; dir }
+            let modules = Module.vs dir cmtidir modules in
+            let lib_deps =
+              try Util.StringMap.find lib_name all_lib_deps
+              with _ -> Util.StringSet.empty
+            in
+            Some { lib_name; archive_name; modules; lib_deps; dir }
         | None ->
-          Logs.err (fun m ->
-              m "Error processing library %s: Ignoring." archive_name);
-          None)
+            Logs.err (fun m ->
+                m "Error processing library %s: Ignoring." archive_name);
+            Logs.err (fun m ->
+                m "Known libraries: [%a]"
+                  Fmt.(list ~sep:sp string)
+                  (Fpath.Map.bindings libname_of_archive |> List.map snd));
+            None)
       results
 
   let pp ppf t =
@@ -212,7 +216,6 @@ let of_libs ~packages_dir libs =
 
   Logs.debug (fun m ->
       m "Libraries to document: [%a]" Fmt.(list ~sep:sp string) all_libs);
-
 
   let lib_dirs_and_archives =
     List.filter_map
@@ -272,7 +275,8 @@ let of_libs ~packages_dir libs =
         match Util.StringSet.elements archives with
         | [] -> map
         | [ archive ] ->
-            Fpath.Map.update Fpath.(dir / archive)
+            Fpath.Map.update
+              Fpath.(dir / archive)
               (function
                 | None -> Some lib
                 | Some x ->

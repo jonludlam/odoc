@@ -133,10 +133,13 @@ let process_package pkg =
         let libname_of_archive =
           List.fold_left
             (fun acc x ->
-              let dir = match x.Library_names.dir with
+              let dir =
+                match x.Library_names.dir with
                 | None -> meta_dir
-                | Some x -> Fpath.(meta_dir // v x) in
-              Fpath.Map.update Fpath.(dir / x.archive_name)
+                | Some x -> Fpath.(meta_dir // v x)
+              in
+              Fpath.Map.update
+                Fpath.(dir / x.archive_name)
                 (function
                   | None -> Some x.Library_names.name
                   | Some y ->
@@ -153,7 +156,8 @@ let process_package pkg =
         Some
           (List.concat_map
              (fun directory ->
-               Format.eprintf "Processing directory: %a\n%!" Fpath.pp directory;
+               Logs.debug (fun m ->
+                   m "Processing directory: %a\n%!" Fpath.pp directory);
                Packages.Lib.v ~libname_of_archive ~pkg_name:pkg.name
                  ~dir:directory ~cmtidir:None ~all_lib_deps)
              Fpath.(Set.to_list directories)))
@@ -178,12 +182,17 @@ let process_package pkg =
           | _ -> false)
         pkg.files
     in
-    Format.eprintf "libdirs_without_meta: %a\n%!"
-      Fmt.(list ~sep:comma Fpath.pp)
-      (List.map (fun p -> Fpath.(pkg_path // p)) libdirs_without_meta);
-    Format.eprintf "lib dirs: %a\n%!"
-      Fmt.(list ~sep:comma Fpath.pp)
-      (List.map (fun (lib : Packages.libty) -> lib.dir) libraries);
+
+    Logs.debug (fun m ->
+        m "libdirs_without_meta: %a\n%!"
+          Fmt.(list ~sep:comma Fpath.pp)
+          (List.map (fun p -> Fpath.(pkg_path // p)) libdirs_without_meta));
+
+    Logs.debug (fun m ->
+        m "lib dirs: %a\n%!"
+          Fmt.(list ~sep:comma Fpath.pp)
+          (List.map (fun (lib : Packages.libty) -> lib.dir) libraries));
+
     List.map
       (fun libdir ->
         let libname_of_archive =
@@ -196,7 +205,9 @@ let process_package pkg =
                   let base = Fpath.basename file in
                   if Astring.String.is_suffix ~affix:".cma" base then
                     let libname = String.sub base 0 (String.length base - 4) in
-                    Fpath.Map.add Fpath.(pkg_path // libdir / libname) libname acc
+                    Fpath.Map.add
+                      Fpath.(pkg_path // libdir / libname)
+                      libname acc
                   else acc)
                 Fpath.Map.empty files
         in
@@ -207,10 +218,6 @@ let process_package pkg =
           ~cmtidir:None ~all_lib_deps)
       libdirs_without_meta
   in
-  Logs.debug (fun m -> m "Found %d METAs" (List.length metas));
-  Format.eprintf "Extra libraries: [%a]"
-    Fmt.(list ~sep:comma Packages.Lib.pp)
-    libraries;
   let libraries = List.flatten extra_libraries @ libraries in
   let result =
     {
@@ -223,7 +230,6 @@ let process_package pkg =
       pkg_dir = top_dir pkg;
     }
   in
-  Format.eprintf "%a\n%!" Packages.pp result;
   result
 
 let pp ppf v =
