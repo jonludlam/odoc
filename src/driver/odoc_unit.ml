@@ -19,12 +19,13 @@ type 'a unit = {
   odocl_file : Fpath.t;
   pkg_args : pkg_args;
   pkgname : string;
-  include_dirs : Fpath.t list;
+  include_dirs : Fpath.Set.t;
   index : index option;
   kind : 'a;
 }
 
 type intf_extra = { hidden : bool; hash : string; deps : intf unit list }
+
 and intf = [ `Intf of intf_extra ]
 
 type impl_extra = { src_id : Odoc.Id.t; src_path : Fpath.t }
@@ -143,7 +144,9 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
         let rel_dir = pkg.Packages.pkg_dir / "lib" / libname in
         let include_dirs, kind =
           let deps = build_deps intf.mif_deps in
-          let include_dirs = List.map (fun u -> u.odoc_dir) deps in
+          let include_dirs =
+            List.map (fun u -> u.odoc_dir) deps |> Fpath.Set.of_list
+          in
           let kind = `Intf { hidden; hash = intf.mif_hash; deps } in
           (include_dirs, kind)
         in
@@ -160,7 +163,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
         let rel_dir = pkg.Packages.pkg_dir / "lib" / libname in
         let include_dirs =
           let deps = build_deps impl.mip_deps in
-          List.map (fun u -> u.odoc_dir) deps
+          List.map (fun u -> u.odoc_dir) deps |> Fpath.Set.of_list
         in
         let kind =
           let src_name = Fpath.filename src_path in
@@ -207,7 +210,9 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
           Fpath.(output_dir // pkg.pkg_dir / "lib" / lib.lib_name))
         pkg.libraries
     in
-    let include_dirs = (output_dir // rel_dir) :: include_dirs in
+    let include_dirs =
+      (output_dir // rel_dir) :: include_dirs |> Fpath.Set.of_list
+    in
     let kind = `Mld in
     let name = mld_path |> Fpath.rem_ext |> Fpath.basename |> ( ^ ) "page-" in
     let unit =
@@ -223,7 +228,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
       pkg.Packages.pkg_dir / "doc" // Fpath.parent asset_rel_path
       |> Fpath.normalize
     in
-    let include_dirs = [] in
+    let include_dirs = Fpath.Set.empty in
     let kind = `Asset in
     let unit =
       let name = asset_path |> Fpath.basename |> ( ^ ) "asset-" in

@@ -150,28 +150,17 @@ module Lib = struct
     List.filter_map
       (fun (archive_name, modules) ->
         try
-          let lib_name =
-            try Util.StringMap.find archive_name libname_of_archive
-            with Not_found ->
-              Logs.debug (fun m ->
-                  m
-                    "Unable to determine library in package '%s' to which \
-                     archive '%s' belongs"
-                    pkg_name archive_name);
-              Logs.debug (fun m ->
-                  m "These are the archives I know about: [%a]"
-                    Fmt.(list ~sep:sp string)
-                    (Util.StringMap.bindings libname_of_archive |> List.map fst));
-              Logs.debug (fun m ->
-                  m "Defaulting to name of library: %s" archive_name);
-              archive_name
-          in
+          let lib_name = Util.StringMap.find archive_name libname_of_archive in
           let modules = Module.vs dir cmtidir modules in
-          let lib_deps = Util.StringMap.find lib_name all_lib_deps in
+          let lib_deps =
+            try Util.StringMap.find lib_name all_lib_deps
+            with _ -> Util.StringSet.empty
+          in
           Some { lib_name; archive_name; modules; lib_deps }
-        with _ ->
+        with e ->
           Logs.err (fun m ->
-              m "Error processing library %s. Ignoring." archive_name);
+              m "Error processing library %s: %s Ignoring." archive_name
+                (Printexc.to_string e));
           None)
       results
 
