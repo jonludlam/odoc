@@ -47,12 +47,24 @@ let process_package pkg =
       pkg.files
   in
 
-  let all_lib_deps = Util.StringMap.empty in
-
-  (* TODO *)
   let pkg_path =
     Fpath.(v "prep" / "universes" / pkg.universe / pkg.name / pkg.version)
   in
+
+  let all_lib_deps =
+    List.fold_left
+      (fun acc meta ->
+        let full_meta_path = Fpath.(pkg_path // meta) in
+        let libs = Library_names.process_meta_file full_meta_path in
+        List.fold_left
+          (fun acc lib ->
+            Util.StringMap.add lib.Library_names.name
+              (Util.StringSet.of_list lib.Library_names.deps)
+              acc)
+          acc libs)
+      Util.StringMap.empty metas
+  in
+
   let assets, mlds =
     List.filter_map
       (fun p ->
