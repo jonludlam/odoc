@@ -23,7 +23,7 @@ type index = {
 
 let pp_index fmt x =
   Format.fprintf fmt
-    "@[hov pkg_args: %a@;output_file: %a@;json: %b@;search_dir: %a@]"
+    "@[<hov>pkg_args: %a@;output_file: %a@;json: %b@;search_dir: %a@]"
     pp_pkg_args x.pkg_args Fpath.pp x.output_file x.json Fpath.pp x.search_dir
 
 type 'a unit = {
@@ -63,19 +63,19 @@ let rec pp_kind : all_kinds Fmt.t =
   | `Asset -> Format.fprintf fmt "`Asset"
 
 and pp_intf_extra fmt x =
-  Format.fprintf fmt "@[hov hidden: %b@;hash: %s@;deps: [%a]@]" x.hidden x.hash
+  Format.fprintf fmt "@[<hov>hidden: %b@;hash: %s@;deps: [%a]@]" x.hidden x.hash
     Fmt.(list ~sep:comma Fpath.pp)
   @@ List.map (fun x -> x.odoc_file) x.deps
 
 and pp_impl_extra fmt x =
-  Format.fprintf fmt "@[hov src_id: %s@;src_path: %a@]"
+  Format.fprintf fmt "@[<hov>src_id: %s@;src_path: %a@]"
     (Odoc.Id.to_string x.src_id)
     Fpath.pp x.src_path
 
 and pp : all_kinds unit Fmt.t =
  fun fmt x ->
   Format.fprintf fmt
-    "@[hov parent_id: %s@;\
+    "@[<hov>parent_id: %s@;\
      odoc_dir: %a@;\
      input_file: %a@;\
      output_dir: %a@;\
@@ -183,11 +183,15 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
       index = Some (index_of pkg);
     }
   in
+  let missing = ref Util.StringSet.empty in
+
   let rec build_deps deps =
     List.filter_map
-      (fun (_name, hash) ->
+      (fun (name, hash) ->
         match Util.StringMap.find_opt hash hashtable with
-        | None -> None
+        | None ->
+            missing := Util.StringSet.add name !missing;
+            None
         | Some (pkg, lib, mod_) ->
             let lib_deps = Util.StringSet.add lib.lib_name lib.lib_deps in
             let result =
