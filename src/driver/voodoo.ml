@@ -174,26 +174,46 @@ let process_package pkg =
     in
     List.map
       (fun libdir ->
+        let libname_of_archive =
+          let files_res = Bos.OS.Dir.contents Fpath.(pkg_path // libdir) in
+          match files_res with
+          | Error _ -> Util.StringMap.empty
+          | Ok files ->
+              List.fold_left
+                (fun acc file ->
+                  let base = Fpath.basename file in
+                  if Astring.String.is_suffix ~affix:".cma" base then
+                    let libname = String.sub base 0 (String.length base - 4) in
+                    Util.StringMap.add libname libname acc
+                  else acc)
+                Util.StringMap.empty files
+        in
         Logs.debug (fun m ->
             m "Processing directory without META: %a" Fpath.pp libdir);
-        Packages.Lib.v ~libname_of_archive:Util.StringMap.empty
-          ~pkg_name:pkg.name
+        Packages.Lib.v ~libname_of_archive ~pkg_name:pkg.name
           ~dir:Fpath.(pkg_path // libdir)
           ~cmtidir:None ~all_lib_deps)
       libdirs_without_meta
   in
-  Logs.debug (fun m -> m "Found %d METAs\n%!" (List.length metas));
+  Logs.debug (fun m -> m "Found %d METAs" (List.length metas));
   let libraries = List.flatten libraries in
-  let libraries = List.flatten extra_libraries @ libraries in
-  {
-    Packages.name = pkg.name;
-    version = pkg.version;
+  Format.eprintf "Extra libraries: [%a]"
+    Fmt.(list ~sep:comma Packages.Lib.pp)
     libraries;
-    mlds;
-    assets;
-    other_docs = Fpath.Set.empty;
-    pkg_dir = top_dir pkg;
-  }
+  let libraries = List.flatten extra_libraries @ libraries in
+  let result =
+    {
+      Packages.name = pkg.name;
+      version = pkg.version;
+      libraries;
+      mlds;
+      assets;
+      other_docs = Fpath.Set.empty;
+      pkg_dir = top_dir pkg;
+    }
+  in
+  Format.eprintf "%a\n%!" Packages.pp result;
+  result
 
 let pp ppf v =
   Format.fprintf ppf "n: %s v: %s u: %s [\n" v.name v.version v.universe;
