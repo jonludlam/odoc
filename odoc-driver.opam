@@ -45,6 +45,7 @@ depends: [
   "progress"
   "cmdliner"
   "sexplib"
+  "ppx-sexp-conv"
 ]
 
 build: [
