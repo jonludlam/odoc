@@ -95,8 +95,9 @@ and pp : all_kinds unit Fmt.t =
     (Fmt.option pp_index) x.index pp_kind
     (x.kind :> all_kinds)
 
-let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
-    (pkgs : Packages.t list) : t list =
+let of_packages ~output_dir ~linked_dir ~index_dir
+    ~extra_paths:(extra_pkg_paths, extra_libs_paths) (pkgs : Packages.t list) :
+    t list =
   let linked_dir =
     match linked_dir with None -> output_dir | Some dir -> dir
   in
@@ -129,22 +130,24 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
           (h, lds) pkg.libraries)
       (h, lds) pkgs
   in
-  let pkg_map =
-    Util.StringMap.of_list (List.map (fun pkg -> (pkg.Packages.name, pkg)) pkgs)
+  let pkg_paths =
+    List.fold_left
+      (fun acc pkg -> Util.StringMap.add pkg.Packages.name (doc_dir pkg) acc)
+      extra_pkg_paths pkgs
   in
 
-  let dash_p pkg = (pkg.Packages.name, doc_dir pkg) in
+  let dash_p pkgname path = (pkgname, path) in
 
   let dash_l lib_name =
     match Util.StringMap.find_opt lib_name lib_dirs with
     | Some dir -> [ (lib_name, dir) ]
     | None ->
-        Logs.err (fun m -> m "Library %s not found" lib_name);
+        Logs.err (fun m -> m "Library '%s' not found" lib_name);
         []
   in
   (* Given a pkg,  *)
   let base_args pkg lib_deps : pkg_args =
-    let own_page = dash_p pkg in
+    let own_page = dash_p pkg.Packages.name (doc_dir pkg) in
     let own_libs = List.concat_map dash_l (Util.StringSet.to_list lib_deps) in
     let map_rel dir = List.map (fun (a, b) -> (a, Fpath.(dir // b))) in
     let pages = map_rel output_dir [ own_page ] in
@@ -158,9 +161,11 @@ let of_packages ~output_dir ~linked_dir ~index_dir ~extra_libs_paths
     let pages_rel =
       List.filter_map
         (fun pkgname ->
-          match Util.StringMap.find_opt pkgname pkg_map with
-          | None -> None
-          | Some pkg -> Some (dash_p pkg))
+          match Util.StringMap.find_opt pkgname pkg_paths with
+          | None ->
+              Logs.debug (fun m -> m "Package '%s' not found" pkgname);
+              None
+          | Some path -> Some (dash_p pkgname path))
         packages
     in
     let libs_rel = List.concat_map dash_l libraries in

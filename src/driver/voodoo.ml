@@ -127,15 +127,30 @@ let process_package pkg =
       Util.StringMap.empty metas
   in
 
+  let ss_pp fmt ss = Format.fprintf fmt "[%d]" (Util.StringSet.cardinal ss) in
+  Logs.debug (fun m ->
+      m "all_lib_deps: %a\n%!"
+        Fmt.(list ~sep:comma (pair ~sep:comma string ss_pp))
+        (Util.StringMap.bindings all_lib_deps));
+
   let assets, mlds = assets_and_mlds_of_pkg pkg_path pkg in
 
   let config =
-    let config_file = Fpath.(v "doc" / pkg.name / "odoc-config.sexp") in
+    let config_file =
+      Fpath.(pkg_path / "doc" / pkg.name / "odoc-config.sexp")
+    in
     match Bos.OS.File.read config_file with
-    | Error _ -> Global_config.empty
-    | Ok s -> Global_config.parse s
+    | Error (`Msg msg) ->
+        Logs.debug (fun m ->
+            m "No config file found: %a\n%s\n%!" Fpath.pp config_file msg);
+        Global_config.empty
+    | Ok s ->
+        Logs.debug (fun m -> m "Config file: %a\n%!" Fpath.pp config_file);
+        Global_config.parse s
   in
 
+  Logs.debug (fun m ->
+      m "Config.packages: %s\n%!" (String.concat ", " config.deps.packages));
   let meta_libraries : Packages.libty list =
     metas
     |> List.filter_map (fun meta_file ->
@@ -259,24 +274,34 @@ let of_voodoo pkg_name ~blessed =
       in
       let packages = List.filter_map (fun x -> x) (last :: packages) in
       let packages = List.map process_package packages in
+      let pkg = List.hd packages in
+      Logs.debug (fun m -> m "Package: %a\n%!" Packages.pp pkg);
       Util.StringMap.singleton pkg_name (List.hd packages)
 
-let extra_libs_paths compile_dir =
+let extra_paths compile_dir =
   let contents =
     Bos.OS.Dir.fold_contents ~dotfiles:true
       (fun p acc -> p :: acc)
       [] compile_dir
   in
   match contents with
-  | Error _ -> Util.StringMap.empty
+  | Error _ -> (Util.StringMap.empty, Util.StringMap.empty)
   | Ok c ->
       List.fold_left
-        (fun acc abs_path ->
+        (fun (pkgs, libs) abs_path ->
           let path = Fpath.rem_prefix compile_dir abs_path |> Option.get in
-          match Fpath.segs path with
-          | [ "p"; _pkg; _version; "lib"; libname ] ->
-              Util.StringMap.add libname path acc
-          | [ "u"; _universe; _pkg; _version; "lib"; libname ] ->
-              Util.StringMap.add libname path acc
-          | _ -> acc)
-        Util.StringMap.empty c
+          let pkgs', libs' =
+            match Fpath.segs path with
+            | [ "p"; _pkg; _version; "lib"; libname ] ->
+                (pkgs, Util.StringMap.add libname path libs)
+            | [ "p"; pkg; _version; "doc" ] ->
+                (Util.StringMap.add pkg path pkgs, libs)
+            | [ "u"; _universe; _pkg; _version; "lib"; libname ] ->
+                (pkgs, Util.StringMap.add libname path libs)
+            | [ "u"; _universe; pkg; _version; "doc" ] ->
+                (Util.StringMap.add pkg path pkgs, libs)
+            | _ -> (pkgs, libs)
+          in
+          (pkgs', libs'))
+        (Util.StringMap.empty, Util.StringMap.empty)
+        c

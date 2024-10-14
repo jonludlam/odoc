@@ -553,7 +553,7 @@ let remap_virtual_interfaces duplicate_hashes pkgs =
 
 let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
     odoc_bin voodoo package_name blessed dune_style compile_grep link_grep
-    generate_grep =
+    generate_grep compile_only no_compile =
   Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
   let _ = Voodoo.find_universe_and_version "foo" in
   Eio_main.run @@ fun env ->
@@ -563,21 +563,21 @@ let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
   Stats.init_nprocs nb_workers;
   let () = Worker_pool.start_workers env sw nb_workers in
 
-  let all, extra_libs_paths =
+  let all, extra_paths =
     match (voodoo, package_name, dune_style, packages_dir) with
     | true, Some p, None, None ->
         let all = Voodoo.of_voodoo p ~blessed in
-        let extra_libs_paths = Voodoo.extra_libs_paths odoc_dir in
+        let extra_libs_paths = Voodoo.extra_paths odoc_dir in
         (all, extra_libs_paths)
     | false, None, Some dir, None ->
-        (Dune_style.of_dune_build dir, Util.StringMap.empty)
+        (Dune_style.of_dune_build dir, Util.StringMap.(empty, empty))
     | false, None, None, packages_dir ->
         let libs = if libs = [] then Ocamlfind.all () else libs in
         let libs =
           List.map Ocamlfind.sub_libraries libs
           |> List.fold_left Util.StringSet.union Util.StringSet.empty
         in
-        (Packages.of_libs ~packages_dir libs, Util.StringMap.empty)
+        (Packages.of_libs ~packages_dir libs, Util.StringMap.(empty, empty))
     | true, None, _, _ -> failwith "--voodoo requires --package"
     | false, Some _, _, _ -> failwith "--package requires --voodoo"
     | true, _, _, Some _ | false, _, Some _, Some _ ->
@@ -626,7 +626,7 @@ let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
           let all = Util.StringMap.bindings all |> List.map snd in
           let internal =
             Odoc_unit.of_packages ~output_dir:odoc_dir ~linked_dir:odocl_dir
-              ~index_dir:None ~extra_libs_paths all
+              ~index_dir:None ~extra_paths all
           in
           let external_ =
             let mld_dir = odoc_dir in
@@ -638,13 +638,17 @@ let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
         in
         Compile.init_stats all;
         let compiled =
-          Compile.compile ?partial ~partial_dir:odoc_dir ?linked_dir:odocl_dir
-            all
+          if no_compile then all
+          else
+            Compile.compile ?partial ~partial_dir:odoc_dir ?linked_dir:odocl_dir
+              all
         in
-        let linked = Compile.link compiled in
-        let () = Compile.html_generate html_dir linked in
-        let _ = Odoc.support_files html_dir in
-        ())
+        if compile_only then ()
+        else
+          let linked = Compile.link compiled in
+          let () = Compile.html_generate html_dir linked in
+          let _ = Odoc.support_files html_dir in
+          ())
       (fun () -> render_stats env nb_workers)
   in
 
@@ -732,6 +736,14 @@ let generate_grep =
   let doc = "Show html-generate commands containing the string" in
   Arg.(value & opt (some string) None & info [ "html-grep" ] ~doc)
 
+let compile_only =
+  let doc = "Only compile the odoc files, don't link" in
+  Arg.(value & flag & info [ "compile-only" ] ~doc)
+
+let no_compile =
+  let doc = "Don't compile" in
+  Arg.(value & flag & info [ "no-compile" ] ~doc)
+
 let cmd =
   let doc = "Generate odoc documentation" in
   let info = Cmd.info "odoc_driver" ~doc in
@@ -739,7 +751,8 @@ let cmd =
     Term.(
       const run $ packages $ verbose $ packages_dir $ odoc_dir $ odocl_dir
       $ html_dir $ stats $ nb_workers $ odoc_bin $ voodoo $ package_name
-      $ blessed $ dune_style $ compile_grep $ link_grep $ generate_grep)
+      $ blessed $ dune_style $ compile_grep $ link_grep $ generate_grep
+      $ compile_only $ no_compile)
 
 (* let map = Ocamlfind.package_to_dir_map () in
    let _dirs = List.map (fun lib -> List.assoc lib map) deps in

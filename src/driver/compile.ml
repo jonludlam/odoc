@@ -58,6 +58,7 @@ type partial =
   * Odoc_unit.intf Odoc_unit.unit list Util.StringMap.t
 
 let unmarshal filename : partial =
+  Format.eprintf "unmarshalling %s\n%!" (Fpath.to_string filename);
   let ic = open_in_bin (Fpath.to_string filename) in
   Fun.protect
     ~finally:(fun () -> close_in ic)
@@ -66,6 +67,17 @@ let unmarshal filename : partial =
 let marshal (v : partial) filename =
   let _ = OS.Dir.create (Fpath.parent filename) |> Result.get_ok in
   let oc = open_out_bin (Fpath.to_string filename) in
+  let keys_fst = List.map fst (fst v) |> List.sort String.compare in
+  let keys_snd =
+    Util.StringMap.bindings (snd v) |> List.map fst |> List.sort String.compare
+  in
+  Format.eprintf "marshal %s\n%!" (Fpath.to_string filename);
+  Format.eprintf "keys_fst: (%d) [%a]\n" (List.length keys_fst)
+    Fmt.(list ~sep:comma string)
+    keys_fst;
+  Format.eprintf "keys_snd: (%d) [%a]\n" (List.length keys_snd)
+    Fmt.(list ~sep:comma string)
+    keys_snd;
   Fun.protect
     ~finally:(fun () -> close_out oc)
     (fun () -> Marshal.to_channel oc v [])

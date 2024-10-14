@@ -3,4 +3,4 @@ val find_universe_and_version :
 
 val of_voodoo : string -> blessed:bool -> Packages.set
 
-val extra_libs_paths : Fpath.t -> Fpath.t Util.StringMap.t
+val extra_paths : Fpath.t -> Fpath.t Util.StringMap.t * Fpath.t Util.StringMap.t
