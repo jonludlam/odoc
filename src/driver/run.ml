@@ -79,6 +79,7 @@ let run env cmd output_file =
   let t_end = Unix.gettimeofday () in
   let r = String.split_on_char '\n' r in
   let time = t_end -. t_start in
+  List.iter (fun l -> Logs.debug (fun m -> m "%d - %s" myn l)) @@ String.split_on_char '\n' errors;
   commands := { cmd; time; output_file; errors } :: !commands;
   r
 

@@ -837,6 +837,9 @@ let rec block_element_list :
                 let content, _stream_head, where_in_line =
                   block_element_list In_tag ~parent_markup:token input
                 in
+                if List.length content > 1 then
+                  Format.eprintf "XXXXXXXXX: Found more than one content element in a tag: %s line %d\n%!" location.Loc.file location.Loc.start.line;
+
                 let tag =
                   match tag with
                   | `Deprecated -> `Deprecated content
@@ -852,6 +855,9 @@ let rec block_element_list :
                 let content, _stream_head, where_in_line =
                   block_element_list In_tag ~parent_markup:token input
                 in
+                if List.length content > 1 then
+                  Format.eprintf "XXXXXXXXX: Found more than one content element in a tag: %s line %d\n%!" location.Loc.file location.Loc.start.line;
+
                 let tag =
                   match tag with
                   | `Param s -> `Param (s, content)
@@ -868,6 +874,9 @@ let rec block_element_list :
                 let content, _next_token, where_in_line =
                   block_element_list In_tag ~parent_markup:token input
                 in
+                if List.length content > 1 then
+                  Format.eprintf "XXXXXXXXX: Found more than one content element in a tag: %s line %d\n%!" location.Loc.file location.Loc.start.line;
+
                 let location =
                   location :: List.map Loc.location content |> Loc.span
                 in
