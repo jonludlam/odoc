@@ -4,6 +4,10 @@
 
 {1:overview What is [odoc]?}
 
+{!Core}
+{!/core/Core}
+{!/core/page-index}
+
 [odoc] is a documentation generator for OCaml. It reads doc comments
 from your source files and your [.mld] files, then outputs HTML, LaTeX and
 man pages. The pages you are reading now are rendered using [odoc].

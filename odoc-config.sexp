@@ -1,0 +1,3 @@
+(libraries core)
+(packages core)
+

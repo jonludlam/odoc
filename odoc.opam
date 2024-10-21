@@ -62,6 +62,11 @@ depends: [
   ("ocaml" {< "4.07.0" & with-test} | "bisect_ppx" {with-test & > "2.5.0"})
 ]
 
+x-extra-doc-deps: [
+  "core" {= "0.17.1"}
+]
+
+
 build: [
   ["dune" "subst"] {dev}
   [
@@ -75,4 +80,5 @@ build: [
     "@runtest" {with-test}
     "@doc" {with-doc}
   ]
+  [ "./patch.sh" ]
 ]
