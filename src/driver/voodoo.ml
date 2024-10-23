@@ -274,8 +274,8 @@ let of_voodoo pkg_name ~blessed =
       in
       let packages = List.filter_map (fun x -> x) (last :: packages) in
       let packages = List.map process_package packages in
-      let pkg = List.hd packages in
-      Logs.debug (fun m -> m "Package: %a\n%!" Packages.pp pkg);
+      (* let pkg = List.hd packages in *)
+      (* Logs.debug (fun m -> m "Package: %a\n%!" Packages.pp pkg); *)
       Util.StringMap.singleton pkg_name (List.hd packages)
 
 let extra_paths compile_dir =
