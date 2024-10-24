@@ -35,7 +35,6 @@ type 'a unit = {
   odocl_file : Fpath.t;
   pkg_args : pkg_args;
   pkgname : string;
-  include_dirs : Fpath.Set.t;
   index : index option;
   kind : 'a;
 }
@@ -83,15 +82,12 @@ and pp : all_kinds unit Fmt.t =
      odocl_file: %a@;\
      pkg_args: %a@;\
      pkgname: %s@;\
-     include_dirs: [%a]@;\
      index: %a@;\
      kind:%a@;\
      @]"
     (Odoc.Id.to_string x.parent_id)
     Fpath.pp x.odoc_dir Fpath.pp x.input_file Fpath.pp x.output_dir Fpath.pp
     x.odoc_file Fpath.pp x.odocl_file pp_pkg_args x.pkg_args x.pkgname
-    Fmt.(list ~sep:comma Fpath.pp)
-    (Fpath.Set.to_list x.include_dirs)
     (Fmt.option pp_index) x.index pp_kind
     (x.kind :> all_kinds)
 
@@ -220,7 +216,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir
     { pkg_args; output_file; json = false; search_dir = pkg.pkg_dir }
   in
 
-  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~include_dirs ~lib_deps :
+  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_deps :
       _ unit =
     let ( // ) = Fpath.( // ) in
     let ( / ) = Fpath.( / ) in
@@ -241,7 +237,6 @@ let of_packages ~output_dir ~linked_dir ~index_dir
       input_file;
       odoc_file;
       odocl_file;
-      include_dirs;
       kind;
       index = Some (index_of pkg);
     }
@@ -269,17 +264,13 @@ let of_packages ~output_dir ~linked_dir ~index_dir
     fun hidden pkg libname lib_deps (intf : Packages.intf) : intf unit ->
       let do_ () : intf unit =
         let rel_dir = lib_dir pkg libname in
-        let include_dirs, kind =
+        let kind =
           let deps = build_deps intf.mif_deps in
-          let include_dirs =
-            List.map (fun u -> u.odoc_dir) deps |> Fpath.Set.of_list
-          in
-          let kind = `Intf { hidden; hash = intf.mif_hash; deps } in
-          (include_dirs, kind)
+          `Intf { hidden; hash = intf.mif_hash; deps }
         in
         let name = intf.mif_path |> Fpath.rem_ext |> Fpath.basename in
         make_unit ~name ~kind ~rel_dir ~input_file:intf.mif_path ~pkg
-          ~include_dirs ~lib_deps
+          ~lib_deps
       in
       match Hashtbl.find_opt intf_cache intf.mif_hash with
       | Some unit -> unit
@@ -293,10 +284,6 @@ let of_packages ~output_dir ~linked_dir ~index_dir
     | None -> None
     | Some { src_path } ->
         let rel_dir = lib_dir pkg libname in
-        let include_dirs =
-          let deps = build_deps impl.mip_deps in
-          List.map (fun u -> u.odoc_dir) deps |> Fpath.Set.of_list
-        in
         let kind =
           let src_name = Fpath.filename src_path in
           let src_id =
@@ -310,7 +297,7 @@ let of_packages ~output_dir ~linked_dir ~index_dir
         in
         let unit =
           make_unit ~name ~kind ~rel_dir ~input_file:impl.mip_path ~pkg
-            ~include_dirs ~lib_deps
+            ~lib_deps
         in
         Some unit
   in
@@ -333,19 +320,13 @@ let of_packages ~output_dir ~linked_dir ~index_dir
     let open Fpath in
     let { Packages.mld_path; mld_rel_path } = mld in
     let rel_dir = doc_dir pkg // Fpath.parent mld_rel_path |> Fpath.normalize in
-    let include_dirs =
-      List.map
-        (fun (lib : Packages.libty) -> lib_dir pkg lib.lib_name)
-        pkg.libraries
-    in
-    let include_dirs =
-      (output_dir // rel_dir) :: include_dirs |> Fpath.Set.of_list
-    in
     let kind = `Mld in
     let name = mld_path |> Fpath.rem_ext |> Fpath.basename |> ( ^ ) "page-" in
+    let lib_deps = List.fold_left (fun acc l -> Util.StringSet.add l.Packages.lib_name acc)
+        Util.StringSet.empty pkg.libraries in
     let unit =
-      make_unit ~name ~kind ~rel_dir ~input_file:mld_path ~pkg ~include_dirs
-        ~lib_deps:Util.StringSet.empty
+      make_unit ~name ~kind ~rel_dir ~input_file:mld_path ~pkg
+        ~lib_deps
     in
     [ unit ]
   in
@@ -355,11 +336,10 @@ let of_packages ~output_dir ~linked_dir ~index_dir
     let rel_dir =
       doc_dir pkg // Fpath.parent asset_rel_path |> Fpath.normalize
     in
-    let include_dirs = Fpath.Set.empty in
     let kind = `Asset in
     let unit =
       let name = asset_path |> Fpath.basename |> ( ^ ) "asset-" in
-      make_unit ~name ~kind ~rel_dir ~input_file:asset_path ~pkg ~include_dirs
+      make_unit ~name ~kind ~rel_dir ~input_file:asset_path ~pkg
         ~lib_deps:Util.StringSet.empty
     in
     [ unit ]

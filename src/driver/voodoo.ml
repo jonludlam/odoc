@@ -121,7 +121,7 @@ let process_package pkg =
         List.fold_left
           (fun acc lib ->
             Util.StringMap.add lib.Library_names.name
-              (Util.StringSet.of_list lib.Library_names.deps)
+              (Util.StringSet.of_list ("stdlib"::lib.Library_names.deps))
               acc)
           acc m.libraries)
       Util.StringMap.empty metas
@@ -281,7 +281,9 @@ let of_voodoo pkg_name ~blessed =
 let extra_paths compile_dir =
   let contents =
     Bos.OS.Dir.fold_contents ~dotfiles:true
-      (fun p acc -> p :: acc)
+      (fun p acc ->
+        
+        p :: acc)
       [] compile_dir
   in
   match contents with

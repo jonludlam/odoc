@@ -6,7 +6,7 @@ let fpf = Format.fprintf
 let make_rel dir l = List.map (fun (x, y) -> (x, Fpath.(dir // y))) l
 
 let make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
-    ?(include_dirs = Fpath.Set.empty) ~pkgname ~pkg_args () =
+     ~pkgname ~pkg_args () =
   let input_file = Fpath.(mld_dir // rel_path / "index.mld") in
   let odoc_file = Fpath.(odoc_dir // rel_path / "page-index.odoc") in
   let odocl_file = Fpath.(odocl_dir // rel_path / "page-index.odocl") in
@@ -23,7 +23,6 @@ let make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
     odocl_file;
     pkg_args;
     pkgname;
-    include_dirs;
     index = None;
     kind = `Mld;
   }
@@ -103,9 +102,8 @@ module LibraryLanding = struct
         libs_linked = [];
       }
     in
-    let include_dirs = Fpath.Set.singleton Fpath.(odoc_dir // rel_path) in
     make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
-      ~pkgname:pkg.name ~include_dirs ~pkg_args ()
+      ~pkgname:pkg.name ~pkg_args ()
 end
 
 module PackageLibLanding = struct

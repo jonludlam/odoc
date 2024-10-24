@@ -568,8 +568,6 @@ let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
     | true, Some p, None, None ->
         let all = Voodoo.of_voodoo p ~blessed in
         let extra_libs_paths = Voodoo.extra_paths odoc_dir in
-        let p1, p2 = extra_libs_paths in
-        Logs.debug (fun m -> m "Extra libs paths: [%a]" Fmt.(Dump.list (pair string Fpath.pp)) (Util.StringMap.bindings p1));
         (all, extra_libs_paths)
     | false, None, Some dir, None ->
         (Dune_style.of_dune_build dir, Util.StringMap.(empty, empty))
