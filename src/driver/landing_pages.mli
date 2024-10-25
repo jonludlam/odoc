@@ -3,5 +3,6 @@ val of_packages :
   odoc_dir:Fpath.t ->
   odocl_dir:Fpath.t ->
   output_dir:Fpath.t ->
+  no_pkglist:bool ->
   Packages.t list ->
   [> `Mld ] Odoc_unit.unit list

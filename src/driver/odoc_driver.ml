@@ -553,7 +553,7 @@ let remap_virtual_interfaces duplicate_hashes pkgs =
 
 let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
     odoc_bin voodoo package_name blessed dune_style compile_grep link_grep
-    generate_grep compile_only no_compile =
+    generate_grep compile_only no_compile no_pkglist =
   Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
   let _ = Voodoo.find_universe_and_version "foo" in
   Eio_main.run @@ fun env ->
@@ -632,7 +632,7 @@ let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
             let mld_dir = odoc_dir in
             let odocl_dir = Option.value odocl_dir ~default:odoc_dir in
             Landing_pages.of_packages ~mld_dir ~odoc_dir ~odocl_dir
-              ~output_dir:odoc_dir all
+              ~output_dir:odoc_dir ~no_pkglist all
           in
           internal @ external_
         in
@@ -720,6 +720,10 @@ let blessed =
   let doc = "Blessed" in
   Arg.(value & flag & info [ "blessed" ] ~doc)
 
+let no_pkglist =
+  let doc = "Omit package list page" in
+  Arg.(value & flag & info [ "no-pkglist" ] ~doc)
+  
 let dune_style =
   let doc = "Dune style" in
   Arg.(value & opt (some fpath_arg) None & info [ "dune-style" ] ~doc)
@@ -752,7 +756,7 @@ let cmd =
       const run $ packages $ verbose $ packages_dir $ odoc_dir $ odocl_dir
       $ html_dir $ stats $ nb_workers $ odoc_bin $ voodoo $ package_name
       $ blessed $ dune_style $ compile_grep $ link_grep $ generate_grep
-      $ compile_only $ no_compile)
+      $ compile_only $ no_compile $ no_pkglist)
 
 (* let map = Ocamlfind.package_to_dir_map () in
    let _dirs = List.map (fun lib -> List.assoc lib map) deps in

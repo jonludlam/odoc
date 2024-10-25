@@ -97,9 +97,9 @@ module LibraryLanding = struct
     let pkg_args =
       {
         pages = make_rel odoc_dir pages_rel;
-        libs = [];
+        libs = [lib.lib_name, rel_path];
         pages_linked = make_rel odocl_dir pages_rel;
-        libs_linked = [];
+        libs_linked = [lib.lib_name, rel_path];
       }
     in
     make_unit ~odoc_dir ~odocl_dir ~mld_dir ~output_dir rel_path ~content
@@ -145,6 +145,9 @@ let of_package ~mld_dir ~odoc_dir ~odocl_dir ~output_dir pkg =
   in
   package_landing_page :: library_list_page :: library_pages
 
-let of_packages ~mld_dir ~odoc_dir ~odocl_dir ~output_dir all =
-  PackageList.page ~mld_dir ~odoc_dir ~odocl_dir ~output_dir all
-  :: List.concat_map (of_package ~mld_dir ~odoc_dir ~odocl_dir ~output_dir) all
+let of_packages ~mld_dir ~odoc_dir ~odocl_dir ~output_dir ~no_pkglist all =
+  let rest = List.concat_map (of_package ~mld_dir ~odoc_dir ~odocl_dir ~output_dir) all in
+  if no_pkglist then rest else
+    let pkglist = PackageList.page ~mld_dir ~odoc_dir ~odocl_dir ~output_dir all in
+    pkglist :: rest
+    
