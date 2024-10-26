@@ -14,11 +14,14 @@ let pp_pkg_args fmt x =
   Format.fprintf fmt "@[<hov>pages: [%a]@;libs: [%a]@]" sfp_pp x.pages sfp_pp
     x.libs
 
+type sidebar = { output_file : Fpath.t; json : bool }
+
 type index = {
   pkg_args : pkg_args;
   output_file : Fpath.t;
   json : bool;
   search_dir : Fpath.t;
+  sidebar : sidebar option;
 }
 
 let pp_index fmt x =
@@ -213,7 +216,17 @@ let of_packages ~output_dir ~linked_dir ~index_dir
     in
     let pkg_args = base_args pkg pkg_libs in
     let output_file = Fpath.(index_dir / pkg.name / Odoc.index_filename) in
-    { pkg_args; output_file; json = false; search_dir = pkg.pkg_dir }
+    let sidebar =
+      let output_file = Fpath.(index_dir / pkg.name / Odoc.sidebar_filename) in
+      { output_file; json = false }
+    in
+    {
+      pkg_args;
+      output_file;
+      json = false;
+      search_dir = pkg.pkg_dir;
+      sidebar = Some sidebar;
+    }
   in
 
   let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_deps :

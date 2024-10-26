@@ -646,7 +646,14 @@ let run libs verbose packages_dir odoc_dir odocl_dir html_dir stats nb_workers
         if compile_only then ()
         else
           let linked = Compile.link compiled in
-          let () = Compile.html_generate html_dir linked in
+          let occurrence_file =
+            let output =
+              Fpath.( / ) odoc_dir "occurrences-all.odoc-occurrences"
+            in
+            let () = Odoc.count_occurrences ~input:[ odoc_dir ] ~output in
+            output
+          in  
+          let () = Compile.html_generate ~occurrence_file html_dir linked in
           let _ = Odoc.support_files html_dir in
           ())
       (fun () -> render_stats env nb_workers)

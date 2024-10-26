@@ -20,12 +20,75 @@
   File "index.mld", line 5, character 7 to line 7, character 0:
   Warning: (children) doesn't include 'omitted'.
 
-  $ odoc html-generate --indent --index index.odoc-index -o _html  _odoc/pkg/doc/page-index.odocl
-  $ odoc html-generate --index index.odoc-index -o _html  _odoc/pkg/doc/page-content.odocl
-  $ odoc html-generate --index index.odoc-index -o _html  _odoc/pkg/doc/page-omitted.odocl
-  $ odoc html-generate --index index.odoc-index -o _html  _odoc/pkg/doc/dir1/page-index.odocl
-  $ odoc html-generate --index index.odoc-index -o _html  _odoc/pkg/doc/dir1/page-content_in_dir.odocl
-  $ odoc html-generate --index index.odoc-index -o _html  _odoc/pkg/doc/dir1/page-dontent.odocl
+  $ odoc sidebar-generate index.odoc-index
+  $ odoc sidebar-generate --json index.odoc-index
+
+  $ cat sidebar.json | jq
+  {
+    "pages": [
+      {
+        "name": "test",
+        "pages": {
+          "node": {
+            "url": "pkg/doc/index.html",
+            "kind": "leaf-page",
+            "content": "<a href=\"pkg/doc/index.html\">This is the main index</a>"
+          },
+          "children": [
+            {
+              "node": {
+                "url": "pkg/doc/content.html",
+                "kind": "leaf-page",
+                "content": "<a href=\"pkg/doc/content.html\">This is top level content</a>"
+              },
+              "children": []
+            },
+            {
+              "node": {
+                "url": "pkg/doc/dir1/index.html",
+                "kind": "leaf-page",
+                "content": "<a href=\"pkg/doc/dir1/index.html\">This is dir1's index</a>"
+              },
+              "children": [
+                {
+                  "node": {
+                    "url": "pkg/doc/dir1/content_in_dir.html",
+                    "kind": "leaf-page",
+                    "content": "<a href=\"pkg/doc/dir1/content_in_dir.html\">This is some content in dir1</a>"
+                  },
+                  "children": []
+                },
+                {
+                  "node": {
+                    "url": "pkg/doc/dir1/dontent.html",
+                    "kind": "leaf-page",
+                    "content": "<a href=\"pkg/doc/dir1/dontent.html\">The name is dontent</a>"
+                  },
+                  "children": []
+                }
+              ]
+            },
+            {
+              "node": {
+                "url": "pkg/doc/omitted.html",
+                "kind": "leaf-page",
+                "content": "<a href=\"pkg/doc/omitted.html\">This one is omitted</a>"
+              },
+              "children": []
+            }
+          ]
+        }
+      }
+    ],
+    "libraries": []
+  }
+
+  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/doc/page-index.odocl
+  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/doc/page-content.odocl
+  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/doc/page-omitted.odocl
+  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/doc/dir1/page-index.odocl
+  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/doc/dir1/page-content_in_dir.odocl
+  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/doc/dir1/page-dontent.odocl
   $ odoc support-files -o _html
 
   $ odoc_print _odoc/pkg/doc/page-index.odocl | jq .frontmatter
@@ -58,8 +121,9 @@ Typo is in the children field of index, but does not exist. It is omitted to,
 but this should be a warning!
 
   $ cat _html/pkg/doc/index.html | grep odoc-global-toc -A 11
-     <nav class="odoc-toc odoc-global-toc"><b>test's Pages</b>
-      <ul>
+     <nav class="odoc-toc odoc-global-toc"><ul class="odoc-modules"></ul>
+      <b>Documentation</b>
+      <ul class="odoc-pages">
        <li><a href="#" class="current_unit">This is the main index</a>
         <ul><li><a href="content.html">This is top level content</a></li>
          <li><a href="dir1/index.html">This is dir1's index</a>
@@ -69,4 +133,3 @@ but this should be a warning!
            </li><li><a href="dir1/dontent.html">The name is dontent</a></li>
           </ul>
          </li><li><a href="omitted.html">This one is omitted</a></li>
-        </ul>

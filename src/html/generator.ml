@@ -542,6 +542,7 @@ module Page = struct
       match sidebar with
       | None -> None
       | Some sidebar ->
+          let sidebar = Odoc_document.Sidebar.to_block sidebar url in
           (* let sidebar = Odoc_document.Sidebar.to_block sidebar p in *)
           (Some (block ~config ~resolve sidebar) :> any Html.elt list option)
     in
@@ -590,3 +591,7 @@ let filepath ~config url = Link.Path.as_filename ~config url
 let doc ~config ~xref_base_uri b =
   let resolve = Link.Base xref_base_uri in
   block ~config ~resolve b
+
+let inline ~config ~xref_base_uri b =
+  let resolve = Link.Base xref_base_uri in
+  inline ~config ~resolve b
