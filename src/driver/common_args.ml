@@ -56,6 +56,10 @@ let generate_grep =
   let doc = "Show html-generate commands containing the string" in
   Arg.(value & opt (some string) None & info [ "html-grep" ] ~doc)
 
+let index_grep =
+  let doc = "Show compile-index commands containing the string" in
+  Arg.(value & opt (some string) None & info [ "index-grep" ] ~doc)
+
 type t = {
   verbose : bool;
   odoc_dir : Fpath.t;
@@ -70,6 +74,7 @@ type t = {
   compile_grep : string option;
   link_grep : string option;
   generate_grep : string option;
+  index_grep : string option;
 }
 
 let term =
@@ -88,6 +93,7 @@ let term =
   and+ odoc_md_bin = odoc_md_bin
   and+ compile_grep = compile_grep
   and+ link_grep = link_grep
+  and+ index_grep = index_grep
   and+ generate_grep = generate_grep in
   {
     verbose;
@@ -103,4 +109,5 @@ let term =
     compile_grep;
     link_grep;
     generate_grep;
+    index_grep;
   }
