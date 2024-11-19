@@ -60,6 +60,10 @@ let remap =
   let doc = "Remap paths in non-selected packages to ocaml.org" in
   Arg.(value & flag & info [ "remap" ] ~doc)
 
+let index_grep =
+  let doc = "Show compile-index commands containing the string" in
+  Arg.(value & opt (some string) None & info [ "index-grep" ] ~doc)
+
 type t = {
   verbose : bool;
   odoc_dir : Fpath.t;
@@ -75,6 +79,7 @@ type t = {
   link_grep : string option;
   generate_grep : string option;
   remap : bool;
+  index_grep : string option;
 }
 
 let term =
@@ -94,6 +99,7 @@ let term =
   and+ compile_grep = compile_grep
   and+ link_grep = link_grep
   and+ generate_grep = generate_grep
+  and+ index_grep = index_grep
   and+ remap = remap in
   {
     verbose;
@@ -110,4 +116,5 @@ let term =
     link_grep;
     generate_grep;
     remap;
+    index_grep;
   }
