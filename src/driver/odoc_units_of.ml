@@ -80,10 +80,11 @@ let packages ~dirs ~extra_paths ~gen_indices (pkgs : Packages.t list) : t list =
   let index_of pkg =
     let roots = [ Fpath.( // ) odocl_dir (doc_dir pkg) ] in
     let output_file = Fpath.(index_dir / pkg.name / Odoc.index_filename) in
+    let pkg_dir = doc_dir pkg in
     let sidebar =
       let output_file = Fpath.(index_dir / pkg.name / Odoc.sidebar_filename) in
-      { output_file; json = false }
-    in
+      { output_file; json = false; pkg_dir }
+    in 
     {
       roots;
       output_file;
