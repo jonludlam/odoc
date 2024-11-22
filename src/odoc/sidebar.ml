@@ -1,7 +1,8 @@
 open Or_error
 open Odoc_utils
 
-let toc_to_json ((url, inline) : Odoc_document.Sidebar.entry) : Json.json =
+let toc_to_json ({ url; content = inline; _ } : Odoc_document.Sidebar.entry) :
+    Json.json =
   let config =
     Odoc_html.Config.v ~semantic_uris:true ~indent:true ~flat:false
       ~open_details:false ~as_json:true ~remap:[] ()
