@@ -94,7 +94,7 @@ let packages ~dirs ~extra_paths ~gen_indices (pkgs : Packages.t list) : t list =
       roots;
       output_file;
       json = false;
-      search_dir = pkg.pkg_dir;
+      search_dir = doc_dir pkg;
       sidebar = Some sidebar;
     }
   in
@@ -171,7 +171,7 @@ let packages ~dirs ~extra_paths ~gen_indices (pkgs : Packages.t list) : t list =
         let kind =
           let src_name = Fpath.filename src_path in
           let src_id =
-            Fpath.(pkg.pkg_dir / "src" / lib.lib_name / src_name)
+            Fpath.(src_dir pkg lib / src_name)
             |> Odoc.Id.of_fpath
           in
           `Impl { src_id; src_path }
@@ -222,7 +222,7 @@ let packages ~dirs ~extra_paths ~gen_indices (pkgs : Packages.t list) : t list =
     let ext = Fpath.get_ext md in
     match ext with
     | ".md" ->
-        let rel_dir = doc_dir pkg in
+        let rel_dir = pkg_dir pkg in
         let kind = `Md in
         let name = md |> Fpath.rem_ext |> Fpath.basename |> ( ^ ) "page-" in
         let lib_deps = Util.StringSet.empty in
