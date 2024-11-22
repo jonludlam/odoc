@@ -180,6 +180,8 @@ let process_package pkg =
     |> List.flatten
   in
   let libraries = meta_libraries @ non_meta_libraries in
+  let pkg_dir = top_dir pkg in
+  let doc_dir = Fpath.(pkg_dir / "doc") in
   let result =
     {
       Packages.name = pkg.name;
@@ -189,7 +191,8 @@ let process_package pkg =
       assets;
       enable_warnings = false;
       other_docs;
-      pkg_dir = top_dir pkg;
+      pkg_dir;
+      doc_dir;
       config;
     }
   in

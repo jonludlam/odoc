@@ -124,6 +124,7 @@ let of_dune_build dir =
                         (* When dune has a notion of doc assets, do something *);
                       enable_warnings = false;
                       pkg_dir;
+                      doc_dir=pkg_dir;
                       other_docs = [];
                       config = Global_config.empty;
                     } )

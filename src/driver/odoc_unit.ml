@@ -117,8 +117,10 @@ and pp : all_kinds unit Fmt.t =
     (Fmt.option pp_index) x.index pp_kind
     (x.kind :> all_kinds)
 
-let doc_dir pkg = pkg.Packages.pkg_dir
-let lib_dir pkg lib = Fpath.(pkg.Packages.pkg_dir / lib.Packages.lib_name)
+let pkg_dir pkg = pkg.Packages.pkg_dir
+let doc_dir pkg = pkg.Packages.doc_dir
+let lib_dir pkg lib = Fpath.(doc_dir pkg / lib.Packages.lib_name)
+let src_dir pkg lib = Fpath.(doc_dir pkg / "src" / lib.Packages.lib_name)
 
 type dirs = {
   odoc_dir : Fpath.t;

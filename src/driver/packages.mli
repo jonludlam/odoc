@@ -76,6 +76,7 @@ type t = {
   enable_warnings : bool;
   other_docs : Fpath.t list;
   pkg_dir : Fpath.t;
+  doc_dir : Fpath.t;
   config : Global_config.t;
 }
 
