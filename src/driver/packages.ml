@@ -90,6 +90,7 @@ type t = {
   enable_warnings : bool;
   other_docs : Fpath.t list;
   pkg_dir : Fpath.t;
+  doc_dir : Fpath.t;
   config : Global_config.t;
 }
 
@@ -403,6 +404,7 @@ let of_libs ~packages_dir libs =
                         enable_warnings = false;
                         other_docs = [];
                         pkg_dir;
+                        doc_dir=pkg_dir;
                         config;
                       })
               acc)
@@ -462,16 +464,13 @@ let of_packages ~packages_dir packages =
             enable_warnings;
             other_docs = [];
             pkg_dir;
+            doc_dir = pkg_dir;
             config;
           }
           acc)
       Util.StringMap.empty all
   in
   let result = fix_missing_deps packages in
-  Logs.debug (fun m ->
-      m "ZZZZ Result: %a"
-        Fmt.(Dump.list (pair string pp))
-        (Util.StringMap.bindings result));
   result
 
 type set = t Util.StringMap.t
