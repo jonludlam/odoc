@@ -22,7 +22,10 @@ let toc_to_json ({ url; content = inline; _ } : Odoc_document.Sidebar.entry) :
   in
   let inline =
     let inline =
-      Odoc_html.Generator.inline ~config ~xref_base_uri:"" [ inline ]
+      let unwrapped = match inline.desc with
+      | Link x -> x.content
+      | _x -> [inline] in
+      Odoc_html.Generator.inline ~config ~xref_base_uri:"" unwrapped
     in
     let inline =
       String.concat ""
