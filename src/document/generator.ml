@@ -1064,7 +1064,7 @@ module Make (Syntax : SYNTAX) = struct
             | Constraint cst -> continue @@ constraint_ cst
             | Comment `Stop ->
                 let rest =
-                  Utils.skip_until rest ~p:(function
+                  Odoc_utils.List.skip_until rest ~p:(function
                     | Lang.ClassSignature.Comment `Stop -> true
                     | _ -> false)
                 in
@@ -1246,7 +1246,7 @@ module Make (Syntax : SYNTAX) = struct
                 loop rest (List.rev_append items acc_items)
             | Comment `Stop ->
                 let rest =
-                  Utils.skip_until rest ~p:(function
+                  Odoc_utils.List.skip_until rest ~p:(function
                     | Lang.Signature.Comment `Stop -> true
                     | _ -> false)
                 in

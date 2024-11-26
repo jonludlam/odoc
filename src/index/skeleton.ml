@@ -128,7 +128,21 @@ let rec unit (u : Compilation_unit.t) =
   { Tree.node = entry; children }
 
 and signature id (s : Signature.t) =
-  List.concat_map ~f:(signature_item (id :> Identifier.LabelParent.t)) s.items
+  let rec loop (l : Signature.item list) acc_items =
+    match l with
+    | [] -> List.flatten (List.rev acc_items)
+    | item :: rest -> (
+      let continue item = loop rest (item :: acc_items) in
+      match item with
+      | Comment `Stop ->
+        let rest =
+          Odoc_utils.List.skip_until rest ~p:(function
+            | Odoc_model.Lang.Signature.Comment `Stop -> true
+            | _ -> false)
+        in
+        loop rest acc_items
+      | _ -> continue (signature_item (id :> Identifier.LabelParent.t) item))
+  in loop s.items []
 
 and signature_item id s_item =
   match s_item with
