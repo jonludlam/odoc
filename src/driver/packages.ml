@@ -392,7 +392,7 @@ let of_libs ~packages_dir libs =
                           pkg = pkg')
                         opam_map
                     in
-                    let mlds, assets, other_docs = mk_mlds docs in
+                    let mlds, assets, _ = mk_mlds docs in
                     Some
                       {
                         name = pkg.name;
@@ -401,7 +401,7 @@ let of_libs ~packages_dir libs =
                         mlds;
                         assets;
                         enable_warnings = false;
-                        other_docs;
+                        other_docs = [];
                         pkg_dir;
                         config;
                       })
@@ -450,7 +450,7 @@ let of_packages ~packages_dir packages =
         in
         let pkg_dir = pkg_dir packages_dir pkg.name in
         let config = Global_config.load pkg.name in
-        let mlds, assets, other_docs = mk_mlds files.docs in
+        let mlds, assets, _ = mk_mlds files.docs in
         let enable_warnings = List.mem pkg.name packages in
         Util.StringMap.add pkg.name
           {
@@ -460,7 +460,7 @@ let of_packages ~packages_dir packages =
             mlds;
             assets;
             enable_warnings;
-            other_docs;
+            other_docs = [];
             pkg_dir;
             config;
           }
