@@ -22,12 +22,14 @@ val empty : Odoc_model.Comment.docs
 val is_stop_comment : Parsetree.attribute -> bool
 
 val attached :
+  env:Ident_env.t ->
   'tags Semantics.handle_internal_tags ->
   Paths.Identifier.LabelParent.t ->
   Parsetree.attributes ->
   Odoc_model.Comment.docs * 'tags
 
 val attached_no_tag :
+  env:Ident_env.t ->
   Paths.Identifier.LabelParent.t ->
   Parsetree.attributes ->
   Odoc_model.Comment.docs
@@ -56,7 +58,7 @@ val standalone_multiple :
   Odoc_model.Comment.docs_or_stop list
 
 val extract_top_comment :
-  'tags Semantics.handle_internal_tags ->
+  env:Ident_env.t -> 'tags Semantics.handle_internal_tags ->
   classify:('item -> [ `Attribute of Parsetree.attribute | `Open ] option) ->
   Paths.Identifier.Signature.t ->
   'item list ->

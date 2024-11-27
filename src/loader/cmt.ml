@@ -85,7 +85,7 @@ let rec read_pattern env parent doc pat =
 
 let read_value_binding env parent vb =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
-  let doc = Doc_attr.attached_no_tag container vb.vb_attributes in
+  let doc = Doc_attr.attached_no_tag ~env container vb.vb_attributes in
     read_pattern env parent doc vb.vb_pat
 
 let read_value_bindings env parent vbs =
@@ -107,7 +107,7 @@ let read_type_extension env parent tyext =
   let open Extension in
   let type_path = Env.Path.read_type env tyext.tyext_path in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
-  let doc = Doc_attr.attached_no_tag container tyext.tyext_attributes in
+  let doc = Doc_attr.attached_no_tag ~env container tyext.tyext_attributes in
   let type_params =
     List.map (fun (ctyp, _) -> ctyp.ctyp_type) tyext.tyext_params
   in
@@ -143,7 +143,7 @@ let rec read_class_type_field env parent ctf =
   let open ClassSignature in
   let open Odoc_model.Names in
   let container = (parent : Identifier.ClassSignature.t :> Identifier.LabelParent.t) in
-  let doc = Doc_attr.attached_no_tag container ctf.ctf_attributes in
+  let doc = Doc_attr.attached_no_tag ~env container ctf.ctf_attributes in
   match ctf.ctf_desc with
   | Tctf_val(name, mutable_, virtual_, typ) ->
       let open InstanceVariable in
@@ -224,7 +224,7 @@ let rec read_class_field env parent cf =
   let open ClassSignature in
   let open Odoc_model.Names in
   let container = (parent : Identifier.ClassSignature.t :> Identifier.LabelParent.t) in
-  let doc = Doc_attr.attached_no_tag container (cf.cf_attributes) in
+  let doc = Doc_attr.attached_no_tag ~env container (cf.cf_attributes) in
   match cf.cf_desc with
   | Tcf_val({txt = name; _}, mutable_, _, kind, _) ->
       let open InstanceVariable in
@@ -334,7 +334,7 @@ let read_class_declaration env parent cld =
   let id = Env.find_class_identifier env cld.ci_id_class in
   let source_loc = None in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
-  let doc = Doc_attr.attached_no_tag container cld.ci_attributes in
+  let doc = Doc_attr.attached_no_tag ~env container cld.ci_attributes in
     Cmi.mark_class_declaration cld.ci_decl;
     let virtual_ = (cld.ci_virt = Virtual) in
     let clparams =
@@ -442,7 +442,7 @@ and read_module_binding env parent mb =
   let id = (mid :> Identifier.Module.t) in
   let source_loc = None in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
-  let doc, canonical = Doc_attr.attached Odoc_model.Semantics.Expect_canonical container mb.mb_attributes in
+  let doc, canonical = Doc_attr.attached ~env Odoc_model.Semantics.Expect_canonical container mb.mb_attributes in
   let type_, canonical =
     match unwrap_module_expr_desc mb.mb_expr.mod_desc with
     | Tmod_ident (p, _) -> (Alias (Env.Path.read_module env p, None), canonical)
@@ -551,7 +551,7 @@ and read_include env parent incl =
   let open Include in
   let loc = Doc_attr.read_location incl.incl_loc in
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
-  let doc, status = Doc_attr.attached Odoc_model.Semantics.Expect_status container incl.incl_attributes in
+  let doc, status = Doc_attr.attached ~env Odoc_model.Semantics.Expect_status container incl.incl_attributes in
   let decl_modty =
     match unwrap_module_expr_desc incl.incl_mod.mod_desc with
     | Tmod_ident(p, _) ->
@@ -572,7 +572,7 @@ and read_include env parent incl =
 
 and read_open env parent o =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
-  let doc = Doc_attr.attached_no_tag container o.open_attributes in
+  let doc = Doc_attr.attached_no_tag ~env container o.open_attributes in
   #if OCAML_VERSION >= (4,8,0)
   let signature = o.open_bound_items in
   #else
@@ -593,7 +593,7 @@ and read_structure :
       | Tstr_attribute attr -> Some (`Attribute attr)
       | _ -> None
     in
-    Doc_attr.extract_top_comment internal_tags ~classify parent str.str_items
+    Doc_attr.extract_top_comment ~env internal_tags ~classify parent str.str_items
   in
   let items =
     List.fold_left
