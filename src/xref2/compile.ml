@@ -253,7 +253,11 @@ and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
                 Component.Delayed.(
                   put (fun () -> Component.Of_Lang.(module_ (empty ()) m)))
               in
-              Env.add_module (m.id :> Paths.Identifier.Path.Module.t) ty {docs=[]; suppress_warnings=false} env
+              Env.add_module
+                (m.id :> Paths.Identifier.Path.Module.t)
+                ty
+                { docs = []; suppress_warnings = false }
+                env
             in
             let env =
               match r with

@@ -62,7 +62,8 @@ val standalone_multiple :
   Odoc_model.Comment.docs_or_stop list
 
 val extract_top_comment :
-  env:Ident_env.t -> 'tags Semantics.handle_internal_tags ->
+  env:Ident_env.t ->
+  'tags Semantics.handle_internal_tags ->
   classify:('item -> [ `Attribute of Parsetree.attribute | `Open ] option) ->
   Paths.Identifier.Signature.t ->
   'item list ->

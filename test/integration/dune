@@ -5,7 +5,8 @@
 
 (cram
  (deps
-  (package odoc) %{bin:odoc_print}))
+  (package odoc)
+  %{bin:odoc_print}))
 
 (cram
  (applies_to json_expansion_with_sources)
