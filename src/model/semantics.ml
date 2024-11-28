@@ -598,7 +598,7 @@ let append_alerts_to_comment alerts
           comment)
       alerts
   in
-  comment @ (alerts : alerts :> Comment.docs)
+  comment @ (alerts :> Comment.block_element with_location list)
 
 let ast_to_comment ~internal_tags ~sections_allowed ~tags_allowed
     ~parent_of_sections (ast : Ast.t) alerts =

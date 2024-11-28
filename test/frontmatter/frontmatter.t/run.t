@@ -24,7 +24,7 @@ When there is one frontmatter, it is extracted from the content:
       ]
     }
   }
-  $ odoc_print page-one_frontmatter.odoc | jq '.content'
+  $ odoc_print page-one_frontmatter.odoc | jq '.content.docs'
   [
     {
       "`Heading": [
@@ -76,7 +76,7 @@ When there is more than one children order, we raise a warning and keep only the
       ]
     }
   }
-  $ odoc_print page-two_frontmatters.odoc | jq '.content'
+  $ odoc_print page-two_frontmatters.odoc | jq '.content.docs'
   [
     {
       "`Heading": [

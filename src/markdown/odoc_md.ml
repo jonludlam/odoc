@@ -35,7 +35,7 @@ let mk_page input_s id content =
     Lang.Page.name = id;
     root;
     children;
-    content;
+    content = {docs = content; suppress_warnings = false};
     digest;
     linked = false;
     frontmatter;
