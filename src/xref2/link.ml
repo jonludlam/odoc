@@ -7,6 +7,11 @@ module Opt = struct
   let map f = function Some x -> Some (f x) | None -> None
 end
 
+(* omg *)
+let maybe_suppress suppress_warnings =
+  if suppress_warnings
+  then fun f -> Lookup_failures.catch_failures ~filename:"" (fun () -> Error.catch_warnings f |> (fun x -> Error.unpack_warnings x |> fst |> Error.unpack_warnings |> fst)) |> Error.unpack_warnings |> fst  else (fun f -> f () |> Error.raise_warnings)
+
 let source_loc env id loc =
   let id = (id :> Id.NonSrc.t) in
   match loc with Some _ as loc -> loc | None -> Shape_tools.lookup_def env id
@@ -228,8 +233,7 @@ let rec comment_inline_element :
   | `Styled (s, ls) ->
       `Styled (s, List.map (with_location (comment_inline_element env suppress_warnings)) ls)
   | `Reference (r, content) as orig -> (
-      let raise = if suppress_warnings then (fun x -> Error.unpack_warnings x |> fst) else Error.raise_warnings in
-      match Ref_tools.resolve_reference env r |> raise with
+      match maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_reference env r) with
       | Ok (ref_, c) ->
           let content =
             (* In case of labels, use the heading text as reference text if
@@ -276,10 +280,8 @@ and comment_nestable_block_element env suppress_warnings parent ~loc:_
       let refs =
         List.rev_map
           (fun (r : Comment.module_reference) ->
-            let raise = if suppress_warnings then (fun x -> Error.unpack_warnings x |> fst) else Error.raise_warnings in
             match
-              Ref_tools.resolve_module_reference env r.module_reference
-              |> raise
+              maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_module_reference env r.module_reference)
             with
             | Ok (r, _, m) ->
                 let module_synopsis =
@@ -298,8 +300,7 @@ and comment_nestable_block_element env suppress_warnings parent ~loc:_
       in
       `Modules refs
   | `Media (`Reference r, m, content) as orig -> (
-      let raise = if suppress_warnings then (fun x -> Error.unpack_warnings x |> fst) else Error.raise_warnings in
-      match Ref_tools.resolve_asset_reference env r |> raise with
+    match maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_asset_reference env r) with
       | Ok x -> `Media (`Reference (`Resolved x), m, content)
       | Error e ->
           if not suppress_warnings then
@@ -321,8 +322,7 @@ and comment_tag env suppress_warnings parent ~loc:_ (x : Comment.tag) =
   | `Param (name, content) ->
       `Param (name, comment_nestable_block_element_list env suppress_warnings parent content)
   | `Raise ((`Reference (r, reference_content) as orig), content) -> (
-      let raise x = if suppress_warnings then Error.unpack_warnings x |> fst else Error.raise_warnings x in
-      match Ref_tools.resolve_reference env r |> raise with
+      match maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_reference env r) with
       | Ok (x, _) ->
           `Raise
             ( `Reference (`Resolved x, reference_content),
