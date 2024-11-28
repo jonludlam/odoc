@@ -373,7 +373,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
           {
             id;
             source_loc = None;
-            doc = { docs=[]; suppress_warnings=false };
+            doc = { docs = []; suppress_warnings = false };
             type_ = ModuleType (Signature s);
             canonical = unit.canonical;
             hidden = unit.hidden;
@@ -387,11 +387,16 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
           {
             id;
             source_loc = None;
-            doc = { docs=[]; suppress_warnings=false };
+            doc = { docs = []; suppress_warnings = false };
             type_ =
               ModuleType
                 (Signature
-                   { items = []; compiled = true; removed = []; doc = { docs=[]; suppress_warnings=false }; });
+                   {
+                     items = [];
+                     compiled = true;
+                     removed = [];
+                     doc = { docs = []; suppress_warnings = false };
+                   });
             canonical = unit.canonical;
             hidden = unit.hidden;
           }
@@ -644,7 +649,13 @@ let lookup_fragment_root env =
 let mk_functor_parameter module_type =
   let type_ = Component.Module.ModuleType module_type in
   Component.Module.
-    { source_loc = None; doc = {docs=[]; suppress_warnings=false}; type_; canonical = None; hidden = false }
+    {
+      source_loc = None;
+      doc = { docs = []; suppress_warnings = false };
+      type_;
+      canonical = None;
+      hidden = false;
+    }
 
 let add_functor_parameter : Lang.FunctorParameter.t -> t -> t =
  fun p t ->
@@ -656,7 +667,10 @@ let add_functor_parameter : Lang.FunctorParameter.t -> t -> t =
         let open Component.Of_Lang in
         mk_functor_parameter (module_type_expr (empty ()) n.expr)
       in
-      add_module id (Component.Delayed.put_val m) {docs=[]; suppress_warnings=false} t
+      add_module id
+        (Component.Delayed.put_val m)
+        { docs = []; suppress_warnings = false }
+        t
 
 let add_functor_args' :
     Paths.Identifier.Signature.t -> Component.ModuleType.expr -> t -> t =

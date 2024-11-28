@@ -101,8 +101,7 @@ val lookup_type_by_name : t -> string -> Paths.Identifier.Type.t list
 val lookup_value_by_name : t -> string -> Paths.Identifier.Value.t list
 (** Lookup a value by its name. *)
 
-val lookup_exception_by_name :
-  t -> string -> Paths.Identifier.Exception.t list
+val lookup_exception_by_name : t -> string -> Paths.Identifier.Exception.t list
 (** Lookup an exception by its name. *)
 
 val lookup_constructor_by_name :
@@ -112,6 +111,5 @@ val lookup_constructor_by_name :
 val lookup_class_by_name : t -> string -> Paths.Identifier.Class.t list
 (** Lookup a class by its name *)
 
-val lookup_class_type_by_name :
-  t -> string -> Paths.Identifier.ClassType.t list
+val lookup_class_type_by_name : t -> string -> Paths.Identifier.ClassType.t list
 (** Lookup a class type by its name *)

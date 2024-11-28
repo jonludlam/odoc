@@ -531,7 +531,9 @@ module Make (Syntax : SYNTAX) = struct
                in
                let anchor = Some url in
                let rhs = Comment.to_ir fld.doc in
-               let doc = if not (Comment.has_doc fld.doc.docs) then [] else rhs in
+               let doc =
+                 if not (Comment.has_doc fld.doc.docs) then [] else rhs
+               in
                let markers = Syntax.Comment.markers in
                DocumentedSrc.Documented { anchor; attrs; code; doc; markers })
       in
@@ -706,7 +708,9 @@ module Make (Syntax : SYNTAX) = struct
                       ++
                       if Syntax.Type.Variant.parenthesize_params then params
                       else O.txt " " ++ O.keyword "of" ++ O.sp ++ params)),
-                match doc with {docs=[]; _} -> None | _ -> Some (Comment.to_ir doc) ))
+                match doc with
+                | { docs = []; _ } -> None
+                | _ -> Some (Comment.to_ir doc) ))
         in
         let markers = Syntax.Comment.markers in
         try
@@ -1111,7 +1115,8 @@ module Make (Syntax : SYNTAX) = struct
             let expansion_doc, items = class_signature csig in
             let url = Url.Path.from_identifier t.id in
             let page =
-              make_expansion_page ~source_anchor url [ t.doc.docs; expansion_doc ]
+              make_expansion_page ~source_anchor url
+                [ t.doc.docs; expansion_doc ]
                 items
             in
             ( O.documentedSrc @@ path url [ inline @@ Text name ],
@@ -1149,7 +1154,8 @@ module Make (Syntax : SYNTAX) = struct
             let url = Url.Path.from_identifier t.id in
             let expansion_doc, items = class_signature csig in
             let page =
-              make_expansion_page ~source_anchor url [ t.doc.docs; expansion_doc ]
+              make_expansion_page ~source_anchor url
+                [ t.doc.docs; expansion_doc ]
                 items
             in
             ( O.documentedSrc @@ path url [ inline @@ Text name ],
@@ -1417,7 +1423,8 @@ module Make (Syntax : SYNTAX) = struct
             let url = Url.Path.from_identifier t.id in
             let link = path url [ inline @@ Text modname ] in
             let page =
-              make_expansion_page ~source_anchor url [ t.doc.docs; expansion_doc ]
+              make_expansion_page ~source_anchor url
+                [ t.doc.docs; expansion_doc ]
                 items
             in
             (link, status, Some page, Some expansion_doc)

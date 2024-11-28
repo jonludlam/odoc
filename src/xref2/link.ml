@@ -9,8 +9,12 @@ end
 
 (* omg *)
 let maybe_suppress suppress_warnings =
-  if suppress_warnings
-  then fun f -> Lookup_failures.catch_failures ~filename:"" (fun () -> Error.catch_warnings f |> (fun x -> Error.unpack_warnings x |> fst |> Error.unpack_warnings |> fst)) |> Error.unpack_warnings |> fst  else (fun f -> f () |> Error.raise_warnings)
+  if suppress_warnings then fun f ->
+    Lookup_failures.catch_failures ~filename:"" (fun () ->
+        Error.catch_warnings f |> fun x ->
+        Error.unpack_warnings x |> fst |> Error.unpack_warnings |> fst)
+    |> Error.unpack_warnings |> fst
+  else fun f -> f () |> Error.raise_warnings
 
 let source_loc env id loc =
   let id = (id :> Id.NonSrc.t) in
@@ -231,9 +235,16 @@ let rec comment_inline_element :
  fun ~loc:_ env suppress_warnings x ->
   match x with
   | `Styled (s, ls) ->
-      `Styled (s, List.map (with_location (comment_inline_element env suppress_warnings)) ls)
+      `Styled
+        ( s,
+          List.map
+            (with_location (comment_inline_element env suppress_warnings))
+            ls )
   | `Reference (r, content) as orig -> (
-      match maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_reference env r) with
+      match
+        maybe_suppress suppress_warnings (fun () ->
+            Ref_tools.resolve_reference env r)
+      with
       | Ok (ref_, c) ->
           let content =
             (* In case of labels, use the heading text as reference text if
@@ -246,7 +257,8 @@ let rec comment_inline_element :
           `Reference (`Resolved ref_, content)
       | Error e ->
           if not suppress_warnings then
-            Errors.report ~what:(`Reference r) ~tools_error:(`Reference e) `Resolve;
+            Errors.report ~what:(`Reference r) ~tools_error:(`Reference e)
+              `Resolve;
           orig)
   | y -> y
 
@@ -265,14 +277,18 @@ and comment_nestable_block_element env suppress_warnings parent ~loc:_
   | `List (x, ys) ->
       `List
         ( x,
-          List.rev_map (comment_nestable_block_element_list env suppress_warnings parent) ys
+          List.rev_map
+            (comment_nestable_block_element_list env suppress_warnings parent)
+            ys
           |> List.rev )
   | `Table { data; align } ->
       let data =
         let map f x = List.rev_map f x |> List.rev in
         map
           (map (fun (cell, cell_type) ->
-               (comment_nestable_block_element_list env suppress_warnings parent cell, cell_type)))
+               ( comment_nestable_block_element_list env suppress_warnings
+                   parent cell,
+                 cell_type )))
           data
       in
       `Table { Comment.data; align }
@@ -281,7 +297,8 @@ and comment_nestable_block_element env suppress_warnings parent ~loc:_
         List.rev_map
           (fun (r : Comment.module_reference) ->
             match
-              maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_module_reference env r.module_reference)
+              maybe_suppress suppress_warnings (fun () ->
+                  Ref_tools.resolve_module_reference env r.module_reference)
             with
             | Ok (r, _, m) ->
                 let module_synopsis =
@@ -291,16 +308,20 @@ and comment_nestable_block_element env suppress_warnings parent ~loc:_
                 in
                 { Comment.module_reference = `Resolved r; module_synopsis }
             | Error e ->
-                if not suppress_warnings then Errors.report
-                  ~what:(`Reference (r.module_reference :> Paths.Reference.t))
-                  ~tools_error:(`Reference e) `Resolve;
+                if not suppress_warnings then
+                  Errors.report
+                    ~what:(`Reference (r.module_reference :> Paths.Reference.t))
+                    ~tools_error:(`Reference e) `Resolve;
                 r)
           refs
         |> List.rev
       in
       `Modules refs
   | `Media (`Reference r, m, content) as orig -> (
-    match maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_asset_reference env r) with
+      match
+        maybe_suppress suppress_warnings (fun () ->
+            Ref_tools.resolve_asset_reference env r)
+      with
       | Ok x -> `Media (`Reference (`Resolved x), m, content)
       | Error e ->
           if not suppress_warnings then
@@ -312,38 +333,66 @@ and comment_nestable_block_element env suppress_warnings parent ~loc:_
 
 and comment_nestable_block_element_list env suppress_warnings parent
     (xs : Comment.nestable_block_element Comment.with_location list) =
-  List.rev_map (with_location (comment_nestable_block_element env suppress_warnings parent)) xs
+  List.rev_map
+    (with_location
+       (comment_nestable_block_element env suppress_warnings parent))
+    xs
   |> List.rev
 
 and comment_tag env suppress_warnings parent ~loc:_ (x : Comment.tag) =
   match x with
   | `Deprecated content ->
-      `Deprecated (comment_nestable_block_element_list env suppress_warnings parent content)
+      `Deprecated
+        (comment_nestable_block_element_list env suppress_warnings parent
+           content)
   | `Param (name, content) ->
-      `Param (name, comment_nestable_block_element_list env suppress_warnings parent content)
+      `Param
+        ( name,
+          comment_nestable_block_element_list env suppress_warnings parent
+            content )
   | `Raise ((`Reference (r, reference_content) as orig), content) -> (
-      match maybe_suppress suppress_warnings (fun () -> Ref_tools.resolve_reference env r) with
+      match
+        maybe_suppress suppress_warnings (fun () ->
+            Ref_tools.resolve_reference env r)
+      with
       | Ok (x, _) ->
           `Raise
             ( `Reference (`Resolved x, reference_content),
-              comment_nestable_block_element_list env suppress_warnings parent content )
+              comment_nestable_block_element_list env suppress_warnings parent
+                content )
       | Error e ->
           if not suppress_warnings then
             Errors.report ~what:(`Reference r) ~tools_error:(`Reference e)
-            `Resolve;
-          `Raise (orig, comment_nestable_block_element_list env suppress_warnings parent content))
+              `Resolve;
+          `Raise
+            ( orig,
+              comment_nestable_block_element_list env suppress_warnings parent
+                content ))
   | `Raise ((`Code_span _ as orig), content) ->
-      `Raise (orig, comment_nestable_block_element_list env suppress_warnings parent content)
+      `Raise
+        ( orig,
+          comment_nestable_block_element_list env suppress_warnings parent
+            content )
   | `Return content ->
-      `Return (comment_nestable_block_element_list env suppress_warnings parent content)
+      `Return
+        (comment_nestable_block_element_list env suppress_warnings parent
+           content)
   | `See (kind, target, content) ->
-      `See (kind, target, comment_nestable_block_element_list env suppress_warnings parent content)
+      `See
+        ( kind,
+          target,
+          comment_nestable_block_element_list env suppress_warnings parent
+            content )
   | `Before (version, content) ->
-      `Before (version, comment_nestable_block_element_list env suppress_warnings parent content)
+      `Before
+        ( version,
+          comment_nestable_block_element_list env suppress_warnings parent
+            content )
   | `Author _ | `Since _ | `Alert _ | `Version _ ->
       x (* only contain primitives *)
 
-and comment_block_element env suppress_warnings parent ~loc (x : Comment.block_element) =
+and comment_block_element env suppress_warnings parent ~loc
+    (x : Comment.block_element) =
   match x with
   | #Comment.nestable_block_element as x ->
       (comment_nestable_block_element env suppress_warnings parent ~loc x
@@ -367,10 +416,16 @@ and with_location :
   { value; location = loc }
 
 and comment_docs env parent d =
-  { Comment.docs = List.rev_map
-    (with_location (comment_block_element env d.Comment.suppress_warnings (parent :> Id.LabelParent.t)))
-    d.Comment.docs
-    |> List.rev; suppress_warnings = d.suppress_warnings }
+  {
+    Comment.docs =
+      List.rev_map
+        (with_location
+           (comment_block_element env d.Comment.suppress_warnings
+              (parent :> Id.LabelParent.t)))
+        d.Comment.docs
+      |> List.rev;
+    suppress_warnings = d.suppress_warnings;
+  }
 
 and comment env parent = function
   | `Stop -> `Stop
