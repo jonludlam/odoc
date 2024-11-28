@@ -531,7 +531,7 @@ module Make (Syntax : SYNTAX) = struct
                in
                let anchor = Some url in
                let rhs = Comment.to_ir fld.doc in
-               let doc = if not (Comment.has_doc fld.doc) then [] else rhs in
+               let doc = if not (Comment.has_doc fld.doc.docs) then [] else rhs in
                let markers = Syntax.Comment.markers in
                DocumentedSrc.Documented { anchor; attrs; code; doc; markers })
       in
@@ -610,7 +610,7 @@ module Make (Syntax : SYNTAX) = struct
                    let anchor = Some url in
                    let rhs = Comment.to_ir cstr.doc in
                    let doc =
-                     if not (Comment.has_doc cstr.doc) then [] else rhs
+                     if not (Comment.has_doc cstr.doc.docs) then [] else rhs
                    in
                    let markers = Syntax.Comment.markers in
                    DocumentedSrc.Nested { anchor; attrs; code; doc; markers })
@@ -706,7 +706,7 @@ module Make (Syntax : SYNTAX) = struct
                       ++
                       if Syntax.Type.Variant.parenthesize_params then params
                       else O.txt " " ++ O.keyword "of" ++ O.sp ++ params)),
-                match doc with [] -> None | _ -> Some (Comment.to_ir doc) ))
+                match doc with {docs=[]; _} -> None | _ -> Some (Comment.to_ir doc) ))
         in
         let markers = Syntax.Comment.markers in
         try
@@ -920,11 +920,11 @@ module Make (Syntax : SYNTAX) = struct
   module Sectioning : sig
     open Odoc_model
 
-    val comment_items : Comment.docs -> Item.t list
+    val comment_items : Comment.content -> Item.t list
 
-    val docs : Comment.docs -> Item.t list * Item.t list
+    val docs : Comment.content -> Item.t list * Item.t list
   end = struct
-    let take_until_heading_or_end (docs : Odoc_model.Comment.docs) =
+    let take_until_heading_or_end (docs : Odoc_model.Comment.content) =
       let content, _, rest =
         Doctree.Take.until docs ~classify:(fun b ->
             match b.Location.value with
@@ -935,7 +935,7 @@ module Make (Syntax : SYNTAX) = struct
       in
       (content, rest)
 
-    let comment_items (input0 : Odoc_model.Comment.docs) =
+    let comment_items (input0 : Odoc_model.Comment.content) =
       let rec loop input_comment acc =
         match input_comment with
         | [] -> List.rev acc
@@ -1070,11 +1070,11 @@ module Make (Syntax : SYNTAX) = struct
                 in
                 loop rest acc_items
             | Comment (`Docs c) ->
-                let items = Sectioning.comment_items c in
+                let items = Sectioning.comment_items c.docs in
                 loop rest (List.rev_append items acc_items))
       in
       (* FIXME: use [t.self] *)
-      (c.doc, loop c.items [])
+      (c.doc.docs, loop c.items [])
 
     let rec class_decl (cd : Odoc_model.Lang.Class.decl) =
       match cd with
@@ -1111,7 +1111,7 @@ module Make (Syntax : SYNTAX) = struct
             let expansion_doc, items = class_signature csig in
             let url = Url.Path.from_identifier t.id in
             let page =
-              make_expansion_page ~source_anchor url [ t.doc; expansion_doc ]
+              make_expansion_page ~source_anchor url [ t.doc.docs; expansion_doc ]
                 items
             in
             ( O.documentedSrc @@ path url [ inline @@ Text name ],
@@ -1132,7 +1132,7 @@ module Make (Syntax : SYNTAX) = struct
       in
       let attr = [ "class" ] in
       let anchor = path_to_id t.id in
-      let doc = Comment.synopsis ~decl_doc:t.doc ~expansion_doc in
+      let doc = Comment.synopsis ~decl_doc:t.doc.docs ~expansion_doc in
       Item.Declaration { attr; anchor; doc; content; source_anchor }
 
     let class_type (t : Odoc_model.Lang.ClassType.t) =
@@ -1149,7 +1149,7 @@ module Make (Syntax : SYNTAX) = struct
             let url = Url.Path.from_identifier t.id in
             let expansion_doc, items = class_signature csig in
             let page =
-              make_expansion_page ~source_anchor url [ t.doc; expansion_doc ]
+              make_expansion_page ~source_anchor url [ t.doc.docs; expansion_doc ]
                 items
             in
             ( O.documentedSrc @@ path url [ inline @@ Text name ],
@@ -1166,14 +1166,14 @@ module Make (Syntax : SYNTAX) = struct
       in
       let attr = [ "class-type" ] in
       let anchor = path_to_id t.id in
-      let doc = Comment.synopsis ~decl_doc:t.doc ~expansion_doc in
+      let doc = Comment.synopsis ~decl_doc:t.doc.docs ~expansion_doc in
       Item.Declaration { attr; anchor; doc; content; source_anchor }
   end
 
   open Class
 
   module Module : sig
-    val signature : Lang.Signature.t -> Comment.Comment.docs * Item.t list
+    val signature : Lang.Signature.t -> Comment.Comment.content * Item.t list
     (** Returns [header_doc, content]. *)
   end = struct
     let internal_module m =
@@ -1242,7 +1242,7 @@ module Make (Syntax : SYNTAX) = struct
             | Exception e -> continue @@ exn e
             | Value v -> continue @@ value v
             | Open o ->
-                let items = Sectioning.comment_items o.doc in
+                let items = Sectioning.comment_items o.doc.docs in
                 loop rest (List.rev_append items acc_items)
             | Comment `Stop ->
                 let rest =
@@ -1252,10 +1252,10 @@ module Make (Syntax : SYNTAX) = struct
                 in
                 loop rest acc_items
             | Comment (`Docs c) ->
-                let items = Sectioning.comment_items c in
+                let items = Sectioning.comment_items c.docs in
                 loop rest (List.rev_append items acc_items))
       in
-      (Lang.extract_signature_doc s, loop s.items [])
+      ((Lang.extract_signature_doc s).docs, loop s.items [])
 
     and functor_parameter :
         Odoc_model.Lang.FunctorParameter.parameter -> DocumentedSrc.t =
@@ -1319,7 +1319,7 @@ module Make (Syntax : SYNTAX) = struct
       let source_anchor = None in
       let modname = Paths.Identifier.name t.id in
       let modname, expansion_doc, mty =
-        module_type_manifest ~subst:true ~source_anchor modname t.id t.doc
+        module_type_manifest ~subst:true ~source_anchor modname t.id t.doc.docs
           (Some t.manifest) prefix
       in
       let content =
@@ -1330,12 +1330,12 @@ module Make (Syntax : SYNTAX) = struct
       in
       let attr = [ "module-type" ] in
       let anchor = path_to_id t.id in
-      let doc = Comment.synopsis ~decl_doc:t.doc ~expansion_doc in
+      let doc = Comment.synopsis ~decl_doc:t.doc.docs ~expansion_doc in
       Item.Declaration { attr; anchor; doc; content; source_anchor }
 
     and simple_expansion :
         Odoc_model.Lang.ModuleType.simple_expansion ->
-        Comment.Comment.docs * Item.t list =
+        Comment.Comment.content * Item.t list =
      fun t ->
       let rec extract_functor_params
           (f : Odoc_model.Lang.ModuleType.simple_expansion) =
@@ -1373,7 +1373,7 @@ module Make (Syntax : SYNTAX) = struct
 
     and expansion_of_module_type_expr :
         Odoc_model.Lang.ModuleType.expr ->
-        (Comment.Comment.docs * Item.t list) option =
+        (Comment.Comment.content * Item.t list) option =
      fun t ->
       let rec simple_expansion_of (t : Odoc_model.Lang.ModuleType.expr) =
         match t with
@@ -1417,7 +1417,7 @@ module Make (Syntax : SYNTAX) = struct
             let url = Url.Path.from_identifier t.id in
             let link = path url [ inline @@ Text modname ] in
             let page =
-              make_expansion_page ~source_anchor url [ t.doc; expansion_doc ]
+              make_expansion_page ~source_anchor url [ t.doc.docs; expansion_doc ]
                 items
             in
             (link, status, Some page, Some expansion_doc)
@@ -1436,7 +1436,7 @@ module Make (Syntax : SYNTAX) = struct
       in
       let attr = [ "module" ] in
       let anchor = path_to_id t.id in
-      let doc = Comment.synopsis ~decl_doc:t.doc ~expansion_doc in
+      let doc = Comment.synopsis ~decl_doc:t.doc.docs ~expansion_doc in
       Item.Declaration { attr; anchor; doc; content; source_anchor }
 
     and simple_expansion_in_decl (base : Paths.Identifier.Module.t) se =
@@ -1501,7 +1501,7 @@ module Make (Syntax : SYNTAX) = struct
       let modname = Paths.Identifier.name t.id in
       let source_anchor = source_anchor t.source_loc in
       let modname, expansion_doc, mty =
-        module_type_manifest ~subst:false ~source_anchor modname t.id t.doc
+        module_type_manifest ~subst:false ~source_anchor modname t.id t.doc.docs
           t.expr prefix
       in
       let content =
@@ -1512,7 +1512,7 @@ module Make (Syntax : SYNTAX) = struct
       in
       let attr = [ "module-type" ] in
       let anchor = path_to_id t.id in
-      let doc = Comment.synopsis ~decl_doc:t.doc ~expansion_doc in
+      let doc = Comment.synopsis ~decl_doc:t.doc.docs ~expansion_doc in
       Item.Declaration { attr; anchor; doc; content; source_anchor }
 
     and umty_hidden : Odoc_model.Lang.ModuleType.U.expr -> bool = function
@@ -1772,7 +1772,7 @@ module Make (Syntax : SYNTAX) = struct
         in*)
       (*let title = Odoc_model.Names.PageName.to_string name in*)
       let url = Url.Path.from_identifier t.name in
-      let preamble, items = Sectioning.docs t.content in
+      let preamble, items = Sectioning.docs t.content.docs in
       let source_anchor = None in
       Document.Page { Page.preamble; items; url; source_anchor }
 

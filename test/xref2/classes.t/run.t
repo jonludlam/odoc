@@ -27,7 +27,9 @@ resolve correctly. All of the 'Class' json objects should contain
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": {
+      "docs": []
+    },
     "type_": {
       "Class": [
         {
@@ -64,7 +66,9 @@ resolve correctly. All of the 'Class' json objects should contain
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": {
+      "docs": []
+    },
     "type_": {
       "Class": [
         {

@@ -466,7 +466,7 @@ module L = struct
           | _ -> find tl)
       | [] -> Error (`Find_by_name (`Page, name))
     in
-    find p.Odoc_model.Lang.Page.content
+    find p.Odoc_model.Lang.Page.content.docs
 
   let of_component _env ~parent_ref label =
     Ok

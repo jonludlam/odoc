@@ -23,6 +23,7 @@ val is_stop_comment : Parsetree.attribute -> bool
 
 val attached :
   env:Ident_env.t ->
+  suppress_warnings:bool ->
   'tags Semantics.handle_internal_tags ->
   Paths.Identifier.LabelParent.t ->
   Parsetree.attributes ->
@@ -30,6 +31,7 @@ val attached :
 
 val attached_no_tag :
   env:Ident_env.t ->
+  suppress_warnings:bool ->
   Paths.Identifier.LabelParent.t ->
   Parsetree.attributes ->
   Odoc_model.Comment.docs
@@ -49,11 +51,13 @@ val page :
 
 val standalone :
   Paths.Identifier.LabelParent.t ->
+  suppress_warnings:bool ->
   Parsetree.attribute ->
   Odoc_model.Comment.docs_or_stop option
 
 val standalone_multiple :
   Paths.Identifier.LabelParent.t ->
+  suppress_warnings:bool ->
   Parsetree.attributes ->
   Odoc_model.Comment.docs_or_stop list
 

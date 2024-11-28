@@ -55,7 +55,9 @@ unresolved in the paths though:
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": {
+      "docs": []
+    },
     "type_": {
       "Alias": [
         {
@@ -121,7 +123,9 @@ unresolved in the paths though:
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": {
+      "docs": []
+    },
     "type_": {
       "Alias": [
         {
@@ -186,7 +190,9 @@ unresolved in the paths though:
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": {
+      "docs": []
+    },
     "type_": {
       "Alias": [
         {
@@ -278,7 +284,9 @@ unresolved in the paths though:
                         ]
                       },
                       "source_loc": "None",
-                      "doc": [],
+                      "doc": {
+                        "docs": []
+                      },
                       "equation": {
                         "params": [],
                         "private_": "false",
@@ -291,7 +299,9 @@ unresolved in the paths though:
                 }
               ],
               "compiled": "true",
-              "doc": []
+              "doc": {
+                "docs": []
+              }
             }
           }
         }

@@ -246,7 +246,7 @@ let mld ~parent_id ~parents_children ~output ~children ~warnings_options input =
      >>= fun id -> Ok (id :> Paths.Identifier.Page.t))
   >>= fun id ->
   let resolve content frontmatter =
-    let zero_heading = Comment.find_zero_heading content in
+    let zero_heading = Comment.find_zero_heading content.Comment.docs in
     if (not (is_index_page id)) && has_children_order frontmatter then
       Error.raise_warning
         (Error.filename_only "Non-index page cannot specify @children_order."

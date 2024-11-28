@@ -18,7 +18,7 @@ val raise_exception : t -> _
 
 val catch : (unit -> 'a) -> ('a, t) Result.result
 
-type 'a with_warnings
+type +'a with_warnings
 
 val raise_warning : ?non_fatal:bool -> t -> unit
 (** Raise a warning that need to be caught with [catch_warnings]. [non_fatal] is
