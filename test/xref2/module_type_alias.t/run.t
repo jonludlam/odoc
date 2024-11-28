@@ -23,92 +23,94 @@ as they are both referencing items that won't be expanded.
   $ odoc_print test.odocl | jq ".content.Module.items[2]"
   {
     "Comment": {
-      "`Docs": [
-        {
-          "`Paragraph": [
-            {
-              "`Reference": [
-                {
-                  "`Resolved": {
-                    "`AliasModuleType": [
-                      {
-                        "`Identifier": {
-                          "`ModuleType": [
-                            {
-                              "`Root": [
-                                "None",
-                                "Test"
-                              ]
-                            },
-                            "A"
-                          ]
-                        }
-                      },
-                      {
-                        "`Identifier": {
-                          "`ModuleType": [
-                            {
-                              "`Root": [
-                                "None",
-                                "Test"
-                              ]
-                            },
-                            "B"
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                },
-                []
-              ]
-            },
-            "`Space",
-            {
-              "`Reference": [
-                {
-                  "`Resolved": {
-                    "`Type": [
-                      {
-                        "`AliasModuleType": [
-                          {
-                            "`Identifier": {
-                              "`ModuleType": [
-                                {
-                                  "`Root": [
-                                    "None",
-                                    "Test"
-                                  ]
-                                },
-                                "A"
-                              ]
-                            }
-                          },
-                          {
-                            "`Identifier": {
-                              "`ModuleType": [
-                                {
-                                  "`Root": [
-                                    "None",
-                                    "Test"
-                                  ]
-                                },
-                                "B"
-                              ]
-                            }
+      "`Docs": {
+        "docs": [
+          {
+            "`Paragraph": [
+              {
+                "`Reference": [
+                  {
+                    "`Resolved": {
+                      "`AliasModuleType": [
+                        {
+                          "`Identifier": {
+                            "`ModuleType": [
+                              {
+                                "`Root": [
+                                  "None",
+                                  "Test"
+                                ]
+                              },
+                              "A"
+                            ]
                           }
-                        ]
-                      },
-                      "t"
-                    ]
-                  }
-                },
-                []
-              ]
-            }
-          ]
-        }
-      ]
+                        },
+                        {
+                          "`Identifier": {
+                            "`ModuleType": [
+                              {
+                                "`Root": [
+                                  "None",
+                                  "Test"
+                                ]
+                              },
+                              "B"
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  []
+                ]
+              },
+              "`Space",
+              {
+                "`Reference": [
+                  {
+                    "`Resolved": {
+                      "`Type": [
+                        {
+                          "`AliasModuleType": [
+                            {
+                              "`Identifier": {
+                                "`ModuleType": [
+                                  {
+                                    "`Root": [
+                                      "None",
+                                      "Test"
+                                    ]
+                                  },
+                                  "A"
+                                ]
+                              }
+                            },
+                            {
+                              "`Identifier": {
+                                "`ModuleType": [
+                                  {
+                                    "`Root": [
+                                      "None",
+                                      "Test"
+                                    ]
+                                  },
+                                  "B"
+                                ]
+                              }
+                            }
+                          ]
+                        },
+                        "t"
+                      ]
+                    }
+                  },
+                  []
+                ]
+              }
+            ]
+          }
+        ]
+      }
     }
   }
 

@@ -59,7 +59,7 @@ type warning = {
       (** If [true], the warning won't be made fatal in [warn_error] mode. *)
 }
 
-type 'a with_warnings = { value : 'a; warnings : warning list }
+type +'a with_warnings = { value : 'a; warnings : warning list }
 
 let with_ref r f =
   let saved = !r in

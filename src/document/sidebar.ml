@@ -94,7 +94,7 @@ end = struct
             | Page { short_title = None; _ } ->
                 let title =
                   let open Odoc_model in
-                  match Comment.find_zero_heading entry.doc with
+                  match Comment.find_zero_heading entry.doc.docs with
                   | Some t -> t
                   | None ->
                       let name =

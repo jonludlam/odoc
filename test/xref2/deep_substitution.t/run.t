@@ -38,7 +38,9 @@ its RHS correctly replaced with an `int`
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": {
+      "docs": []
+    },
     "equation": {
       "params": [],
       "private_": "false",

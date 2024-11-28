@@ -101,7 +101,9 @@ There should be an expansion on `NotHidden`
                   ]
                 },
                 "source_loc": "None",
-                "doc": [],
+                "doc": {
+                  "docs": []
+                },
                 "equation": {
                   "params": [],
                   "private_": "false",
@@ -114,7 +116,9 @@ There should be an expansion on `NotHidden`
           }
         ],
         "compiled": "true",
-        "doc": []
+        "doc": {
+          "docs": []
+        }
       }
     }
   }
@@ -128,7 +132,7 @@ There should be an expansion on `NotHidden`
       ]
     },
     "source_loc": "None",
-    "doc": [],
+    "doc": { "docs": [] },
     "type_": {
       "Constr": [
         {

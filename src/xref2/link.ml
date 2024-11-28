@@ -13,7 +13,7 @@ let source_loc env id loc =
 
 (** Equivalent to {!Comment.synopsis}. *)
 let synopsis_from_comment (docs : Component.CComment.docs) =
-  match docs with
+  match docs.docs with
   | ({ value = #Comment.nestable_block_element; _ } as e) :: _ ->
       (* Only the first element is considered. *)
       Comment.synopsis [ e ]
@@ -361,10 +361,10 @@ and with_location :
   { value; location = loc }
 
 and comment_docs env parent d =
-  List.rev_map
+  { Comment.docs = List.rev_map
     (with_location (comment_block_element env (parent :> Id.LabelParent.t)))
-    d
-  |> List.rev
+    d.Comment.docs
+    |> List.rev; suppress_warnings = d.suppress_warnings }
 
 and comment env parent = function
   | `Stop -> `Stop
