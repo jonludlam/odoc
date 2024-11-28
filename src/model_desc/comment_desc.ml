@@ -33,8 +33,7 @@ type general_block_element =
     Comment.heading_attrs * Identifier.Label.t * general_link_content
   | `Tag of general_tag
   | `Media of
-    [ `Reference of Paths.Reference.t | `Link of string ] * media * string
-]
+    [ `Reference of Paths.Reference.t | `Link of string ] * media * string ]
 
 and general_tag =
   [ `Author of string
@@ -133,7 +132,10 @@ let rec block_element : general_block_element t =
     | `Verbatim x -> C ("`Verbatim", x, string)
     | `Modules x -> C ("`Modules", x, List module_reference)
     | `List (x1, x2) ->
-        C ("`List", (x1, (x2 :> general_docs list)), Pair (list_kind, List general_content))
+        C
+          ( "`List",
+            (x1, (x2 :> general_docs list)),
+            Pair (list_kind, List general_content) )
     | `Table { data; align } ->
         let cell_type_desc =
           Variant (function `Header -> C0 "`Header" | `Data -> C0 "`Data")
@@ -179,14 +181,17 @@ and tag : general_tag t =
     | `Version x -> C ("`Version", x, string)
     | `Alert (x1, x2) -> C ("`Alert", (x1, x2), Pair (string, Option string)))
 
-and general_content : general_docs t = List (Indirect (ignore_loc, block_element))
+and general_content : general_docs t =
+  List (Indirect (ignore_loc, block_element))
 
-let content : content t = Indirect ((fun x -> (x :> general_docs)), general_content)
-let docs = 
-  Record [ 
-    F ("docs", (fun h -> h.docs), content);
-    F ("suppress_warnings", (fun h -> h.suppress_warnings), bool);
-  ]
+let content : content t =
+  Indirect ((fun x -> (x :> general_docs)), general_content)
+let docs =
+  Record
+    [
+      F ("docs", (fun h -> h.docs), content);
+      F ("suppress_warnings", (fun h -> h.suppress_warnings), bool);
+    ]
 
 let docs_or_stop : docs_or_stop t =
   Variant (function `Docs x -> C ("`Docs", x, docs) | `Stop -> C0 "`Stop")
