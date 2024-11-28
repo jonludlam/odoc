@@ -615,10 +615,10 @@ and read_structure :
   | _ ->
     ({ Signature.items = Comment (`Docs doc_post) :: items; compiled=false; removed = []; doc }, tags)
 
-let read_implementation root name impl =
+let read_implementation root name suppress_warnings impl =
   let id = Identifier.Mk.root (root, Odoc_model.Names.ModuleName.make_std name) in
   let sg, canonical =
-    read_structure Odoc_model.Semantics.Expect_canonical {e=Env.empty (); sw=false} id impl
+    read_structure Odoc_model.Semantics.Expect_canonical {e=Env.empty (); sw=suppress_warnings} id impl
   in
   let canonical = match canonical with | None -> None | Some s -> Some (Doc_attr.conv_canonical_module s) in
   (id, sg, canonical)

@@ -27,6 +27,7 @@ val read_module_expr :
 val read_interface :
   Odoc_model.Paths.Identifier.ContainerPage.t option ->
   string ->
+  bool ->
   Typedtree.signature ->
   Paths.Identifier.RootModule.t
   * Odoc_model.Lang.Signature.t
