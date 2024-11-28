@@ -1173,7 +1173,7 @@ and read_signature env parent (items : Odoc_model.Compat.signature) =
   fst @@ read_signature_noenv env parent items
 
 
-let read_interface root name intf =
+let read_interface root name suppress_warnings intf =
   let id = Identifier.Mk.root (root, Odoc_model.Names.ModuleName.make_std name) in
-  let items = read_signature { e=Env.empty (); sw=false } id intf in
+  let items = read_signature { e=Env.empty (); sw=suppress_warnings } id intf in
   (id, items)

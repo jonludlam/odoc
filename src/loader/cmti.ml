@@ -814,10 +814,10 @@ and read_signature :
   | _ ->
     ({ Signature.items = Comment (`Docs doc_post) :: items; compiled=false; removed = []; doc }, tags)
 
-let read_interface root name intf =
+let read_interface root name suppress_warnings intf =
   let id = Identifier.Mk.root (root, Odoc_model.Names.ModuleName.make_std name) in
   let sg, canonical =
-    read_signature Odoc_model.Semantics.Expect_canonical {e=Env.empty (); sw=false} id intf
+    read_signature Odoc_model.Semantics.Expect_canonical {e=Env.empty (); sw=suppress_warnings} id intf
   in
   let canonical = match canonical with | None -> None | Some s -> Some (Doc_attr.conv_canonical_module s) in
   (id, sg, canonical)
