@@ -118,7 +118,9 @@ let read_cmti ~make_root ~parent ~filename ~suppress_warnings () =
               cmt_info.cmt_source_digest,
               cmt_info.cmt_builddir )
           in
-          let id, sg, canonical = Cmti.read_interface parent name suppress_warnings intf in
+          let id, sg, canonical =
+            Cmti.read_interface parent name suppress_warnings intf
+          in
           compilation_unit_of_sig ~make_root ~imports:cmt_info.cmt_imports
             ~interface ~sourcefile ~name ~id ?canonical sg)
   | _ -> raise Not_an_interface
@@ -175,7 +177,9 @@ let read_cmt ~make_root ~parent ~filename ~suppress_warnings () =
           make_compilation_unit ~make_root ~imports ~interface ~sourcefile ~name
             ~id content
       | Implementation impl ->
-          let id, sg, canonical = Cmt.read_implementation parent name suppress_warnings impl in
+          let id, sg, canonical =
+            Cmt.read_implementation parent name suppress_warnings impl
+          in
           compilation_unit_of_sig ~make_root ~imports ~interface ~sourcefile
             ~name ~id ?canonical sg
       | _ -> raise Not_an_implementation)
@@ -252,15 +256,18 @@ let wrap_errors ~filename f =
       | Make_root_error m -> error_msg filename m)
 
 let read_cmti ~make_root ~parent ~filename ~suppress_warnings =
-  wrap_errors ~filename (read_cmti ~make_root ~parent ~filename ~suppress_warnings)
+  wrap_errors ~filename
+    (read_cmti ~make_root ~parent ~filename ~suppress_warnings)
 
 let read_cmt ~make_root ~parent ~filename ~suppress_warnings =
-  wrap_errors ~filename (read_cmt ~make_root ~parent ~filename ~suppress_warnings)
+  wrap_errors ~filename
+    (read_cmt ~make_root ~parent ~filename ~suppress_warnings)
 
 let read_impl ~make_root ~filename ~source_id =
   wrap_errors ~filename (read_impl ~make_root ~source_id ~filename)
 
 let read_cmi ~make_root ~parent ~filename ~suppress_warnings =
-  wrap_errors ~filename (read_cmi ~make_root ~parent ~filename ~suppress_warnings)
+  wrap_errors ~filename
+    (read_cmi ~make_root ~parent ~filename ~suppress_warnings)
 
 let read_location = Doc_attr.read_location

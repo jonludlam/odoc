@@ -36,7 +36,8 @@ let compile_deps f =
   | [ (_, digest) ], deps -> Ok { digest; deps }
   | _ -> Error (`Msg "odd")
 
-let compile ~output_dir ~input_file:file ~includes ~suppress_warnings ~parent_id =
+let compile ~output_dir ~input_file:file ~includes ~suppress_warnings ~parent_id
+    =
   let open Cmd in
   let includes =
     Fpath.Set.fold

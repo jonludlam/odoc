@@ -253,8 +253,9 @@ module Tools_error = struct
         )
     | `Path_error (err, tag, path) -> pp_path_error fmt err tag path
     | `Parent e -> pp fmt (e :> any)
-    | `Lookup_by_id id -> Format.fprintf fmt "Couldn't find identifier %s"
-        (String.concat "." (Identifier.fullname id))
+    | `Lookup_by_id id ->
+        Format.fprintf fmt "Couldn't find identifier %s"
+          (String.concat "." (Identifier.fullname id))
 end
 
 type kind = [ `OpaqueModule | `Root of string ]

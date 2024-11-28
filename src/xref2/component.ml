@@ -7,7 +7,7 @@ module ModuleMap = Map.Make (struct
 end)
 
 module TypeMap = Map.Make (struct
-  type t = Ident.type_ 
+  type t = Ident.type_
 
   let compare a b = Ident.compare (a :> Ident.any) (b :> Ident.any)
 end)
@@ -456,8 +456,10 @@ and CComment : sig
     | `Media of
       Odoc_model.Comment.media_href * Odoc_model.Comment.media * string ]
 
-  type docs =
-    { docs : block_element Odoc_model.Comment.with_location list; suppress_warnings : bool }
+  type docs = {
+    docs : block_element Odoc_model.Comment.with_location list;
+    suppress_warnings : bool;
+  }
 
   type docs_or_stop = [ `Docs of docs | `Stop ]
 end =
@@ -2705,7 +2707,11 @@ module Of_Lang = struct
     | { value = `Tag _ | `Media _; _ } as t -> t
     | { value = #Odoc_model.Comment.nestable_block_element; _ } as n -> n
 
-  and docs ident_map d = { docs = List.map (block_element ident_map) d.docs; suppress_warnings = d.suppress_warnings }
+  and docs ident_map d =
+    {
+      docs = List.map (block_element ident_map) d.docs;
+      suppress_warnings = d.suppress_warnings;
+    }
 
   and docs_or_stop ident_map = function
     | `Docs d -> `Docs (docs ident_map d)
@@ -2724,5 +2730,6 @@ let module_of_functor_argument (arg : FunctorParameter.parameter) =
 (** This is equivalent to {!Lang.extract_signature_doc}. *)
 let extract_signature_doc (s : Signature.t) =
   match (s.doc, s.items) with
-  | { docs=[]; _}, Include { expansion_; status = `Inline; _ } :: _ -> expansion_.doc
+  | { docs = []; _ }, Include { expansion_; status = `Inline; _ } :: _ ->
+      expansion_.doc
   | doc, _ -> doc
