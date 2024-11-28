@@ -9,6 +9,8 @@ module ModuleName = Odoc_model.Names.ModuleName
 type t = Entry.t Tree.t
 
 let rec t_of_in_progress (dir : In_progress.in_progress) : t =
+  let empty_doc = {Comment.docs=[]; suppress_warnings=false} in
+
   let entry_of_page page =
     let kind = Entry.Page page.Lang.Page.frontmatter in
     let doc = page.content in
@@ -17,7 +19,7 @@ let rec t_of_in_progress (dir : In_progress.in_progress) : t =
   in
   let entry_of_impl id =
     let kind = Entry.Impl in
-    let doc = [] in
+    let doc = empty_doc in
     Entry.entry ~kind ~doc ~id
   in
   let children_order, index =
@@ -31,7 +33,7 @@ let rec t_of_in_progress (dir : In_progress.in_progress) : t =
           match In_progress.root_dir dir with
           | Some id ->
               let kind = Entry.Dir in
-              let doc = [] in
+              let doc = empty_doc in
               Entry.entry ~kind ~doc ~id
           | None ->
               let id =
@@ -39,7 +41,7 @@ let rec t_of_in_progress (dir : In_progress.in_progress) : t =
                 Id.Mk.leaf_page (None, Names.PageName.make_std "index")
               in
               let kind = Entry.Dir in
-              let doc = [] in
+              let doc = empty_doc in
               Entry.entry ~kind ~doc ~id
         in
         (None, entry)

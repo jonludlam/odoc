@@ -146,5 +146,5 @@ let block_element env : Comment.block_element -> Comment.block_element =
         `Heading (attrs, label, List.map (with_location (inline_element env)) content)
     | `Tag t -> `Tag t
 
-let resolve env (v : Comment.docs) =
+let resolve env (v : Comment.content) =
   List.map (with_location (block_element env)) v
