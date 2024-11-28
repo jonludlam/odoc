@@ -185,6 +185,7 @@ let content : content t = Indirect ((fun x -> (x :> general_docs)), general_cont
 let docs = 
   Record [ 
     F ("docs", (fun h -> h.docs), content);
+    F ("suppress_warnings", (fun h -> h.suppress_warnings), bool);
   ]
 
 let docs_or_stop : docs_or_stop t =
