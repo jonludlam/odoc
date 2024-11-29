@@ -191,6 +191,7 @@ let packages ~dirs ~extra_paths ~gen_indices (pkgs : Packages.t list) : t list =
   in
   let of_lib pkg (lib : Packages.libty) =
     let lib_deps = Util.StringSet.add lib.lib_name lib.lib_deps in
+    let lib_deps = List.fold_left (fun acc lib -> Util.StringSet.add lib.Packages.lib_name acc) lib_deps pkg.Packages.libraries in
     let index = index_of pkg in
     let landing_page :> t = Landing_pages.library ~dirs ~pkg ~index lib in
     landing_page :: List.concat_map (of_module pkg lib lib_deps) lib.modules
