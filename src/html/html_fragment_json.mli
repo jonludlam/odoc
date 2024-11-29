@@ -2,6 +2,7 @@ module Html = Tyxml.Html
 
 val make :
   config:Config.t ->
+  title: Html_types.phrasing Html.elt list ->
   preamble:Html_types.div_content Html.elt list ->
   url:Odoc_document.Url.Path.t ->
   breadcrumbs:Types.breadcrumb list ->
