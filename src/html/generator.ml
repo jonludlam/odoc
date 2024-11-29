@@ -643,6 +643,11 @@ module Page = struct
   and subpages ~config ~sidebar subpages =
     List.map (include_ ~config ~sidebar) subpages
 
+  and title_of_page p =
+    match Doctree.PageTitle.render_title p with
+    | [Heading h] -> h.title
+    | _ -> []
+
   and page ~config ~sidebar p : Odoc_document.Renderer.page =
     let { Page.preamble; items = i; url; source_anchor } =
       Doctree.Labels.disambiguate_page ~enter_subpages:false p
@@ -661,13 +666,15 @@ module Page = struct
     let uses_katex = Doctree.Math.has_math_elements p in
     let toc = Toc.gen_toc ~config ~resolve ~path:url i in
     let content = (items ~config ~resolve i :> any Html.elt list) in
+    let title = inline ~config ~resolve (title_of_page p) in
+
     if Config.as_json config then
       let source_anchor =
         match source_anchor with
         | Some url -> Some (Link.href ~config ~resolve url)
         | None -> None
       in
-      Html_fragment_json.make ~sidebar ~config
+      Html_fragment_json.make ~sidebar ~config ~title
         ~preamble:(items ~config ~resolve preamble :> any Html.elt list)
         ~breadcrumbs ~toc ~url ~uses_katex ~source_anchor content subpages
     else
