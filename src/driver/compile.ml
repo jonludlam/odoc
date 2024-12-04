@@ -270,18 +270,23 @@ let html_generate ~occurrence_file output_dir linked =
   let compile_index : Odoc_unit.index -> _ =
    fun index ->
     let compile_index_one
-        ({ roots; output_file; json; search_dir = _; sidebar } as index :
+        ({ roots; output_file; json; search_dir = _; sidebar; simplified_path } as index :
           Odoc_unit.index) =
       let () =
         Odoc.compile_index ~json ~occurrence_file ~output_file ~roots ~simplified:false ~wrap:false ()
       in
+      let () =
+        match simplified_path with
+        | Some o ->
+          Odoc.compile_index ~json:true ~occurrence_file ~output_file:(Fpath.(output_dir // o)) ~simplified:true ~wrap:true ~roots ();
+        | None -> ()
+      in
       let sidebar =
         match sidebar with
         | None -> None
-        | Some { output_file; json; pkg_dir } ->
+        | Some { output_file; json; doc_dir } ->
             Odoc.sidebar_generate ~output_file ~json index.output_file ();
-            Odoc.sidebar_generate ~output_file:(Fpath.(output_dir // pkg_dir / "sidebar.json")) ~json:true index.output_file ();
-            Odoc.compile_index ~json:true ~occurrence_file ~output_file:(Fpath.(output_dir // pkg_dir / "index.js")) ~simplified:true ~wrap:true ~roots ();
+            Odoc.sidebar_generate ~output_file:(Fpath.(output_dir // doc_dir / "sidebar.json")) ~json:true index.output_file ();
 
             Some output_file
       in

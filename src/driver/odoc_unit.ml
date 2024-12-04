@@ -40,13 +40,14 @@ module Pkg_args = struct
       x.odoc_dir Fpath.pp x.odocl_dir sfp_pp (Util.StringMap.bindings x.pages) sfp_pp (Util.StringMap.bindings x.libs)
 end
 
-type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
+type sidebar = { output_file : Fpath.t; json : bool; doc_dir : Fpath.t }
 
 type index = {
   roots : Fpath.t list;
   output_file : Fpath.t;
   json : bool;
   search_dir : Fpath.t;
+  simplified_path : Fpath.t option;
   sidebar : sidebar option;
 }
 
