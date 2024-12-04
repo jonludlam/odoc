@@ -273,7 +273,7 @@ let html_generate ~occurrence_file output_dir linked =
         ({ roots; output_file; json; search_dir = _; sidebar } as index :
           Odoc_unit.index) =
       let () =
-        Odoc.compile_index ~json ~occurrence_file ~output_file ~roots ()
+        Odoc.compile_index ~json ~occurrence_file ~output_file ~roots ~simplified:false ~wrap:false ()
       in
       let sidebar =
         match sidebar with
@@ -281,6 +281,8 @@ let html_generate ~occurrence_file output_dir linked =
         | Some { output_file; json; pkg_dir } ->
             Odoc.sidebar_generate ~output_file ~json index.output_file ();
             Odoc.sidebar_generate ~output_file:(Fpath.(output_dir // pkg_dir / "sidebar.json")) ~json:true index.output_file ();
+            Odoc.compile_index ~json:true ~occurrence_file ~output_file:(Fpath.(output_dir // pkg_dir / "index.js")) ~simplified:true ~wrap:true ~roots ();
+
             Some output_file
       in
       (sherlodoc_index_one ~output_dir index, sidebar)
