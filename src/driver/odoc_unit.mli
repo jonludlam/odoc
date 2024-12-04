@@ -17,12 +17,13 @@ module Pkg_args : sig
   val pp : t Fmt.t
 end
 
-type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
+type sidebar = { output_file : Fpath.t; json : bool; doc_dir : Fpath.t }
 type index = {
   roots : Fpath.t list;
   output_file : Fpath.t;
   json : bool;
   search_dir : Fpath.t;
+  simplified_path : Fpath.t option;
   sidebar : sidebar option;
 }
 
