@@ -40,7 +40,7 @@ let parse_input_files input =
     (Ok []) input
   >>= fun files -> Ok (List.concat files)
 
-let compile_to_json ~output ~occurrences hierarchies =
+let compile_to_json ~output ~occurrences ~wrap ~simplified hierarchies =
   let output_channel =
     Fs.Directory.mkdir_p (Fs.File.dirname output);
     open_out_bin (Fs.File.to_string output)
@@ -51,17 +51,22 @@ let compile_to_json ~output ~occurrences hierarchies =
     f output up;
     false
   in
+  if wrap then
+    Format.fprintf output "let documents = ";
   Format.fprintf output "[";
   let _first =
     List.fold_left
       (fun first hierarchy ->
         Tree.fold_left
           ~f:(fun first entry ->
-            print (Json_search.of_entry ?occurrences) first entry)
+            print (Json_search.of_entry ?occurrences ~simplified) first entry)
           first hierarchy)
       true hierarchies
   in
   Format.fprintf output "]";
+  if wrap then
+    Format.fprintf output ";\nconst options = { keys: ['name', 'comment'] };\n\
+        var idx_fuse = new Fuse(documents, options);\n";
   Ok ()
 
 let read_occurrences file =
@@ -76,7 +81,7 @@ let absolute_normalization p =
   Fpath.normalize p
 
 let compile out_format ~output ~warnings_options ~occurrences ~roots
-    ~inputs_in_file ~odocls =
+    ~inputs_in_file ~simplified_json ~wrap_json ~odocls =
   let handle_warnings f =
     let res = Error.catch_warnings f in
     Error.handle_warnings ~warnings_options res |> Result.join
@@ -150,5 +155,5 @@ let compile out_format ~output ~warnings_options ~occurrences ~roots
     List.map hierarchy_of_group root_groups
   in
   match out_format with
-  | `JSON -> compile_to_json ~output ~occurrences hierarchies
+  | `JSON -> compile_to_json ~output ~occurrences ~simplified:simplified_json ~wrap:wrap_json hierarchies
   | `Marshall -> Ok (Odoc_file.save_index output hierarchies)

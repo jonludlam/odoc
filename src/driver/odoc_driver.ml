@@ -15,7 +15,7 @@ let render_stats env nprocs =
   let total_indexes = Atomic.get Stats.stats.total_indexes in
   let bar message total =
     let open Progress.Line in
-    list [ lpad 16 (const message); bar total; count_to total ]
+    list [ lpad 16 (const message); bar total; rpad 10 (count_to total) ]
   in
   let procs total =
     let open Progress.Line in
@@ -30,7 +30,8 @@ let render_stats env nprocs =
   let non_hidden = Atomic.get Stats.stats.non_hidden_units in
 
   let dline x y = Multi.line (bar x y) in
-  with_reporters
+  let config = Progress.Config.v ~persistent:false () in
+  with_reporters ~config
     Multi.(
       dline "Compiling" total
       ++ dline "Compiling impls" total_impls
@@ -278,8 +279,8 @@ let run mode
       | _ -> ())
     !Cmd_outputs.outputs;
 
-  Format.eprintf "Final stats: %a@.%!" Stats.pp_stats Stats.stats;
-  Format.eprintf "Total time: %f@.%!" (Stats.total_time ());
+  (* Format.eprintf "Final stats: %a@.%!" Stats.pp_stats Stats.stats; *)
+  (* Format.eprintf "Total time: %f@.%!" (Stats.total_time ()); *)
   if stats then Stats.bench_results html_dir
 
 open Cmdliner

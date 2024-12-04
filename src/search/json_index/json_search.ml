@@ -81,12 +81,60 @@ let rec of_id x =
 
 let of_id n = `Array (List.rev @@ of_id (n :> Odoc_model.Paths.Identifier.t))
 
+let rec prefix_name_kind_of_id (n : Odoc_model.Paths.Identifier.t) =
+  let open Odoc_model.Names in
+  let prefix_of_parent parent =
+    let prefix, pname, _kind = prefix_name_kind_of_id (parent :> Odoc_model.Paths.Identifier.t) in
+    if prefix = "" then pname else prefix ^ "." ^ pname
+  in
+  match n.iv with
+  | `Root (_, name) -> ("", ModuleName.to_string name, "module")
+  | `Page (_, name) -> ("", PageName.to_string name, "page")
+  | `AssetFile (_, name) -> ("", AssetName.to_string name, "asset")
+  | `LeafPage (_, name) -> ("", PageName.to_string name, "page")
+  | `Module (parent, name) ->
+      (prefix_of_parent parent, ModuleName.to_string name, "module")
+  | `Parameter (parent, name) ->
+      (prefix_of_parent parent, ModuleName.to_string name, "parameter")
+  | `Result x -> prefix_name_kind_of_id (x :> Odoc_model.Paths.Identifier.t)
+  | `ModuleType (parent, name) ->
+      (prefix_of_parent parent, ModuleTypeName.to_string name, "module_type") 
+  | `Type (parent, name) ->
+      (prefix_of_parent parent, TypeName.to_string name, "type")
+  | `Constructor (parent, name) ->
+      (prefix_of_parent parent, ConstructorName.to_string name, "constructor")
+  | `Field (parent, name) ->
+      (prefix_of_parent parent, FieldName.to_string name, "field")
+  | `Extension (parent, name) ->
+      (prefix_of_parent parent, ExtensionName.to_string name, "extension")
+  | `ExtensionDecl (parent, _, name) ->
+      (prefix_of_parent parent, ExtensionName.to_string name, "extension_decl")
+  | `Exception (parent, name) ->
+      (prefix_of_parent parent, ExceptionName.to_string name, "exception")
+  | `Value (parent, name) ->
+      (prefix_of_parent parent, ValueName.to_string name, "value")
+  | `Class (parent, name) ->
+      (prefix_of_parent parent, TypeName.to_string name, "class")
+  | `ClassType (parent, name) ->
+      (prefix_of_parent parent, TypeName.to_string name, "class_type")
+  | `Method (parent, name) ->
+      (prefix_of_parent parent, MethodName.to_string name, "method")
+  | `InstanceVariable (parent, name) ->
+      (prefix_of_parent parent, InstanceVariableName.to_string name, "instance_variable")
+  | `Label (parent, name) ->
+      (prefix_of_parent parent, LabelName.to_string name, "label")
+  | `SourceLocationMod _ | `SourceLocation _ | `SourcePage _
+  | `SourceLocationInternal _ ->
+      ("", "", "")
+
+
 let of_doc (doc : Odoc_model.Comment.docs) =
   let txt = Text.of_doc doc in
   `String txt
 
 let of_entry ({ Entry.id; doc; kind } as entry) html occurrences =
   let j_id = of_id id in
+  let (pprefix, pname, pkind) = prefix_name_kind_of_id id in
   let doc = of_doc doc in
   let kind =
     let return kind arr = `Object (("kind", `String kind) :: arr) in
@@ -180,20 +228,27 @@ let of_entry ({ Entry.id; doc; kind } as entry) html occurrences =
   in
   let display = Json_display.of_entry entry html in
   `Object
-    ([ ("id", j_id); ("doc", doc); ("kind", kind); ("display", display) ]
+    ([ ("id", j_id); ("prefix", `String pprefix); ("name", `String pname); ("pkind", `String pkind); ("doc", doc); ("kind", kind); ("display", display) ]
     @ occurrences)
 
-let output_json ppf first (entry, html, occurrences) =
+let simplified_of_entry ({ Entry.id; doc; _ }) =
+  let (prefix, name, kind) = prefix_name_kind_of_id id in
+  let doc = of_doc doc in
+  `Object
+    [ ("name", `String name); ("prefixname", `String prefix); ("kind", `String kind); ("doc", doc); ("comment", doc) ]
+
+let output_json ppf ~first ~simplified (entry, html, occurrences) =
   let output_json json =
     let str = Odoc_html.Json.to_string json in
     Format.fprintf ppf "%s\n" str
   in
-  let json = of_entry entry html occurrences in
+  let json =
+    if simplified then simplified_of_entry entry else of_entry entry html occurrences in
   if not first then Format.fprintf ppf ",";
   output_json json;
   false
 
-let unit ?occurrences ppf u =
+let unit ?occurrences ppf ~simplified u =
   let get_occ id =
     match occurrences with
     | None -> None
@@ -207,23 +262,23 @@ let unit ?occurrences ppf u =
       let occ = get_occ entry.Entry.id in
       (entry, Html.of_entry entry, occ)
     in
-    let first = output_json ppf first entry in
+    let first = output_json ppf ~first ~simplified entry in
     first
   in
   let skel = Odoc_index.Skeleton.from_unit u in
   let _first = Odoc_utils.Tree.fold_left ~f true skel in
   ()
 
-let page ppf (page : Odoc_model.Lang.Page.t) =
+let page ppf ~simplified (page : Odoc_model.Lang.Page.t) =
   let f first entry =
     let entry = (entry, Html.of_entry entry, None) in
-    output_json ppf first entry
+    output_json ppf ~first ~simplified entry
   in
   let skel = Odoc_index.Skeleton.from_page page in
   let _first = Odoc_utils.Tree.fold_left ~f true skel in
   ()
 
-let of_entry ?occurrences ppf entry =
+let of_entry ?occurrences ppf ~simplified entry =
   let get_occ id =
     match occurrences with
     | None -> None
@@ -236,10 +291,10 @@ let of_entry ?occurrences ppf entry =
     let occ = get_occ entry.Entry.id in
     (entry, Html.of_entry entry, occ)
   in
-  let _ = output_json ppf true entry in
+  let _ = output_json ppf ~first:true ~simplified entry in
   ()
 
-let index ?occurrences ppf (index : Skeleton.t list) =
+let index ?occurrences ppf ~simplified (index : Skeleton.t list) =
   let get_occ id =
     match occurrences with
     | None -> None
@@ -252,6 +307,6 @@ let index ?occurrences ppf (index : Skeleton.t list) =
     Odoc_utils.Forest.fold_left true index ~f:(fun first entry ->
         let occ = get_occ entry.Entry.id in
         let entry = (entry, Html.of_entry entry, occ) in
-        output_json ppf first entry)
+        output_json ppf ~first ~simplified entry)
   in
   ()
