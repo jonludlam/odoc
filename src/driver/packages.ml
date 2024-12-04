@@ -418,6 +418,7 @@ let of_packages ~packages_dir packages =
   let deps =
     if packages = [] then Opam.all_opam_packages () else Opam.deps packages
   in
+  Format.eprintf "Got deps... \n%!";
 
   let Ocamlfind.Db.{ libname_of_archive; cmi_only_libs; all_lib_deps; _ } =
     Ocamlfind.Db.create (Ocamlfind.all () |> Util.StringSet.of_list)
@@ -440,6 +441,7 @@ let of_packages ~packages_dir packages =
 
   let all = orig @ ps in
 
+  Format.eprintf "startinrg... \n%!";
   let packages =
     List.fold_left
       (fun acc (pkg, files) ->
