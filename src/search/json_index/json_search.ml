@@ -234,8 +234,11 @@ let of_entry ({ Entry.id; doc; kind } as entry) html occurrences =
 let simplified_of_entry ({ Entry.id; doc; _ }) =
   let (prefix, name, kind) = prefix_name_kind_of_id id in
   let doc = of_doc doc in
+  let config = Odoc_html.Config.v ~flat:false ~semantic_uris:false ~indent:false ~open_details:false ~as_json:false ~remap:[] () in
+
+  let url = Odoc_html.Link.href ~config ~resolve:(Base "/") (Odoc_document.Url.from_identifier ~stop_before:false id) in
   `Object
-    [ ("name", `String name); ("prefixname", `String prefix); ("kind", `String kind); ("doc", doc); ("comment", doc) ]
+    [ ("name", `String name); ("prefixname", `String prefix); ("kind", `String kind); ("url", `String url); ("doc", doc); ("comment", doc) ]
 
 let output_json ppf ~first ~simplified (entry, html, occurrences) =
   let output_json json =
