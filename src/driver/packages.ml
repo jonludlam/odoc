@@ -452,11 +452,7 @@ let of_packages ~packages_dir packages =
         in
         let pkg_dir = pkg_dir packages_dir pkg.name in
         let config = Global_config.load pkg.name in
-<<<<<<< HEAD
-        let mlds, assets, other_docs = mk_mlds files.docs in
-=======
-        let mlds, assets = mk_mlds files.docs in
->>>>>>> 447be6510 (Driver: remove LICENSE and other file in non voodoo mode)
+        let mlds, assets, _ = mk_mlds files.docs in
         let selected = List.mem pkg.name packages in
         let remaps =
           if selected then []
