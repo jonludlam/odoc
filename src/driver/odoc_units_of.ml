@@ -264,7 +264,7 @@ let packages ~dirs ~extra_paths ~remap ~gen_indices (pkgs : Packages.t list) : t
               (Fpath.normalize (Fpath.v "./index.mld")))
           pkg.mlds
       in
-      if has_index_page || not pkg.selected then []
+      if has_index_page then []
       else
         let index = index_of pkg in
         [ Landing_pages.package ~dirs ~pkg ~index ]
