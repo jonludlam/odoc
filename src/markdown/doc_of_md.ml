@@ -64,11 +64,13 @@ let textloc_to_loc ~locator textloc =
   let point_of_line_and_byte_pos ~locator:(location, line_trim_counts) l pos =
     let line_num, line_pos = l in
     let line = location.Lexing.pos_lnum + line_num - 1 in
-    let column = line_trim_counts.(line_num - 1) + (pos - line_pos) in
-    let column =
-      match line_num with 1 -> comment_col ~location + column | _ -> column
-    in
-    { Loc.line; column }
+    try
+      let column = line_trim_counts.(line_num - 1) + (pos - line_pos) in
+      let column =
+        match line_num with 1 -> comment_col ~location + column | _ -> column
+      in
+      { Loc.line; column }
+    with _ -> { Loc.line = -1; column = -1 }
   in
   let file = Textloc.file textloc in
   let first_line = Textloc.first_line textloc in
@@ -162,7 +164,9 @@ type nestable_ast_acc =
 let link_definition defs l =
   match Inline.Link.reference_definition defs l with
   | Some (Link_definition.Def (ld, _)) -> ld
-  | Some _ -> assert false (* if we parse without cmarkit extensions *)
+  | Some (Block.Footnote.Def (f, _)) ->
+      Link_definition.make ~label:(Block.Footnote.label f) ()
+  | Some _ -> assert false
   | None -> assert false (* assert [l]'s referenced label is not synthetic *)
 
 let autolink_to_inline_element ~locator a m (is, warns) =
