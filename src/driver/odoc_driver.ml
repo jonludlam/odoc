@@ -156,24 +156,30 @@ let run mode
   Stats.init_nprocs nb_workers;
   let () = Worker_pool.start_workers env sw nb_workers in
 
-  let all, extra_paths, actions, gen_indices =
+  let all, extra_paths, actions, gen_indices, generate_json =
     match mode with
     | Voodoo { package_name = p; blessed; actions } ->
         let all = Voodoo.of_voodoo p ~blessed in
         let extra_paths = Voodoo.extra_paths odoc_dir in
-        (all, extra_paths, actions, false)
+        (all, extra_paths, actions, false, true)
     | Dune { path } ->
-        (Dune_style.of_dune_build path, Voodoo.empty_extra_paths, All, true)
+        ( Dune_style.of_dune_build path,
+          Voodoo.empty_extra_paths,
+          All,
+          true,
+          generate_json )
     | OpamLibs { libs } ->
         ( Packages.of_libs ~packages_dir:None (Util.StringSet.of_list libs),
           Voodoo.empty_extra_paths,
           All,
-          true )
+          true,
+          generate_json )
     | OpamPackages { packages } ->
         ( Packages.of_packages ~packages_dir:None packages,
           Voodoo.empty_extra_paths,
           All,
-          true )
+          true,
+          generate_json )
   in
 
   let virtual_check =
