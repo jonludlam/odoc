@@ -452,14 +452,18 @@ let rec read_type_expr env typ =
             if name = "_" then Any
             else Var name
       | Tarrow(lbl, arg, res, _) ->
-          let arg =
-            if Btype.is_optional lbl then
-              match Compat.get_desc arg with
-              | Tconstr(_option, [arg], _) -> read_type_expr env arg
-              | _ -> assert false
-            else read_type_expr env arg
-          in
           let lbl = read_label lbl in
+          let lbl,arg =
+            match lbl with
+            | Some (Optional s) -> (
+              match Compat.get_desc arg with
+              | Tconstr(_option, [arg], _) ->
+                lbl, read_type_expr env arg (* Unwrap option if possible *)
+              | _ ->
+                (Some (RawOptional s), read_type_expr env arg)) (* If not, mark is as wrapped *)
+            | _ ->
+              lbl, read_type_expr env arg
+          in
           let res = read_type_expr env res in
             Arrow(lbl, arg, res)
       | Ttuple typs ->
@@ -937,13 +941,14 @@ let rec read_class_type env parent params =
       ClassType (read_class_signature env parent params cty)
   | Cty_arrow(lbl, arg, cty) ->
       let arg =
-        if Btype.is_optional lbl then
+        (*if Btype.is_optional lbl then
           match Compat.get_desc arg with
           | Tconstr(path, [arg], _)
             when OCamlPath.same path Predef.path_option ->
               read_type_expr env arg
           | _ -> assert false
-        else read_type_expr env arg
+        else *)
+          read_type_expr env arg
       in
       let lbl = read_label lbl in
       let cty = read_class_type env parent params cty in

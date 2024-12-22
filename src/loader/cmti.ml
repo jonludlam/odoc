@@ -46,21 +46,7 @@ let rec read_core_type env container ctyp =
     | Ttyp_var s -> Var s
     | Ttyp_arrow(lbl, arg, res) ->
         let lbl = read_label lbl in
-#if OCAML_VERSION < (4,3,0)
-        (* NOTE(@ostera): Unbox the optional value for this optional labelled
-           argument since the 4.02.x representation includes it explicitly. *)
-        let arg = match lbl with
-          | None | Some(Label(_)) -> read_core_type env container arg
-          | Some(Optional(_)) ->
-              let arg' = match arg.ctyp_desc with
-                | Ttyp_constr(_, _, param :: _) -> param
-                | _ -> arg
-              in
-              read_core_type env container arg'
-#else
-        let arg = read_core_type env container arg
-#endif
-        in
+        let arg = read_core_type env container arg in
         let res = read_core_type env container res in
           Arrow(lbl, arg, res)
     | Ttyp_tuple typs ->

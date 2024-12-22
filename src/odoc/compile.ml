@@ -145,6 +145,8 @@ let resolve_and_substitute ~resolver ~make_root ~hidden ~suppress_warnings
   (* Resolve imports, used by the [link-deps] command. *)
   let unit = { unit with imports = resolve_imports resolver unit.imports } in
   let env = Resolver.build_compile_env_for_unit resolver unit in
+  Odoc_file.save_unit Fpath.(v "/tmp/myunit") ~warnings:[] unit;
+
   let compiled =
     Odoc_xref2.Compile.compile ~filename env unit |> Error.raise_warnings
   in
@@ -279,7 +281,8 @@ let mld ~parent_id ~parents_children ~output ~children ~warnings_options input =
   Odoc_loader.read_string (id :> Paths.Identifier.LabelParent.t) input_s str
   |> Error.raise_errors_and_warnings
   |> function
-  | content, page_tags -> resolve content page_tags
+  | content, page_tags ->
+    resolve content page_tags
 
 let handle_file_ext ext =
   match ext with

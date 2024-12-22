@@ -858,6 +858,34 @@ and type_expression_package env parent p =
               }))
   | Error _ -> { p with path = Lang_of.(Path.module_type (empty ()) cp) }
 
+and handle_arrow : Env.t -> Id.Id.label_parent -> TypeExpr.label option -> TypeExpr.t -> TypeExpr.t -> TypeExpr.t =
+  fun env parent lbl t1 t2 ->
+    match lbl with
+    | Some (RawOptional s) -> begin
+      match Component.Of_Lang.(type_expression (empty ()) t1) with
+      | Constr (p, _ts) ->
+        let find_option t =
+          match Tools.resolve_type env t with
+          | Ok (_, `FType (_n, decl)) -> (
+            match decl.equation.manifest with
+            | Some (Constr (`Resolved (`CoreType n), [t])) when Names.TypeName.to_string n = "option" ->
+                let t = Lang_of.(type_expr (empty ()) parent t) in
+                Some t
+            | Some _ -> Format.eprintf "boo 1\n%!"; None
+            | None -> Format.eprintf "boo\n%!"; None)
+          | Ok (_, `CoreType n) -> Format.eprintf "CoreType: %a" Names.TypeName.fmt n; None
+          | Ok (_, (`FClass _ | `FClassType _ | `FType_removed _)) -> Format.eprintf "Other!\n%!"; None
+          | Error _ -> Format.eprintf "Error\n%!"; None
+        in
+        (match find_option p with
+        | Some t1 ->
+          Arrow (Some (Optional s), type_expression env parent t1, type_expression env parent t2)
+        | None ->
+          Arrow (Some (RawOptional s), type_expression env parent t1, type_expression env parent t2))
+      | _ -> failwith "here be problems" end
+    | (Some (Optional _  | Label _) | None) ->
+      Arrow (lbl, type_expression env parent t1, type_expression env parent t2)
+
 and type_expression : Env.t -> Id.LabelParent.t -> _ -> _ =
  fun env parent texpr ->
   let open TypeExpr in
@@ -865,7 +893,7 @@ and type_expression : Env.t -> Id.LabelParent.t -> _ -> _ =
   | Var _ | Any -> texpr
   | Alias (t, str) -> Alias (type_expression env parent t, str)
   | Arrow (lbl, t1, t2) ->
-      Arrow (lbl, type_expression env parent t1, type_expression env parent t2)
+    handle_arrow env parent lbl t1 t2
   | Tuple ts -> Tuple (List.map (type_expression env parent) ts)
   | Constr (path, ts') -> (
       let cp = Component.Of_Lang.(type_path (empty ()) path) in
