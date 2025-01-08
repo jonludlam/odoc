@@ -443,7 +443,11 @@ let of_packages ~packages_dir packages =
   in
 
   let all = orig @ ps in
-  let all = List.sort_uniq (fun (a, _) (b, _) -> String.compare a.Opam.name b.Opam.name) all in
+  let all =
+    List.sort_uniq
+      (fun (a, _) (b, _) -> String.compare a.Opam.name b.Opam.name)
+      all
+  in
 
   Logs.app (fun m -> m "Analyzing packages needed to be built...");
   let packages =
