@@ -1,0 +1,65 @@
+(executable
+ (public_name odoc_driver)
+ (package odoc-driver)
+ (link_deps
+  (package odoc)
+  (package odoc-md)
+  %{bin:sherlodoc})
+ (libraries
+  odoc_driver_lib
+  cmdliner
+  bos
+  progress
+  fpath
+  yojson
+  findlib
+  opam-format
+  logs
+  logs.fmt
+  eio_main
+  sexplib
+  odoc_utils))
+
+(executable
+ (public_name odoc_driver_voodoo)
+ (package odoc-driver)
+ (link_deps
+  (package odoc)
+  (package odoc-md)
+  %{bin:sherlodoc})
+ (libraries
+  odoc_driver_lib
+  cmdliner
+  bos
+  progress
+  fpath
+  yojson
+  findlib
+  opam-format
+  logs
+  logs.fmt
+  eio_main
+  sexplib
+  odoc_utils))
+
+(executable
+ (public_name odoc_driver_monorepo)
+ (package odoc-driver)
+ (link_deps
+  (package odoc)
+  (package odoc-md)
+  %{bin:sherlodoc})
+ (libraries
+  odoc_driver_lib
+  cmdliner
+  bos
+  progress
+  fpath
+  yojson
+  findlib
+  opam-format
+  logs
+  logs.fmt
+  eio_main
+  sexplib
+  odoc_utils))
