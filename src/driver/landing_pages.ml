@@ -132,7 +132,7 @@ let content dir _pkg libs _src subdirs all_libs =
         fpf pfp "- {{!/pkg/%apage-index}%s}\n%!" Fpath.pp subdir (Fpath.basename subdir)) subdirs
     end;
     
-    if List.length libs > 0 then begin
+    if not is_root && List.length libs > 0 then begin
       List.iter (fun (_, lib) -> 
       fpf pfp "{1 Library %s}" lib.Packages.lib_name;
       fpf pfp "%a@\n" module_list lib) libs
@@ -192,7 +192,9 @@ let make_custom dirs index_of (pkg : Packages.t) : Odoc_unit.mld Odoc_unit.unit 
     if Fpath.Set.mem p all_indexes
     then (Logs.debug (fun m -> m "Skipping predefined index.mld: %a" Fpath.pp p); acc)
     else begin
-      let libs = Fpath.Map.fold (fun p' lib libs -> if p=p' then lib::libs else libs) lib_dirs [] in
+      let libs =
+        let is_root = Fpath.to_string p = "./" in
+        Fpath.Map.fold (fun p' lib libs -> if p=p' || is_root then lib::libs else libs) lib_dirs [] in
       let src = Fpath.Map.find_opt p src_dirs in
       let pkg_src = Fpath.Map.find_opt p pkg_src_dirs in
       let subdirs = Fpath.Set.filter (fun p' -> Fpath.parent p' = p) all_dirs in

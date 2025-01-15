@@ -75,16 +75,11 @@ let of_dune_build dir =
   | Error _ -> []
   | Ok c ->
       let libs = dune_describe dir in
-      let local_libs =
-        List.filter_map
-          (function Library l -> if l.local then Some l else None)
-          libs
-      in
 
-      let global_libs =
-        List.filter_map
-          (function Library l -> if l.local then None else Some l)
-          libs
+      let local_libs, global_libs =
+        List.partition
+          (function l -> l.local)
+          (List.filter_map (function Library l -> Some l) libs)
       in
 
       List.iter
@@ -94,22 +89,40 @@ let of_dune_build dir =
                 Fmt.(option string)
                 (internal_name_of_library lib)))
         local_libs;
+
       let uid_to_libname =
         List.fold_left
           (fun acc l -> Util.StringMap.add l.uid l.name acc)
-          Util.StringMap.empty local_libs
+          Util.StringMap.empty (local_libs @ global_libs)
       in
+
       let all_lib_deps =
         List.fold_left
           (fun acc (l : library) ->
             Util.StringMap.add l.name
-              (List.filter_map
+              ("stdlib" :: List.filter_map
                  (fun uid -> Util.StringMap.find_opt uid uid_to_libname)
                  l.requires
               |> Util.StringSet.of_list)
               acc)
-          Util.StringMap.empty local_libs
+          Util.StringMap.empty (local_libs @ global_libs)
       in
+
+      let rec with_trans_deps =
+        let cache = Hashtbl.create (List.length libs) in
+        fun lib_name ->
+          try Hashtbl.find cache lib_name
+          with Not_found ->
+            let libs = try Util.StringMap.find lib_name all_lib_deps with Not_found ->
+              Logs.debug (fun m -> m "No lib deps for library %s" lib_name); Util.StringSet.empty in
+            let result = Util.StringSet.fold (fun l acc ->
+              Util.StringSet.union (with_trans_deps l) acc) libs libs in
+            Hashtbl.add cache lib_name result;
+            result
+      in
+
+      let all_lib_deps = Util.StringMap.mapi (fun lib_name _ -> with_trans_deps lib_name) all_lib_deps in 
+
       let colon = Fmt.any ":" in
       Format.eprintf "all_lib_deps: %a@."
         Fmt.(list ~sep:comma (pair ~sep:colon string (list ~sep:semi string)))
@@ -137,7 +150,7 @@ let of_dune_build dir =
       in
       let libs =
         List.filter_map
-          (fun (Library lib) ->
+          (fun lib ->
             match internal_name_of_library lib with
             | None -> None
             | Some libname ->
@@ -154,7 +167,7 @@ let of_dune_build dir =
                     Fpath.(v lib.source_dir)
                   |> Option.map Fpath.to_string
                 in
-                Logs.debug (fun m -> m "this should never be 'None': %a" Fmt.Dump.(option string) id_override);
+                Logs.warn (fun m -> m "this should never be 'None': %a" Fmt.Dump.(option string) id_override);
                 if List.mem cmtidir c then
                   Some
                     (Packages.Lib.v ~libname_of_archive ~pkg_name:lib.name
@@ -162,7 +175,7 @@ let of_dune_build dir =
                        ~cmtidir:(Some cmtidir) ~all_lib_deps ~cmi_only_libs:[]
                        ~id_override)
                 else None)
-          libs
+          local_libs
       in
       let find_docs ext =
         List.filter_map
@@ -178,8 +191,11 @@ let of_dune_build dir =
       in
       let other_docs = find_docs ".md" |> List.map (fun (p,r) -> { Packages.md_path = p; md_rel_path = r}) in
       let mlds = find_docs ".mld" |> List.map (fun (p,r) -> { Packages.mld_path = p; mld_rel_path = r}) in
-
+      let assets = find_docs ".jpg" |> List.map (fun (p,r) -> { Packages.asset_path = p; asset_rel_path = r}) in
       let libs = List.flatten libs in
+      let global_config = {
+        Global_config.deps = { packages=["cmdliner";"fmt"]; libraries="fmt"::List.map (fun (lib : Packages.libty) -> lib.lib_name) libs};
+      } in
       let local =
         [
             {
@@ -187,16 +203,17 @@ let of_dune_build dir =
               version = "1.0";
               libraries = libs;
               mlds;
-              assets = [];
+              assets;
               selected = true;
               remaps = [];
               pkg_dir = Fpath.v ".";
               doc_dir = Fpath.v ".";
               other_docs;
-              config = Global_config.empty;
+              config = global_config;
             };
         ]
       in
       let global = Packages.of_libs ~packages_dir:(Some (Fpath.v "opam_switch")) (List.map (fun (l : library) -> l.name) global_libs |> Util.StringSet.of_list) in
-      local @ global
+      let result = local @ global in
+      Packages.fix_missing_deps result
 
