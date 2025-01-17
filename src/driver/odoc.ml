@@ -211,7 +211,8 @@ let sidebar_generate ?(ignore_output = false) ~output_file ~json input_file () =
   ignore @@ Cmd_outputs.submit log desc cmd (Some output_file)
 
 let html_generate ~output_dir ?sidebar ?(ignore_output = false)
-    ?(search_uris = []) ?remap ?(as_json = false) ~input_file:file () =
+    ?(search_uris = []) ?remap ?(as_json = false) ?support_uri ~input_file:file
+     () =
   let open Cmd in
   let index =
     match sidebar with None -> empty | Some idx -> v "--sidebar" % p idx
@@ -229,6 +230,10 @@ let html_generate ~output_dir ?sidebar ?(ignore_output = false)
     match remap with None -> cmd | Some f -> cmd % "--remap-file" % p f
   in
   let cmd = if as_json then cmd % "--as-json" else cmd in
+  let cmd =
+    match support_uri with
+    | None -> cmd
+    | Some s -> cmd % "--support-uri" % s in
   let desc = Printf.sprintf "Generating HTML for %s" (Fpath.to_string file) in
   let log =
     if ignore_output then None else Some (`Generate, Fpath.to_string file)

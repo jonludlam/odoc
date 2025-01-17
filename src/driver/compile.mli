@@ -18,6 +18,7 @@ val html_generate :
   occurrence_file:Fpath.t ->
   remaps:(string * string) list ->
   generate_json:bool ->
+  support_uri:string option ->
   Fpath.t ->
   linked list ->
   unit

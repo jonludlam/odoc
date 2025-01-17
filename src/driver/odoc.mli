@@ -69,6 +69,7 @@ val html_generate :
   ?search_uris:Fpath.t list ->
   ?remap:Fpath.t ->
   ?as_json:bool ->
+  ?support_uri:string ->
   input_file:Fpath.t ->
   unit ->
   unit

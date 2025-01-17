@@ -282,7 +282,7 @@ let sherlodoc_index_one ~output_dir (index : Odoc_unit.index) =
   Sherlodoc.index ~format:`js ~inputs ~dst ();
   rel_path
 
-let html_generate ~occurrence_file ~remaps ~generate_json output_dir linked =
+let html_generate ~occurrence_file ~remaps ~generate_json ~support_uri output_dir linked =
   let tbl = Hashtbl.create 10 in
   let _ = OS.Dir.create output_dir |> Result.get_ok in
   Sherlodoc.js Fpath.(output_dir // Sherlodoc.js_file);
@@ -352,7 +352,7 @@ let html_generate ~occurrence_file ~remaps ~generate_json output_dir linked =
                 (Some search_uris, sidebar)
           in
           Odoc.html_generate ?search_uris ?sidebar ?remap:remap_file ~output_dir
-            ~input_file ();
+            ?support_uri ~input_file ();
           Atomic.incr Stats.stats.generated_units;
           if generate_json then (
             Odoc.html_generate ?search_uris ?sidebar ~output_dir ~input_file

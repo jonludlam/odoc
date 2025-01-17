@@ -7,7 +7,7 @@ let with_dir dir pat f =
   | Some dir -> f dir ()
 
 let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
-    ~generate_grep ~index_grep ~remap ~index_mld packages
+    ~generate_grep ~index_grep ~remap ~index_mld ~support_uri packages
     {
       Common_args.verbose;
       html_dir;
@@ -71,10 +71,17 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
           output
         in
         let () =
-          Compile.html_generate ~occurrence_file ~remaps ~generate_json html_dir
+          Compile.html_generate ~occurrence_file ~remaps ~generate_json ~support_uri html_dir
             linked
         in
-        let _ = Odoc.support_files html_dir in
+        let _ =
+          match support_uri with
+          | Some x when String.length x > 0 && x.[0] = '.' ->
+            Odoc.support_files Fpath.(html_dir // v x)
+          | Some _ -> []
+          | None ->
+            Odoc.support_files html_dir
+        in
         Stats.stats.finished <- true;
         ())
       (fun () -> Stats.render_stats env ~generate_json nb_workers)
@@ -136,14 +143,14 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
   if stats then Stats.bench_results html_dir
 
 let run odoc_dir odocl_dir index_dir mld_dir compile_grep link_grep
-    generate_grep index_grep remap packages index_mld common () =
+    generate_grep index_grep remap index_mld support_uri packages common () =
   with_dir odoc_dir "odoc-%s" @@ fun odoc_dir () ->
   with_dir odocl_dir "odocl-%s" @@ fun odocl_dir () ->
   with_dir index_dir "index-%s" @@ fun index_dir () ->
   with_dir mld_dir "mld-%s" @@ fun mld_dir () ->
   let () =
     run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
-      ~generate_grep ~index_grep ~remap ~index_mld packages common
+      ~generate_grep ~index_grep ~remap ~index_mld ~support_uri packages common
   in
   ()
 
@@ -211,11 +218,22 @@ let index_mld =
     & opt (some Common_args.fpath_arg) None
     & info [ "index-mld" ] ~docv:"INDEX" ~doc)
 
+let support_uri =
+  let doc =
+    "Provide an alternate location for the support files (css, etc). If this \
+     is a relative path then it is taken to be relative to _html. If it starts \
+     with anything other than `.` then it is taken to be an absolute URI and \
+     the driver will not attempt to create them itself." in
+  Arg.(
+    value
+    & opt (some string) None
+    & info ["support-uri"] ~docv:"URI" ~doc) 
+
 let cmd_term =
   Term.(
     const run $ odoc_dir $ odocl_dir $ index_dir $ mld_dir $ compile_grep
-    $ link_grep $ generate_grep $ index_grep $ remap $ packages $ index_mld
-    $ Common_args.term $ const ())
+    $ link_grep $ generate_grep $ index_grep $ remap $ index_mld $ support_uri
+    $ packages $ Common_args.term $ const ())
 
 let cmd =
   let doc =
