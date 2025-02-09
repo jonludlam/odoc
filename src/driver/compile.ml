@@ -138,7 +138,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
           (Odoc_unit.Pkg_args.compiled_libs unit.pkg_args)
       in
       Odoc.compile ~output_dir:unit.output_dir ~input_file:unit.input_file
-        ~includes ~suppress_warnings:(not unit.enable_warnings)
+        ~includes ~warnings_tag:unit.pkgname
         ~parent_id:unit.parent_id;
       (match unit.input_copy with
       | None -> ()
@@ -198,7 +198,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
     | `Mld ->
         let includes = Fpath.Set.empty in
         Odoc.compile ~output_dir:unit.output_dir ~input_file:unit.input_file
-          ~includes ~suppress_warnings:false ~parent_id:unit.parent_id;
+          ~includes ~warnings_tag:None ~parent_id:unit.parent_id;
         Atomic.incr Stats.stats.compiled_mlds;
         Ok [ unit ]
     | `Md ->
@@ -216,8 +216,8 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
 
 type linked = Odoc_unit.any
 
-let link : custom_layout:bool -> compiled list -> _ =
- fun ~custom_layout compiled ->
+let link : warnings_tags:string list -> custom_layout:bool -> compiled list -> _ =
+ fun ~warnings_tags ~custom_layout compiled ->
   let link : compiled -> linked =
    fun c ->
     let link input_file output_file enable_warnings =
@@ -225,7 +225,7 @@ let link : custom_layout:bool -> compiled list -> _ =
       let pages = Odoc_unit.Pkg_args.compiled_pages c.pkg_args in
       let includes = Odoc_unit.Pkg_args.includes c.pkg_args in
       Odoc.link ~custom_layout ~input_file ~output_file ~libs ~docs:pages
-        ~includes ~ignore_output:(not enable_warnings)
+        ~includes ~ignore_output:(not enable_warnings) ~warnings_tags
         ?current_package:c.pkgname ()
     in
     match c.kind with
