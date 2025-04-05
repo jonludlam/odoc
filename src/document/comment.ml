@@ -300,8 +300,7 @@ let rec nestable_block_element :
                    data,
                    source_of_code (Odoc_model.Location_.value c.content),
                    rest );
-          ]
-          @ rest)
+          ])
   | `Math_block s -> [ block @@ Math s ]
   | `Verbatim s -> [ block @@ Verbatim s ]
   | `Modules ms -> [ module_references ms ]
