@@ -670,7 +670,9 @@ module Page = struct
     let { Page.preamble = _; items = i; url; source_anchor; resources; assets } =
       Doctree.Labels.disambiguate_page ~enter_subpages:false p
     in
-    let subpages = subpages ~config ~frontmatter ~sidebar @@ Doctree.Subpages.compute p in
+    let subpages =
+      subpages ~config ~frontmatter ~sidebar @@ Doctree.Subpages.compute p
+    in
     let resolve = Link.Current url in
     let breadcrumbs = Breadcrumbs.gen_breadcrumbs ~config ~sidebar ~url in
     let sidebar =
