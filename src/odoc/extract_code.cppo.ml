@@ -62,7 +62,8 @@ let block_element line_directives oc names v =
   | `Tag
       ( `Author _ | `Since _ | `Version _ | `Canonical _ | `Inline | `Open
       | `Children_order _ | `Toc_status _ | `Order_category _ | `Short_title _
-      | `Closed | `Hidden )
+      | `Closed | `Hidden ) ->
+      ()
   | `Heading _ ->
       ()
   | #Ast.nestable_block_element as value ->
