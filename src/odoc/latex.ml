@@ -6,7 +6,8 @@ type args = Odoc_latex.Generator.config = {
   remove_functor_arg_link : bool;
 }
 
-let render args _sidebar page = Odoc_latex.Generator.render ~config:args page
+let render args _frontmatter _sidebar page =
+  Odoc_latex.Generator.render ~config:args page
 
 let filepath _args url = Odoc_latex.Generator.filepath url
 
