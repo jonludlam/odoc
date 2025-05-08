@@ -49,7 +49,7 @@ depends: [
   "result"
   "tyxml" {>= "4.4.0"}
   "fmt"
-
+  "cmarkit" {>= "0.3.0" & ocaml:version >= "4.14"}
   "ocamlfind" {with-test}
   "yojson" {>= "2.1.0"}
   ("ocaml" {< "4.04.1" & with-test} | "sexplib0" {with-test})
