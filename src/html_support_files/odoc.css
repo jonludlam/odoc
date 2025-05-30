@@ -608,6 +608,7 @@ tt, code, pre {
   border-radius: 5px;
   overflow-x: auto;
   text-indent: initial;
+  white-space: pre-wrap;
 }
 
 .odoc p code,
