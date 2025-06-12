@@ -458,9 +458,11 @@ let code_block_to_nestable_block_element ~locator cb m (bs, warns) =
             else [ `Tag (Loc.at (textloc_to_loc ~locator env_loc) env) ]
           in
           let lang =
-            if lang = "ocaml" && String.length code > 2 && code.[0] = '#' && code.[1] = ' '
-            then "ocamltop"
-            else "ocaml"
+            if lang = "ocaml" then begin
+              if String.length code > 2 && code.[0] = '#' && code.[1] = ' '
+              then "ocamltop"
+              else "ocaml"
+            end else lang
           in
           let lang = Loc.at (textloc_to_loc ~locator lang_loc) lang in
           let metadata = Some { Ast.language = lang; tags = env } in
