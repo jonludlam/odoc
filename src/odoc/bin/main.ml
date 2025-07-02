@@ -1786,6 +1786,7 @@ let () =
       Extract_code.(cmd, info ~docs:section_pipeline);
       Odoc_markdown_cmd.generate ~docs:section_pipeline;
       Odoc_markdown_cmd.generate_source ~docs:section_pipeline;
+      Odoc_markdown_cmd.targets ~docs:section_support;
     ]
   in
   let default =
