@@ -6,11 +6,13 @@ let run inp =
   let htbl : Odoc_occurrences.Table.t = Io_utils.unmarshal inp in
   Odoc_occurrences.Table.iter
     (fun id { Odoc_occurrences.Table.direct; indirect; _ } ->
-      let id =
-        String.concat ~sep:"." (Odoc_model.Paths.Identifier.fullname id)
-      in
-      Format.printf "%s was used directly %d times and indirectly %d times\n" id
-        direct indirect)
+      match id.iv with
+      | `Root _ | `Module _ | `ModuleType _ | `Class _ | `ClassType _ ->
+        let id =
+          String.concat ~sep:"." (Odoc_model.Paths.Identifier.fullname id)
+        in
+        Format.printf "%s %d\n" id (direct + indirect)
+      | _ -> ())
     htbl
 
 open Cmdliner
