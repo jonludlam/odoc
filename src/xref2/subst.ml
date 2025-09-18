@@ -29,6 +29,49 @@ let identity =
     unresolve_opaque_paths = false;
   }
 
+let pp fmt s =
+  let pp_map pp_binding b fmt map =
+    let pp_b fmt (id, v) =
+      Format.fprintf fmt "%a -> %a" Ident.fmt id pp_binding v
+    in
+    Format.fprintf fmt "@[<hov 1>{%a}@]" (Format.pp_print_list pp_b) (b map)
+  in
+  let pp_subst ppp fmt v =
+    Format.fprintf fmt "%s"
+      (match v with
+      | `Prefixed (p, _) -> Format.asprintf "%a" ppp p
+      | `Renamed id' -> Format.asprintf "%a" Ident.fmt id'
+      | `Substituted -> "<substituted>")
+  in
+  let pp_type_replacement fmt (te, eq) =
+    Format.fprintf fmt "(%a,%a)"
+      Component.Fmt.(type_expr default)
+      te
+      Component.Fmt.(type_equation default)
+      eq
+  in
+
+  Format.fprintf fmt
+    "{ module_ = %a;@ module_type = %a;@ type_ = %a;@ class_type = %a;@ \
+     type_replacement = %a;@ module_type_replacement = %a;@ \
+     path_invalidating_modules = [%a];@ unresolve_opaque_paths = %b }"
+    (pp_map (pp_subst Component.Fmt.(module_path default)) ModuleMap.bindings)
+    s.module_
+    (pp_map
+       (pp_subst Component.Fmt.(module_type_path default))
+       ModuleTypeMap.bindings)
+    s.module_type
+    (pp_map (pp_subst Component.Fmt.(type_path default)) TypeMap.bindings)
+    s.type_
+    (pp_map (pp_subst Component.Fmt.(class_type_path default)) TypeMap.bindings)
+    s.class_type
+    (pp_map pp_type_replacement TypeMap.bindings)
+    s.type_replacement
+    (pp_map Component.Fmt.(module_type_expr default) ModuleTypeMap.bindings)
+    s.module_type_replacement
+    (Format.pp_print_list Ident.fmt)
+    s.path_invalidating_modules s.unresolve_opaque_paths
+
 let unresolve_opaque_paths s = { s with unresolve_opaque_paths = true }
 
 let path_invalidate_module id t =
@@ -919,6 +962,7 @@ and removed_items s items =
     items
 
 and signature s sg =
+  (* Format.eprintf "Subst.signature:\nsig: %a\ns  :%a%!" Component.Fmt.(signature default) sg pp s; *)
   let s, items = rename_bound_idents s [] sg.items in
   let items, removed, dont_recompile = apply_sig_map s items sg.removed in
   { sg with items; removed; compiled = sg.compiled && dont_recompile }

@@ -1140,12 +1140,12 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
                     type_expression env parent (p :: visited) t'
                   with
                   | Loop -> Constr (`Resolved p, ts)
-                  | e ->
-                      Format.eprintf
+                  | _e ->
+                      (* Format.eprintf
                         "Caught unexpected exception when expanding type \
                          declaration (%s)\n\
                          %!"
-                        (Printexc.to_string e);
+                        (Printexc.to_string e); *)
                       Constr (`Resolved p, ts))
               | _ -> Constr (`Resolved p, ts)
             else Constr (`Resolved p, ts)

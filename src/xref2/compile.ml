@@ -424,8 +424,8 @@ and include_ : Env.t -> Include.t -> Include.t * Env.t =
               Strengthen.signature cp sg
           | None -> sg
         in
-        let e = Lang_of.(simple_expansion map i.parent (Signature sg')) in
-
+        let sg'' = Tools.apply_inner_substs env sg' in
+        let e = Lang_of.(simple_expansion map i.parent (Signature sg'')) in
         let expansion_sg =
           match e with
           | ModuleType.Signature sg -> sg

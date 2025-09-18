@@ -51,7 +51,7 @@ let rec type_expr map t =
   | Var v -> (
       try List.assoc v map
       with _ ->
-        Format.eprintf "Failed to list assoc %s\n%!" v;
+        (* Format.eprintf "Failed to list assoc %s\n%!" v; *)
         failwith "bah")
   | Any -> Any
   | Alias (t, s) ->
