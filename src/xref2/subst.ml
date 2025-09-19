@@ -599,6 +599,11 @@ and type_expr s t =
             | Any -> acc
             | Var n -> (n, type_expr s pexpr) :: acc
           in
+          if List.length ts <> List.length eq.params then (
+            Format.eprintf
+              "Type substitution error: eq.params length=%d ts length=%d@."
+              (List.length eq.params) (List.length ts);
+            assert false);
           let vars = List.fold_left2 mk_var [] ts eq.params in
           substitute_vars vars t
       | Not_replaced p -> Constr (p, List.map (type_expr s) ts))
@@ -962,7 +967,7 @@ and removed_items s items =
     items
 
 and signature s sg =
-  (* Format.eprintf "Subst.signature:\nsig: %a\ns  :%a%!" Component.Fmt.(signature default) sg pp s; *)
+  (* Format.eprintf "Subst.signature:\nsig: %a\ns  :%a\n%!" Component.Fmt.(signature default) sg pp s; *)
   let s, items = rename_bound_idents s [] sg.items in
   let items, removed, dont_recompile = apply_sig_map s items sg.removed in
   { sg with items; removed; compiled = sg.compiled && dont_recompile }

@@ -97,6 +97,9 @@ and content env id =
   let open Compilation_unit in
   function
   | Module sg ->
+      (* Format.eprintf "Compiling module %a\n%!"
+        Component.Fmt.(model_identifier default)
+        (id :> Paths.Identifier.t); *)
       let sg = signature env (id :> Id.Signature.t) sg in
       Module sg
   | Pack p -> Pack p
@@ -241,6 +244,9 @@ and module_substitution env m =
 and signature_items : Env.t -> Id.Signature.t -> Signature.item list -> _ =
  fun initial_env id s ->
   let open Signature in
+  (* Format.eprintf "Compiling signature %a\n%!"
+    Component.Fmt.(model_identifier default)
+    (id :> Paths.Identifier.t); *)
   let rec loop items env xs =
     match xs with
     | [] -> (List.rev items, env)
@@ -386,7 +392,16 @@ and include_decl : Env.t -> Id.Signature.t -> Include.decl -> Include.decl =
  fun env id decl ->
   let open Include in
   match decl with
-  | ModuleType expr -> ModuleType (u_module_type_expr env id expr)
+  | ModuleType expr ->
+      let rec is_elidable_with_u : Odoc_model.Lang.ModuleType.U.expr -> bool =
+        function
+        | Path _ -> false
+        | Signature _ -> true
+        | With (_, expr) -> is_elidable_with_u expr
+        | TypeOf _ -> false
+      in
+      if is_elidable_with_u expr then ModuleType expr
+      else ModuleType (u_module_type_expr env id expr)
   | Alias p -> Alias (module_path env p)
 
 and module_type : Env.t -> ModuleType.t -> ModuleType.t =
@@ -403,6 +418,9 @@ and module_type : Env.t -> ModuleType.t -> ModuleType.t =
 and include_ : Env.t -> Include.t -> Include.t * Env.t =
  fun env i ->
   let open Include in
+  (* Format.eprintf "Handling include for parent: %a\n%!"
+    Component.Fmt.(model_identifier default)
+    (i.parent :> Paths.Identifier.t); *)
   let decl = Component.Of_Lang.(include_decl (empty ()) i.decl) in
   let get_expansion () =
     match
@@ -411,7 +429,9 @@ and include_ : Env.t -> Include.t -> Include.t * Env.t =
       | Alias p ->
           Tools.expansion_of_module_path env ~strengthen:true p >>= fun exp ->
           Tools.assert_not_functor exp
-      | ModuleType mty -> Tools.signature_of_u_module_type_expr env mty
+      | ModuleType mty ->
+          (* Format.eprintf "\n\n\n\n**** include *** About to get signature_of_u_module_type_expr for: %a\n%!" Component.Fmt.(u_module_type_expr default) mty; *)
+          Tools.signature_of_u_module_type_expr env mty
     with
     | Error e ->
         Errors.report ~what:(`Include decl) ~tools_error:e `Expand;
@@ -435,7 +455,10 @@ and include_ : Env.t -> Include.t -> Include.t * Env.t =
         in
         { i.expansion with content = expansion_sg }
   in
-  let expansion = get_expansion () in
+  let expansion =
+    if i.expansion.content.compiled then i.expansion else get_expansion ()
+  in
+  (* Format.eprintf "About to compile include expansion\n%!"; *)
   let items, env' = signature_items env i.parent expansion.content.items in
   let expansion =
     {
