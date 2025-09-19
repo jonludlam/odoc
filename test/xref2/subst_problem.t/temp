@@ -1,0 +1,36 @@
+Subst.signature:
+  sig: include r(root(Test2).S1) with [resolved(root(root(Test2).S1).t0) = resolved(t/20)]
+                          (sig :
+                            type t/20 := = resolved(unit)
+                            val x/21 : [resolved(t/20)] resolved(t/20)
+                            (removed=type () t0 = (local(t/20,false)))
+                           end)
+  (removed=type () t = (identifier(root(Test2).S3.t1,false)))
+  s  :{ module_ = 
+  {}; module_type = {}; type_ = {}; class_type = {};
+  type_replacement = {t/20 -> (identifier(root(Test2).S3.t1,false), = identifier(root(Test2).S3.t1,false))};
+  module_type_replacement = {}; path_invalidating_modules = [];
+  unresolve_opaque_paths = false }
+
+
+  What do we _want_?
+
+  S2 = sig
+    type t
+
+    (* include *)
+    type 'a t := unit
+    val x : t t
+  end
+
+  but here, t and t are different! Perhaps the include should apply the substitution?
+
+  Then we would get
+
+  S2 = sig
+    type t
+
+    (* include *)
+    val x : unit
+  end
+  

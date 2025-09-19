@@ -43,7 +43,7 @@ Module `C` then includes them both, causing further shadowing.
       include module type of struct include {A}3/shadowed/(CCCC) end
         (sig :
           include module type of struct include B.{A}1/shadowed/(BBBB) end
-            (sig : type t = {A}3/shadowed/(CCCC).t end)
+            (sig : type t = B.A.t end)
           type b = B.A.b
          end)
     end
