@@ -53,6 +53,35 @@ Search for something that should be in one of the databases
   mod Tyxml_html
   type 'a Tyxml_html.wrap
 
+Compare merged database with traditional (all-at-once) database
+The reference database was built with all files at once
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 5 --no-rhs "attrib" > reference_attrib.txt
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 5 --no-rhs "attrib" > merged_attrib.txt
+  $ diff reference_attrib.txt merged_attrib.txt
+
+Search results for "Tyxml_html" should be identical
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 10 --no-rhs "Tyxml_html" > reference_tyxml.txt
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 10 --no-rhs "Tyxml_html" > merged_tyxml.txt
+  $ diff reference_tyxml.txt merged_tyxml.txt
+
+Search results for "string_attrib" should be identical
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 8 --no-rhs "string_attrib" > reference_string.txt
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 8 --no-rhs "string_attrib" > merged_string.txt
+  $ diff reference_string.txt merged_string.txt
+
+Test partial name search consistency
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 6 --no-rhs "tring" > reference_tring.txt
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 6 --no-rhs "tring" > merged_tring.txt
+  $ diff reference_tring.txt merged_tring.txt
+
 Test merging with just one database (edge case)
   $ sherlodoc merge --format marshal -o single.marshal db1.marshal
   Loaded 1 shard(s) from db1.marshal
