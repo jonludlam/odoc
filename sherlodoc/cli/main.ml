@@ -74,10 +74,15 @@ let cmd_jsoo =
   in
   Cmd.v info Term.(const emit_js_dep $ target)
 
+let cmd_merge =
+  let doc = "Merge multiple sherlodoc databases into one" in
+  let info = Cmd.info "merge" ~doc in
+  Cmd.v info (with_db Merge_cmd.term db_filename)
+
 let cmd =
   let doc = "Sherlodoc" in
   let version = "0.2" in
   let info = Cmd.info "sherlodoc" ~version ~doc in
-  Cmd.group info [ cmd_search; cmd_index; cmd_serve; cmd_jsoo ]
+  Cmd.group info [ cmd_search; cmd_index; cmd_serve; cmd_jsoo; cmd_merge ]
 
 let () = exit (Cmd.eval cmd)

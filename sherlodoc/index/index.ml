@@ -136,3 +136,5 @@ let term =
     $ index_name
     $ type_search
     $ favoured_prefixes)
+
+module Merge = Merge
