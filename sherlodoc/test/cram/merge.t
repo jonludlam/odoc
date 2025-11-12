@@ -82,6 +82,51 @@ Test partial name search consistency
   $ sherlodoc search --limit 6 --no-rhs "tring" > merged_tring.txt
   $ diff reference_tring.txt merged_tring.txt
 
+Negative test: incomplete merge should omit entries from excluded databases
+Create an incomplete merge with only db1 and db2 (excluding db3)
+  $ sherlodoc merge --format marshal -o incomplete.marshal db1.marshal db2.marshal
+  Loaded 1 shard(s) from db1.marshal
+  Loaded 1 shard(s) from db2.marshal
+  Total shards to merge: 2
+  Merging databases...
+  Writing merged database to incomplete.marshal...
+  Merge complete!
+
+First, identify what entries are in db3 only
+  $ export SHERLODOC_DB=db3.marshal
+  $ sherlodoc search --limit 5 --no-rhs "wrap" > db3_wrap.txt
+
+These entries should be in the complete merged database
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 5 --no-rhs "wrap" > merged_wrap.txt
+  $ diff db3_wrap.txt merged_wrap.txt
+
+These entries should also be in the reference database
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 5 --no-rhs "wrap" > reference_wrap.txt
+  $ diff db3_wrap.txt reference_wrap.txt
+
+But these entries should NOT all be in the incomplete merge (only db1+db2)
+The diff shows entries from db3 that are missing in the incomplete merge:
+  $ export SHERLODOC_DB=incomplete.marshal
+  $ sherlodoc search --limit 5 --no-rhs "wrap" > incomplete_wrap.txt
+  $ diff db3_wrap.txt incomplete_wrap.txt
+  1,2d0
+  < type 'a Tyxml_xml.wrap
+  < type 'a Tyxml_svg.wrap
+  4c2,3
+  < type 'a Tyxml_svg.Xml.wrap
+  ---
+  > mod Xml_wrap
+  > type 'a Svg_f.Make.wrap
+  5a5
+  > type 'a Html_f.Make.wrap
+  [1]
+
+The incomplete merge correctly omits entries that were only in db3
+Specifically, Tyxml_xml.wrap and Tyxml_svg.wrap are missing, demonstrating
+that the merge only includes what was in the input databases (db1+db2)
+
 Test merging with just one database (edge case)
   $ sherlodoc merge --format marshal -o single.marshal db1.marshal
   Loaded 1 shard(s) from db1.marshal
