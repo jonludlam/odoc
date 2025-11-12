@@ -127,6 +127,34 @@ The incomplete merge correctly omits entries that were only in db3
 Specifically, Tyxml_xml.wrap and Tyxml_svg.wrap are missing, demonstrating
 that the merge only includes what was in the input databases (db1+db2)
 
+Limitation: Type-based search does not work on merged databases
+This is because we only have the string representation of types, not the
+original Odoc type expression AST needed for type polarity analysis.
+
+Type search works on the reference database (traditional build):
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 5 --no-rhs ": list"
+  val Tyxml_svg.of_seq
+  val Tyxml_html.of_seq
+  val Svg_f.Make.of_seq
+  val Html_f.Make.of_seq
+  val Svg_f.Make_with_wrapped_functions.of_seq
+
+But type search returns no results on the merged database:
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 5 --no-rhs ": list"
+  [No results]
+
+This is a known limitation: merged databases only support name-based search,
+not type-based search. For type search to work, databases must be built
+directly from .odocl files, not merged from other databases.
+
+Name-based search still works perfectly on merged databases:
+  $ sherlodoc search --limit 3 --no-rhs "emptytags"
+  val Tyxml_svg.Info.emptytags
+  val Tyxml_html.Info.emptytags
+  val Svg_f.Make.Info.emptytags
+
 Test merging with just one database (edge case)
   $ sherlodoc merge --format marshal -o single.marshal db1.marshal
   Loaded 1 shard(s) from db1.marshal
