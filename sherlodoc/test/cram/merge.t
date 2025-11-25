@@ -127,33 +127,175 @@ The incomplete merge correctly omits entries that were only in db3
 Specifically, Tyxml_xml.wrap and Tyxml_svg.wrap are missing, demonstrating
 that the merge only includes what was in the input databases (db1+db2)
 
-Type-based search also works on merged databases.
-The type information is preserved in entries via the Kind type (e.g., Val of Typexpr.t)
-and is recomputed during merge using type polarity analysis.
+================================================================================
+COMPREHENSIVE COMPARISON: MERGED vs TRADITIONAL DATABASE
+================================================================================
 
-Type search on the reference database (traditional build):
+The following tests comprehensively verify that merged databases produce
+identical results to databases built directly from .odocl files.
+
+Helper function to compare search results:
+  $ compare_search() {
+  >   local query="$1"
+  >   local limit="${2:-20}"
+  >   export SHERLODOC_DB=reference.marshal
+  >   sherlodoc search --limit "$limit" --no-rhs "$query" > /tmp/ref_result.txt
+  >   export SHERLODOC_DB=merged.marshal
+  >   sherlodoc search --limit "$limit" --no-rhs "$query" > /tmp/merged_result.txt
+  >   if diff -q /tmp/ref_result.txt /tmp/merged_result.txt > /dev/null; then
+  >     echo "PASS: '$query' (limit $limit)"
+  >   else
+  >     echo "FAIL: '$query' (limit $limit)"
+  >     diff /tmp/ref_result.txt /tmp/merged_result.txt
+  >   fi
+  > }
+
+--------------------------------------------------------------------------------
+NAME-BASED SEARCH TESTS
+--------------------------------------------------------------------------------
+
+Exact name matches:
+  $ compare_search "Tyxml_html"
+  PASS: 'Tyxml_html' (limit 20)
+  $ compare_search "Tyxml_svg"
+  PASS: 'Tyxml_svg' (limit 20)
+  $ compare_search "Html_types"
+  PASS: 'Html_types' (limit 20)
+  $ compare_search "Svg_types"
+  PASS: 'Svg_types' (limit 20)
+
+Partial name matches (prefix):
+  $ compare_search "attrib"
+  PASS: 'attrib' (limit 20)
+  $ compare_search "string_"
+  PASS: 'string_' (limit 20)
+  $ compare_search "event_"
+  PASS: 'event_' (limit 20)
+
+Partial name matches (suffix/substring):
+  $ compare_search "tring"
+  PASS: 'tring' (limit 20)
+  $ compare_search "_handler"
+  PASS: '_handler' (limit 20)
+  $ compare_search "wrap"
+  PASS: 'wrap' (limit 20)
+
+Multi-word queries:
+  $ compare_search "string attrib"
+  PASS: 'string attrib' (limit 20)
+  $ compare_search "event handler"
+  PASS: 'event handler' (limit 20)
+  $ compare_search "Svg Make"
+  PASS: 'Svg Make' (limit 20)
+
+Short queries:
+  $ compare_search "uri"
+  PASS: 'uri' (limit 20)
+  $ compare_search "elt"
+  PASS: 'elt' (limit 20)
+  $ compare_search "xml"
+  PASS: 'xml' (limit 20)
+
+Long queries:
+  $ compare_search "Make_with_wrapped_functions"
+  PASS: 'Make_with_wrapped_functions' (limit 20)
+  $ compare_search "keyboard_event_handler"
+  PASS: 'keyboard_event_handler' (limit 20)
+
+--------------------------------------------------------------------------------
+TYPE-BASED SEARCH TESTS
+--------------------------------------------------------------------------------
+
+Simple type searches:
+  $ compare_search ": list"
+  PASS: ': list' (limit 20)
+  $ compare_search ": string"
+  PASS: ': string' (limit 20)
+  $ compare_search ": attrib"
+  PASS: ': attrib' (limit 20)
+
+Arrow type searches:
+  $ compare_search ": _ -> _"
+  PASS: ': _ -> _' (limit 20)
+  $ compare_search ": string -> _"
+  PASS: ': string -> _' (limit 20)
+  $ compare_search ": _ -> attrib"
+  PASS: ': _ -> attrib' (limit 20)
+
+Polymorphic type searches:
+  $ compare_search ": 'a"
+  PASS: ': 'a' (limit 20)
+  $ compare_search ": 'a -> 'a"
+  PASS: ': 'a -> 'a' (limit 20)
+  $ compare_search ": 'a list"
+  PASS: ': 'a list' (limit 20)
+
+Complex type searches:
+  $ compare_search ": 'a elt"
+  PASS: ': 'a elt' (limit 20)
+  $ compare_search ": _ wrap"
+  PASS: ': _ wrap' (limit 20)
+  $ compare_search ": string -> attrib"
+  PASS: ': string -> attrib' (limit 20)
+
+--------------------------------------------------------------------------------
+COMBINED NAME + TYPE SEARCH TESTS
+--------------------------------------------------------------------------------
+
+  $ compare_search "unsafe : string"
+  PASS: 'unsafe : string' (limit 20)
+  $ compare_search "attrib : string"
+  PASS: 'attrib : string' (limit 20)
+  $ compare_search "of_seq : list"
+  PASS: 'of_seq : list' (limit 20)
+
+--------------------------------------------------------------------------------
+RESULT ORDERING AND COST TESTS
+--------------------------------------------------------------------------------
+
+Results should have identical ordering (costs):
   $ export SHERLODOC_DB=reference.marshal
-  $ sherlodoc search --limit 5 --no-rhs ": list"
-  val Tyxml_svg.of_seq
-  val Tyxml_html.of_seq
-  val Svg_f.Make.of_seq
-  val Html_f.Make.of_seq
-  val Svg_f.Make_with_wrapped_functions.of_seq
-
-Type search returns identical results on the merged database:
+  $ sherlodoc search --limit 15 --print-cost --no-rhs "attrib" > /tmp/ref_cost.txt
   $ export SHERLODOC_DB=merged.marshal
-  $ sherlodoc search --limit 5 --no-rhs ": list"
-  val Tyxml_svg.of_seq
-  val Tyxml_html.of_seq
-  val Svg_f.Make.of_seq
-  val Html_f.Make.of_seq
-  val Svg_f.Make_with_wrapped_functions.of_seq
+  $ sherlodoc search --limit 15 --print-cost --no-rhs "attrib" > /tmp/merged_cost.txt
+  $ diff /tmp/ref_cost.txt /tmp/merged_cost.txt && echo "Costs match"
+  Costs match
 
-Name-based search also works on merged databases:
-  $ sherlodoc search --limit 3 --no-rhs "emptytags"
-  val Tyxml_svg.Info.emptytags
-  val Tyxml_html.Info.emptytags
-  val Svg_f.Make.Info.emptytags
+Type search costs should also match:
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 15 --print-cost --no-rhs ": list" > /tmp/ref_type_cost.txt
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 15 --print-cost --no-rhs ": list" > /tmp/merged_type_cost.txt
+  $ diff /tmp/ref_type_cost.txt /tmp/merged_type_cost.txt && echo "Type search costs match"
+  Type search costs match
+
+--------------------------------------------------------------------------------
+LARGE RESULT SET TESTS
+--------------------------------------------------------------------------------
+
+Test with larger result limits to catch any ordering differences:
+  $ compare_search "attrib" 50
+  PASS: 'attrib' (limit 50)
+  $ compare_search "type" 50
+  PASS: 'type' (limit 50)
+  $ compare_search ": _" 50
+  PASS: ': _' (limit 50)
+
+--------------------------------------------------------------------------------
+STATIC SORT TESTS
+--------------------------------------------------------------------------------
+
+Static sort (without query-based ranking) should also match:
+  $ export SHERLODOC_DB=reference.marshal
+  $ sherlodoc search --limit 20 --static-sort --no-rhs "handler" > /tmp/ref_static.txt
+  $ export SHERLODOC_DB=merged.marshal
+  $ sherlodoc search --limit 20 --static-sort --no-rhs "handler" > /tmp/merged_static.txt
+  $ diff /tmp/ref_static.txt /tmp/merged_static.txt && echo "Static sort matches"
+  Static sort matches
+
+================================================================================
+EDGE CASES AND ERROR HANDLING
+================================================================================
 
 Test merging with just one database (edge case)
   $ sherlodoc merge --format marshal -o single.marshal db1.marshal
