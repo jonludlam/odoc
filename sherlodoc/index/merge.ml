@@ -1,7 +1,7 @@
 (** Merge multiple sherlodoc databases into one *)
 
 module Entry = Db.Entry
-module Entry_set = Set.Make(Entry)
+module Entry_set = Set.Make (Entry)
 
 (** Extract all entries from a string automaton *)
 let rec collect_entries_from_node acc node =
@@ -14,8 +14,7 @@ let rec collect_entries_from_node acc node =
   in
   match node.children with
   | None -> acc
-  | Some children ->
-      Array.fold_left collect_entries_from_node acc children
+  | Some children -> Array.fold_left collect_entries_from_node acc children
 
 let collect_entries_from_automaton (automaton : Db.String_automata.t) =
   collect_entries_from_node Entry_set.empty automaton.t
@@ -29,8 +28,8 @@ let collect_entries_from_db (db : Db.Storage.db) =
   let entries =
     Occurences.fold
       (fun _count automaton acc ->
-        let new_entries = collect_entries_from_automaton automaton in
-        Entry_set.union acc new_entries)
+         let new_entries = collect_entries_from_automaton automaton in
+         Entry_set.union acc new_entries)
       db.db_pos_types
       entries
   in
@@ -38,8 +37,8 @@ let collect_entries_from_db (db : Db.Storage.db) =
   let entries =
     Occurences.fold
       (fun _count automaton acc ->
-        let new_entries = collect_entries_from_automaton automaton in
-        Entry_set.union acc new_entries)
+         let new_entries = collect_entries_from_automaton automaton in
+         Entry_set.union acc new_entries)
       db.db_neg_types
       entries
   in
@@ -51,33 +50,25 @@ let merge_databases (dbs : Db.Storage.db list) =
   let all_entries =
     List.fold_left
       (fun acc db ->
-        let entries = collect_entries_from_db db in
-        Entry_set.union acc entries)
+         let entries = collect_entries_from_db db in
+         Entry_set.union acc entries)
       Entry_set.empty
       dbs
   in
-
   (* Create a new database writer *)
   let db = Db_writer.make () in
-
   (* Register all entries *)
   Entry_set.iter
     (fun (entry : Entry.t) ->
-      (* Register the name *)
-      let name = String.lowercase_ascii entry.name in
-      Db_writer.store_word db name entry;
-
-      (* Register the type if present *)
-      match entry.rhs with
-      | None -> ()
-      | Some _ ->
-          (* We need to re-parse and register the type.
-             However, we don't have the original Odoc type expression,
-             only the string representation. For now, we skip type indexing
-             during merge. This is a limitation but the name search will still work. *)
-          ()
-    )
-    all_entries;
-
+       (* Register the name *)
+       let name = String.lowercase_ascii entry.name in
+       Db_writer.store_word db name entry ;
+       (* Register type polarities if available *)
+       match Entry.Kind.get_type entry.kind with
+       | None -> ()
+       | Some typ ->
+           let polarities = Db.Type_polarity.of_typ ~any_is_poly:true typ in
+           Db_writer.store_type_polarities db entry polarities)
+    all_entries ;
   (* Export the merged database *)
   Db_writer.export ~summarize:false db

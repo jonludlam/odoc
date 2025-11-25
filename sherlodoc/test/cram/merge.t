@@ -127,11 +127,11 @@ The incomplete merge correctly omits entries that were only in db3
 Specifically, Tyxml_xml.wrap and Tyxml_svg.wrap are missing, demonstrating
 that the merge only includes what was in the input databases (db1+db2)
 
-Limitation: Type-based search does not work on merged databases
-This is because we only have the string representation of types, not the
-original Odoc type expression AST needed for type polarity analysis.
+Type-based search also works on merged databases.
+The type information is preserved in entries via the Kind type (e.g., Val of Typexpr.t)
+and is recomputed during merge using type polarity analysis.
 
-Type search works on the reference database (traditional build):
+Type search on the reference database (traditional build):
   $ export SHERLODOC_DB=reference.marshal
   $ sherlodoc search --limit 5 --no-rhs ": list"
   val Tyxml_svg.of_seq
@@ -140,16 +140,16 @@ Type search works on the reference database (traditional build):
   val Html_f.Make.of_seq
   val Svg_f.Make_with_wrapped_functions.of_seq
 
-But type search returns no results on the merged database:
+Type search returns identical results on the merged database:
   $ export SHERLODOC_DB=merged.marshal
   $ sherlodoc search --limit 5 --no-rhs ": list"
-  [No results]
+  val Tyxml_svg.of_seq
+  val Tyxml_html.of_seq
+  val Svg_f.Make.of_seq
+  val Html_f.Make.of_seq
+  val Svg_f.Make_with_wrapped_functions.of_seq
 
-This is a known limitation: merged databases only support name-based search,
-not type-based search. For type search to work, databases must be built
-directly from .odocl files, not merged from other databases.
-
-Name-based search still works perfectly on merged databases:
+Name-based search also works on merged databases:
   $ sherlodoc search --limit 3 --no-rhs "emptytags"
   val Tyxml_svg.Info.emptytags
   val Tyxml_html.Info.emptytags
@@ -188,8 +188,10 @@ Test merging non-existent files - cmdliner validates file existence
 
 Test that help message is available
   $ sherlodoc merge --help | head -5
-  NAME
+  SHERLODOC-MERGE(1)             Sherlodoc Manual             SHERLODOC-MERGE(1)
+  
+  NNAAMMEE
          sherlodoc-merge - Merge multiple sherlodoc databases into one
   
-  SYNOPSIS
-         sherlodoc merge [--format=DB_FORMAT] [--db=DB] [OPTION]… INPUT_DB…
+
+
