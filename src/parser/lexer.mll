@@ -549,7 +549,7 @@ and token input = parse
     { warning input Parse_error.truncated_see;
       emit input (`Word "@see") }
 
-  | '@' (['a'-'z' 'A'-'Z']+ as tag)
+  | '@' (['a'-'z' 'A'-'Z'] ['a'-'z' 'A'-'Z' '0'-'9' '_' '.']* as tag)
     { emit input (`Tag (`Custom tag)) }
 
   | '@'
