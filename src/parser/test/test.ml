@@ -6161,6 +6161,52 @@ let%expect_test _ =
       [%expect
         {| ((output (((f.ml (1 0) (1 7)) (@custom custom)))) (warnings ())) |}]
 
+    let custom_tag_with_dot =
+      test "@foo.bar";
+      [%expect
+        {| ((output (((f.ml (1 0) (1 8)) (@custom foo.bar)))) (warnings ())) |}]
+
+    let custom_tag_with_multiple_dots =
+      test "@callout.box.large";
+      [%expect
+        {| ((output (((f.ml (1 0) (1 18)) (@custom callout.box.large)))) (warnings ())) |}]
+
+    let custom_tag_with_underscore =
+      test "@foo_bar";
+      [%expect
+        {| ((output (((f.ml (1 0) (1 8)) (@custom foo_bar)))) (warnings ())) |}]
+
+    let custom_tag_with_number =
+      test "@rfc2616";
+      [%expect
+        {| ((output (((f.ml (1 0) (1 8)) (@custom rfc2616)))) (warnings ())) |}]
+
+    let custom_tag_with_content =
+      test "@foo.bar This is the content";
+      [%expect
+        {|
+        ((output
+          (((f.ml (1 0) (1 28))
+            (@custom foo.bar
+             ((f.ml (1 9) (1 28))
+              (paragraph
+               (((f.ml (1 9) (1 13)) (word This)) ((f.ml (1 13) (1 14)) space)
+                ((f.ml (1 14) (1 16)) (word is)) ((f.ml (1 16) (1 17)) space)
+                ((f.ml (1 17) (1 20)) (word the)) ((f.ml (1 20) (1 21)) space)
+                ((f.ml (1 21) (1 28)) (word content)))))))))
+         (warnings ()))
+        |}]
+
+    let custom_tag_trailing_dot =
+      test "@foo. bar";
+      [%expect
+        {|
+        ((output
+          (((f.ml (1 0) (1 9))
+            (@custom foo.
+             ((f.ml (1 6) (1 9)) (paragraph (((f.ml (1 6) (1 9)) (word bar)))))))))
+         (warnings ())) |}]
+
     let custom_reference_kind =
       test "{!custom:foo}";
       [%expect
