@@ -469,11 +469,19 @@ let warn_on_hidden_representation (id : Id.Type.t)
         Lookup_failures.report_warning "@[<2>Hidden constructors in type '%a'@]"
           Component.Fmt.(model_identifier fmt_cfg)
           (id :> Id.any)
-  | Record fields ->
-      if List.exists internal_field fields then
-        Lookup_failures.report_warning "@[<2>Hidden fields in type '%a'@]"
-          Component.Fmt.(model_identifier fmt_cfg)
-          (id :> Id.any)
+  | Record fields -> (
+      match List.filter internal_field fields with
+      | [] -> ()
+      | hidden ->
+          let field_names =
+            List.map
+              (fun f -> Paths.Identifier.name f.Lang.TypeDecl.Field.id)
+              hidden
+          in
+          Lookup_failures.report_warning
+            "@[<2>Hidden fields in type '%a': %s@]"
+            Component.Fmt.(model_identifier fmt_cfg)
+            (id :> Id.any) (String.concat ", " field_names))
   | Extensible -> ()
 
 let rec unit env t =
