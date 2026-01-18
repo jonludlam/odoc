@@ -49,8 +49,7 @@ let support_files : (string, support_file) Hashtbl.t = Hashtbl.create 16
 
 let register_handler ~prefix (handler : 'block handler) =
   Hashtbl.replace handlers prefix (Obj.repr handler);
-  Hashtbl.replace prefixes prefix ();
-  Printf.printf "[odoc] Registered extension: @%s\n%!" prefix
+  Hashtbl.replace prefixes prefix ()
 
 let register_support_file ~prefix (file : support_file) =
   let key = prefix ^ ":" ^ file.filename in
