@@ -9,6 +9,9 @@ module List = ListLabels
 open Odoc_odoc
 open Cmdliner
 
+(* Load all installed extensions at startup *)
+let () = Sites.Plugins.Extensions.load_all ()
+
 let convert_syntax : Odoc_document.Renderer.syntax Arg.conv =
   let syntax_parser str =
     match str with
@@ -1761,6 +1764,21 @@ let section_support = "COMMANDS: Scripting"
 let section_legacy = "COMMANDS: Legacy pipeline"
 let section_deprecated = "COMMANDS: Deprecated"
 
+module Extensions = struct
+  let run () =
+    let prefixes = Odoc_extension_api.Registry.list_prefixes () in
+    match prefixes with
+    | [] ->
+        Printf.printf "No extensions installed.\n%!";
+        Printf.printf "Extensions can be installed as opam packages that register with odoc.\n%!"
+    | _ ->
+        Printf.printf "Installed extensions:\n%!";
+        List.iter ~f:(fun prefix -> Printf.printf "  @%s\n%!" prefix) prefixes
+
+  let cmd = Term.(const run $ const ())
+  let info ~docs = Cmd.info "extensions" ~docs ~doc:"List installed odoc extensions"
+end
+
 (** Sections in the order they should appear. *)
 let main_page_sections =
   [
@@ -1813,6 +1831,7 @@ let () =
          Depends.Odoc_html.(cmd, info ~docs:section_deprecated);
          Classify.(cmd, info ~docs:section_pipeline);
          Extract_code.(cmd, info ~docs:section_pipeline);
+         Extensions.(cmd, info ~docs:section_support);
        ]
   in
   let main =

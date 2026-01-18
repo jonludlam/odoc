@@ -30,44 +30,152 @@ file.
 
 ## Design Decisions
 
-### Q1: Static linking (with future dynlink option)
+### Q1: Dynamic plugins using dune's sites mechanism
 
-Extensions are OCaml libraries implementing a defined interface. Initially we
-support static linking only - the extension is compiled and linked into either:
-- A custom odoc binary, or
-- The documentation generation pipeline
+Extensions are OCaml libraries that are dynamically loaded at runtime using
+dune's plugins/sites mechanism (`dune-site`). This approach:
 
-This avoids Dynlink's cross-platform complexity and ABI compatibility issues.
-The interface should be designed to allow dynlink as a future enhancement.
+- **No custom odoc binary**: Extensions are loaded by the standard odoc at runtime
+- **Independent installation**: Extensions are installed as separate opam packages
+- **Automatic discovery**: odoc discovers installed extensions via the sites mechanism
+- **Ecosystem-friendly**: Follows established dune patterns for extensibility
 
-### Q2: Package-wide declaration in dune-project
+#### How it works
 
-Extensions are declared per-package in `dune-project`, within the existing
-`(documentation ...)` stanza:
+1. **odoc declares a plugin site** in its `dune-project`:
+
+```lisp
+(lang dune 3.21)
+(using dune_site 0.1)
+(name odoc)
+
+(package
+  (name odoc)
+  (sites (lib extensions)))  ; Extensions are installed here
+```
+
+2. **odoc uses `generate_sites_module`** to discover and load plugins:
+
+```lisp
+; In odoc's dune file
+(executable
+  (name odoc_main)
+  (libraries odoc_core dune-site dune-site.plugins)
+  (modules odoc_main sites))
+
+(generate_sites_module
+  (module sites)
+  (plugins (odoc extensions)))
+```
+
+3. **Extension packages declare themselves as plugins**:
+
+```lisp
+; In odoc-rfc-extension/dune-project
+(lang dune 3.21)
+(using dune_site 0.1)
+(name odoc-rfc-extension)
+
+(package (name odoc-rfc-extension))
+```
+
+```lisp
+; In odoc-rfc-extension/dune
+(library
+  (public_name odoc-rfc-extension.impl)
+  (name odoc_rfc_impl)
+  (libraries odoc.extension_api))
+
+(plugin
+  (name odoc-rfc-extension)
+  (libraries odoc-rfc-extension.impl)
+  (site (odoc extensions)))
+```
+
+4. **odoc loads all installed extensions** at startup:
+
+```ocaml
+(* In odoc_main.ml *)
+let () = Sites.Plugins.Extensions.load_all ()
+(* Extensions register themselves during load *)
+```
+
+#### ABI compatibility
+
+The primary concern with dynamic loading is ABI compatibility - plugins must be
+compiled with the same OCaml version and compatible compiler flags. This is
+mitigated by:
+
+- **opam's OCaml version constraints**: Extension packages depend on specific
+  OCaml versions, so opam ensures compatibility
+- **Rebuild on OCaml upgrade**: When the OCaml compiler is upgraded, all
+  packages (including extensions) are rebuilt
+- **Clear error messages**: If loading fails due to ABI mismatch, odoc reports
+  a clear error directing users to rebuild the extension
+
+### Q2: Extension registration pattern
+
+Extensions register themselves with odoc's extension registry when loaded.
+This is the standard dune plugin pattern:
+
+```ocaml
+(* In odoc.extension_api *)
+module Registry : sig
+  val register : (module Odoc_tag_extension) -> unit
+  val find : string -> (module Odoc_tag_extension) option
+  val all : unit -> (module Odoc_tag_extension) list
+end
+
+(* In odoc_rfc_impl.ml - executed when plugin loads *)
+let () =
+  Odoc.Extension_api.Registry.register (module Rfc_extension)
+```
+
+### Q3: Declaration in dune-project and opam
+
+Users declare which extensions they need in their `dune-project`. This serves
+two purposes:
+
+1. **Build-time dependency**: Ensures the extension is available when building docs
+2. **CI solver hint**: Allows ocaml.org doc CI to know which extensions to install
 
 ```lisp
 (package
   (name mypkg)
-  (documentation
-    (depends odoc)
-    (extensions my_rfc_extension my_example_extension)))
+  (depends
+    (odoc (>= 3.0))
+    (odoc-rfc-extension (>= 1.0))
+    (odoc-graphviz-extension (>= 1.0))))
 ```
 
-This maps 1:1 to opam packages, so extension dependencies flow naturally
-into each package's generated `.opam` file.
+Since extensions are regular opam packages with `(plugin ...)` stanzas, they
+appear as normal dependencies. The CI solver simply installs all dependencies,
+which includes the extensions.
 
-### Q3: Opam file for CI solver
+For explicit documentation about which extensions a package uses, an optional
+`x-odoc-extensions` field can be added:
 
-The CI solver only has access to opam files during dependency resolution, so
-extension info must be in opam. Since dune generates opam files, we maintain
-a single source of truth:
+```
+x-odoc-extensions: ["odoc-rfc-extension" "odoc-graphviz-extension"]
+```
 
-1. Declare in `dune-project`
-2. Dune generates opam with extension metadata (e.g., `x-odoc-extensions`)
-3. CI solver reads opam, installs extension packages
-4. Build system uses extensions during doc generation
+This is informational only - the actual dependency resolution uses the
+standard `depends` field.
 
-Non-dune builds can manually add the opam fields.
+### Q4: Fallback for missing extensions
+
+When odoc encounters a custom tag but the extension is not installed:
+
+1. **Warning**: "Unknown tag @rfc - is odoc-rfc-extension installed?"
+2. **Graceful degradation**: The tag content is rendered as a blockquote with
+   a note about the missing extension
+3. **No build failure**: Documentation generation continues
+
+This allows documentation to be built even if extensions are missing, which is
+important for:
+- Quick local builds without all extensions
+- CI environments that don't have all extensions configured
+- Viewing older docs where extensions may have changed
 
 ## Extension Interface
 
@@ -216,4 +324,191 @@ When odoc encounters a custom tag:
 2. If no extension registered: warning "Unknown tag @foo"
 3. If extension raises `Unsupported_tag`: error "Tag @foo.bar not supported by 'foo' extension"
 4. Extension errors during link/render are reported with source location
+
+## Dune Integration
+
+### Extension loading in dune's doc rules
+
+When dune runs `odoc link` or `odoc html-generate`, the extensions are loaded
+automatically because:
+
+1. odoc is built with `dune-site.plugins` support
+2. The `Sites.Plugins.Extensions.load_all ()` call happens at odoc startup
+3. Any extensions installed in the `odoc/extensions` site are discovered
+
+No special dune rules are needed - if the extension package is installed,
+odoc will find and use it.
+
+### Development workflow
+
+During development (before extensions are installed), extensions can be
+loaded by setting environment variables that dune-site respects:
+
+```bash
+# Point to local extension build
+export DUNE_DIR_LOCATIONS="odoc:lib:extensions:_build/default/my-extension"
+dune build @doc
+```
+
+Alternatively, dune could be enhanced to understand that packages with
+`(plugin (site (odoc extensions)))` should have their build directories
+added to the site path when building docs.
+
+### Complete example: RFC extension package
+
+Here's the full structure of an RFC extension package:
+
+```
+odoc-rfc-extension/
+├── dune-project
+├── odoc-rfc-extension.opam
+├── src/
+│   ├── dune
+│   └── rfc_extension.ml
+└── test/
+    └── ...
+```
+
+**dune-project**:
+```lisp
+(lang dune 3.21)
+(using dune_site 0.1)
+(name odoc-rfc-extension)
+(generate_opam_files true)
+
+(package
+  (name odoc-rfc-extension)
+  (synopsis "RFC reference extension for odoc")
+  (depends
+    (ocaml (>= 4.14))
+    (odoc (>= 3.0))))
+```
+
+**src/dune**:
+```lisp
+(library
+  (public_name odoc-rfc-extension.impl)
+  (name rfc_extension)
+  (libraries odoc.extension_api))
+
+(plugin
+  (name odoc-rfc-extension)
+  (libraries odoc-rfc-extension.impl)
+  (site (odoc extensions)))
+```
+
+**src/rfc_extension.ml**:
+```ocaml
+open Odoc_extension_api
+
+let prefix = "rfc"
+
+let link ~tag _env content = content
+
+let to_document ~tag content =
+  (* Parse "@rfc 9110" or "@rfc 9110 Section 5.5" *)
+  let rfc_num, section = parse_rfc_reference content in
+  let url = Printf.sprintf "https://www.rfc-editor.org/rfc/rfc%d" rfc_num in
+  let url = match section with
+    | None -> url
+    | Some s -> url ^ "#" ^ s
+  in
+  let link_text = match section with
+    | None -> Printf.sprintf "RFC %d" rfc_num
+    | Some s -> Printf.sprintf "RFC %d %s" rfc_num s
+  in
+  {
+    content = Block.[
+      Paragraph [Inline.Link { url; text = [Inline.Text link_text] }]
+    ];
+    overrides = [];
+    resources = [];
+  }
+
+(* Register on load *)
+let () = Registry.register (module struct
+  let prefix = prefix
+  let link = link
+  let to_document = to_document
+end)
+```
+
+## Trade-offs: Dynamic vs Static Linking
+
+### Dynamic plugins (recommended)
+
+**Advantages:**
+- No need to rebuild odoc for each project
+- Extensions are independent packages with their own release cycles
+- Natural fit with opam package management
+- Standard dune pattern used by other tools
+- Extensions can be added/removed without touching the main project
+
+**Disadvantages:**
+- ABI compatibility requirements (same OCaml version)
+- Slightly more complex deployment (multiple packages)
+- Runtime discovery adds small startup overhead
+- Cross-compilation may be more complex
+
+### Static linking (alternative)
+
+**Advantages:**
+- Single binary with all extensions baked in
+- No runtime ABI concerns
+- Simpler deployment for specialized use cases
+- Works in environments where dynlink is unavailable
+
+**Disadvantages:**
+- Requires rebuilding a custom odoc binary
+- Extensions tightly coupled to specific odoc version
+- More complex build setup
+- Doesn't fit well with standard opam workflows
+
+### Recommendation
+
+The dynamic plugin approach using dune-site is recommended as the primary
+mechanism because:
+
+1. It follows established dune patterns
+2. It integrates naturally with opam
+3. It allows extensions to evolve independently
+4. The ABI concerns are well-handled by opam's dependency resolver
+5. It's the approach used by other OCaml tools with plugin systems
+
+Static linking could be supported as an advanced option for specific use
+cases (embedded systems, specialized deployments), but shouldn't be the
+default.
+
+## Implementation Plan
+
+### Phase 1: Core extension infrastructure
+
+1. Add `odoc.extension_api` library with:
+   - `Odoc_tag_extension` module type
+   - `Registry` module for extension registration
+   - `extension_output` type and helpers
+
+2. Modify odoc to:
+   - Add `(sites (lib extensions))` to dune-project
+   - Add `dune-site` and `dune-site.plugins` dependencies
+   - Generate sites module and call `load_all ()` at startup
+   - Hook extension registry into link and html-generate phases
+
+### Phase 2: Extension discovery and error handling
+
+1. Implement graceful fallback for unknown tags
+2. Add helpful error messages for ABI mismatches
+3. Add `odoc extensions` subcommand to list installed extensions
+
+### Phase 3: Example extensions
+
+1. Create `odoc-rfc-extension` as a reference implementation
+2. Create `odoc-callout-extension` showing universal content
+3. Create `odoc-graphviz-extension` showing backend overrides
+
+### Phase 4: Documentation and ecosystem
+
+1. Document extension authoring guide
+2. Work with ocaml.org CI to support extensions
+3. Consider creating an `odoc-extensions` opam repository or tag
 
