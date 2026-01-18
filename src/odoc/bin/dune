@@ -2,8 +2,14 @@
  (name main)
  (package odoc)
  (public_name odoc)
- (libraries cmdliner odoc_model odoc_odoc)
+ (libraries cmdliner odoc_model odoc_odoc odoc_extension_api
+            dune-site dune-site.plugins)
+ (modules main sites)
  (instrumentation
   (backend landmarks --auto))
  (instrumentation
   (backend bisect_ppx)))
+
+(generate_sites_module
+ (module sites)
+ (plugins (odoc extensions)))

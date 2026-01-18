@@ -375,7 +375,22 @@ let tag : Comment.tag -> Description.one =
       item ~tag:"alert"
         [ block (Block.Inline ([ inline @@ Text tag ] @ content)) ]
   | `Custom (name, content) ->
-      item ~tag:name (nestable_block_element_list content)
+      (* Check if there's a registered extension for this tag *)
+      let prefix = Odoc_extension_registry.prefix_of_tag name in
+      (match Odoc_extension_registry.find_handler ~prefix with
+      | Some handler ->
+          (match handler name content with
+          | Some result ->
+              (* Extension handled the tag - use its output *)
+              { Description.attr = [ name ];
+                key = [ inline ~attr:[ "at-tag" ] (Text name) ];
+                definition = result.Odoc_extension_registry.content }
+          | None ->
+              (* Extension declined to handle this tag variant *)
+              item ~tag:name (nestable_block_element_list content))
+      | None ->
+          (* No extension registered - use default handling *)
+          item ~tag:name (nestable_block_element_list content))
 
 let attached_block_element : Comment.attached_block_element -> Block.t =
   function
