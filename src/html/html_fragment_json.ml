@@ -49,16 +49,6 @@ let make ~config ~preamble ~url ~breadcrumbs ~toc ~uses_katex ~source_anchor
   let source_anchor =
     match source_anchor with Some url -> `String url | None -> `Null
   in
-  let frontmatter : Json.json =
-    `Object
-      [
-        ( "other_config",
-          `Array
-            (List.map
-               (fun (k, v) -> (`Array [ `String k; `String v ] : Json.json))
-               frontmatter.Odoc_model.Frontmatter.other_config) );
-      ]
-  in
   let content ppf =
     Format.pp_print_string ppf
       (json_to_string

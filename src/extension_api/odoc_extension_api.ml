@@ -143,7 +143,7 @@ let rec text_of_nestable_block_elements elements =
   List.iter (fun (el : Comment.nestable_block_element Location_.with_location) ->
     match el.Location_.value with
     | `Paragraph p -> Buffer.add_string buf (text_of_paragraph p)
-    | `Code_block (_, code, _) -> Buffer.add_string buf code.Location_.value
+    | `Code_block c -> Buffer.add_string buf c.content.Location_.value
     | `Math_block m -> Buffer.add_string buf m
     | `Verbatim v -> Buffer.add_string buf v
     | `Modules _ -> ()

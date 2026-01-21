@@ -256,9 +256,12 @@ let rec block ~config ~resolve (l : Block.t) : flow Html.elt list =
         mk_block Html.ul (List.map item l)
     | Raw_markup r -> raw_markup r
     | Verbatim s -> mk_block Html.pre [ Html.txt s ]
-    | Source (lang_tag, c) ->
+    | Source (lang_tag, _classes, _data, c, output) ->
         let extra_class = [ "language-" ^ lang_tag ] in
-        mk_block ~extra_class Html.pre (source (inline ~config ~resolve) c)
+        mk_block Html.div
+          ((mk_block ~extra_class Html.pre
+              (source (inline ~config ~resolve) c))
+          @ block ~config ~resolve output)
     | Math s -> mk_block Html.div [ block_math s ]
     | Audio (target, alt) ->
         let audio src alt =
