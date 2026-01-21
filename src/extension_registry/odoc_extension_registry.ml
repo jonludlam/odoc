@@ -72,3 +72,44 @@ let prefix_of_tag tag =
   match String.index_opt tag '.' with
   | None -> tag
   | Some i -> String.sub tag 0 i
+
+(** {1 Code Block Handlers}
+
+    Similar to custom tag handlers, but for code blocks like [{@dot[...]}].
+    Handlers can transform code blocks based on language and metadata.
+*)
+
+(** Metadata for code blocks, extracted from parser AST *)
+type code_block_meta = {
+  language : string;
+  tags : Odoc_parser.Ast.code_block_tag list;
+}
+
+(** Type of code block handler functions.
+    Takes metadata and code content, returns optional transformed result. *)
+type 'block code_block_handler =
+  code_block_meta ->  (* language + metadata tags *)
+  string ->           (* code content *)
+  'block extension_result option
+
+(** Registry for code block handlers, indexed by language prefix *)
+let code_block_handlers : (string, Obj.t) Hashtbl.t = Hashtbl.create 16
+
+(** Registered code block prefixes *)
+let code_block_prefixes : (string, unit) Hashtbl.t = Hashtbl.create 16
+
+let register_code_block_handler ~prefix (handler : 'block code_block_handler) =
+  Hashtbl.replace code_block_handlers prefix (Obj.repr handler);
+  Hashtbl.replace code_block_prefixes prefix ()
+
+let find_code_block_handler (type block) ~prefix : block code_block_handler option =
+  match Hashtbl.find_opt code_block_handlers prefix with
+  | None -> None
+  | Some h -> Some (Obj.obj h)
+
+let list_code_block_prefixes () =
+  Hashtbl.fold (fun prefix () acc -> prefix :: acc) code_block_prefixes []
+  |> List.sort String.compare
+
+(** Extract the prefix from a language tag (part before the first dot) *)
+let prefix_of_language = prefix_of_tag

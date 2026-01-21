@@ -1,0 +1,57 @@
+Test code block metadata preservation and handler infrastructure.
+
+First, compile the test page:
+
+  $ odoc compile --package test test_code_blocks.mld
+
+Link:
+
+  $ odoc link -I . page-test_code_blocks.odoc
+
+Generate HTML:
+
+  $ odoc html-generate -o html page-test_code_blocks.odocl
+
+Check the HTML output exists:
+
+  $ test -f html/test/test_code_blocks.html && echo "HTML generated"
+  HTML generated
+
+Verify code blocks are rendered with language classes.
+The language-* class should be present for each code block:
+
+  $ grep -o 'class="[^"]*language-[^"]*"' html/test/test_code_blocks.html | sort | uniq
+  class="language-dot"
+  class="language-mermaid"
+  class="language-ocaml"
+  class="language-python"
+
+Verify the code content is preserved in the output:
+
+  $ grep -q "let x = 1" html/test/test_code_blocks.html && echo "ocaml code preserved"
+  ocaml code preserved
+
+  $ grep -q "let y = 2" html/test/test_code_blocks.html && echo "ocaml with metadata preserved"
+  ocaml with metadata preserved
+
+  $ grep -q "digraph G" html/test/test_code_blocks.html && echo "dot code preserved"
+  dot code preserved
+
+  $ grep -q "sequenceDiagram" html/test/test_code_blocks.html && echo "mermaid code preserved"
+  mermaid code preserved
+
+Verify bare tags don't break rendering (skip, noeval):
+
+  $ grep -q "let z = 3" html/test/test_code_blocks.html && echo "code with bare tags preserved"
+  code with bare tags preserved
+
+Verify bindings don't break rendering (version=5.0):
+
+  $ grep -q "def hello" html/test/test_code_blocks.html && echo "python code preserved"
+  python code preserved
+
+Test the odoc extensions command works:
+
+  $ odoc extensions | head -2
+  No extensions installed.
+  Extensions can be installed as opam packages that register with odoc.

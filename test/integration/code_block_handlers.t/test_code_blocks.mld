@@ -1,0 +1,53 @@
+{0 Test Code Block Handlers}
+
+This page tests code block metadata preservation and handler infrastructure.
+
+{1 Basic Code Block}
+
+A simple code block with just a language tag:
+
+{@ocaml[
+let x = 1
+]}
+
+{1 Code Block with Metadata}
+
+A code block with key=value bindings:
+
+{@ocaml env=test version=5.0[
+let y = 2
+]}
+
+{1 Code Block with Bare Tags}
+
+A code block with bare tags (boolean flags):
+
+{@ocaml skip noeval[
+let z = 3
+]}
+
+{1 Code Block with Mixed Tags}
+
+A code block with both bindings and bare tags:
+
+{@python version=3.11 async highlight[
+def hello():
+    print("Hello")
+]}
+
+{1 Custom Language Handler}
+
+This would be handled by a custom handler if registered:
+
+{@dot width=500 height=300 format=svg[
+digraph G {
+  a -> b -> c;
+  b -> d;
+}
+]}
+
+{@mermaid theme=dark[
+sequenceDiagram
+  Alice->>Bob: Hello
+  Bob-->>Alice: Hi
+]}

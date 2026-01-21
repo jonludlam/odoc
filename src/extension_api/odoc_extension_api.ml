@@ -60,6 +60,44 @@ module type Extension = sig
       page-level resources needed (JS/CSS). *)
 end
 
+(** {1 Code Block Extensions}
+
+    Extensions can also handle code blocks like [{@dot[...]}] or
+    [{@mermaid[...]}]. These extensions receive the language tag,
+    metadata (key=value pairs), and the code content.
+*)
+
+(** Metadata for code blocks *)
+type code_block_meta = Odoc_extension_registry.code_block_meta = {
+  language : string;
+  (** The language tag, e.g., "dot" or "mermaid" *)
+
+  tags : Odoc_parser.Ast.code_block_tag list;
+  (** Additional metadata tags like [width=500] or [format=svg].
+      Each tag is either [`Tag name] for bare tags or
+      [`Binding (key, value)] for key=value pairs. *)
+}
+
+(** The signature that code block extensions must implement *)
+module type Code_Block_Extension = sig
+  val prefix : string
+  (** The language prefix this extension handles.
+      E.g., "dot" handles [{@dot[...]}], "mermaid" handles [{@mermaid[...]}] *)
+
+  val to_document :
+    code_block_meta ->
+    string ->
+    extension_output option
+  (** Transform a code block. Takes metadata and code content.
+      Returns [Some output] to replace the code block, or [None] to
+      fall back to default rendering.
+
+      Example metadata for [{@dot width=500 format=svg[digraph {...}]}]:
+      - [meta.language = "dot"]
+      - [meta.tags = [`Binding ("width", "500"); `Binding ("format", "svg")]]
+      - content = "digraph {...}" *)
+end
+
 (** {1 Support Files}
 
     Extensions can register support files (CSS, JS, images, etc.) that
@@ -91,6 +129,19 @@ module Registry = struct
     in
     Odoc_extension_registry.register_handler ~prefix:E.prefix handler
 
+  let register_code_block (module E : Code_Block_Extension) =
+    let handler meta content =
+      match E.to_document meta content with
+      | Some result ->
+          Some {
+            Odoc_extension_registry.content = result.content;
+            overrides = result.overrides;
+            resources = result.resources;
+          }
+      | None -> None
+    in
+    Odoc_extension_registry.register_code_block_handler ~prefix:E.prefix handler
+
   (** Register a support file for this extension.
       The file will be output when [odoc support-files] is run. *)
   let register_support_file ~prefix file =
@@ -99,8 +150,14 @@ module Registry = struct
   let find prefix =
     Odoc_extension_registry.find_handler ~prefix
 
+  let find_code_block prefix =
+    Odoc_extension_registry.find_code_block_handler ~prefix
+
   let list_prefixes () =
     Odoc_extension_registry.list_prefixes ()
+
+  let list_code_block_prefixes () =
+    Odoc_extension_registry.list_code_block_prefixes ()
 
   let list_support_files () =
     Odoc_extension_registry.list_support_files ()
@@ -175,3 +232,39 @@ let link ~url ~text =
 (** Create an empty extension output with just content *)
 let simple_output content =
   { content; overrides = []; resources = [] }
+
+(** {1 Code Block Metadata Helpers} *)
+
+(** Get the value of a binding from code block tags.
+    E.g., for [{@dot width=500[...]}], [get_binding "width" meta.tags]
+    returns [Some "500"]. *)
+let get_binding key tags =
+  List.find_map (function
+    | `Binding (k, v) ->
+        if k.Odoc_parser.Loc.value = key then Some v.Odoc_parser.Loc.value
+        else None
+    | `Tag _ -> None
+  ) tags
+
+(** Check if a bare tag is present in code block tags.
+    E.g., for [{@ocaml line-numbers[...]}], [has_tag "line-numbers" meta.tags]
+    returns [true]. *)
+let has_tag name tags =
+  List.exists (function
+    | `Tag t -> t.Odoc_parser.Loc.value = name
+    | `Binding _ -> false
+  ) tags
+
+(** Get all bindings as a list of (key, value) pairs *)
+let get_all_bindings tags =
+  List.filter_map (function
+    | `Binding (k, v) -> Some (k.Odoc_parser.Loc.value, v.Odoc_parser.Loc.value)
+    | `Tag _ -> None
+  ) tags
+
+(** Get all bare tags as a list of names *)
+let get_all_tags tags =
+  List.filter_map (function
+    | `Tag t -> Some t.Odoc_parser.Loc.value
+    | `Binding _ -> None
+  ) tags

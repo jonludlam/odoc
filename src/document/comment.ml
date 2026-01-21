@@ -222,33 +222,48 @@ let rec nestable_block_element :
         | Some { language = { Odoc_parser.Loc.value; _ }; tags } -> (value, tags)
         | None -> (default_lang_tag, [])
       in
-      let rest =
-        match c.output with
-        | Some xs -> nestable_block_element_list xs
-        | None -> []
+      let prefix = Odoc_extension_registry.prefix_of_language lang_tag in
+      (* Check for a registered code block handler *)
+      let handler_result =
+        match Odoc_extension_registry.find_code_block_handler ~prefix with
+        | Some handler ->
+            let meta = { Odoc_extension_registry.language = lang_tag; tags = other_tags } in
+            handler meta (Odoc_model.Location_.value c.content)
+        | None -> None
       in
-      let value : 'a Odoc_parser.Loc.with_location -> 'a = fun x -> x.value in
-      let classes =
-        List.filter_map
-          (function `Binding (_, _) -> None | `Tag t -> Some (value t))
-          other_tags
-      in
-      let data =
-        List.filter_map
-          (function
-            | `Binding (k, v) -> Some (value k, value v) | `Tag _ -> None)
-          other_tags
-      in
-      [
-        block
-        @@ Source
-             ( lang_tag,
-               classes,
-               data,
-               source_of_code (Odoc_model.Location_.value c.content),
-               rest );
-      ]
-      @ rest
+      (match handler_result with
+      | Some result ->
+          (* Handler produced a result, use it *)
+          result.content
+      | None ->
+          (* No handler or handler declined, use default rendering *)
+          let rest =
+            match c.output with
+            | Some xs -> nestable_block_element_list xs
+            | None -> []
+          in
+          let value : 'a Odoc_parser.Loc.with_location -> 'a = fun x -> x.value in
+          let classes =
+            List.filter_map
+              (function `Binding (_, _) -> None | `Tag t -> Some (value t))
+              other_tags
+          in
+          let data =
+            List.filter_map
+              (function
+                | `Binding (k, v) -> Some (value k, value v) | `Tag _ -> None)
+              other_tags
+          in
+          [
+            block
+            @@ Source
+                 ( lang_tag,
+                   classes,
+                   data,
+                   source_of_code (Odoc_model.Location_.value c.content),
+                   rest );
+          ]
+          @ rest)
   | `Math_block s -> [ block @@ Math s ]
   | `Verbatim s -> [ block @@ Verbatim s ]
   | `Modules ms -> [ module_references ms ]
