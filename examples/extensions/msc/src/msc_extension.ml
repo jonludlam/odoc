@@ -26,7 +26,24 @@ module Block = Odoc_document.Types.Block
 module Inline = Odoc_document.Types.Inline
 
 (** MscGen.js CDN URL - the inpage version auto-renders on DOMContentLoaded *)
-let mscgen_js_url = "https://unpkg.com/mscgenjs-inpage@6/dist/mscgen-inpage.js"
+let mscgen_js_url = "https://unpkg.com/mscgenjs-inpage@4/dist/mscgen-inpage.js"
+
+(** Script to load mscgenjs with defer-like behavior *)
+let loader_script = Printf.sprintf {|
+(function() {
+  function loadMscgen() {
+    var script = document.createElement('script');
+    script.src = %S;
+    script.async = false;
+    document.head.appendChild(script);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadMscgen);
+  } else {
+    loadMscgen();
+  }
+})();
+|} mscgen_js_url
 
 
 (** Generate a unique ID for each diagram *)
@@ -102,7 +119,7 @@ module Msc_handler : Api.Code_Block_Extension = struct
       Api.content = block;
       overrides = [];
       resources = [
-        Api.Js_url mscgen_js_url;
+        Api.Js_inline loader_script;
       ];
     }
 end
