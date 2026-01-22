@@ -26,7 +26,7 @@ module Block = Odoc_document.Types.Block
 module Inline = Odoc_document.Types.Inline
 
 (** MscGen.js CDN URL - the inpage version auto-renders on DOMContentLoaded *)
-let mscgen_js_url = "https://cdn.jsdelivr.net/npm/mscgenjs@6/dist/mscgen-inpage.js"
+let mscgen_js_url = "https://unpkg.com/mscgenjs-inpage@6/dist/mscgen-inpage.js"
 
 
 (** Generate a unique ID for each diagram *)
