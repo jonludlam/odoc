@@ -44,6 +44,23 @@ let get_dimensions tags =
   let height = Api.get_binding "height" tags in
   (width, height)
 
+(** Check if content looks like a complete DOT graph *)
+let has_graph_wrapper content =
+  let trimmed = String.trim content in
+  String.length trimmed > 0 &&
+  (let starts_with prefix s =
+     String.length s >= String.length prefix &&
+     String.sub s 0 (String.length prefix) = prefix
+   in
+   starts_with "digraph" trimmed ||
+   starts_with "graph" trimmed ||
+   starts_with "strict" trimmed)
+
+(** Wrap content in a digraph if needed *)
+let ensure_graph_wrapper content =
+  if has_graph_wrapper content then content
+  else Printf.sprintf "digraph G {\n%s\n}" content
+
 (** Build inline style string from dimensions *)
 let make_style width height =
   let parts = [] in
@@ -101,15 +118,18 @@ module Dot_handler : Api.Code_Block_Extension = struct
     let (width, height) = get_dimensions meta.Api.tags in
     let style = make_style width height in
 
+    (* Auto-wrap in digraph if needed *)
+    let dot_content = ensure_graph_wrapper content in
+
     (* Create a container div with the diagram placeholder *)
     let style_attr = if style = "" then "" else Printf.sprintf " style=\"%s\"" style in
     let html = Printf.sprintf
       {|<div id="%s" class="odoc-dot-diagram"%s><pre>%s</pre></div>|}
-      id style_attr content
+      id style_attr content  (* Show original in fallback *)
     in
 
     (* JavaScript to render the diagram *)
-    let script = render_script id layout content in
+    let script = render_script id layout dot_content in
 
     let block = Block.[{
       attr = ["odoc-dot"];
