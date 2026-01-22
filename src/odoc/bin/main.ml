@@ -10,7 +10,11 @@ open Odoc_odoc
 open Cmdliner
 
 (* Load all installed extensions at startup *)
-let () = Sites.Plugins.Extensions.load_all ()
+let () =
+  let paths = Sites.Sites.extensions in
+  if List.length paths > 0 then
+    Printf.eprintf "DEBUG: Found %d extension path(s)\n%!" (List.length paths);
+  Sites.Plugins.Extensions.load_all ()
 
 let convert_syntax : Odoc_document.Renderer.syntax Arg.conv =
   let syntax_parser str =
