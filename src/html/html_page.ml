@@ -130,8 +130,8 @@ let default_meta_elements ~config ~url =
       ();
   ]
 
-let page_creator ~config ~url ~uses_katex ~global_toc header breadcrumbs
-    local_toc content =
+let page_creator ~config ~url ~uses_katex ~resources ~global_toc header
+    breadcrumbs local_toc content =
   let theme_uri = Config.theme_uri config in
   let support_uri = Config.support_uri config in
   let search_uris = Config.search_uris config in
@@ -183,6 +183,21 @@ let search_urls = %s;
               (Html.txt "");
           ]
     in
+    (* Convert extension resources to HTML elements *)
+    let extension_resources =
+      let open Odoc_extension_registry in
+      List.concat_map
+        (function
+          | Js_url url ->
+              [ Html.script ~a:[ Html.a_src url ] (Html.txt "") ]
+          | Css_url url ->
+              [ Html.link ~rel:[ `Stylesheet ] ~href:url () ]
+          | Js_inline code ->
+              [ Html.script (Html.cdata_script code) ]
+          | Css_inline code ->
+              [ Html.style [ Html.cdata_style code ] ])
+        resources
+    in
     let meta_elements =
       let highlightjs_meta =
         let highlight_js_uri = file_uri support_uri "highlight.pack.js" in
@@ -219,6 +234,7 @@ let search_urls = %s;
         else []
       in
       default_meta_elements ~config ~url @ highlightjs_meta @ katex_meta
+        @ extension_resources
     in
     let meta_elements = meta_elements @ search_scripts in
     Html.head (Html.title (Html.txt title_string)) meta_elements
@@ -247,12 +263,12 @@ let search_urls = %s;
   in
   content
 
-let make ~config ~url ~header ~breadcrumbs ~sidebar ~toc ~uses_katex content
-    children =
+let make ~config ~url ~header ~breadcrumbs ~sidebar ~toc ~uses_katex ~resources
+    content children =
   let filename = Link.Path.as_filename ~config url in
   let content =
-    page_creator ~config ~url ~uses_katex ~global_toc:sidebar header breadcrumbs
-      toc content
+    page_creator ~config ~url ~uses_katex ~resources ~global_toc:sidebar header
+      breadcrumbs toc content
   in
   { Odoc_document.Renderer.filename; content; children; path = url }
 

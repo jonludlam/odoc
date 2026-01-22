@@ -1,0 +1,29 @@
+opam-version: "2.0"
+version: "dev"
+synopsis: "Message Sequence Chart support for odoc documentation"
+description: """
+Renders {@msc[...]} code blocks as message sequence charts.
+Uses the MscGen syntax for defining sequence diagrams."""
+maintainer: ["Jon Ludlam <jon@recoil.org>"]
+authors: ["Jon Ludlam <jon@recoil.org>"]
+license: "ISC"
+homepage: "https://github.com/ocaml/odoc"
+bug-reports: "https://github.com/ocaml/odoc/issues"
+dev-repo: "git+https://github.com/ocaml/odoc.git"
+depends: [
+  "dune" {>= "3.18"}
+  "ocaml" {>= "4.14"}
+  "odoc" {= version}
+]
+build: [
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+  ]
+]
+x-maintenance-intent: ["(latest)"]

@@ -1,0 +1,10 @@
+(library
+  (name dot_extension)
+  (public_name odoc-dot-extension.impl)
+  (libraries odoc_extension_api odoc_parser))
+
+(plugin
+  (name odoc-dot-extension)
+  (package odoc-dot-extension)
+  (libraries odoc-dot-extension.impl)
+  (site (odoc extensions)))

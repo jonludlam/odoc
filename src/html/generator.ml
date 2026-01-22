@@ -652,7 +652,7 @@ module Page = struct
     List.map (include_ ~config ~sidebar) subpages
 
   and page ~config ~sidebar p : Odoc_document.Renderer.page =
-    let { Page.preamble = _; items = i; url; source_anchor } =
+    let { Page.preamble = _; items = i; url; source_anchor; resources } =
       Doctree.Labels.disambiguate_page ~enter_subpages:false p
     in
     let subpages = subpages ~config ~sidebar @@ Doctree.Subpages.compute p in
@@ -684,7 +684,7 @@ module Page = struct
         subpages
     else
       Html_page.make ~sidebar ~config ~header:(header @ preamble) ~toc
-        ~breadcrumbs ~url ~uses_katex content subpages
+        ~breadcrumbs ~url ~uses_katex ~resources content subpages
 
   and source_page ~config ~sidebar sp =
     let { Source_page.url; contents } = sp in

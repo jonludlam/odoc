@@ -10,7 +10,24 @@ open Odoc_odoc
 open Cmdliner
 
 (* Load all installed extensions at startup *)
-let () = Sites.Plugins.Extensions.load_all ()
+let () =
+  let paths = Sites.Sites.extensions in
+  Printf.eprintf "DEBUG: Extension paths:\n";
+  List.iter (fun p -> Printf.eprintf "  %s\n" p) paths;
+  List.iter (fun p ->
+    if Sys.file_exists p && Sys.is_directory p then begin
+      Printf.eprintf "  %s/:\n" p;
+      Array.iter (fun f -> Printf.eprintf "    %s\n" f) (Sys.readdir p)
+    end else
+      Printf.eprintf "  %s: (not found or not a dir)\n" p
+  ) paths;
+  Printf.eprintf "DEBUG: Calling load_all...\n%!";
+  try
+    Sites.Plugins.Extensions.load_all ()
+  with e ->
+    Printf.eprintf "DEBUG: load_all raised: %s\n%!" (Printexc.to_string e);
+    Printexc.print_backtrace stderr;
+    raise e
 
 let convert_syntax : Odoc_document.Renderer.syntax Arg.conv =
   let syntax_parser str =

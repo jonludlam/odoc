@@ -1,0 +1,10 @@
+(library
+  (name mermaid_extension)
+  (public_name odoc-mermaid-extension.impl)
+  (libraries odoc_extension_api odoc_parser))
+
+(plugin
+  (name odoc-mermaid-extension)
+  (package odoc-mermaid-extension)
+  (libraries odoc-mermaid-extension.impl)
+  (site (odoc extensions)))

@@ -1,0 +1,29 @@
+opam-version: "2.0"
+version: "dev"
+synopsis: "Graphviz/DOT diagram support for odoc documentation"
+description: """
+Renders {@dot[...]} code blocks as SVG diagrams using Graphviz.
+Supports width, height, and layout engine options."""
+maintainer: ["Jon Ludlam <jon@recoil.org>"]
+authors: ["Jon Ludlam <jon@recoil.org>"]
+license: "ISC"
+homepage: "https://github.com/ocaml/odoc"
+bug-reports: "https://github.com/ocaml/odoc/issues"
+dev-repo: "git+https://github.com/ocaml/odoc.git"
+depends: [
+  "dune" {>= "3.18"}
+  "ocaml" {>= "4.14"}
+  "odoc" {= version}
+]
+build: [
+  [
+    "dune"
+    "build"
+    "-p"
+    name
+    "-j"
+    jobs
+    "@install"
+  ]
+]
+x-maintenance-intent: ["(latest)"]

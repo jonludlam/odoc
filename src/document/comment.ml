@@ -21,6 +21,24 @@ open Odoc_model.Names
 
 let default_lang_tag = "ocaml"
 
+(** Resource collection for extension handlers.
+    Resources are collected during document generation and retrieved when
+    building the final page. *)
+module Resources = struct
+  let collected : Odoc_extension_registry.resource list ref = ref []
+
+  let add resources =
+    collected := !collected @ resources
+
+  let take () =
+    let result = !collected in
+    collected := [];
+    result
+
+  let clear () =
+    collected := []
+end
+
 let source_of_code s =
   if s = "" then [] else [ Source.Elt [ inline @@ Inline.Text s ] ]
 
@@ -233,7 +251,8 @@ let rec nestable_block_element :
       in
       (match handler_result with
       | Some result ->
-          (* Handler produced a result, use it *)
+          (* Handler produced a result, collect resources and use content *)
+          Resources.add result.resources;
           result.content
       | None ->
           (* No handler or handler declined, use default rendering *)
