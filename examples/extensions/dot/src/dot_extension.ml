@@ -61,18 +61,7 @@ let make_style width height =
 
 (** JavaScript code to render a single diagram *)
 let render_script id layout content =
-  (* Escape content for JavaScript string *)
-  let escaped =
-    content
-    |> String.split_on_char '\\'
-    |> String.concat "\\\\"
-    |> String.split_on_char '"'
-    |> String.concat "\\\""
-    |> String.split_on_char '\n'
-    |> String.concat "\\n"
-    |> String.split_on_char '\r'
-    |> String.concat "\\r"
-  in
+  (* Use %S for proper escaping - it handles newlines, quotes, backslashes *)
   Printf.sprintf {|
 (function() {
   function renderDot() {
@@ -101,7 +90,7 @@ let render_script id layout content =
     renderDot();
   }
 })();
-|} id escaped layout
+|} id content layout
 
 module Dot_handler : Api.Code_Block_Extension = struct
   let prefix = "dot"

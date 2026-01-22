@@ -25,25 +25,8 @@ module Api = Odoc_extension_api
 module Block = Odoc_document.Types.Block
 module Inline = Odoc_document.Types.Inline
 
-(** MscGen.js CDN URL - using the standalone library for more control *)
+(** MscGen.js CDN URL - the inpage version auto-renders on DOMContentLoaded *)
 let mscgen_js_url = "https://cdn.jsdelivr.net/npm/mscgenjs@6/dist/mscgen-inpage.js"
-
-(** Initialization script to ensure rendering happens after DOM is ready *)
-let init_script = {|
-(function() {
-  function initMscGen() {
-    if (typeof mscgen_js_inpage !== 'undefined' && mscgen_js_inpage.renderAll) {
-      mscgen_js_inpage.renderAll();
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMscGen);
-  } else {
-    // Small delay to ensure mscgen-inpage.js has initialized
-    setTimeout(initMscGen, 100);
-  }
-})();
-|}
 
 (** Generate a unique ID for each diagram *)
 let diagram_counter = ref 0
@@ -118,7 +101,6 @@ module Msc_handler : Api.Code_Block_Extension = struct
       overrides = [];
       resources = [
         Api.Js_url mscgen_js_url;
-        Api.Js_inline init_script;
       ];
     }
 end
