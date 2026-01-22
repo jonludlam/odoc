@@ -10,27 +10,7 @@ open Odoc_odoc
 open Cmdliner
 
 (* Load all installed extensions at startup *)
-let () =
-  let paths = Sites.Sites.extensions in
-  Printf.eprintf "DEBUG: Extension paths: %s\n%!" (String.concat ~sep:", " paths);
-  List.iter ~f:(fun p ->
-    if Sys.file_exists p && Sys.is_directory p then begin
-      Printf.eprintf "DEBUG: %s/:\n%!" p;
-      Array.iter (fun f -> Printf.eprintf "DEBUG:   %s\n%!" f) (Sys.readdir p)
-    end
-  ) paths;
-  let available = Sites.Plugins.Extensions.list () in
-  Printf.eprintf "DEBUG: Available plugins: %s\n%!" (String.concat ~sep:", " available);
-  List.iter ~f:(fun name ->
-    Printf.eprintf "DEBUG: Loading plugin %s...\n%!" name;
-    try
-      Sites.Plugins.Extensions.load name;
-      Printf.eprintf "DEBUG: Loaded %s successfully\n%!" name
-    with e ->
-      Printf.eprintf "DEBUG: Failed to load %s: %s\n%!" name (Printexc.to_string e)
-  ) available;
-  let prefixes = Odoc_extension_api.Registry.list_code_block_prefixes () in
-  Printf.eprintf "DEBUG: Registered code block prefixes: %s\n%!" (String.concat ~sep:", " prefixes)
+let () = Sites.Plugins.Extensions.load_all ()
 
 let convert_syntax : Odoc_document.Renderer.syntax Arg.conv =
   let syntax_parser str =
