@@ -75,23 +75,31 @@ let render_script id layout content =
   in
   Printf.sprintf {|
 (function() {
-  var container = document.getElementById('%s');
-  if (!container) return;
+  function renderDot() {
+    var container = document.getElementById('%s');
+    if (!container) return;
 
-  if (typeof Viz === 'undefined') {
-    container.innerHTML = '<pre style="color: red;">Viz.js not loaded</pre>';
-    return;
+    if (typeof Viz === 'undefined') {
+      container.innerHTML = '<pre style="color: red;">Viz.js not loaded</pre>';
+      return;
+    }
+
+    var viz = new Viz();
+    viz.renderSVGElement(%S, { engine: %S })
+      .then(function(svg) {
+        container.innerHTML = '';
+        container.appendChild(svg);
+      })
+      .catch(function(error) {
+        container.innerHTML = '<pre style="color: red;">' + error + '</pre>';
+      });
   }
 
-  var viz = new Viz();
-  viz.renderSVGElement(%S, { engine: %S })
-    .then(function(svg) {
-      container.innerHTML = '';
-      container.appendChild(svg);
-    })
-    .catch(function(error) {
-      container.innerHTML = '<pre style="color: red;">' + error + '</pre>';
-    });
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderDot);
+  } else {
+    renderDot();
+  }
 })();
 |} id escaped layout
 
