@@ -1,7 +1,7 @@
 (library
   (name dot_extension)
   (public_name odoc-dot-extension.impl)
-  (libraries odoc_extension_api odoc_parser))
+  (libraries odoc_extension_api odoc_parser unix))
 
 (plugin
   (name odoc-dot-extension)

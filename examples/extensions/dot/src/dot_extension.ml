@@ -1,6 +1,7 @@
 (** Graphviz/DOT diagram extension for odoc.
 
-    Renders [{@dot[...]}] code blocks as SVG diagrams.
+    Renders [{@dot[...]}] code blocks as diagrams. By default uses client-side
+    JavaScript (Viz.js), but can render server-side to PNG/SVG with format option.
 
     Example:
     {[
@@ -11,11 +12,6 @@
         }
       ]}
     ]}
-
-    Supported options:
-    - [width]: CSS width (e.g., "500px", "100%")
-    - [height]: CSS height
-    - [layout]: Graphviz layout engine (dot, neato, fdp, sfdp, twopi, circo)
 *)
 
 module Api = Odoc_extension_api
@@ -33,12 +29,17 @@ let fresh_id () =
   incr diagram_counter;
   Printf.sprintf "dot-diagram-%d" !diagram_counter
 
-(** Extract layout engine option *)
+(** Extract option values *)
 let get_layout tags =
   Api.get_binding "layout" tags
   |> Option.value ~default:"dot"
 
-(** Extract CSS dimensions *)
+let get_format tags =
+  Api.get_binding "format" tags
+
+let get_filename tags =
+  Api.get_binding "filename" tags
+
 let get_dimensions tags =
   let width = Api.get_binding "width" tags in
   let height = Api.get_binding "height" tags in
@@ -76,9 +77,46 @@ let make_style width height =
   | [] -> ""
   | ps -> String.concat "; " (List.rev ps)
 
-(** JavaScript code to render a single diagram *)
+(** Run the dot command to render to a specific format *)
+let run_dot ~layout ~format content =
+  (* Create temp file for input *)
+  let tmp_in = Filename.temp_file "odoc_dot_" ".dot" in
+  let tmp_out = Filename.temp_file "odoc_dot_" ("." ^ format) in
+  Fun.protect ~finally:(fun () ->
+    (try Sys.remove tmp_in with _ -> ());
+    (try Sys.remove tmp_out with _ -> ())
+  ) (fun () ->
+    (* Write DOT content *)
+    let oc = open_out tmp_in in
+    output_string oc content;
+    close_out oc;
+    (* Run dot command *)
+    let cmd = Printf.sprintf "dot -K%s -T%s -o %s %s 2>&1"
+      layout format (Filename.quote tmp_out) (Filename.quote tmp_in) in
+    let ic = Unix.open_process_in cmd in
+    let error_output = Buffer.create 256 in
+    (try
+      while true do
+        Buffer.add_string error_output (input_line ic);
+        Buffer.add_char error_output '\n'
+      done
+    with End_of_file -> ());
+    let status = Unix.close_process_in ic in
+    match status with
+    | Unix.WEXITED 0 ->
+        (* Read the output file *)
+        let ic = open_in_bin tmp_out in
+        let len = in_channel_length ic in
+        let data = Bytes.create len in
+        really_input ic data 0 len;
+        close_in ic;
+        Ok data
+    | _ ->
+        Error (Buffer.contents error_output)
+  )
+
+(** JavaScript code to render a single diagram (for client-side rendering) *)
 let render_script id layout content =
-  (* Use %S for proper escaping - it handles newlines, quotes, backslashes *)
   Printf.sprintf {|
 (function() {
   function renderDot() {
@@ -115,37 +153,94 @@ module Dot_handler : Api.Code_Block_Extension = struct
   let to_document meta content =
     let id = fresh_id () in
     let layout = get_layout meta.Api.tags in
+    let format = get_format meta.Api.tags in
+    let filename_opt = get_filename meta.Api.tags in
     let (width, height) = get_dimensions meta.Api.tags in
     let style = make_style width height in
+    let style_attr = if style = "" then "" else Printf.sprintf " style=\"%s\"" style in
 
     (* Auto-wrap in digraph if needed *)
     let dot_content = ensure_graph_wrapper content in
 
-    (* Create a container div with the diagram placeholder *)
-    let style_attr = if style = "" then "" else Printf.sprintf " style=\"%s\"" style in
-    let html = Printf.sprintf
-      {|<div id="%s" class="odoc-dot-diagram"%s><pre>%s</pre></div>|}
-      id style_attr content  (* Show original in fallback *)
-    in
+    match format with
+    | Some "png" | Some "svg" ->
+        (* Server-side rendering *)
+        let fmt = match format with Some f -> f | None -> "png" in
+        let base_filename = match filename_opt with
+          | Some f -> f
+          | None -> Printf.sprintf "dot-%s.%s" id fmt
+        in
+        (match run_dot ~layout ~format:fmt dot_content with
+        | Ok data ->
+            let html = Printf.sprintf
+              {|<div id="%s" class="odoc-dot-diagram"%s><img src="%s" alt="DOT diagram" /></div>|}
+              id style_attr base_filename
+            in
+            let block = Block.[{
+              attr = ["odoc-dot"];
+              desc = Raw_markup ("html", html)
+            }] in
+            Some {
+              Api.content = block;
+              overrides = [];
+              resources = [];
+              assets = [{ Api.asset_filename = base_filename; asset_content = data }];
+            }
+        | Error err ->
+            (* Show error message *)
+            let html = Printf.sprintf
+              "<div id=\"%s\" class=\"odoc-dot-diagram odoc-dot-error\"><pre style=\"color: red;\">Error rendering DOT diagram (is graphviz installed?):\n%s</pre><pre>%s</pre></div>"
+              id err content
+            in
+            let block = Block.[{
+              attr = ["odoc-dot"; "odoc-dot-error"];
+              desc = Raw_markup ("html", html)
+            }] in
+            Some {
+              Api.content = block;
+              overrides = [];
+              resources = [];
+              assets = [];
+            })
 
-    (* JavaScript to render the diagram *)
-    let script = render_script id layout dot_content in
+    | Some unknown_format ->
+        (* Unknown format - show error *)
+        let html = Printf.sprintf
+          {|<div class="odoc-dot-error"><pre style="color: red;">Unknown format: %s (supported: png, svg)</pre></div>|}
+          unknown_format
+        in
+        let block = Block.[{
+          attr = ["odoc-dot-error"];
+          desc = Raw_markup ("html", html)
+        }] in
+        Some {
+          Api.content = block;
+          overrides = [];
+          resources = [];
+          assets = [];
+        }
 
-    let block = Block.[{
-      attr = ["odoc-dot"];
-      desc = Raw_markup ("html", html)
-    }] in
-
-    Some {
-      Api.content = block;
-      overrides = [];
-      resources = [
-        Api.Js_url viz_js_url;
-        Api.Js_url viz_full_js_url;
-        Api.Js_inline script;
-      ];
-      assets = [];
-    }
+    | None ->
+        (* Default: client-side JavaScript rendering *)
+        let html = Printf.sprintf
+          {|<div id="%s" class="odoc-dot-diagram"%s><pre>%s</pre></div>|}
+          id style_attr content
+        in
+        let script = render_script id layout dot_content in
+        let block = Block.[{
+          attr = ["odoc-dot"];
+          desc = Raw_markup ("html", html)
+        }] in
+        Some {
+          Api.content = block;
+          overrides = [];
+          resources = [
+            Api.Js_url viz_js_url;
+            Api.Js_url viz_full_js_url;
+            Api.Js_inline script;
+          ];
+          assets = [];
+        }
 end
 
 (** CSS for dot diagrams *)
@@ -155,7 +250,8 @@ let dot_css = {|
   overflow: auto;
 }
 
-.odoc-dot-diagram svg {
+.odoc-dot-diagram svg,
+.odoc-dot-diagram img {
   max-width: 100%;
   height: auto;
 }
@@ -166,10 +262,30 @@ let dot_css = {|
   border-radius: 4px;
   overflow-x: auto;
 }
+
+.odoc-dot-error pre {
+  color: #c00;
+}
 |}
+
+(** Extension documentation *)
+let extension_info : Api.extension_info = {
+  info_kind = `Code_block;
+  info_prefix = "dot";
+  info_description = "Render Graphviz/DOT diagrams. Uses client-side Viz.js by default, or server-side graphviz with format=png|svg.";
+  info_options = [
+    { opt_name = "format"; opt_description = "Output format: png, svg (server-side), or omit for client-side JS"; opt_default = None };
+    { opt_name = "layout"; opt_description = "Graphviz layout engine"; opt_default = Some "dot" };
+    { opt_name = "width"; opt_description = "CSS width (e.g., 500px, 100%)"; opt_default = None };
+    { opt_name = "height"; opt_description = "CSS height"; opt_default = None };
+    { opt_name = "filename"; opt_description = "Output filename for server-side rendering"; opt_default = Some "auto-generated" };
+  ];
+  info_example = Some "{@dot format=png layout=neato[a -> b -> c]}";
+}
 
 let () =
   Api.Registry.register_code_block (module Dot_handler);
+  Api.Registry.register_extension_info extension_info;
   Api.Registry.register_support_file ~prefix:"dot" {
     filename = "extensions/dot.css";
     content = dot_css;

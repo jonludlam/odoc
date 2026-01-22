@@ -36,6 +36,27 @@ type asset = Odoc_extension_registry.asset = {
   asset_content : bytes;    (** Binary content *)
 }
 
+(** {1 Extension Documentation}
+
+    Extensions can register documentation describing their options and usage.
+    This information is displayed by [odoc extensions --help]. *)
+
+(** Documentation for a single option *)
+type option_doc = Odoc_extension_registry.option_doc = {
+  opt_name : string;           (** Option name, e.g., "width" *)
+  opt_description : string;    (** What the option does *)
+  opt_default : string option; (** Default value if any *)
+}
+
+(** Documentation/metadata for an extension *)
+type extension_info = Odoc_extension_registry.extension_info = {
+  info_kind : [ `Tag | `Code_block ];  (** Type of extension *)
+  info_prefix : string;                (** The prefix this extension handles *)
+  info_description : string;           (** Short description *)
+  info_options : option_doc list;      (** Supported options *)
+  info_example : string option;        (** Example usage *)
+}
+
 (** Output from the document phase *)
 type extension_output = {
   content : Block.t;
@@ -176,6 +197,15 @@ module Registry = struct
 
   let list_support_files () =
     Odoc_extension_registry.list_support_files ()
+
+  (** Register documentation for an extension.
+      This will be displayed by [odoc extensions]. *)
+  let register_extension_info info =
+    Odoc_extension_registry.register_extension_info info
+
+  (** List all registered extension documentation *)
+  let list_extension_infos () =
+    Odoc_extension_registry.list_extension_infos ()
 end
 
 (** {1 Helper Functions} *)

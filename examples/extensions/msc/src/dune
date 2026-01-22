@@ -1,7 +1,7 @@
 (library
   (name msc_extension)
   (public_name odoc-msc-extension.impl)
-  (libraries odoc_extension_api odoc_parser))
+  (libraries odoc_extension_api odoc_parser unix))
 
 (plugin
   (name odoc-msc-extension)

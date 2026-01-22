@@ -35,19 +35,135 @@ def hello():
     print("Hello")
 ]}
 
-{1 Custom Language Handler}
+{1 Graphviz DOT Diagrams}
 
-This would be handled by a custom handler if registered:
+Client-side rendering (default) with Viz.js:
 
-{@dot width=500 height=300 format=svg[
+{@dot[
 digraph G {
   a -> b -> c;
   b -> d;
 }
 ]}
 
-{@mermaid theme=dark[
+With layout and dimensions:
+
+{@dot layout=neato width=400px[
+graph G {
+  a -- b -- c -- a;
+}
+]}
+
+Server-side PNG rendering (requires graphviz installed):
+
+{@dot format=png filename=my-graph.png[
+digraph Dependencies {
+  rankdir=LR;
+  A [label="Module A"];
+  B [label="Module B"];
+  C [label="Module C"];
+  A -> B -> C;
+}
+]}
+
+Server-side SVG rendering:
+
+{@dot format=svg layout=circo[
+digraph Circular {
+  a -> b -> c -> d -> e -> a;
+}
+]}
+
+{1 Mermaid Diagrams}
+
+Client-side rendering (default) with Mermaid.js:
+
+{@mermaid[
+graph LR
+  A[Start] --> B{Decision}
+  B -->|Yes| C[OK]
+  B -->|No| D[Cancel]
+]}
+
+With theme option:
+
+{@mermaid theme=forest[
 sequenceDiagram
   Alice->>Bob: Hello
   Bob-->>Alice: Hi
+]}
+
+Server-side PNG rendering (requires mmdc/mermaid-cli installed):
+
+{@mermaid format=png theme=neutral[
+pie title Pets
+  "Dogs" : 386
+  "Cats" : 85
+  "Birds" : 15
+]}
+
+Server-side SVG with custom filename:
+
+{@mermaid format=svg filename=class-diagram.svg[
+classDiagram
+  Animal <|-- Duck
+  Animal <|-- Fish
+  Animal : +int age
+  Animal : +String gender
+  Animal: +isMammal()
+  Duck : +String beakColor
+  Duck : +swim()
+  Fish : +int sizeInFeet
+  Fish : +canEat()
+]}
+
+{1 Message Sequence Charts}
+
+Client-side rendering (default) with mscgen-inpage.js:
+
+{@msc[
+msc {
+  a, b, c;
+  a -> b [label="request"];
+  b -> c [label="forward"];
+  c -> b [label="response"];
+  b -> a [label="reply"];
+}
+]}
+
+With named style and dimensions:
+
+{@msc named-style=lazy width=500px[
+msc {
+  client, server, database;
+  client -> server [label="HTTP GET"];
+  server -> database [label="SELECT"];
+  database -> server [label="rows"];
+  server -> client [label="JSON"];
+}
+]}
+
+Server-side PNG rendering (requires mscgen installed):
+
+{@msc format=png[
+msc {
+  Alice, Bob, Carol;
+  Alice -> Bob [label="Hello"];
+  Bob -> Carol [label="Hi there"];
+  Carol -> Alice [label="Greetings"];
+}
+]}
+
+Server-side SVG with custom filename:
+
+{@msc format=svg filename=protocol.svg[
+msc {
+  sender, receiver;
+  sender -> receiver [label="SYN"];
+  receiver -> sender [label="SYN-ACK"];
+  sender -> receiver [label="ACK"];
+  --- [label="connection established"];
+  sender -> receiver [label="DATA"];
+  receiver -> sender [label="ACK"];
+}
 ]}

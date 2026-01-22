@@ -27,6 +27,22 @@ type asset = {
   asset_content : bytes;    (** Binary content *)
 }
 
+(** Documentation for an extension option *)
+type option_doc = {
+  opt_name : string;        (** Option name, e.g., "width" *)
+  opt_description : string; (** What the option does *)
+  opt_default : string option; (** Default value if any *)
+}
+
+(** Documentation/metadata for an extension *)
+type extension_info = {
+  info_kind : [ `Tag | `Code_block ];  (** Type of extension *)
+  info_prefix : string;                (** The prefix this extension handles *)
+  info_description : string;           (** Short description of what it does *)
+  info_options : option_doc list;      (** Supported options *)
+  info_example : string option;        (** Example usage *)
+}
+
 (** Result of processing a custom tag.
     We use a record with a polymorphic content type that gets
     instantiated with the actual Block.t by odoc_document. *)
@@ -122,3 +138,22 @@ let list_code_block_prefixes () =
 
 (** Extract the prefix from a language tag (part before the first dot) *)
 let prefix_of_language = prefix_of_tag
+
+(** {1 Extension Documentation}
+
+    Extensions can register documentation that describes their options
+    and usage. This is displayed by [odoc extensions]. *)
+
+(** Registry for extension documentation *)
+let extension_infos : (string, extension_info) Hashtbl.t = Hashtbl.create 16
+
+let register_extension_info (info : extension_info) =
+  let key = match info.info_kind with
+    | `Tag -> "tag:" ^ info.info_prefix
+    | `Code_block -> "code:" ^ info.info_prefix
+  in
+  Hashtbl.replace extension_infos key info
+
+let list_extension_infos () =
+  Hashtbl.fold (fun _ info acc -> info :: acc) extension_infos []
+  |> List.sort (fun a b -> String.compare a.info_prefix b.info_prefix)

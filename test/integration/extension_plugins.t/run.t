@@ -26,7 +26,7 @@ Test the 'odoc extensions' command.
 The output depends on what extensions are installed:
 
   $ odoc extensions | head -1
-  Installed extensions:
+  No extensions installed.
 
 Check that tag content is preserved in the output.
 
