@@ -28,25 +28,6 @@ module Inline = Odoc_document.Types.Inline
 (** MscGen.js CDN URL - the inpage version auto-renders on DOMContentLoaded *)
 let mscgen_js_url = "https://cdn.jsdelivr.net/npm/mscgenjs@6/dist/mscgen-inpage.js"
 
-(** Initialization script - ensures mscgen renders after library loads *)
-let init_script = {|
-(function() {
-  function initMscgen() {
-    if (typeof window.mscgen_js_inpage !== 'undefined' &&
-        typeof window.mscgen_js_inpage.renderAll === 'function') {
-      window.mscgen_js_inpage.renderAll();
-    }
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(initMscgen, 100);
-    });
-  } else {
-    setTimeout(initMscgen, 100);
-  }
-})();
-|}
 
 (** Generate a unique ID for each diagram *)
 let diagram_counter = ref 0
@@ -104,11 +85,12 @@ module Msc_handler : Api.Code_Block_Extension = struct
     let style = make_style width height in
 
     (* Create a container div with the MSC content *)
-    (* mscgen_js looks for <pre class="mscgen"> or data-language="mscgen" *)
+    (* mscgen_js looks for <script type="text/x-mscgen"> elements *)
     let style_attr = if style = "" then "" else Printf.sprintf " style=\"%s\"" style in
+    let data_style = if style_name = "basic" then "" else Printf.sprintf " data-named-style=\"%s\"" style_name in
     let html = Printf.sprintf
-      {|<div id="%s" class="odoc-msc-diagram"%s><pre class="mscgen" data-named-style="%s">%s</pre></div>|}
-      id style_attr style_name (html_escape content)
+      {|<div id="%s" class="odoc-msc-diagram"%s><script type="text/x-mscgen"%s>%s</script><noscript><pre>%s</pre></noscript></div>|}
+      id style_attr data_style content (html_escape content)
     in
 
     let block = Block.[{
@@ -121,7 +103,6 @@ module Msc_handler : Api.Code_Block_Extension = struct
       overrides = [];
       resources = [
         Api.Js_url mscgen_js_url;
-        Api.Js_inline init_script;
       ];
     }
 end
@@ -138,16 +119,12 @@ let msc_css = {|
   height: auto;
 }
 
-.odoc-msc-diagram pre.mscgen {
+/* Fallback for noscript */
+.odoc-msc-diagram noscript pre {
   background: #f8f8f8;
   padding: 1em;
   border-radius: 4px;
   overflow-x: auto;
-}
-
-/* Hide the source once rendered */
-.odoc-msc-diagram pre.mscgen[data-renderedby="mscgen_js"] {
-  display: none;
 }
 |}
 
