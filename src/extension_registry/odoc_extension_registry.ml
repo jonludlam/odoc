@@ -99,6 +99,7 @@ let code_block_handlers : (string, Obj.t) Hashtbl.t = Hashtbl.create 16
 let code_block_prefixes : (string, unit) Hashtbl.t = Hashtbl.create 16
 
 let register_code_block_handler ~prefix (handler : 'block code_block_handler) =
+  Printf.eprintf "DEBUG REGISTRY: Registering code block handler for prefix %S\n%!" prefix;
   Hashtbl.replace code_block_handlers prefix (Obj.repr handler);
   Hashtbl.replace code_block_prefixes prefix ()
 
@@ -108,6 +109,8 @@ let find_code_block_handler (type block) ~prefix : block code_block_handler opti
   | Some h -> Some (Obj.obj h)
 
 let list_code_block_prefixes () =
+  let count = Hashtbl.length code_block_prefixes in
+  Printf.eprintf "DEBUG REGISTRY: list_code_block_prefixes called, table has %d entries\n%!" count;
   Hashtbl.fold (fun prefix () acc -> prefix :: acc) code_block_prefixes []
   |> List.sort String.compare
 

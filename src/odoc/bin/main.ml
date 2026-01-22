@@ -12,9 +12,25 @@ open Cmdliner
 (* Load all installed extensions at startup *)
 let () =
   let paths = Sites.Sites.extensions in
-  if List.length paths > 0 then
-    Printf.eprintf "DEBUG: Found %d extension path(s)\n%!" (List.length paths);
-  Sites.Plugins.Extensions.load_all ()
+  Printf.eprintf "DEBUG: Extension paths: %s\n%!" (String.concat ~sep:", " paths);
+  List.iter ~f:(fun p ->
+    if Sys.file_exists p && Sys.is_directory p then begin
+      Printf.eprintf "DEBUG: %s/:\n%!" p;
+      Array.iter (fun f -> Printf.eprintf "DEBUG:   %s\n%!" f) (Sys.readdir p)
+    end
+  ) paths;
+  let available = Sites.Plugins.Extensions.list () in
+  Printf.eprintf "DEBUG: Available plugins: %s\n%!" (String.concat ~sep:", " available);
+  List.iter ~f:(fun name ->
+    Printf.eprintf "DEBUG: Loading plugin %s...\n%!" name;
+    try
+      Sites.Plugins.Extensions.load name;
+      Printf.eprintf "DEBUG: Loaded %s successfully\n%!" name
+    with e ->
+      Printf.eprintf "DEBUG: Failed to load %s: %s\n%!" name (Printexc.to_string e)
+  ) available;
+  let prefixes = Odoc_extension_api.Registry.list_code_block_prefixes () in
+  Printf.eprintf "DEBUG: Registered code block prefixes: %s\n%!" (String.concat ~sep:", " prefixes)
 
 let convert_syntax : Odoc_document.Renderer.syntax Arg.conv =
   let syntax_parser str =
@@ -1770,14 +1786,22 @@ let section_deprecated = "COMMANDS: Deprecated"
 
 module Extensions = struct
   let run () =
-    let prefixes = Odoc_extension_api.Registry.list_prefixes () in
-    match prefixes with
-    | [] ->
+    let tag_prefixes = Odoc_extension_api.Registry.list_prefixes () in
+    let code_block_prefixes = Odoc_extension_api.Registry.list_code_block_prefixes () in
+    match tag_prefixes, code_block_prefixes with
+    | [], [] ->
         Printf.printf "No extensions installed.\n%!";
         Printf.printf "Extensions can be installed as opam packages that register with odoc.\n%!"
     | _ ->
         Printf.printf "Installed extensions:\n%!";
-        List.iter ~f:(fun prefix -> Printf.printf "  @%s\n%!" prefix) prefixes
+        if tag_prefixes <> [] then begin
+          Printf.printf "  Tag handlers:\n%!";
+          List.iter ~f:(fun prefix -> Printf.printf "    @%s\n%!" prefix) tag_prefixes
+        end;
+        if code_block_prefixes <> [] then begin
+          Printf.printf "  Code block handlers:\n%!";
+          List.iter ~f:(fun prefix -> Printf.printf "    {@%s[...]}\n%!" prefix) code_block_prefixes
+        end
 
   let cmd = Term.(const run $ const ())
   let info ~docs = Cmd.info "extensions" ~docs ~doc:"List installed odoc extensions"
