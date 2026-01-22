@@ -28,6 +28,26 @@ module Inline = Odoc_document.Types.Inline
 (** MscGen.js CDN URL - the inpage version auto-renders on DOMContentLoaded *)
 let mscgen_js_url = "https://cdn.jsdelivr.net/npm/mscgenjs@6/dist/mscgen-inpage.js"
 
+(** Initialization script - ensures mscgen renders after library loads *)
+let init_script = {|
+(function() {
+  function initMscgen() {
+    if (typeof window.mscgen_js_inpage !== 'undefined' &&
+        typeof window.mscgen_js_inpage.renderAll === 'function') {
+      window.mscgen_js_inpage.renderAll();
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setTimeout(initMscgen, 100);
+    });
+  } else {
+    setTimeout(initMscgen, 100);
+  }
+})();
+|}
+
 (** Generate a unique ID for each diagram *)
 let diagram_counter = ref 0
 
@@ -101,6 +121,7 @@ module Msc_handler : Api.Code_Block_Extension = struct
       overrides = [];
       resources = [
         Api.Js_url mscgen_js_url;
+        Api.Js_inline init_script;
       ];
     }
 end
