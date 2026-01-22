@@ -187,6 +187,8 @@ and Page : sig
             or a sub part. *)
     resources : Odoc_extension_registry.resource list;
         (** Resources (JS/CSS) to inject into the page, collected from extensions. *)
+    assets : Odoc_extension_registry.asset list;
+        (** Binary assets to write alongside this page's HTML output. *)
   }
 end =
   Page

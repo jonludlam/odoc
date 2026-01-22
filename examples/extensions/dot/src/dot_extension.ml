@@ -144,6 +144,7 @@ module Dot_handler : Api.Code_Block_Extension = struct
         Api.Js_url viz_full_js_url;
         Api.Js_inline script;
       ];
+      assets = [];
     }
 end
 

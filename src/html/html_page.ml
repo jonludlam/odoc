@@ -264,13 +264,13 @@ let search_urls = %s;
   content
 
 let make ~config ~url ~header ~breadcrumbs ~sidebar ~toc ~uses_katex ~resources
-    content children =
+    ~assets content children =
   let filename = Link.Path.as_filename ~config url in
   let content =
     page_creator ~config ~url ~uses_katex ~resources ~global_toc:sidebar header
       breadcrumbs toc content
   in
-  { Odoc_document.Renderer.filename; content; children; path = url }
+  { Odoc_document.Renderer.filename; content; children; path = url; assets }
 
 let path_of_module_of_source ppf url =
   match url.Url.Path.parent with
@@ -311,4 +311,4 @@ let make_src ~config ~url ~breadcrumbs ~header ~sidebar title content =
   let content =
     src_page_creator ~breadcrumbs ~config ~url ~header ~sidebar title content
   in
-  { Odoc_document.Renderer.filename; content; children = []; path = url }
+  { Odoc_document.Renderer.filename; content; children = []; path = url; assets = [] }

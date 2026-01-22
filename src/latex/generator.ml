@@ -522,7 +522,7 @@ module Doc = struct
       if config.with_children then link_children ppf children else ()
     in
     let content ppf = Fmt.pf ppf "@[<v>%a@,%t@]@." pp content children_input in
-    { Odoc_document.Renderer.filename; content; children; path = url }
+    { Odoc_document.Renderer.filename; content; children; path = url; assets = [] }
 end
 
 module Page = struct

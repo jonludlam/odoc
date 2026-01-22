@@ -88,7 +88,8 @@ let make_expansion_page ~source_anchor url comments items =
   let comment = List.concat comments in
   let preamble, items = prepare_preamble comment items in
   let resources = Comment.Resources.take () in
-  { Page.preamble; items; url; source_anchor; resources }
+  let assets = Comment.Assets.take () in
+  { Page.preamble; items; url; source_anchor; resources; assets }
 
 include Generator_signatures
 
@@ -1815,7 +1816,8 @@ module Make (Syntax : SYNTAX) = struct
       let preamble, items = Sectioning.docs t.content.elements in
       let source_anchor = None in
       let resources = Comment.Resources.take () in
-      Document.Page { Page.preamble; items; url; source_anchor; resources }
+      let assets = Comment.Assets.take () in
+      Document.Page { Page.preamble; items; url; source_anchor; resources; assets }
 
     let implementation (v : Odoc_model.Lang.Implementation.t) syntax_info
         source_code =

@@ -562,7 +562,7 @@ and render_page (p : Page.t) =
   and children = List.concat_map subpage (Subpages.compute p) in
   let content ppf = Format.fprintf ppf "%a@." Roff.pp (page p) in
   let filename = Link.as_filename p.url in
-  { Renderer.filename; content; children; path = p.url }
+  { Renderer.filename; content; children; path = p.url; assets = [] }
 
 let render = function
   | Document.Page page -> [ render_page page ]

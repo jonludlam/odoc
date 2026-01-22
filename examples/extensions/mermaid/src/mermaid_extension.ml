@@ -111,6 +111,7 @@ if (typeof window.mermaidInitialized === 'undefined') {
         Api.Js_url mermaid_js_url;
         Api.Js_inline init_script;
       ];
+      assets = [];
     }
 end
 

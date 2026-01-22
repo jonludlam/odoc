@@ -121,6 +121,7 @@ module Msc_handler : Api.Code_Block_Extension = struct
       resources = [
         Api.Js_inline loader_script;
       ];
+      assets = [];
     }
 end
 

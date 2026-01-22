@@ -39,6 +39,24 @@ module Resources = struct
     collected := []
 end
 
+(** Asset collection for extension handlers.
+    Assets (binary files like PNGs) are collected during document generation
+    and written alongside the HTML output. *)
+module Assets = struct
+  let collected : Odoc_extension_registry.asset list ref = ref []
+
+  let add assets =
+    collected := !collected @ assets
+
+  let take () =
+    let result = !collected in
+    collected := [];
+    result
+
+  let clear () =
+    collected := []
+end
+
 let source_of_code s =
   if s = "" then [] else [ Source.Elt [ inline @@ Inline.Text s ] ]
 
@@ -251,8 +269,9 @@ let rec nestable_block_element :
       in
       (match handler_result with
       | Some result ->
-          (* Handler produced a result, collect resources and use content *)
+          (* Handler produced a result, collect resources/assets and use content *)
           Resources.add result.resources;
+          Assets.add result.assets;
           result.content
       | None ->
           (* No handler or handler declined, use default rendering *)
@@ -434,7 +453,9 @@ let tag : Comment.tag -> Description.one =
       | Some handler ->
           (match handler name content with
           | Some result ->
-              (* Extension handled the tag - use its output *)
+              (* Extension handled the tag - collect resources/assets and use output *)
+              Resources.add result.Odoc_extension_registry.resources;
+              Assets.add result.Odoc_extension_registry.assets;
               { Description.attr = [ name ];
                 key = [ inline ~attr:[ "at-tag" ] (Text name) ];
                 definition = result.Odoc_extension_registry.content }
