@@ -42,34 +42,6 @@
 (package (name odoc-bench))
 (package (name sherlodoc))
 
-; Example extension packages
-(package
- (name odoc-dot-extension)
- (synopsis "Graphviz/DOT diagram support for odoc documentation")
- (description "Renders {@dot[...]} code blocks as SVG diagrams using Graphviz.
-Supports width, height, and layout engine options.")
- (depends
-  (ocaml (>= 4.14))
-  odoc))
-
-(package
- (name odoc-mermaid-extension)
- (synopsis "Mermaid diagram support for odoc documentation")
- (description "Renders {@mermaid[...]} code blocks as interactive diagrams.
-Supports flowcharts, sequence diagrams, class diagrams, and more.")
- (depends
-  (ocaml (>= 4.14))
-  odoc))
-
-(package
- (name odoc-msc-extension)
- (synopsis "Message Sequence Chart support for odoc documentation")
- (description "Renders {@msc[...]} code blocks as message sequence charts.
-Uses the MscGen syntax for defining sequence diagrams.")
- (depends
-  (ocaml (>= 4.14))
-  odoc))
-
 (using mdx 0.3)
 
 ; Sherlodoc
