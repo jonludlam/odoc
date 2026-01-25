@@ -5,6 +5,8 @@
  (libraries cmdliner odoc_model odoc_odoc odoc_extension_api
             dune-site dune-site.plugins)
  (modules main sites)
+ ; -linkall ensures all modules are included for plugin dynamic linking
+ (link_flags (-linkall))
  (instrumentation
   (backend landmarks --auto))
  (instrumentation
