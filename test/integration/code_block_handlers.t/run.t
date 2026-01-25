@@ -68,5 +68,4 @@ Verify format option is accepted (format=png, format=svg):
 Test the odoc extensions command works:
 
   $ odoc extensions | head -2
-  No extensions installed.
-  Extensions can be installed as opam packages that register with odoc.
+  Installed extensions:
