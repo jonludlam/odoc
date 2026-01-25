@@ -1,0 +1,2 @@
+; This is test data for manual testing, not part of the build
+(data_only_dirs test_odoc_driver)

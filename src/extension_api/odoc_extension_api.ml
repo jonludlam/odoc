@@ -126,10 +126,10 @@ module type Code_Block_Extension = sig
       Returns [Some output] to replace the code block, or [None] to
       fall back to default rendering.
 
-      Example metadata for [{@dot width=500 format=svg[digraph {...}]}]:
+      Example metadata for [{\@dot width=500 format=svg[digraph \{...\}]}]:
       - [meta.language = "dot"]
       - [meta.tags = [`Binding ("width", "500"); `Binding ("format", "svg")]]
-      - content = "digraph {...}" *)
+      - content = "digraph \{...\}" *)
 end
 
 (** {1 Support Files}

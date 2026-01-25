@@ -12,7 +12,7 @@ with the latest development of [odoc],
 
 Several drivers for [odoc] exist, such as:
 {{:https://dune.readthedocs.io/en/stable/documentation.html}dune} and
-{{!/odig/page-index}odig}.
+{{:https://erratique.ch/software/odig/doc/}odig}.
 
 This document explains how to drive [odoc], as of version 3. It is not needed to
 know any of this to {e use} [odoc], it is targeted at driver authors, tools that

@@ -9,7 +9,8 @@
   ocamldoc_differences
   odoc_for_authors
   cheatsheet
-  json))
+  json)
+ (files odoc_logo_placeholder.jpg))
 
 ; Uncomment to run mdx on the documentation's code blocks.
 ; (mdx
@@ -51,12 +52,6 @@
 (install
  (section doc)
  (files
-  odoc-config.sexp
   (odoc_logo_placeholder.jpg as odoc-pages/odoc_logo_placeholder.jpg))
  (package odoc))
 
-(install
- (section doc)
- (files
-  (odoc-parser-config.sexp as odoc-config.sexp))
- (package odoc-parser))

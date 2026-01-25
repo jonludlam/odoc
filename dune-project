@@ -34,12 +34,13 @@
 
 (package
  (name odoc)
- (sites (lib extensions)))
+ (sites (lib extensions))
+ (documentation (depends odoc-driver cmdliner)))
 
-(package (name odoc-parser))
+(package (name odoc-parser) (documentation (depends odoc)))
 (package (name odoc-md))
-(package (name odoc-driver))
-(package (name odoc-bench))
+(package (name odoc-driver) (documentation (depends sherlodoc odoc)))
+(package (name odoc-bench) (allow_empty))
 (package (name sherlodoc))
 
 (using mdx 0.3)
