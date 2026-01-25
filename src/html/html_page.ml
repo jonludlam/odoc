@@ -189,9 +189,11 @@ let search_urls = %s;
       List.concat_map
         (function
           | Js_url url ->
-              [ Html.script ~a:[ Html.a_src url ] (Html.txt "") ]
+              let resolved_url = file_uri support_uri url in
+              [ Html.script ~a:[ Html.a_src resolved_url ] (Html.txt "") ]
           | Css_url url ->
-              [ Html.link ~rel:[ `Stylesheet ] ~href:url () ]
+              let resolved_url = file_uri support_uri url in
+              [ Html.link ~rel:[ `Stylesheet ] ~href:resolved_url () ]
           | Js_inline code ->
               [ Html.script (Html.cdata_script code) ]
           | Css_inline code ->
