@@ -85,10 +85,17 @@ let prepare_preamble comment items =
   (Comment.standalone preamble, Comment.standalone first_comment @ items)
 
 let make_expansion_page ~source_anchor url comments items =
+  (* Save any resources accumulated before this page - they belong to
+     the parent/main page's content, not this nested expansion. *)
+  let saved_resources = Comment.Resources.take () in
+  let saved_assets = Comment.Assets.take () in
   let comment = List.concat comments in
   let preamble, items = prepare_preamble comment items in
   let resources = Comment.Resources.take () in
   let assets = Comment.Assets.take () in
+  (* Restore the parent's resources *)
+  Comment.Resources.add saved_resources;
+  Comment.Assets.add saved_assets;
   { Page.preamble; items; url; source_anchor; resources; assets }
 
 include Generator_signatures
@@ -1805,6 +1812,16 @@ module Make (Syntax : SYNTAX) = struct
       in
       let source_anchor = source_anchor t.source_loc in
       let page = make_expansion_page ~source_anchor url [ unit_doc ] items in
+      (* Collect any remaining resources that were accumulated during signature
+         processing but not captured by nested pages. These belong to the
+         top-level compilation unit. *)
+      let remaining_resources = Comment.Resources.take () in
+      let remaining_assets = Comment.Assets.take () in
+      let page =
+        { page with
+          Page.resources = page.Page.resources @ remaining_resources;
+          assets = page.assets @ remaining_assets }
+      in
       Document.Page page
 
     let page (t : Odoc_model.Lang.Page.t) =

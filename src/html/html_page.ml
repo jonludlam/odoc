@@ -186,13 +186,23 @@ let search_urls = %s;
     (* Convert extension resources to HTML elements *)
     let extension_resources =
       let open Odoc_extension_registry in
+      let is_absolute_url url =
+        String.is_prefix ~affix:"http://" url ||
+        String.is_prefix ~affix:"https://" url
+      in
       List.concat_map
         (function
           | Js_url url ->
-              let resolved_url = file_uri support_uri url in
+              let resolved_url =
+                if is_absolute_url url then url
+                else file_uri support_uri url
+              in
               [ Html.script ~a:[ Html.a_src resolved_url ] (Html.txt "") ]
           | Css_url url ->
-              let resolved_url = file_uri support_uri url in
+              let resolved_url =
+                if is_absolute_url url then url
+                else file_uri support_uri url
+              in
               [ Html.link ~rel:[ `Stylesheet ] ~href:resolved_url () ]
           | Js_inline code ->
               [ Html.script (Html.cdata_script code) ]

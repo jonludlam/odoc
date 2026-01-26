@@ -210,6 +210,10 @@ end
 
 (** {1 Helper Functions} *)
 
+(** Convert Comment AST to Block elements, preserving references and formatting.
+    This is the proper way to convert tag content to renderable blocks. *)
+let blocks_of_nestable_elements = Odoc_document.Comment.nestable_block_element_list
+
 (** Extract plain text from nestable block elements (for simple parsing) *)
 let rec text_of_inline (inline : Comment.inline_element Location_.with_location) =
   match inline.Location_.value with

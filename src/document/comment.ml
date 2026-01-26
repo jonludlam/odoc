@@ -265,7 +265,8 @@ let rec nestable_block_element :
         | Some handler ->
             let meta = { Odoc_extension_registry.language = lang_tag; tags = other_tags } in
             handler meta (Odoc_model.Location_.value c.content)
-        | None -> None
+        | None ->
+            None
       in
       (match handler_result with
       | Some result ->
