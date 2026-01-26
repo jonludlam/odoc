@@ -456,8 +456,9 @@ let tag : Comment.tag -> Description.one =
               (* Extension handled the tag - collect resources/assets and use output *)
               Resources.add result.Odoc_extension_registry.resources;
               Assets.add result.Odoc_extension_registry.assets;
+              (* Use empty key - extension output in definition is self-describing *)
               { Description.attr = [ name ];
-                key = [ inline ~attr:[ "at-tag" ] (Text name) ];
+                key = [];
                 definition = result.Odoc_extension_registry.content }
           | None ->
               (* Extension declined to handle this tag variant *)
