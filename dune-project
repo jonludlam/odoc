@@ -35,7 +35,7 @@
 (package
  (name odoc)
  (sites (lib extensions))
- (documentation (depends odoc-driver cmdliner)))
+ (documentation (depends odoc-driver odoc-parser odoc-md sherlodoc cmdliner)))
 
 (package (name odoc-parser) (documentation (depends odoc)))
 (package (name odoc-md))

@@ -1,16 +1,8 @@
 (documentation
  (package odoc)
- (mld_files
-  driver
-  dune
-  features
-  index
-  interface
-  ocamldoc_differences
-  odoc_for_authors
-  cheatsheet
-  json)
- (files odoc_logo_placeholder.jpg))
+ (files
+  (glob_files_rec (*.mld with_prefix .))
+  odoc_logo_placeholder.jpg))
 
 ; Uncomment to run mdx on the documentation's code blocks.
 ; (mdx
