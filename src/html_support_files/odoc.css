@@ -770,38 +770,6 @@ td.def-doc *:first-child {
 .at-tags li { padding-left: 3ex; text-indent: -3ex; }
 .at-tags .at-tag { text-transform: capitalize }
 
-/* Admonition styles - for @admonition.note, @admonition.warning, etc. */
-
-.at-tags li[class^="admonition"] {
-  padding: 1em;
-  margin: 1em 0;
-  border-left: 4px solid;
-  border-radius: 4px;
-  text-indent: 0;
-}
-.at-tags li[class^="admonition"] .at-tag {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 0.5em;
-}
-.at-tags li.admonition\.note,
-.at-tags li[class="admonition"] {
-  border-color: #2196F3;
-  background: #E3F2FD;
-}
-.at-tags li.admonition\.warning {
-  border-color: #FF9800;
-  background: #FFF3E0;
-}
-.at-tags li.admonition\.tip {
-  border-color: #4CAF50;
-  background: #E8F5E9;
-}
-.at-tags li.admonition\.important {
-  border-color: #F44336;
-  background: #FFEBEE;
-}
-
 /* Alert emoji */
 
 .alert::before, .deprecated::before {
