@@ -1,7 +1,8 @@
 (documentation
  (package odoc)
  (files
-  (glob_files_rec (*.mld with_prefix .))
+  (glob_files *.mld)
+  (glob_files deprecated/*.mld)
   odoc_logo_placeholder.jpg))
 
 ; Uncomment to run mdx on the documentation's code blocks.
