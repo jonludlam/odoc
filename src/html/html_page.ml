@@ -183,6 +183,16 @@ let search_urls = %s;
               (Html.txt "");
           ]
     in
+    (* Deduplicate resources while preserving order (keep first occurrence) *)
+    let deduplicate_resources resources =
+      let rec aux seen acc = function
+        | [] -> List.rev acc
+        | r :: rest ->
+            if List.mem r seen then aux seen acc rest
+            else aux (r :: seen) (r :: acc) rest
+      in
+      aux [] [] resources
+    in
     (* Convert extension resources to HTML elements *)
     let extension_resources =
       let open Odoc_extension_registry in
@@ -190,6 +200,7 @@ let search_urls = %s;
         String.is_prefix ~affix:"http://" url ||
         String.is_prefix ~affix:"https://" url
       in
+      let resources = deduplicate_resources resources in
       List.concat_map
         (function
           | Js_url url ->
