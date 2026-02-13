@@ -192,12 +192,12 @@ let tag :=
   | bare = tag_bare; { bare }
 
 let tag_with_content := tag = located(Tag_with_content); children = sequence(nestable_block_element(paragraph)); {
-    Writer.map children ~f:(fun children -> 
+    Writer.map children ~f:(fun children ->
       let Loc.{ value; location } = tag in
-      let start = 
-        tag_with_content_start_point value 
-        |> Option.map (fun start -> { location with start }) 
-        |> Option.value ~default:location 
+      let start =
+        tag_with_content_start_point value
+        |> Option.map (fun start -> { location with start })
+        |> Option.value ~default:location
       in
       let span = Loc.span @@ start :: List.map Loc.location children in
       Loc.at span @@ tag_with_content children value)
@@ -205,9 +205,9 @@ let tag_with_content := tag = located(Tag_with_content); children = sequence(nes
   | tag = located(Tag_with_content); horizontal_whitespace?; {
     return @@ { tag with Loc.value = tag_with_content [] tag.Loc.value }
   }
-  (* TODO: (@FayCarsons) Right now this is the only way to accept a newline 
-     after a tag_with_content, adding an optional newline causes unsolvable 
-     reduce conflicts. 
+  (* TODO: (@FayCarsons) Right now this is the only way to accept a newline
+     after a tag_with_content, adding an optional newline causes unsolvable
+     reduce conflicts.
      Maybe if the line break/whitespace handling for nestable block element were
      refactored, we could remove this *)
   | tag = located(Tag_with_content); Single_newline; children = sequence(nestable_block_element(paragraph)); {
@@ -516,15 +516,17 @@ let item_open :=
   | LI; { Tokens.LI }
   | DASH; { Tokens.DASH } 
 
+let block_element_with_ws := block = nestable_block_element(paragraph); any_whitespace*; { block }
+
 let item_heavy :=
-| startpos = located(item_open); any_whitespace*; items = sequence(nestable_block_element(paragraph)); any_whitespace*; endpos = located(RIGHT_BRACE); {
+| startpos = located(item_open); any_whitespace*; items = sequence(block_element_with_ws); endpos = located(RIGHT_BRACE); {
     let span = Loc.delimited startpos endpos in
-    let should_not_be_empty = 
-      Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe LI) span) 
+    let should_not_be_empty =
+      Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe LI) span)
     in
-    Writer.ensure not_empty should_not_be_empty items 
+    Writer.ensure not_empty should_not_be_empty items
   }
-  | startpos = located(item_open); any_whitespace*; items = sequence(nestable_block_element(paragraph))?; any_whitespace*; endpos = located(END); {
+  | startpos = located(item_open); any_whitespace*; items = sequence(block_element_with_ws)?; endpos = located(END); {
     let end_not_allowed = 
       Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe DASH) endpos.Loc.location)
     in

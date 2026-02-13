@@ -4428,16 +4428,11 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 3)) (unordered heavy ()))
-           ((f.ml (4 3) (4 4)) (paragraph (((f.ml (4 3) (4 4)) (word })))))
-           ((f.ml (4 4) (4 5)) (paragraph (((f.ml (4 4) (4 5)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 4, character 3:\
-           \nIllegal character or syntax 'bar' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 4, characters 3-4:\
-           \n''}'': bad markup."
-            "File \"f.ml\", line 4, characters 4-5:\
-           \n''}'': bad markup.")))
+          (((f.ml (1 0) (4 5))
+            (unordered heavy
+             ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))
+               ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))))))
+         (warnings ()))
         |}]
 
     let junk =
