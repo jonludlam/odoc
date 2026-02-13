@@ -557,12 +557,15 @@ let odoc_list :=
 
 (* TABLES *)
 
-let cell_heavy := 
-  | cell_kind = Table_cell; children = sequence_nonempty(nestable_block_element(paragraph)); RIGHT_BRACE; whitespace*;
+let cell_block_element :=
+  | ~ = nestable_block_element(paragraph); whitespace*; <>
+
+let cell_heavy :=
+  | cell_kind = Table_cell; whitespace*; children = sequence_nonempty(cell_block_element); RIGHT_BRACE; whitespace*;
     { Writer.map ~f:(fun c -> (c, cell_kind)) children }
-  | cell_kind = Table_cell; RIGHT_BRACE; whitespace*;
+  | cell_kind = Table_cell; whitespace*; RIGHT_BRACE; whitespace*;
     { return ([], cell_kind) }
-  | cell_kind = Table_cell; children = sequence_nonempty(nestable_block_element(paragraph))?; errloc = position(error); {
+  | cell_kind = Table_cell; whitespace*; children = sequence_nonempty(cell_block_element)?; errloc = position(error); {
     let illegal = Writer.InputNeeded (fun input ->
       let (start_pos, end_pos) as loc = errloc in 
       let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
