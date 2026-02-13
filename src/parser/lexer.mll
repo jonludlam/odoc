@@ -936,7 +936,8 @@ and media tok_descr buffer nesting_level start_offset input = parse
           ~in_what:tok_descr);
       Buffer.contents buffer}
   | (newline)
-    { Buffer.add_char buffer ' ';
+    { Lexing.new_line lexbuf;
+      Buffer.add_char buffer ' ';
       media tok_descr buffer nesting_level start_offset input lexbuf }
   | _ as c
     { Buffer.add_char buffer c;
@@ -971,6 +972,11 @@ and verbatim buffer last_false_terminator start_offset input = parse
           Parse_error.no_trailing_whitespace_in_verbatim
       end;
       emit_verbatim lexbuf input start_offset buffer }
+
+  | ('\n' as c)
+    { Lexing.new_line lexbuf;
+      Buffer.add_char buffer c;
+      verbatim buffer last_false_terminator start_offset input lexbuf }
 
   | _ as c
     { Buffer.add_char buffer c;

@@ -2262,7 +2262,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 23))
+          (((f.ml (1 0) (2 5))
             (simple ((f.ml (1 8) (1 12)) (Reference foo)) "bar   baz" image))))
          (warnings ()))
         |}]
@@ -3682,9 +3682,9 @@ let%expect_test _ =
       test "{v\n  \nv}";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 8)) (verbatim ""))))
+        ((output (((f.ml (1 0) (2 5)) (verbatim ""))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-8:\
+          ( "File \"f.ml\", line 1, character 0 to line 2, character 5:\
            \n'{v ... v}' (verbatim text) should not be empty.")))
         |}]
 
@@ -3724,12 +3724,12 @@ let%expect_test _ =
     let leading_newline =
       test "{v\nfoo v}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 9)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 6)) (verbatim foo)))) (warnings ())) |}]
 
     let leading_cr_lf =
       test "{v\r\nfoo v}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 10)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 6)) (verbatim foo)))) (warnings ())) |}]
 
     let trailing_tab =
       test "{v foo\tv}";
@@ -3755,41 +3755,41 @@ let%expect_test _ =
       test "{v foo\nbar v}";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 13)) (verbatim  "foo\
-                                                 \nbar")))) (warnings ()))
+        ((output (((f.ml (1 0) (2 6)) (verbatim  "foo\
+                                                \nbar")))) (warnings ()))
         |}]
 
     let cr_lf =
       test "{v foo\r\nbar v}";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 14)) (verbatim  "foo\r\
-                                                 \nbar")))) (warnings ()))
+        ((output (((f.ml (1 0) (2 6)) (verbatim  "foo\r\
+                                                \nbar")))) (warnings ()))
         |}]
 
     let blank_line =
       test "{v foo\n\nbar v}";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 14)) (verbatim  "foo\
-                                                 \n\
-                                                 \nbar")))) (warnings ()))
+        ((output (((f.ml (1 0) (3 6)) (verbatim  "foo\
+                                                \n\
+                                                \nbar")))) (warnings ()))
         |}]
 
     let leading_newlines =
       test "{v\n\nfoo v}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 10)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (3 6)) (verbatim foo)))) (warnings ())) |}]
 
     let leading_newline_with_space =
       test "{v\n foo v}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 10)) (verbatim " foo")))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 7)) (verbatim " foo")))) (warnings ())) |}]
 
     let leading_newline_with_trash =
       test "{v \nfoo v}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 10)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 6)) (verbatim foo)))) (warnings ())) |}]
 
     let nested_opener =
       test "{v {v v}";
@@ -3850,7 +3850,7 @@ let%expect_test _ =
     let trailing_newlines =
       test "{v foo\n\nv}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 10)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 3)) (verbatim foo)))) (warnings ())) |}]
 
     let preceded_by_whitespace =
       test "{v foo v}";
@@ -3996,14 +3996,14 @@ let%expect_test _ =
   foo
  v}|};
       [%expect
-        {| ((output (((f.ml (2 3) (2 15)) (verbatim "  foo")))) (warnings ())) |}]
+        {| ((output (((f.ml (2 3) (4 3)) (verbatim "  foo")))) (warnings ())) |}]
 
     let multiline_without_newline =
       test {|
    {v foo
  v}|};
       [%expect
-        {| ((output (((f.ml (2 3) (2 13)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (2 3) (3 3)) (verbatim foo)))) (warnings ())) |}]
 
     let everything_is_wrong =
       test {|
@@ -4027,7 +4027,7 @@ let%expect_test _ =
    foo
  v}|};
       [%expect
-        {| ((output (((f.ml (2 3) (2 16)) (verbatim "   foo")))) (warnings ())) |}]
+        {| ((output (((f.ml (2 3) (4 3)) (verbatim "   foo")))) (warnings ())) |}]
 
     let all_good_single_line =
       test {| {v foo v} |};
@@ -4045,9 +4045,9 @@ let%expect_test _ =
  v}|};
       [%expect
         {|
-        ((output (((f.ml (2 3) (2 36)) (verbatim  "   foo\
-                                                 \n  bar\
-                                                 \n    baz"))))
+        ((output (((f.ml (2 3) (6 3)) (verbatim  "   foo\
+                                                \n  bar\
+                                                \n    baz"))))
          (warnings ()))
         |}]
 
@@ -4060,9 +4060,9 @@ let%expect_test _ =
  v}|};
       [%expect
         {|
-        ((output (((f.ml (2 3) (2 36)) (verbatim  "       baz\
-                                                 \n  bar\
-                                                 \nfoo"))))
+        ((output (((f.ml (2 3) (6 3)) (verbatim  "       baz\
+                                                \n  bar\
+                                                \nfoo"))))
          (warnings ()))
         |}]
 
@@ -4075,9 +4075,9 @@ let%expect_test _ =
  v}|};
       [%expect
         {|
-        ((output (((f.ml (2 3) (2 40)) (verbatim  "       baz\
-                                                 \n  bar\
-                                                 \n    foo"))))
+        ((output (((f.ml (2 3) (6 3)) (verbatim  "       baz\
+                                                \n  bar\
+                                                \n    foo"))))
          (warnings ()))
         |}]
 
@@ -4091,12 +4091,12 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (2 3) (2 31))
+          (((f.ml (2 3) (6 3))
             (verbatim  "     baz\
                       \nbar\
                       \n  foo"
              (Warnings
-               "File \"f.ml\", line 2, characters 3-31:\
+               "File \"f.ml\", line 2, character 3 to line 6, character 3:\
               \nVerbatims should be indented at the opening `{`.")))))
          (warnings ()))
         |}]
