@@ -2555,9 +2555,9 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 11)) (modules ()))))
          (warnings
-          ( "File \"_none_\", line 1, characters 0-0:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
            \n is not allowed in '{!modules ...}'."
-            "File \"_none_\", line 1, characters 0-0:\
+            "File \"f.ml\", line 1, characters 0-11:\
            \n'{!modules ...}' should not be empty.")))
         |}]
 
@@ -2567,9 +2567,9 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 12)) (modules ()))))
          (warnings
-          ( "File \"_none_\", line 1, characters 0-0:\
+          ( "File \"f.ml\", line 1, characters 0-12:\
            \n is not allowed in '{!modules ...}'."
-            "File \"_none_\", line 1, characters 0-0:\
+            "File \"f.ml\", line 1, characters 0-12:\
            \n'{!modules ...}' should not be empty.")))
         |}]
 
@@ -2579,10 +2579,10 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 10)) (modules ()))))
          (warnings
-          ( "File \"_none_\", line 1, characters 0-0:\
+          ( "File \"f.ml\", line 1, characters 0-10:\
            \nEnd of text is not allowed in '{!modules ...}'.\
            \nSuggestion: add '}'."
-            "File \"_none_\", line 1, characters 0-0:\
+            "File \"f.ml\", line 1, characters 0-10:\
            \n is not allowed in '{!modules ...}'.")))
         |}]
 

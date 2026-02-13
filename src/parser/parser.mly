@@ -870,55 +870,54 @@ let math_block := inner = located(Math_block); {
 
 let modules := startpos = located(MODULES); modules = sequence(inline_element(whitespace)); endpos = located(RIGHT_BRACE); {
     let in_what = Tokens.describe MODULES in
-    Writer.bind modules ~f:(fun m -> 
-      let not_allowed =  
-        let span = Loc.span @@ List.map Loc.location m in
-        let first_offending = 
-          List.find_opt 
-            (function 
-              | `Word _ | `Space _ -> false 
-              | _ -> true) 
-            (List.map Loc.value m : Ast.inline_element list) 
+    let outer_span = Loc.(span [startpos.location; endpos.location]) in
+    Writer.bind modules ~f:(fun m ->
+      let content_span = match m with [] -> outer_span | _ -> Loc.span @@ List.map Loc.location m in
+      let not_allowed =
+        let first_offending =
+          List.find_opt
+            (function
+              | `Word _ | `Space _ -> false
+              | _ -> true)
+            (List.map Loc.value m : Ast.inline_element list)
         in
-        let what = 
-          Option.map Tokens.describe_inline first_offending 
-          |> Option.value ~default:String.empty 
+        let what =
+          Option.map Tokens.describe_inline first_offending
+          |> Option.value ~default:String.empty
         in
-        Writer.Warning (Parse_error.not_allowed ~what ~in_what span) 
+        Writer.Warning (Parse_error.not_allowed ~what ~in_what content_span)
       in
-      let is_empty = 
-        let span = Loc.span @@ List.map Loc.location m in
+      let is_empty =
         let what = Tokens.describe MODULES in
-        Writer.Warning (Parse_error.should_not_be_empty ~what span) 
+        Writer.Warning (Parse_error.should_not_be_empty ~what content_span)
       in
-      let span = Loc.(span [startpos.location; endpos.location]) in
-      let inner = Loc.at span @@ `Modules (List.map (Loc.map inline_element_inner) m) in
+      let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) m) in
       (* Test the content for errors, throwing away the value afterwards with `*>` *)
-      (Writer.ensure not_empty is_empty (return m) 
-       |> Writer.ensure legal_module_list not_allowed) 
+      (Writer.ensure not_empty is_empty (return m)
+       |> Writer.ensure legal_module_list not_allowed)
        *> return inner)
   }
   | startpos = located(MODULES); modules = sequence(inline_element(whitespace)); endpos = located(END); {
     let in_what = Tokens.describe MODULES in
-    Writer.bind modules ~f:(fun m -> 
-      let span = Loc.span @@ List.map Loc.location m in
-      let not_allowed = 
-        let first_offending = 
-          List.find_opt 
-            (function 
-              | `Word _ | `Space _ -> false 
-              | _ -> true) 
-            (List.map Loc.value m : Ast.inline_element list) 
+    let outer_span = Loc.(span [startpos.location; endpos.location]) in
+    Writer.bind modules ~f:(fun m ->
+      let content_span = match m with [] -> outer_span | _ -> Loc.span @@ List.map Loc.location m in
+      let not_allowed =
+        let first_offending =
+          List.find_opt
+            (function
+              | `Word _ | `Space _ -> false
+              | _ -> true)
+            (List.map Loc.value m : Ast.inline_element list)
         in
         let what = Option.map Tokens.describe_inline first_offending |> Option.value ~default:String.empty in
-        Writer.Warning (Parse_error.not_allowed ~what ~in_what span) 
+        Writer.Warning (Parse_error.not_allowed ~what ~in_what content_span)
       in
-      let unexpected_end = 
-        Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe MODULES) span)
+      let unexpected_end =
+        Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe MODULES) content_span)
       in
-      let span = Loc.(span [startpos.location; endpos.location]) in
-      let inner = Loc.at span @@ `Modules (List.map (Loc.map inline_element_inner) m) in
-      Writer.return_warning inner not_allowed 
+      let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) m) in
+      Writer.return_warning inner not_allowed
       |> Writer.warning unexpected_end)
   }
 
