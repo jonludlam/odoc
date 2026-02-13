@@ -2130,7 +2130,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 16))
-            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "   " image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "" image))))
          (warnings ()))
         |}]
 
@@ -2140,7 +2140,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 27))
-            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "    hello     " image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) hello image))))
          (warnings ()))
         |}]
 
@@ -2250,7 +2250,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 16))
-            (simple ((f.ml (1 8) (1 12)) (Reference foo)) " bar" image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) bar image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 16-16:\
            \nEnd of text is not allowed in {{image!.")))
@@ -2262,7 +2262,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 23))
-            (simple ((f.ml (1 8) (1 12)) (Reference foo)) " bar   baz" image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "bar   baz" image))))
          (warnings ()))
         |}]
   end in
@@ -2505,9 +2505,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 18))
-            (modules
-             (((f.ml (1 10) (1 13)) Foo) ((f.ml (1 13) (1 14)) " ")
-              ((f.ml (1 14) (1 17)) Bar))))))
+            (modules (((f.ml (1 10) (1 13)) Foo) ((f.ml (1 14) (1 17)) Bar))))))
          (warnings ()))
         |}]
 
@@ -2517,9 +2515,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 21))
-            (modules
-             (((f.ml (1 10) (1 11)) " ") ((f.ml (1 11) (1 14)) Foo)
-              ((f.ml (1 14) (1 16)) "  ") ((f.ml (1 16) (1 19)) Bar))))))
+            (modules (((f.ml (1 11) (1 14)) Foo) ((f.ml (1 16) (1 19)) Bar))))))
          (warnings ()))
         |}]
 
@@ -2529,9 +2525,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (2 4))
-            (modules
-             (((f.ml (1 10) (1 13)) Foo) ((f.ml (1 13) (2 0)) "\n")
-              ((f.ml (2 0) (2 3)) Bar))))))
+            (modules (((f.ml (1 10) (1 13)) Foo) ((f.ml (2 0) (2 3)) Bar))))))
          (warnings ()))
         |}]
 
@@ -2541,9 +2535,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (2 4))
-            (modules
-             (((f.ml (1 10) (1 13)) Foo) ((f.ml (1 13) (2 0)) "\r\n")
-              ((f.ml (2 0) (2 3)) Bar))))))
+            (modules (((f.ml (1 10) (1 13)) Foo) ((f.ml (2 0) (2 3)) Bar))))))
          (warnings ()))
         |}]
 

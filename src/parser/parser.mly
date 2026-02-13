@@ -764,7 +764,7 @@ let media :=
       | Image -> `Image
       | Video -> `Video
     in
-    let inner = Loc.at span @@ `Media (`Simple, ref_kind, content, media_kind) in
+    let inner = Loc.at span @@ `Media (`Simple, ref_kind, String.trim content, media_kind) in
     return inner
   }
 
@@ -891,7 +891,8 @@ let modules := startpos = located(MODULES); modules = sequence(inline_element(wh
         let what = Tokens.describe MODULES in
         Writer.Warning (Parse_error.should_not_be_empty ~what content_span)
       in
-      let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) m) in
+      let non_space = List.filter (fun e -> match Loc.value e with `Space _ -> false | _ -> true) m in
+      let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) non_space) in
       (* Test the content for errors, throwing away the value afterwards with `*>` *)
       (Writer.ensure not_empty is_empty (return m)
        |> Writer.ensure legal_module_list not_allowed)
@@ -916,7 +917,8 @@ let modules := startpos = located(MODULES); modules = sequence(inline_element(wh
       let unexpected_end =
         Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe MODULES) content_span)
       in
-      let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) m) in
+      let non_space = List.filter (fun e -> match Loc.value e with `Space _ -> false | _ -> true) m in
+      let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) non_space) in
       Writer.return_warning inner not_allowed
       |> Writer.warning unexpected_end)
   }
