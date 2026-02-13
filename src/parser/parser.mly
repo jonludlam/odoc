@@ -325,7 +325,7 @@ let style :=
     let style = style.Loc.value in
     let warning =
       let in_what = Tokens.describe @@ Style style in
-      Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what span)
+      Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location)
     in
     Writer.warning warning children
     |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style, normalize_inline c))
@@ -335,7 +335,7 @@ let style :=
     let style = style.Loc.value in
     let warning =
       let in_what = Tokens.describe @@ Style style in
-      Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what span)
+      Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location)
     in
     let inner = Loc.at span @@ `Styled (ast_style style, []) in
     Writer.return_warning inner warning
@@ -370,7 +370,7 @@ let reference :=
     let span = { endpos.Loc.location with start } in
     let not_allowed =
       let in_what = Tokens.describe (Ref_with_replacement content) in
-      Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what span)
+      Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location)
     in
     let* children = Option.value ~default:(return []) children in
     let node = Loc.at span @@ `Reference (`With_text, inner, normalize_inline children) in
@@ -380,7 +380,7 @@ let reference :=
     let Tokens.{ inner; start } = content in
     let span = { endpos.Loc.location with start } in
     let in_what = Tokens.describe @@ Ref_with_replacement content in
-    let end_not_allowed = Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what span) in
+    let end_not_allowed = Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location) in
     `Reference (`With_text, inner, [])
     |> Loc.at span
     |> return
@@ -428,7 +428,7 @@ let link :=
     let url = String.trim inner in
     let span = { endpos.Loc.location with start } in
     let in_what = Tokens.describe @@ Link_with_replacement content in
-    let end_not_allowed = Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what span) in
+    let end_not_allowed = Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location) in
     `Link (url, [])
     |> Loc.at span
     |> return
@@ -933,7 +933,7 @@ let modules := startpos = located(MODULES); modules = sequence(inline_element(wh
         Writer.Warning (Parse_error.not_allowed ~what ~in_what content_span)
       in
       let unexpected_end =
-        Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what:(Tokens.describe MODULES) content_span)
+        Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what:(Tokens.describe MODULES) endpos.Loc.location)
       in
       let non_space = List.filter (fun e -> match Loc.value e with `Space _ -> false | _ -> true) m in
       let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) non_space) in

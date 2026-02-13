@@ -1207,7 +1207,7 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 2)) (paragraph (((f.ml (1 0) (1 2)) (bold ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-2:\
+          ( "File \"f.ml\", line 1, characters 2-2:\
            \nEnd of text is not allowed in '{b ...}' (boldface text).")))
         |}]
 
@@ -1220,7 +1220,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 6)) (bold (((f.ml (1 3) (1 6)) (word foo))))))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-6:\
+          ( "File \"f.ml\", line 1, characters 6-6:\
            \nEnd of text is not allowed in '{b ...}' (boldface text).")))
         |}]
 
@@ -2028,7 +2028,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 6)) (with_text ((f.ml (1 3) (1 6)) foo) ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-6:\
+          ( "File \"f.ml\", line 1, characters 6-6:\
            \nEnd of text is not allowed in '{{!...} ...}' (cross-reference)."
             "File \"f.ml\", line 1, characters 0-6:\
            \nOpen bracket '{{!' is never closed.")))
@@ -2045,7 +2045,7 @@ let%expect_test _ =
                (with_text ((f.ml (1 3) (1 7)) foo)
                 (((f.ml (1 8) (1 11)) (word bar))))))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-11:\
+          ( "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in '{{!...} ...}' (cross-reference).")))
         |}]
   end in
@@ -2422,7 +2422,7 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 6)) (paragraph (((f.ml (1 0) (1 6)) (foo ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-6:\
+          ( "File \"f.ml\", line 1, characters 6-6:\
            \nEnd of text is not allowed in '{{:...} ...}' (external link)."
             "File \"f.ml\", line 1, characters 0-6:\
            \nOpen bracket '{{:' is never closed.")))
@@ -2541,7 +2541,7 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 10)) (modules ()))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-10:\
+          ( "File \"f.ml\", line 1, characters 10-10:\
            \nEnd of text is not allowed in '{!modules ...}'."
             "File \"f.ml\", line 1, characters 0-10:\
            \n is not allowed in '{!modules ...}'.")))
