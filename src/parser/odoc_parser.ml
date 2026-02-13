@@ -117,9 +117,21 @@ let parse_comment : location:Lexing.position -> text:string -> t =
  fun ~location ~text ->
   let reversed_newlines = reversed_newlines ~input:text in
   let lexbuf = Lexing.from_string text in
-  (* We cannot directly pass parameters to Menhir without converting our parser
-     to a module functor. So we pass our current filename to the lexbuf here *)
-  lexbuf.Lexing.lex_curr_p <- location;
+  (* Initialize the lexbuf position for menhir's position tracking.
+     The lexing engine will overwrite pos_cnum to the raw buffer offset,
+     so we set pos_bol such that (pos_cnum - pos_bol) gives the correct
+     column. For the first line, the comment may start at a non-zero column,
+     so pos_bol must be negative to offset for this. After a newline,
+     Lexing.new_line resets pos_bol = pos_cnum, which is correct since
+     subsequent lines start at column 0 within the file. *)
+  let comment_start_column =
+    location.Lexing.pos_cnum - location.Lexing.pos_bol
+  in
+  lexbuf.Lexing.lex_curr_p <-
+    { location with
+      Lexing.pos_bol = -comment_start_column;
+      pos_cnum = 0;
+    };
   let lexer_state =
     Lexer.
       {
