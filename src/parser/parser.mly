@@ -764,7 +764,7 @@ let media :=
       | Image -> `Image
       | Video -> `Video
     in
-    let inner = Loc.at span @@ `Media (`With_text, ref_kind, content, media_kind) in 
+    let inner = Loc.at span @@ `Media (`Simple, ref_kind, content, media_kind) in
     return inner
   }
 

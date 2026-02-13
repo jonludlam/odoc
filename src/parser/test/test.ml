@@ -2102,17 +2102,15 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 16))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) bar image))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) bar image))
            ((f.ml (3 0) (4 16))
-            (with_text ((f.ml (3 8) (3 12)) (Reference foo)) bar audio))
+            (simple ((f.ml (3 8) (3 12)) (Reference foo)) bar audio))
            ((f.ml (5 0) (7 16))
-            (with_text ((f.ml (5 8) (5 12)) (Reference foo)) bar video))
-           ((f.ml (7 0) (10 16))
-            (with_text ((f.ml (7 8) (7 12)) (Link foo)) bar image))
-           ((f.ml (9 0) (13 16))
-            (with_text ((f.ml (9 8) (9 12)) (Link foo)) bar audio))
+            (simple ((f.ml (5 8) (5 12)) (Reference foo)) bar video))
+           ((f.ml (7 0) (10 16)) (simple ((f.ml (7 8) (7 12)) (Link foo)) bar image))
+           ((f.ml (9 0) (13 16)) (simple ((f.ml (9 8) (9 12)) (Link foo)) bar audio))
            ((f.ml (11 0) (16 16))
-            (with_text ((f.ml (11 8) (11 12)) (Link foo)) bar video))))
+            (simple ((f.ml (11 8) (11 12)) (Link foo)) bar video))))
          (warnings ()))
         |}]
 
@@ -2122,7 +2120,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 13))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) "" image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "" image))))
          (warnings ()))
         |}]
 
@@ -2132,7 +2130,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 16))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) "   " image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "   " image))))
          (warnings ()))
         |}]
 
@@ -2142,7 +2140,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 27))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) "    hello     " image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "    hello     " image))))
          (warnings ()))
         |}]
 
@@ -2152,7 +2150,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 20))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) "{b bar}" image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "{b bar}" image))))
          (warnings ()))
         |}]
 
@@ -2164,7 +2162,7 @@ let%expect_test _ =
           (((f.ml (1 0) (1 26))
             (unordered heavy
              ((((f.ml (1 8) (1 24))
-                (with_text ((f.ml (1 16) (1 20)) (Reference foo)) bar image))))))))
+                (simple ((f.ml (1 16) (1 20)) (Reference foo)) bar image))))))))
          (warnings ()))
         |}]
 
@@ -2174,7 +2172,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (with_text ((f.ml (1 8) (1 11)) (Reference foo)) "" image))))
+            (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in {{image!."
@@ -2200,7 +2198,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (with_text ((f.ml (1 8) (1 11)) (Reference foo)) "" video))))
+            (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" video))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in {{video!."
@@ -2226,7 +2224,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (with_text ((f.ml (1 8) (1 11)) (Reference foo)) "" audio))))
+            (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" audio))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in {{audio!."
@@ -2252,7 +2250,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 16))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) " bar" image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) " bar" image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 16-16:\
            \nEnd of text is not allowed in {{image!.")))
@@ -2264,7 +2262,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 23))
-            (with_text ((f.ml (1 8) (1 12)) (Reference foo)) " bar   baz" image))))
+            (simple ((f.ml (1 8) (1 12)) (Reference foo)) " bar   baz" image))))
          (warnings ()))
         |}]
   end in
