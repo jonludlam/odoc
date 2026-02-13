@@ -285,15 +285,13 @@ let trim_trailing_space_or_accept_whitespace text =
   | ' ' -> String.sub text 0 (String.length text - 1)
   | '\t' | '\r' | '\n' -> text
   | _ -> text
-  | exception Invalid_argument _ -> text
+  | exception Invalid_argument _ -> ""
 
 let emit_verbatim lexbuf input start_offset buffer =
   let start = input.offset_to_location start_offset in
-  let inner = Buffer.contents buffer 
-    |> trim_trailing_space_or_accept_whitespace 
-    |> trim_leading_space_or_accept_whitespace lexbuf input start_offset 
-    |> trim_leading_blank_lines 
-    |> trim_trailing_blank_lines 
+  let inner = Buffer.contents buffer
+    |> trim_leading_space_or_accept_whitespace lexbuf input start_offset
+    |> trim_trailing_space_or_accept_whitespace
   in
   Verbatim { inner; start } 
 
