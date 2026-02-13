@@ -2030,12 +2030,12 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 6)) (with_text ((f.ml (1 3) (1 6)) foo) ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 6-6:\
+          ( "File \"f.ml\", line 1, characters 0-6:\
+           \nOpen bracket '{{!' is never closed."
+            "File \"f.ml\", line 1, characters 6-6:\
            \nEnd of text is not allowed in '{{!...} ...}' (cross-reference)."
             "File \"f.ml\", line 1, characters 0-6:\
-           \n'{{!...} ...}' (cross-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 0-6:\
-           \nOpen bracket '{{!' is never closed.")))
+           \n'{{!...} ...}' (cross-reference) should not be empty.")))
         |}]
 
     let unterminated_content =
@@ -2169,12 +2169,12 @@ let%expect_test _ =
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" image))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-10:\
-           \n'{{image!...} ...}' (image-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 0-11:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{image!' is never closed."
             "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{{image!...} ...}' (image-reference).")))
+           \nEnd of text is not allowed in '{{image!...} ...}' (image-reference)."
+            "File \"f.ml\", line 1, characters 11-10:\
+           \n'{{image!...} ...}' (image-reference) should not be empty.")))
         |}]
 
     let unterminated_image_simple =
@@ -2197,12 +2197,12 @@ let%expect_test _ =
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" video))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-10:\
-           \n'{{video!...} ...}' (video-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 0-11:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{video!' is never closed."
             "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{{video!...} ...}' (video-reference).")))
+           \nEnd of text is not allowed in '{{video!...} ...}' (video-reference)."
+            "File \"f.ml\", line 1, characters 11-10:\
+           \n'{{video!...} ...}' (video-reference) should not be empty.")))
         |}]
 
     let unterminated_video_simple =
@@ -2225,12 +2225,12 @@ let%expect_test _ =
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" audio))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-10:\
-           \n'{{audio!...} ...}' (audio-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 0-11:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{audio!' is never closed."
             "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{{audio!...} ...}' (audio-reference).")))
+           \nEnd of text is not allowed in '{{audio!...} ...}' (audio-reference)."
+            "File \"f.ml\", line 1, characters 11-10:\
+           \n'{{audio!...} ...}' (audio-reference) should not be empty.")))
         |}]
 
     let unterminated_audio_simple =
@@ -2426,10 +2426,10 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 6)) (paragraph (((f.ml (1 0) (1 6)) (foo ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 6-6:\
-           \nEnd of text is not allowed in '{{:...} ...}' (external link)."
-            "File \"f.ml\", line 1, characters 0-6:\
-           \nOpen bracket '{{:' is never closed.")))
+          ( "File \"f.ml\", line 1, characters 0-6:\
+           \nOpen bracket '{{:' is never closed."
+            "File \"f.ml\", line 1, characters 6-6:\
+           \nEnd of text is not allowed in '{{:...} ...}' (external link).")))
         |}]
 
     let single_braces =
@@ -3195,10 +3195,10 @@ let%expect_test _ =
             (code_block (((f.ml (1 2) (1 5)) met) ()) ((f.ml (1 5) (1 5)) "")))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-5:\
-           \n'{[...]}' (code block) should not be empty."
-            "File \"f.ml\", line 1, characters 0-5:\
            \nMissing end of code block.\
-           \nSuggestion: try '{@ocaml[ ... ]}'.")))
+           \nSuggestion: try '{@ocaml[ ... ]}'."
+            "File \"f.ml\", line 1, characters 0-5:\
+           \n'{[...]}' (code block) should not be empty.")))
         |}]
 
     let newlines_after_langtag =
@@ -3947,10 +3947,10 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 2)) (verbatim ""))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-2:\
-           \n'{v ... v}' (verbatim text) should not be empty."
-            "File \"f.ml\", line 1, characters 2-2:\
-           \nEnd of text is not allowed in '{v ... v}' (verbatim text).")))
+          ( "File \"f.ml\", line 1, characters 2-2:\
+           \nEnd of text is not allowed in '{v ... v}' (verbatim text)."
+            "File \"f.ml\", line 1, characters 0-2:\
+           \n'{v ... v}' (verbatim text) should not be empty.")))
         |}]
 
     let unterminated_whitespace =
@@ -3959,10 +3959,10 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 2)) (verbatim ""))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-2:\
-           \n'{v ... v}' (verbatim text) should not be empty."
-            "File \"f.ml\", line 1, characters 2-2:\
-           \nEnd of text is not allowed in '{v ... v}' (verbatim text).")))
+          ( "File \"f.ml\", line 1, characters 2-2:\
+           \nEnd of text is not allowed in '{v ... v}' (verbatim text)."
+            "File \"f.ml\", line 1, characters 0-2:\
+           \n'{v ... v}' (verbatim text) should not be empty.")))
         |}]
 
     let unterminated_whitespace_2 =
@@ -3971,10 +3971,10 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 2)) (verbatim ""))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-2:\
-           \n'{v ... v}' (verbatim text) should not be empty."
-            "File \"f.ml\", line 1, characters 2-2:\
-           \nEnd of text is not allowed in '{v ... v}' (verbatim text).")))
+          ( "File \"f.ml\", line 1, characters 2-2:\
+           \nEnd of text is not allowed in '{v ... v}' (verbatim text)."
+            "File \"f.ml\", line 1, characters 0-2:\
+           \n'{v ... v}' (verbatim text) should not be empty.")))
         |}]
 
     let trailing_cr =
@@ -5765,12 +5765,12 @@ let%expect_test _ =
           (((f.ml (1 0) (1 1)) (paragraph (((f.ml (1 0) (1 1)) (word {)))))
            ((f.ml (1 1) (1 2)) (paragraph (((f.ml (1 1) (1 2)) (word })))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 1-2:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."
-            "File \"f.ml\", line 1, characters 0-1:\
+          ( "File \"f.ml\", line 1, characters 0-1:\
            \n'{': bad markup.\
-           \nSuggestion: escape the brace with '\\{'.")))
+           \nSuggestion: escape the brace with '\\{'."
+            "File \"f.ml\", line 1, characters 1-2:\
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let left_space =

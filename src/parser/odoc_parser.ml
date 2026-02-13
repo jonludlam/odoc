@@ -147,7 +147,7 @@ let parse_comment : location:Lexing.position -> text:string -> t =
   in
   {
     ast;
-    warnings = warnings @ List.rev lexer_state.warnings;
+    warnings = List.rev lexer_state.warnings @ warnings;
     reversed_newlines;
     original_pos = location;
   }
