@@ -188,11 +188,13 @@ let print : token -> string = function
 let describe : token -> string = function
   | Space _ -> "(horizontal space)"
   | Media { inner = ref_kind, media_kind; _ } ->
-      let ref_kind, media_kind = media_description ref_kind media_kind in
-      Printf.sprintf "{%s%s" media_kind ref_kind
+      let ref_sym, media_str = media_description ref_kind media_kind in
+      let kind_str = match ref_kind with Reference _ -> "reference" | Link _ -> "link" in
+      Printf.sprintf "'{%s%s...}' (%s-%s)" media_str ref_sym media_str kind_str
   | Media_with_replacement { inner = ref_kind, media_kind, _; _ } ->
-      let ref_kind, media_kind = media_description ref_kind media_kind in
-      Printf.sprintf "{{%s%s" media_kind ref_kind
+      let ref_sym, media_str = media_description ref_kind media_kind in
+      let kind_str = match ref_kind with Reference _ -> "reference" | Link _ -> "link" in
+      Printf.sprintf "'{{%s%s...} ...}' (%s-%s)" media_str ref_sym media_str kind_str
   | Word w -> Printf.sprintf "'%s'" w
   | Code_span _ -> "'[...]' (code)"
   | Raw_markup _ -> "'{%...%}' (raw markup)"

@@ -2172,7 +2172,7 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 0-11:\
            \n'{{image!...} ...}' (image-reference) should not be empty."
             "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in {{image!."
+           \nEnd of text is not allowed in '{{image!...} ...}' (image-reference)."
             "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{image!' is never closed.")))
         |}]
@@ -2200,7 +2200,7 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 0-11:\
            \n'{{video!...} ...}' (video-reference) should not be empty."
             "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in {{video!."
+           \nEnd of text is not allowed in '{{video!...} ...}' (video-reference)."
             "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{video!' is never closed.")))
         |}]
@@ -2228,7 +2228,7 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 0-11:\
            \n'{{audio!...} ...}' (audio-reference) should not be empty."
             "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in {{audio!."
+           \nEnd of text is not allowed in '{{audio!...} ...}' (audio-reference)."
             "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{audio!' is never closed.")))
         |}]
@@ -2254,7 +2254,7 @@ let%expect_test _ =
             (simple ((f.ml (1 8) (1 12)) (Reference foo)) bar image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 16-16:\
-           \nEnd of text is not allowed in {{image!.")))
+           \nEnd of text is not allowed in '{{image!...} ...}' (image-reference).")))
         |}]
 
     let newline_in_content =
