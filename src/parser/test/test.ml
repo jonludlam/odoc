@@ -2277,8 +2277,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 12))
             (paragraph
-             (((f.ml (1 0) (1 12))
-               (foo (((f.ml (1 7) (1 8)) space) ((f.ml (1 8) (1 11)) (word bar))))))))))
+             (((f.ml (1 0) (1 12)) (foo (((f.ml (1 8) (1 11)) (word bar))))))))))
          (warnings ()))
         |}]
 
@@ -2291,8 +2290,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 16))
                (foo
-                (((f.ml (1 7) (1 8)) space)
-                 ((f.ml (1 8) (1 15)) (bold (((f.ml (1 11) (1 14)) (word bar)))))))))))))
+                (((f.ml (1 8) (1 15)) (bold (((f.ml (1 11) (1 14)) (word bar)))))))))))))
          (warnings ()))
         |}]
 
@@ -2305,9 +2303,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 16))
                (emphasis
-                (((f.ml (1 3) (1 15))
-                  (foo
-                   (((f.ml (1 10) (1 11)) space) ((f.ml (1 11) (1 14)) (word bar)))))))))))))
+                (((f.ml (1 3) (1 15)) (foo (((f.ml (1 11) (1 14)) (word bar)))))))))))))
          (warnings ()))
         |}]
 
@@ -2330,10 +2326,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 21))
                (foo
-                (((f.ml (1 7) (1 8)) space)
-                 ((f.ml (1 8) (1 20))
-                  (bar
-                   (((f.ml (1 15) (1 16)) space) ((f.ml (1 16) (1 19)) (word baz)))))))))))))
+                (((f.ml (1 8) (1 20)) (bar (((f.ml (1 16) (1 19)) (word baz)))))))))))))
          (warnings ()))
         |}]
 
@@ -2346,13 +2339,9 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 25))
                (foo
-                (((f.ml (1 7) (1 8)) space)
-                 ((f.ml (1 8) (1 24))
+                (((f.ml (1 8) (1 24))
                   (emphasis
-                   (((f.ml (1 11) (1 23))
-                     (bar
-                      (((f.ml (1 18) (1 19)) space)
-                       ((f.ml (1 19) (1 22)) (word baz))))))))))))))))
+                   (((f.ml (1 11) (1 23)) (bar (((f.ml (1 19) (1 22)) (word baz))))))))))))))))
          (warnings ()))
         |}]
 
@@ -2365,8 +2354,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 19))
                (foo
-                (((f.ml (1 7) (1 8)) space)
-                 ((f.ml (1 8) (1 18))
+                (((f.ml (1 8) (1 18))
                   (emphasis
                    (((f.ml (1 11) (1 17)) (simple ((f.ml (1 13) (1 17)) bar) ())))))))))))))
          (warnings ()))
@@ -2383,10 +2371,7 @@ let%expect_test _ =
                (with_text ((f.ml (1 3) (1 7)) foo)
                 (((f.ml (1 8) (1 24))
                   (emphasis
-                   (((f.ml (1 11) (1 23))
-                     (bar
-                      (((f.ml (1 18) (1 19)) space)
-                       ((f.ml (1 19) (1 22)) (word baz))))))))))))))))
+                   (((f.ml (1 11) (1 23)) (bar (((f.ml (1 19) (1 22)) (word baz))))))))))))))))
          (warnings ()))
         |}]
 
@@ -2396,9 +2381,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 9))
-            (paragraph
-             (((f.ml (1 0) (1 9))
-               ("" (((f.ml (1 4) (1 5)) space) ((f.ml (1 5) (1 8)) (word foo))))))))))
+            (paragraph (((f.ml (1 0) (1 9)) ("" (((f.ml (1 5) (1 8)) (word foo))))))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-9:\
            \n'{{:...} ...}' (external link) should not be empty.")))
@@ -2411,8 +2394,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 10))
             (paragraph
-             (((f.ml (1 0) (1 10))
-               ("" (((f.ml (1 5) (1 6)) space) ((f.ml (1 6) (1 9)) (word foo))))))))))
+             (((f.ml (1 0) (1 10)) ("" (((f.ml (1 6) (1 9)) (word foo))))))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-10:\
            \n'{{:...} ...}' (external link) should not be empty.")))
@@ -2433,9 +2415,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 16))
             (paragraph
-             (((f.ml (1 0) (1 16))
-               ("foo bar"
-                (((f.ml (1 11) (1 12)) space) ((f.ml (1 12) (1 15)) (word baz))))))))))
+             (((f.ml (1 0) (1 16)) ("foo bar" (((f.ml (1 12) (1 15)) (word baz))))))))))
          (warnings ()))
         |}]
 
@@ -4961,9 +4941,7 @@ let%expect_test _ =
              ((f.ml (1 12) (2 0))
               (paragraph
                (((f.ml (1 12) (1 15)) (word foo)) ((f.ml (1 15) (2 0)) space))))))
-           ((f.ml (2 0) (2 7))
-            (2 (label ())
-             (((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word Bar)))))))
+           ((f.ml (2 0) (2 7)) (2 (label ()) (((f.ml (2 3) (2 6)) (word Bar)))))))
          (warnings ()))
         |}]
   end in
@@ -6173,8 +6151,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 10))
-            (2 (label ("\206\187"))
-             (((f.ml (1 5) (1 6)) space) ((f.ml (1 6) (1 9)) (word Bar)))))))
+            (2 (label ("\206\187")) (((f.ml (1 6) (1 9)) (word Bar)))))))
          (warnings ()))
         |}]
 

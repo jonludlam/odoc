@@ -157,7 +157,7 @@ let section_heading :=
   | content = Section_heading; children = sequence_nonempty(inline_element(whitespace)); endpos = located(RIGHT_BRACE); {
     let Tokens.{ inner = (num, title); start } = content in
     let span = { endpos.Loc.location with start } in
-    Writer.map ~f:(fun c -> Loc.at span @@ `Heading (num, title, c)) children
+    Writer.map ~f:(fun c -> Loc.at span @@ `Heading (num, title, trim_start c)) children
   }
   | content = Section_heading; endpos = located(RIGHT_BRACE); { 
     let Tokens.{ inner = (num, title); start } = content in
@@ -399,7 +399,7 @@ let link :=
       let Tokens.{ inner; start } = content in
       let url = String.trim inner in
       let span = { endpos.Loc.location with start } in
-      let node = Loc.at span @@ `Link (url, c) in
+      let node = Loc.at span @@ `Link (url, trim_start c) in
       if "" = url then
         let what = Tokens.describe @@ Link_with_replacement content in
         let warning =
