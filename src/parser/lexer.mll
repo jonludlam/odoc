@@ -935,7 +935,14 @@ and media tok_descr buffer nesting_level start_offset input = parse
 
 and verbatim buffer last_false_terminator start_offset input = parse
   | (space_char as c) "v}"
-    { Buffer.add_char buffer c;
+    { if c = '\n' then begin
+        let pos = lexbuf.Lexing.lex_curr_p in
+        lexbuf.Lexing.lex_curr_p <- { pos with
+          pos_lnum = pos.pos_lnum + 1;
+          pos_bol = pos.pos_cnum - 2 (* "v}" is 2 chars after the \n *)
+        }
+      end;
+      Buffer.add_char buffer c;
       emit_verbatim lexbuf input start_offset buffer }
 
   | "v}"

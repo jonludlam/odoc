@@ -3678,7 +3678,7 @@ let%expect_test _ =
     let blank_line_only =
       test "{v\n  \nv}";
       [%expect
-        {| ((output (((f.ml (1 0) (2 5)) (verbatim "  ")))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (3 2)) (verbatim "  ")))) (warnings ())) |}]
 
     let no_leading_whitespace =
       test "{vfoo v}";
@@ -3731,12 +3731,12 @@ let%expect_test _ =
     let trailing_newline =
       test "{v foo\nv}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 9)) (verbatim foo)))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 2)) (verbatim foo)))) (warnings ())) |}]
 
     let trailing_cr_lf =
       test "{v foo\r\nv}";
       [%expect
-        {| ((output (((f.ml (1 0) (1 10)) (verbatim "foo\r")))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (2 2)) (verbatim "foo\r")))) (warnings ())) |}]
 
     let internal_whitespace =
       test "{v foo bar v}";
@@ -3845,7 +3845,7 @@ let%expect_test _ =
     let trailing_newlines =
       test "{v foo\n\nv}";
       [%expect
-        {| ((output (((f.ml (1 0) (2 3)) (verbatim "foo\n")))) (warnings ())) |}]
+        {| ((output (((f.ml (1 0) (3 2)) (verbatim "foo\n")))) (warnings ())) |}]
 
     let preceded_by_whitespace =
       test "{v foo v}";
