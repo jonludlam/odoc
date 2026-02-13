@@ -506,7 +506,7 @@ let list_light :=
       let in_what = Tokens.describe value in
       Parse_error.illegal ~in_what error_text span)
     in
-    `List (list_kind, `Light, [])
+    `List (list_kind, `Light, [[]])
     |> Loc.at span
     |> return
     |> Writer.warning illegal

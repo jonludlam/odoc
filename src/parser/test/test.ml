@@ -4291,7 +4291,7 @@ let%expect_test _ =
       test "-";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 1)) (unordered light ()))))
+        ((output (((f.ml (1 0) (1 1)) (unordered light (())))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-1:\
            \nIllegal character or syntax '' in '-' (bulleted list item)")))
@@ -4302,7 +4302,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 0)) (unordered light ()))
+          (((f.ml (1 0) (2 0)) (unordered light (())))
            ((f.ml (2 0) (2 3)) (paragraph (((f.ml (2 0) (2 3)) (word foo)))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 2, character 0:\
@@ -4315,7 +4315,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 0)) (unordered light ()))
+          (((f.ml (1 0) (4 0)) (unordered light (())))
            ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word foo)))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 4, character 0:\
