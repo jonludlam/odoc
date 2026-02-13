@@ -5415,7 +5415,7 @@ let%expect_test _ =
       test "@canonical Foo";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 14)) (@canonical ((f.ml (1 0) (1 14)) Foo)))))
+        ((output (((f.ml (1 0) (1 14)) (@canonical ((f.ml (1 11) (1 14)) Foo)))))
          (warnings ()))
         |}]
 
@@ -5423,7 +5423,7 @@ let%expect_test _ =
       test "@canonical";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 10)) (@canonical ((f.ml (1 0) (1 10)) "")))))
+        ((output (((f.ml (1 0) (1 10)) (@canonical ((f.ml (1 11) (1 10)) "")))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-10:\
            \n'@canonical' should not be empty.")))
@@ -5433,7 +5433,7 @@ let%expect_test _ =
       test "@canonical";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 10)) (@canonical ((f.ml (1 0) (1 10)) "")))))
+        ((output (((f.ml (1 0) (1 10)) (@canonical ((f.ml (1 11) (1 10)) "")))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-10:\
            \n'@canonical' should not be empty.")))
@@ -5443,7 +5443,7 @@ let%expect_test _ =
       test "@canonical  Foo";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 15)) (@canonical ((f.ml (1 0) (1 15)) Foo)))))
+        ((output (((f.ml (1 0) (1 15)) (@canonical ((f.ml (1 11) (1 15)) Foo)))))
          (warnings ()))
         |}]
 
@@ -5465,7 +5465,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 18)) (@canonical ((f.ml (1 0) (1 18)) "Foo Bar")))))
+          (((f.ml (1 0) (1 18)) (@canonical ((f.ml (1 11) (1 18)) "Foo Bar")))))
          (warnings ()))
         |}]
   end in
