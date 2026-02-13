@@ -285,23 +285,44 @@ let style :=
     |> Writer.warning not_allowed
     |> Writer.warning should_not_be_empty
   }
+  | style = located(Style); children = sequence_nonempty(inline_element(whitespace)); errloc = position(error); {
+    let span = Loc.span [style.Loc.location; Loc.of_position errloc] in
+    let illegal = Writer.InputNeeded (fun input ->
+      let in_what = Tokens.describe @@ Style style.Loc.value in
+      let (start_pos, end_pos) = errloc in
+      let illegal_section = Loc.extract ~input ~start_pos ~end_pos in
+      Parse_error.illegal ~in_what illegal_section span)
+    in
+    Writer.warning illegal children
+    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style.Loc.value, trim_start c))
+  }
   | style = located(Style); errloc = position(error); {
     let span = Loc.span [style.Loc.location; Loc.of_position errloc] in
     let illegal = Writer.InputNeeded (fun input ->
       let in_what = Tokens.describe @@ Style style.Loc.value in
       let (start_pos, end_pos) = errloc in
       let illegal_section = Loc.extract ~input ~start_pos ~end_pos in
-      Parse_error.illegal ~in_what illegal_section span) 
+      Parse_error.illegal ~in_what illegal_section span)
     in
     let inner = Loc.at span @@ `Styled (ast_style style.Loc.value, []) in
     Writer.return_warning inner illegal
   }
+  | style = located(Style); children = sequence_nonempty(inline_element(whitespace)); endpos = located(END); {
+    let span = Loc.delimited style endpos in
+    let style = style.Loc.value in
+    let warning =
+      let in_what = Tokens.describe @@ Style style in
+      Writer.Warning (Parse_error.end_not_allowed ~in_what span)
+    in
+    Writer.warning warning children
+    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style, trim_start c))
+  }
   | style = located(Style); endpos = located(END); {
     let span = Loc.delimited style endpos in
     let style = style.Loc.value in
-    let warning = 
+    let warning =
       let in_what = Tokens.describe @@ Style style in
-      Writer.Warning (Parse_error.end_not_allowed ~in_what span) 
+      Writer.Warning (Parse_error.end_not_allowed ~in_what span)
     in
     let inner = Loc.at span @@ `Styled (ast_style style, []) in
     Writer.return_warning inner warning

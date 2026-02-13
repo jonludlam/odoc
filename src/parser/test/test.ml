@@ -1142,8 +1142,11 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 6))
             (paragraph
-             (((f.ml (1 0) (2 2)) (bold ())) ((f.ml (2 2) (2 3)) space)
-              ((f.ml (2 3) (2 6)) (word bar)))))
+             (((f.ml (1 0) (2 2))
+               (bold
+                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 0)) space)
+                 ((f.ml (2 0) (2 1)) space))))
+              ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar)))))
            ((f.ml (2 6) (2 7)) (paragraph (((f.ml (2 6) (2 7)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 2, character 2:\
@@ -1159,8 +1162,11 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 6))
             (paragraph
-             (((f.ml (1 0) (2 2)) (bold ())) ((f.ml (2 2) (2 3)) space)
-              ((f.ml (2 3) (2 6)) (word bar)))))
+             (((f.ml (1 0) (2 2))
+               (bold
+                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 0)) space)
+                 ((f.ml (2 0) (2 1)) space))))
+              ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar)))))
            ((f.ml (2 6) (2 7)) (paragraph (((f.ml (2 6) (2 7)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 2, character 2:\
@@ -1210,7 +1216,8 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (4 3))
             (paragraph
-             (((f.ml (1 0) (4 0)) (bold ())) ((f.ml (4 0) (4 3)) (word bar)))))
+             (((f.ml (1 0) (4 0)) (bold (((f.ml (1 3) (1 6)) (word foo)))))
+              ((f.ml (4 0) (4 3)) (word bar)))))
            ((f.ml (4 3) (4 4)) (paragraph (((f.ml (4 3) (4 4)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 4, character 0:\
@@ -1236,10 +1243,14 @@ let%expect_test _ =
       test "{b foo";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 6)) (paragraph (((f.ml (1 0) (1 6)) (bold ())))))))
+        ((output
+          (((f.ml (1 0) (1 6))
+            (paragraph
+             (((f.ml (1 0) (1 6)) (bold (((f.ml (1 3) (1 6)) (word foo))))))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-6:\
-           \nIllegal character or syntax '' in '{b ...}' (boldface text)")))
+           \nEnd of text is not allowed in '{b ...}' (boldface text).\
+           \nSuggestion: add '}'.")))
         |}]
 
     let nested_code_block =
