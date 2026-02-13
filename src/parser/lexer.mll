@@ -38,11 +38,30 @@ let unescape_word : string -> string = fun s ->
     Buffer.contents buffer
 
 
-let update_content_newlines : content:string -> Lexing.lexbuf -> unit = 
-  fun ~content lexbuf -> 
-    String.iter 
-      (function '\n' -> Lexing.new_line lexbuf | _ -> ()) 
+let update_content_newlines : content:string -> Lexing.lexbuf -> unit =
+  fun ~content lexbuf ->
+    String.iter
+      (function '\n' -> Lexing.new_line lexbuf | _ -> ())
       content
+
+(** Like [update_content_newlines] but computes correct pos_bol by tracking
+    position relative to [base_offset] (the start of the matched text). *)
+let track_newlines_in_match ~content ~base_offset lexbuf =
+  let newlines = ref 0 in
+  let last_newline_offset = ref (-1) in
+  String.iteri (fun i c ->
+    if c = '\n' then begin
+      incr newlines;
+      last_newline_offset := i
+    end
+  ) content;
+  if !newlines > 0 then begin
+    let pos = lexbuf.Lexing.lex_curr_p in
+    lexbuf.Lexing.lex_curr_p <- { pos with
+      pos_lnum = pos.pos_lnum + !newlines;
+      pos_bol = base_offset + !last_newline_offset + 1
+    }
+  end
 
 (* This is used for code and verbatim blocks. It can be done with a regular
    expression, but the regexp gets quite ugly, so a function is easier to
@@ -1043,12 +1062,13 @@ and code_block_metadata_atom input = parse
      with_location_adjustments (fun _ _ -> Loc.at) lexbuf input "" }
 
 and code_block_metadata_tail input tag acc = parse
- | space_char+
-   { let acc = match tag with | Some t -> `Tag t :: acc | None -> acc in
+ | space_char+ as ws
+   { track_newlines_in_match ~content:ws ~base_offset:(Lexing.lexeme_start lexbuf) lexbuf;
+     let acc = match tag with | Some t -> `Tag t :: acc | None -> acc in
      let tag = code_block_metadata_atom input lexbuf in
      code_block_metadata_tail input (Some tag) acc lexbuf }
- | space_char* '[' (* Nb this will be a longer match than the above case! *)
-   {
+ | (space_char* as ws) '[' (* Nb this will be a longer match than the above case! *)
+   { track_newlines_in_match ~content:ws ~base_offset:(Lexing.lexeme_start lexbuf) lexbuf;
      let acc = match tag with | Some t -> `Tag t :: acc | None -> acc in
      `Ok (List.rev acc) }
  | '='

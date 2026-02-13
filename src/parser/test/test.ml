@@ -3206,7 +3206,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 17))
+          (((f.ml (1 0) (2 9))
             (code_block (((f.ml (1 2) (1 7)) ocaml) ())
              ((f.ml (2 1) (2 7)) " code ")))))
          (warnings ()))
@@ -3217,7 +3217,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 31))
+          (((f.ml (1 0) (2 9))
             (code_block
              (((f.ml (1 2) (1 7)) ocaml)
               ((binding ((f.ml (1 8) (1 12)) kind) ((f.ml (1 13) (1 21)) toplevel))))
@@ -3243,7 +3243,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 34))
+          (((f.ml (1 0) (2 11))
             (code_block
              (((f.ml (1 2) (1 7)) ocaml)
               ((binding ((f.ml (1 8) (1 12)) kind) ((f.ml (1 13) (1 21)) toplevel))))
@@ -3256,7 +3256,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 37))
+          (((f.ml (1 0) (2 15))
             (code_block
              (((f.ml (1 2) (1 7)) ocaml)
               ((binding ((f.ml (1 8) (1 12)) kind) ((f.ml (1 13) (1 21)) toplevel))
@@ -3270,7 +3270,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 30))
+          (((f.ml (1 0) (2 22))
             (code_block
              (((f.ml (1 2) (1 7)) ocaml)
               ((binding ((f.ml (2 0) (2 4)) kind) ((f.ml (2 5) (2 13)) toplevel))))
@@ -3539,7 +3539,7 @@ let%expect_test _ =
          [foo]}|};
       [%expect {|
         ((output
-          (((f.ml (1 0) (1 220))
+          (((f.ml (1 0) (9 15))
             (code_block
              (((f.ml (1 2) (1 7)) ocaml)
               ((binding ((f.ml (2 9) (2 12)) env) ((f.ml (2 13) (2 15)) f1))
