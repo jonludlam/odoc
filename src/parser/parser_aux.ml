@@ -26,13 +26,15 @@ let merge_spaces : Ast.inline_element Loc.with_location list -> Ast.inline_eleme
   in
   go [] elts
 
+let normalize_inline elts = trim_start elts |> merge_spaces
+
 (* Wrap a list of `inline_element` in a `Paragraph *)
 let paragraph :
     Ast.inline_element Loc.with_location list ->
     Ast.nestable_block_element Loc.with_location =
  fun elts ->
   let span = Loc.span @@ List.map Loc.location elts in
-  let elts = trim_start elts |> trim_end |> merge_spaces in
+  let elts = normalize_inline elts |> trim_end in
   Loc.at span @@ `Paragraph elts
 
 type align_error =

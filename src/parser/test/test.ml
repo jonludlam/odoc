@@ -1139,9 +1139,9 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (2 7))
                (bold
-                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 0)) space)
-                 ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 2)) (word -))
-                 ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar))))))))))
+                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 1)) space)
+                 ((f.ml (2 1) (2 2)) (word -)) ((f.ml (2 2) (2 3)) space)
+                 ((f.ml (2 3) (2 6)) (word bar))))))))))
          (warnings ()))
         |}]
 
@@ -1154,9 +1154,9 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (2 7))
                (bold
-                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 0)) space)
-                 ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 2)) (word +))
-                 ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar))))))))))
+                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 1)) space)
+                 ((f.ml (2 1) (2 2)) (word +)) ((f.ml (2 2) (2 3)) space)
+                 ((f.ml (2 3) (2 6)) (word bar))))))))))
          (warnings ()))
         |}]
 

@@ -157,7 +157,7 @@ let section_heading :=
   | content = Section_heading; children = sequence_nonempty(inline_element(whitespace)); endpos = located(RIGHT_BRACE); {
     let Tokens.{ inner = (num, title); start } = content in
     let span = { endpos.Loc.location with start } in
-    Writer.map ~f:(fun c -> Loc.at span @@ `Heading (num, title, trim_start c)) children
+    Writer.map ~f:(fun c -> Loc.at span @@ `Heading (num, title, normalize_inline c)) children
   }
   | content = Section_heading; endpos = located(RIGHT_BRACE); { 
     let Tokens.{ inner = (num, title); start } = content in
@@ -262,7 +262,7 @@ let style :=
       Writer.Warning (Parse_error.should_not_be_empty ~what span) 
     in
     Writer.ensure not_empty warning children
-    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style, trim_start c)) 
+    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style, normalize_inline c)) 
   }
   | style = located(Style); endpos = located(RIGHT_BRACE); {
     let span = Loc.delimited style endpos in
@@ -299,7 +299,7 @@ let style :=
       Parse_error.illegal ~in_what illegal_section span)
     in
     Writer.warning illegal children
-    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style.Loc.value, trim_start c))
+    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style.Loc.value, normalize_inline c))
   }
   | style = located(Style); errloc = position(error); {
     let span = Loc.span [style.Loc.location; Loc.of_position errloc] in
@@ -320,7 +320,7 @@ let style :=
       Writer.Warning (Parse_error.end_not_allowed ~in_what span)
     in
     Writer.warning warning children
-    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style, trim_start c))
+    |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style, normalize_inline c))
   }
   | style = located(Style); endpos = located(END); {
     let span = Loc.delimited style endpos in
@@ -345,7 +345,7 @@ let reference :=
     Writer.bind children ~f:(fun c -> 
       let Tokens.{ inner; start } = content in
       let span = { endpos.Loc.location with start } in
-      return @@ Loc.at span @@ `Reference (`With_text, inner, trim_start c))
+      return @@ Loc.at span @@ `Reference (`With_text, inner, normalize_inline c))
   }
   | content = Ref_with_replacement; endpos = located(RIGHT_BRACE); {
     let Tokens.{ inner; start } = content in
@@ -399,7 +399,7 @@ let link :=
       let Tokens.{ inner; start } = content in
       let url = String.trim inner in
       let span = { endpos.Loc.location with start } in
-      let node = Loc.at span @@ `Link (url, trim_start c) in
+      let node = Loc.at span @@ `Link (url, normalize_inline c) in
       if "" = url then
         let what = Tokens.describe @@ Link_with_replacement content in
         let warning =

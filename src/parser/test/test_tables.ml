@@ -163,13 +163,9 @@ let%expect_test _ =
                   (((f.ml (16 15) (19 0))
                     (unordered light
                      ((((f.ml (16 17) (17 15))
-                        (paragraph
-                         (((f.ml (16 17) (16 20)) (word aaa))
-                          ((f.ml (16 20) (17 0)) space))))
+                        (paragraph (((f.ml (16 17) (16 20)) (word aaa)))))
                        ((f.ml (17 17) (18 15))
-                        (paragraph
-                         (((f.ml (17 17) (17 20)) (word bbb))
-                          ((f.ml (17 20) (18 0)) space))))
+                        (paragraph (((f.ml (17 17) (17 20)) (word bbb)))))
                        ((f.ml (18 17) (19 0))
                         (paragraph (((f.ml (18 17) (18 20)) (word ccc)))))))))))
                  (data
@@ -577,7 +573,7 @@ let%expect_test _ =
                      (((f.ml (4 11) (5 23))
                        (emphasis
                         (((f.ml (4 14) (4 18)) (word with))
-                         ((f.ml (4 18) (5 0)) space) ((f.ml (5 0) (5 14)) space)
+                         ((f.ml (4 18) (5 14)) space)
                          ((f.ml (5 14) (5 22)) (word newlines))))))))))
                  (data
                   (((f.ml (5 26) (5 37))
