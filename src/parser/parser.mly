@@ -776,7 +776,13 @@ let media :=
       let ref_sym = match ref_kind.Loc.value with `Reference _ -> "!" | `Link _ -> ":" in
       let media_str = match media_kind with `Audio -> "audio" | `Image -> "image" | `Video -> "video" in
       let what = Printf.sprintf "'{{%s%s...} ...}' (%s-reference)" media_str ref_sym media_str in
-      Writer.return_warning inner (Writer.Warning (Parse_error.should_not_be_empty ~what span))
+      (* Use content location (after reference, before closing }) like master *)
+      let prefix_len = String.length (Printf.sprintf "{{%s%s" media_str ref_sym) in
+      let ref_str = match ref_kind.Loc.value with `Reference s | `Link s -> s in
+      let c_location =
+        Loc.nudge_start (prefix_len + String.length ref_str) span
+        |> Loc.nudge_end 1 in
+      Writer.return_warning inner (Writer.Warning (Parse_error.should_not_be_empty ~what c_location))
     else return inner
   }
 
