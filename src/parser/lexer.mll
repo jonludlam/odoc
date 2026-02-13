@@ -446,12 +446,13 @@ rule reference_paren_content input opening_delimiter start_offset content_offset
           lexbuf }
   | eof
     { 
-      let unclosed_bracket = 
+      let unclosed_bracket =
         Parse_error.unclosed_bracket ~bracket:"("
       in
-      warning lexbuf input ~start_offset unclosed_bracket;
-      let start = input.offset_to_location @@ Option.value ~default:(Lexing.lexeme_start lexbuf) content_offset 
-      and end_ = input.offset_to_location @@ Lexing.lexeme_end lexbuf in 
+      let paren_offset = Option.value ~default:(Lexing.lexeme_start lexbuf) content_offset in
+      warning lexbuf input ~start_offset:paren_offset unclosed_bracket;
+      let start = input.offset_to_location @@ paren_offset
+      and end_ = input.offset_to_location @@ Lexing.lexeme_end lexbuf in
       Loc.{ value = Buffer.contents buffer; location = { start; end_; file = input.file }}
     }
   | _

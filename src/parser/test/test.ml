@@ -1824,7 +1824,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 8)) (simple ((f.ml (1 2) (1 8)) "(.*()}") ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-8:\
+          ( "File \"f.ml\", line 1, characters 2-8:\
            \nOpen bracket '(' is never closed.")))
         |}]
 
@@ -1837,7 +1837,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 7)) (simple ((f.ml (1 2) (1 7)) "(.*()") ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-7:\
+          ( "File \"f.ml\", line 1, characters 2-7:\
            \nOpen bracket '(' is never closed.")))
         |}]
   end in
