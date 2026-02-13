@@ -901,9 +901,9 @@ let modules := startpos = located(MODULES); modules = sequence(inline_element(wh
       let non_space = List.filter (fun e -> match Loc.value e with `Space _ -> false | _ -> true) m in
       let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) non_space) in
       (* Test the content for errors, throwing away the value afterwards with `*>` *)
-      (Writer.ensure not_empty is_empty (return m)
-       |> Writer.ensure legal_module_list not_allowed)
-       *> return inner)
+      let checked = Writer.ensure not_empty is_empty (return m) in
+      let checked = if not_empty m then Writer.ensure legal_module_list not_allowed checked else checked in
+      checked *> return inner)
   }
   | startpos = located(MODULES); modules = sequence(inline_element(whitespace)); endpos = located(END); {
     let in_what = Tokens.describe MODULES in

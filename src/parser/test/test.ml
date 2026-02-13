@@ -2517,8 +2517,6 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 11)) (modules ()))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
-           \n is not allowed in '{!modules ...}'."
-            "File \"f.ml\", line 1, characters 0-11:\
            \n'{!modules ...}' should not be empty.")))
         |}]
 
@@ -2529,8 +2527,6 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 12)) (modules ()))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-12:\
-           \n is not allowed in '{!modules ...}'."
-            "File \"f.ml\", line 1, characters 0-12:\
            \n'{!modules ...}' should not be empty.")))
         |}]
 
