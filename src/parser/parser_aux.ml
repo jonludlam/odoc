@@ -93,7 +93,11 @@ let valid_align_row (row : Ast.inline_element Loc.with_location list list) :
 
 (* Merges inline elements within a cell into a single paragraph element, and tags cells w/ tag *)
 let merged_tagged_row tag : 'a Loc.with_location list list -> 'b =
-  List.map (fun elts -> ([ paragraph (trim_start (trim_end elts)) ], tag))
+  List.map (fun elts ->
+    let trimmed = trim_start (trim_end elts) in
+    match trimmed with
+    | [] -> ([], tag)
+    | _ -> ([ paragraph trimmed ], tag))
 let as_data = merged_tagged_row `Data
 let as_header = merged_tagged_row `Header
 
