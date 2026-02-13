@@ -333,12 +333,17 @@ let style :=
   | style = located(Style); endpos = located(END); {
     let span = Loc.delimited style endpos in
     let style = style.Loc.value in
-    let warning =
+    let end_warning =
       let in_what = Tokens.describe @@ Style style in
       Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location)
     in
+    let empty_warning =
+      let what = Tokens.describe @@ Style style in
+      Writer.Warning (Parse_error.should_not_be_empty ~what span)
+    in
     let inner = Loc.at span @@ `Styled (ast_style style, []) in
-    Writer.return_warning inner warning
+    Writer.return_warning inner empty_warning
+    |> Writer.warning end_warning
   }
 
 (* LINKS + REFS *)
@@ -381,9 +386,14 @@ let reference :=
     let span = { endpos.Loc.location with start } in
     let in_what = Tokens.describe @@ Ref_with_replacement content in
     let end_not_allowed = Writer.Warning (Parse_error.not_allowed ~what:"end of text" ~in_what endpos.Loc.location) in
+    let empty_warning =
+      let what = Tokens.describe @@ Ref_with_replacement content in
+      Writer.Warning (Parse_error.should_not_be_empty ~what span)
+    in
     `Reference (`With_text, inner, [])
     |> Loc.at span
     |> return
+    |> Writer.warning empty_warning
     |> Writer.warning end_not_allowed
   }
 
@@ -937,8 +947,12 @@ let modules := startpos = located(MODULES); modules = sequence(inline_element(wh
       in
       let non_space = List.filter (fun e -> match Loc.value e with `Space _ -> false | _ -> true) m in
       let inner = Loc.at outer_span @@ `Modules (List.map (Loc.map inline_element_inner) non_space) in
-      Writer.return_warning inner not_allowed
-      |> Writer.warning unexpected_end)
+      let result = Writer.return_warning inner not_allowed in
+      let result = if non_space = [] then
+        let what = Tokens.describe MODULES in
+        Writer.warning (Writer.Warning (Parse_error.should_not_be_empty ~what outer_span)) result
+      else result in
+      Writer.warning unexpected_end result)
   }
 
 

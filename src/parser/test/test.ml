@@ -1208,7 +1208,9 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 2)) (paragraph (((f.ml (1 0) (1 2)) (bold ())))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 2-2:\
-           \nEnd of text is not allowed in '{b ...}' (boldface text).")))
+           \nEnd of text is not allowed in '{b ...}' (boldface text)."
+            "File \"f.ml\", line 1, characters 0-2:\
+           \n'{b ...}' (boldface text) should not be empty.")))
         |}]
 
     let end_of_comment =
@@ -2031,6 +2033,8 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 6-6:\
            \nEnd of text is not allowed in '{{!...} ...}' (cross-reference)."
             "File \"f.ml\", line 1, characters 0-6:\
+           \n'{{!...} ...}' (cross-reference) should not be empty."
+            "File \"f.ml\", line 1, characters 0-6:\
            \nOpen bracket '{{!' is never closed.")))
         |}]
 
@@ -2543,6 +2547,8 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 10-10:\
            \nEnd of text is not allowed in '{!modules ...}'."
+            "File \"f.ml\", line 1, characters 0-10:\
+           \n'{!modules ...}' should not be empty."
             "File \"f.ml\", line 1, characters 0-10:\
            \n is not allowed in '{!modules ...}'.")))
         |}]
