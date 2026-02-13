@@ -26,7 +26,7 @@ let merge_spaces : Ast.inline_element Loc.with_location list -> Ast.inline_eleme
   in
   go [] elts
 
-let normalize_inline elts = trim_start elts |> merge_spaces
+let normalize_inline elts = merge_spaces elts |> trim_start
 
 (* Wrap a list of `inline_element` in a `Paragraph *)
 let paragraph :

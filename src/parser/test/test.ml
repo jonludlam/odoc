@@ -1009,8 +1009,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (paragraph
-             (((f.ml (1 0) (2 5))
-               (bold (((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word foo))))))))))
+             (((f.ml (1 0) (2 5)) (bold (((f.ml (2 1) (2 4)) (word foo))))))))))
          (warnings ()))
         |}]
 
@@ -1297,8 +1296,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (paragraph
-             (((f.ml (1 0) (2 5))
-               (italic (((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word foo))))))))))
+             (((f.ml (1 0) (2 5)) (italic (((f.ml (2 1) (2 4)) (word foo))))))))))
          (warnings ()))
         |}]
   end in
@@ -1343,9 +1341,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (paragraph
-             (((f.ml (1 0) (2 5))
-               (emphasis
-                (((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word foo))))))))))
+             (((f.ml (1 0) (2 5)) (emphasis (((f.ml (2 1) (2 4)) (word foo))))))))))
          (warnings ()))
         |}]
   end in
@@ -1400,9 +1396,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (paragraph
-             (((f.ml (1 0) (2 5))
-               (superscript
-                (((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word foo))))))))))
+             (((f.ml (1 0) (2 5)) (superscript (((f.ml (2 1) (2 4)) (word foo))))))))))
          (warnings ()))
         |}]
 
@@ -1477,9 +1471,7 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (paragraph
-             (((f.ml (1 0) (2 5))
-               (subscript
-                (((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word foo))))))))))
+             (((f.ml (1 0) (2 5)) (subscript (((f.ml (2 1) (2 4)) (word foo))))))))))
          (warnings ()))
         |}]
 
@@ -2054,7 +2046,7 @@ let%expect_test _ =
             (paragraph
              (((f.ml (1 0) (1 11))
                (with_text ((f.ml (1 3) (1 7)) foo)
-                (((f.ml (1 7) (1 8)) space) ((f.ml (1 8) (1 11)) (word bar))))))))))
+                (((f.ml (1 8) (1 11)) (word bar))))))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \nEnd of text is not allowed in '{{!...} ...}' (cross-reference).\

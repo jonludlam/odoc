@@ -365,7 +365,7 @@ let reference :=
       Writer.Warning (Parse_error.end_not_allowed ~in_what span)
     in
     let* children = Option.value ~default:(return []) children in
-    let node = Loc.at span @@ `Reference (`With_text, inner, children) in
+    let node = Loc.at span @@ `Reference (`With_text, inner, normalize_inline children) in
     Writer.return_warning node not_allowed
   }
   | content = Ref_with_replacement; endpos = located(END); {
