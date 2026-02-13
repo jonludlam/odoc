@@ -380,53 +380,56 @@ let reference :=
   }
 
 let link := 
-  | content = located(Simple_link); { 
+  | content = located(Simple_link); {
     let Loc.{ value = Tokens.{ inner; start }; location } = content in
     let span = { location with start } in
-    let node = Loc.at span @@ `Link (inner, []) in
     let url = String.trim inner in
-    if "" = url then 
+    let node = Loc.at span @@ `Link (url, []) in
+    if "" = url then
       let what = Tokens.describe @@ Simple_link content.Loc.value in
-      let warning = 
+      let warning =
         Writer.Warning (Parse_error.should_not_be_empty ~what span)
       in
       Writer.return_warning node warning
     else
       return node
   }
-  | content = Link_with_replacement; children = sequence_nonempty(inline_element(whitespace)); endpos = located(RIGHT_BRACE); { 
-    Writer.bind children ~f:(fun c -> 
+  | content = Link_with_replacement; children = sequence_nonempty(inline_element(whitespace)); endpos = located(RIGHT_BRACE); {
+    Writer.bind children ~f:(fun c ->
       let Tokens.{ inner; start } = content in
+      let url = String.trim inner in
       let span = { endpos.Loc.location with start } in
-      let node = Loc.at span @@ `Link (inner, c) in
-      if "" = inner then
+      let node = Loc.at span @@ `Link (url, c) in
+      if "" = url then
         let what = Tokens.describe @@ Link_with_replacement content in
-        let warning =  
+        let warning =
           Writer.Warning (Parse_error.should_not_be_empty ~what span)
         in
         Writer.return_warning node warning
-      else 
+      else
         return node)
   }
   | content = Link_with_replacement; endpos = located(RIGHT_BRACE); {
     let Tokens.{ inner; start } = content in
+    let url = String.trim inner in
     let span = { endpos.Loc.location with start } in
-    let node = Loc.at span @@ `Link (inner, []) in
+    let node = Loc.at span @@ `Link (url, []) in
     let what = Tokens.describe @@ Link_with_replacement content in
     let should_not_be_empty =
-      Writer.Warning (Parse_error.should_not_be_empty ~what span) 
+      Writer.Warning (Parse_error.should_not_be_empty ~what span)
     in
     Writer.return_warning node should_not_be_empty
   }
   | content = Link_with_replacement; endpos = located(END); {
     let Tokens.{ inner; start } = content in
+    let url = String.trim inner in
     let span = { endpos.Loc.location with start } in
     let in_what = Tokens.describe @@ Link_with_replacement content in
     let end_not_allowed = Writer.Warning (Parse_error.end_not_allowed ~in_what span) in
-    `Link (inner, [])
-    |> Loc.at span 
-    |> return 
-    |> Writer.warning end_not_allowed 
+    `Link (url, [])
+    |> Loc.at span
+    |> return
+    |> Writer.warning end_not_allowed
   }
 
 (* LIST *)

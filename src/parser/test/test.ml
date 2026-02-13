@@ -2412,8 +2412,10 @@ let%expect_test _ =
           (((f.ml (1 0) (1 10))
             (paragraph
              (((f.ml (1 0) (1 10))
-               (" " (((f.ml (1 5) (1 6)) space) ((f.ml (1 6) (1 9)) (word foo))))))))))
-         (warnings ()))
+               ("" (((f.ml (1 5) (1 6)) space) ((f.ml (1 6) (1 9)) (word foo))))))))))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-10:\
+           \n'{{:...} ...}' (external link) should not be empty.")))
         |}]
 
     let empty =
@@ -2481,7 +2483,7 @@ let%expect_test _ =
       test "{: }";
       [%expect
         {|
-        ((output (((f.ml (1 0) (1 4)) (paragraph (((f.ml (1 0) (1 4)) (" " ())))))))
+        ((output (((f.ml (1 0) (1 4)) (paragraph (((f.ml (1 0) (1 4)) ("" ())))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-4:\
            \n'{:...} (external link)' should not be empty.")))
