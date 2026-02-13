@@ -4401,17 +4401,11 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 16)) (unordered heavy ()))
-           ((f.ml (1 17) (1 20)) (paragraph (((f.ml (1 17) (1 20)) (word bar)))))
-           ((f.ml (1 20) (1 21)) (paragraph (((f.ml (1 20) (1 21)) (word })))))
-           ((f.ml (1 21) (1 22)) (paragraph (((f.ml (1 21) (1 22)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, characters 0-16:\
-           \nIllegal character or syntax '{li' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 20-21:\
-           \n''}'': bad markup."
-            "File \"f.ml\", line 1, characters 21-22:\
-           \n''}'': bad markup.")))
+          (((f.ml (1 0) (1 22))
+            (unordered heavy
+             ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo))))))
+              (((f.ml (1 17) (1 20)) (paragraph (((f.ml (1 17) (1 20)) (word bar)))))))))))
+         (warnings ()))
         |}]
 
     let items_on_separate_lines =
@@ -4419,17 +4413,11 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 3)) (unordered heavy ()))
-           ((f.ml (2 4) (2 7)) (paragraph (((f.ml (2 4) (2 7)) (word bar)))))
-           ((f.ml (2 7) (2 8)) (paragraph (((f.ml (2 7) (2 8)) (word })))))
-           ((f.ml (2 8) (2 9)) (paragraph (((f.ml (2 8) (2 9)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 2, character 3:\
-           \nIllegal character or syntax '{li' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 2, characters 7-8:\
-           \n''}'': bad markup."
-            "File \"f.ml\", line 2, characters 8-9:\
-           \n''}'': bad markup.")))
+          (((f.ml (1 0) (2 9))
+            (unordered heavy
+             ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo))))))
+              (((f.ml (2 4) (2 7)) (paragraph (((f.ml (2 4) (2 7)) (word bar)))))))))))
+         (warnings ()))
         |}]
 
     let blank_line =
@@ -4437,21 +4425,11 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 0))
+          (((f.ml (1 0) (4 9))
             (unordered heavy
-             ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))))
-           ((f.ml (4 0) (4 8)) (paragraph (((f.ml (4 4) (4 7)) (word bar)))))
-           ((f.ml (4 8) (4 9)) (paragraph (((f.ml (4 8) (4 9)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 4, character 0:\
-           \nIllegal character or syntax '\
-           \n\
-           \n' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 4, characters 0-8:\
-           \n'{li ...}' (list item) is not allowed in top-level text.\
-           \nSuggestion: Move '{li ...}' (list item) into '{ol ...}' (numbered list) or '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 4, characters 8-9:\
-           \n''}'': bad markup.")))
+             ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo))))))
+              (((f.ml (4 4) (4 7)) (paragraph (((f.ml (4 4) (4 7)) (word bar)))))))))))
+         (warnings ()))
         |}]
 
     let blank_line_in_item =
@@ -4649,17 +4627,11 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 15)) (unordered heavy ()))
-           ((f.ml (1 16) (1 19)) (paragraph (((f.ml (1 16) (1 19)) (word bar)))))
-           ((f.ml (1 19) (1 20)) (paragraph (((f.ml (1 19) (1 20)) (word })))))
-           ((f.ml (1 20) (1 21)) (paragraph (((f.ml (1 20) (1 21)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, characters 0-15:\
-           \nIllegal character or syntax '{-' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 19-20:\
-           \n''}'': bad markup."
-            "File \"f.ml\", line 1, characters 20-21:\
-           \n''}'': bad markup.")))
+          (((f.ml (1 0) (1 21))
+            (unordered heavy
+             ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo))))))
+              (((f.ml (1 16) (1 19)) (paragraph (((f.ml (1 16) (1 19)) (word bar)))))))))))
+         (warnings ()))
         |}]
 
     let nested =

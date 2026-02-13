@@ -515,8 +515,10 @@ let item_heavy :=
       |> Writer.warning end_not_allowed
   }
 
-let list_heavy := 
-  | list_kind = located(List); whitespace*; items = sequence(item_heavy); whitespace*; endpos = located(RIGHT_BRACE); { 
+let item_heavy_with_ws := item = item_heavy; any_whitespace*; { item }
+
+let list_heavy :=
+  | list_kind = located(List); whitespace*; items = sequence(item_heavy_with_ws); endpos = located(RIGHT_BRACE); {
     let span = Loc.delimited list_kind endpos in
     let should_not_be_empty = 
       let what = Tokens.describe @@ List list_kind.Loc.value in
@@ -528,7 +530,7 @@ let list_heavy :=
         |> Loc.at span
         |> return)
   }
-  | list_kind = located(List); whitespace*; items = sequence_nonempty(item_heavy); errloc = position(error); {
+  | list_kind = located(List); whitespace*; items = sequence_nonempty(item_heavy_with_ws); errloc = position(error); {
     let span = Loc.(span [list_kind.location; of_position errloc]) in
     let illegal = Writer.InputNeeded (fun input ->
       let (start_pos, end_pos) = errloc in 
