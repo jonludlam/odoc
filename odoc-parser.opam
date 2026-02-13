@@ -17,6 +17,8 @@ depends: [
   "ocaml" {>= "4.08.0" & < "5.5"}
   "astring"
   "camlp-streams"
+  "menhir" {>= "20211128"}
+  "menhirLib"
   "ppx_expect" {with-test}
   "sexplib0" {with-test}
 ]

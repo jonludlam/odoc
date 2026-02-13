@@ -1,5 +1,7 @@
 open Odoc_parser
 
+module Serialize = Serialize
+
 type sexp = Sexplib0.Sexp.t = Atom of string | List of sexp list
 
 module Location_to_sexp = struct
