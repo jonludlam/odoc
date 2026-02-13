@@ -46,30 +46,37 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 22))
-            (table (syntax heavy) (grid ()) (align "no alignment")))))
+          (((f.ml (1 0) (1 13))
+            (table (syntax heavy) (grid ()) (align "no alignment")))
+           ((f.ml (1 14) (1 21)) (paragraph (((f.ml (1 14) (1 21)) (word content)))))
+           ((f.ml (1 21) (1 22)) (paragraph (((f.ml (1 21) (1 22)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 7-13:\
-           \n'absurd' is not allowed in '{table ...}' (table).\
-           \nSuggestion: Move outside of {table ...}, or inside {tr ...}"
-            "File \"f.ml\", line 1, characters 14-21:\
-           \n'content' is not allowed in '{table ...}' (table).\
-           \nSuggestion: Move outside of {table ...}, or inside {tr ...}"))) |}]
+           \nIllegal character or syntax 'absurd' in '{table ...}' (table)"
+            "File \"f.ml\", line 1, characters 21-22:\
+           \n''}'': bad markup.")))
+        |}]
 
     let bad_row =
       test "{table {tr absurd content}}";
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 27))
-            (table (syntax heavy) (grid ((row ()))) (align "no alignment")))))
+          (((f.ml (1 0) (1 18))
+            (table (syntax heavy) (grid ((row ()))) (align "no alignment")))
+           ((f.ml (1 18) (1 25)) (paragraph (((f.ml (1 18) (1 25)) (word content)))))
+           ((f.ml (1 25) (1 26)) (paragraph (((f.ml (1 25) (1 26)) (word })))))
+           ((f.ml (1 26) (1 27)) (paragraph (((f.ml (1 26) (1 27)) (word })))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-17:\
-           \n'absurd' is not allowed in '{tr ...}' (table row).\
-           \nSuggestion: Move outside of {table ...}, or inside {td ...} or {th ...}"
-            "File \"f.ml\", line 1, characters 18-25:\
-           \n'content' is not allowed in '{tr ...}' (table row).\
-           \nSuggestion: Move outside of {table ...}, or inside {td ...} or {th ...}"))) |}]
+          ( "File \"f.ml\", line 1, characters 17-18:\
+           \nIllegal character or syntax ' ' in '{table ...}' (table)"
+            "File \"f.ml\", line 1, characters 11-17:\
+           \nIllegal character or syntax 'absurd' in '{tr ...}' (table row)"
+            "File \"f.ml\", line 1, characters 25-26:\
+           \n''}'': bad markup."
+            "File \"f.ml\", line 1, characters 26-27:\
+           \n''}'': bad markup.")))
+        |}]
 
     let multiple_headers =
       test "{table {tr {th}} {tr {th}} {tr {td}}}";
@@ -86,13 +93,13 @@ let%expect_test _ =
       test "{table {tr {td}}";
       [%expect
         {|
-            ((output
-              (((f.ml (1 0) (1 16))
-                (table (syntax heavy) (grid ((row ((data ()))))) (align "no alignment")))))
-             (warnings
-              ( "File \"f.ml\", line 1, characters 16-16:\
-               \nEnd of text is not allowed in table.\
-               \nSuggestion: add '}'."))) |}]
+        ((output
+          (((f.ml (1 0) (1 16))
+            (table (syntax heavy) (grid ((row ((data ()))))) (align "no alignment")))))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 16-16:\
+           \nIllegal character or syntax '' in '{table ...}' (table)")))
+        |}]
 
     let complex_table =
       test
@@ -140,27 +147,36 @@ let%expect_test _ =
                     (paragraph (((f.ml (5 16) (5 19)) (word yyy)))))))))
                (row
                 ((data
-                  (((f.ml (8 16) (8 36))
+                  (((f.ml (8 16) (9 0))
                     (paragraph
                      (((f.ml (8 16) (8 20)) (word aaaa)) ((f.ml (8 20) (8 21)) space)
                       ((f.ml (8 21) (8 24)) (word bbb)) ((f.ml (8 24) (8 25)) space)
                       ((f.ml (8 25) (8 28)) (word ccc)) ((f.ml (8 28) (8 29)) space)
                       ((f.ml (8 29) (8 36))
-                       (italic (((f.ml (8 32) (8 35)) (word ddd))))))))))
+                       (italic (((f.ml (8 32) (8 35)) (word ddd)))))
+                      ((f.ml (8 36) (9 0)) space))))))
                  (data
                   (((f.ml (11 15) (11 32))
                     (table (syntax heavy) (grid ((row ((data ())))))
                      (align "no alignment")))))))
                (row
                 ((data
-                  (((f.ml (16 15) (18 20))
+                  (((f.ml (16 15) (19 0))
                     (unordered light
-                     ((((f.ml (16 17) (16 20))
-                        (paragraph (((f.ml (16 17) (16 20)) (word aaa))))))
-                      (((f.ml (17 17) (17 20))
-                        (paragraph (((f.ml (17 17) (17 20)) (word bbb))))))
-                      (((f.ml (18 17) (18 20))
-                        (paragraph (((f.ml (18 17) (18 20)) (word ccc)))))))))))
+                     ((((f.ml (16 17) (17 15))
+                        (paragraph
+                         (((f.ml (16 17) (16 20)) (word aaa))
+                          ((f.ml (16 20) (17 0)) space)
+                          ((f.ml (17 0) (17 15)) space))))
+                       ((f.ml (17 17) (18 15))
+                        (paragraph
+                         (((f.ml (17 17) (17 20)) (word bbb))
+                          ((f.ml (17 20) (18 0)) space)
+                          ((f.ml (18 0) (18 15)) space))))
+                       ((f.ml (18 17) (19 0))
+                        (paragraph
+                         (((f.ml (18 17) (18 20)) (word ccc))
+                          ((f.ml (18 20) (19 0)) space))))))))))
                  (data
                   (((f.ml (21 14) (25 15))
                     (table (syntax light)
@@ -187,7 +203,8 @@ let%expect_test _ =
                             (paragraph (((f.ml (24 25) (24 26)) (word 3)))))))))))
                      (align (default default default))))))))))
              (align "no alignment")))))
-         (warnings ())) |}]
+         (warnings ()))
+        |}]
   end in
   ()
 
@@ -199,8 +216,9 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 4))
-            (table (syntax light) (grid ()) (align "no alignment")))))
-         (warnings ())) |}]
+            (table (syntax light) (grid ((row ()))) (align "no alignment")))))
+         (warnings ()))
+        |}]
 
     let unclosed_table =
       test "{t ";
@@ -210,9 +228,10 @@ let%expect_test _ =
           (((f.ml (1 0) (1 3))
             (table (syntax light) (grid ()) (align "no alignment")))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 2-3:\
-           \nEnd of text is not allowed in table.\
-           \nSuggestion: add '}'."))) |}]
+          ( "File \"f.ml\", line 1, characters 0-3:\
+           \nEnd of text is not allowed in '{t ...}' (table).\
+           \nSuggestion: add '}'.")))
+        |}]
 
     let simple =
       test {|
@@ -346,8 +365,9 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (2 6) (4 7))
-            (table (syntax light) (grid ()) (align (default default))))))
-         (warnings ())) |}]
+            (table (syntax light) (grid ((row ()))) (align (default default))))))
+         (warnings ()))
+        |}]
 
     let no_data =
       test {|
@@ -457,36 +477,38 @@ let%expect_test _ =
       |};
       [%expect
         {|
-          ((output
-            (((f.ml (2 6) (10 7))
-              (table (syntax light)
-               (grid
-                ((row
-                  ((header
-                    (((f.ml (4 9) (4 10)) (paragraph (((f.ml (4 9) (4 10)) (word a)))))))
-                   (header
-                    (((f.ml (4 13) (4 14))
-                      (paragraph (((f.ml (4 13) (4 14)) (word b)))))))
-                   (header
-                    (((f.ml (4 17) (4 18))
-                      (paragraph (((f.ml (4 17) (4 18)) (word c)))))))
-                   (header
-                    (((f.ml (4 21) (4 22))
-                      (paragraph (((f.ml (4 21) (4 22)) (word d)))))))))
-                 (row
-                  ((data
-                    (((f.ml (8 9) (8 10)) (paragraph (((f.ml (8 9) (8 10)) (word a)))))))
-                   (data
-                    (((f.ml (8 13) (8 14))
-                      (paragraph (((f.ml (8 13) (8 14)) (word b)))))))
-                   (data
-                    (((f.ml (8 17) (8 18))
-                      (paragraph (((f.ml (8 17) (8 18)) (word c)))))))
-                   (data
-                    (((f.ml (8 21) (8 22))
-                      (paragraph (((f.ml (8 21) (8 22)) (word d)))))))))))
-               (align (default default default default))))))
-           (warnings ())) |}]
+        ((output
+          (((f.ml (2 6) (14 7))
+            (table (syntax light)
+             (grid
+              ((row
+                ((header
+                  (((f.ml (5 9) (5 10)) (paragraph (((f.ml (5 9) (5 10)) (word a)))))))
+                 (header
+                  (((f.ml (5 13) (5 14))
+                    (paragraph (((f.ml (5 13) (5 14)) (word b)))))))
+                 (header
+                  (((f.ml (5 17) (5 18))
+                    (paragraph (((f.ml (5 17) (5 18)) (word c)))))))
+                 (header
+                  (((f.ml (5 21) (5 22))
+                    (paragraph (((f.ml (5 21) (5 22)) (word d)))))))))
+               (row
+                ((data
+                  (((f.ml (11 9) (11 10))
+                    (paragraph (((f.ml (11 9) (11 10)) (word a)))))))
+                 (data
+                  (((f.ml (11 13) (11 14))
+                    (paragraph (((f.ml (11 13) (11 14)) (word b)))))))
+                 (data
+                  (((f.ml (11 17) (11 18))
+                    (paragraph (((f.ml (11 17) (11 18)) (word c)))))))
+                 (data
+                  (((f.ml (11 21) (11 22))
+                    (paragraph (((f.ml (11 21) (11 22)) (word d)))))))))))
+             (align (default default default default))))))
+         (warnings ()))
+        |}]
 
     let light_table_markup =
       test
@@ -560,7 +582,7 @@ let%expect_test _ =
                      (((f.ml (4 11) (5 23))
                        (emphasis
                         (((f.ml (4 14) (4 18)) (word with))
-                         ((f.ml (4 18) (5 14)) space)
+                         ((f.ml (4 18) (5 0)) space) ((f.ml (5 0) (5 14)) space)
                          ((f.ml (5 14) (5 22)) (word newlines))))))))))
                  (data
                   (((f.ml (5 26) (5 37))
@@ -569,9 +591,8 @@ let%expect_test _ =
                       ((f.ml (5 31) (5 32)) space)
                       ((f.ml (5 32) (5 37)) (code_span foo)))))))))))
              (align (default default))))))
-         (warnings
-          ( "File \"f.ml\", line 4, character 11 to line 5, character 23:\
-           \nLine break is not allowed in '{t ...}' (table)."))) |}]
+         (warnings ()))
+        |}]
 
     let no_space =
       test
@@ -680,14 +701,17 @@ let%expect_test _ =
             (table (syntax light)
              (grid
               ((row
-                ((header ())
+                ((header
+                  (((f.ml (3 18) (3 20))
+                    (paragraph (((f.ml (3 18) (3 20)) (word "")))))))
                  (header
                   (((f.ml (3 23) (3 24))
                     (paragraph (((f.ml (3 23) (3 24)) (word b)))))))))))
              (align (default default))))))
          (warnings
-          ( "File \"f.ml\", line 3, characters 13-20:\
-           \n'{[...]}' (code block) is not allowed in '{t ...}' (table)."))) |}]
+          ( "File \"f.ml\", line 3, characters 18-20:\
+           \nIllegal character or syntax ']}' in '{t ...}' (table)")))
+        |}]
 
     let block_element_in_row =
       test
@@ -705,16 +729,24 @@ let%expect_test _ =
             (table (syntax light)
              (grid
               ((row
-                ((header
+                ((data
                   (((f.ml (4 13) (4 14))
                     (paragraph (((f.ml (4 13) (4 14)) (word a)))))))
-                 (header
+                 (data
                   (((f.ml (4 17) (4 18))
-                    (paragraph (((f.ml (4 17) (4 18)) (word b)))))))))))
-             (align (default default))))))
+                    (paragraph (((f.ml (4 17) (4 18)) (word b)))))))))
+               (row
+                ((data
+                  (((f.ml (5 12) (5 15))
+                    (paragraph (((f.ml (5 12) (5 15)) (word ---)))))))
+                 (data
+                  (((f.ml (5 16) (5 19))
+                    (paragraph (((f.ml (5 16) (5 19)) (word ---)))))))))))
+             (align (default))))))
          (warnings
-          ( "File \"f.ml\", line 3, characters 11-18:\
-           \n'{[...]}' (code block) is not allowed in '{t ...}' (table)."))) |}]
+          ( "File \"f.ml\", line 3, characters 16-18:\
+           \nIllegal character or syntax ']}' in '{t ...}' (table)")))
+        |}]
 
     let more_cells_later =
       test
