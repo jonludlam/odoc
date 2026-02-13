@@ -735,14 +735,14 @@ let table :=
 (* MEDIA *)
 
 let media := 
-  | content = located(Media); whitespace*; { 
+  | content = located(Media); whitespace*; {
     let Loc.{ value = Tokens.{ inner = ref_kind, media_kind; start }; location } = content in
     let span = { location with start } in
-    let ref_kind = 
+    let ref_kind =
       let open Tokens in
-      match ref_kind with 
-      | Reference refr -> Loc.map (fun r -> `Reference r) refr
-      | Link link -> Loc.map (fun l -> `Link l) link
+      match ref_kind with
+      | Reference refr -> Loc.nudge_map_end 1 (Loc.map (fun r -> `Reference r) refr)
+      | Link link -> Loc.nudge_map_end 1 (Loc.map (fun l -> `Link l) link)
     in
     let media_kind = 
       let open Tokens in
@@ -754,12 +754,12 @@ let media :=
     let inner = Loc.at span @@ `Media (`Simple, ref_kind, "", media_kind) in 
     return inner
   }
-  | content = located(Media_with_replacement); whitespace*; { 
+  | content = located(Media_with_replacement); whitespace*; {
     let Loc.{ value = Tokens.{ inner = (ref_kind, media_kind, content); start }; location } = content in
     let span = { location with start } in
-    let ref_kind = 
+    let ref_kind =
       let open Tokens in
-      match ref_kind with 
+      match ref_kind with
       | Reference refr -> Loc.map (fun r -> `Reference r) refr
       | Link link -> Loc.map (fun l -> `Link l) link
     in

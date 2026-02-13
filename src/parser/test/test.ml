@@ -2065,15 +2065,15 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (simple ((f.ml (1 7) (1 11)) (Reference foo)) "" image))
+            (simple ((f.ml (1 7) (1 10)) (Reference foo)) "" image))
            ((f.ml (3 0) (3 11))
-            (simple ((f.ml (3 7) (3 11)) (Reference foo)) "" audio))
+            (simple ((f.ml (3 7) (3 10)) (Reference foo)) "" audio))
            ((f.ml (5 0) (5 11))
-            (simple ((f.ml (5 7) (5 11)) (Reference foo)) "" video))
-           ((f.ml (7 0) (7 11)) (simple ((f.ml (7 7) (7 11)) (Link foo)) "" image))
-           ((f.ml (9 0) (9 11)) (simple ((f.ml (9 7) (9 11)) (Link foo)) "" audio))
+            (simple ((f.ml (5 7) (5 10)) (Reference foo)) "" video))
+           ((f.ml (7 0) (7 11)) (simple ((f.ml (7 7) (7 10)) (Link foo)) "" image))
+           ((f.ml (9 0) (9 11)) (simple ((f.ml (9 7) (9 10)) (Link foo)) "" audio))
            ((f.ml (11 0) (11 11))
-            (simple ((f.ml (11 7) (11 11)) (Link foo)) "" video))))
+            (simple ((f.ml (11 7) (11 10)) (Link foo)) "" video))))
          (warnings ()))
         |}]
 
@@ -2179,7 +2179,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 10))
-            (simple ((f.ml (1 7) (1 10)) (Reference foo)) "" image))))
+            (simple ((f.ml (1 7) (1 9)) (Reference foo)) "" image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-10:\
            \nOpen bracket '{image!' is never closed.")))
@@ -2207,7 +2207,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 10))
-            (simple ((f.ml (1 7) (1 10)) (Reference foo)) "" video))))
+            (simple ((f.ml (1 7) (1 9)) (Reference foo)) "" video))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-10:\
            \nOpen bracket '{video!' is never closed.")))
@@ -2235,7 +2235,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 10))
-            (simple ((f.ml (1 7) (1 10)) (Reference foo)) "" audio))))
+            (simple ((f.ml (1 7) (1 9)) (Reference foo)) "" audio))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-10:\
            \nOpen bracket '{audio!' is never closed.")))
