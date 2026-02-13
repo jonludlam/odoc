@@ -767,30 +767,33 @@ let media :=
   | content = located(Media_with_replacement); whitespace*; {
     let Loc.{ value = Tokens.{ inner = (ref_kind, media_kind, content); start }; location } = content in
     let span = { location with start } in
-    let ref_kind =
+    let media_kind =
       let open Tokens in
-      match ref_kind with
-      | Reference refr -> Loc.map (fun r -> `Reference r) refr
-      | Link link -> Loc.map (fun l -> `Link l) link
-    in
-    let media_kind = 
-      let open Tokens in
-      match media_kind with 
-      | Audio -> `Audio 
+      match media_kind with
+      | Audio -> `Audio
       | Image -> `Image
       | Video -> `Video
+    in
+    let ref_sym = let open Tokens in match ref_kind with Reference _ -> "!" | Link _ -> ":" in
+    let media_str = match media_kind with `Audio -> "audio" | `Image -> "image" | `Video -> "video" in
+    let prefix = Printf.sprintf "{{%s%s" media_str ref_sym in
+    (* Compute ref location from span like master: nudge_start by prefix, nudge_end by content+1 *)
+    let ref_kind =
+      let open Tokens in
+      let r_location = Loc.nudge_start (String.length prefix) span
+        |> Loc.nudge_end (String.length content + 1) in
+      match ref_kind with
+      | Reference refr -> Loc.at r_location (`Reference refr.Loc.value)
+      | Link link -> Loc.at r_location (`Link link.Loc.value)
     in
     let trimmed = String.trim content in
     let inner = Loc.at span @@ `Media (`Simple, ref_kind, trimmed, media_kind) in
     if not (has_content trimmed) then
-      let ref_sym = match ref_kind.Loc.value with `Reference _ -> "!" | `Link _ -> ":" in
-      let media_str = match media_kind with `Audio -> "audio" | `Image -> "image" | `Video -> "video" in
       let what = Printf.sprintf "'{{%s%s...} ...}' (%s-reference)" media_str ref_sym media_str in
       (* Use content location (after reference, before closing }) like master *)
-      let prefix_len = String.length (Printf.sprintf "{{%s%s" media_str ref_sym) in
       let ref_str = match ref_kind.Loc.value with `Reference s | `Link s -> s in
       let c_location =
-        Loc.nudge_start (prefix_len + String.length ref_str) span
+        Loc.nudge_start (String.length prefix + String.length ref_str) span
         |> Loc.nudge_end 1 in
       Writer.return_warning inner (Writer.Warning (Parse_error.should_not_be_empty ~what c_location))
     else return inner

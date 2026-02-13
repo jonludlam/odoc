@@ -2167,7 +2167,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" image))))
+            (simple ((f.ml (1 8) (1 10)) (Reference foo)) "" image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{image!' is never closed."
@@ -2195,7 +2195,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" video))))
+            (simple ((f.ml (1 8) (1 10)) (Reference foo)) "" video))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{video!' is never closed."
@@ -2223,7 +2223,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11))
-            (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" audio))))
+            (simple ((f.ml (1 8) (1 10)) (Reference foo)) "" audio))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{audio!' is never closed."
@@ -2251,7 +2251,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 16))
-            (simple ((f.ml (1 8) (1 12)) (Reference foo)) bar image))))
+            (simple ((f.ml (1 8) (1 11)) (Reference foo)) bar image))))
          (warnings
           ( "File \"f.ml\", line 1, characters 16-16:\
            \nEnd of text is not allowed in '{{image!...} ...}' (image-reference).")))
@@ -2263,7 +2263,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (2 5))
-            (simple ((f.ml (1 8) (1 12)) (Reference foo)) "bar   baz" image))))
+            (simple ((f.ml (1 8) (2 -6)) (Reference foo)) "bar   baz" image))))
          (warnings ()))
         |}]
   end in
