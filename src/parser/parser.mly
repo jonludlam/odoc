@@ -248,8 +248,12 @@ let inline_element_without_whitespace :=
   | ~ = reference; <>
   | ~ = link; <>
 
-let style := 
-  | style = located(Style); children = sequence(inline_element(whitespace)); endpos = located(RIGHT_BRACE); { 
+let style_inline_element :=
+  | ~ = inline_element(whitespace); <>
+  | ~ = symbol_as_word(symbols); <>
+
+let style :=
+  | style = located(Style); children = sequence(style_inline_element); endpos = located(RIGHT_BRACE); { 
     let span = Loc.delimited style endpos in
     let style = style.Loc.value in
     let warning = 
@@ -285,7 +289,7 @@ let style :=
     |> Writer.warning not_allowed
     |> Writer.warning should_not_be_empty
   }
-  | style = located(Style); children = sequence_nonempty(inline_element(whitespace)); errloc = position(error); {
+  | style = located(Style); children = sequence_nonempty(style_inline_element); errloc = position(error); {
     let span = Loc.span [style.Loc.location; Loc.of_position errloc] in
     let illegal = Writer.InputNeeded (fun input ->
       let in_what = Tokens.describe @@ Style style.Loc.value in
@@ -307,7 +311,7 @@ let style :=
     let inner = Loc.at span @@ `Styled (ast_style style.Loc.value, []) in
     Writer.return_warning inner illegal
   }
-  | style = located(Style); children = sequence_nonempty(inline_element(whitespace)); endpos = located(END); {
+  | style = located(Style); children = sequence_nonempty(style_inline_element); endpos = located(END); {
     let span = Loc.delimited style endpos in
     let style = style.Loc.value in
     let warning =

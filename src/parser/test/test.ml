@@ -1126,13 +1126,9 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 4)) (paragraph (((f.ml (1 0) (1 4)) (bold ())))))
-           ((f.ml (1 4) (1 5)) (paragraph (((f.ml (1 4) (1 5)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, characters 0-4:\
-           \nIllegal character or syntax '-' in '{b ...}' (boldface text)"
-            "File \"f.ml\", line 1, characters 4-5:\
-           \n''}'': bad markup.")))
+          (((f.ml (1 0) (1 5))
+            (paragraph (((f.ml (1 0) (1 5)) (bold (((f.ml (1 3) (1 4)) (word -))))))))))
+         (warnings ()))
         |}]
 
     let minus_list_item =
@@ -1140,19 +1136,14 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 6))
+          (((f.ml (1 0) (2 7))
             (paragraph
-             (((f.ml (1 0) (2 2))
+             (((f.ml (1 0) (2 7))
                (bold
                 (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 0)) space)
-                 ((f.ml (2 0) (2 1)) space))))
-              ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar)))))
-           ((f.ml (2 6) (2 7)) (paragraph (((f.ml (2 6) (2 7)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 2, character 2:\
-           \nIllegal character or syntax '-' in '{b ...}' (boldface text)"
-            "File \"f.ml\", line 2, characters 6-7:\
-           \n''}'': bad markup.")))
+                 ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 2)) (word -))
+                 ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar))))))))))
+         (warnings ()))
         |}]
 
     let plus_list_item =
@@ -1160,19 +1151,14 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 6))
+          (((f.ml (1 0) (2 7))
             (paragraph
-             (((f.ml (1 0) (2 2))
+             (((f.ml (1 0) (2 7))
                (bold
                 (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 0)) space)
-                 ((f.ml (2 0) (2 1)) space))))
-              ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar)))))
-           ((f.ml (2 6) (2 7)) (paragraph (((f.ml (2 6) (2 7)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 2, character 2:\
-           \nIllegal character or syntax '+' in '{b ...}' (boldface text)"
-            "File \"f.ml\", line 2, characters 6-7:\
-           \n''}'': bad markup.")))
+                 ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 2)) (word +))
+                 ((f.ml (2 2) (2 3)) space) ((f.ml (2 3) (2 6)) (word bar))))))))))
+         (warnings ()))
         |}]
 
     let immediate_minus_list_item =
@@ -1180,16 +1166,13 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 5))
+          (((f.ml (1 0) (2 6))
             (paragraph
-             (((f.ml (1 0) (2 1)) (bold ())) ((f.ml (2 1) (2 2)) space)
-              ((f.ml (2 2) (2 5)) (word foo)))))
-           ((f.ml (2 5) (2 6)) (paragraph (((f.ml (2 5) (2 6)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 2, character 1:\
-           \nIllegal character or syntax '-' in '{b ...}' (boldface text)"
-            "File \"f.ml\", line 2, characters 5-6:\
-           \n''}'': bad markup.")))
+             (((f.ml (1 0) (2 6))
+               (bold
+                (((f.ml (2 0) (2 1)) (word -)) ((f.ml (2 1) (2 2)) space)
+                 ((f.ml (2 2) (2 5)) (word foo))))))))))
+         (warnings ()))
         |}]
 
     let immediate_plus_list_item =
@@ -1197,16 +1180,13 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 5))
+          (((f.ml (1 0) (2 6))
             (paragraph
-             (((f.ml (1 0) (2 1)) (bold ())) ((f.ml (2 1) (2 2)) space)
-              ((f.ml (2 2) (2 5)) (word foo)))))
-           ((f.ml (2 5) (2 6)) (paragraph (((f.ml (2 5) (2 6)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 2, character 1:\
-           \nIllegal character or syntax '+' in '{b ...}' (boldface text)"
-            "File \"f.ml\", line 2, characters 5-6:\
-           \n''}'': bad markup.")))
+             (((f.ml (1 0) (2 6))
+               (bold
+                (((f.ml (2 0) (2 1)) (word +)) ((f.ml (2 1) (2 2)) space)
+                 ((f.ml (2 2) (2 5)) (word foo))))))))))
+         (warnings ()))
         |}]
 
     let blank_line =
