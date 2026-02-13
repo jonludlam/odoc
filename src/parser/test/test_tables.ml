@@ -153,8 +153,7 @@ let%expect_test _ =
                       ((f.ml (8 21) (8 24)) (word bbb)) ((f.ml (8 24) (8 25)) space)
                       ((f.ml (8 25) (8 28)) (word ccc)) ((f.ml (8 28) (8 29)) space)
                       ((f.ml (8 29) (8 36))
-                       (italic (((f.ml (8 32) (8 35)) (word ddd)))))
-                      ((f.ml (8 36) (9 0)) space))))))
+                       (italic (((f.ml (8 32) (8 35)) (word ddd))))))))))
                  (data
                   (((f.ml (11 15) (11 32))
                     (table (syntax heavy) (grid ((row ((data ())))))
@@ -166,17 +165,13 @@ let%expect_test _ =
                      ((((f.ml (16 17) (17 15))
                         (paragraph
                          (((f.ml (16 17) (16 20)) (word aaa))
-                          ((f.ml (16 20) (17 0)) space)
-                          ((f.ml (17 0) (17 15)) space))))
+                          ((f.ml (16 20) (17 0)) space))))
                        ((f.ml (17 17) (18 15))
                         (paragraph
                          (((f.ml (17 17) (17 20)) (word bbb))
-                          ((f.ml (17 20) (18 0)) space)
-                          ((f.ml (18 0) (18 15)) space))))
+                          ((f.ml (17 20) (18 0)) space))))
                        ((f.ml (18 17) (19 0))
-                        (paragraph
-                         (((f.ml (18 17) (18 20)) (word ccc))
-                          ((f.ml (18 20) (19 0)) space))))))))))
+                        (paragraph (((f.ml (18 17) (18 20)) (word ccc)))))))))))
                  (data
                   (((f.ml (21 14) (25 15))
                     (table (syntax light)

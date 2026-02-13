@@ -20,7 +20,7 @@ let paragraph :
     Ast.nestable_block_element Loc.with_location =
  fun elts ->
   let span = Loc.span @@ List.map Loc.location elts in
-  let elts = trim_start elts in
+  let elts = trim_start elts |> trim_end in
   Loc.at span @@ `Paragraph elts
 
 type align_error =
