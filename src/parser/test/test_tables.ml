@@ -147,7 +147,7 @@ let%expect_test _ =
                     (paragraph (((f.ml (5 16) (5 19)) (word yyy)))))))))
                (row
                 ((data
-                  (((f.ml (8 16) (9 0))
+                  (((f.ml (8 16) (8 36))
                     (paragraph
                      (((f.ml (8 16) (8 20)) (word aaaa)) ((f.ml (8 20) (8 21)) space)
                       ((f.ml (8 21) (8 24)) (word bbb)) ((f.ml (8 24) (8 25)) space)
@@ -160,13 +160,13 @@ let%expect_test _ =
                      (align "no alignment")))))))
                (row
                 ((data
-                  (((f.ml (16 15) (19 0))
+                  (((f.ml (16 15) (18 20))
                     (unordered light
-                     ((((f.ml (16 17) (17 15))
+                     ((((f.ml (16 17) (16 20))
                         (paragraph (((f.ml (16 17) (16 20)) (word aaa)))))
-                       ((f.ml (17 17) (18 15))
+                       ((f.ml (17 17) (17 20))
                         (paragraph (((f.ml (17 17) (17 20)) (word bbb)))))
-                       ((f.ml (18 17) (19 0))
+                       ((f.ml (18 17) (18 20))
                         (paragraph (((f.ml (18 17) (18 20)) (word ccc)))))))))))
                  (data
                   (((f.ml (21 14) (25 15))

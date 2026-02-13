@@ -33,8 +33,8 @@ let paragraph :
     Ast.inline_element Loc.with_location list ->
     Ast.nestable_block_element Loc.with_location =
  fun elts ->
-  let span = Loc.span @@ List.map Loc.location elts in
   let elts = normalize_inline elts |> trim_end in
+  let span = Loc.span @@ List.map Loc.location elts in
   Loc.at span @@ `Paragraph elts
 
 type align_error =
