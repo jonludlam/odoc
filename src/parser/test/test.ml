@@ -414,8 +414,8 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 4))
             (paragraph
-             (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (2 0)) space)
-              ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word bar)))))))
+             (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (2 1)) space)
+              ((f.ml (2 1) (2 4)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -437,8 +437,8 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 4))
             (paragraph
-             (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (2 0)) space)
-              ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 4)) (word bar)))))))
+             (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (2 1)) space)
+              ((f.ml (2 1) (2 4)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -6040,8 +6040,8 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 3))
             (paragraph
-             (((f.ml (1 0) (1 2)) (word "\206\187")) ((f.ml (1 2) (2 0)) space)
-              ((f.ml (2 0) (2 1)) space) ((f.ml (2 1) (2 3)) (word "\206\187")))))))
+             (((f.ml (1 0) (1 2)) (word "\206\187")) ((f.ml (1 2) (2 1)) space)
+              ((f.ml (2 1) (2 3)) (word "\206\187")))))))
          (warnings ()))
         |}]
 
@@ -6346,10 +6346,6 @@ let%expect_test _ =
                 (end_loc (1 3)) (value (word one)))
                ((start ((pos_fname none) (pos_bol 0) (pos_lnum 1) (pos_cnum 3)))
                 (start_loc (1 3))
-                (end ((pos_fname none) (pos_bol 4) (pos_lnum 2) (pos_cnum 4)))
-                (end_loc (2 0)) (value space))
-               ((start ((pos_fname none) (pos_bol 4) (pos_lnum 2) (pos_cnum 4)))
-                (start_loc (2 0))
                 (end ((pos_fname none) (pos_bol 4) (pos_lnum 2) (pos_cnum 5)))
                 (end_loc (2 1)) (value space))
                ((start ((pos_fname none) (pos_bol 4) (pos_lnum 2) (pos_cnum 5)))
@@ -6358,10 +6354,6 @@ let%expect_test _ =
                 (end_loc (2 4)) (value (word two)))
                ((start ((pos_fname none) (pos_bol 4) (pos_lnum 2) (pos_cnum 8)))
                 (start_loc (2 4))
-                (end ((pos_fname none) (pos_bol 9) (pos_lnum 3) (pos_cnum 9)))
-                (end_loc (3 0)) (value space))
-               ((start ((pos_fname none) (pos_bol 9) (pos_lnum 3) (pos_cnum 9)))
-                (start_loc (3 0))
                 (end ((pos_fname none) (pos_bol 9) (pos_lnum 3) (pos_cnum 11)))
                 (end_loc (3 2)) (value space))
                ((start ((pos_fname none) (pos_bol 9) (pos_lnum 3) (pos_cnum 11)))
@@ -6392,10 +6384,6 @@ let%expect_test _ =
                 (end_loc (2 13)) (value (word one)))
                ((start ((pos_fname none) (pos_bol 10) (pos_lnum 2) (pos_cnum 23)))
                 (start_loc (2 13))
-                (end ((pos_fname none) (pos_bol 24) (pos_lnum 3) (pos_cnum 24)))
-                (end_loc (3 0)) (value space))
-               ((start ((pos_fname none) (pos_bol 24) (pos_lnum 3) (pos_cnum 24)))
-                (start_loc (3 0))
                 (end ((pos_fname none) (pos_bol 24) (pos_lnum 3) (pos_cnum 25)))
                 (end_loc (3 1)) (value space))
                ((start ((pos_fname none) (pos_bol 24) (pos_lnum 3) (pos_cnum 25)))
@@ -6404,10 +6392,6 @@ let%expect_test _ =
                 (end_loc (3 4)) (value (word two)))
                ((start ((pos_fname none) (pos_bol 24) (pos_lnum 3) (pos_cnum 28)))
                 (start_loc (3 4))
-                (end ((pos_fname none) (pos_bol 29) (pos_lnum 4) (pos_cnum 29)))
-                (end_loc (4 0)) (value space))
-               ((start ((pos_fname none) (pos_bol 29) (pos_lnum 4) (pos_cnum 29)))
-                (start_loc (4 0))
                 (end ((pos_fname none) (pos_bol 29) (pos_lnum 4) (pos_cnum 31)))
                 (end_loc (4 2)) (value space))
                ((start ((pos_fname none) (pos_bol 29) (pos_lnum 4) (pos_cnum 31)))

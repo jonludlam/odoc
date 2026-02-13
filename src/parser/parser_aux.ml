@@ -14,13 +14,25 @@ let trim_end xs =
   | Loc.{ value = `Space _; _ } :: rest -> List.rev rest
   | _ -> xs
 
+(* Merge consecutive Space elements into a single Space *)
+let merge_spaces : Ast.inline_element Loc.with_location list -> Ast.inline_element Loc.with_location list =
+ fun elts ->
+  let rec go acc = function
+    | Loc.{ value = `Space s1; location = l1 } :: Loc.{ value = `Space s2; location = l2 } :: rest ->
+        let merged_loc = { l1 with Loc.end_ = l2.Loc.end_ } in
+        go acc (Loc.at merged_loc (`Space (s1 ^ s2)) :: rest)
+    | x :: rest -> go (x :: acc) rest
+    | [] -> List.rev acc
+  in
+  go [] elts
+
 (* Wrap a list of `inline_element` in a `Paragraph *)
 let paragraph :
     Ast.inline_element Loc.with_location list ->
     Ast.nestable_block_element Loc.with_location =
  fun elts ->
   let span = Loc.span @@ List.map Loc.location elts in
-  let elts = trim_start elts |> trim_end in
+  let elts = trim_start elts |> trim_end |> merge_spaces in
   Loc.at span @@ `Paragraph elts
 
 type align_error =
