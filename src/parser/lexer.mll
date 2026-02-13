@@ -305,22 +305,14 @@ let emit_verbatim lexbuf input start_offset buffer =
    and trailing empty lines removed. *)
 let emit_code_block lexbuf input ~start_offset ~content_offset ~metadata ~delimiter ~terminator ~content has_output =
   let content = Buffer.contents content in
-  let content_location = input.offset_to_location content_offset in
-  let content = 
-    trim_trailing_blank_lines content
-    |> with_location_adjustments
-        (fun _ _ _ c ->
-          let first_line_offset = content_location.column in
-          trim_leading_whitespace ~first_line_offset c)
+  let content =
+    with_location_adjustments
+        ~adjust_end_by:terminator
+        ~start_offset:content_offset
+        (fun _ _ -> Loc.at)
         lexbuf
-        input 
-    |> trim_leading_blank_lines 
-    |> with_location_adjustments 
-        ~adjust_end_by:terminator 
-        ~start_offset:content_offset 
-        (fun _ _ -> Loc.at) 
-        lexbuf 
-        input 
+        input
+        content
   in
   let inner = { metadata; delimiter; content } in
   let start = input.offset_to_location start_offset in
