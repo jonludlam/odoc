@@ -3388,11 +3388,25 @@ let%expect_test _ =
       test
         {|{delim@ocaml[ let x = ]delim[ {err@mdx-error[ here's the error ]} ]err}
         ]delim}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 29))
+            (code_block (((f.ml (1 7) (1 12)) ocaml) ())
+             ((f.ml (1 13) (1 22)) "let x = ")
+             ((code_block (((f.ml (1 35) (1 44)) mdx-error) ())
+               ((f.ml (1 45) (1 66)) "here's the error ]} ")))))))
+         (warnings ()))
+        |}]
 
     let delimited_code_block_with_output =
       test "{delim@ocaml[ foo ]delim[ ]}";
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 25))
+            (code_block (((f.ml (1 7) (1 12)) ocaml) ())
+             ((f.ml (1 13) (1 18)) "foo ") ()))))
+         (warnings ()))
+        |}]
 
     (** {3 Code block indentation}
 
@@ -3407,30 +3421,51 @@ let%expect_test _ =
    {[
   foo
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output (((f.ml (2 3) (4 0)) (code_block ((f.ml (2 5) (4 1)) foo)))))
+         (warnings ()))
+        |}]
 
     let multiline_without_newline =
       test {|
    {[ foo
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output (((f.ml (2 3) (3 0)) (code_block ((f.ml (2 5) (3 1)) foo)))))
+         (warnings ()))
+        |}]
 
     let everything_is_wrong =
       test {|
    {[ foo
   bar ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 3) (3 0))
+            (code_block ((f.ml (2 5) (3 6))  "   foo\
+                                            \nbar ")
+             (Warnings
+               "File \"f.ml\", line 2, character 3 to line 3, character 0:\
+              \nCode blocks should be indented at the opening `{`.")))))
+         (warnings ()))
+        |}]
 
     let all_good_multiline =
       test {|
    {[
    foo
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output (((f.ml (2 3) (4 0)) (code_block ((f.ml (2 5) (4 1)) foo)))))
+         (warnings ()))
+        |}]
 
     let all_good_single_line =
       test {| {[ foo ]} |};
-      [%expect.unreachable]
+      [%expect {|
+        ((output (((f.ml (1 1) (1 10)) (code_block ((f.ml (1 3) (1 8)) "foo ")))))
+         (warnings ()))
+        |}]
 
     (** Let's now test that the correct amount of whitespace is removed. *)
 
@@ -3441,7 +3476,17 @@ let%expect_test _ =
      bar
        baz
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 3) (6 0))
+            (code_block ((f.ml (2 5) (6 1))  " foo\
+                                            \nbar\
+                                            \n  baz")
+             (Warnings
+               "File \"f.ml\", line 2, character 3 to line 6, character 0:\
+              \nCode blocks should be indented at the opening `{`.")))))
+         (warnings ()))
+        |}]
 
     let ascending_stair =
       test {|
@@ -3450,7 +3495,17 @@ let%expect_test _ =
      bar
    foo
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 3) (6 0))
+            (code_block ((f.ml (2 5) (6 1))  "       baz\
+                                            \n  bar\
+                                            \nfoo")
+             (Warnings
+               "File \"f.ml\", line 2, character 3 to line 6, character 0:\
+              \nCode blocks should be indented at the opening `{`.")))))
+         (warnings ()))
+        |}]
 
     let indented_after_opening_fence =
       test {|
@@ -3459,7 +3514,17 @@ let%expect_test _ =
      bar
        foo
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 3) (6 0))
+            (code_block ((f.ml (2 5) (6 1))  "     baz\
+                                            \nbar\
+                                            \n  foo")
+             (Warnings
+               "File \"f.ml\", line 2, character 3 to line 6, character 0:\
+              \nCode blocks should be indented at the opening `{`.")))))
+         (warnings ()))
+        |}]
 
     let indentation_warning_case =
       test {|
@@ -3468,7 +3533,17 @@ let%expect_test _ =
   bar
     foo
  ]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 3) (6 0))
+            (code_block ((f.ml (2 5) (6 1))  "     baz\
+                                            \nbar\
+                                            \n  foo")
+             (Warnings
+               "File \"f.ml\", line 2, character 3 to line 6, character 0:\
+              \nCode blocks should be indented at the opening `{`.")))))
+         (warnings ()))
+        |}]
 
     (** {3 Metadata tags}
 
@@ -3477,7 +3552,17 @@ let%expect_test _ =
     let lots_of_tags =
       test
         {|{@ocaml env=f1 version=4.06 "tag with several words" "binding with"=singleword also="other case" "everything has"="multiple words" [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 137))
+            (code_block
+             (((f.ml (1 2) (1 7)) ocaml)
+              ((tag
+                ((f.ml (1 8) (1 130))
+                 "env=f1 version=4.06 \"tag with several words\" \"binding with\"=singleword also=\"other case\" \"everything has\"=\"multiple words\""))))
+             ((f.ml (1 132) (1 135)) foo)))))
+         (warnings ()))
+        |}]
 
     let lots_of_tags_with_newlines =
       test
@@ -3490,42 +3575,85 @@ let%expect_test _ =
          also="other case"
          "everything has"="multiple words"
          [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 220))
+            (code_block
+             (((f.ml (1 2) (1 7)) ocaml)
+              ((tag
+                ((f.ml (2 9) (8 42))
+                  "env=f1\
+                 \n         version=4.06\
+                 \n         single_tag\
+                 \n         \"tag with several words\"\
+                 \n         \"binding with\"=singleword\
+                 \n         also=\"other case\"\
+                 \n         \"everything has\"=\"multiple words\""))))
+             ((f.ml (9 10) (9 13)) foo)))))
+         (warnings ()))
+        |}]
 
     let escaping1 =
       test {|{@ocaml "\""="\"" [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 24))
+            (code_block
+             (((f.ml (1 2) (1 7)) ocaml)
+              ((tag ((f.ml (1 8) (1 17)) "\"\\\"\"=\"\\\"\""))))
+             ((f.ml (1 19) (1 22)) foo)))))
+         (warnings ()))
+        |}]
 
     let escaping2 =
       test {|{@ocaml \"=\" [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 20))
+            (code_block
+             (((f.ml (1 2) (1 7)) ocaml) ((tag ((f.ml (1 8) (1 13)) "\\\"=\\\""))))
+             ((f.ml (1 15) (1 18)) foo)))))
+         (warnings ()))
+        |}]
 
     let two_slashes_are_required =
       test {|{@ocaml "\\" [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (1 0) (1 19))
+            (code_block
+             (((f.ml (1 2) (1 7)) ocaml) ((tag ((f.ml (1 8) (1 12)) "\"\\\\\""))))
+             ((f.ml (1 14) (1 17)) foo)))))
+         (warnings ()))
+        |}]
 
     let escaped_char_are_allowed_but_warn =
       test {|
      {@ocaml "\a\b\c" [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 5) (2 28))
+            (code_block
+             (((f.ml (2 7) (2 12)) ocaml)
+              ((tag ((f.ml (2 13) (2 21)) "\"\\a\\b\\c\""))))
+             ((f.ml (2 23) (2 26)) foo)))))
+         (warnings ()))
+        |}]
 
     let escaped_char_are_allowed_but_warn2 =
       test {|
      {@ocaml "\a\b\c"="\x\y\z" [foo]}|};
-      [%expect.unreachable]
+      [%expect {|
+        ((output
+          (((f.ml (2 5) (2 37))
+            (code_block
+             (((f.ml (2 7) (2 12)) ocaml)
+              ((tag ((f.ml (2 13) (2 30)) "\"\\a\\b\\c\"=\"\\x\\y\\z\""))))
+             ((f.ml (2 32) (2 35)) foo)))))
+         (warnings ()))
+        |}]
   end in
   ()
-[@@expect.uncaught_exn {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-  (Odoc_parser__Parser.MenhirBasics.Error)
-  Raised at MenhirLib.Engine.Make.loop in file "lib/pack/menhirLib.ml", line 1728, characters 8-19
-  Called from Odoc_parser.parse_comment in file "src/parser/odoc_parser.ml", line 145, characters 30-74
-  Called from Odoc_parser_test__Test.test in file "src/parser/test/test.ml", line 279, characters 12-57
-  Called from Odoc_parser_test__Test.(fun).Code_block.code_block_with_output in file "src/parser/test/test.ml", lines 3388-3390, characters 6-17
-  Called from Ppx_expect_runtime__Test_block.Configured.dump_backtrace in file "runtime/test_block.ml", line 142, characters 10-28
-  |}]
 
 let%expect_test _ =
   let module Verbatim = struct

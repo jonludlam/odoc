@@ -740,7 +740,7 @@ and token input = parse
   | "@hidden"
     { Tag HIDDEN }
 
-  | "]}"
+  | "]" delim_char* "}"
     { RIGHT_CODE_DELIMITER }
 
   | '{'

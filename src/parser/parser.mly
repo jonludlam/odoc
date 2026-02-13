@@ -68,6 +68,7 @@
 %on_error_reduce nestable_block_element(paragraph)
 %on_error_reduce tag_with_content
 %on_error_reduce section_heading
+%on_error_reduce code_block
 
 %start <Ast.t Writer.t> main 
 
@@ -813,7 +814,7 @@ let code_block :=
     Fun.const node <$> Writer.ensure (Loc.is has_content) should_not_be_empty (return content)
      
   }
-  | content = located(Code_block_with_output); output = sequence_nonempty(nestable_block_element(paragraph)); RIGHT_CODE_DELIMITER; {
+  | content = located(Code_block_with_output); any_whitespace*; output = output_block_elements; RIGHT_CODE_DELIMITER; {
     let* output = Option.some <$> output in
     let Loc.{ value = Tokens.{ inner; start }; location } = content in
     let Tokens.{ metadata; delimiter; content } = inner in
@@ -821,6 +822,9 @@ let code_block :=
     let node = `Code_block Ast.{ meta; delimiter; content; output } in
     return @@ Loc.at { location with start } node
   }
+
+let output_block_element := block = nestable_block_element(paragraph); any_whitespace*; { block }
+let output_block_elements == sequence(output_block_element)
 
 let math_block := inner = located(Math_block); {
   let Loc.{ value; location } = inner in
