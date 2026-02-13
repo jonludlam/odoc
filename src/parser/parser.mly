@@ -413,12 +413,7 @@ let link :=
     let Tokens.{ inner; start } = content in
     let url = String.trim inner in
     let span = { endpos.Loc.location with start } in
-    let node = Loc.at span @@ `Link (url, []) in
-    let what = Tokens.describe @@ Link_with_replacement content in
-    let should_not_be_empty =
-      Writer.Warning (Parse_error.should_not_be_empty ~what span)
-    in
-    Writer.return_warning node should_not_be_empty
+    return @@ Loc.at span @@ `Link (url, [])
   }
   | content = Link_with_replacement; endpos = located(END); {
     let Tokens.{ inner; start } = content in

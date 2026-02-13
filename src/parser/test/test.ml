@@ -2423,9 +2423,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output (((f.ml (1 0) (1 8)) (paragraph (((f.ml (1 0) (1 8)) (foo ())))))))
-         (warnings
-          ( "File \"f.ml\", line 1, characters 0-8:\
-           \n'{{:...} ...}' (external link) should not be empty.")))
+         (warnings ()))
         |}]
 
     let internal_whitespace =
