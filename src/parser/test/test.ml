@@ -472,7 +472,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -482,7 +482,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -492,7 +492,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
-           ((f.ml (4 1) (4 4)) (paragraph (((f.ml (4 1) (4 4)) (word bar)))))))
+           ((f.ml (3 1) (3 4)) (paragraph (((f.ml (3 1) (3 4)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -502,7 +502,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -512,7 +512,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))
          (warnings ()))
         |}]
   end in
@@ -1192,12 +1192,12 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 4))
+          (((f.ml (1 0) (3 4))
             (paragraph
-             (((f.ml (1 0) (4 4))
+             (((f.ml (1 0) (3 4))
                (bold
-                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (4 0)) space)
-                 ((f.ml (4 0) (4 3)) (word bar))))))))))
+                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (3 0)) space)
+                 ((f.ml (3 0) (3 3)) (word bar))))))))))
          (warnings ()))
         |}]
 
@@ -2070,13 +2070,13 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 7) (1 11)) (Reference foo)) "" image))
-           ((f.ml (3 0) (4 11))
+           ((f.ml (3 0) (3 11))
             (simple ((f.ml (3 7) (3 11)) (Reference foo)) "" audio))
-           ((f.ml (5 0) (7 11))
+           ((f.ml (5 0) (5 11))
             (simple ((f.ml (5 7) (5 11)) (Reference foo)) "" video))
-           ((f.ml (7 0) (10 11)) (simple ((f.ml (7 7) (7 11)) (Link foo)) "" image))
-           ((f.ml (9 0) (13 11)) (simple ((f.ml (9 7) (9 11)) (Link foo)) "" audio))
-           ((f.ml (11 0) (16 11))
+           ((f.ml (7 0) (7 11)) (simple ((f.ml (7 7) (7 11)) (Link foo)) "" image))
+           ((f.ml (9 0) (9 11)) (simple ((f.ml (9 7) (9 11)) (Link foo)) "" audio))
+           ((f.ml (11 0) (11 11))
             (simple ((f.ml (11 7) (11 11)) (Link foo)) "" video))))
          (warnings ()))
         |}]
@@ -2094,13 +2094,13 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 16))
             (simple ((f.ml (1 8) (1 12)) (Reference foo)) bar image))
-           ((f.ml (3 0) (4 16))
+           ((f.ml (3 0) (3 16))
             (simple ((f.ml (3 8) (3 12)) (Reference foo)) bar audio))
-           ((f.ml (5 0) (7 16))
+           ((f.ml (5 0) (5 16))
             (simple ((f.ml (5 8) (5 12)) (Reference foo)) bar video))
-           ((f.ml (7 0) (10 16)) (simple ((f.ml (7 8) (7 12)) (Link foo)) bar image))
-           ((f.ml (9 0) (13 16)) (simple ((f.ml (9 8) (9 12)) (Link foo)) bar audio))
-           ((f.ml (11 0) (16 16))
+           ((f.ml (7 0) (7 16)) (simple ((f.ml (7 8) (7 12)) (Link foo)) bar image))
+           ((f.ml (9 0) (9 16)) (simple ((f.ml (9 8) (9 12)) (Link foo)) bar audio))
+           ((f.ml (11 0) (11 16))
             (simple ((f.ml (11 8) (11 12)) (Link foo)) bar video))))
          (warnings ()))
         |}]
@@ -2940,7 +2940,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
-           ((f.ml (3 0) (4 7)) (code_block ((f.ml (3 2) (3 5)) bar)))))
+           ((f.ml (3 0) (3 7)) (code_block ((f.ml (3 2) (3 5)) bar)))))
          (warnings ()))
         |}]
 
@@ -3874,7 +3874,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 9)) (verbatim foo)) ((f.ml (3 0) (4 9)) (verbatim bar))))
+          (((f.ml (1 0) (1 9)) (verbatim foo)) ((f.ml (3 0) (3 9)) (verbatim bar))))
          (warnings ()))
         |}]
 
@@ -4125,9 +4125,9 @@ let%expect_test _ =
           (((f.ml (1 0) (1 5))
             (unordered light
              ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo)))))))))
-           ((f.ml (4 0) (4 5))
+           ((f.ml (3 0) (3 5))
             (unordered light
-             ((((f.ml (4 2) (4 5)) (paragraph (((f.ml (4 2) (4 5)) (word bar)))))))))))
+             ((((f.ml (3 2) (3 5)) (paragraph (((f.ml (3 2) (3 5)) (word bar)))))))))))
          (warnings ()))
         |}]
 
@@ -4225,7 +4225,7 @@ let%expect_test _ =
           (((f.ml (1 0) (1 5))
             (unordered light
              ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo)))))))))
-           ((f.ml (3 0) (4 7)) (code_block ((f.ml (3 2) (3 5)) bar)))))
+           ((f.ml (3 0) (3 7)) (code_block ((f.ml (3 2) (3 5)) bar)))))
          (warnings ()))
         |}]
 
@@ -4269,10 +4269,10 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 0)) (unordered light (())))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word foo)))))))
+          (((f.ml (1 0) (3 0)) (unordered light (())))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word foo)))))))
          (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 4, character 0:\
+          ( "File \"f.ml\", line 1, character 0 to line 3, character 0:\
            \nIllegal character or syntax '\
            \n\
            \n' in '-' (bulleted list item)")))
@@ -4355,10 +4355,10 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 9))
+          (((f.ml (1 0) (3 9))
             (unordered heavy
              ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo))))))
-              (((f.ml (4 4) (4 7)) (paragraph (((f.ml (4 4) (4 7)) (word bar)))))))))))
+              (((f.ml (3 4) (3 7)) (paragraph (((f.ml (3 4) (3 7)) (word bar)))))))))))
          (warnings ()))
         |}]
 
@@ -4367,10 +4367,10 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 5))
+          (((f.ml (1 0) (3 5))
             (unordered heavy
              ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))
-               ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))))))
+               ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))))))
          (warnings ()))
         |}]
 
@@ -4437,7 +4437,7 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (5 2))
+          (((f.ml (1 0) (4 2))
             (unordered heavy
              ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))))))
          (warnings ()))
@@ -4531,9 +4531,9 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 5))
+          (((f.ml (1 0) (3 5))
             (unordered heavy
-             ((((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word foo)))))))))))
+             ((((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word foo)))))))))))
          (warnings ()))
         |}]
 
@@ -4681,7 +4681,7 @@ let%expect_test _ =
           (((f.ml (1 0) (1 15))
             (@deprecated
              ((f.ml (1 12) (1 15)) (paragraph (((f.ml (1 12) (1 15)) (word foo)))))))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word bar)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))
          (warnings ()))
         |}]
 
@@ -4716,7 +4716,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 11)) (@deprecated))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word foo)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word foo)))))))
          (warnings ()))
         |}]
 
@@ -4851,10 +4851,10 @@ let%expect_test _ =
                ((((f.ml (1 14) (2 0))
                   (paragraph (((f.ml (1 14) (1 17)) (word foo)))))
                  ((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
-           ((f.ml (5 0) (5 13))
+           ((f.ml (4 0) (4 13))
             (paragraph
-             (((f.ml (5 0) (5 3)) (word New)) ((f.ml (5 3) (5 4)) space)
-              ((f.ml (5 4) (5 13)) (word paragraph)))))))
+             (((f.ml (4 0) (4 3)) (word New)) ((f.ml (4 3) (4 4)) space)
+              ((f.ml (4 4) (4 13)) (word paragraph)))))))
          (warnings
           ( "File \"f.ml\", line 1, character 11 to line 2, character 0:\
            \n'-' (bulleted list item) should begin on its own line.")))
@@ -4988,7 +4988,7 @@ let%expect_test _ =
           (((f.ml (1 0) (1 14))
             (@param foo
              ((f.ml (1 11) (1 14)) (paragraph (((f.ml (1 11) (1 14)) (word bar)))))))
-           ((f.ml (4 0) (4 3)) (paragraph (((f.ml (4 0) (4 3)) (word baz)))))))
+           ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word baz)))))))
          (warnings ()))
         |}]
 
@@ -6063,7 +6063,7 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 2)) (paragraph (((f.ml (1 0) (1 2)) (word "\206\187")))))
-           ((f.ml (4 1) (4 3)) (paragraph (((f.ml (4 1) (4 3)) (word "\206\187")))))))
+           ((f.ml (3 1) (3 3)) (paragraph (((f.ml (3 1) (3 3)) (word "\206\187")))))))
          (warnings ()))
         |}]
 

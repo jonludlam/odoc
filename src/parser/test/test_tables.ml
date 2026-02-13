@@ -469,34 +469,33 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (2 6) (14 7))
+          (((f.ml (2 6) (10 7))
             (table (syntax light)
              (grid
               ((row
                 ((header
-                  (((f.ml (5 9) (5 10)) (paragraph (((f.ml (5 9) (5 10)) (word a)))))))
+                  (((f.ml (4 9) (4 10)) (paragraph (((f.ml (4 9) (4 10)) (word a)))))))
                  (header
-                  (((f.ml (5 13) (5 14))
-                    (paragraph (((f.ml (5 13) (5 14)) (word b)))))))
+                  (((f.ml (4 13) (4 14))
+                    (paragraph (((f.ml (4 13) (4 14)) (word b)))))))
                  (header
-                  (((f.ml (5 17) (5 18))
-                    (paragraph (((f.ml (5 17) (5 18)) (word c)))))))
+                  (((f.ml (4 17) (4 18))
+                    (paragraph (((f.ml (4 17) (4 18)) (word c)))))))
                  (header
-                  (((f.ml (5 21) (5 22))
-                    (paragraph (((f.ml (5 21) (5 22)) (word d)))))))))
+                  (((f.ml (4 21) (4 22))
+                    (paragraph (((f.ml (4 21) (4 22)) (word d)))))))))
                (row
                 ((data
-                  (((f.ml (11 9) (11 10))
-                    (paragraph (((f.ml (11 9) (11 10)) (word a)))))))
+                  (((f.ml (8 9) (8 10)) (paragraph (((f.ml (8 9) (8 10)) (word a)))))))
                  (data
-                  (((f.ml (11 13) (11 14))
-                    (paragraph (((f.ml (11 13) (11 14)) (word b)))))))
+                  (((f.ml (8 13) (8 14))
+                    (paragraph (((f.ml (8 13) (8 14)) (word b)))))))
                  (data
-                  (((f.ml (11 17) (11 18))
-                    (paragraph (((f.ml (11 17) (11 18)) (word c)))))))
+                  (((f.ml (8 17) (8 18))
+                    (paragraph (((f.ml (8 17) (8 18)) (word c)))))))
                  (data
-                  (((f.ml (11 21) (11 22))
-                    (paragraph (((f.ml (11 21) (11 22)) (word d)))))))))))
+                  (((f.ml (8 21) (8 22))
+                    (paragraph (((f.ml (8 21) (8 22)) (word d)))))))))))
              (align (default default default default))))))
          (warnings ()))
         |}]

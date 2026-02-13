@@ -462,8 +462,8 @@ and reference_content input opening_delimiter start_offset content_offset buffer
   parse
   | '}'
     {
-      let start = input.offset_to_location @@ Option.value ~default:(Lexing.lexeme_start lexbuf) content_offset 
-      and end_ = input.offset_to_location @@ Lexing.lexeme_end lexbuf in 
+      let start = input.offset_to_location @@ Option.value ~default:(Lexing.lexeme_start lexbuf) content_offset
+      and end_ = input.offset_to_location @@ Lexing.lexeme_end lexbuf in
       Loc.{ value = Buffer.contents buffer; location = { start; end_; file = input.file }}
     }
   | '('
@@ -517,8 +517,7 @@ and token input = parse
   | ((horizontal_space* newline as prefix)
     horizontal_space* (((newline)+ as suffix) as ws)) 
     {
-      (* Account for the first newline we got *)
-      update_content_newlines ~content:("\n" ^ prefix ^ suffix) lexbuf;
+      update_content_newlines ~content:(prefix ^ suffix) lexbuf;
       Blank_line ws
     }
 
