@@ -1194,18 +1194,13 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (4 3))
+          (((f.ml (1 0) (4 4))
             (paragraph
-             (((f.ml (1 0) (4 0)) (bold (((f.ml (1 3) (1 6)) (word foo)))))
-              ((f.ml (4 0) (4 3)) (word bar)))))
-           ((f.ml (4 3) (4 4)) (paragraph (((f.ml (4 3) (4 4)) (word })))))))
-         (warnings
-          ( "File \"f.ml\", line 1, character 0 to line 4, character 0:\
-           \nIllegal character or syntax '\
-           \n\
-           \n' in '{b ...}' (boldface text)"
-            "File \"f.ml\", line 4, characters 3-4:\
-           \n''}'': bad markup.")))
+             (((f.ml (1 0) (4 4))
+               (bold
+                (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (4 0)) space)
+                 ((f.ml (4 0) (4 3)) (word bar))))))))))
+         (warnings ()))
         |}]
 
     let immediate_blank_line =

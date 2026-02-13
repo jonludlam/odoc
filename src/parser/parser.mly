@@ -251,6 +251,7 @@ let inline_element_without_whitespace :=
 let style_inline_element :=
   | ~ = inline_element(whitespace); <>
   | ~ = symbol_as_word(symbols); <>
+  | s = located(Blank_line); { return @@ Loc.map (fun s -> `Space s) s }
 
 let style :=
   | style = located(Style); children = sequence(style_inline_element); endpos = located(RIGHT_BRACE); { 
