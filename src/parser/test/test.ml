@@ -2112,7 +2112,9 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 13))
             (simple ((f.ml (1 8) (1 12)) (Reference foo)) "" image))))
-         (warnings ()))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-13:\
+           \n'{{image!...} ...}' (image-reference) should not be empty.")))
         |}]
 
     let whitespace =
@@ -2122,7 +2124,9 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 16))
             (simple ((f.ml (1 8) (1 12)) (Reference foo)) "" image))))
-         (warnings ()))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-16:\
+           \n'{{image!...} ...}' (image-reference) should not be empty.")))
         |}]
 
     let trimming =
@@ -2165,7 +2169,9 @@ let%expect_test _ =
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" image))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-11:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
+           \n'{{image!...} ...}' (image-reference) should not be empty."
+            "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in {{image!."
             "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{image!' is never closed.")))
@@ -2191,7 +2197,9 @@ let%expect_test _ =
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" video))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-11:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
+           \n'{{video!...} ...}' (video-reference) should not be empty."
+            "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in {{video!."
             "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{video!' is never closed.")))
@@ -2217,7 +2225,9 @@ let%expect_test _ =
           (((f.ml (1 0) (1 11))
             (simple ((f.ml (1 8) (1 11)) (Reference foo)) "" audio))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 11-11:\
+          ( "File \"f.ml\", line 1, characters 0-11:\
+           \n'{{audio!...} ...}' (audio-reference) should not be empty."
+            "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in {{audio!."
             "File \"f.ml\", line 1, characters 0-11:\
            \nOpen bracket '{{audio!' is never closed.")))

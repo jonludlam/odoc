@@ -771,8 +771,14 @@ let media :=
       | Image -> `Image
       | Video -> `Video
     in
-    let inner = Loc.at span @@ `Media (`Simple, ref_kind, String.trim content, media_kind) in
-    return inner
+    let trimmed = String.trim content in
+    let inner = Loc.at span @@ `Media (`Simple, ref_kind, trimmed, media_kind) in
+    if not (has_content trimmed) then
+      let ref_sym = match ref_kind.Loc.value with `Reference _ -> "!" | `Link _ -> ":" in
+      let media_str = match media_kind with `Audio -> "audio" | `Image -> "image" | `Video -> "video" in
+      let what = Printf.sprintf "'{{%s%s...} ...}' (%s-reference)" media_str ref_sym media_str in
+      Writer.return_warning inner (Writer.Warning (Parse_error.should_not_be_empty ~what span))
+    else return inner
   }
 
 (* TOP-LEVEL ELEMENTS *)
