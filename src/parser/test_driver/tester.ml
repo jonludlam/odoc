@@ -354,11 +354,10 @@ let mkfailure label exn last failure_index tokens =
   { offending_token = last; failure_index; tokens; exn; label }
 
 let run_test (label, case) =
-  let open Either in
   let reversed_newlines = Parser.reversed_newlines ~input:case in
   let lexbuf = Lexing.from_string case in
   let file = "Tester" in
-  Lexing.set_filename lexbuf file;
+  lexbuf.Lexing.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = file };
   let tokens = ref [] in
   let input =
     Parser.Lexer.
@@ -383,14 +382,10 @@ let run_test (label, case) =
     let ast, warnings = Parser.run ~input:case @@ Parser.main get_tok lexbuf in
     let warnings = warnings @ input.warnings in
     let output = Format.asprintf "%a" parser_output (ast, warnings) in
-    Left (label, output)
+    Ok (label, output)
   with e ->
     let exns = Printexc.to_string e in
-    (*
-    let offending_token = List.hd @@ tokbuf.cache in
-    let tokens = List.map Loc.value @@ TokBuf.cache_rest tokbuf in
-    *)
-    Right
+    Error
       (mkfailure label exns
          (Option.get !offending_token)
          !failure_index (List.rev !tokens))
@@ -441,7 +436,16 @@ let () =
           documentation_cases)
     else bad_markup
   in
-  let sucesses, failures = List.partition_map run_test cases in
+  let sucesses, failures =
+    List.fold_left
+      (fun (oks, errs) case ->
+        match run_test case with
+        | Ok v -> (v :: oks, errs)
+        | Error v -> (oks, v :: errs))
+      ([], []) cases
+  in
+  let sucesses = List.rev sucesses in
+  let failures = List.rev failures in
   let sucesses = format_successes sucesses in
   let failures = format_failures @@ List.map failure_string failures in
   Printf.printf
