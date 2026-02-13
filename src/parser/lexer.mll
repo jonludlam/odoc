@@ -306,7 +306,6 @@ let emit_verbatim lexbuf input start_offset buffer =
 let emit_code_block lexbuf input ~start_offset ~content_offset ~metadata ~delimiter ~terminator ~content has_output =
   let content = Buffer.contents content in
   let content_location = input.offset_to_location content_offset in
-  update_content_newlines ~content lexbuf;
   let content = 
     trim_trailing_blank_lines content
     |> with_location_adjustments
@@ -1131,16 +1130,30 @@ and code_block allow_result_block start_offset content_offset metadata buffer de
         ~content:buffer 
         false
     }
+  | ('\n' as c)
+    {
+      Lexing.new_line lexbuf;
+      Buffer.add_char buffer c;
+      code_block
+        allow_result_block
+        start_offset
+        content_offset
+        metadata
+        buffer
+        delimiter
+        input
+        lexbuf
+    }
   | (_ as c)
     {
       Buffer.add_char buffer c;
-      code_block 
-        allow_result_block 
-        start_offset 
-        content_offset 
+      code_block
+        allow_result_block
+        start_offset
+        content_offset
         metadata
-        buffer 
-        delimiter 
-        input 
+        buffer
+        delimiter
+        input
         lexbuf
     }
