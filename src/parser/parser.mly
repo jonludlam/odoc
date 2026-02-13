@@ -655,7 +655,9 @@ let row_light :=
   | ~ = cells; Single_newline; <>
   | ~ = cells; Single_newline; Space; <>
   | ~ = cells; Blank_line; <>
+  | ~ = cells; Blank_line; Space; <>
   | ~ = cells; Blank_line; Single_newline; <>
+  | ~ = cells; Blank_line; Single_newline; Space; <>
 
 let rows_light := ~ = sequence_nonempty(row_light); <>
 
