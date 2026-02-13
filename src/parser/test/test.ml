@@ -5262,7 +5262,12 @@ let%expect_test _ =
     let bare =
       test "@since";
       [%expect
-        {| ((output (((f.ml (1 0) (1 6)) (@since "")))) (warnings ())) |}]
+        {|
+        ((output (((f.ml (1 0) (1 6)) (@since ""))))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-6:\
+           \n'@since' should not be empty.")))
+        |}]
 
     let prefix =
       test "@sincefoo";
@@ -5292,7 +5297,12 @@ let%expect_test _ =
     let whitespace_only =
       test "@since";
       [%expect
-        {| ((output (((f.ml (1 0) (1 6)) (@since "")))) (warnings ())) |}]
+        {|
+        ((output (((f.ml (1 0) (1 6)) (@since ""))))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-6:\
+           \n'@since' should not be empty.")))
+        |}]
   end in
   ()
 
@@ -5348,7 +5358,12 @@ let%expect_test _ =
     let bare =
       test "@version";
       [%expect
-        {| ((output (((f.ml (1 0) (1 8)) (@version "")))) (warnings ())) |}]
+        {|
+        ((output (((f.ml (1 0) (1 8)) (@version ""))))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-8:\
+           \n'@version' should not be empty.")))
+        |}]
 
     let prefix =
       test "@versionfoo";
@@ -5379,7 +5394,12 @@ let%expect_test _ =
     let whitespace_only =
       test "@version";
       [%expect
-        {| ((output (((f.ml (1 0) (1 8)) (@version "")))) (warnings ())) |}]
+        {|
+        ((output (((f.ml (1 0) (1 8)) (@version ""))))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-8:\
+           \n'@version' should not be empty.")))
+        |}]
   end in
   ()
 
@@ -5398,7 +5418,9 @@ let%expect_test _ =
       [%expect
         {|
         ((output (((f.ml (1 0) (1 10)) (@canonical ((f.ml (1 0) (1 10)) "")))))
-         (warnings ()))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-10:\
+           \n'@canonical' should not be empty.")))
         |}]
 
     let whitespace_only =
@@ -5406,7 +5428,9 @@ let%expect_test _ =
       [%expect
         {|
         ((output (((f.ml (1 0) (1 10)) (@canonical ((f.ml (1 0) (1 10)) "")))))
-         (warnings ()))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-10:\
+           \n'@canonical' should not be empty.")))
         |}]
 
     let extra_whitespace =

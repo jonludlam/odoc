@@ -219,7 +219,16 @@ let tag_with_content := tag = located(Tag_with_content); children = sequence(nes
   }
 
 let tag_bare := tag = located(Tag); horizontal_whitespace?; {
-  return @@ Loc.map (Fun.const @@ tag_bare tag) tag
+  let result = return @@ Loc.map (Fun.const @@ tag_bare tag) tag in
+  let empty_inner = match tag.Loc.value with
+    | Tokens.Author s | Since s | Version s | Canonical s ->
+      not (has_content (String.trim s.inner))
+    | _ -> false
+  in
+  if empty_inner then
+    let what = Tokens.describe (Tag tag.Loc.value) in
+    Writer.warning (Writer.Warning (Parse_error.should_not_be_empty ~what tag.Loc.location)) result
+  else result
 }
 
 (* INLINE ELEMENTS *)
