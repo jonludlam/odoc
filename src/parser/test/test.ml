@@ -2167,10 +2167,10 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \n'{{image!...} ...}' (image-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{{image!...} ...}' (image-reference)."
             "File \"f.ml\", line 1, characters 0-11:\
-           \nOpen bracket '{{image!' is never closed.")))
+           \nOpen bracket '{{image!' is never closed."
+            "File \"f.ml\", line 1, characters 11-11:\
+           \nEnd of text is not allowed in '{{image!...} ...}' (image-reference).")))
         |}]
 
     let unterminated_image_simple =
@@ -2195,10 +2195,10 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \n'{{video!...} ...}' (video-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{{video!...} ...}' (video-reference)."
             "File \"f.ml\", line 1, characters 0-11:\
-           \nOpen bracket '{{video!' is never closed.")))
+           \nOpen bracket '{{video!' is never closed."
+            "File \"f.ml\", line 1, characters 11-11:\
+           \nEnd of text is not allowed in '{{video!...} ...}' (video-reference).")))
         |}]
 
     let unterminated_video_simple =
@@ -2223,10 +2223,10 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 0-11:\
            \n'{{audio!...} ...}' (audio-reference) should not be empty."
-            "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{{audio!...} ...}' (audio-reference)."
             "File \"f.ml\", line 1, characters 0-11:\
-           \nOpen bracket '{{audio!' is never closed.")))
+           \nOpen bracket '{{audio!' is never closed."
+            "File \"f.ml\", line 1, characters 11-11:\
+           \nEnd of text is not allowed in '{{audio!...} ...}' (audio-reference).")))
         |}]
 
     let unterminated_audio_simple =
@@ -3281,10 +3281,10 @@ let%expect_test _ =
             (code_block (((f.ml (1 2) (1 7)) ocaml) ())
              ((f.ml (1 14) (1 20)) " code ")))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 9-10:\
-           \nInvalid character in code block metadata tag 'f'."
-            "File \"f.ml\", line 1, characters 8-9:\
-           \nInvalid character in code block metadata tag '='.")))
+          ( "File \"f.ml\", line 1, characters 8-9:\
+           \nInvalid character in code block metadata tag '='."
+            "File \"f.ml\", line 1, characters 9-10:\
+           \nInvalid character in code block metadata tag 'f'.")))
         |}]
 
     let no_escape_without_quotes =
@@ -3594,11 +3594,11 @@ let%expect_test _ =
              (((f.ml (2 7) (2 12)) ocaml) ((tag ((f.ml (2 13) (2 21)) "a\bc"))))
              ((f.ml (2 23) (2 26)) foo)))))
          (warnings
-          ( "File \"f.ml\", line 2, characters 18-20:\
-           \nThe 'c' character should not be escaped.\
-           \nSuggestion: Remove \\."
-            "File \"f.ml\", line 2, characters 14-16:\
+          ( "File \"f.ml\", line 2, characters 14-16:\
            \nThe 'a' character should not be escaped.\
+           \nSuggestion: Remove \\."
+            "File \"f.ml\", line 2, characters 18-20:\
+           \nThe 'c' character should not be escaped.\
            \nSuggestion: Remove \\.")))
         |}]
 
@@ -3613,20 +3613,20 @@ let%expect_test _ =
               ((binding ((f.ml (2 13) (2 21)) "a\bc") ((f.ml (2 22) (2 30)) xyz))))
              ((f.ml (2 32) (2 35)) foo)))))
          (warnings
-          ( "File \"f.ml\", line 2, characters 27-29:\
-           \nThe 'z' character should not be escaped.\
-           \nSuggestion: Remove \\."
-            "File \"f.ml\", line 2, characters 25-27:\
-           \nThe 'y' character should not be escaped.\
-           \nSuggestion: Remove \\."
-            "File \"f.ml\", line 2, characters 23-25:\
-           \nThe 'x' character should not be escaped.\
+          ( "File \"f.ml\", line 2, characters 14-16:\
+           \nThe 'a' character should not be escaped.\
            \nSuggestion: Remove \\."
             "File \"f.ml\", line 2, characters 18-20:\
            \nThe 'c' character should not be escaped.\
            \nSuggestion: Remove \\."
-            "File \"f.ml\", line 2, characters 14-16:\
-           \nThe 'a' character should not be escaped.\
+            "File \"f.ml\", line 2, characters 23-25:\
+           \nThe 'x' character should not be escaped.\
+           \nSuggestion: Remove \\."
+            "File \"f.ml\", line 2, characters 25-27:\
+           \nThe 'y' character should not be escaped.\
+           \nSuggestion: Remove \\."
+            "File \"f.ml\", line 2, characters 27-29:\
+           \nThe 'z' character should not be escaped.\
            \nSuggestion: Remove \\.")))
         |}]
   end in
@@ -3654,10 +3654,10 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 4)) (verbatim v}))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-2:\
-           \n'{v' should be followed by whitespace."
-            "File \"f.ml\", line 1, characters 2-4:\
-           \n'v}' should be preceded by whitespace.")))
+          ( "File \"f.ml\", line 1, characters 2-4:\
+           \n'v}' should be preceded by whitespace."
+            "File \"f.ml\", line 1, characters 0-2:\
+           \n'{v' should be followed by whitespace.")))
         |}]
 
     let whitespace_only =
