@@ -139,6 +139,7 @@ let parse_comment : location:Lexing.position -> text:string -> t =
         offset_to_location =
           offset_to_location ~reversed_newlines ~comment_location:location;
         file = Lexing.(location.pos_fname);
+        string_buffer = Buffer.create 256;
       }
   in
   let ast, warnings =

@@ -25,7 +25,7 @@ type code_block = {
 }
 and meta = {
   language_tag : string Loc.with_location;
-  tags : string Loc.with_location option;
+  tags : Ast.code_block_tags;
 }
 
 (* Token names follow Menhir conventions where ALL_CAPS denote a unit variant,

@@ -367,6 +367,7 @@ let run_test (label, case) =
           Parser.offset_to_location ~reversed_newlines
             ~comment_location:lexbuf.lex_curr_p;
         file;
+        string_buffer = Buffer.create 256;
       }
   in
   let failure_index = ref (-1) in

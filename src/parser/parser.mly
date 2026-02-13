@@ -804,7 +804,7 @@ let code_block :=
   | content = located(Code_block); {
     let Loc.{ value = Tokens.{ inner; start }; location } = content in
     let Tokens.{ metadata; delimiter; content } = inner in
-    let meta = Option.map (fun Tokens.{ language_tag; tags } -> Ast.{ language = language_tag; tags = match tags with Some t -> [`Tag t] | None -> [] }) metadata in
+    let meta = Option.map (fun Tokens.{ language_tag; tags } -> Ast.{ language = language_tag; tags }) metadata in
     let span = { location with start } in
     let should_not_be_empty = Writer.Warning (
       let what = Tokens.describe @@ Code_block Tokens.{ inner; start } in
@@ -818,7 +818,7 @@ let code_block :=
     let* output = Option.some <$> output in
     let Loc.{ value = Tokens.{ inner; start }; location } = content in
     let Tokens.{ metadata; delimiter; content } = inner in
-    let meta = Option.map (fun Tokens.{ language_tag; tags } -> Ast.{ language = language_tag; tags = match tags with Some t -> [`Tag t] | None -> [] }) metadata in
+    let meta = Option.map (fun Tokens.{ language_tag; tags } -> Ast.{ language = language_tag; tags }) metadata in
     let node = `Code_block Ast.{ meta; delimiter; content; output } in
     return @@ Loc.at { location with start } node
   }
