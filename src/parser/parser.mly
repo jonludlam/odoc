@@ -130,15 +130,14 @@ let toplevel_error :=
       else 
         Writer.warning unclosed m)
   }
-  | errloc = position(RIGHT_BRACE); whitespace?; { 
+  | errloc = position(RIGHT_BRACE); whitespace?; {
     let span = Loc.of_position errloc in
-    let warning = 
-      let what = Tokens.describe RIGHT_BRACE in 
-      Writer.Warning (Parse_error.bad_markup what span) 
-    in 
+    let warning =
+      Writer.Warning (Parse_error.unpaired_right_brace span)
+    in
     let as_text = Loc.at span @@ `Word "}" in
     let node = (Loc.same as_text @@ `Paragraph [ as_text ]) in
-    Writer.return_warning node warning 
+    Writer.return_warning node warning
   }
   | errloc = position(RIGHT_CODE_DELIMITER); { 
     let span = Loc.of_position errloc in

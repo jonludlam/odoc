@@ -54,7 +54,8 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 7-13:\
            \nIllegal character or syntax 'absurd' in '{table ...}' (table)"
             "File \"f.ml\", line 1, characters 21-22:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let bad_row =
@@ -73,9 +74,11 @@ let%expect_test _ =
             "File \"f.ml\", line 1, characters 11-17:\
            \nIllegal character or syntax 'absurd' in '{tr ...}' (table row)"
             "File \"f.ml\", line 1, characters 25-26:\
-           \n''}'': bad markup."
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'."
             "File \"f.ml\", line 1, characters 26-27:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let multiple_headers =

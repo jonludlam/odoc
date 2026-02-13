@@ -3795,7 +3795,8 @@ let%expect_test _ =
            ((f.ml (1 11) (1 12)) (paragraph (((f.ml (1 11) (1 12)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-12:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let nested_closer_with_word =
@@ -4392,7 +4393,8 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 0-7:\
            \nIllegal character or syntax 'foo' in '{ul ...}' (bulleted list)"
             "File \"f.ml\", line 1, characters 7-8:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let junk_with_no_whitespace =
@@ -4406,7 +4408,8 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 0-6:\
            \nIllegal character or syntax 'foo' in '{ul ...}' (bulleted list)"
             "File \"f.ml\", line 1, characters 6-7:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let empty =
@@ -5757,7 +5760,8 @@ let%expect_test _ =
            ((f.ml (1 1) (1 2)) (paragraph (((f.ml (1 1) (1 2)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 1-2:\
-           \n''}'': bad markup."
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'."
             "File \"f.ml\", line 1, characters 0-1:\
            \n'{': bad markup.\
            \nSuggestion: escape the brace with '\\{'.")))
@@ -5812,8 +5816,10 @@ let%expect_test _ =
       [%expect
         {|
         ((output (((f.ml (1 0) (1 1)) (paragraph (((f.ml (1 0) (1 1)) (word })))))))
-         (warnings ( "File \"f.ml\", line 1, characters 0-1:\
-                    \n''}'': bad markup.")))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-1:\
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let right_brace_in_paragraph =
@@ -5823,8 +5829,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
            ((f.ml (1 3) (1 4)) (paragraph (((f.ml (1 3) (1 4)) (word })))))))
-         (warnings ( "File \"f.ml\", line 1, characters 3-4:\
-                    \n''}'': bad markup.")))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 3-4:\
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let multiple_right_brace =
@@ -5839,9 +5847,11 @@ let%expect_test _ =
            ((f.ml (1 12) (1 15)) (paragraph (((f.ml (1 12) (1 15)) (word baz)))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 3-5:\
-           \n''}'': bad markup."
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'."
             "File \"f.ml\", line 1, characters 9-11:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let right_brace_in_list_item =
@@ -5853,8 +5863,10 @@ let%expect_test _ =
             (unordered light
              ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo)))))))))
            ((f.ml (1 5) (1 6)) (paragraph (((f.ml (1 5) (1 6)) (word })))))))
-         (warnings ( "File \"f.ml\", line 1, characters 5-6:\
-                    \n''}'': bad markup.")))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 5-6:\
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let right_brace_in_code_span =
@@ -5891,7 +5903,8 @@ let%expect_test _ =
            ((f.ml (1 11) (1 13)) (paragraph (((f.ml (1 11) (1 13)) (word })))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-13:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let right_bracket =
@@ -5983,7 +5996,8 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 0-10:\
            \nIllegal character or syntax ']}' in '{ul ...}' (bulleted list)"
             "File \"f.ml\", line 1, characters 10-11:\
-           \n''}'': bad markup.")))
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
 
     let right_bracket_in_heading =
@@ -6187,8 +6201,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 2)) (paragraph (((f.ml (1 0) (1 2)) (word "\206\187")))))
            ((f.ml (1 2) (1 3)) (paragraph (((f.ml (1 2) (1 3)) (word })))))))
-         (warnings ( "File \"f.ml\", line 1, characters 2-3:\
-                    \n''}'': bad markup.")))
+         (warnings
+          ( "File \"f.ml\", line 1, characters 2-3:\
+           \nUnpaired '}' (end of markup).\
+           \nSuggestion: try '\\}'.")))
         |}]
   end in
   ()
