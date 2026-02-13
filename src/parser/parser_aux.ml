@@ -9,6 +9,11 @@ let has_content : string -> bool = fun s -> String.length s > 0
 
 let trim_start = function Loc.{ value = `Space _; _ } :: xs -> xs | xs -> xs
 
+let trim_end xs =
+  match List.rev xs with
+  | Loc.{ value = `Space _; _ } :: rest -> List.rev rest
+  | _ -> xs
+
 (* Wrap a list of `inline_element` in a `Paragraph *)
 let paragraph :
     Ast.inline_element Loc.with_location list ->
@@ -88,7 +93,7 @@ let valid_align_row (row : Ast.inline_element Loc.with_location list list) :
 
 (* Merges inline elements within a cell into a single paragraph element, and tags cells w/ tag *)
 let merged_tagged_row tag : 'a Loc.with_location list list -> 'b =
-  List.map (fun elts -> ([ paragraph elts ], tag))
+  List.map (fun elts -> ([ paragraph (trim_start (trim_end elts)) ], tag))
 let as_data = merged_tagged_row `Data
 let as_header = merged_tagged_row `Header
 
