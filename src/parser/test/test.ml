@@ -1039,9 +1039,9 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 0))
+          (((f.ml (1 0) (2 1))
             (paragraph
-             (((f.ml (1 0) (2 0)) (bold (((f.ml (1 3) (1 6)) (word foo))))))))))
+             (((f.ml (1 0) (2 1)) (bold (((f.ml (1 3) (1 6)) (word foo))))))))))
          (warnings ()))
         |}]
 
@@ -1050,9 +1050,9 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (2 0))
+          (((f.ml (1 0) (2 1))
             (paragraph
-             (((f.ml (1 0) (2 0)) (bold (((f.ml (1 3) (1 6)) (word foo))))))))))
+             (((f.ml (1 0) (2 1)) (bold (((f.ml (1 3) (1 6)) (word foo))))))))))
          (warnings ()))
         |}]
 

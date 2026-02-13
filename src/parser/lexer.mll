@@ -522,10 +522,10 @@ and token input = parse
   | horizontal_space* eof
     { END }
 
-  | ((horizontal_space* newline as prefix)
-    horizontal_space* (((newline)+ as suffix) as ws)) 
+  | ((horizontal_space* newline as _prefix)
+    horizontal_space* (((newline)+ as _suffix) as ws))
     {
-      update_content_newlines ~content:(prefix ^ suffix) lexbuf;
+      track_newlines_in_match ~content:(Lexing.lexeme lexbuf) ~base_offset:(Lexing.lexeme_start lexbuf) lexbuf;
       Blank_line ws
     }
 
@@ -538,9 +538,9 @@ and token input = parse
   | (horizontal_space+ as ws)
     { Space ws }
 
-  | (horizontal_space* (newline)? as p) '}'
+  | (horizontal_space* (newline)? as _p) '}'
     {
-      update_content_newlines ~content:p lexbuf;
+      track_newlines_in_match ~content:(Lexing.lexeme lexbuf) ~base_offset:(Lexing.lexeme_start lexbuf) lexbuf;
       RIGHT_BRACE }
 
   | '|'
@@ -841,7 +841,7 @@ and code_span buffer nesting_level start_offset input = parse
     { Buffer.add_char buffer c;
       code_span buffer nesting_level start_offset input lexbuf }
 
-  | newline horizontal_space* ((newline horizontal_space*)+ as ws)
+  | newline horizontal_space* ((newline horizontal_space*)+ as _ws)
     { 
       let not_allowed = 
         Parse_error.not_allowed
@@ -849,7 +849,7 @@ and code_span buffer nesting_level start_offset input = parse
           ~in_what:(Tokens.describe (Code_span {inner = ""; start = Loc.dummy_pos}))
       in
       warning lexbuf input not_allowed;
-      update_content_newlines ~content:("\n" ^ ws) lexbuf; 
+      track_newlines_in_match ~content:(Lexing.lexeme lexbuf) ~base_offset:(Lexing.lexeme_start lexbuf) lexbuf;
       Buffer.add_char buffer ' ';
       code_span buffer nesting_level start_offset input lexbuf }
   | newline horizontal_space*
