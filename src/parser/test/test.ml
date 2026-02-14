@@ -4021,9 +4021,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (unordered light
-             ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo)))))
-               ((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
-         (warnings ())) |}]
+             ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo))))))
+              (((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
+         (warnings ()))
+        |}]
 
     let two_lists =
       test "- foo\n\n- bar";
@@ -4075,9 +4076,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 11))
             (unordered light
-             ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo)))))
-               ((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word bar)))))))))))
-         (warnings ())) |}]
+             ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo))))))
+              (((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word bar)))))))))))
+         (warnings ()))
+        |}]
 
     let bullet_in_line_immediately =
       test "- - foo";
@@ -4139,9 +4141,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (2 5))
             (unordered light
-             ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo)))))
-               ((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
-         (warnings ())) |}]
+             ((((f.ml (1 2) (1 5)) (paragraph (((f.ml (1 2) (1 5)) (word foo))))))
+              (((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
+         (warnings ()))
+        |}]
 
     let no_content =
       test "-";
@@ -4475,9 +4478,10 @@ let%expect_test _ =
              ((((f.ml (1 8) (2 5))
                 (unordered light
                  ((((f.ml (1 10) (1 13))
-                    (paragraph (((f.ml (1 10) (1 13)) (word foo)))))
-                   ((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))))))
-         (warnings ())) |}]
+                    (paragraph (((f.ml (1 10) (1 13)) (word foo))))))
+                  (((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))))))
+         (warnings ()))
+        |}]
 
     let explicit_in_shorthand =
       test "- {ul {li foo}}";
@@ -4717,11 +4721,12 @@ let%expect_test _ =
              ((f.ml (1 12) (2 5))
               (unordered light
                ((((f.ml (1 14) (1 17))
-                  (paragraph (((f.ml (1 14) (1 17)) (word foo)))))
-                 ((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))))
+                  (paragraph (((f.ml (1 14) (1 17)) (word foo))))))
+                (((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))))
          (warnings
           ( "File \"f.ml\", line 1, character 11 to line 2, character 0:\
-           \n'-' (bulleted list item) should begin on its own line."))) |}]
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
 
     let double_implicitly_ended =
       test "@deprecated - foo\n- bar\n\nNew paragraph";
@@ -4733,15 +4738,16 @@ let%expect_test _ =
              ((f.ml (1 12) (2 5))
               (unordered light
                ((((f.ml (1 14) (1 17))
-                  (paragraph (((f.ml (1 14) (1 17)) (word foo)))))
-                 ((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
+                  (paragraph (((f.ml (1 14) (1 17)) (word foo))))))
+                (((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))
            ((f.ml (4 0) (4 13))
             (paragraph
              (((f.ml (4 0) (4 3)) (word New)) ((f.ml (4 3) (4 4)) space)
               ((f.ml (4 4) (4 13)) (word paragraph)))))))
          (warnings
           ( "File \"f.ml\", line 1, character 11 to line 2, character 0:\
-           \n'-' (bulleted list item) should begin on its own line."))) |}]
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
 
     let with_shorthand_list_after_newline =
       test "@deprecated\n- foo";

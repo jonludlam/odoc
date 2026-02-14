@@ -12,8 +12,10 @@
 
 %token <string> Word (* Any space-delmited text *)
 
-%token MINUS "-" 
+%token MINUS "-"
 %token PLUS "+"
+%token MINUS_AT_LINE_START
+%token PLUS_AT_LINE_START
 
 %token <Tokens.style> Style "{i" (* or '{b' etc *)
 
@@ -258,7 +260,7 @@ let inline_element_without_whitespace :=
 
 let style_inline_element :=
   | ~ = inline_element(whitespace); <>
-  | ~ = symbol_as_word(symbols); <>
+  | ~ = symbol_as_word(symbols_all); <>
   | s = located(Blank_line); { return @@ Loc.map (fun s -> `Space s) s }
 
 (* Block-level tokens that are self-contained (consumed as a single token).
@@ -502,11 +504,13 @@ let link :=
 
 (* LIST *)
 
-let list_light_start := 
+let list_light_start :=
+  | MINUS_AT_LINE_START; { Tokens.MINUS }
+  | PLUS_AT_LINE_START; { Tokens.PLUS }
   | MINUS; { Tokens.MINUS }
   | PLUS; { Tokens.PLUS }
 
-let light_list_paragraph_item := 
+let light_list_paragraph_item :=
   | ~ = inline_element(whitespace); <>
   | ~ = symbol_as_word(bar); <>
 let paragraph_no_list_symbols := horizontal_whitespace?; x = inline_element_without_whitespace; xs = sequence(light_list_paragraph_item); {
@@ -538,7 +542,7 @@ let list_light :=
       let spans, children = List.split children in
       let span = Loc.span spans in
       let list_kind, children = split_light_list_items children in
-      Loc.at span @@ `List (list_kind, `Light,  [ children ]))
+      Loc.at span @@ `List (list_kind, `Light, List.map (fun c -> [c]) children))
   }
   | children = sequence_separated_nonempty(whitespace*, list_light_item); errpos = position(error); {
     Writer.bind children ~f:(fun children -> 
@@ -556,7 +560,7 @@ let list_light :=
         in
         Parse_error.not_allowed ~what ~in_what span)
       in
-      `List (list_kind, `Light, [ children ])
+      `List (list_kind, `Light, List.map (fun c -> [c]) children)
       |> Loc.at span
       |> return 
       |> Writer.warning illegal)
@@ -636,6 +640,8 @@ let list_junk_token ==
   | _s = Blank_line; { "" }
   | MINUS; { Tokens.describe MINUS }
   | PLUS; { Tokens.describe PLUS }
+  | MINUS_AT_LINE_START; { Tokens.describe MINUS }
+  | PLUS_AT_LINE_START; { Tokens.describe PLUS }
   | BAR; { Tokens.describe BAR }
   | s = Style; { Tokens.describe (Style s) }
   | c = Code_span; { Tokens.describe (Code_span c) }
@@ -755,6 +761,8 @@ let row_junk_token ==
   | _s = Blank_line; { "" }
   | MINUS; { Tokens.describe MINUS }
   | PLUS; { Tokens.describe PLUS }
+  | MINUS_AT_LINE_START; { Tokens.describe MINUS }
+  | PLUS_AT_LINE_START; { Tokens.describe PLUS }
   | BAR; { Tokens.describe BAR }
   | s = Style; { Tokens.describe (Style s) }
   | c = Code_span; { Tokens.describe (Code_span c) }
@@ -823,6 +831,8 @@ let table_junk_token ==
   | _s = Blank_line; { "" }
   | MINUS; { Tokens.describe MINUS }
   | PLUS; { Tokens.describe PLUS }
+  | MINUS_AT_LINE_START; { Tokens.describe MINUS }
+  | PLUS_AT_LINE_START; { Tokens.describe PLUS }
   | BAR; { Tokens.describe BAR }
   | s = Style; { Tokens.describe (Style s) }
   | c = Code_span; { Tokens.describe (Code_span c) }
@@ -1067,17 +1077,24 @@ let verbatim := verbatim = located(Verbatim); {
 }
 
 (* Split so that we can exclude bar in i.e. light tables *)
-let symbols_without_bar := 
+let symbols_without_bar :=
   | PLUS; { "+" }
   | MINUS; { "-" }
-let bar := 
+let bar :=
   | BAR; { "|" }
 
-let symbols := 
+let symbols :=
   | ~ = symbols_without_bar; <>
   | ~ = bar; <>
+
+(* Symbols including line-start variants, for contexts where -/+ should always be text *)
+let symbols_all :=
+  | ~ = symbols; <>
+  | MINUS_AT_LINE_START; { "-" }
+  | PLUS_AT_LINE_START; { "+" }
+
 let symbol_as_word(symbols) == s = located(symbols); { return @@ Loc.map (fun w -> `Word w) s }
-let paragraph_middle_element := 
+let paragraph_middle_element :=
   | ~ = inline_element(whitespace); <>
   | ~ = symbol_as_word(symbols); <>
   

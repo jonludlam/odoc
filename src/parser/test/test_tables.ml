@@ -159,10 +159,10 @@ let%expect_test _ =
                   (((f.ml (16 15) (18 20))
                     (unordered light
                      ((((f.ml (16 17) (16 20))
-                        (paragraph (((f.ml (16 17) (16 20)) (word aaa)))))
-                       ((f.ml (17 17) (17 20))
-                        (paragraph (((f.ml (17 17) (17 20)) (word bbb)))))
-                       ((f.ml (18 17) (18 20))
+                        (paragraph (((f.ml (16 17) (16 20)) (word aaa))))))
+                      (((f.ml (17 17) (17 20))
+                        (paragraph (((f.ml (17 17) (17 20)) (word bbb))))))
+                      (((f.ml (18 17) (18 20))
                         (paragraph (((f.ml (18 17) (18 20)) (word ccc)))))))))))
                  (data
                   (((f.ml (21 14) (25 15))
