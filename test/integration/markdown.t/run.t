@@ -8,7 +8,9 @@
   Warning: '{{!...} ...}' (cross-reference) should not be empty.
   File "page.mld", line 35, characters 49-59:
   Warning: '{{!...} ...}' (cross-reference) should not be empty.
-  File "page.mld", line 125, characters 0-11:
+  File "page.mld", line 101, characters 17-19:
+  Warning: ''}'': bad markup.
+  File "page.mld", line 118, characters 0-11:
   Warning: Tags are not allowed in pages.
   $ odoc compile --package test test.cmti
   $ odoc compile --package test -I . test2.cmti
@@ -195,6 +197,8 @@
   | --- | --- |
   | Cell 1 | Cell 2 |
   | Cell 3 | Cell 4 |
+  {
+  
   
   ##### Light syntax
   

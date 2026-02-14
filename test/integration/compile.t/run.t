@@ -79,11 +79,10 @@ Test different parsing errors.
   File "parser_errors.mli", line 10, characters 8-11:
   Warning: '{li ...}' should be followed by space, a tab, or a new line.
   File "parser_errors.mli", line 13, characters 4-7:
+  Warning: '{li ...}' should be followed by space, a tab, or a new line.
+  File "parser_errors.mli", line 13, characters 4-20:
   Warning: '{li ...}' (list item) is not allowed in top-level text.
-  Suggestion: move '{li ...}' into '{ul ...}' (bulleted list), or use '-' (bulleted list item).
-  File "parser_errors.mli", line 13, characters 19-20:
-  Warning: Unpaired '}' (end of markup).
-  Suggestion: try '\}'.
+  Suggestion: Move '{li ...}' (list item) into '{ol ...}' (numbered list) or '{ul ...}' (bulleted list)
   File "parser_errors.mli", line 16, characters 4-6:
   Warning: '{v' should be followed by whitespace.
   File "parser_errors.mli", line 19, characters 37-39:
@@ -106,15 +105,19 @@ Test different parsing errors.
   Warning: '@see' should be followed by <url>, 'file', or "document title".
   File "parser_errors.mli", line 43, characters 4-15:
   Warning: Unknown tag '@UnknownTag'.
-  File "parser_errors.mli", line 46, characters 4-5:
+  File "parser_errors.mli", line 46, characters 3-5:
   Warning: Unpaired '}' (end of markup).
   Suggestion: try '\}'.
+  File "parser_errors.mli", line 46, characters 6-14:
+  Warning: Paragraph should begin on its own line.
   File "parser_errors.mli", line 49, characters 4-5:
   Warning: Unpaired ']' (end of code).
   Suggestion: try '\]'.
-  File "parser_errors.mli", line 53, characters 4-5:
+  File "parser_errors.mli", line 53, characters 0-5:
   Warning: Unpaired '}' (end of markup).
   Suggestion: try '\}'.
+  File "parser_errors.mli", line 53, characters 6-32:
+  Warning: Paragraph should begin on its own line.
   File "parser_errors.mli", line 56, characters 4-18:
   Warning: '{x bad markup}': bad markup.
   Suggestion: did you mean '{!x bad markup}' or '[x bad markup]'?
@@ -130,11 +133,10 @@ With warn-error enabled.
   File "parser_errors.mli", line 10, characters 8-11:
   Error: '{li ...}' should be followed by space, a tab, or a new line.
   File "parser_errors.mli", line 13, characters 4-7:
+  Error: '{li ...}' should be followed by space, a tab, or a new line.
+  File "parser_errors.mli", line 13, characters 4-20:
   Error: '{li ...}' (list item) is not allowed in top-level text.
-  Suggestion: move '{li ...}' into '{ul ...}' (bulleted list), or use '-' (bulleted list item).
-  File "parser_errors.mli", line 13, characters 19-20:
-  Error: Unpaired '}' (end of markup).
-  Suggestion: try '\}'.
+  Suggestion: Move '{li ...}' (list item) into '{ol ...}' (numbered list) or '{ul ...}' (bulleted list)
   File "parser_errors.mli", line 16, characters 4-6:
   Error: '{v' should be followed by whitespace.
   File "parser_errors.mli", line 19, characters 37-39:
@@ -157,15 +159,19 @@ With warn-error enabled.
   Error: '@see' should be followed by <url>, 'file', or "document title".
   File "parser_errors.mli", line 43, characters 4-15:
   Error: Unknown tag '@UnknownTag'.
-  File "parser_errors.mli", line 46, characters 4-5:
+  File "parser_errors.mli", line 46, characters 3-5:
   Error: Unpaired '}' (end of markup).
   Suggestion: try '\}'.
+  File "parser_errors.mli", line 46, characters 6-14:
+  Error: Paragraph should begin on its own line.
   File "parser_errors.mli", line 49, characters 4-5:
   Error: Unpaired ']' (end of code).
   Suggestion: try '\]'.
-  File "parser_errors.mli", line 53, characters 4-5:
+  File "parser_errors.mli", line 53, characters 0-5:
   Error: Unpaired '}' (end of markup).
   Suggestion: try '\}'.
+  File "parser_errors.mli", line 53, characters 6-32:
+  Error: Paragraph should begin on its own line.
   File "parser_errors.mli", line 56, characters 4-18:
   Error: '{x bad markup}': bad markup.
   Suggestion: did you mean '{!x bad markup}' or '[x bad markup]'?
@@ -180,13 +186,13 @@ Compiling a '.cmt' file.
 Check line numbers for errors in a '.mld' file.
 
   $ odoc compile line_numbers.mld
-  File "line_numbers.mld", line 2, characters 0-4:
-  Warning: '{[...]}' (code block) should not be empty.
   File "line_numbers.mld", line 8, characters 0-12:
   Warning: '{Bad Markup}': bad markup.
   Suggestion: did you mean '{!Bad Markup}' or '[Bad Markup]'?
   File "line_numbers.mld", line 32, characters 0-1:
   Warning: '{': bad markup.
   Suggestion: escape the brace with '\{'.
+  File "line_numbers.mld", line 2, characters 0-4:
+  Warning: '{[...]}' (code block) should not be empty.
   File "line_numbers.mld", line 16, characters 0-11:
   Warning: '6': bad heading level (0-5 allowed).

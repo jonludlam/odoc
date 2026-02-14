@@ -35,7 +35,11 @@ With other block
   > {0 Test1}
   > EOF
   $ odoc compile --parent-id pkg --output-dir _odoc index.mld
-  File "index.mld", line 1, characters 0-27:
+  File "index.mld", line 1, characters 13-27:
+  Warning: '{[...]}' (code block) should begin on its own line.
+  File "index.mld":
+  Warning: Pages (.mld files) should start with a heading.
+  File "index.mld", line 1, characters 0-12:
   Warning: Short titles cannot contain other block than a single paragraph
   $ odoc_print _odoc/pkg/page-index.odoc | jq .frontmatter.short_title -c
   "None"

@@ -1,6 +1,20 @@
 We need to odoc-compile the package mld file, listing its children
 
   $ odoc compile index.mld --parent-id pkg1/ --output-dir _odoc
+  File "index.mld", line 9, characters 19-35:
+  Warning: '{image!...}' (image-reference) should begin on its own line.
+  File "index.mld", line 10, characters 20-68:
+  Warning: '{image!...}' (image-reference) should begin on its own line.
+  File "index.mld", line 11, characters 31-53:
+  Warning: '{image!...}' (image-reference) should begin on its own line.
+  File "index.mld", line 12, characters 28-83:
+  Warning: '{image!...}' (image-reference) should begin on its own line.
+  File "index.mld", line 16, characters 12-60:
+  Warning: '{image:...}' (image-link) should begin on its own line.
+  File "index.mld", line 17, characters 15-52:
+  Warning: '{image:...}' (image-link) should begin on its own line.
+  File "index.mld", line 43, characters 48-64:
+  Warning: '{image!...}' (image-reference) should begin on its own line.
 
   $ odoc compile-asset --parent-id pkg1/ --output-dir _odoc --name caml.gif
   $ odoc compile-asset --parent-id pkg1/ --output-dir _odoc --name caml.png
@@ -27,14 +41,13 @@ To test visually, indent:
 Testing the working references:
 
   $ cat html/pkg1/index.html | grep img
-        <a href="caml.gif" class="img-link">
-         <img src="caml.gif" alt="caml.gif"/>
-        <a href="caml.png" class="img-link">
-         <img src="caml.png" alt="With alt text and {b emphasis}"/>
-        <a href="https://picsum.photos/200/300" class="img-link">
-         <img src="https://picsum.photos/200/300" alt="reference"/>
-        <a href="https://picsum.photos/200/300" class="img-link">
-         <img src="https://picsum.photos/200/300"
+      <a href="caml.gif" class="img-link"><img src="caml.gif" alt="caml.gif"/>
+      <a href="caml.png" class="img-link">
+       <img src="caml.png" alt="With alt text and {b emphasis}"/>
+      <a href="https://picsum.photos/200/300" class="img-link">
+       <img src="https://picsum.photos/200/300" alt="reference"/>
+      <a href="https://picsum.photos/200/300" class="img-link">
+       <img src="https://picsum.photos/200/300"
 
   $ cat html/pkg1/index.html | grep video
        <li><a href="#video">Video</a>
@@ -51,7 +64,7 @@ Testing the working references:
 
   $ cat html/pkg1/index.html | grep audio
        <li><a href="#audio">Audio</a>
-     </ul><h2 id="audio"><a href="#audio" class="anchor"></a>Audio</h2>
+     </div><h2 id="audio"><a href="#audio" class="anchor"></a>Audio</h2>
       <audio src="Cri_du_chameau.ogg" controls="controls"
       </audio>
       <audio
@@ -62,9 +75,9 @@ Testing the working references:
 Testing the unresolved references:
 
   $ cat html/pkg1/index.html | grep xref-unresolved
-       <div><span class="xref-unresolved">./caqzdqzdml.gif</span></div>
-       <div><span class="xref-unresolved">With alt text and {b emphasis}</span>
-       <div><span class="xref-unresolved">./module-x</span></div>
+     <div><span class="xref-unresolved">./caqzdqzdml.gif</span></div>
+     <div><span class="xref-unresolved">With alt text and {b emphasis}</span>
+     <div><span class="xref-unresolved">./module-x</span></div>
 
 Testing latex and manpages
 
@@ -74,7 +87,7 @@ Testing latex and manpages
   ./caqzdqzdml.gif
 
   $ cat latex/pkg1/index.tex | grep png
-  \includegraphics{pkg1/caml.png}}%
+  \includegraphics{pkg1/caml.png}\begin{itemize}\item{Unresolved without alt text:}\end{itemize}%
 
   $ odoc man-generate -o man _odoc/pkg1/page-index.odocl
   $ cat man/pkg1/index.3o | grep gif
