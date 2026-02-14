@@ -4346,11 +4346,12 @@ let%expect_test _ =
              ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-11:\
-           \nEnd of text is not allowed in '{- ...}' (list item).\
+           \nEnd of text is not allowed in '{li ...}' (list item).\
            \nSuggestion: add '}'."
             "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in '{ul ...}' (bulleted list).\
-           \nSuggestion: add '}'."))) |}]
+           \nSuggestion: add '}'.")))
+        |}]
 
     let unterminated_left_curly_brace =
       test "{ul {- foo";
@@ -4384,7 +4385,8 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 9)) (unordered heavy (())))))
          (warnings
           ( "File \"f.ml\", line 1, characters 4-8:\
-           \n'{li ...}' (list item) should not be empty."))) |}]
+           \n'{- ...}' (list item) should not be empty.")))
+        |}]
 
     let li_syntax_without_whitespace =
       test "{ul {lifoo}}";

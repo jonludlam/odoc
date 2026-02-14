@@ -594,13 +594,13 @@ let item_heavy :=
 | startpos = located(item_open); any_whitespace*; items = sequence(block_element_with_ws); endpos = located(RIGHT_BRACE); {
     let span = Loc.delimited startpos endpos in
     let should_not_be_empty =
-      Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe LI) span)
+      Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe startpos.Loc.value) span)
     in
     Writer.ensure not_empty should_not_be_empty items
   }
   | startpos = located(item_open); any_whitespace*; items = sequence(block_element_with_ws)?; endpos = located(END); {
     let end_not_allowed =
-      Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe DASH) endpos.Loc.location)
+      Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe startpos.Loc.value) endpos.Loc.location)
     in
     match items with
     | Some writer ->
@@ -608,7 +608,7 @@ let item_heavy :=
     | None ->
       let span = Loc.delimited startpos endpos in
       let should_not_be_empty =
-        Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe DASH) span)
+        Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe startpos.Loc.value) span)
       in
       Writer.return_warning [] should_not_be_empty
       |> Writer.warning end_not_allowed
