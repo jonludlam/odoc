@@ -62,18 +62,15 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 26))
-            (table (syntax heavy) (grid ((row ()))) (align "no alignment")))
-           ((f.ml (1 26) (1 27)) (paragraph (((f.ml (1 26) (1 27)) (word })))))))
+          (((f.ml (1 0) (1 27))
+            (table (syntax heavy) (grid ((row ()))) (align "no alignment")))))
          (warnings
           ( "File \"f.ml\", line 1, characters 11-17:\
-           \nIllegal character or syntax 'absurd' in '{tr ...}' (table row)"
+           \n'absurd' is not allowed in '{tr ...}' (table row).\
+           \nSuggestion: Move outside of {table ...}, or inside {td ...} or {th ...}"
             "File \"f.ml\", line 1, characters 18-25:\
-           \n'content' is not allowed in '{table ...}' (table).\
-           \nSuggestion: Move outside of {table ...}, or inside {tr ...}"
-            "File \"f.ml\", line 1, characters 26-27:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'.")))
+           \n'content' is not allowed in '{tr ...}' (table row).\
+           \nSuggestion: Move outside of {table ...}, or inside {td ...} or {th ...}")))
         |}]
 
     let multiple_headers =

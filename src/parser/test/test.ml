@@ -4392,30 +4392,26 @@ let%expect_test _ =
       test "{ul foo}";
       [%expect
         {|
-        ((output
-          (((f.ml (1 0) (1 7)) (unordered heavy ()))
-           ((f.ml (1 7) (1 8)) (paragraph (((f.ml (1 7) (1 8)) (word })))))))
+        ((output (((f.ml (1 0) (1 8)) (unordered heavy ()))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-7:\
-           \nIllegal character or syntax 'foo' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 7-8:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'.")))
+          ( "File \"f.ml\", line 1, characters 0-8:\
+           \n'{ul ...}' (bulleted list) should not be empty."
+            "File \"f.ml\", line 1, characters 4-7:\
+           \n'foo' is not allowed in '{ul ...}' (bulleted list).\
+           \nSuggestion: Move into a list item, '{li ...}' or '{- ...}'")))
         |}]
 
     let junk_with_no_whitespace =
       test "{ulfoo}";
       [%expect
         {|
-        ((output
-          (((f.ml (1 0) (1 6)) (unordered heavy ()))
-           ((f.ml (1 6) (1 7)) (paragraph (((f.ml (1 6) (1 7)) (word })))))))
+        ((output (((f.ml (1 0) (1 7)) (unordered heavy ()))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-6:\
-           \nIllegal character or syntax 'foo' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 6-7:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'.")))
+          ( "File \"f.ml\", line 1, characters 0-7:\
+           \n'{ul ...}' (bulleted list) should not be empty."
+            "File \"f.ml\", line 1, characters 3-6:\
+           \n'foo' is not allowed in '{ul ...}' (bulleted list).\
+           \nSuggestion: Move into a list item, '{li ...}' or '{- ...}'")))
         |}]
 
     let empty =
@@ -4434,8 +4430,9 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 3)) (unordered heavy ()))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-3:\
-           \nIllegal character or syntax '' in '{ul ...}' (bulleted list)")))
+          ( "File \"f.ml\", line 1, characters 3-3:\
+           \nEnd of text is not allowed in '{ul ...}' (bulleted list).\
+           \nSuggestion: add '}'.")))
         |}]
 
     let no_whitespace =
@@ -4468,10 +4465,11 @@ let%expect_test _ =
             (unordered heavy
              ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-11:\
-           \nIllegal character or syntax '' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 11-11:\
+          ( "File \"f.ml\", line 1, characters 11-11:\
            \nEnd of text is not allowed in '{- ...}' (list item).\
+           \nSuggestion: add '}'."
+            "File \"f.ml\", line 1, characters 11-11:\
+           \nEnd of text is not allowed in '{ul ...}' (bulleted list).\
            \nSuggestion: add '}'.")))
         |}]
 
@@ -4484,10 +4482,11 @@ let%expect_test _ =
             (unordered heavy
              ((((f.ml (1 7) (1 10)) (paragraph (((f.ml (1 7) (1 10)) (word foo)))))))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-10:\
-           \nIllegal character or syntax '' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 10-10:\
+          ( "File \"f.ml\", line 1, characters 10-10:\
            \nEnd of text is not allowed in '{- ...}' (list item).\
+           \nSuggestion: add '}'."
+            "File \"f.ml\", line 1, characters 10-10:\
+           \nEnd of text is not allowed in '{ul ...}' (bulleted list).\
            \nSuggestion: add '}'.")))
         |}]
 
@@ -5987,23 +5986,22 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 6)) (unordered heavy ()))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-6:\
-           \nIllegal character or syntax ']}' in '{ul ...}' (bulleted list)")))
+          ( "File \"f.ml\", line 1, characters 6-6:\
+           \nEnd of text is not allowed in '{ul ...}' (bulleted list).\
+           \nSuggestion: add '}'."
+            "File \"f.ml\", line 1, characters 4-6:\
+           \n']}' is not allowed in '{ul ...}' (bulleted list).\
+           \nSuggestion: Move into a list item, '{li ...}' or '{- ...}'")))
         |}]
 
     let right_bracket_in_list_item =
       test "{ul {li ]}}";
       [%expect
         {|
-        ((output
-          (((f.ml (1 0) (1 10)) (unordered heavy ()))
-           ((f.ml (1 10) (1 11)) (paragraph (((f.ml (1 10) (1 11)) (word })))))))
+        ((output (((f.ml (1 0) (1 11)) (unordered heavy (())))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-10:\
-           \nIllegal character or syntax ']}' in '{ul ...}' (bulleted list)"
-            "File \"f.ml\", line 1, characters 10-11:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'.")))
+          ( "File \"f.ml\", line 1, characters 8-10:\
+           \nIllegal character or syntax ']}' in '{li ...}' (list item)")))
         |}]
 
     let right_bracket_in_heading =

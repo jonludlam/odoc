@@ -544,58 +544,124 @@ let item_heavy :=
     Writer.ensure not_empty should_not_be_empty items
   }
   | startpos = located(item_open); any_whitespace*; items = sequence(block_element_with_ws)?; endpos = located(END); {
-    let end_not_allowed = 
+    let end_not_allowed =
       Writer.Warning (Parse_error.end_not_allowed ~in_what:(Tokens.describe DASH) endpos.Loc.location)
     in
-    match items with 
+    match items with
     | Some writer ->
       Writer.warning end_not_allowed writer
     | None ->
       let span = Loc.delimited startpos endpos in
-      let should_not_be_empty = 
-        Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe DASH) span) 
+      let should_not_be_empty =
+        Writer.Warning (Parse_error.should_not_be_empty ~what:(Tokens.describe DASH) span)
       in
-      Writer.return_warning [] should_not_be_empty 
+      Writer.return_warning [] should_not_be_empty
       |> Writer.warning end_not_allowed
+  }
+  | startpos = located(item_open); any_whitespace*; children = sequence(block_element_with_ws)?; errloc = position(error); {
+    let illegal = Writer.InputNeeded (fun input ->
+      let (start_pos, end_pos) as loc = errloc in
+      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
+      let span = Loc.of_position loc in
+      let in_what = Tokens.describe @@ startpos.Loc.value in
+      Parse_error.illegal ~in_what illegal_input span)
+    in
+    Option.value ~default:(return []) children
+    |> Writer.warning illegal
   }
 
 let item_heavy_with_ws := item = item_heavy; any_whitespace*; { item }
 
+(* Junk tokens inside {ul ...} or {ol ...}: any token that is not {li, {-, }, or END.
+   Returns a description string suitable for use as ~what in Parse_error.not_allowed *)
+let list_junk_token ==
+  | w = Word; { Tokens.describe (Word w) }
+  | _s = Space; { "" }
+  | _s = Single_newline; { "" }
+  | _s = Blank_line; { "" }
+  | MINUS; { Tokens.describe MINUS }
+  | PLUS; { Tokens.describe PLUS }
+  | BAR; { Tokens.describe BAR }
+  | s = Style; { Tokens.describe (Style s) }
+  | c = Code_span; { Tokens.describe (Code_span c) }
+  | c = Code_block; { Tokens.describe (Code_block c) }
+  | c = Code_block_with_output; { Tokens.describe (Code_block_with_output c) }
+  | v = Verbatim; { Tokens.describe (Verbatim v) }
+  | m = Math_span; { Tokens.describe (Math_span m) }
+  | m = Math_block; { Tokens.describe (Math_block m) }
+  | r = Raw_markup; { Tokens.describe (Raw_markup r) }
+  | r = Simple_ref; { Tokens.describe (Simple_ref r) }
+  | r = Ref_with_replacement; { Tokens.describe (Ref_with_replacement r) }
+  | l = Simple_link; { Tokens.describe (Simple_link l) }
+  | l = Link_with_replacement; { Tokens.describe (Link_with_replacement l) }
+  | m = Media; { Tokens.describe (Media m) }
+  | m = Media_with_replacement; { Tokens.describe (Media_with_replacement m) }
+  | l = List; { Tokens.describe (List l) }
+  | TABLE_LIGHT; { Tokens.describe TABLE_LIGHT }
+  | TABLE_HEAVY; { Tokens.describe TABLE_HEAVY }
+  | TABLE_ROW; { Tokens.describe TABLE_ROW }
+  | c = Table_cell; { Tokens.describe (Table_cell c) }
+  | h = Section_heading; { Tokens.describe (Section_heading h) }
+  | t = Tag; { Tokens.describe (Tag t) }
+  | t = Tag_with_content; { Tokens.describe (Tag_with_content t) }
+  | MODULES; { Tokens.describe MODULES }
+  | p = Paragraph_style; { Tokens.describe (Paragraph_style p) }
+  | RIGHT_CODE_DELIMITER; { Tokens.describe RIGHT_CODE_DELIMITER }
+
+(* A list heavy item is either a valid list item or a junk token.
+   Junk returns (what, location) for the parent to emit a warning with context. *)
+let list_heavy_item ==
+  | item = item_heavy_with_ws; { Writer.map ~f:(fun i -> `Item i) item }
+  | junk = located(list_junk_token); whitespace*; {
+    let what = junk.Loc.value in
+    if what = "" then return `Skip
+    else return (`Junk (what, junk.Loc.location))
+  }
+
 let list_heavy :=
-  | list_kind = located(List); whitespace*; items = sequence(item_heavy_with_ws); endpos = located(RIGHT_BRACE); {
+  | list_kind = located(List); whitespace*; items = list(list_heavy_item); endpos = located(RIGHT_BRACE); {
     let span = Loc.delimited list_kind endpos in
-    let should_not_be_empty = 
-      let what = Tokens.describe @@ List list_kind.Loc.value in
-      Writer.Warning (Parse_error.should_not_be_empty ~what span) 
+    let in_what = Tokens.describe @@ List list_kind.Loc.value in
+    let* items = Writer.sequence items in
+    let real_items = List.filter_map (function `Item i -> Some i | _ -> None) items in
+    let result =
+      Loc.at span @@ `List (Tokens.ast_list_kind list_kind.Loc.value, `Heavy, real_items)
     in
-    Writer.ensure not_empty should_not_be_empty items 
-    |> Writer.bind ~f:(fun items -> 
-        `List (Tokens.ast_list_kind list_kind.Loc.value, `Heavy, items) 
-        |> Loc.at span
-        |> return)
-  }
-  | list_kind = located(List); whitespace*; items = sequence_nonempty(item_heavy_with_ws); errloc = position(error); {
-    let span = Loc.(span [list_kind.location; of_position errloc]) in
-    let illegal = Writer.InputNeeded (fun input ->
-      let (start_pos, end_pos) = errloc in 
-      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
-      let in_what = Tokens.describe @@ List list_kind.Loc.value in
-      Parse_error.illegal ~in_what illegal_input span) 
-    in 
-    let* items : Ast.nestable_block_element Loc.with_location list list = Writer.warning illegal items in
-    let inner = Loc.at span @@ `List (Tokens.ast_list_kind list_kind.Loc.value, `Heavy, items) in
-    return inner 
-  }
-  | list_kind = located(List); errloc = position(error); {
-    let span = Loc.(span [list_kind.location; of_position errloc]) in
-    let illegal = Writer.InputNeeded (fun input ->
-      let (start_pos, end_pos) = errloc in 
-      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
-      let in_what = Tokens.describe (List list_kind.Loc.value) in
-      Parse_error.illegal ~in_what illegal_input span) 
+    let result = List.fold_left (fun acc item ->
+      match item with
+      | `Junk (what, loc) ->
+        Writer.warning (Writer.Warning (
+          Parse_error.not_allowed ~what ~in_what
+            ~suggestion:"Move into a list item, '{li ...}' or '{- ...}'"
+            loc)) acc
+      | _ -> acc
+    ) (return result) items in
+    let should_not_be_empty =
+      Writer.Warning (Parse_error.should_not_be_empty ~what:in_what span)
     in
-    let inner = Loc.at span @@ `List (Tokens.ast_list_kind list_kind.Loc.value, `Heavy, []) in
-    Writer.return_warning inner illegal
+    if real_items = [] then Writer.warning should_not_be_empty result
+    else result
+  }
+  | list_kind = located(List); whitespace*; items = list(list_heavy_item); endpos = located(END); {
+    let span = Loc.delimited list_kind endpos in
+    let in_what = Tokens.describe @@ List list_kind.Loc.value in
+    let end_warning = Writer.Warning (
+      Parse_error.end_not_allowed ~in_what endpos.Loc.location) in
+    let* items = Writer.sequence items in
+    let real_items = List.filter_map (function `Item i -> Some i | _ -> None) items in
+    let result =
+      Loc.at span @@ `List (Tokens.ast_list_kind list_kind.Loc.value, `Heavy, real_items)
+    in
+    let result = List.fold_left (fun acc item ->
+      match item with
+      | `Junk (what, loc) ->
+        Writer.warning (Writer.Warning (
+          Parse_error.not_allowed ~what ~in_what
+            ~suggestion:"Move into a list item, '{li ...}' or '{- ...}'"
+            loc)) acc
+      | _ -> acc
+    ) (return result) items in
+    Writer.warning end_warning result
   }
 
 let odoc_list := 
@@ -625,19 +691,71 @@ let cell_heavy :=
     |> Writer.warning illegal 
   }
 
-let row_heavy := 
-  | TABLE_ROW; whitespace*; ~ = sequence_nonempty(cell_heavy); RIGHT_BRACE; whitespace*; <>
-  | TABLE_ROW; whitespace*; RIGHT_BRACE; whitespace*; { return [] }
-  | TABLE_ROW; children = sequence_nonempty(cell_heavy)?; errloc = position(error); {
-    let illegal = Writer.InputNeeded (fun input ->
-      let (start_pos, end_pos) as loc = errloc in 
-      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
-      let span = Loc.of_position loc in
+(* Junk tokens inside {tr ...}: any token that is not {td, {th, }, or END.
+   Same pattern as table_junk_token but for row context. *)
+let row_junk_token ==
+  | w = Word; { Tokens.describe (Word w) }
+  | _s = Space; { "" }
+  | _s = Single_newline; { "" }
+  | _s = Blank_line; { "" }
+  | MINUS; { Tokens.describe MINUS }
+  | PLUS; { Tokens.describe PLUS }
+  | BAR; { Tokens.describe BAR }
+  | s = Style; { Tokens.describe (Style s) }
+  | c = Code_span; { Tokens.describe (Code_span c) }
+  | c = Code_block; { Tokens.describe (Code_block c) }
+  | c = Code_block_with_output; { Tokens.describe (Code_block_with_output c) }
+  | v = Verbatim; { Tokens.describe (Verbatim v) }
+  | m = Math_span; { Tokens.describe (Math_span m) }
+  | m = Math_block; { Tokens.describe (Math_block m) }
+  | r = Raw_markup; { Tokens.describe (Raw_markup r) }
+  | r = Simple_ref; { Tokens.describe (Simple_ref r) }
+  | r = Ref_with_replacement; { Tokens.describe (Ref_with_replacement r) }
+  | l = Simple_link; { Tokens.describe (Simple_link l) }
+  | l = Link_with_replacement; { Tokens.describe (Link_with_replacement l) }
+  | m = Media; { Tokens.describe (Media m) }
+  | m = Media_with_replacement; { Tokens.describe (Media_with_replacement m) }
+  | l = List; { Tokens.describe (List l) }
+  | LI; { Tokens.describe LI }
+  | DASH; { Tokens.describe DASH }
+  | TABLE_LIGHT; { Tokens.describe TABLE_LIGHT }
+  | TABLE_HEAVY; { Tokens.describe TABLE_HEAVY }
+  | TABLE_ROW; { Tokens.describe TABLE_ROW }
+  | h = Section_heading; { Tokens.describe (Section_heading h) }
+  | t = Tag; { Tokens.describe (Tag t) }
+  | t = Tag_with_content; { Tokens.describe (Tag_with_content t) }
+  | MODULES; { Tokens.describe MODULES }
+  | p = Paragraph_style; { Tokens.describe (Paragraph_style p) }
+  | RIGHT_CODE_DELIMITER; { Tokens.describe RIGHT_CODE_DELIMITER }
+
+(* A row heavy item is either a valid cell or a junk token that gets warned about *)
+let row_heavy_item ==
+  | cell = cell_heavy; { Writer.map ~f:Option.some cell }
+  | junk = located(row_junk_token); whitespace*; {
+    let what = junk.Loc.value in
+    if what = "" then
+      return None
+    else
       let in_what = Tokens.describe TABLE_ROW in
-      Parse_error.illegal ~in_what illegal_input span) 
-    in 
-    Option.value ~default:(return []) children
-    |> Writer.warning illegal 
+      let warning = Writer.Warning (
+        Parse_error.not_allowed ~what
+          ~in_what
+          ~suggestion:"Move outside of {table ...}, or inside {td ...} or {th ...}"
+          junk.Loc.location) in
+      Writer.return_warning None warning
+  }
+
+let row_heavy :=
+  | TABLE_ROW; whitespace*; items = list(row_heavy_item); RIGHT_BRACE; whitespace*; {
+    Writer.sequence items
+    |> Writer.map ~f:(fun items -> List.filter_map Fun.id items)
+  }
+  | TABLE_ROW; whitespace*; items = list(row_heavy_item); endpos = located(END); {
+    let end_warning = Writer.Warning (
+      Parse_error.end_not_allowed ~in_what:(Tokens.describe TABLE_ROW) endpos.Loc.location) in
+    Writer.sequence items
+    |> Writer.map ~f:(fun items -> List.filter_map Fun.id items)
+    |> Writer.warning end_warning
   }
 
 (* Junk tokens inside {table ...}: any token that is not {tr, }, or END.
