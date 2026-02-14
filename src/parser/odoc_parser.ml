@@ -217,6 +217,80 @@ let warn_should_begin_on_own_line (ast : Ast.t) : Warning.t list =
   in
   check [] (-1) false ast
 
+(* Warn about list-like content and blank lines inside inline styles.
+   When '-' or '+' appears at the start of a line inside {b ...}, the user
+   likely intended a list. Similarly, blank lines in styles are suspicious. *)
+let warn_in_styles (ast : Ast.t) : Warning.t list =
+  let style_desc (s : Ast.style) =
+    Tokens.describe @@ Tokens.Style (Tokens.of_ast_style s)
+  in
+  let check_styled style children =
+    let in_what = style_desc style in
+    let acc = ref [] in
+    let prev_was_space_end_line = ref (-1) in
+    List.iter
+      (fun (child : Ast.inline_element Loc.with_location) ->
+        (match child.Loc.value with
+        | `Word w when (w = "-" || w = "+") ->
+          let loc = child.Loc.location in
+          (* Check if this word is at the start of a line (column 0 or 1) *)
+          if loc.start.column <= 1 then begin
+            let what =
+              if w = "-" then "'-' (bulleted list item)"
+              else "'+' (numbered list item)"
+            in
+            let suggestion =
+              "move '" ^ w ^ "' so it isn't the first thing on the line."
+            in
+            acc :=
+              Parse_error.not_allowed ~suggestion ~what ~in_what loc :: !acc
+          end
+        | `Space _ ->
+          (* Track space elements to detect blank lines *)
+          let loc = child.Loc.location in
+          if loc.end_.line > loc.start.line + 1 then begin
+            (* Space spans more than one line break = blank line *)
+            let blank_loc = {
+              Loc.file = loc.file;
+              start = { line = loc.start.line + 1; column = 0 };
+              end_ = { line = loc.start.line + 1; column = 0 };
+            } in
+            acc :=
+              Parse_error.not_allowed ~what:"blank line" ~in_what blank_loc
+              :: !acc
+          end;
+          prev_was_space_end_line := loc.end_.line
+        | _ -> prev_was_space_end_line := (-1));
+      )
+      children;
+    List.rev !acc
+  in
+  let rec walk_inline acc (elem : Ast.inline_element Loc.with_location) =
+    match elem.Loc.value with
+    | `Styled (style, children) ->
+      let style_warnings = check_styled style children in
+      let child_warnings = List.concat_map (walk_inline []) children in
+      acc @ style_warnings @ child_warnings
+    | _ -> acc
+  and walk_block acc (elem : Ast.block_element Loc.with_location) =
+    match elem.Loc.value with
+    | `Paragraph inlines ->
+      List.fold_left walk_inline acc inlines
+    | `Tag (`Deprecated content | `Return content
+           | `Before (_, content) | `Param (_, content)
+           | `Raise (_, content) | `See (_, _, content)
+           | `Children_order content | `Toc_status content
+           | `Order_category content | `Short_title content) ->
+      List.fold_left
+        (fun a (e : Ast.nestable_block_element Loc.with_location) ->
+          match e.value with
+          | `Paragraph inlines -> List.fold_left walk_inline a inlines
+          | _ -> a)
+        acc content
+    | _ -> acc
+  in
+  List.fold_left walk_block [] ast
+
 (* The main entry point for this module *)
 let parse_comment : location:Lexing.position -> text:string -> t =
  fun ~location ~text ->
@@ -252,9 +326,12 @@ let parse_comment : location:Lexing.position -> text:string -> t =
   in
   let ast = splice_escaped_blocks ast escaped_blocks in
   let own_line_warnings = warn_should_begin_on_own_line ast in
+  let style_warnings = warn_in_styles ast in
   {
     ast;
-    warnings = List.rev lexer_state.warnings @ warnings @ own_line_warnings;
+    warnings =
+      List.rev lexer_state.warnings @ warnings @ own_line_warnings
+      @ style_warnings;
     reversed_newlines;
     original_pos = location;
   }

@@ -1131,7 +1131,11 @@ let%expect_test _ =
                 (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 1)) space)
                  ((f.ml (2 1) (2 2)) (word -)) ((f.ml (2 2) (2 3)) space)
                  ((f.ml (2 3) (2 6)) (word bar))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 2, characters 1-2:\
+           \n'-' (bulleted list item) is not allowed in '{b ...}' (boldface text).\
+           \nSuggestion: move '-' so it isn't the first thing on the line.")))
+        |}]
 
     let plus_list_item =
       test "{b foo\n + bar}";
@@ -1145,7 +1149,11 @@ let%expect_test _ =
                 (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (2 1)) space)
                  ((f.ml (2 1) (2 2)) (word +)) ((f.ml (2 2) (2 3)) space)
                  ((f.ml (2 3) (2 6)) (word bar))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 2, characters 1-2:\
+           \n'+' (numbered list item) is not allowed in '{b ...}' (boldface text).\
+           \nSuggestion: move '+' so it isn't the first thing on the line.")))
+        |}]
 
     let immediate_minus_list_item =
       test "{b\n- foo}";
@@ -1158,7 +1166,11 @@ let%expect_test _ =
                (bold
                 (((f.ml (2 0) (2 1)) (word -)) ((f.ml (2 1) (2 2)) space)
                  ((f.ml (2 2) (2 5)) (word foo))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 2, characters 0-1:\
+           \n'-' (bulleted list item) is not allowed in '{b ...}' (boldface text).\
+           \nSuggestion: move '-' so it isn't the first thing on the line.")))
+        |}]
 
     let immediate_plus_list_item =
       test "{b\n+ foo}";
@@ -1171,7 +1183,11 @@ let%expect_test _ =
                (bold
                 (((f.ml (2 0) (2 1)) (word +)) ((f.ml (2 1) (2 2)) space)
                  ((f.ml (2 2) (2 5)) (word foo))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 2, characters 0-1:\
+           \n'+' (numbered list item) is not allowed in '{b ...}' (boldface text).\
+           \nSuggestion: move '+' so it isn't the first thing on the line.")))
+        |}]
 
     let blank_line =
       test "{b foo\n\nbar}";
@@ -1184,7 +1200,10 @@ let%expect_test _ =
                (bold
                 (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (3 0)) space)
                  ((f.ml (3 0) (3 3)) (word bar))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 2, characters 0-0:\
+           \nBlank line is not allowed in '{b ...}' (boldface text).")))
+        |}]
 
     let immediate_blank_line =
       test "{b";
