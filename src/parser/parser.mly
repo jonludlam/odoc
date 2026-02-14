@@ -176,9 +176,9 @@ let section_heading :=
     let span = Loc.{ file; start; end_; } in
     let start_pos = fst start_pos and end_pos = snd end_pos in
     let illegal = Writer.InputNeeded (fun input ->
-      let err = Loc.extract ~input ~start_pos ~end_pos in
+      let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
       let in_what = Tokens.describe @@ Section_heading (fst content) in
-      Parse_error.illegal ~in_what err span) 
+      Parse_error.not_allowed ~what ~in_what span)
     in
     let inner = Loc.at span @@ `Heading (num, title, []) in
     Writer.return_warning inner illegal
@@ -300,22 +300,22 @@ let style :=
   }
   | style = located(Style); children = sequence_nonempty(style_inline_element); errloc = position(error); {
     let span = Loc.span [style.Loc.location; Loc.of_position errloc] in
+    let in_what = Tokens.describe @@ Style style.Loc.value in
     let illegal = Writer.InputNeeded (fun input ->
-      let in_what = Tokens.describe @@ Style style.Loc.value in
       let (start_pos, end_pos) = errloc in
-      let illegal_section = Loc.extract ~input ~start_pos ~end_pos in
-      Parse_error.illegal ~in_what illegal_section span)
+      let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
+      Parse_error.not_allowed ~what ~in_what (Loc.of_position errloc))
     in
     Writer.warning illegal children
     |> Writer.map ~f:(fun c -> Loc.at span @@ `Styled (ast_style style.Loc.value, normalize_inline c))
   }
   | style = located(Style); errloc = position(error); {
     let span = Loc.span [style.Loc.location; Loc.of_position errloc] in
+    let in_what = Tokens.describe @@ Style style.Loc.value in
     let illegal = Writer.InputNeeded (fun input ->
-      let in_what = Tokens.describe @@ Style style.Loc.value in
       let (start_pos, end_pos) = errloc in
-      let illegal_section = Loc.extract ~input ~start_pos ~end_pos in
-      Parse_error.illegal ~in_what illegal_section span)
+      let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
+      Parse_error.not_allowed ~what ~in_what (Loc.of_position errloc))
     in
     let inner = Loc.at span @@ `Styled (ast_style style.Loc.value, []) in
     Writer.return_warning inner illegal
@@ -494,12 +494,12 @@ let list_light :=
       let span = Loc.span (spans @ [errloc]) in
       let list_kind, children = split_light_list_items children in
 
-      let illegal = Writer.InputNeeded (fun input -> 
-        let error_text = Loc.extract ~input ~start_pos ~end_pos in 
-        let in_what = Tokens.describe @@ 
-          match list_kind with `Ordered -> PLUS | `Unordered -> MINUS 
+      let illegal = Writer.InputNeeded (fun input ->
+        let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
+        let in_what = Tokens.describe @@
+          match list_kind with `Ordered -> PLUS | `Unordered -> MINUS
         in
-        Parse_error.illegal ~in_what error_text span)
+        Parse_error.not_allowed ~what ~in_what span)
       in
       `List (list_kind, `Light, [ children ])
       |> Loc.at span
@@ -516,11 +516,11 @@ let list_light :=
     in
     let errloc = Loc.of_position errpos in
     let span = Loc.span [location; errloc] in
-    let illegal = Writer.InputNeeded (fun input -> 
+    let illegal = Writer.InputNeeded (fun input ->
       let (start_pos, end_pos) = errpos in
-      let error_text = Loc.extract ~input ~start_pos ~end_pos in
+      let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
       let in_what = Tokens.describe value in
-      Parse_error.illegal ~in_what error_text span)
+      Parse_error.not_allowed ~what ~in_what span)
     in
     `List (list_kind, `Light, [[]])
     |> Loc.at span
@@ -561,10 +561,10 @@ let item_heavy :=
   | startpos = located(item_open); any_whitespace*; children = sequence(block_element_with_ws)?; errloc = position(error); {
     let illegal = Writer.InputNeeded (fun input ->
       let (start_pos, end_pos) as loc = errloc in
-      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
+      let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
       let span = Loc.of_position loc in
       let in_what = Tokens.describe @@ startpos.Loc.value in
-      Parse_error.illegal ~in_what illegal_input span)
+      Parse_error.not_allowed ~what ~in_what span)
     in
     Option.value ~default:(return []) children
     |> Writer.warning illegal
@@ -680,15 +680,15 @@ let cell_heavy :=
     { return ([], cell_kind) }
   | cell_kind = Table_cell; whitespace*; children = sequence_nonempty(cell_block_element)?; errloc = position(error); {
     let illegal = Writer.InputNeeded (fun input ->
-      let (start_pos, end_pos) as loc = errloc in 
-      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
+      let (start_pos, end_pos) as loc = errloc in
+      let what = Printf.sprintf "'%s'" (Loc.extract ~input ~start_pos ~end_pos) in
       let span = Loc.of_position loc in
       let in_what = Tokens.describe @@ Table_cell cell_kind in
-      Parse_error.illegal ~in_what illegal_input span) 
-    in 
+      Parse_error.not_allowed ~what ~in_what span)
+    in
     Option.value ~default:(return []) children
     |> Writer.map ~f:(fun c -> (c, cell_kind))
-    |> Writer.warning illegal 
+    |> Writer.warning illegal
   }
 
 (* Junk tokens inside {tr ...}: any token that is not {td, {th, }, or END.
@@ -843,8 +843,8 @@ let cell_inner :=
   | (start_pos, end_pos) = position(error); {
     let span = Loc.of_position (start_pos, end_pos) in
     let illegal = Writer.InputNeeded (fun input ->
-      let text_span = Loc.extract ~start_pos ~end_pos ~input in 
-      Parse_error.illegal ~in_what:(Tokens.describe TABLE_LIGHT) text_span span)
+      let what = Printf.sprintf "'%s'" (Loc.extract ~start_pos ~end_pos ~input) in
+      Parse_error.not_allowed ~what ~in_what:(Tokens.describe TABLE_LIGHT) span)
     in
     (* TODO: (@FayCarsons)
         This is the best we can do right now. Accepting a `nestable_block_element`,

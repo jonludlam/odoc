@@ -696,7 +696,7 @@ let%expect_test _ =
              (align (default default))))))
          (warnings
           ( "File \"f.ml\", line 3, characters 18-20:\
-           \nIllegal character or syntax ']}' in '{t ...}' (table)")))
+           \n']}' is not allowed in '{t ...}' (table).")))
         |}]
 
     let block_element_in_row =
@@ -731,7 +731,7 @@ let%expect_test _ =
              (align (default))))))
          (warnings
           ( "File \"f.ml\", line 3, characters 16-18:\
-           \nIllegal character or syntax ']}' in '{t ...}' (table)")))
+           \n']}' is not allowed in '{t ...}' (table).")))
         |}]
 
     let more_cells_later =

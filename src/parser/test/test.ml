@@ -1233,8 +1233,8 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 10)) (paragraph (((f.ml (1 0) (1 10)) (bold ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-10:\
-           \nIllegal character or syntax ']}' in '{b ...}' (boldface text)")))
+          ( "File \"f.ml\", line 1, characters 8-10:\
+           \n']}' is not allowed in '{b ...}' (boldface text).")))
         |}]
 
     let degenerate =
@@ -4262,7 +4262,7 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 1)) (unordered light (())))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-1:\
-           \nIllegal character or syntax '' in '-' (bulleted list item)")))
+           \n'' is not allowed in '-' (bulleted list item).")))
         |}]
 
     let immediate_newline =
@@ -4274,8 +4274,8 @@ let%expect_test _ =
            ((f.ml (2 0) (2 3)) (paragraph (((f.ml (2 0) (2 3)) (word foo)))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 2, character 0:\
-           \nIllegal character or syntax '\
-           \n' in '-' (bulleted list item)")))
+           \n'\
+           \n' is not allowed in '-' (bulleted list item).")))
         |}]
 
     let immediate_blank_line =
@@ -4287,9 +4287,9 @@ let%expect_test _ =
            ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word foo)))))))
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 3, character 0:\
-           \nIllegal character or syntax '\
+           \n'\
            \n\
-           \n' in '-' (bulleted list item)")))
+           \n' is not allowed in '-' (bulleted list item).")))
         |}]
 
     let immediate_markup =
@@ -6001,7 +6001,7 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 11)) (unordered heavy (())))))
          (warnings
           ( "File \"f.ml\", line 1, characters 8-10:\
-           \nIllegal character or syntax ']}' in '{li ...}' (list item)")))
+           \n']}' is not allowed in '{li ...}' (list item).")))
         |}]
 
     let right_bracket_in_heading =
@@ -6011,7 +6011,7 @@ let%expect_test _ =
         ((output (((f.ml (1 0) (1 5)) (2 (label ()) ()))))
          (warnings
           ( "File \"f.ml\", line 1, characters 0-5:\
-           \nIllegal character or syntax '{2 ]}' in '{2 ...}' (section heading)")))
+           \n'{2 ]}' is not allowed in '{2 ...}' (section heading).")))
         |}]
 
     let right_bracket_in_author =
