@@ -46,16 +46,15 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 13))
-            (table (syntax heavy) (grid ()) (align "no alignment")))
-           ((f.ml (1 14) (1 21)) (paragraph (((f.ml (1 14) (1 21)) (word content)))))
-           ((f.ml (1 21) (1 22)) (paragraph (((f.ml (1 21) (1 22)) (word })))))))
+          (((f.ml (1 0) (1 22))
+            (table (syntax heavy) (grid ()) (align "no alignment")))))
          (warnings
           ( "File \"f.ml\", line 1, characters 7-13:\
-           \nIllegal character or syntax 'absurd' in '{table ...}' (table)"
-            "File \"f.ml\", line 1, characters 21-22:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'.")))
+           \n'absurd' is not allowed in '{table ...}' (table).\
+           \nSuggestion: Move outside of {table ...}, or inside {tr ...}"
+            "File \"f.ml\", line 1, characters 14-21:\
+           \n'content' is not allowed in '{table ...}' (table).\
+           \nSuggestion: Move outside of {table ...}, or inside {tr ...}")))
         |}]
 
     let bad_row =
@@ -63,19 +62,15 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 18))
+          (((f.ml (1 0) (1 26))
             (table (syntax heavy) (grid ((row ()))) (align "no alignment")))
-           ((f.ml (1 18) (1 25)) (paragraph (((f.ml (1 18) (1 25)) (word content)))))
-           ((f.ml (1 25) (1 26)) (paragraph (((f.ml (1 25) (1 26)) (word })))))
            ((f.ml (1 26) (1 27)) (paragraph (((f.ml (1 26) (1 27)) (word })))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 17-18:\
-           \nIllegal character or syntax ' ' in '{table ...}' (table)"
-            "File \"f.ml\", line 1, characters 11-17:\
+          ( "File \"f.ml\", line 1, characters 11-17:\
            \nIllegal character or syntax 'absurd' in '{tr ...}' (table row)"
-            "File \"f.ml\", line 1, characters 25-26:\
-           \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."
+            "File \"f.ml\", line 1, characters 18-25:\
+           \n'content' is not allowed in '{table ...}' (table).\
+           \nSuggestion: Move outside of {table ...}, or inside {tr ...}"
             "File \"f.ml\", line 1, characters 26-27:\
            \nUnpaired '}' (end of markup).\
            \nSuggestion: try '\\}'.")))
@@ -101,7 +96,8 @@ let%expect_test _ =
             (table (syntax heavy) (grid ((row ((data ()))))) (align "no alignment")))))
          (warnings
           ( "File \"f.ml\", line 1, characters 16-16:\
-           \nIllegal character or syntax '' in '{table ...}' (table)")))
+           \nEnd of text is not allowed in '{table ...}' (table).\
+           \nSuggestion: add '}'.")))
         |}]
 
     let complex_table =

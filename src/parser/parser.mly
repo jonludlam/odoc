@@ -640,27 +640,79 @@ let row_heavy :=
     |> Writer.warning illegal 
   }
 
-let table_heavy :=
-  | grid = delimited_location(TABLE_HEAVY, whitespace*; sequence_nonempty(row_heavy), RIGHT_BRACE); {
-    Loc.map (fun grid -> `Table ((grid, None), `Heavy)) <$> (Writer.sequence_loc grid)
-  }
-  | startpos = located(TABLE_HEAVY); endpos = located(RIGHT_BRACE); { 
-    let span = Loc.(span [startpos.location; endpos.location]) in
-    let inner = Loc.at span @@ `Table (([], None), `Heavy) in
-    return inner
-  }
-  | startpos = located(TABLE_HEAVY); whitespace*; grid = sequence_nonempty(row_heavy)?; errloc = position(error); {
-    let illegal = Writer.InputNeeded (fun input ->
-      let (start_pos, end_pos) as loc = errloc in 
-      let illegal_input = Loc.extract ~input ~start_pos ~end_pos in
-      let span = Loc.of_position loc in
+(* Junk tokens inside {table ...}: any token that is not {tr, }, or END.
+   Matched one-at-a-time so the table keeps consuming until it finds } or END.
+   Returns a description string suitable for use as ~what in Parse_error.not_allowed *)
+let table_junk_token ==
+  | w = Word; { Tokens.describe (Word w) }
+  | _s = Space; { "" }
+  | _s = Single_newline; { "" }
+  | _s = Blank_line; { "" }
+  | MINUS; { Tokens.describe MINUS }
+  | PLUS; { Tokens.describe PLUS }
+  | BAR; { Tokens.describe BAR }
+  | s = Style; { Tokens.describe (Style s) }
+  | c = Code_span; { Tokens.describe (Code_span c) }
+  | c = Code_block; { Tokens.describe (Code_block c) }
+  | c = Code_block_with_output; { Tokens.describe (Code_block_with_output c) }
+  | v = Verbatim; { Tokens.describe (Verbatim v) }
+  | m = Math_span; { Tokens.describe (Math_span m) }
+  | m = Math_block; { Tokens.describe (Math_block m) }
+  | r = Raw_markup; { Tokens.describe (Raw_markup r) }
+  | r = Simple_ref; { Tokens.describe (Simple_ref r) }
+  | r = Ref_with_replacement; { Tokens.describe (Ref_with_replacement r) }
+  | l = Simple_link; { Tokens.describe (Simple_link l) }
+  | l = Link_with_replacement; { Tokens.describe (Link_with_replacement l) }
+  | m = Media; { Tokens.describe (Media m) }
+  | m = Media_with_replacement; { Tokens.describe (Media_with_replacement m) }
+  | l = List; { Tokens.describe (List l) }
+  | LI; { Tokens.describe LI }
+  | DASH; { Tokens.describe DASH }
+  | TABLE_LIGHT; { Tokens.describe TABLE_LIGHT }
+  | TABLE_HEAVY; { Tokens.describe TABLE_HEAVY }
+  | c = Table_cell; { Tokens.describe (Table_cell c) }
+  | h = Section_heading; { Tokens.describe (Section_heading h) }
+  | t = Tag; { Tokens.describe (Tag t) }
+  | t = Tag_with_content; { Tokens.describe (Tag_with_content t) }
+  | MODULES; { Tokens.describe MODULES }
+  | p = Paragraph_style; { Tokens.describe (Paragraph_style p) }
+  | RIGHT_CODE_DELIMITER; { Tokens.describe RIGHT_CODE_DELIMITER }
+
+(* A table heavy item is either a valid row or a junk token that gets warned about *)
+let table_heavy_item ==
+  | row = row_heavy; { Writer.map ~f:Option.some row }
+  | junk = located(table_junk_token); whitespace*; {
+    let what = junk.Loc.value in
+    if what = "" then
+      (* Whitespace tokens - silently skip *)
+      return None
+    else
       let in_what = Tokens.describe TABLE_HEAVY in
-      Parse_error.illegal ~in_what illegal_input span) 
-    in 
-    let span = Loc.(span [startpos.location; (Loc.of_position errloc)]) in
-    Option.value ~default:(return []) grid
-    |> Writer.map ~f:(fun grid -> Loc.at span @@ `Table ((grid, None), `Heavy))
-    |> Writer.warning illegal 
+      let warning = Writer.Warning (
+        Parse_error.not_allowed ~what
+          ~in_what
+          ~suggestion:"Move outside of {table ...}, or inside {tr ...}"
+          junk.Loc.location) in
+      Writer.return_warning None warning
+  }
+
+let table_heavy :=
+  | startpos = located(TABLE_HEAVY); whitespace*; items = list(table_heavy_item); endpos = located(RIGHT_BRACE); {
+    let span = Loc.delimited startpos endpos in
+    Writer.sequence items
+    |> Writer.map ~f:(fun items ->
+      let rows = List.filter_map Fun.id items in
+      Loc.at span @@ `Table ((rows, None), `Heavy))
+  }
+  | startpos = located(TABLE_HEAVY); whitespace*; items = list(table_heavy_item); endpos = located(END); {
+    let span = Loc.delimited startpos endpos in
+    let end_warning = Writer.Warning (
+      Parse_error.end_not_allowed ~in_what:(Tokens.describe TABLE_HEAVY) endpos.Loc.location) in
+    Writer.sequence items
+    |> Writer.map ~f:(fun items ->
+      let rows = List.filter_map Fun.id items in
+      Loc.at span @@ `Table ((rows, None), `Heavy))
+    |> Writer.warning end_warning
   }
 
 (* LIGHT TABLE *)
