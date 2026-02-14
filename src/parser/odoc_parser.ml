@@ -319,6 +319,7 @@ let parse_comment : location:Lexing.position -> text:string -> t =
           offset_to_location ~reversed_newlines ~comment_location:location;
         file = Lexing.(location.pos_fname);
         string_buffer = Buffer.create 256;
+        at_line_start = true;
       }
   in
   let { Writer.value = ast; warnings; escaped_blocks } =

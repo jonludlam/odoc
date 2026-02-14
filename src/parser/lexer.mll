@@ -169,6 +169,7 @@ type input = {
   offset_to_location : int -> Loc.point;
   mutable warnings : Warning.t list;
   string_buffer : Buffer.t;
+  mutable at_line_start : bool;
 }
 
 type math_kind =
@@ -541,7 +542,7 @@ and reference_content input opening_delimiter start_offset content_offset buffer
         buffer 
         lexbuf }
 
-and token input = parse
+and token_raw input = parse
   | horizontal_space* eof
     { END }
 
@@ -555,7 +556,7 @@ and token input = parse
   | (horizontal_space* (newline as ws))
     {
       Lexing.new_line lexbuf;
-      Single_newline ws 
+      Single_newline ws
     }
 
   | (horizontal_space+ as ws)
@@ -847,7 +848,7 @@ and token input = parse
 
   | '\r'
     { warning lexbuf input Parse_error.stray_cr;
-      token input lexbuf }
+      token_raw input lexbuf }
 
 and code_span buffer nesting_level start_offset input = parse
   | ']'
@@ -1207,3 +1208,17 @@ and code_block allow_result_block start_offset content_offset metadata buffer de
         input
         lexbuf
     }
+
+{
+let token input lexbuf =
+  let tok = token_raw input lexbuf in
+  let was_at_line_start = input.at_line_start in
+  (match tok with
+   | Single_newline _ | Blank_line _ -> input.at_line_start <- true
+   | Space _ -> () (* preserve at_line_start through horizontal whitespace *)
+   | _ -> input.at_line_start <- false);
+  match tok with
+  | MINUS when was_at_line_start -> MINUS_AT_LINE_START
+  | PLUS when was_at_line_start -> PLUS_AT_LINE_START
+  | _ -> tok
+}

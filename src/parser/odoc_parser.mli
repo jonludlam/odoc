@@ -27,6 +27,7 @@ module Tester : sig
       offset_to_location : int -> Loc.point;
       mutable warnings : Warning.t list;
       string_buffer : Buffer.t;
+      mutable at_line_start : bool;
     }
 
     val token : input -> Lexing.lexbuf -> Parser.token

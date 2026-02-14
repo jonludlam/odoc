@@ -371,6 +371,7 @@ let run_test (label, case) =
             ~comment_location:lexbuf.lex_curr_p;
         file;
         string_buffer = Buffer.create 256;
+        at_line_start = true;
       }
   in
   let failure_index = ref (-1) in

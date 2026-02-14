@@ -67,6 +67,8 @@ type token =
   | Table_cell of Ast.table_cell_kind (* '{td' *)
   | MINUS (* '-' *)
   | PLUS (* '+' *)
+  | MINUS_AT_LINE_START (* '-' at start of a line *)
+  | PLUS_AT_LINE_START (* '+' at start of a line *)
   | BAR (* '|' *)
   | Section_heading of (int * string option) with_start_point (* '{2 Foo}' *)
   | Tag of tag (* '@author Fay Carsons' *)
@@ -154,8 +156,8 @@ let print : token -> string = function
   | TABLE_ROW -> "'{tr'"
   | Table_cell `Header -> "'{th'"
   | Table_cell `Data -> "'{td'"
-  | MINUS -> "'-'"
-  | PLUS -> "'+'"
+  | MINUS | MINUS_AT_LINE_START -> "'-'"
+  | PLUS | PLUS_AT_LINE_START -> "'+'"
   | BAR -> "'|'"
   | Section_heading { inner = level, label; _ } ->
       let label = match label with None -> "" | Some label -> ":" ^ label in
@@ -229,8 +231,8 @@ let describe : token -> string = function
   | TABLE_ROW -> "'{tr ...}' (table row)"
   | Table_cell `Header -> "'{th ... }' (table header cell)"
   | Table_cell `Data -> "'{td ... }' (table data cell)"
-  | MINUS -> "'-' (bulleted list item)"
-  | PLUS -> "'+' (numbered list item)"
+  | MINUS | MINUS_AT_LINE_START -> "'-' (bulleted list item)"
+  | PLUS | PLUS_AT_LINE_START -> "'+' (numbered list item)"
   | BAR -> "'|'"
   | Section_heading { inner = level, _; _ } ->
       Printf.sprintf "'{%i ...}' (section heading)" level
