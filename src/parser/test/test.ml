@@ -1012,7 +1012,10 @@ let%expect_test _ =
           (((f.ml (1 0) (1 6))
             (paragraph
              (((f.ml (1 0) (1 6)) (bold (((f.ml (1 2) (1 5)) (word foo))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 0-2:\
+           \n'{b' should be followed by space, a tab, or a new line.")))
+        |}]
 
     let trailing_whitespace =
       test "{b foo }";
@@ -1189,10 +1192,13 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 2)) (paragraph (((f.ml (1 0) (1 2)) (bold ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 2-2:\
+          ( "File \"f.ml\", line 1, characters 0-2:\
+           \n'{b' should be followed by space, a tab, or a new line."
+            "File \"f.ml\", line 1, characters 2-2:\
            \nEnd of text is not allowed in '{b ...}' (boldface text)."
             "File \"f.ml\", line 1, characters 0-2:\
-           \n'{b ...}' (boldface text) should not be empty."))) |}]
+           \n'{b ...}' (boldface text) should not be empty.")))
+        |}]
 
     let end_of_comment =
       test "{b foo";
@@ -1217,7 +1223,10 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, characters 3-10:\
            \n'{[...]}' (code block) is not allowed in '{b ...}' (boldface text)."
             "File \"f.ml\", line 1, characters 0-2:\
-           \n'{b ...}' (boldface text) should not be empty."))) |}]
+           \n'{b ...}' (boldface text) should not be empty."
+            "File \"f.ml\", line 1, characters 3-10:\
+           \n'{[...]}' (code block) should begin on its own line.")))
+        |}]
 
     let degenerate =
       test "{b}";
@@ -2498,7 +2507,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
            ((f.ml (1 4) (1 18)) (modules (((f.ml (1 14) (1 17)) Foo))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 4-18:\
+           \n'{!modules ...}' should begin on its own line.")))
+        |}]
 
     let followed_by_word =
       test "{!modules:Foo} foo";
@@ -2507,7 +2519,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 14)) (modules (((f.ml (1 10) (1 13)) Foo))))
            ((f.ml (1 15) (1 18)) (paragraph (((f.ml (1 15) (1 18)) (word foo)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 15-18:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let in_list =
       test "- {!modules:Foo}";
@@ -2758,7 +2773,8 @@ let%expect_test _ =
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
            ((f.ml (1 7) (1 9)) (paragraph (((f.ml (1 7) (1 9)) (word {)))))))
          (warnings ( "File \"f.ml\", line 1, characters 7-9:\
-                    \n''}'': bad markup."))) |}]
+                    \n''}'': bad markup.")))
+        |}]
 
     let nested_bracket =
       test "{[]]}";
@@ -2837,7 +2853,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
            ((f.ml (1 8) (1 15)) (code_block ((f.ml (1 10) (1 13)) bar)))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-15:\
+           \n'{[...]}' (code block) should begin on its own line.")))
+        |}]
 
     let two =
       test "{[foo]}\n{[bar]}";
@@ -2864,7 +2883,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
            ((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word bar)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-11:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let preceded_by_words =
       test "foo {[bar]}";
@@ -2873,7 +2895,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
            ((f.ml (1 4) (1 11)) (code_block ((f.ml (1 6) (1 9)) bar)))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 4-11:\
+           \n'{[...]}' (code block) should begin on its own line.")))
+        |}]
 
     let preceded_by_paragraph =
       test "foo\n{[bar]}";
@@ -2956,7 +2981,10 @@ let%expect_test _ =
            ((f.ml (2 12) (2 14)) (paragraph (((f.ml (2 12) (2 14)) (word {)))))))
          (warnings
           ( "File \"f.ml\", line 2, characters 12-14:\
-           \n''}'': bad markup."))) |}]
+           \n''}'': bad markup."
+            "File \"f.ml\", line 1, character 14 to line 2, character 12:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let code_block_with_meta =
       test "{@ocaml env=f1 version>=4.06 [code goes here]}";
@@ -3653,7 +3681,10 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 11-12:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'."
+            "File \"f.ml\", line 1, characters 10-11:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let nested_closer_with_word =
       test "{v {dev} v}";
@@ -3714,7 +3745,10 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 9)) (verbatim foo)) ((f.ml (1 10) (1 19)) (verbatim bar))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 10-19:\
+           \n'{v ... v}' (verbatim text) should begin on its own line.")))
+        |}]
 
     let two =
       test "{v foo v}\n{v bar v}";
@@ -3739,7 +3773,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 9)) (verbatim foo))
            ((f.ml (1 10) (1 13)) (paragraph (((f.ml (1 10) (1 13)) (word bar)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 10-13:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let preceded_by_words =
       test "foo {v bar v}";
@@ -3748,7 +3785,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 3)) (paragraph (((f.ml (1 0) (1 3)) (word foo)))))
            ((f.ml (1 4) (1 13)) (verbatim bar))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 4-13:\
+           \n'{v ... v}' (verbatim text) should begin on its own line.")))
+        |}]
 
     let preceded_by_paragraph =
       test "foo\n{v bar v}";
@@ -4103,7 +4143,8 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, character 0 to line 2, character 0:\
            \n'\
-           \n' is not allowed in '-' (bulleted list item)."))) |}]
+           \n' is not allowed in '-' (bulleted list item).")))
+        |}]
 
     let immediate_blank_line =
       test "-\n\nfoo";
@@ -4116,7 +4157,8 @@ let%expect_test _ =
           ( "File \"f.ml\", line 1, character 0 to line 3, character 0:\
            \n'\
            \n\
-           \n' is not allowed in '-' (bulleted list item)."))) |}]
+           \n' is not allowed in '-' (bulleted list item).")))
+        |}]
 
     let immediate_markup =
       test "-{b foo}";
@@ -4139,7 +4181,10 @@ let%expect_test _ =
            ((f.ml (1 8) (1 13))
             (unordered light
              ((((f.ml (1 10) (1 13)) (paragraph (((f.ml (1 10) (1 13)) (word bar)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-13:\
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -4330,7 +4375,10 @@ let%expect_test _ =
           (((f.ml (1 0) (1 12))
             (unordered heavy
              ((((f.ml (1 7) (1 10)) (paragraph (((f.ml (1 7) (1 10)) (word foo)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 4-7:\
+           \n'{li ...}' should be followed by space, a tab, or a new line.")))
+        |}]
 
     let li_syntax_followed_by_newline =
       test "{ul {li\nfoo}}";
@@ -4456,7 +4504,10 @@ let%expect_test _ =
            ((f.ml (1 8) (1 21))
             (unordered heavy
              ((((f.ml (1 16) (1 19)) (paragraph (((f.ml (1 16) (1 19)) (word bar)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-21:\
+           \n'{ul ...}' (bulleted list) should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -4585,7 +4636,8 @@ let%expect_test _ =
            ((f.ml (1 16) (1 31))
             (@deprecated
              ((f.ml (1 28) (1 31)) (paragraph (((f.ml (1 28) (1 31)) (word bar)))))))))
-         (warnings ())) |}]
+         (warnings ()))
+        |}]
 
     let nested_in_self_at_start =
       test "@deprecated @deprecated foo";
@@ -4596,7 +4648,8 @@ let%expect_test _ =
            ((f.ml (1 12) (1 27))
             (@deprecated
              ((f.ml (1 24) (1 27)) (paragraph (((f.ml (1 24) (1 27)) (word foo)))))))))
-         (warnings ())) |}]
+         (warnings ()))
+        |}]
 
     let preceded_by_paragraph =
       test "foo\n@deprecated";
@@ -4699,7 +4752,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
            ((f.ml (1 8) (1 19)) (@deprecated))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-19:\
+           \n'@deprecated' should begin on its own line.")))
+        |}]
 
     let followed_by_section =
       test "@deprecated foo\n{2 Bar}";
@@ -4812,7 +4868,8 @@ let%expect_test _ =
         {|
         ((output
           (((f.ml (1 0) (1 10)) (@param foo)) ((f.ml (1 11) (1 21)) (@param bar))))
-         (warnings ())) |}]
+         (warnings ()))
+        |}]
 
     let preceded_by_paragraph =
       test "foo\n@param bar";
@@ -4840,7 +4897,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
            ((f.ml (1 8) (1 18)) (@param foo))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-18:\
+           \n'@param' should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -5015,7 +5075,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) (code_block ((f.ml (1 2) (1 5)) foo)))
            ((f.ml (1 8) (1 18)) (@see url foo))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-18:\
+           \n'@see' should begin on its own line.")))
+        |}]
 
     let url_attempted_nested_closer =
       test "@see <foo>bar>";
@@ -5282,7 +5345,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) @inline)
            ((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-11:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let followed_by_paragraph =
       test "@inline\nfoo";
@@ -5309,7 +5375,10 @@ let%expect_test _ =
            ((f.ml (1 8) (1 13))
             (unordered light
              ((((f.ml (1 10) (1 13)) (paragraph (((f.ml (1 10) (1 13)) (word foo)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-13:\
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -5340,7 +5409,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 5)) @open)
            ((f.ml (1 6) (1 9)) (paragraph (((f.ml (1 6) (1 9)) (word foo)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 6-9:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let followed_by_paragraph =
       test "@open\nfoo";
@@ -5367,7 +5439,10 @@ let%expect_test _ =
            ((f.ml (1 6) (1 11))
             (unordered light
              ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 6-11:\
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -5399,7 +5474,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) @closed)
            ((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-11:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let followed_by_paragraph =
       test "@closed\nfoo";
@@ -5426,7 +5504,10 @@ let%expect_test _ =
            ((f.ml (1 8) (1 13))
             (unordered light
              ((((f.ml (1 10) (1 13)) (paragraph (((f.ml (1 10) (1 13)) (word foo)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-13:\
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -5458,7 +5539,10 @@ let%expect_test _ =
         ((output
           (((f.ml (1 0) (1 7)) @hidden)
            ((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-11:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let followed_by_paragraph =
       test "@hidden\nfoo";
@@ -5485,7 +5569,10 @@ let%expect_test _ =
            ((f.ml (1 8) (1 13))
             (unordered light
              ((((f.ml (1 10) (1 13)) (paragraph (((f.ml (1 10) (1 13)) (word foo)))))))))))
-         (warnings ())) |}]
+         (warnings
+          ( "File \"f.ml\", line 1, characters 8-13:\
+           \n'-' (bulleted list item) should begin on its own line.")))
+        |}]
   end in
   ()
 
@@ -5539,7 +5626,8 @@ let%expect_test _ =
            \nSuggestion: escape the brace with '\\{'."
             "File \"f.ml\", line 1, characters 1-2:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'.")))
+        |}]
 
     let left_space =
       test "{ foo}";
@@ -5605,7 +5693,8 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 3-4:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'.")))
+        |}]
 
     let multiple_right_brace =
       test "foo } bar } baz";
@@ -5623,7 +5712,12 @@ let%expect_test _ =
            \nSuggestion: try '\\}'."
             "File \"f.ml\", line 1, characters 9-11:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'."
+            "File \"f.ml\", line 1, characters 6-9:\
+           \nParagraph should begin on its own line."
+            "File \"f.ml\", line 1, characters 12-15:\
+           \nParagraph should begin on its own line.")))
+        |}]
 
     let right_brace_in_list_item =
       test "- foo}";
@@ -5637,7 +5731,8 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 5-6:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'.")))
+        |}]
 
     let right_brace_in_code_span =
       test "[foo}]";
@@ -5674,7 +5769,8 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 11-13:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'.")))
+        |}]
 
     let right_bracket =
       test "]";
@@ -5733,10 +5829,13 @@ let%expect_test _ =
         {|
         ((output (((f.ml (1 0) (1 4)) (paragraph (((f.ml (1 0) (1 4)) (bold ())))))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 0-4:\
+          ( "File \"f.ml\", line 1, characters 0-2:\
+           \n'{b' should be followed by space, a tab, or a new line."
+            "File \"f.ml\", line 1, characters 0-4:\
            \n'{b ...}' (boldface text) should not be empty."
             "File \"f.ml\", line 1, characters 0-4:\
-           \n']}' is not allowed in '{b ...}' (boldface text)."))) |}]
+           \n']}' is not allowed in '{b ...}' (boldface text).")))
+        |}]
 
     let right_bracket_in_verbatim =
       test "{v ] v}";
@@ -5965,7 +6064,8 @@ let%expect_test _ =
          (warnings
           ( "File \"f.ml\", line 1, characters 2-3:\
            \nUnpaired '}' (end of markup).\
-           \nSuggestion: try '\\}'."))) |}]
+           \nSuggestion: try '\\}'.")))
+        |}]
   end in
   ()
 

@@ -155,6 +155,68 @@ let splice_escaped_blocks (ast : Ast.t) escaped_blocks =
     in
     result @ trailing
 
+(* Describe a block element for "should begin on its own line" warnings. *)
+let describe_tag : Ast.tag -> string = function
+  | `Author _ -> "'@author'"
+  | `Deprecated _ -> "'@deprecated'"
+  | `Param _ -> "'@param'"
+  | `Raise _ -> "'@raise'"
+  | `Return _ -> "'@return'"
+  | `See _ -> "'@see'"
+  | `Since _ -> "'@since'"
+  | `Before _ -> "'@before'"
+  | `Version _ -> "'@version'"
+  | `Canonical _ -> "'@canonical'"
+  | `Inline -> "'@inline'"
+  | `Open -> "'@open'"
+  | `Closed -> "'@closed'"
+  | `Hidden -> "'@hidden'"
+  | `Children_order _ -> "'@children_order'"
+  | `Toc_status _ -> "'@toc_status'"
+  | `Order_category _ -> "'@order_category'"
+  | `Short_title _ -> "'@short_title'"
+
+let describe_block_element : Ast.block_element -> string = function
+  | `Paragraph _ -> "paragraph"
+  | `Tag tag -> describe_tag tag
+  | `Heading _ -> "section heading"
+  | #Ast.nestable_block_element as e -> Tokens.describe_nestable_block e
+
+(* Check consecutive top-level block elements and warn if they share a line.
+   The warning fires when an element starts on the same line as the previous
+   element ended, AND the element doesn't start at column 0 (beginning of line).
+   Tag-after-tag is excluded since master handles that with "not allowed" warnings. *)
+let warn_should_begin_on_own_line (ast : Ast.t) : Warning.t list =
+  let is_markup_char = function
+    | '{' | '}' | '[' | ']' | '@' | '-' | '+' -> true
+    | _ -> false
+  in
+  let is_error_recovery_paragraph = function
+    | `Paragraph [ { Loc.value = `Word w; _ } ] ->
+        String.length w > 0 && String.for_all is_markup_char w
+    | _ -> false
+  in
+  let is_tag = function `Tag _ -> true | _ -> false in
+  let rec check acc prev_end_line prev_is_tag = function
+    | [] -> List.rev acc
+    | (elem : Ast.block_element Loc.with_location) :: rest ->
+      let start = elem.location.start in
+      let cur_is_tag = is_tag elem.value in
+      let acc =
+        if prev_end_line >= 0
+           && start.line = prev_end_line
+           && start.column > 0
+           && not (cur_is_tag && prev_is_tag)
+           && not (is_error_recovery_paragraph elem.value)
+        then
+          let what = describe_block_element elem.value in
+          Parse_error.should_begin_on_its_own_line ~what elem.location :: acc
+        else acc
+      in
+      check acc elem.location.end_.line cur_is_tag rest
+  in
+  check [] (-1) false ast
+
 (* The main entry point for this module *)
 let parse_comment : location:Lexing.position -> text:string -> t =
  fun ~location ~text ->
@@ -189,9 +251,10 @@ let parse_comment : location:Lexing.position -> text:string -> t =
     Writer.run ~input:text @@ Parser.main (Lexer.token lexer_state) lexbuf
   in
   let ast = splice_escaped_blocks ast escaped_blocks in
+  let own_line_warnings = warn_should_begin_on_own_line ast in
   {
     ast;
-    warnings = List.rev lexer_state.warnings @ warnings;
+    warnings = List.rev lexer_state.warnings @ warnings @ own_line_warnings;
     reversed_newlines;
     original_pos = location;
   }

@@ -223,6 +223,28 @@ let warning =
   with_location_adjustments @@ fun _ input location error ->
     input.warnings <- error location :: input.warnings
 
+let check_followed_by_whitespace input lexbuf ~what =
+  let pos = Lexing.lexeme_end lexbuf in
+  let len = lexbuf.Lexing.lex_buffer_len in
+  let needs_warning =
+    if pos >= len then true  (* EOF — not followed by whitespace *)
+    else
+      match Bytes.get lexbuf.Lexing.lex_buffer pos with
+      | ' ' | '\t' | '\n' | '\r' | '}' -> false
+      | _ -> true
+  in
+  if needs_warning then begin
+    let start = Lexing.lexeme_start lexbuf in
+    let location = {
+      Loc.file = input.file;
+      start = input.offset_to_location start;
+      end_ = input.offset_to_location pos;
+    } in
+    input.warnings <-
+      Parse_error.should_be_followed_by_whitespace ~what location
+      :: input.warnings
+  end
+
 (* From ocaml.git/parsing/lexer.mll *)
 let digit_value c =
   match c with
@@ -562,13 +584,16 @@ and token input = parse
     { PLUS }
 
   | "{b"
-    { Style Bold  }
+    { check_followed_by_whitespace input lexbuf ~what:"'{b'";
+      Style Bold  }
 
   | "{i"
-    { Style Italic }
+    { check_followed_by_whitespace input lexbuf ~what:"'{i'";
+      Style Italic }
 
   | "{e"
-    { Style Emphasis }
+    { check_followed_by_whitespace input lexbuf ~what:"'{e'";
+      Style Emphasis }
 
   | "{L"
     { Paragraph_style { inner = Left; start = input.offset_to_location @@ Lexing.lexeme_start lexbuf } }
@@ -674,7 +699,8 @@ and token input = parse
     { List Ordered }
 
   | "{li"
-    { LI }
+    { check_followed_by_whitespace input lexbuf ~what:"'{li ...}'";
+      LI }
 
   | "{-"
     { DASH }
