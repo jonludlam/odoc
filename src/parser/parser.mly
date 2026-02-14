@@ -261,6 +261,31 @@ let style_inline_element :=
   | ~ = symbol_as_word(symbols); <>
   | s = located(Blank_line); { return @@ Loc.map (fun s -> `Space s) s }
 
+(* Block-level tokens that are self-contained (consumed as a single token).
+   Returns (located nestable_block_element, description_string) for use in
+   error recovery when a block appears inside an inline context. *)
+let block_element_token ==
+  | tok = located(Code_block); {
+    let Tokens.{ inner; start } = tok.Loc.value in
+    let Tokens.{ metadata; delimiter; content } = inner in
+    let meta = Option.map (fun Tokens.{ language_tag; tags } -> Ast.{ language = language_tag; tags }) metadata in
+    let what = Tokens.describe @@ Code_block tok.Loc.value in
+    let span = { tok.Loc.location with start } in
+    (Loc.at span @@ `Code_block Ast.{ meta; delimiter; content; output = None }, what)
+  }
+  | tok = located(Verbatim); {
+    let Tokens.{ start; inner } = tok.Loc.value in
+    let what = Tokens.describe @@ Verbatim tok.Loc.value in
+    let span = { tok.Loc.location with start } in
+    (Loc.at span @@ `Verbatim inner, what)
+  }
+  | tok = located(Math_block); {
+    let Tokens.{ start; inner } = tok.Loc.value in
+    let what = Tokens.describe @@ Math_block tok.Loc.value in
+    let span = { tok.Loc.location with start } in
+    (Loc.at span @@ `Math_block inner, what)
+  }
+
 let style :=
   | style = located(Style); children = sequence(style_inline_element); endpos = located(RIGHT_BRACE); { 
     let span = Loc.delimited style endpos in
@@ -297,6 +322,36 @@ let style :=
     return inner 
     |> Writer.warning not_allowed
     |> Writer.warning should_not_be_empty
+  }
+  (* Block-level token inside style: close the style, emit the block as an
+     EscapedBlock so it can be spliced into the AST as a sibling. *)
+  | style = located(Style); children = sequence(style_inline_element); block = block_element_token; {
+    let (block_located, block_what) = block in
+    let in_what = Tokens.describe @@ Style style.Loc.value in
+    let not_allowed = Writer.Warning (
+      Parse_error.not_allowed ~what:block_what ~in_what block_located.Loc.location)
+    in
+    let escaped = Writer.EscapedBlock block_located in
+    let* c = children in
+    let normalized = normalize_inline c in
+    let style_span =
+      match normalized with
+      | [] -> style.Loc.location
+      | _ ->
+        let children_locs = List.map Loc.location normalized in
+        Loc.span (style.Loc.location :: children_locs)
+    in
+    let node = Loc.at style_span @@ `Styled (ast_style style.Loc.value, normalized) in
+    let result = return node in
+    let result =
+      if not (not_empty normalized) then
+        let what = Tokens.describe @@ Style style.Loc.value in
+        Writer.warning (Writer.Warning (Parse_error.should_not_be_empty ~what style_span)) result
+      else result
+    in
+    result
+    |> Writer.warning not_allowed
+    |> Writer.warning escaped
   }
   | style = located(Style); children = sequence_nonempty(style_inline_element); errloc = position(error); {
     let span = Loc.span [style.Loc.location; Loc.of_position errloc] in

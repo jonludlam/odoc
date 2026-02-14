@@ -1231,10 +1231,13 @@ let%expect_test _ =
       [%expect
         {|
         ((output
-          (((f.ml (1 0) (1 10)) (paragraph (((f.ml (1 0) (1 10)) (bold ())))))))
+          (((f.ml (1 0) (1 2)) (paragraph (((f.ml (1 0) (1 2)) (bold ())))))
+           ((f.ml (1 3) (1 10)) (code_block ((f.ml (1 5) (1 8)) foo)))))
          (warnings
-          ( "File \"f.ml\", line 1, characters 8-10:\
-           \n']}' is not allowed in '{b ...}' (boldface text).")))
+          ( "File \"f.ml\", line 1, characters 3-10:\
+           \n'{[...]}' (code block) is not allowed in '{b ...}' (boldface text)."
+            "File \"f.ml\", line 1, characters 0-2:\
+           \n'{b ...}' (boldface text) should not be empty.")))
         |}]
 
     let degenerate =

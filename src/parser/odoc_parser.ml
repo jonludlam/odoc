@@ -85,7 +85,11 @@ module Tester = struct
   type token = Tokens.token
   let is_EOI = function Tokens.END -> true | _ -> false
   let pp_warning = Warning.to_string
-  let run = Writer.run
+  let run ~input w =
+    let { Writer.value; warnings; escaped_blocks = _ } =
+      Writer.run ~input w
+    in
+    (value, warnings)
   let reversed_newlines = reversed_newlines
   let offset_to_location = offset_to_location
   let string_of_token = Tokens.describe
@@ -111,6 +115,45 @@ let position_of_point : t -> Loc.point -> Lexing.position =
   let pos_cnum = point.column + pos_bol in
   let pos_fname = original_pos.pos_fname in
   { Lexing.pos_bol; pos_lnum; pos_cnum; pos_fname }
+
+(* [splice_escaped_blocks ast blocks] inserts block-level elements that were
+   consumed during error recovery in inline contexts (e.g., a code block inside
+   {b ...}) back into the AST at the appropriate positions. Each escaped block
+   is inserted immediately after the block element whose span contains it. *)
+let splice_escaped_blocks (ast : Ast.t) escaped_blocks =
+  match escaped_blocks with
+  | [] -> ast
+  | _ ->
+    let remaining = ref escaped_blocks in
+    let result =
+      List.fold_right
+        (fun (elem : Ast.block_element Loc.with_location) acc ->
+          let after =
+            let rec take_while_inside acc = function
+              | [] -> (List.rev acc, [])
+              | (block : Ast.nestable_block_element Loc.with_location) :: rest ->
+                if block.location.start.line >= elem.location.start.line
+                   && block.location.start.line <= elem.location.end_.line then
+                  take_while_inside
+                    ({ block with value = (block.value :> Ast.block_element) } :: acc)
+                    rest
+                else (List.rev acc, block :: rest)
+            in
+            let (taken, rest) = take_while_inside [] !remaining in
+            remaining := rest;
+            taken
+          in
+          elem :: after @ acc)
+        ast []
+    in
+    (* Any remaining blocks go at the end *)
+    let trailing =
+      List.map
+        (fun (b : Ast.nestable_block_element Loc.with_location) ->
+          { b with value = (b.value :> Ast.block_element) })
+        !remaining
+    in
+    result @ trailing
 
 (* The main entry point for this module *)
 let parse_comment : location:Lexing.position -> text:string -> t =
@@ -142,9 +185,10 @@ let parse_comment : location:Lexing.position -> text:string -> t =
         string_buffer = Buffer.create 256;
       }
   in
-  let ast, warnings =
+  let { Writer.value = ast; warnings; escaped_blocks } =
     Writer.run ~input:text @@ Parser.main (Lexer.token lexer_state) lexbuf
   in
+  let ast = splice_escaped_blocks ast escaped_blocks in
   {
     ast;
     warnings = List.rev lexer_state.warnings @ warnings;

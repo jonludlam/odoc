@@ -40,6 +40,9 @@ let error_recovery =
     ("End not allowed in table", "{t \n| -- | :--: |\n| a | b");
     ("Empty modules", "{!modules: }");
     ("EOI in modules", "{!modules: Foo Bar");
+    ("Code block in bold", "{b {[foo]}");
+    ("Verbatim in italic", "{i {v bar v}");
+    ("Code block in bold with content", "{b hello {[foo]}");
   ]
 
 let open_t =
@@ -380,7 +383,7 @@ let run_test (label, case) =
     tok
   in
   try
-    let ast, warnings = Parser.run ~input:case @@ Parser.main get_tok lexbuf in
+    let (ast, warnings) = Parser.run ~input:case @@ Parser.main get_tok lexbuf in
     let warnings = warnings @ input.warnings in
     let output = Format.asprintf "%a" parser_output (ast, warnings) in
     Ok (label, output)
