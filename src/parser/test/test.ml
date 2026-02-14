@@ -5775,6 +5775,11 @@ let%expect_test _ =
       [%expect
         {| ((output (((f.ml (1 0) (1 10)) (verbatim foo})))) (warnings ())) |}]
 
+    let basic_author =
+      test "@author Foo Bar";
+      [%expect
+        {| ((output (((f.ml (1 0) (1 15)) (@author "Foo Bar")))) (warnings ())) |}]
+
     let right_brace_in_author =
       test "@author Foo}";
       [%expect

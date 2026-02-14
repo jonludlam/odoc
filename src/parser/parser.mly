@@ -83,9 +83,9 @@ let main :=
 
 let toplevel :=
   | block = nestable_block_element(paragraph); any_whitespace*; { (block :> Ast.block_element Loc.with_location Writer.t) }
-  | t = tag; line_break?; { Writer.map ~f:(fun loc -> Loc.{ loc with value = `Tag loc.value }) t }
-  | ~ = section_heading; line_break*; <>
-  | ~ = toplevel_error; line_break*; <>
+  | t = tag; any_whitespace*; { Writer.map ~f:(fun loc -> Loc.{ loc with value = `Tag loc.value }) t }
+  | ~ = section_heading; any_whitespace*; <>
+  | ~ = toplevel_error; any_whitespace*; <>
 
 (* Tokens which cannot begin any block element *)
 (* TODO: This should have cases for block elements on the same line:

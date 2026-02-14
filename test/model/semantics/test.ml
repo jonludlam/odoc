@@ -283,8 +283,7 @@ let%expect_test _ =
     let multiline_target =
       test "{%\n:foo%}";
       [%expect
-        {|
-        {"value":[{"`Paragraph":[{"`Code_span":"foo"}]}],"warnings":["File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml\", line 1, character 0 to line 2, character 6:\n'{%\n:': bad raw markup target.\nSuggestion: try '{%html:...%}'."]} |}]
+        {| {"value":[{"`Paragraph":[{"`Code_span":"foo"}]}],"warnings":["File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml\", line 1, characters 0-9:\n'{%\n:': bad raw markup target.\nSuggestion: try '{%html:...%}'."]} |}]
 
     let percent_in_target =
       test "{%%:%}";
@@ -477,14 +476,12 @@ let%expect_test _ =
     let no_leading_whitespace =
       test "{2Foo}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]}],"warnings":["File \"f.ml\", line 1, characters 0-2:\n'{2' should be followed by space, a tab, or a new line."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]}],"warnings":[]} |}]
 
     let no_leading_whitespace_h3 =
       test "{3Foo}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsubsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]}],"warnings":["File \"f.ml\", line 1, characters 0-2:\n'{3' should be followed by space, a tab, or a new line."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsubsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]}],"warnings":[]} |}]
 
     let leading_newline =
       test "{2\nFoo}";
@@ -501,14 +498,12 @@ let%expect_test _ =
     let leading_blank_line =
       test "{2\n\nFoo}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]}],"warnings":["File \"f.ml\", line 2, characters 0-0:\nBlank line is not allowed in '{2 ...}' (section heading)."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]},{"`Paragraph":[{"`Word":"Foo"}]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, character 0 to line 3, character 0:\n'{2\n\n' is not allowed in '{2 ...}' (section heading).","File \"f.ml\", line 3, characters 3-4:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'."]} |}]
 
     let leading_blank_line_h3 =
       test "{3\n\nFoo}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsubsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]}],"warnings":["File \"f.ml\", line 2, characters 0-0:\nBlank line is not allowed in '{3 ...}' (section heading)."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsubsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]},{"`Paragraph":[{"`Word":"Foo"}]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, character 0 to line 3, character 0:\n'{3\n\n' is not allowed in '{3 ...}' (section heading).","File \"f.ml\", line 3, characters 3-4:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'."]} |}]
 
     let trailing_whitespace =
       test "{2 Foo }";
@@ -525,8 +520,7 @@ let%expect_test _ =
     let trailing_blank_line =
       test "{2 Foo\n\n}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo-"]},[{"`Word":"Foo"},"`Space"]]}],"warnings":["File \"f.ml\", line 2, characters 0-0:\nBlank line is not allowed in '{2 ...}' (section heading)."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, character 0 to line 3, character 0:\n'{2 Foo\n\n' is not allowed in '{2 ...}' (section heading).","File \"f.ml\", line 3, characters 0-1:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'."]} |}]
 
     let nested_markup =
       test "{2 [foo]}";
@@ -567,14 +561,12 @@ let%expect_test _ =
     let nested_heading =
       test "{2 {2 Foo}}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]},{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[{"`Word":"Foo"}]]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, characters 3-5:\n'{2 ...}' (section heading) is not allowed in '{2 ...}' (section heading).","File \"f.ml\", line 1, characters 0-2:\n'{2 ...}' (section heading) should not be empty.","File \"f.ml\", line 1, characters 3-5:\n'{2 ...}' (section heading) should begin on its own line.","File \"f.ml\", line 1, characters 10-11:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml\", line 1, characters 3-10:\n'{2': heading level should be lower than top heading level '2'."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]},{"`Paragraph":[{"`Word":"Foo"}]},{"`Paragraph":[{"`Word":"}"}]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, characters 0-5:\n'{2 {2' is not allowed in '{2 ...}' (section heading).","File \"f.ml\", line 1, characters 9-10:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml\", line 1, characters 10-11:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml\", line 1, characters 6-9:\nParagraph should begin on its own line."]} |}]
 
     let in_list =
       test "- {2 Foo}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"Foo"}]}]]]}],"warnings":["File \"f.ml\", line 1, characters 2-4:\n'{2 ...}' (section heading) is not allowed in '-' (bulleted list item).\nSuggestion: move '{2' outside of any other markup.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[]]]},{"`Paragraph":[{"`Word":"Foo"}]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, characters 0-4:\n'{2' is not allowed in '-' (bulleted list item).","File \"f.ml\", line 1, characters 8-9:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml\", line 1, characters 5-8:\nParagraph should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let followed_by_junk =
       test "{2 Foo} bar";
@@ -585,8 +577,7 @@ let%expect_test _ =
     let preceded_by_junk =
       test "foo {2 Bar}";
       [%expect
-        {|
-        {"value":[{"`Paragraph":[{"`Word":"foo"},"`Space"]},{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"bar"]},[{"`Word":"Bar"}]]}],"warnings":["File \"f.ml\", line 1, characters 4-6:\n'{2 ...}' (section heading) should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`Paragraph":[{"`Word":"foo"}]},{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"bar"]},[{"`Word":"Bar"}]]}],"warnings":["File \"f.ml\", line 1, characters 4-11:\nSection heading should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let followed_by_block =
       test "{2 Foo}\nbar";
@@ -615,26 +606,22 @@ let%expect_test _ =
     let whitespace_after_colon =
       test "{2: foo Bar}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},"foo-bar"]},[{"`Word":"foo"},"`Space",{"`Word":"Bar"}]]}],"warnings":["File \"f.ml\", line 1, characters 0-3:\nHeading label should not be empty."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"true"},{"`Label":[{"`Page":["None","f.ml"]},""]},[{"`Word":"foo"},"`Space",{"`Word":"Bar"}]]}],"warnings":[]} |}]
 
     let label_only =
       test "{2:foo}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"true"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[]]}],"warnings":["File \"f.ml\", line 1, characters 0-6:\n'{2 ...}' (section heading) should not be empty."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"true"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[]]}],"warnings":["File \"f.ml\", line 1, characters 0-7:\n'{2 ...}' (section heading) should not be empty."]} |}]
 
     let label_only_with_whitespace =
       test "{2:foo }";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"true"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[]]}],"warnings":["File \"f.ml\", line 1, characters 0-6:\n'{2 ...}' (section heading) should not be empty."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"true"},{"`Label":[{"`Page":["None","f.ml"]},"foo"]},[]]}],"warnings":["File \"f.ml\", line 1, characters 0-8:\n'{2 ...}' (section heading) should not be empty."]} |}]
 
     let in_list_outside_item =
       test "{ul {2 Foo}}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[]]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, characters 4-6:\n'{2 ...}' (section heading) is not allowed in '{ul ...}' (bulleted list).\nSuggestion: move '{2 ...}' (section heading) outside the list.","File \"f.ml\", line 1, characters 7-10:\n'Foo' is not allowed in '{ul ...}' (bulleted list).\nSuggestion: move 'Foo' into a list item, '{li ...}' or '{- ...}'.","File \"f.ml\", line 1, characters 0-3:\n'{ul ...}' (bulleted list) should not be empty.","File \"f.ml\", line 1, characters 11-12:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[]]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 1, characters 0-11:\n'{ul ...}' (bulleted list) should not be empty.","File \"f.ml\", line 1, characters 7-10:\n'Foo' is not allowed in '{ul ...}' (bulleted list).\nSuggestion: Move into a list item, '{li ...}' or '{- ...}'","File \"f.ml\", line 1, characters 4-6:\n'{2 ...}' (section heading) is not allowed in '{ul ...}' (bulleted list).\nSuggestion: Move into a list item, '{li ...}' or '{- ...}'","File \"f.ml\", line 1, characters 11-12:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let preceded_by_shorthand_list =
       test "- foo\n{2 Bar}";
@@ -645,8 +632,7 @@ let%expect_test _ =
     let nested_in_two_lists =
       test "{ul {li - foo\n{2 Bar}}}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"}]}]]]},{"`Paragraph":[{"`Word":"Bar"}]}]]]}],"warnings":["File \"f.ml\", line 2, characters 0-2:\n'{2 ...}' (section heading) is not allowed in '{li ...}' (list item).\nSuggestion: move '{2' outside of any other markup.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"}]}]]]}]]]},{"`Paragraph":[{"`Word":"}"}]},{"`Paragraph":[{"`Word":"}"}]}],"warnings":["File \"f.ml\", line 2, characters 0-2:\n'{2' is not allowed in '{li ...}' (list item).","File \"f.ml\", line 2, characters 3-6:\n'Bar' is not allowed in '{ul ...}' (bulleted list).\nSuggestion: Move into a list item, '{li ...}' or '{- ...}'","File \"f.ml\", line 2, characters 7-8:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml\", line 2, characters 8-9:\nUnpaired '}' (end of markup).\nSuggestion: try '\\}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let bad_level_long_number =
       test "{22 Foo}";
@@ -721,14 +707,12 @@ let%expect_test _ =
     let empty =
       test "@author";
       [%expect
-        {|
-        {"value":[{"`Tag":{"`Author":""}}],"warnings":["File \"f.ml\", line 1, characters 0-7:\n'@author' should not be empty.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`Paragraph":[{"`Word":"@author"}]}],"warnings":["File \"f.ml\", line 1, characters 0-7:\nUnknown tag '@author'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let whitespace_only =
       test "@author";
       [%expect
-        {|
-        {"value":[{"`Tag":{"`Author":""}}],"warnings":["File \"f.ml\", line 1, characters 0-7:\n'@author' should not be empty.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`Paragraph":[{"`Word":"@author"}]}],"warnings":["File \"f.ml\", line 1, characters 0-7:\nUnknown tag '@author'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let extra_whitespace =
       test "@author  Foo Bar";
@@ -840,8 +824,7 @@ let%expect_test _ =
     let in_paragraph =
       test "foo @author Bar";
       [%expect
-        {|
-        {"value":[{"`Paragraph":[{"`Word":"foo"},"`Space"]},{"`Tag":{"`Author":"Bar"}}],"warnings":["File \"f.ml\", line 1, characters 4-15:\n'@author' should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`Paragraph":[{"`Word":"foo"}]},{"`Tag":{"`Author":"Bar"}}],"warnings":["File \"f.ml\", line 1, characters 4-15:\n'@author' should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_code =
       test "[@author Foo]";
@@ -852,14 +835,12 @@ let%expect_test _ =
     let in_style =
       test "{b @author Foo}";
       [%expect
-        {|
-        {"value":[{"`Paragraph":[{"`Styled":["`Bold",[]]}]},{"`Tag":{"`Author":"Foo}"}}],"warnings":["File \"f.ml\", line 1, characters 3-15:\n'@author' is not allowed in '{b ...}' (boldface text).","File \"f.ml\", line 1, characters 0-2:\n'{b ...}' (boldface text) should not be empty.","File \"f.ml\", line 1, characters 3-15:\n'@author' should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`Paragraph":[{"`Styled":["`Bold",[]]}]}],"warnings":["File \"f.ml\", line 1, characters 3-15:\n'@author Foo}' is not allowed in '{b ...}' (boldface text).","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_heading =
       test "{2 @author Foo}";
       [%expect
-        {|
-        {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]},{"`Tag":{"`Author":"Foo}"}}],"warnings":["File \"f.ml\", line 1, characters 3-15:\n'@author' is not allowed in '{2 ...}' (section heading).","File \"f.ml\", line 1, characters 0-2:\n'{2 ...}' (section heading) should not be empty.","File \"f.ml\", line 1, characters 3-15:\n'@author' should begin on its own line."]} |}]
+        {| {"value":[{"`Heading":[{"heading_level":"`Subsection","heading_label_explicit":"false"},{"`Label":[{"`Page":["None","f.ml"]},""]},[]]}],"warnings":["File \"f.ml\", line 1, characters 0-15:\n'{2 @author Foo}' is not allowed in '{2 ...}' (section heading)."]} |}]
 
     let after_shorthand_list =
       test "- foo\n@author Bar";
@@ -870,38 +851,32 @@ let%expect_test _ =
     let in_shorthand_list =
       test "- foo @author Bar";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"},"`Space"]},{"`Paragraph":[{"`Word":"@author"},"`Space",{"`Word":" Bar"}]}]]]}],"warnings":["File \"f.ml\", line 1, characters 6-17:\n'@author' is not allowed in '-' (bulleted list item).\nSuggestion: move '@author' outside of any other markup.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"}]}]]]},{"`Tag":{"`Author":"Bar"}}],"warnings":["File \"f.ml\", line 1, characters 6-17:\n'@author' should begin on its own line.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_shorthand_list_at_start =
       test "- @author Foo";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"@author"},"`Space",{"`Word":" Foo"}]}]]]}],"warnings":["File \"f.ml\", line 1, characters 2-13:\n'@author' is not allowed in '-' (bulleted list item).\nSuggestion: move '@author' outside of any other markup.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[]]]}],"warnings":["File \"f.ml\", line 1, characters 0-13:\n'@author Foo' is not allowed in '-' (bulleted list item).","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_list_item =
       test "{ul {li foo @author Bar}}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"},"`Space"]},{"`Paragraph":[{"`Word":"@author"},"`Space",{"`Word":" Bar}}"}]}]]]}],"warnings":["File \"f.ml\", line 1, characters 12-25:\n'@author' is not allowed in '{li ...}' (list item).\nSuggestion: move '@author' outside of any other markup.","File \"f.ml\", line 1, characters 25-25:\nEnd of text is not allowed in '{li ...}' (list item).\nSuggestion: add '}'.","File \"f.ml\", line 1, characters 25-25:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"}]}]]]}],"warnings":["File \"f.ml\", line 1, characters 12-25:\n'@author Bar}}' is not allowed in '{li ...}' (list item).","File \"f.ml\", line 1, characters 25-25:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_list_item_at_start =
       test "{ul {li @author Foo}}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"@author"},"`Space",{"`Word":" Foo}}"}]}]]]}],"warnings":["File \"f.ml\", line 1, characters 8-21:\n'@author' is not allowed in '{li ...}' (list item).\nSuggestion: move '@author' outside of any other markup.","File \"f.ml\", line 1, characters 21-21:\nEnd of text is not allowed in '{li ...}' (list item).\nSuggestion: add '}'.","File \"f.ml\", line 1, characters 21-21:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[]]]}],"warnings":["File \"f.ml\", line 1, characters 8-21:\n'@author Foo}}' is not allowed in '{li ...}' (list item).","File \"f.ml\", line 1, characters 21-21:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_list_item_on_new_line =
       test "{ul {li foo\n@author Bar}}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"}]},{"`Paragraph":[{"`Word":"@author"},"`Space",{"`Word":" Bar}}"}]}]]]}],"warnings":["File \"f.ml\", line 2, characters 0-13:\n'@author' is not allowed in '{li ...}' (list item).\nSuggestion: move '@author' outside of any other markup.","File \"f.ml\", line 2, characters 13-13:\nEnd of text is not allowed in '{li ...}' (list item).\nSuggestion: add '}'.","File \"f.ml\", line 2, characters 13-13:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[[{"`Paragraph":[{"`Word":"foo"}]}]]]}],"warnings":["File \"f.ml\", line 2, characters 0-13:\n'@author Bar}}' is not allowed in '{li ...}' (list item).","File \"f.ml\", line 2, characters 13-13:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_list =
       test "{ul @author Foo}";
       [%expect
-        {|
-        {"value":[{"`List":["`Unordered",[]]}],"warnings":["File \"f.ml\", line 1, characters 4-16:\n'@author' is not allowed in '{ul ...}' (bulleted list).\nSuggestion: move '@author' outside the list.","File \"f.ml\", line 1, characters 16-16:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml\", line 1, characters 0-3:\n'{ul ...}' (bulleted list) should not be empty.","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
+        {| {"value":[{"`List":["`Unordered",[]]}],"warnings":["File \"f.ml\", line 1, characters 16-16:\nEnd of text is not allowed in '{ul ...}' (bulleted list).\nSuggestion: add '}'.","File \"f.ml\", line 1, characters 4-16:\n'@author' is not allowed in '{ul ...}' (bulleted list).\nSuggestion: Move into a list item, '{li ...}' or '{- ...}'","File \"f.ml.mld\":\nPages (.mld files) should start with a heading."]} |}]
 
     let in_code_block =
       test "{[@author Foo]}";
