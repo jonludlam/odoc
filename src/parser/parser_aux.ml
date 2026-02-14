@@ -256,12 +256,12 @@ let tag_with_content
   | SHORT_TITLE -> `Short_title content
 
 let tag_bare : Tokens.tag Loc.with_location -> Ast.tag = function
-  | { value = Author s; _ } -> `Author s.inner
-  | { value = Since s; _ } -> `Since s.inner
-  | { value = Version s; _ } -> `Version s.inner
+  | { value = Author s; _ } -> `Author (String.trim s.inner)
+  | { value = Since s; _ } -> `Since (String.trim s.inner)
+  | { value = Version s; _ } -> `Version (String.trim s.inner)
   | { value = Canonical s; location; _ } ->
     let r_location = Loc.nudge_start (String.length "@canonical ") location in
-    `Canonical (Loc.at r_location s.inner)
+    `Canonical (Loc.at r_location (String.trim s.inner))
   | { value = INLINE; _ } -> `Inline
   | { value = OPEN; _ } -> `Open
   | { value = CLOSED; _ } -> `Closed
