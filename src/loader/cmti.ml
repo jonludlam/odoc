@@ -143,7 +143,9 @@ let rec read_core_type env container ctyp =
           Polymorphic_variant {kind; elements}
     | Ttyp_poly([], typ) -> read_core_type env container typ
     | Ttyp_poly(vars, typ) -> Poly(vars, read_core_type env container typ)
-#if OCAML_VERSION >= (5,4,0)
+#if OCAML_VERSION >= (5,5,0)
+    | Ttyp_package {tpt_path = pack_path; tpt_constraints=pack_fields; _} ->
+#elif OCAML_VERSION >= (5,4,0)
     | Ttyp_package {tpt_path = pack_path; tpt_cstrs=pack_fields; _} ->
 #else
     | Ttyp_package {pack_path; pack_fields; _} ->
@@ -163,6 +165,11 @@ let rec read_core_type env container ctyp =
     | Ttyp_open (_p,_l,t) ->
       (* TODO: adjust model *)
       read_core_type env container t
+#endif
+#if OCAML_VERSION >= (5,5,0)
+    | Ttyp_functor _ ->
+      (* TODO: adjust model *)
+      Any
 #endif
 
 let read_value_description env parent vd =
@@ -262,6 +269,9 @@ let read_type_kind env parent =
         List.map (read_label_declaration env parent label_parent) lbls in
           Some (Record lbls)
     | Ttype_open -> Some Extensible
+#if OCAML_VERSION >= (5,5,0)
+    | Ttype_external _ -> None
+#endif
 
 let read_type_equation env container decl =
   let open TypeDecl.Equation in
@@ -273,7 +283,11 @@ let read_type_equation env container decl =
       (fun (typ1, typ2, _) ->
          (read_core_type env container typ1,
           read_core_type env container typ2))
+#if OCAML_VERSION >= (5,5,0)
+      decl.typ_constraints
+#else
       decl.typ_cstrs
+#endif
   in
     {params; private_; manifest; constraints}
 
@@ -585,7 +599,11 @@ and read_module_type env parent label_parent mty =
             let p = Env.Path.read_module env.ident_env p in
             TypeOf {t_desc = ModPath p; t_original_path = p; t_expansion = None}
           | Tmod_structure {str_items = [{str_desc = Tstr_include {incl_mod; _}; _}]; _} -> begin
+#if OCAML_VERSION >= (5,5,0)
+            match Typedtree.path_of_module incl_mod with
+#else
             match Typemod.path_of_module incl_mod with
+#endif
               | Some p ->
                 let p = Env.Path.read_module env.ident_env p in
                 TypeOf {t_desc=StructInclude p; t_original_path = p; t_expansion = None}

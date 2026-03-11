@@ -118,6 +118,9 @@ let unit_of_uid uid =
   | Item { comp_unit; _ } -> Some comp_unit
   | Predef _ -> None
   | Internal -> None
+#if OCAML_VERSION >= (5,5,0)
+  | Local_opaque_item _ -> None
+#endif
 
 #if OCAML_VERSION >= (5,2,0)
 let rec traverse_aliases = function

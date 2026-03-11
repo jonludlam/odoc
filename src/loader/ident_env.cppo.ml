@@ -125,7 +125,11 @@ and extract_signature_type_items_extract vis ~hidden item rest =
           | Type_variant (cstrs, _) ->
 #endif
             List.map (fun c -> `Constructor (c.Types.cd_id, id, Some c.cd_loc)) cstrs
-          | Type_open -> [] in
+          | Type_open -> []
+#if OCAML_VERSION >= (5,5,0)
+          | Type_external _ -> []
+#endif
+          in
         `Type (id, hidden, None) :: constrs @ extract_signature_type_items vis rest
 
     | Sig_module(id, _, _, _, _), _ ->
@@ -211,6 +215,9 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
         | Ttype_variant constrs -> List.map (fun c -> `Constructor (c.cd_id, decl.typ_id, Some c.cd_loc)) constrs
         | Ttype_record _ -> []
         | Ttype_open -> []
+#if OCAML_VERSION >= (5,5,0)
+        | Ttype_external _ -> []
+#endif
           )
       decls @ extract_signature_tree_items hide_item rest
 
@@ -357,6 +364,9 @@ let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> 
         | Ttype_variant constrs -> List.map (fun c -> `Constructor (c.cd_id, decl.typ_id, Some c.cd_loc)) constrs
         | Ttype_record _ -> []
         | Ttype_open -> []
+#if OCAML_VERSION >= (5,5,0)
+        | Ttype_external _ -> []
+#endif
           ))
            decls @ extract_structure_tree_items hide_item rest
 
