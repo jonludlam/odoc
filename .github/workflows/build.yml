@@ -22,7 +22,7 @@ jobs:
           - "5.4"
         include:
           - os: ubuntu-latest
-            ocaml-compiler: "5.4"
+            ocaml-compiler: "5.3"
             # We don't need to compute coverage for more than one build
             send-coverage: true
             # Mdx tests Mdx tests
