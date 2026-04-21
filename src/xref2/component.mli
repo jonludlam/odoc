@@ -596,7 +596,8 @@ module Fmt : sig
 
   val type_decl : config -> Format.formatter -> TypeDecl.t -> unit
 
-  val type_equation : config -> Format.formatter -> TypeDecl.Equation.t -> unit
+  val type_equation :
+    ?sep:string -> config -> Format.formatter -> TypeDecl.Equation.t -> unit
 
   val exception_ : config -> Format.formatter -> Exception.t -> unit
 
