@@ -2353,65 +2353,43 @@ let resolve_class_type_path env p =
 
 let apply_inner_substs env (sg : Component.Signature.t) : Component.Signature.t
     =
-  let rec inner (items : Component.Signature.item list) :
-      Component.Signature.item list =
-    match items with
-    | Component.Signature.TypeSubstitution (id, typedecl) :: rest -> (
-        let subst =
-          Component.ModuleType.TypeSubst
-            (`Dot (`Root, Ident.Name.type_ id), typedecl.equation)
+  let open Component.Signature in
+  let folder (sub, removed_acc, items_acc) item =
+    match item with
+    | TypeSubstitution (id, td) -> (
+        match td.Component.TypeDecl.equation.manifest with
+        | Some manifest ->
+            let sub =
+              Subst.add_type_replacement
+                (id :> Ident.type_)
+                manifest td.equation sub
+            in
+            let r = RType (Ident.Name.typed_type id, manifest, td.equation) in
+            (sub, r :: removed_acc, items_acc)
+        | None -> (sub, removed_acc, item :: items_acc))
+    | ModuleTypeSubstitution (id, mts) ->
+        let sub =
+          Subst.add_module_type_replacement
+            (id :> Ident.module_type)
+            mts.manifest sub
         in
-        let rest =
-          Component.Signature.Type
-            (id, Ordinary, Component.Delayed.put (fun () -> typedecl))
-          :: inner rest
-        in
-        match fragmap env subst { sg with items = rest } with
-        | Ok sg' -> sg'.items
-        | Error _ -> failwith "error")
-    | Component.Signature.ModuleSubstitution (id, modsubst) :: rest -> (
-        let subst =
-          Component.ModuleType.ModuleSubst
-            (`Dot (`Root, Ident.Name.module_ id), modsubst.manifest)
-        in
-        let rest =
-          Component.Signature.Module
-            ( id,
-              Ordinary,
-              Component.Delayed.put (fun () ->
-                  {
-                    Component.Module.source_loc = None;
-                    doc = modsubst.doc;
-                    type_ = Alias (modsubst.manifest, None);
-                    canonical = None;
-                    hidden = false;
-                  }) )
-          :: inner rest
-        in
-        match fragmap env subst { sg with items = rest } with
-        | Ok sg' -> sg'.items
-        | Error _ -> failwith "error")
-    | Component.Signature.ModuleTypeSubstitution (id, modtypesubst) :: rest -> (
-        let subst =
-          Component.ModuleType.ModuleTypeSubst
-            (`Dot (`Root, Ident.Name.module_type id), modtypesubst.manifest)
-        in
-        let rest =
-          Component.Signature.ModuleType
-            ( id,
-              Component.Delayed.put (fun () ->
-                  {
-                    Component.ModuleType.source_loc = None;
-                    doc = modtypesubst.doc;
-                    expr = Some modtypesubst.manifest;
-                    canonical = None;
-                  }) )
-          :: inner rest
-        in
-        match fragmap env subst { sg with items = rest } with
-        | Ok sg' -> sg'.items
-        | Error _ -> failwith "error")
-    | x :: rest -> x :: inner rest
-    | [] -> []
+        let r = RModuleType (Ident.Name.typed_module_type id, mts.manifest) in
+        (sub, r :: removed_acc, items_acc)
+    | ModuleSubstitution (id, ms) -> (
+        match resolve_module env ms.manifest with
+        | Ok (rp, _) ->
+            let sub =
+              Subst.add_module
+                (id :> Ident.module_)
+                (`Resolved rp) rp sub
+            in
+            let r = RModule (Ident.Name.typed_module id, ms.manifest) in
+            (sub, r :: removed_acc, items_acc)
+        | Error _ -> (sub, removed_acc, item :: items_acc))
+    | other -> (sub, removed_acc, other :: items_acc)
   in
-  { sg with items = inner sg.items }
+  let sub, removed_rev, items_rev =
+    List.fold_left folder (Subst.identity, [], []) sg.items
+  in
+  let items = Subst.apply_sig_map_items sub (List.rev items_rev) in
+  { sg with items; removed = List.rev removed_rev @ sg.removed }
