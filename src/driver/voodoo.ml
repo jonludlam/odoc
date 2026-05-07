@@ -104,6 +104,45 @@ let of_voodoo pkg =
       (Util.StringMap.empty, []) metas
   in
 
+  (* Transitively close [all_lib_deps] over itself so each lib's deps
+     reflect every lib reachable through META requires.
+
+     Why: per-compile [-I] emission uses the lib's [lib_deps] set (set in
+     [Packages.Lib.v] by [StringMap.find lib_name all_lib_deps]). With
+     direct-only deps, a lib like [core_unix.time_unix] gets
+     [time_float_unix] in its includes but not [core], even though
+     [time_float_unix] itself depends on [core]. odoc compile then loads
+     [time_float_unix.odoc], hits a destructive [module M := Core.X]
+     substitution embedded there, fails to load [core.odoc] (not in -I),
+     and [Tools.apply_inner_substs.inner] raises [Failure "error"] from
+     the [fragmap] [Error _] branch.
+
+     Libs referenced as deps but not present as keys (e.g. cross-package
+     deps where only this package's META is in scope) are added to the
+     closed set as leaves — they still get into [-I] via the marker-scan
+     [extra_libs_paths] in [Odoc_units_of.lib_dirs]. Cycle-safe via the
+     pre-seeded empty entry in [cache]. *)
+  let all_lib_deps =
+    let cache : (string, Util.StringSet.t) Hashtbl.t =
+      Hashtbl.create (Util.StringMap.cardinal all_lib_deps) in
+    let rec close lib =
+      match Hashtbl.find_opt cache lib with
+      | Some r -> r
+      | None ->
+        Hashtbl.add cache lib Util.StringSet.empty;
+        let direct = match Util.StringMap.find_opt lib all_lib_deps with
+          | Some s -> s
+          | None -> Util.StringSet.empty
+        in
+        let closed = Util.StringSet.fold (fun dep acc ->
+          Util.StringSet.union (Util.StringSet.add dep (close dep)) acc
+        ) direct Util.StringSet.empty in
+        Hashtbl.replace cache lib closed;
+        closed
+    in
+    Util.StringMap.mapi (fun lib _ -> close lib) all_lib_deps
+  in
+
   let ss_pp fmt ss = Format.fprintf fmt "[%d]" (Util.StringSet.cardinal ss) in
   Logs.debug (fun m ->
       m "all_lib_deps: %a\n%!"
