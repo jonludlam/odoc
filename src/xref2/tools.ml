@@ -2368,7 +2368,11 @@ let apply_inner_substs env (sg : Component.Signature.t) : Component.Signature.t
         in
         match fragmap env subst { sg with items = rest } with
         | Ok sg' -> sg'.items
-        | Error _ -> failwith "error")
+        | Error e ->
+            Lookup_failures.report_internal
+              "apply_inner_substs: fragmap failed: %a" Errors.Tools_error.pp
+              (e :> Errors.Tools_error.any);
+            rest)
     | Component.Signature.ModuleSubstitution (id, modsubst) :: rest -> (
         let subst =
           Component.ModuleType.ModuleSubst
@@ -2390,7 +2394,11 @@ let apply_inner_substs env (sg : Component.Signature.t) : Component.Signature.t
         in
         match fragmap env subst { sg with items = rest } with
         | Ok sg' -> sg'.items
-        | Error _ -> failwith "error")
+        | Error e ->
+            Lookup_failures.report_internal
+              "apply_inner_substs: fragmap failed: %a" Errors.Tools_error.pp
+              (e :> Errors.Tools_error.any);
+            rest)
     | Component.Signature.ModuleTypeSubstitution (id, modtypesubst) :: rest -> (
         let subst =
           Component.ModuleType.ModuleTypeSubst
@@ -2410,7 +2418,11 @@ let apply_inner_substs env (sg : Component.Signature.t) : Component.Signature.t
         in
         match fragmap env subst { sg with items = rest } with
         | Ok sg' -> sg'.items
-        | Error _ -> failwith "error")
+        | Error e ->
+            Lookup_failures.report_internal
+              "apply_inner_substs: fragmap failed: %a" Errors.Tools_error.pp
+              (e :> Errors.Tools_error.any);
+            rest)
     | x :: rest -> x :: inner rest
     | [] -> []
   in
