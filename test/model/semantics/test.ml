@@ -15,6 +15,40 @@ let parser_output_desc =
           F ("warnings", snd, List warning_desc);
         ] )
 
+let dump_oc = ref None
+
+let with_group name f =
+  match Sys.getenv_opt "EXPECTED_DUMP_DIR" with
+  | None -> f ()
+  | Some dir -> (
+      let path = Filename.concat dir (name ^ ".expected") in
+      let oc = open_out path in
+      dump_oc := Some oc;
+      let finalize () =
+        dump_oc := None;
+        close_out oc
+      in
+      try
+        let r = f () in
+        finalize ();
+        r
+      with e ->
+        finalize ();
+        raise e)
+
+let ends_with_newline s = String.length s > 0 && s.[String.length s - 1] = '\n'
+
+let dump_block ~input ~output =
+  match !dump_oc with
+  | None -> ()
+  | Some oc ->
+      output_string oc "--- input ---\n";
+      output_string oc input;
+      if not (ends_with_newline input) then output_char oc '\n';
+      output_string oc "--- output ---\n";
+      output_string oc output;
+      if not (ends_with_newline output) then output_char oc '\n'
+
 let test ?(tags_allowed = true) ?(location = { Location_.line = 1; column = 0 })
     str =
   let dummy_filename = "f.ml" in
@@ -33,16 +67,19 @@ let test ?(tags_allowed = true) ?(location = { Location_.line = 1; column = 0 })
     Semantics.parse_comment ~internal_tags:Odoc_model.Semantics.Expect_none
       ~tags_allowed ~containing_definition:dummy_page ~location ~text:str
   in
-  let print_json_desc desc t =
-    let yojson = Type_desc_to_yojson.to_yojson desc t in
-    Format.fprintf Format.std_formatter "%s" (Yojson.Basic.to_string yojson)
-  in
-  print_json_desc parser_output_desc parser_output;
-  Format.pp_print_flush Format.std_formatter ()
+  let buf = Buffer.create 256 in
+  let f = Format.formatter_of_buffer buf in
+  let yojson = Type_desc_to_yojson.to_yojson parser_output_desc parser_output in
+  Format.fprintf f "%s" (Yojson.Basic.to_string yojson);
+  Format.pp_print_flush f ();
+  let body = Buffer.contents buf in
+  print_string body;
+  dump_block ~input:str ~output:body
 
 [@@@ocaml.warning "-32"]
 
 let%expect_test _ =
+  with_group "simple_reference" @@ fun () ->
   let module Simple_reference = struct
     let basic =
       test "{!foo}";
@@ -225,6 +262,7 @@ let%expect_test _ =
   ()
 
 let%expect_test _ =
+  with_group "raw_markup" @@ fun () ->
   let module Raw_markup = struct
     let html_target =
       test "{%html:foo%}";
@@ -355,6 +393,7 @@ let%expect_test _ =
   ()
 
 let%expect_test _ =
+  with_group "section_contexts" @@ fun () ->
   let module Section_contexts = struct
     let titles_allowed =
       test "{0 Foo}";
@@ -449,6 +488,7 @@ let%expect_test _ =
   ()
 
 let%expect_test _ =
+  with_group "heading" @@ fun () ->
   let module Heading = struct
     let basic =
       test "{2 Foo}";
@@ -711,6 +751,7 @@ let%expect_test _ =
   ()
 
 let%expect_test _ =
+  with_group "author" @@ fun () ->
   let module Author = struct
     let basic =
       test "@author Foo Bar";
@@ -964,6 +1005,7 @@ let%expect_test _ =
   ()
 
 let%expect_test _ =
+  with_group "reference_component_kind" @@ fun () ->
   let module Reference_component_kind = struct
     let no_kind_with_quotes =
       test "{!\"foo\".\"bar\"}";
@@ -2690,6 +2732,7 @@ let%expect_test _ =
   ()
 
 let%expect_test _ =
+  with_group "reference_path" @@ fun () ->
   let module Reference_path = struct
     (* Absolute references *)
 
