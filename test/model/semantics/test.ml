@@ -15,8 +15,6 @@ let parser_output_desc =
           F ("warnings", snd, List warning_desc);
         ] )
 
-let ends_with_newline s = String.length s > 0 && s.[String.length s - 1] = '\n'
-
 let test ?(tags_allowed = true) ?(location = { Location_.line = 1; column = 0 })
     str =
   let dummy_filename = "f.ml" in
@@ -40,13 +38,7 @@ let test ?(tags_allowed = true) ?(location = { Location_.line = 1; column = 0 })
   let yojson = Type_desc_to_yojson.to_yojson parser_output_desc parser_output in
   Format.fprintf f "%s" (Yojson.Basic.to_string yojson);
   Format.pp_print_flush f ();
-  let body = Buffer.contents buf in
-  print_string "--- input ---\n";
-  print_string str;
-  if not (ends_with_newline str) then print_char '\n';
-  print_string "--- output ---\n";
-  print_string body;
-  if not (ends_with_newline body) then print_char '\n'
+  Expect_test_helper.print ~input:str ~output:(Buffer.contents buf)
 
 [@@@ocaml.warning "-32"]
 
@@ -1100,14 +1092,4 @@ let groups =
     ("reference_path", reference_path);
   ]
 
-let () =
-  match Sys.argv with
-  | [| _; name |] -> (
-      match List.assoc_opt name groups with
-      | Some f -> f ()
-      | None ->
-          prerr_endline ("Unknown group: " ^ name);
-          exit 2)
-  | _ ->
-      prerr_endline "usage: test.exe <group>";
-      exit 2
+let () = Expect_test_helper.run groups

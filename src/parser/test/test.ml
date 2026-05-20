@@ -264,8 +264,6 @@ let parser_output formatter v =
   Sexplib0.Sexp.pp_hum formatter output;
   Format.pp_print_flush formatter ()
 
-let ends_with_newline s = String.length s > 0 && s.[String.length s - 1] = '\n'
-
 let test ?(location = { Loc.line = 1; column = 0 }) str =
   let dummy_filename = "f.ml" in
   let location =
@@ -281,13 +279,7 @@ let test ?(location = { Loc.line = 1; column = 0 }) str =
   let f = Format.formatter_of_buffer buf in
   Format.fprintf f "%a" parser_output ast;
   Format.pp_print_flush f ();
-  let body = Buffer.contents buf in
-  print_string "--- input ---\n";
-  print_string str;
-  if not (ends_with_newline str) then print_char '\n';
-  print_string "--- output ---\n";
-  print_string body;
-  if not (ends_with_newline body) then print_char '\n'
+  Expect_test_helper.print ~input:str ~output:(Buffer.contents buf)
 
 [@@@ocaml.warning "-32"]
 
@@ -1787,13 +1779,7 @@ let locations () =
       let f = Format.formatter_of_buffer buf in
       Format.fprintf f "%a" parser_output ast;
       Format.pp_print_flush f ();
-      let body = Buffer.contents buf in
-      print_string "--- input ---\n";
-      print_string text;
-      if not (ends_with_newline text) then print_char '\n';
-      print_string "--- output ---\n";
-      print_string body;
-      if not (ends_with_newline body) then print_char '\n'
+      Expect_test_helper.print ~input:text ~output:(Buffer.contents buf)
 
     let non_offset_location = test "one\n two\n  three"
 

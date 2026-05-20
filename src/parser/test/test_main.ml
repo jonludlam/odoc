@@ -45,14 +45,4 @@ let groups =
     ("light", Test_tables.light);
   ]
 
-let () =
-  match Sys.argv with
-  | [| _; name |] -> (
-      match List.assoc_opt name groups with
-      | Some f -> f ()
-      | None ->
-          prerr_endline ("Unknown group: " ^ name);
-          exit 2)
-  | _ ->
-      prerr_endline "usage: test_main.exe <group>";
-      exit 2
+let () = Expect_test_helper.run groups
