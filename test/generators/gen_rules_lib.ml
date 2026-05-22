@@ -72,27 +72,27 @@ module Dune = struct
 
   let run cmd = List (Atom "run" :: arg_list cmd)
 
-  let package = List [ Atom "package"; Atom "odoc" ]
+  let package name = List [ Atom "package"; Atom name ]
 
-  let rule ?enabledif ?(fields = []) action =
+  let rule ~pkg ?enabledif ?(fields = []) action =
     List
       ((Atom "rule" :: fields)
-      @ (package :: List [ Atom "action"; action ] :: render_enabledif enabledif)
+      @ (package pkg :: List [ Atom "action"; action ] :: render_enabledif enabledif)
       )
 
-  let simple_rule ?enabledif target cmd =
-    rule ?enabledif
+  let simple_rule ~pkg ?enabledif target cmd =
+    rule ~pkg ?enabledif
       ~fields:[ List [ Atom "target"; Atom (arg_fpath target) ] ]
       (run cmd)
 
-  let rule_with_output_to ?enabledif target cmd =
+  let rule_with_output_to ~pkg ?enabledif target cmd =
     let target = arg_fpath target in
-    rule ?enabledif
+    rule ~pkg ?enabledif
       ~fields:[ List [ Atom "target"; Atom target ] ]
       (List [ Atom "with-outputs-to"; Atom target; run cmd ])
 
-  let runtest_diff ?enabledif file_a file_b =
-    rule ?enabledif
+  let runtest_diff ~pkg ?enabledif file_a file_b =
+    rule ~pkg ?enabledif
       ~fields:[ List [ Atom "alias"; Atom "runtest" ] ]
       (List [ Atom "diff"; Atom (arg_fpath file_a); Atom (arg_fpath file_b) ])
 
@@ -100,15 +100,15 @@ module Dune = struct
 end
 
 let cu_target_rule enabledif dep target =
-  Dune.simple_rule ?enabledif target
+  Dune.simple_rule ~pkg:"odoc" ?enabledif target
     [ "ocamlc"; "-c"; "-bin-annot"; "-o"; "%{target}"; Dune.arg_dep dep ]
 
 let odoc_target_rule enabledif dep target =
-  Dune.simple_rule ?enabledif target
+  Dune.simple_rule ~pkg:"odoc" ?enabledif target
     [ "odoc"; "compile"; "-o"; "%{target}"; Dune.arg_dep dep ]
 
 let odocl_target_rule enabledif dep target =
-  Dune.simple_rule ?enabledif target
+  Dune.simple_rule ~pkg:"odoc" ?enabledif target
     [ "odoc"; "link"; "-o"; "%{target}"; Dune.arg_dep dep ]
 
 let gen_rule_for_source_file { input; cmt; odoc; odocl; enabledif } =
@@ -130,26 +130,19 @@ let expected_targets backend test_case =
   try Io_utils.read_lines (Fpath.to_string targets_file) |> List.map Fpath.v
   with _ -> []
 
-let gen_targets_file enabledif ?flat_flag backend target_path relinput =
+let gen_targets_file ~pkg enabledif ?flat_flag targets_cmd backend target_path relinput =
   let flat_flag = match flat_flag with None -> [] | Some x -> [ x ] in
   let gen_path = Fpath.add_ext ".gen" target_path in
   [
     Dune.subdir backend
       [
-        Dune.rule_with_output_to ?enabledif gen_path
-          ([
-             "odoc";
-             Fpath.to_string backend ^ "-targets";
-             "-o";
-             ".";
-             Dune.arg_dep relinput;
-           ]
-          @ flat_flag);
-        Dune.runtest_diff ?enabledif target_path gen_path;
+        Dune.rule_with_output_to ~pkg ?enabledif gen_path
+          (targets_cmd relinput @ flat_flag);
+        Dune.runtest_diff ~pkg ?enabledif target_path gen_path;
       ];
   ]
 
-let gen_backend_diff_rule enabledif ~targets (b_t_r, b, _) p =
+let gen_backend_diff_rule enabledif ~targets (b_t_r, b, _, pkg, _) p =
   match targets with
   | [] -> []
   | _ ->
@@ -162,14 +155,14 @@ let gen_backend_diff_rule enabledif ~targets (b_t_r, b, _) p =
       Dune.
         [
           subdir b
-            (rule ?enabledif ~fields:[ targets_field ] (run (b_t_r p))
-            :: List.map2 (Dune.runtest_diff ?enabledif) targets targets_gen);
+            (rule ~pkg ?enabledif ~fields:[ targets_field ] (run (b_t_r p))
+            :: List.map2 (Dune.runtest_diff ~pkg ?enabledif) targets targets_gen);
         ]
 
 let gen_backend_rule enabledif backend_target_rules path =
   List.map
     (fun b_t_r ->
-      let _, b, flat_flag = b_t_r in
+      let _, b, flat_flag, pkg, targets_cmd = b_t_r in
       let targets = expected_targets b path in
       let relpath =
         let path = Fpath.relativize ~root:b path in
@@ -178,7 +171,7 @@ let gen_backend_rule enabledif backend_target_rules path =
       let targets_file = targets_file_path relpath in
       [
         gen_backend_diff_rule enabledif ~targets b_t_r relpath;
-        gen_targets_file enabledif ?flat_flag b targets_file relpath;
+        gen_targets_file ~pkg enabledif ?flat_flag targets_cmd b targets_file relpath;
       ]
       |> List.concat)
     backend_target_rules

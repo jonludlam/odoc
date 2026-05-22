@@ -4,8 +4,8 @@ let die s =
 
 let html_target_rule path =
   [
-    "odoc";
-    "html-generate";
+    "odoc-html";
+    "generate";
     "--indent";
     "--flat";
     "--extra-suffix";
@@ -14,6 +14,9 @@ let html_target_rule path =
     ".";
     Gen_rules_lib.Dune.arg_dep path;
   ]
+
+let html_targets_cmd path =
+  [ "odoc-html"; "targets"; "-o"; "."; Gen_rules_lib.Dune.arg_dep path ]
 
 let latex_target_rule path =
   [
@@ -26,6 +29,9 @@ let latex_target_rule path =
     Gen_rules_lib.Dune.arg_dep path;
   ]
 
+let latex_targets_cmd path =
+  [ "odoc"; "latex-targets"; "-o"; "."; Gen_rules_lib.Dune.arg_dep path ]
+
 let man_target_rule path =
   [
     "odoc";
@@ -37,6 +43,9 @@ let man_target_rule path =
     Gen_rules_lib.Dune.arg_dep path;
   ]
 
+let man_targets_cmd path =
+  [ "odoc"; "man-targets"; "-o"; "."; Gen_rules_lib.Dune.arg_dep path ]
+
 let markdown_target_rule path =
   [
     "odoc";
@@ -47,6 +56,9 @@ let markdown_target_rule path =
     "gen";
     Gen_rules_lib.Dune.arg_dep path;
   ]
+
+let markdown_targets_cmd path =
+  [ "odoc"; "markdown-targets"; "-o"; "."; Gen_rules_lib.Dune.arg_dep path ]
 
 (** Returns filenames, not paths. *)
 let read_files_from_dir dir =
@@ -114,10 +126,10 @@ let () =
   let stanzas =
     Gen_rules_lib.gen_rule
       [
-        (html_target_rule, Fpath.v "html", Some "--flat");
-        (latex_target_rule, Fpath.v "latex", None);
-        (man_target_rule, Fpath.v "man", None);
-        (markdown_target_rule, Fpath.v "markdown", None);
+        (html_target_rule, Fpath.v "html", Some "--flat", "odoc-html", html_targets_cmd);
+        (latex_target_rule, Fpath.v "latex", None, "odoc", latex_targets_cmd);
+        (man_target_rule, Fpath.v "man", None, "odoc", man_targets_cmd);
+        (markdown_target_rule, Fpath.v "markdown", None, "odoc", markdown_targets_cmd);
       ]
       cases
   in
