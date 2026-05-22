@@ -2,6 +2,7 @@
  (name odoc_html_bin)
  (package odoc-html)
  (libraries
+  cmdliner
   fpath
   odoc_document
   odoc_html
