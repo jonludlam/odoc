@@ -220,7 +220,7 @@ module Make (Syntax : SYNTAX) = struct
         let in_bound x = min (max x 0) (String.length src) in
         let a = in_bound a and b = in_bound b in
         let a, b = (min a b, max a b) in
-        String.with_range src ~first:a ~len:(b - a)
+        String.sub src a (b - a)
       in
       let plain_code = function
         | "" -> []
@@ -370,7 +370,7 @@ module Make (Syntax : SYNTAX) = struct
            | Open -> O.txt "[> " ++ elements ++ O.txt " ]"
            | Closed [] -> O.txt "[< " ++ elements ++ O.txt " ]"
            | Closed lst ->
-               let constrs = String.concat ~sep:" " lst in
+               let constrs = String.concat " " lst in
                O.txt "[< " ++ elements ++ O.txt (" " ^ constrs ^ " ]"))
 
     and te_object (t : Odoc_model.Lang.TypeExpr.Object.t) =
@@ -447,7 +447,7 @@ module Make (Syntax : SYNTAX) = struct
           let res =
             kind_annotation ~needs_parentheses:true base
             ++ O.txt " " ++ O.keyword "mod"
-            ++ O.txt (" " ^ String.concat ~sep:" " modes)
+            ++ O.txt (" " ^ String.concat " " modes)
           in
           enclose_parens_if_needed res
       | With (base, ty, modalities) ->
@@ -457,7 +457,7 @@ module Make (Syntax : SYNTAX) = struct
             ++
             match modalities with
             | [] -> O.noop
-            | mods -> O.txt " @@ " ++ O.txt (String.concat ~sep:" " mods)
+            | mods -> O.txt " @@ " ++ O.txt (String.concat " " mods)
           in
           enclose_parens_if_needed res
       | Kind_of ty ->
@@ -877,7 +877,7 @@ module Make (Syntax : SYNTAX) = struct
         | Closed [] ->
             (O.documentedSrc (O.txt "[< "), O.documentedSrc (O.txt " ]"))
         | Closed lst ->
-            let constrs = String.concat ~sep:" " lst in
+            let constrs = String.concat " " lst in
             ( O.documentedSrc (O.txt "[< "),
               O.documentedSrc (O.txt (" " ^ constrs ^ " ]")) )
       in
@@ -904,7 +904,7 @@ module Make (Syntax : SYNTAX) = struct
           | Some Odoc_model.Lang.TypeDecl.Bivariant -> "+" :: "-" :: desc
         in
         let final = if injectivity then "!" :: var_desc else var_desc in
-        String.concat ~sep:"" final
+        String.concat "" final
       in
       let format_param p =
         Type_expression.with_kind_annotation p.Odoc_model.Lang.TypeDecl.kind

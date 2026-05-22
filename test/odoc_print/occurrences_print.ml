@@ -7,7 +7,7 @@ let run inp =
   Odoc_occurrences.Table.iter
     (fun id { Odoc_occurrences.Table.direct; indirect; _ } ->
       let id =
-        String.concat ~sep:"." (Odoc_model.Paths.Identifier.fullname id)
+        String.concat "." (Odoc_model.Paths.Identifier.fullname id)
       in
       Format.printf "%s was used directly %d times and indirectly %d times\n" id
         direct indirect)

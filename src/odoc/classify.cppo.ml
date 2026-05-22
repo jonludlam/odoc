@@ -293,7 +293,7 @@ let classify files libraries =
   let cmis = List.filter (Fpath.has_ext ".cmi") files in
   let cmi_names =
     List.map
-      (fun f -> Fpath.(rem_ext f |> basename |> Astring.String.Ascii.capitalize))
+      (fun f -> Fpath.(rem_ext f |> basename |> String.capitalize_ascii))
       cmis
   in
 
@@ -308,7 +308,7 @@ let classify files libraries =
     List.map
       (fun f ->
         let modname =
-          Filename.chop_suffix (Fpath.basename f) ".cmi" |> Astring.String.Ascii.capitalize
+          Filename.chop_suffix (Fpath.basename f) ".cmi" |> String.capitalize_ascii
         in
         (modname, Cmi.get_deps Fpath.(f |> to_string)))
       intfs
@@ -469,7 +469,7 @@ let classify files libraries =
       let archive = Archive.filter_by_cmis cmi_names archive_all in
       if Archive.has_modules archive then
         Printf.printf "%s %s\n" a.Archive.name
-          (archive.Archive.modules |> StringSet.elements |> String.concat ~sep:" "))
+          (archive.Archive.modules |> StringSet.elements |> String.concat " "))
     archives;
 
   ()

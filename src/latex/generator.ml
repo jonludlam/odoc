@@ -230,7 +230,7 @@ and tag s ppf x = Raw.ocamltag s pp ppf x
 
 let raw_markup (t : Raw_markup.t) =
   let target, content = t in
-  match Astring.String.Ascii.lowercase target with
+  match String.lowercase_ascii target with
   | "latex" | "tex" -> [ Raw content ]
   | _ -> []
 

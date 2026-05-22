@@ -117,12 +117,12 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
       m "Documentation generation complete. Results are in %a" Fpath.pp html_dir);
 
   let grep_log ty s =
-    let open Astring in
     let do_ affix =
       let grep { Cmd_outputs.log_dest; prefix; run } =
         if log_dest = ty then
-          let l = run.Run.cmd |> String.concat ~sep:" " in
-          if String.is_infix ~affix l then Format.printf "%s: %s\n" prefix l
+          let l = run.Run.cmd |> String.concat " " in
+          if Odoc_utils.String.is_infix ~affix l then
+            Format.printf "%s: %s\n" prefix l
       in
       List.iter grep !Cmd_outputs.outputs
     in

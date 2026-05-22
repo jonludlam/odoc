@@ -133,7 +133,7 @@ module Module = struct
     Fmt.pf ppf "name: %s@.intf: %a@.impl: %a@.hidden: %b@." t.m_name Fpath.pp
       t.m_intf.mif_path (Fmt.option pp_impl) t.m_impl t.m_hidden
 
-  let is_hidden name = Astring.String.is_infix ~affix:"__" name
+  let is_hidden name = Odoc_utils.String.is_infix ~affix:"__" name
 
   let vs libsdir cmtidir modules =
     let dir = match cmtidir with None -> libsdir | Some dir -> dir in

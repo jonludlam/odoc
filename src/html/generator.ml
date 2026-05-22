@@ -69,7 +69,7 @@ let block_math (s : Math.t) =
 
 and raw_markup (t : Raw_markup.t) =
   let target, content = t in
-  match Astring.String.Ascii.lowercase target with
+  match String.lowercase_ascii target with
   | "html" ->
       (* This is OK because we output *textual* HTML.
          In theory, we should try to parse the HTML with lambdasoup and rebuild
@@ -489,7 +489,7 @@ module Toc = struct
       in
       let title_str =
         List.map (Format.asprintf "%a" (Tyxml.Html.pp_elt ())) text
-        |> String.concat ~sep:""
+        |> String.concat ""
       in
       let href = Link.href ~config ~resolve url in
       { title; title_str; href; children = List.map section children }

@@ -152,7 +152,7 @@ let deindent : what:string -> loc:Loc.span -> string -> string * Warning.t list
     count_leading_whitespace' 0 len
   in
 
-  let lines = Astring.String.cuts ~sep:"\n" s in
+  let lines = String.split_on_char '\n' s in
 
   let least_amount_of_whitespace =
     List.fold_left

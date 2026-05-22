@@ -70,7 +70,7 @@ module Reference = struct
       | `TAbsolutePath -> "/"
       | `TCurrentPackage -> "//"
     in
-    tag ^ String.concat ~sep:"/" cs
+    tag ^ String.concat "/" cs
 
   let rec render_unresolved : Reference.t -> string =
     let open Reference in

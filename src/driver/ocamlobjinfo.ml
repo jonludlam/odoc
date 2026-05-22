@@ -6,15 +6,15 @@ let ocamlobjinfo = Cmd.v "ocamlobjinfo"
 let source_possibilities file =
   let default = [ file ] in
   let generated =
-    if Astring.String.is_suffix ~affix:"-gen" file then
+    if String.ends_with ~suffix:"-gen" file then
       let pos = String.length file - 4 in
-      [ Astring.String.take ~max:pos file ]
+      [ String.sub file 0 (min pos (String.length file)) ]
     else []
   in
   let pp =
-    if Astring.String.is_suffix ~affix:".pp.ml" file then
+    if String.ends_with ~suffix:".pp.ml" file then
       let pos = String.length file - 5 in
-      [ Astring.String.take ~max:pos file ^ "ml" ]
+      [ String.sub file 0 (min pos (String.length file)) ^ "ml" ]
     else []
   in
   pp @ default @ generated
@@ -37,7 +37,7 @@ let get_source file srcdirs =
     List.filter_map
       (fun line ->
         let affix = "Source file: " in
-        if Astring.String.is_prefix ~affix line then
+        if String.starts_with ~prefix:affix line then
           let name =
             String.sub line (String.length affix)
               (String.length line - String.length affix)

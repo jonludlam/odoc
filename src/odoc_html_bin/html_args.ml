@@ -26,7 +26,7 @@ module Uri = struct
 
   let is_absolute str =
     List.exists [ "http"; "https"; "file"; "data"; "ftp" ] ~f:(fun scheme ->
-        Astring.String.is_prefix ~affix:(scheme ^ ":") str)
+        String.starts_with ~prefix:(scheme ^ ":") str)
     || str.[0] = '/'
 
   let conv_rel_dir rel =
@@ -43,7 +43,7 @@ module Uri = struct
         let last_char = str.[String.length str - 1] in
         let str =
           if last_char <> '/' then str
-          else String.with_range ~len:(String.length str - 1) str
+          else String.sub str 0 (String.length str - 1)
         in
         Ok
           (if is_absolute str then (Absolute str : uri)
@@ -65,7 +65,7 @@ module Uri = struct
       if String.length str = 0 then Error "invalid URI"
       else
         let conv_rel_file rel =
-          match String.cut ~rev:true ~sep:"/" rel with
+          match String.cut_right ~sep:"/" rel with
           | Some (before, after) ->
               let base = conv_rel_dir before in
               Odoc_document.Url.Path.

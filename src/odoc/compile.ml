@@ -53,7 +53,10 @@ let rec path_of_id output_dir id =
 let check_is_empty msg = function [] -> Ok () | _ :: _ -> Error (`Msg msg)
 
 (** Used to disambiguate child references. *)
-let is_module_name n = String.length n > 0 && Char.Ascii.is_upper n.[0]
+let is_module_name n =
+  String.length n > 0 &&
+  let c = n.[0] in
+  c >= 'A' && c <= 'Z'
 
 (** Accepted child references:
 
@@ -67,14 +70,13 @@ let is_module_name n = String.length n > 0 && Char.Ascii.is_upper n.[0]
 let parse_parent_child_reference s =
   let unquote s =
     let len = String.length s in
-    if String.head s = Some '"' && String.head ~rev:true s = Some '"' && len > 1
-    then String.with_range ~first:1 ~len:(len - 2) s
+    if len > 1 && s.[0] = '"' && s.[len - 1] = '"' then String.sub s 1 (len - 2)
     else s
   in
   match String.cut ~sep:"-" s with
   | Some ("page", n) -> Ok (Lang.Page.Page_child (unquote n))
   | Some ("module", n) ->
-      Ok (Module_child (unquote (String.Ascii.capitalize n)))
+      Ok (Module_child (unquote (String.capitalize_ascii n)))
   | Some ("src", _) -> Error (`Msg "Implementation unexpected")
   | Some (k, _) -> Error (`Msg ("Unrecognized kind: " ^ k))
   | None -> if is_module_name s then Ok (Module_child s) else Ok (Page_child s)
@@ -179,7 +181,7 @@ let root_of_compilation_unit ~parent_id ~parents_children ~hidden ~output
         let filename =
           Filename.chop_extension Fs.File.(to_string @@ basename output)
         in
-        String.Ascii.(uncapitalize n = uncapitalize filename)
+        String.uncapitalize_ascii n = String.uncapitalize_ascii filename
     | Page_child _ -> false
   in
   match parents_children with
@@ -203,14 +205,16 @@ let name_of_output ~prefix output =
   let page_dash_root =
     Filename.chop_extension Fs.File.(to_string @@ basename output)
   in
-  String.drop ~max:(String.length prefix) page_dash_root
+  let l = String.length page_dash_root in
+  let n = min (String.length prefix) l in
+  String.sub page_dash_root n (l - n)
 
 let page_name_of_output output = name_of_output ~prefix:"page-" output
 
 let is_index_page = function
   | { Paths.Identifier.iv = `Page _; _ } -> false
   | { iv = `LeafPage (_, p); _ } ->
-      Astring.String.equal (Names.PageName.to_string p) "index"
+      String.equal (Names.PageName.to_string p) "index"
 
 let has_children_order { Frontmatter.children_order; _ } =
   Option.is_some children_order
@@ -381,7 +385,7 @@ let resolve_spec ~input resolver cli_spec =
         let name = Fs.File.set_ext ".odoc" input in
         let name = Fs.File.basename name in
         if ext = ".mld" then "page-" ^ Fs.File.to_string name
-        else name |> Fpath.to_string |> String.Ascii.uncapitalize
+        else name |> Fpath.to_string |> String.uncapitalize_ascii
       in
       let output = Fs.File.create ~directory ~name in
       Ok { parent_id; output; parents_children = None; children = [] }

@@ -47,7 +47,7 @@ let internal_name_of_library : library -> (string * Fpath.t) option =
           match Option.map Fpath.segs p' with
           | Some (objdir :: "byte" :: _) -> (
               (* cmt files are expected to be in [library_path/.libname.objs/byte/name.cmt]. *)
-              match Astring.String.fields ~is_sep:(fun c -> c = '.') objdir with
+              match String.split_on_char '.' objdir with
               | [ ""; libname; "objs" ] ->
                   Some (libname, Fpath.(parent (v p) |> rem_empty_seg))
               | _ -> None)

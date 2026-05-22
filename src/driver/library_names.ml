@@ -33,9 +33,23 @@ let read_libraries_from_pkg_defs ~library_name pkg_defs =
     let deps =
       try
         let deps_str = Fl_metascanner.lookup "requires" [] pkg_defs in
-        (* The deps_str is a string of space-separated package names, e.g. "a b c" *)
-        (* We use Astring to split the string into a list of package names *)
-        Astring.String.fields ~empty:false deps_str
+        (* Whitespace-separated package names, e.g. "a b c" *)
+        let is_white = function
+          | ' ' | '\t' | '\n' | '\x0B' | '\x0C' | '\r' -> true
+          | _ -> false
+        in
+        let n = String.length deps_str in
+        let rec loop acc i =
+          if i >= n then List.rev acc
+          else if is_white deps_str.[i] then loop acc (i + 1)
+          else
+            let rec find_end j =
+              if j >= n || is_white deps_str.[j] then j else find_end (j + 1)
+            in
+            let j = find_end (i + 1) in
+            loop (String.sub deps_str i (j - i) :: acc) j
+        in
+        loop [] 0
       with _ -> []
     in
 

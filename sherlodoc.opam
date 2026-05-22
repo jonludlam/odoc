@@ -9,7 +9,7 @@ doc: "https://ocaml.github.io/odoc/"
 bug-reports: "https://github.com/ocaml/odoc/issues"
 depends: [
   "dune" {>= "3.21"}
-  "ocaml" {>= "4.0.8"}
+  "ocaml" {>= "5.4.0"}
   "odoc" {= version}
   "odoc-html" {= version}
   "base64" {>= "3.5.1"}

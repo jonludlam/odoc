@@ -315,7 +315,7 @@ let () =
       in
       Printf.printf
         "Available subcommands: %s\nSee --help for more information.\n%!"
-        (String.concat ~sep:", " available_subcommands)
+        (String.concat ", " available_subcommands)
     in
     let man = List.map ~f:(fun s -> `S s) main_page_sections in
     let default = Term.(const print_default $ const ()) in

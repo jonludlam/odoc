@@ -32,7 +32,7 @@ let compile_deps f =
   let cmd = Cmd.(!odoc % "compile-deps" % Fpath.to_string f) in
   let desc = Printf.sprintf "Compile deps for %s" (Fpath.to_string f) in
   let deps = Cmd_outputs.submit None desc cmd None in
-  let l = List.filter_map (Astring.String.cut ~sep:" ") deps in
+  let l = List.filter_map (Odoc_utils.String.cut ~sep:" ") deps in
   let basename = Fpath.(basename (f |> rem_ext)) |> String.capitalize_ascii in
   match List.partition (fun (n, _) -> basename = n) l with
   | [ (_, digest) ], deps -> Ok { digest; deps }

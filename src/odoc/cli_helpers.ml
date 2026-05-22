@@ -37,7 +37,7 @@ let convert_fpath =
 
 let convert_named_root =
   let parse inp =
-    match String.cuts inp ~sep:":" with
+    match String.cuts ~sep:":" inp with
     | [ s1; s2 ] -> Ok (s1, Fs.Directory.of_string s2)
     | _ -> Error (`Msg "")
   in

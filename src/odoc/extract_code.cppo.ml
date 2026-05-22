@@ -29,7 +29,7 @@ let print line_directives oc location value =
   if line_directives then (
     Printf.fprintf oc "#%d \"%s\"\n" location.Loc.start.line location.file;
     Printf.fprintf oc "%s%s\n"
-      (String.v ~len:location.start.column (fun _ -> ' '))
+      (String.init location.start.column (fun _ -> ' '))
       value)
   else Printf.fprintf oc "%s" value
 
@@ -221,7 +221,7 @@ let load_mld line_directives oc names input =
   let location =
     { Lexing.pos_fname = input; pos_lnum = 1; pos_bol = 0; pos_cnum = 0 }
   in
-  let c = Io_utils.read_lines input |> String.concat ~sep:"\n" in
+  let c = Io_utils.read_lines input |> String.concat "\n" in
   let parsed = parse_comment ~location ~text:c in
   let ast = ast parsed in
   List.iter (block_element line_directives oc names) ast;

@@ -73,4 +73,66 @@ module Int = struct
   let max x y : t = if x >= y then x else y
 end
 
-include Astring
+module String = struct
+  include String
+
+  let cut ~sep s =
+    let slen = String.length sep in
+    if slen = 0 then invalid_arg "String.cut: empty separator"
+    else
+      let n = String.length s in
+      let first = String.unsafe_get sep 0 in
+      let rec find i =
+        if i + slen > n then None
+        else if String.unsafe_get s i = first && String.sub s i slen = sep then
+          Some i
+        else find (i + 1)
+      in
+      match find 0 with
+      | None -> None
+      | Some j ->
+          Some (String.sub s 0 j, String.sub s (j + slen) (n - j - slen))
+
+  let cut_right ~sep s =
+    let slen = String.length sep in
+    if slen = 0 then invalid_arg "String.cut_right: empty separator"
+    else
+      let n = String.length s in
+      let first = String.unsafe_get sep 0 in
+      let rec find i =
+        if i < 0 then None
+        else if String.unsafe_get s i = first && String.sub s i slen = sep then
+          Some i
+        else find (i - 1)
+      in
+      match find (n - slen) with
+      | None -> None
+      | Some j ->
+          Some (String.sub s 0 j, String.sub s (j + slen) (n - j - slen))
+
+  let cuts ~sep s =
+    let slen = String.length sep in
+    if slen = 0 then invalid_arg "String.cuts: empty separator"
+    else
+      let rec loop acc s =
+        match cut ~sep s with
+        | None -> List.rev (s :: acc)
+        | Some (before, rest) -> loop (before :: acc) rest
+      in
+      loop [] s
+
+  let is_infix ~affix s =
+    let alen = String.length affix in
+    let slen = String.length s in
+    if alen = 0 then true
+    else if alen > slen then false
+    else
+      let first = String.unsafe_get affix 0 in
+      let rec scan i =
+        if i + alen > slen then false
+        else if String.unsafe_get s i = first && String.sub s i alen = affix
+        then true
+        else scan (i + 1)
+      in
+      scan 0
+end

@@ -47,7 +47,7 @@ let save_page file ~warnings page =
   let dir = Fs.File.dirname file in
   let base = Fs.File.(to_string @@ basename file) in
   let file =
-    if Astring.String.is_prefix ~affix:"page-" base then file
+    if String.starts_with ~prefix:"page-" base then file
     else Fs.File.create ~directory:dir ~name:("page-" ^ base)
   in
   save_unit file page.Lang.Page.root { content = Page_content page; warnings }
@@ -56,7 +56,7 @@ let save_impl file ~warnings impl =
   let dir = Fs.File.dirname file in
   let base = Fs.File.(to_string @@ basename file) in
   let file =
-    if Astring.String.is_prefix ~affix:"impl-" base then file
+    if String.starts_with ~prefix:"impl-" base then file
     else Fs.File.create ~directory:dir ~name:("impl-" ^ base)
   in
   save_unit file impl.Lang.Implementation.root
@@ -66,7 +66,7 @@ let save_asset file ~warnings asset =
   let dir = Fs.File.dirname file in
   let base = Fs.File.(to_string @@ basename file) in
   let file =
-    if Astring.String.is_prefix ~affix:"asset-" base then file
+    if String.starts_with ~prefix:"asset-" base then file
     else Fs.File.create ~directory:dir ~name:("asset-" ^ base)
   in
   let t = { content = Asset_content asset; warnings } in

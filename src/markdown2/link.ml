@@ -16,7 +16,7 @@ module Path = struct
     let remaps =
       []
       (* List.filter
-        (fun (prefix, _replacement) -> Astring.String.is_prefix ~affix:prefix l)
+        (fun (prefix, _replacement) -> String.starts_with ~prefix l)
         false (* (Config.remap config) *) *)
     in
     let remaps =

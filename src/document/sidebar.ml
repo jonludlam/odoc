@@ -30,7 +30,7 @@ end = struct
           if valid_link then
             let target = Target.Internal (Target.Resolved url) in
             let attr =
-              if url.page = current_url && Astring.String.equal url.anchor ""
+              if url.page = current_url && String.equal url.anchor ""
               then [ "current_unit" ]
               else []
             in
@@ -100,7 +100,7 @@ end = struct
                       let name =
                         match entry.id.iv with
                         | `LeafPage (Some parent, name)
-                          when Astring.String.equal
+                          when String.equal
                                  (Names.PageName.to_string name)
                                  "index" ->
                             Id.name parent

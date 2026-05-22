@@ -37,7 +37,7 @@ let all_opam_packages =
       List.filter_map
         (fun p ->
           let name = Fpath.basename p in
-          match Astring.String.cut ~sep:"." name with
+          match Odoc_utils.String.cut ~sep:"." name with
           | Some (name, version) -> Some { name; version }
           | None -> None)
         contents
@@ -109,7 +109,7 @@ let deps pkgs =
   let out = Util.lines_of_process cmd in
   List.filter_map
     (fun x ->
-      match Astring.String.cut ~sep:"." x with
+      match Odoc_utils.String.cut ~sep:"." x with
       | Some (name, version) -> Some { name; version }
       | None -> None)
     out
@@ -292,7 +292,7 @@ let check pkgs =
   let res =
     List.filter_map
       (fun x ->
-        match Astring.String.cut ~sep:"." x with
+        match Odoc_utils.String.cut ~sep:"." x with
         | Some (name, _version) -> Some name
         | None -> None)
       out

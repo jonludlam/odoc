@@ -17,7 +17,6 @@
  (libraries
   odoc_model
   fpath
-  astring
   syntax_highlighter
   odoc_utils
   odoc_index))

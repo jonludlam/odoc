@@ -188,7 +188,7 @@ let read_cmt ~make_root ~parent ~filename ~warnings_tag () =
             List.map
               (fun file ->
                 let pref = Misc.chop_extensions file in
-                Astring.String.Ascii.capitalize (Filename.basename pref))
+                String.capitalize_ascii (Filename.basename pref))
               files
           in
           let items = List.sort String.compare items in

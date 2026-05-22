@@ -70,7 +70,7 @@ and inline ~(config : Config.t) ~resolve l =
         (* Since CommonMark doesn't support Math's, we treat it a inline code *)
         [ Renderer.Inline.Code_span [ s ] ]
     | Raw_markup (target, content) -> (
-        match Astring.String.Ascii.lowercase target with
+        match String.lowercase_ascii target with
         | "html" ->
             let block_lines = content in
             [ Renderer.Inline.Raw_html [ block_lines ] ]
@@ -129,7 +129,7 @@ let rec block ~config ~resolve l =
           (* We extract definition as inline *)
           let definition_inline =
             Renderer.Inline.Text
-              (String.concat ~sep:"" (block_text_only definition))
+              (String.concat "" (block_text_only definition))
           in
           let space = Renderer.Inline.Text " " in
           let term_inline =
@@ -156,7 +156,7 @@ let rec block ~config ~resolve l =
         in
         [ block ]
     | Raw_markup (target, content) -> (
-        match Astring.String.Ascii.lowercase target with
+        match String.lowercase_ascii target with
         | "html" ->
             let html_block_lines = Renderer.block_line_of_string content in
             [ Renderer.Block.Html_block html_block_lines ]
@@ -195,7 +195,7 @@ and block_table ~config ~resolve t =
     | [ { Types.Block.desc = Inline p; _ } ] ->
         inline ~config ~resolve p
     | blocks ->
-        let text = String.concat ~sep:" " (block_text_only blocks) in
+        let text = String.concat " " (block_text_only blocks) in
         [ Renderer.Inline.Text text ]
   in
 
@@ -290,7 +290,7 @@ and documentedSrc ~config ~resolve t =
   in
   (* Convert doc blocks to a plain-text comment string *)
   let doc_comment doc =
-    let text = String.concat ~sep:"" (block_text_only doc) in
+    let text = String.concat "" (block_text_only doc) in
     if String.length text = 0 then None else Some ("(* " ^ text ^ " *)")
   in
   let indent_str = "  " in
@@ -303,7 +303,7 @@ and documentedSrc ~config ~resolve t =
         let indented =
           (prefix ^ first) :: List.map (fun l -> prefix ^ l) rest
         in
-        String.concat ~sep:"\n" indented
+        String.concat "\n" indented
   in
   (* Collect all consecutive Code/Documented/Nested items into a list
      of lines forming a single code block. *)
@@ -313,14 +313,14 @@ and documentedSrc ~config ~resolve t =
     | (Code _ | Alternative _) :: _ ->
         let code, _header, rest = take_code t in
         let inline_source = source inline_text_only code in
-        let text = String.concat ~sep:"" inline_source in
+        let text = String.concat "" inline_source in
         if had_items then
           (* After items, Code chunks go on a new line *)
           let lines = lines @ [ current ] in
           collect_code ~lines ~current:text ~had_items rest
         else collect_code ~lines ~current:(current ^ text) ~had_items rest
     | Documented { code; doc; _ } :: rest ->
-        let code_str = String.concat ~sep:"" (inline_text_only code) in
+        let code_str = String.concat "" (inline_text_only code) in
         let line =
           match doc_comment doc with
           | Some comment -> indent_str ^ code_str ^ " " ^ comment
@@ -336,7 +336,7 @@ and documentedSrc ~config ~resolve t =
           collect_code ~lines:[] ~current:"" ~had_items:false code
         in
         let nested_all = nested_lines @ [ nested_current ] in
-        let nested_str = String.concat ~sep:"\n" nested_all in
+        let nested_str = String.concat "\n" nested_all in
         let nested_with_doc =
           match doc_comment doc with
           | Some comment -> nested_str ^ " " ^ comment
@@ -365,7 +365,7 @@ and documentedSrc ~config ~resolve t =
         in
         (* Remove trailing empty lines *)
         let trimmed = trim_trailing all_lines in
-        let code_str = String.concat ~sep:"\n" trimmed in
+        let code_str = String.concat "\n" trimmed in
         let code = [ code_str ] in
         let block =
           Renderer.Block.Code_block { info_string = Some "ocaml"; code }
@@ -415,10 +415,10 @@ module Page = struct
         match (span : Types.Source_page.span) with
         | Plain_code s -> s
         | Tagged_code (_, docs) ->
-            String.concat ~sep:"" (List.map doc_to_text docs)
+            String.concat "" (List.map doc_to_text docs)
       in
 
-      docs |> List.map doc_to_text |> String.concat ~sep:"" |> String.trim
+      docs |> List.map doc_to_text |> String.concat "" |> String.trim
     in
     let source_block =
       Renderer.Block.Code_block

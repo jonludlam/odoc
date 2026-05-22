@@ -370,8 +370,8 @@ let report ~(what : what) ?tools_error action =
         r "module type expression" (module_type_expr c) cexpr
     | `Module_type_u_expr cexpr ->
         r "module type u expression" (u_module_type_expr c) cexpr
-    | `Child_module rf -> r "child module" Astring.String.pp rf
-    | `Child_page rf -> r "child page" Astring.String.pp rf
+    | `Child_module rf -> r "child module" Format.pp_print_string rf
+    | `Child_page rf -> r "child page" Format.pp_print_string rf
     | `Reference ref -> r "reference" (model_reference c) ref
   in
   match kind_of_error ~what tools_error with

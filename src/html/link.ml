@@ -15,7 +15,7 @@ module Path = struct
     let path = String.concat "/" dir ^ "/" ^ file in
     let remaps =
       List.filter
-        (fun (prefix, _) -> Astring.String.is_prefix ~affix:prefix path)
+        (fun (prefix, _) -> String.starts_with ~prefix path)
         (Config.remap config)
     in
     let remaps =

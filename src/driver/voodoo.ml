@@ -54,7 +54,7 @@ let libname_of_archives_of_dir dir =
       List.fold_left
         (fun acc file ->
           let base = Fpath.basename file in
-          if Astring.String.is_suffix ~affix:".cma" base then
+          if String.ends_with ~suffix:".cma" base then
             let libname = String.sub base 0 (String.length base - 4) in
             Fpath.Map.add Fpath.(dir / libname) libname acc
           else acc)
@@ -266,7 +266,7 @@ let find_pkg pkg_name ~blessed =
             match Fpath.segs file with
             | "prep" :: "universes" :: u :: p :: v :: (_ :: _ as rest)
               when p = pkg_name -> (
-                let file = Fpath.v (Astring.String.concat ~sep:"/" rest) in
+                let file = Fpath.v (String.concat "/" rest) in
                 match cur_opt with
                 | Some cur
                   when cur.name = p && cur.version = v && cur.universe = u ->

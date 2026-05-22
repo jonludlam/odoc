@@ -8,10 +8,18 @@ module Id = Odoc_model.Paths.Identifier
 let parse_input_file input =
   let is_sep = function '\n' | '\r' -> true | _ -> false in
   Fs.File.read input >>= fun content ->
-  let files =
-    String.fields ~empty:false ~is_sep content |> List.rev_map Fs.File.of_string
+  let n = String.length content in
+  let rec loop acc i =
+    if i >= n then acc
+    else if is_sep content.[i] then loop acc (i + 1)
+    else
+      let rec find_end j =
+        if j >= n || is_sep content.[j] then j else find_end (j + 1)
+      in
+      let j = find_end (i + 1) in
+      loop (Fs.File.of_string (String.sub content i (j - i)) :: acc) j
   in
-  Ok files
+  Ok (loop [] 0)
 
 let parse_input_files input =
   List.fold_left

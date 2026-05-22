@@ -232,7 +232,18 @@ let equation ppf x =
   Fmt.cut ppf ();
   (* A blank line before \end{equation*} is a latex error,
      we trim on the right the user input to avoid any surprise *)
-  let x = Astring.String.drop ~rev:true ~sat:Astring.Char.Ascii.is_white x in
+  let is_white = function
+    | ' ' | '\t' | '\n' | '\x0B' | '\x0C' | '\r' -> true
+    | _ -> false
+  in
+  let x =
+    let rec last_non_white i =
+      if i < 0 then 0
+      else if is_white x.[i] then last_non_white (i - 1)
+      else i + 1
+    in
+    String.sub x 0 (last_non_white (String.length x - 1))
+  in
   Fmt.string ppf x;
   Fmt.cut ppf ();
   mend ppf name

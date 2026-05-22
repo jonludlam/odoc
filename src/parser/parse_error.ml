@@ -1,4 +1,4 @@
-let capitalize_ascii = Astring.String.Ascii.capitalize
+let capitalize_ascii = String.capitalize_ascii
 
 let bad_markup : ?suggestion:string -> string -> Loc.span -> Warning.t =
  fun ?suggestion -> Warning.make ?suggestion "'%s': bad markup."

@@ -16,7 +16,7 @@ type t = {
 }
 
 let ensure_trailing_slash s =
-  if Astring.String.is_suffix ~affix:"/" s then s else s ^ "/"
+  if String.ends_with ~suffix:"/" s then s else s ^ "/"
 
 let v ?(search_result = false) ?theme_uri ?support_uri ?(search_uris = [])
     ~semantic_uris ~indent ~flat ~open_details ~as_json ~remap ?home_breadcrumb

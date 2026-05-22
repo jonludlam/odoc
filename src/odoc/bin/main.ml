@@ -34,7 +34,7 @@ module Compile : sig
 end = struct
   let has_page_prefix file =
     file |> Fs.File.basename |> Fs.File.to_string
-    |> String.is_prefix ~affix:"page-"
+    |> String.starts_with ~prefix:"page-"
 
   let unique_id =
     let doc = "For debugging use" in
@@ -254,7 +254,7 @@ module Compile_impl = struct
   let output_file output_dir parent_id input =
     let name =
       Fs.File.basename input |> Fpath.set_ext "odoc" |> Fs.File.to_string
-      |> String.Ascii.uncapitalize
+      |> String.uncapitalize_ascii
     in
     let name = prefix ^ name in
 
@@ -997,7 +997,7 @@ let () =
       in
       Printf.printf
         "Available subcommands: %s\nSee --help for more information.\n%!"
-        (String.concat ~sep:", " available_subcommands)
+        (String.concat ", " available_subcommands)
     in
     let man =
       (* Show sections in a defined order. *)

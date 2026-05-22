@@ -157,7 +157,7 @@ end = struct
               let file = Fpath.v file in
               if Fpath.has_ext "odoc" file then
                 Hashtbl.add unit_cache
-                  (Astring.String.Ascii.capitalize
+                  (String.capitalize_ascii
                      (file |> Fpath.rem_ext |> Fpath.basename))
                   (Fs.File.append directory file))
             files
@@ -168,7 +168,7 @@ end = struct
     unit_cache
 
   let find t name =
-    let name = Astring.String.Ascii.capitalize name in
+    let name = String.capitalize_ascii name in
     Hashtbl.find_all t name
 end
 
@@ -349,7 +349,7 @@ let lookup_page_by_name ap target_name =
 
 (** Lookup an implementation. *)
 let lookup_impl ap target_name =
-  let target_name = "impl-" ^ Astring.String.Ascii.uncapitalize target_name in
+  let target_name = "impl-" ^ String.uncapitalize_ascii target_name in
   let is_impl u =
     match u with
     | Odoc_file.Impl_content p -> Some p
@@ -439,8 +439,10 @@ let lookup_page_by_path ~pages ~hierarchy path =
 
 let lookup_unit_by_path ~libs ~hierarchy path =
   let possible_unit_names name =
-    Astring.String.Ascii.
-      [ capitalize name ^ ".odoc"; uncapitalize name ^ ".odoc" ]
+    [
+      String.capitalize_ascii name ^ ".odoc";
+      String.uncapitalize_ascii name ^ ".odoc";
+    ]
   in
   match lookup_path ~possible_unit_names ~named_roots:libs ~hierarchy path with
   | Ok (Odoc_file.Unit_content u) -> Ok (Odoc_xref2.Env.Found u)

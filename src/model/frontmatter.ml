@@ -60,10 +60,10 @@ let apply fm line =
 
 let parse_child c =
   let mod_prefix = "module-" in
-  if Astring.String.is_suffix ~affix:"/" c then
+  if String.ends_with ~suffix:"/" c then
     let c = String.sub c 0 (String.length c - 1) in
     Dir c
-  else if Astring.String.is_prefix ~affix:mod_prefix c then
+  else if String.starts_with ~prefix:mod_prefix c then
     let l = String.length mod_prefix in
     let c = String.sub c l (String.length c - l) in
     Module c

@@ -90,7 +90,7 @@ let not_allowed :
     Error.t =
  fun ?suggestion ~what ~in_what ->
   Error.make ?suggestion "%s is not allowed in %s."
-    (Astring.String.Ascii.capitalize what)
+    (String.capitalize_ascii what)
     in_what
 
 let describe_element = function
@@ -347,7 +347,7 @@ let generate_heading_label : Comment.inline_element with_location list -> string
            let c =
              match c with
              | ' ' | '\t' | '\r' | '\n' -> '-'
-             | _ -> Astring.Char.Ascii.lowercase c
+             | _ -> Char.lowercase_ascii c
            in
            Bytes.set result index c);
     Bytes.unsafe_to_string result
@@ -362,7 +362,7 @@ let generate_heading_label : Comment.inline_element with_location list -> string
         let anchor =
           match (element : Comment.inline_element) with
           | `Space -> anchor ^ "-"
-          | `Word w -> anchor ^ Astring.String.Ascii.lowercase w
+          | `Word w -> anchor ^ String.lowercase_ascii w
           | `Code_span c | `Math_span c ->
               anchor ^ replace_spaces_with_hyphens_and_lowercase c
           | `Raw_markup _ ->

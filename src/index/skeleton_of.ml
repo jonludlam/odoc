@@ -35,8 +35,8 @@ let compare_entry (t1 : t) (t2 : t) =
     match comp (f t1) (f t2) with 0 -> fallback () | i -> i
   in
   try_ (compare : int -> int -> int) by_kind @@ fun () ->
-  try_ Astring.String.compare by_category @@ fun () ->
-  try_ Astring.String.compare by_name @@ fun () -> 0
+  try_ String.compare by_category @@ fun () ->
+  try_ String.compare by_name @@ fun () -> 0
 
 let rec t_of_in_progress (dir : In_progress.in_progress) : t =
   let entry_of_page page =
@@ -120,11 +120,11 @@ let rec t_of_in_progress (dir : In_progress.in_progress) : t =
         let equal id ch =
           match (ch, id.Id.iv) with
           | (_, { Location_.value = Frontmatter.Dir c; _ }), `Page (_, name) ->
-              Astring.String.equal (PageName.to_string name) c
+              String.equal (PageName.to_string name) c
           | (_, { Location_.value = Page c; _ }), `LeafPage (_, name) ->
-              Astring.String.equal (PageName.to_string name) c
+              String.equal (PageName.to_string name) c
           | (_, { Location_.value = Module c; _ }), `Root (_, name) ->
-              Astring.String.equal (ModuleName.to_string name) c
+              String.equal (ModuleName.to_string name) c
           | _ -> false
         in
         let children_indexes, indexed_content, unindexed_content =

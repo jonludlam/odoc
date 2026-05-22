@@ -19,7 +19,7 @@ let reference_kinds_do_not_match : string -> string -> Location_.span -> Error.t
 
 let should_not_be_empty : what:string -> Location_.span -> Error.t =
  fun ~what ->
-  Error.make "%s should not be empty." (Astring.String.Ascii.capitalize what)
+  Error.make "%s should not be empty." (String.capitalize_ascii what)
 
 let not_allowed :
     ?suggestion:string ->
@@ -29,7 +29,7 @@ let not_allowed :
     Error.t =
  fun ?suggestion ~what ~in_what ->
   Error.make ?suggestion "%s is not allowed in %s."
-    (Astring.String.Ascii.capitalize what)
+    (String.capitalize_ascii what)
     in_what
 
 (** Format a list in a human readable way: [A, B, or C]. *)
@@ -171,10 +171,10 @@ let tokenize location s : token list * path_prefix option =
     let length = started_at - offset in
     let identifier = String.sub s offset length in
     let identifier =
-      Astring.String.cuts ~sep:"\"" identifier
+      Odoc_utils.String.cuts ~sep:"\"" identifier
       |> List.mapi (fun i s ->
              if i mod 2 = 0 then
-               Astring.String.cuts s ~sep:" " |> String.concat ""
+               Odoc_utils.String.cuts ~sep:" " s |> String.concat ""
              else s)
       |> String.concat ""
     in
@@ -225,7 +225,7 @@ let expected ?(expect_paths = false) allowed location =
   expected_err (pp_hum_comma_separated Format.pp_print_string) allowed location
 
 let parse_path whole_path_location p =
-  let segs = Astring.String.cuts ~sep:"/" p in
+  let segs = Odoc_utils.String.cuts ~sep:"/" p in
   let check segs start =
     let _finish =
       List.fold_left
