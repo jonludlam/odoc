@@ -135,4 +135,21 @@ module String = struct
         else scan (i + 1)
       in
       scan 0
+
+  (** Split on any of [\n] or [\r], dropping empty fields. Useful for parsing
+      line-separated text files where line endings are either flavour. *)
+  let split_lines s =
+    let is_sep = function '\n' | '\r' -> true | _ -> false in
+    let n = String.length s in
+    let rec loop acc i =
+      if i >= n then List.rev acc
+      else if is_sep s.[i] then loop acc (i + 1)
+      else
+        let rec find_end j =
+          if j >= n || is_sep s.[j] then j else find_end (j + 1)
+        in
+        let j = find_end (i + 1) in
+        loop (String.sub s i (j - i) :: acc) j
+    in
+    loop [] 0
 end
