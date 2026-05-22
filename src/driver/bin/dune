@@ -4,6 +4,7 @@
  (package odoc-driver)
  (link_deps
   (package odoc)
+  (package odoc-html)
   (package odoc-md)
   %{bin:sherlodoc})
  (libraries odoc_driver_lib))
@@ -14,6 +15,7 @@
  (package odoc-driver)
  (link_deps
   (package odoc)
+  (package odoc-html)
   (package odoc-md)
   %{bin:sherlodoc})
  (libraries odoc_driver_lib))
@@ -24,6 +26,7 @@
  (package odoc-driver)
  (link_deps
   (package odoc)
+  (package odoc-html)
   (package odoc-md)
   %{bin:sherlodoc})
  (libraries odoc_driver_lib))

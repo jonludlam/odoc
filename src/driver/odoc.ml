@@ -24,6 +24,8 @@ type compile_deps = { digest : Digest.t; deps : (string * Digest.t) list }
 
 let odoc = ref (Cmd.v "odoc")
 
+let odoc_html = ref (Cmd.v "odoc-html")
+
 let odoc_md = ref (Cmd.v "odoc-md")
 
 let compile_deps f =
@@ -235,7 +237,7 @@ let html_generate ~output_dir ?sidebar ?(ignore_output = false)
       empty search_uris
   in
   let cmd =
-    !odoc % "html-generate" % p file %% index %% search_uris % "-o" % output_dir
+    !odoc_html % "generate" % p file %% index %% search_uris % "-o" % output_dir
     %% home_breadcrumb
   in
   let cmd =
@@ -257,7 +259,7 @@ let html_generate_asset ~output_dir ?(ignore_output = false) ?home_breadcrumb
     | Some name -> v "--home-breadcrumb" % name
   in
   let cmd =
-    !odoc % "html-generate-asset" % "-o" % output_dir % "--asset-unit" % p file
+    !odoc_html % "generate-asset" % "-o" % output_dir % "--asset-unit" % p file
     % p asset_path %% home_breadcrumb
   in
   let desc = Printf.sprintf "Copying asset %s" (Fpath.to_string file) in
@@ -285,7 +287,7 @@ let html_generate_source ~output_dir ?(ignore_output = false) ~source ?sidebar
       empty search_uris
   in
   let cmd =
-    !odoc % "html-generate-source" %% file %% sidebar % p source %% search_uris
+    !odoc_html % "generate-source" %% file %% sidebar % p source %% search_uris
     % "-o" % output_dir %% home_breadcrumb
   in
   let cmd = if as_json then cmd % "--as-json" else cmd in
@@ -298,7 +300,7 @@ let html_generate_source ~output_dir ?(ignore_output = false) ~source ?sidebar
 
 let support_files path =
   let open Cmd in
-  let cmd = !odoc % "support-files" % "-o" % Fpath.to_string path in
+  let cmd = !odoc_html % "support-files" % "-o" % Fpath.to_string path in
   let desc = "Generating support files" in
   Cmd_outputs.submit None desc cmd None
 

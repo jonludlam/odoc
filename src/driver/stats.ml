@@ -173,7 +173,7 @@ let dump () =
   List.iter print_cmd (List.rev !commands);
   List.iter print_cmd (k_longest_commands "compile" 5);
   List.iter print_cmd (k_longest_commands "link" 5);
-  List.iter print_cmd (k_longest_commands "html-generate" 5)
+  List.iter print_cmd (k_longest_commands "generate" 5)
 
 let rec compute_min_max_avg min_ max_ total count = function
   | [] -> (min_, max_, total /. float count, count)
@@ -296,12 +296,12 @@ let all_metrics html_dir =
   compute_metric_cmd "compile"
   @ compute_metric_cmd "compile-deps"
   @ compute_metric_cmd "link"
-  @ compute_metric_cmd "html-generate"
+  @ compute_metric_cmd "generate"
   @ compute_longest_cmd "compile"
   @ compute_longest_cmd "link"
   @ compute_produced_cmd "compile"
   @ compute_produced_cmd "link"
-  @ compute_produced_tree "html-generate" html_dir
+  @ compute_produced_tree "generate" html_dir
 
 let bench_results html_dir =
   let result =

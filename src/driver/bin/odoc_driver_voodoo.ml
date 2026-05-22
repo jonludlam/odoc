@@ -41,8 +41,11 @@ let generate_status ~html_dir pkg =
   Status.file ~html_dir ~pkg ~redirections ()
 
 let run package_name blessed actions odoc_dir odocl_dir
-    { Common_args.verbose; html_dir; nb_workers; odoc_bin; odoc_md_bin; _ } =
+    { Common_args.verbose; html_dir; nb_workers; odoc_bin; odoc_html_bin; odoc_md_bin; _ } =
   Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
+  Option.iter
+    (fun odoc_html_bin -> Odoc.odoc_html := Bos.Cmd.v odoc_html_bin)
+    odoc_html_bin;
   Option.iter
     (fun odoc_md_bin -> Odoc.odoc_md := Bos.Cmd.v odoc_md_bin)
     odoc_md_bin;

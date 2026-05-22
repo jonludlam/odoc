@@ -22,11 +22,15 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
       stats;
       nb_workers;
       odoc_bin;
+      odoc_html_bin;
       odoc_md_bin;
       generate_json;
       _;
     } () =
   Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
+  Option.iter
+    (fun odoc_html_bin -> Odoc.odoc_html := Bos.Cmd.v odoc_html_bin)
+    odoc_html_bin;
   Option.iter
     (fun odoc_md_bin -> Odoc.odoc_md := Bos.Cmd.v odoc_md_bin)
     odoc_md_bin;
@@ -189,7 +193,7 @@ let link_grep =
     & info [ "link-grep" ] ~doc ~docs:Manpage.s_none)
 
 let generate_grep =
-  let doc = "Show html-generate commands containing the string" in
+  let doc = "Show generate commands containing the string" in
   Arg.(
     value
     & opt (some string) None

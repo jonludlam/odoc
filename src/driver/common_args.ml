@@ -34,6 +34,13 @@ let odoc_bin =
     & opt (some string) None
     & info [ "odoc" ] ~doc ~docs:Manpage.s_common_options)
 
+let odoc_html_bin =
+  let doc = "Odoc-html binary to use" in
+  Arg.(
+    value
+    & opt (some string) None
+    & info [ "odoc-html" ] ~doc ~docs:Manpage.s_common_options)
+
 let odoc_md_bin =
   let doc = "Odoc-md binary to use" in
   Arg.(
@@ -68,6 +75,7 @@ type t = {
   stats : bool;
   nb_workers : int;
   odoc_bin : string option;
+  odoc_html_bin : string option;
   odoc_md_bin : string option;
   generate_json : bool;
 }
@@ -106,6 +114,7 @@ let term =
   and+ stats = stats
   and+ nb_workers = nb_workers
   and+ odoc_bin = odoc_bin
+  and+ odoc_html_bin = odoc_html_bin
   and+ odoc_md_bin = odoc_md_bin
   and+ generate_json = generate_json in
-  { verbose; html_dir; stats; nb_workers; odoc_bin; odoc_md_bin; generate_json }
+  { verbose; html_dir; stats; nb_workers; odoc_bin; odoc_html_bin; odoc_md_bin; generate_json }

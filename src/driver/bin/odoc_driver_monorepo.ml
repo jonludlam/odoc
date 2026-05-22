@@ -13,11 +13,15 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
       stats;
       nb_workers;
       odoc_bin;
+      odoc_html_bin;
       odoc_md_bin;
       generate_json;
       _;
     } () =
   Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
+  Option.iter
+    (fun odoc_html_bin -> Odoc.odoc_html := Bos.Cmd.v odoc_html_bin)
+    odoc_html_bin;
   Option.iter
     (fun odoc_md_bin -> Odoc.odoc_md := Bos.Cmd.v odoc_md_bin)
     odoc_md_bin;
