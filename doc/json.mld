@@ -3,7 +3,7 @@
 In order to embed the output of odoc within another website,
 the html generator for odoc has a mode where instead of producing HTML files, it will produce JSON files
 where the HTML files would have been. For example, if the HTML generator would have produced a file 
-[/x/y/z/index.html], then when the [--as-json] flag is passed to [odoc html-generate], it will instead
+[/x/y/z/index.html], then when the [--as-json] flag is passed to [odoc-html generate], it will instead
 write the file [/x/y/z/index.html.json].
 
 In addition, there is a per-package 'global' sidebar json file.

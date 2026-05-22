@@ -100,12 +100,12 @@ The output of the [odoc link] command is an [.odocl] file, by default, in the sa
 
 {2 Generating HTML}
 {v
-$ odoc html-generate --indent -o html page-john.odocl
-  && odoc html-generate --indent -o html page-doe.odocl
-  && odoc html-generate --indent -o html page-mark.odocl
-  && odoc html-generate --indent -o html page-max.odocl
-  && odoc html-generate --indent -o html foo.odocl
-  && odoc support-files -o html
+$ odoc-html generate --indent -o html page-john.odocl
+  && odoc-html generate --indent -o html page-doe.odocl
+  && odoc-html generate --indent -o html page-mark.odocl
+  && odoc-html generate --indent -o html page-max.odocl
+  && odoc-html generate --indent -o html foo.odocl
+  && odoc-html support-files -o html
 v}
 
 Then we inspect the contents of the [html] directory using;

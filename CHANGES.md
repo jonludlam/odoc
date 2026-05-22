@@ -1,5 +1,32 @@
 # Unreleased
 
+### Breaking
+- The `odoc` opam package no longer ships the HTML generator. HTML output is
+  now provided by a new `odoc-html` package with subcommands on a separate
+  `odoc-html` binary:
+  - `odoc html-generate` → `odoc-html generate`
+  - `odoc html-generate-source` → `odoc-html generate-source`
+  - `odoc html-generate-asset` → `odoc-html generate-asset`
+  - `odoc html-fragment` → `odoc-html fragment`
+  - `odoc html-url` → `odoc-html url`
+  - `odoc html-targets` → `odoc-html targets`
+  - `odoc html-targets-source` → `odoc-html targets-source`
+  - `odoc support-files` → `odoc-html support-files`
+  - `odoc support-files-targets` → `odoc-html support-files-targets`
+  - `odoc html` (legacy `link`+`generate`) → `odoc link` then `odoc-html generate`
+  - The `--json` mode of `odoc sidebar-generate` is now
+    `odoc-html sidebar-generate-json`.
+  - The deprecated aliases `odoc css` and `odoc html-deps` are removed; use
+    `odoc-html support-files` and `odoc link-deps` respectively.
+
+  Build systems that invoke `odoc html-*` (including dune's `@doc` alias)
+  must be updated. Install `odoc-html` alongside `odoc` to keep producing
+  HTML.
+
+  As a result, the core `odoc` package no longer depends on `tyxml` or the
+  build-time `crunch` tool. `latex-generate`, `manpage-generate`, and
+  `markdown-generate` remain in the core package.
+
 - Support for OxCaml unboxed named types (@art-w, #1407)
 
 # 3.2.1

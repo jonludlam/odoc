@@ -297,9 +297,9 @@ of HTML, Latex and manpages, although currently HTML is the [odoc] backend that
 supports the most functionalities (such as images, videos, ...).
 
 In this manual, we describe the HTML generation usecase. Usually,
-generating for other backend boils down to replacing [html-generate] by
-[latex-generate] or [man-generate], refer to the manpage to see the diverging
-options.
+generating for other backend boils down to replacing [odoc-html generate] by
+[odoc latex-generate] or [odoc man-generate], refer to the manpage to see the
+diverging options.
 
 Given an [.odocl] file, [odoc] might generate a single [.html] file, or a
 complete directory of [.html] files. The [--output-dir] option specifies the
@@ -325,10 +325,10 @@ web worker to perform searches:
 
 {3 Interfaces and pages}
 
-A generic [html-generate] command for interfaces has the following form:
+A generic [odoc-html generate] command for interfaces has the following form:
 
 {@shell[
-  $ odoc html-generate
+  $ odoc-html generate
     --output-dir <odir>
     --index <path/to/file.odoc-index>
     --search-uri <relative/to/output-dir/file.js>
@@ -353,7 +353,7 @@ the page and the [.html] extension.
 An example of such command is:
 
 {@shell[
-  $ odoc html-generate
+  $ odoc-html generate
       _odoc/ppxlib/page-index.odocl
       --index _odoc/ppxlib/index.odoc-index
       --search-uri ppxlib/sherlodoc_db.js
@@ -364,7 +364,7 @@ An example of such command is:
 {3 Source code}
 
 {@shell[
-  $ odoc html-generate-source --output-dir <odir> --impl <path/to/impl-file.odocl> <path/to/source/file.ml>
+  $ odoc-html generate-source --output-dir <odir> --impl <path/to/impl-file.odocl> <path/to/source/file.ml>
 ]}
 
 - [--output-dir <odir>] has been covered already
@@ -379,7 +379,7 @@ initial [--source-id] and [--name] given when creating the [impl-*.odoc] file.
 An example of such command is:
 
 {@shell[
-  $ odoc html-generate-source
+  $ odoc-html generate-source
       --impl _odoc/ppxlib/ppxlib/impl-ppxlib__Reconcile.odocl
       /home/panglesd/.opam/5.2.0/lib/ppxlib/reconcile.ml
       -o _html/
@@ -391,7 +391,7 @@ This is the phase where we pass the actual asset. We pass it as a positional
 argument, and give the asset unit using [--asset-unit].
 
 {@shell[
-  $ odoc html-generate-asset --output-dir <odir> --asset-unit <path/to/asset-file.odocl> <path/to/asset/file.ext>
+  $ odoc-html generate-asset --output-dir <odir> --asset-unit <path/to/asset-file.odocl> <path/to/asset/file.ext>
 ]}
 
 {1:conv Convention for installed packages}
