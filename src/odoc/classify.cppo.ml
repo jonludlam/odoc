@@ -107,12 +107,12 @@ module Archive = struct
   let has_modules a = StringSet.cardinal a.modules > 0
 
   let pp ppf lib =
-    Fmt.pf ppf "Name: %s@.Modules: %a@.Intf deps: %a@.Impl_deps: %a@." lib.name
-      Fmt.(list ~sep:sp string)
+    Format.fprintf ppf "Name: %s@.Modules: %a@.Intf deps: %a@.Impl_deps: %a@." lib.name
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements lib.modules)
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements lib.intf_deps)
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements lib.impl_deps)
 end
 
@@ -348,7 +348,7 @@ let classify files libraries =
 
     (* If our module depends on a library, it shouldn't be in any dependency of that library *)
     log "Modules dependencies: %a\n%!"
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (List.assoc m intfs_deps |> list_of_stringset);
     let denylist =
       List.fold_left
@@ -358,11 +358,11 @@ let classify files libraries =
           in
           if StringSet.cardinal lib_dependent_modules > 0 then (
             log "Module %s has dependencies [%a] in archive %s\n%!" m
-              Fmt.(list ~sep:sp string)
+              (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
                 (list_of_stringset lib_dependent_modules)
               archive.Archive.name;
             log "Therefore denying: %a\n%!"
-              Fmt.(list ~sep:sp string)
+              (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
               (List.assoc archive.name libdeps
               |> list_of_stringset);
             StringSet.union acc (List.assoc archive.name libdeps))
@@ -371,7 +371,7 @@ let classify files libraries =
     in
 
     log "Denylist: %a\n%!"
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements denylist);
 
     (* If library x depends upon our module, our module can't be in any library that depends upon x *)
@@ -393,7 +393,7 @@ let classify files libraries =
         StringSet.empty archives
     in
     log "Denylist2: %a\n%!"
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements denylist2);
 
     (* We prefer to put the module into a library that depends upon our module *)
@@ -406,7 +406,7 @@ let classify files libraries =
         StringSet.empty archives
     in
     log "Goodlist: %a\n%!"
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements goodlist);
 
     let goodlist2 =
@@ -423,7 +423,7 @@ let classify files libraries =
     let goodlist = StringSet.union goodlist goodlist2 in
 
     log "Goodlist: %a\n%!"
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements goodlist);
 
     let possibilities =
@@ -439,7 +439,7 @@ let classify files libraries =
     in
 
     log "Possibilities: %a\n%!"
-      Fmt.(list ~sep:sp string)
+      (Format.pp_print_list ~pp_sep:Format.pp_print_space Format.pp_print_string)
       (StringSet.elements possibilities);
 
     let result =

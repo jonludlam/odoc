@@ -7,7 +7,7 @@ type pr = Format.formatter -> unit
 
 type 'a with_options = ?options:pr list -> 'a
 
-type ('a, 'b) tr = 'a Fmt.t -> 'b Fmt.t
+type ('a, 'b) tr = (Format.formatter -> 'a -> unit) -> (Format.formatter -> 'b -> unit)
 
 type 'a t = ('a, 'a) tr
 
@@ -44,34 +44,34 @@ module Escape = struct
   let ref ppf s =
     for i = 0 to String.length s - 1 do
       match s.[i] with
-      | '~' -> Fmt.pf ppf "+t+"
-      | '&' -> Fmt.pf ppf "+a+"
-      | '^' -> Fmt.pf ppf "+c+"
-      | '%' -> Fmt.pf ppf "+p+"
-      | '{' -> Fmt.pf ppf "+ob+"
-      | '}' -> Fmt.pf ppf "+cb+"
-      | '+' -> Fmt.pf ppf "+++"
-      | c -> Fmt.pf ppf "%c" c
+      | '~' -> Format.fprintf ppf "+t+"
+      | '&' -> Format.fprintf ppf "+a+"
+      | '^' -> Format.fprintf ppf "+c+"
+      | '%' -> Format.fprintf ppf "+p+"
+      | '{' -> Format.fprintf ppf "+ob+"
+      | '}' -> Format.fprintf ppf "+cb+"
+      | '+' -> Format.fprintf ppf "+++"
+      | c -> Format.fprintf ppf "%c" c
     done
 end
 
-let option ppf pp = Fmt.pf ppf "[%t]" pp
+let option ppf pp = Format.fprintf ppf "[%t]" pp
 
 let create name ?(options = []) pp ppf content =
-  Fmt.pf ppf {|\%s%a{%a}|} name (Fmt.list option) options pp content
+  Format.fprintf ppf {|\%s%a{%a}|} name (Format.pp_print_list option) options pp content
 
-let math name ppf = Fmt.pf ppf {|$\%s$|} name
+let math name ppf = Format.fprintf ppf {|$\%s$|} name
 
 let create2 name ?(options = []) pp_x pp_y ppf x y =
-  Fmt.pf ppf {|\%s%a{%a}{%a}|} name (Fmt.list option) options pp_x x pp_y y
+  Format.fprintf ppf {|\%s%a{%a}{%a}|} name (Format.pp_print_list option) options pp_x x pp_y y
 
 let bind pp x ppf = pp ppf x
 
 let label ppf = create "label" Escape.ref ppf
 
-let mbegin ?options = create "begin" ?options Fmt.string
+let mbegin ?options = create "begin" ?options Format.pp_print_string
 
-let mend = create "end" Fmt.string
+let mend = create "end" Format.pp_print_string
 
 let code_fragment pp = create "ocamlcodefragment" pp
 
@@ -88,12 +88,12 @@ let break ppf level =
     | Types.Line | Separation | Aesthetic | Simple -> ""
     | Paragraph -> "@,"
   in
-  Fmt.pf ppf (pre ^^ "@," ^^ post)
+  Format.fprintf ppf (pre ^^ "@," ^^ post)
 
 let env name pp ?(with_break = false) ?(opts = []) ?(args = []) ppf content =
   mbegin ppf name;
-  List.iter (Fmt.pf ppf "[%t]") opts;
-  List.iter (Fmt.pf ppf "{%t}") args;
+  List.iter (Format.fprintf ppf "[%t]") opts;
+  List.iter (Format.fprintf ppf "{%t}") args;
   pp ppf content;
   mend ppf name;
   break ppf (if with_break then Simple else Aesthetic)
@@ -102,7 +102,7 @@ let indent pp ppf x = env "ocamlindent" pp ppf x
 
 let inline_code pp = create "ocamlinlinecode" pp
 
-let verbatim ppf x = env "verbatim" Fmt.string ppf x
+let verbatim ppf x = env "verbatim" Format.pp_print_string ppf x
 
 let pageref_star x = create "pageref*" Escape.ref x
 
@@ -121,9 +121,9 @@ let superscript pp = create "textsuperscript" pp
 let code_block pp ppf x =
   let name = "ocamlcodeblock" in
   mbegin ppf name;
-  Fmt.cut ppf ();
+  Format.pp_print_cut ppf ();
   pp ppf x;
-  Fmt.cut ppf ();
+  Format.pp_print_cut ppf ();
   mend ppf name
 
 let includegraphics pp = create "includegraphics" pp
@@ -149,21 +149,21 @@ let item ?options = create "item" ?options
 
 let description pp ppf x =
   (* printing description inside a group make them more robust *)
-  let group_printer d ppf = Fmt.pf ppf "{%a}" pp d in
+  let group_printer d ppf = Format.fprintf ppf "{%a}" pp d in
   let elt ppf (d, elt) = item ~options:[ group_printer d ] pp ppf elt in
   let all ppf x =
-    Fmt.pf ppf
+    Format.fprintf ppf
       {|\kern-\topsep
 \makeatletter\advance\%@topsepadd-\topsep\makeatother%% topsep is hardcoded
 |};
-    Fmt.list ~sep:(fun ppf () -> break ppf Aesthetic) elt ppf x
+    Format.pp_print_list ~pp_sep:(fun ppf () -> break ppf Aesthetic) elt ppf x
   in
   match x with
   | [] -> () (* empty description are not supported *)
   | _ :: _ -> raw_description all ppf x
 
 let url ppf s =
-  create "url" Fmt.string ppf (Escape.text ~code_hyphenation:false s)
+  create "url" Format.pp_print_string ppf (Escape.text ~code_hyphenation:false s)
 
 let footnote x = create "footnote" url x
 
@@ -172,7 +172,7 @@ let rightarrow ppf = math "rightarrow" ppf
 (** Latex uses forward slash even on Windows. *)
 let latex_path ppf path =
   let path_s = String.concat "/" (Fpath.segs path) in
-  Fmt.string ppf path_s
+  Format.pp_print_string ppf path_s
 
 let input ppf x = create "input" latex_path ppf x
 
@@ -182,27 +182,27 @@ let ocamltabular ~column_desc pp ppf x =
 let small_table pp ppf (alignment, tbl) =
   let columns = match tbl with [] -> 1 | _ -> List.length (List.hd tbl) in
   let row ppf x =
-    let ampersand ppf () = Fmt.pf ppf "& " in
-    Fmt.list ~sep:ampersand pp ppf x;
+    let ampersand ppf () = Format.fprintf ppf "& " in
+    Format.pp_print_list ~pp_sep:ampersand pp ppf x;
     break ppf Line
   in
   let matrix ppf m = List.iter (row ppf) m in
   let column_desc =
     let pp_alignment ppf align =
       match align with
-      | Odoc_document.Types.Table.Default -> Fmt.pf ppf "p"
-      | Left -> Fmt.pf ppf "w{l}"
-      | Right -> Fmt.pf ppf "w{r}"
-      | Center -> Fmt.pf ppf "w{c}"
+      | Odoc_document.Types.Table.Default -> Format.fprintf ppf "p"
+      | Left -> Format.fprintf ppf "w{l}"
+      | Right -> Format.fprintf ppf "w{r}"
+      | Center -> Format.fprintf ppf "w{c}"
     in
     let cell ppf align =
-      Fmt.pf ppf "%a{%.3f\\textwidth}" pp_alignment align
+      Format.fprintf ppf "%a{%.3f\\textwidth}" pp_alignment align
         (1.0 /. float_of_int columns)
     in
     match alignment with
     | None ->
         let rec repeat n s ppf =
-          if n = 0 then () else Fmt.pf ppf "%t%t" s (repeat (n - 1) s)
+          if n = 0 then () else Format.fprintf ppf "%t%t" s (repeat (n - 1) s)
         in
         repeat columns (fun ppf -> cell ppf Default)
     | Some alignment -> fun ppf -> List.iter (cell ppf) alignment
@@ -222,14 +222,14 @@ let small_table pp ppf (alignment, tbl) =
   table ppf tbl;
   break ppf Line
 
-let ocamltag tag pp ppf x = create2 "ocamltag" Fmt.string pp ppf tag x
+let ocamltag tag pp ppf x = create2 "ocamltag" Format.pp_print_string pp ppf tag x
 
-let math ppf x = Fmt.pf ppf {|$%s$|} x
+let math ppf x = Format.fprintf ppf {|$%s$|} x
 
 let equation ppf x =
   let name = "equation*" in
   mbegin ppf name;
-  Fmt.cut ppf ();
+  Format.pp_print_cut ppf ();
   (* A blank line before \end{equation*} is a latex error,
      we trim on the right the user input to avoid any surprise *)
   let is_white = function
@@ -244,6 +244,6 @@ let equation ppf x =
     in
     String.sub x 0 (last_non_white (String.length x - 1))
   in
-  Fmt.string ppf x;
-  Fmt.cut ppf ();
+  Format.pp_print_string ppf x;
+  Format.pp_print_cut ppf ();
   mend ppf name

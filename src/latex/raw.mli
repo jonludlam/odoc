@@ -7,7 +7,7 @@ type pr = Format.formatter -> unit
 
 type 'a with_options = ?options:pr list -> 'a
 
-type ('a, 'b) tr = 'a Fmt.t -> 'b Fmt.t
+type ('a, 'b) tr = (Format.formatter -> 'a -> unit) -> (Format.formatter -> 'b -> unit)
 
 type 'a t = ('a, 'a) tr
 
@@ -15,28 +15,28 @@ type 'a t = ('a, 'a) tr
 module Escape : sig
   val text : code_hyphenation:bool -> string -> string
 
-  val ref : string Fmt.t
+  val ref : Format.formatter -> string -> unit
 end
 
-val break : Types.break_hierarchy Fmt.t
+val break : Format.formatter -> Types.break_hierarchy -> unit
 
 val rightarrow : pr
 
-val label : string Fmt.t
+val label : Format.formatter -> string -> unit
 
-val verbatim : string Fmt.t
+val verbatim : Format.formatter -> string -> unit
 
-val pageref_star : string Fmt.t
+val pageref_star : Format.formatter -> string -> unit
 
 val hyperref : string -> 'a t
 
 val href : string -> 'a t
 
-val ref : string Fmt.t
+val ref : Format.formatter -> string -> unit
 
-val url : string Fmt.t
+val url : Format.formatter -> string -> unit
 
-val footnote : string Fmt.t
+val footnote : Format.formatter -> string -> unit
 
 val emph : 'a t
 
@@ -64,7 +64,7 @@ val item : 'a t with_options
 
 val small_table : ('a, Types.alignment list option * 'a list list) tr
 
-val input : Fpath.t Fmt.t
+val input : Format.formatter -> Fpath.t -> unit
 
 val includegraphics : 'a t
 
@@ -95,6 +95,6 @@ val ocamltag : string -> 'a t
 
 (** {2 Math mode} *)
 
-val math : string Fmt.t
+val math : Format.formatter -> string -> unit
 
-val equation : string Fmt.t
+val equation : Format.formatter -> string -> unit

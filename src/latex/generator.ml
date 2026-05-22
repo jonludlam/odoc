@@ -89,7 +89,7 @@ let gen_hyperref pp r ppf =
       let pp =
         if r.short then Raw.inline_code pp
         else fun ppf x ->
-          Fmt.pf ppf "%a[p%a]" (Raw.inline_code pp) x Raw.pageref_star s
+          Format.fprintf ppf "%a[p%a]" (Raw.inline_code pp) x Raw.pageref_star s
       in
       Raw.hyperref s pp ppf content
 
@@ -110,7 +110,7 @@ let list kind pp ppf x =
   let elt ppf = Raw.item pp ppf in
   match x with
   | [] -> (* empty list are not supported *) ()
-  | _ -> list (Fmt.list ~sep:(fun ppf () -> Raw.break ppf Aesthetic) elt) ppf x
+  | _ -> list (Format.pp_print_list ~pp_sep:(fun ppf () -> Raw.break ppf Aesthetic) elt) ppf x
 
 let escape_entity = function "#45" -> "-" | "gt" -> ">" | s -> s
 
@@ -161,7 +161,7 @@ let entity ~in_source ~verbatim x =
 let small_table_height_limit = 10
 
 let rec pp_elt ppf = function
-  | Txt words -> Fmt.list Fmt.string ~sep:none ppf words
+  | Txt words -> Format.pp_print_list ~pp_sep:none Format.pp_print_string ppf words
   | Section { level; label; content } ->
       let with_label ppf (label, content) =
         pp ppf content;
@@ -169,7 +169,7 @@ let rec pp_elt ppf = function
       in
       level_macro level with_label ppf (label, content)
   | Break lvl -> Raw.break ppf lvl
-  | Raw s -> Fmt.string ppf s
+  | Raw s -> Format.pp_print_string ppf s
   | Verbatim s -> Raw.verbatim ppf s
   | Internal_ref r -> hyperref ppf r
   | External_ref (l, x) -> href ppf (l, x)
@@ -188,7 +188,7 @@ let rec pp_elt ppf = function
       else large_table ppf tbl
   | Label x -> Raw.label ppf x
   | Indented x -> Raw.indent pp ppf x
-  | Ligaturable s -> Fmt.string ppf s
+  | Ligaturable s -> Format.pp_print_string ppf s
   | Tag (s, t) -> tag s ppf t
   | Image target -> Raw.includegraphics Fpath.pp ppf target
 
@@ -219,9 +219,9 @@ and large_table ppf tbl =
     | [ a ] ->
         pp ppf a;
         Raw.break ppf Line
-    | [ a; b ] -> Fmt.pf ppf "%a%a%a" pp a Raw.break Aesthetic (Raw.indent pp) b
+    | [ a; b ] -> Format.fprintf ppf "%a%a%a" pp a Raw.break Aesthetic (Raw.indent pp) b
     | a :: (_ :: _ as q) ->
-        Fmt.pf ppf "%a%a%a" pp a Raw.break Aesthetic (Raw.indent row) q
+        Format.fprintf ppf "%a%a%a" pp a Raw.break Aesthetic (Raw.indent row) q
   in
   let matrix ppf m = List.iter (row ppf) m in
   Raw.indent matrix ppf tbl
@@ -507,7 +507,7 @@ module Doc = struct
     let input_child ppf child =
       Raw.input ppf child.Odoc_document.Renderer.filename
     in
-    Fmt.list input_child ppf children
+    Format.pp_print_list input_child ppf children
 
   let make ~config url content children =
     let filename = Link.filename url in
@@ -521,7 +521,7 @@ module Doc = struct
     let children_input ppf =
       if config.with_children then link_children ppf children else ()
     in
-    let content ppf = Fmt.pf ppf "@[<v>%a@,%t@]@." pp content children_input in
+    let content ppf = Format.fprintf ppf "@[<v>%a@,%t@]@." pp content children_input in
     { Odoc_document.Renderer.filename; content; children; path = url }
 end
 
