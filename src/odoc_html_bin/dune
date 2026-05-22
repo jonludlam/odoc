@@ -1,6 +1,6 @@
 (library
  (name odoc_html_bin)
- (public_name odoc.html_bin)
+ (package odoc-html)
  (libraries
   fpath
   odoc_document

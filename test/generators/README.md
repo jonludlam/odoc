@@ -51,3 +51,16 @@ Dependencies of `link.dune.inc` (information used by `gen_rules.exe` to compute 
 - `dune promote` -> writes the output files to the file system.
 
 **Note** : you may need to run `dune clean && dune build` where expected files are not produced.
+
+### Per-package attribution
+
+After the `odoc-html` package was split out of `odoc`, the `cases/` corpus is
+shared by all renderer tests, but the generated rules are tagged with their
+owning opam package via `(package odoc-html)` for the html cases and
+`(package odoc)` for `latex`, `man`, and `markdown`. Compile/link rules for
+the source files stay tagged `(package odoc)` since `.odocl` files are
+produced by the core odoc binary.
+
+`dune runtest --only-packages odoc` runs every non-html test in this tree.
+The html cases require both packages: `dune runtest --only-packages
+odoc,odoc-html`. A full `dune runtest` exercises everything.
