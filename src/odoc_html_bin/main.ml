@@ -193,6 +193,94 @@ module Sidebar_json = struct
     Cmd.info "sidebar-generate-json" ~docs ~doc
 end
 
+module Compile_index_json = struct
+  let output_file ~dst =
+    match dst with
+    | Some file
+      when not
+             (Fpath.has_ext "json" (Fpath.v file)
+             || Fpath.has_ext "js" (Fpath.v file)) ->
+        Error
+          (`Msg
+             "When generating a json index, the output must have a .json or \
+              .js file extension")
+    | Some file -> Ok (Fs.File.of_string file)
+    | None -> Ok (Fs.File.of_string "index.json")
+
+  let index dst warnings_options roots inputs_in_file inputs occurrences
+      simplified_json wrap_json =
+    output_file ~dst >>= fun output ->
+    Odoc_html_bin.Compile_index_json.compile ~output ~warnings_options ~roots
+      ~occurrences ~inputs_in_file ~odocls:inputs ~simplified:simplified_json
+      ~wrap:wrap_json
+
+  let cmd =
+    let dst =
+      let doc =
+        "Output file path. Non-existing intermediate directories are created. \
+         Defaults to index.json (a .json or .js file extension is required)."
+      in
+      Arg.(
+        value & opt (some string) None
+        & info ~docs:Cli_helpers.docs ~docv:"PATH" ~doc [ "o" ])
+    in
+    let occurrences =
+      let doc = "Occurrence file." in
+      Arg.(
+        value
+        & opt (some Cli_helpers.convert_fpath) None
+        & info ~docs:Cli_helpers.docs ~docv:"PATH" ~doc [ "occurrences" ])
+    in
+    let inputs_in_file =
+      let doc =
+        "Input text file containing a line-separated list of paths to .odocl \
+         files to index."
+      in
+      Arg.(
+        value & opt_all Cli_helpers.convert_fpath []
+        & info ~doc ~docv:"FILE" [ "file-list" ])
+    in
+    let simplified_json =
+      let doc = "Whether to simplify the json output." in
+      Arg.(value & flag & info ~doc [ "simplified-json" ])
+    in
+    let wrap_json =
+      let doc =
+        "Not intended for general use. Wraps the json output in a JavaScript \
+         variable assignment, and assumes the use of fuse.js"
+      in
+      Arg.(value & flag & info ~doc [ "wrap-json" ])
+    in
+    let inputs =
+      let doc = ".odocl file to index" in
+      Arg.(
+        value
+        & pos_all Cli_helpers.convert_fpath []
+        & info ~doc ~docv:"FILE" [])
+    in
+    let roots =
+      let doc =
+        "Specifies a directory PATH containing pages or units that should be \
+         included in the index."
+      in
+      Arg.(
+        value
+        & opt_all (Cli_helpers.convert_directory ()) []
+        & info ~docs:Cli_helpers.docs ~docv:"NAME:PATH" ~doc [ "root" ])
+    in
+    Term.(
+      const Cli_helpers.handle_error
+      $ (const index $ dst $ Cli_helpers.warnings_options $ roots
+       $ inputs_in_file $ inputs $ occurrences $ simplified_json $ wrap_json))
+
+  let info ~docs =
+    let doc =
+      "Generate a JSON index of all identified entries in the .odocl files \
+       found in the given directories."
+    in
+    Cmd.info "compile-index-json" ~docs ~doc
+end
+
 let section_pipeline = "COMMANDS: HTML pipeline"
 let section_support = "COMMANDS: Scripting"
 let section_legacy = "COMMANDS: Legacy pipeline"
@@ -211,6 +299,7 @@ let () =
          Odoc_html_cmds.generate_asset ~docs:section_pipeline;
          Support_files_command.(cmd, info ~docs:section_pipeline);
          Sidebar_json.(cmd, info ~docs:section_pipeline);
+         Compile_index_json.(cmd, info ~docs:section_pipeline);
          Odoc_html_url.(cmd, info ~docs:section_support);
          Support_files_targets.(cmd, info ~docs:section_support);
          Odoc_html_cmds.targets ~docs:section_support;

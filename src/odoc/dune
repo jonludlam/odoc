@@ -10,7 +10,6 @@
   odoc_loader
   odoc_manpage
   odoc_model
-  odoc_json_index
   odoc_xref2
   odoc_occurrences
   unix)

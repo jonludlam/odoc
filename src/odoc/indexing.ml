@@ -1,6 +1,5 @@
 open Odoc_utils
 open ResultMonad
-open Odoc_json_index
 open Odoc_model
 
 module H = Odoc_model.Paths.Identifier.Hashtbl.Any
@@ -22,35 +21,14 @@ let parse_input_files input =
     (Ok []) input
   >>= fun files -> Ok (List.concat files)
 
-let compile_to_json ~output ~occurrences ~wrap ~simplified hierarchies =
-  Fs.Directory.mkdir_p (Fs.File.dirname output);
-  Io_utils.with_formatter_out (Fs.File.to_string output) @@ fun output ->
-  if wrap then Format.fprintf output "let documents = ";
-  let all =
-    List.fold_left
-      (fun acc hierarchy ->
-        Tree.fold_left
-          ~f:(fun acc entry ->
-            Json_search.of_entry ~simplified ?occurrences entry :: acc)
-          acc hierarchy)
-      [] hierarchies
-  in
-  Format.fprintf output "%s" (Odoc_utils.Json.to_string (`Array (List.rev all)));
-  if wrap then
-    Format.fprintf output
-      ";\n\
-       const options = { keys: ['name', 'comment'] };\n\
-       var idx_fuse = new Fuse(documents, options);\n";
-  Ok ()
-
 let absolute_normalization p =
   let p =
     if Fpath.is_rel p then Fpath.( // ) (Fpath.v (Sys.getcwd ())) p else p
   in
   Fpath.normalize p
 
-let compile out_format ~output ~warnings_options ~occurrences ~roots
-    ~inputs_in_file ~simplified_json ~wrap_json ~odocls =
+let build_hierarchies ~warnings_options ~occurrences ~roots ~inputs_in_file
+    ~odocls =
   let handle_warnings f =
     let res = Error.catch_warnings f in
     Error.handle_warnings ~warnings_options res |> Result.join
@@ -125,8 +103,11 @@ let compile out_format ~output ~warnings_options ~occurrences ~roots
     in
     List.map hierarchy_of_group root_groups
   in
-  match out_format with
-  | `JSON ->
-      compile_to_json ~output ~occurrences ~simplified:simplified_json
-        ~wrap:wrap_json hierarchies
-  | `Marshall -> Ok (Odoc_file.save_index output hierarchies)
+  Ok (hierarchies, occurrences)
+
+let compile ~output ~warnings_options ~occurrences ~roots ~inputs_in_file
+    ~odocls =
+  build_hierarchies ~warnings_options ~occurrences ~roots ~inputs_in_file
+    ~odocls
+  >>= fun (hierarchies, _occurrences) ->
+  Ok (Odoc_file.save_index output hierarchies)

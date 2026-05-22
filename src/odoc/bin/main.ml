@@ -315,39 +315,27 @@ module Compile_impl = struct
 end
 
 module Indexing = struct
-  let output_file ~dst marshall =
-    match (dst, marshall) with
-    | Some file, `JSON
-      when not
-             (Fpath.has_ext "json" (Fpath.v file)
-             || Fpath.has_ext "js" (Fpath.v file)) ->
-        Error
-          (`Msg
-             "When generating a json index, the output must have a .json or \
-              .js file extension")
-    | Some file, `Marshall when not (Fpath.has_ext "odoc-index" (Fpath.v file))
-      ->
+  let output_file ~dst =
+    match dst with
+    | Some file when not (Fpath.has_ext "odoc-index" (Fpath.v file)) ->
         Error
           (`Msg
              "When generating a binary index, the output must have a \
               .odoc-index file extension")
-    | Some file, _ -> Ok (Fs.File.of_string file)
-    | None, `JSON -> Ok (Fs.File.of_string "index.json")
-    | None, `Marshall -> Ok (Fs.File.of_string "index.odoc-index")
+    | Some file -> Ok (Fs.File.of_string file)
+    | None -> Ok (Fs.File.of_string "index.odoc-index")
 
-  let index dst json warnings_options roots inputs_in_file inputs occurrences
-      simplified_json wrap_json =
-    let marshall = if json then `JSON else `Marshall in
-    output_file ~dst marshall >>= fun output ->
-    Indexing.compile marshall ~output ~warnings_options ~roots ~occurrences
-      ~inputs_in_file ~simplified_json ~wrap_json ~odocls:inputs
+  let index dst warnings_options roots inputs_in_file inputs occurrences =
+    output_file ~dst >>= fun output ->
+    Indexing.compile ~output ~warnings_options ~roots ~occurrences
+      ~inputs_in_file ~odocls:inputs
 
   let cmd =
     let dst =
       let doc =
         "Output file path. Non-existing intermediate directories are created. \
-         Defaults to index.odoc-index, or index.json if --json is passed (in \
-         which case, the .odoc-index file extension is mandatory)."
+         Defaults to index.odoc-index (the .odoc-index file extension is \
+         mandatory)."
       in
       Arg.(
         value & opt (some string) None & info ~docs ~docv:"PATH" ~doc [ "o" ])
@@ -368,25 +356,6 @@ module Indexing = struct
         value & opt_all convert_fpath []
         & info ~doc ~docv:"FILE" [ "file-list" ])
     in
-    let json =
-      let doc = "whether to output a json file, or a binary .odoc-index file" in
-      Arg.(value & flag & info ~doc [ "json" ])
-    in
-    let simplified_json =
-      let doc =
-        "whether to simplify the json file. Only has an effect in json output \
-         mode."
-      in
-      Arg.(value & flag & info ~doc [ "simplified-json" ])
-    in
-    let wrap_json =
-      let doc =
-        "Not intended for general use. Wraps the json output in a JavaScript \
-         variable assignment, and assumes the use of fuse.js"
-      in
-      Arg.(value & flag & info ~doc [ "wrap-json" ])
-    in
-
     let inputs =
       let doc = ".odocl file to index" in
       Arg.(value & pos_all convert_fpath [] & info ~doc ~docv:"FILE" [])
@@ -403,13 +372,13 @@ module Indexing = struct
     in
     Term.(
       const handle_error
-      $ (const index $ dst $ json $ warnings_options $ roots $ inputs_in_file
-       $ inputs $ occurrences $ simplified_json $ wrap_json))
+      $ (const index $ dst $ warnings_options $ roots $ inputs_in_file
+       $ inputs $ occurrences))
 
   let info ~docs =
     let doc =
-      "Generate an index of all identified entries in the .odocl files found \
-       in the given directories."
+      "Generate a binary index of all identified entries in the .odocl files \
+       found in the given directories."
     in
     Cmd.info "compile-index" ~docs ~doc
 end

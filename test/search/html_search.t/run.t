@@ -65,7 +65,7 @@ the --marshall flag is passed.  Odocl files can be given either in a list (using
 passing directly the name of the files.
 
   $ printf "main.odocl\npage-page.odocl\nj.odocl\n" > index_map
-  $ odoc compile-index --json -o index.json --root .
+  $ odoc-html compile-index-json -o index.json --root .
 
   $ odoc compile-index -o index-main.odoc-index --root .
 
@@ -230,7 +230,7 @@ Wrong file extensions:
   $ odoc compile-index -o index.json
   ERROR: When generating a binary index, the output must have a .odoc-index file extension
   [1]
-  $ odoc compile-index  --json  -o index.odoc-index
+  $ odoc-html compile-index-json -o index.odoc-index
   ERROR: When generating a json index, the output must have a .json or .js file extension
   [1]
 

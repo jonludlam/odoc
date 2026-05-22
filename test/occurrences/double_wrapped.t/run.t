@@ -140,7 +140,7 @@ We can use the generated table when generating the json output:
 
   $ odoc link -I . main.odoc
 
-  $ odoc compile-index --json -o index.json --occurrences all.odoc-occurrences main.odocl
+  $ odoc-html compile-index-json -o index.json --occurrences all.odoc-occurrences main.odocl
 
   $ cat index.json | jq sort | jq '.[]' -c
   {"id":[{"kind":"Root","name":"Main"}],"doc":"Handwritten top-level module","kind":{"kind":"Module"},"display":{"url":"Main/index.html","html":"<code class=\"entry-kind\">mod</code><code class=\"entry-title\"><span class=\"entry-name\">Main</span></code><div class=\"entry-comment\"><div><p>Handwritten top-level module</p></div></div>"},"occurrences":{"direct":0,"indirect":11}}
