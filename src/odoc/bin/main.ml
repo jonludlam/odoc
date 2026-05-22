@@ -576,41 +576,28 @@ module Indexing = struct
 end
 
 module Sidebar = struct
-  let output_file ~dst marshall =
-    match (dst, marshall) with
-    | Some file, `JSON when not (Fpath.has_ext "json" (Fpath.v file)) ->
-        Error
-          (`Msg
-             "When generating a sidebar with --json, the output must have a \
-              .json file extension")
-    | Some file, `Marshall
-      when not (Fpath.has_ext "odoc-sidebar" (Fpath.v file)) ->
+  let output_file ~dst =
+    match dst with
+    | Some file when not (Fpath.has_ext "odoc-sidebar" (Fpath.v file)) ->
         Error
           (`Msg
              "When generating sidebar, the output must have a .odoc-sidebar \
               file extension")
-    | Some file, _ -> Ok (Fs.File.of_string file)
-    | None, `JSON -> Ok (Fs.File.of_string "sidebar.json")
-    | None, `Marshall -> Ok (Fs.File.of_string "sidebar.odoc-sidebar")
+    | Some file -> Ok (Fs.File.of_string file)
+    | None -> Ok (Fs.File.of_string "sidebar.odoc-sidebar")
 
-  let generate dst json warnings_options input =
-    let marshall = if json then `JSON else `Marshall in
-    output_file ~dst marshall >>= fun output ->
-    Sidebar.generate ~marshall ~output ~warnings_options ~index:input
+  let generate dst warnings_options input =
+    output_file ~dst >>= fun output ->
+    Sidebar.generate ~output ~warnings_options ~index:input
 
   let cmd =
     let dst =
       let doc =
         "Output file path. Non-existing intermediate directories are created. \
-         Defaults to sidebar.odoc-sidebar, or sidebar.json if --json is \
-         passed."
+         Defaults to sidebar.odoc-sidebar."
       in
       Arg.(
         value & opt (some string) None & info ~docs ~docv:"PATH" ~doc [ "o" ])
-    in
-    let json =
-      let doc = "whether to output a json file, or a binary .odoc-index file" in
-      Arg.(value & flag & info ~doc [ "json" ])
     in
     let inputs =
       let doc = ".odoc-index file to generate a value from" in
@@ -619,7 +606,7 @@ module Sidebar = struct
     in
     Term.(
       const handle_error
-      $ (const generate $ dst $ json $ warnings_options $ inputs))
+      $ (const generate $ dst $ warnings_options $ inputs))
 
   let info ~docs =
     let doc = "Generate a sidebar from an index file." in
