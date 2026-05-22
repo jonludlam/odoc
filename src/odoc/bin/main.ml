@@ -452,35 +452,6 @@ module Sidebar = struct
     Cmd.info "sidebar-generate" ~docs ~doc
 end
 
-module Support_files_command = struct
-  let support_files without_theme output_dir =
-    Odoc_html_bin.Support_files.write ~without_theme output_dir
-
-  let without_theme =
-    let doc = "Don't copy the default theme to output directory." in
-    Arg.(value & flag & info ~doc [ "without-theme" ])
-
-  let cmd = Term.(const support_files $ without_theme $ dst ~create:true ())
-
-  let info ~docs =
-    let doc =
-      "Copy the support files (e.g. default theme, JavaScript files) to the \
-       output directory."
-    in
-    Cmd.info ~docs ~doc "support-files"
-end
-
-module Css = struct
-  let cmd = Support_files_command.cmd
-
-  let info ~docs =
-    let doc =
-      "DEPRECATED: Use $(i,odoc support-files) to copy the CSS file for the \
-       default theme."
-    in
-    Cmd.info ~docs ~doc "css"
-end
-
 module Odoc_link : sig
   val cmd : unit Term.t
 
@@ -682,13 +653,6 @@ end = struct
       "latex-url"
 end
 
-module Odoc_html = Make_renderer.Make (struct
-  type args = Odoc_html_bin.Html_args.args
-
-  let renderer = Odoc_html_bin.Html_args.renderer
-  let extra_args = Odoc_html_bin.Html_args.extra_args
-end)
-
 module Odoc_markdown_cmd = Make_renderer.Make (struct
   type args = Odoc_markdown.Config.t
 
@@ -700,85 +664,6 @@ module Odoc_markdown_cmd = Make_renderer.Make (struct
     Term.const { Odoc_markdown.Config.root_url = None; allow_html = true }
   let renderer = { Odoc_document.Renderer.name = "markdown"; render; filepath }
 end)
-
-module Odoc_html_url : sig
-  val cmd : unit Term.t
-
-  val info : docs:string -> Cmd.info
-end = struct
-  let root_url =
-    let doc =
-      "A string to prepend to the generated relative url. A separating / is \
-       added if needed."
-    in
-    Arg.(value & opt (some string) None & info [ "r"; "root-url" ] ~doc)
-
-  let reference =
-    let doc = "The reference to be resolved and whose url to be generated." in
-    Arg.(required & pos 0 (some string) None & info ~doc ~docv:"REF" [])
-
-  let reference_to_url = Odoc_html_bin.Url.reference_to_url_html
-
-  let cmd =
-    Term.(
-      const handle_error
-      $ (const reference_to_url $ Odoc_html_bin.Html_args.extra_args $ root_url
-       $ odoc_file_directories $ reference))
-
-  let info ~docs =
-    Cmd.info ~docs ~doc:"Resolve a reference and output its corresponding url."
-      "html-url"
-end
-
-module Html_fragment : sig
-  val cmd : unit Term.t
-
-  val info : docs:string -> Cmd.info
-end = struct
-  let html_fragment directories xref_base_uri output_file input_file
-      warnings_options =
-    let resolver =
-      Resolver.create ~important_digests:false ~directories ~open_modules:[]
-        ~roots:None
-    in
-    let input_file = Fs.File.of_string input_file in
-    let output_file = Fs.File.of_string output_file in
-    let xref_base_uri =
-      if xref_base_uri = "" then xref_base_uri
-      else
-        let last_char = xref_base_uri.[String.length xref_base_uri - 1] in
-        if last_char <> '/' then xref_base_uri ^ "/" else xref_base_uri
-    in
-    Odoc_html_bin.Html_fragment.from_mld ~resolver ~xref_base_uri
-      ~output:output_file ~warnings_options input_file
-
-  let cmd =
-    let output =
-      let doc = "Output HTML fragment file." in
-      Arg.(
-        value & opt string "/dev/stdout"
-        & info ~docs ~docv:"file.html" ~doc [ "o"; "output-file" ])
-    in
-    let input =
-      let doc = "Input documentation page file." in
-      Arg.(required & pos 0 (some file) None & info ~doc ~docv:"file.mld" [])
-    in
-    let xref_base_uri =
-      let doc =
-        "Base URI used to resolve cross-references. Set this to the root of \
-         the global docset during local development. By default `.' is used."
-      in
-      Arg.(value & opt string "" & info ~docv:"URI" ~doc [ "xref-base-uri" ])
-    in
-    Term.(
-      const handle_error
-      $ (const html_fragment $ odoc_file_directories $ xref_base_uri $ output
-       $ input $ warnings_options))
-
-  let info ~docs =
-    Cmd.info ~docs ~doc:"Generates an html fragment file from an mld one."
-      "html-fragment"
-end
 
 module Odoc_manpage = Make_renderer.Make (struct
   type args = unit
@@ -908,25 +793,6 @@ module Depends = struct
            references."
   end
 
-  module Odoc_html = struct
-    let includes =
-      let doc = "For backwards compatibility. Ignored." in
-      Arg.(
-        value
-        & opt_all (convert_directory ()) []
-        & info ~docs ~docv:"DIR" ~doc [ "I" ])
-
-    let cmd =
-      let input =
-        let doc = "Input directory" in
-        Arg.(required & pos 0 (some file) None & info ~doc ~docv:"PKG_DIR" [])
-      in
-      let cmd _ = Link.list_dependencies in
-      Term.(const handle_error $ (const cmd $ includes $ input))
-
-    let info ~docs =
-      Cmd.info "html-deps" ~docs ~doc:"DEPRECATED: alias for link-deps"
-  end
 end
 
 module Targets = struct
@@ -946,19 +812,6 @@ module Targets = struct
            passed, the same path is printed but error checking is performed."
   end
 
-  module Support_files = struct
-    let list_targets without_theme output_directory =
-      Odoc_html_bin.Support_files.print_filenames ~without_theme
-        output_directory
-
-    let cmd =
-      Term.(const list_targets $ Support_files_command.without_theme $ dst ())
-
-    let info ~docs =
-      Cmd.info "support-files-targets" ~docs
-        ~doc:
-          "Lists the names of the files that $(i,odoc support-files) outputs."
-  end
 end
 
 module Occurrences = struct
@@ -1154,10 +1007,6 @@ let () =
          Compile.(cmd, info ~docs:section_pipeline);
          Compile_asset.(cmd, info ~docs:section_pipeline);
          Odoc_link.(cmd, info ~docs:section_pipeline);
-         Odoc_html.generate ~docs:section_pipeline;
-         Odoc_html.generate_source ~docs:section_pipeline;
-         Odoc_html.generate_asset ~docs:section_pipeline;
-         Support_files_command.(cmd, info ~docs:section_pipeline);
          Compile_impl.(cmd, info ~docs:section_pipeline);
          Indexing.(cmd, info ~docs:section_pipeline);
          Sidebar.(cmd, info ~docs:section_pipeline);
@@ -1166,23 +1015,15 @@ let () =
          Odoc_markdown_cmd.targets ~docs:section_support;
          Odoc_manpage.generate ~docs:section_generators;
          Odoc_latex.generate ~docs:section_generators;
-         Odoc_html_url.(cmd, info ~docs:section_support);
          Odoc_latex_url.(cmd, info ~docs:section_support);
-         Targets.Support_files.(cmd, info ~docs:section_support);
          Odoc_error.(cmd, info ~docs:section_support);
-         Odoc_html.targets ~docs:section_support;
-         Odoc_html.targets_source ~docs:section_support;
          Odoc_manpage.targets ~docs:section_support;
          Odoc_latex.targets ~docs:section_support;
          Depends.Compile.(cmd, info ~docs:section_support);
          Targets.Compile.(cmd, info ~docs:section_support);
-         Html_fragment.(cmd, info ~docs:section_legacy);
-         Odoc_html.process ~docs:section_legacy;
          Odoc_manpage.process ~docs:section_legacy;
          Odoc_latex.process ~docs:section_legacy;
          Depends.Link.(cmd, info ~docs:section_legacy);
-         Css.(cmd, info ~docs:section_deprecated);
-         Depends.Odoc_html.(cmd, info ~docs:section_deprecated);
          Classify.(cmd, info ~docs:section_pipeline);
          Extract_code.(cmd, info ~docs:section_pipeline);
        ]

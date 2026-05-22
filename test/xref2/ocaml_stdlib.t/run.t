@@ -13,8 +13,10 @@ Imitate the way the stdlib is built and how its documentation should be built.
   Warning: Canonical paths must contain a dot, eg. X.Y.
   $ odoc compile --pkg ocaml -o main__x.odoc main__x.cmti -I .
 
-  $ odoc html --indent -o html main__x.odoc -I .
-  $ odoc html --indent -o html main.odoc -I .
+  $ odoc link -o main__x.odocl main__x.odoc -I .
+  $ odoc link -o main.odocl main.odoc -I .
+  $ odoc-html generate --indent -o html main__x.odocl
+  $ odoc-html generate --indent -o html main.odocl
 
 The page for Main should include the synopsis from X:
 
