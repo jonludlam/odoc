@@ -1,5 +1,7 @@
 open Odoc_utils
 open ResultMonad
+module Fs = Odoc_odoc.Fs
+module Resolver = Odoc_odoc.Resolver
 
 let from_mld ~xref_base_uri ~resolver ~output ~warnings_options input =
   (* Internal names, they don't have effect on the output. *)

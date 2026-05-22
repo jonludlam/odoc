@@ -42,18 +42,6 @@ let resolve url_to_string directories reference =
               Ok ()
           | None -> Error (`Msg "Hidden reference")))
 
-let reference_to_url_html { Html_page.html_config = config; _ } root_url =
-  let url_to_string url =
-    let base =
-      match root_url with
-      | None | Some "" -> ""
-      | Some base ->
-          if base.[String.length base - 1] = '/' then base else base ^ "/"
-    in
-    Odoc_html.Link.(href ~config ~resolve:(Base base) url)
-  in
-  resolve url_to_string
-
 let reference_to_url_latex =
   let url_to_string url = Odoc_latex.Generator.Link.label url in
   resolve url_to_string

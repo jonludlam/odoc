@@ -2,11 +2,10 @@
  (name odoc_odoc)
  (public_name odoc.odoc)
  (libraries
+  cmdliner
   compiler-libs.common
   fpath
-  odoc_html
   odoc_markdown
-  odoc_html_support_files
   odoc_latex
   odoc_loader
   odoc_manpage
@@ -14,7 +13,6 @@
   odoc_json_index
   odoc_xref2
   odoc_occurrences
-  tyxml
   unix)
  (instrumentation
   (backend landmarks --auto))

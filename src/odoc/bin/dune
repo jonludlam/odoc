@@ -2,7 +2,7 @@
  (name main)
  (package odoc)
  (public_name odoc)
- (libraries cmdliner odoc_model odoc_odoc)
+ (libraries cmdliner odoc_html_bin odoc_model odoc_odoc)
  (instrumentation
   (backend landmarks --auto))
  (instrumentation

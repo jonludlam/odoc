@@ -1,8 +1,30 @@
+(library
+ (name odoc_html_bin)
+ (public_name odoc.html_bin)
+ (libraries
+  fpath
+  odoc_document
+  odoc_html
+  odoc_html_support_files
+  odoc_json_index
+  odoc_loader
+  odoc_model
+  odoc_odoc
+  odoc_xref2
+  tyxml
+  unix)
+ (modules :standard \ main)
+ (instrumentation
+  (backend landmarks --auto))
+ (instrumentation
+  (backend bisect_ppx)))
+
 (executable
  (name main)
  (package odoc-html)
  (public_name odoc-html)
- (libraries cmdliner)
+ (libraries cmdliner odoc_html_bin odoc_model odoc_odoc)
+ (modules main)
  (instrumentation
   (backend landmarks --auto))
  (instrumentation

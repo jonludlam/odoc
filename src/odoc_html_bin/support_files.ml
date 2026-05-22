@@ -1,4 +1,5 @@
 open Odoc_utils
+module Fs = Odoc_odoc.Fs
 
 let should_include ~without_theme file =
   if without_theme then

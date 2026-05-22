@@ -20,10 +20,10 @@ open Odoc_utils
 
 val from_mld :
   xref_base_uri:string ->
-  resolver:Resolver.t ->
-  output:Fs.File.t ->
+  resolver:Odoc_odoc.Resolver.t ->
+  output:Odoc_odoc.Fs.File.t ->
   warnings_options:Odoc_model.Error.warnings_options ->
-  Fs.File.t ->
+  Odoc_odoc.Fs.File.t ->
   (unit, [> msg ]) result
 (** [from_mld ~xref_base_uri ~resolver ~output input] parses the content of the
     [input] file as a documentation page ({e i.e.} the ocamldoc syntax),

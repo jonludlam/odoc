@@ -9,178 +9,18 @@ module List = ListLabels
 open Odoc_odoc
 open Cmdliner
 
-let convert_syntax : Odoc_document.Renderer.syntax Arg.conv =
-  let syntax_parser str =
-    match str with
-    | "ml" | "ocaml" -> Ok Odoc_document.Renderer.OCaml
-    | "re" | "reason" -> Ok Odoc_document.Renderer.Reason
-    | s -> Error (Printf.sprintf "Unknown syntax '%s'" s)
-  in
-  let syntax_printer fmt syntax =
-    Format.pp_print_string fmt (Odoc_document.Renderer.string_of_syntax syntax)
-  in
-  Arg.conv' (syntax_parser, syntax_printer)
-
-let convert_directory ?(create = false) () : Fs.Directory.t Arg.conv =
-  let dir_parser, dir_printer =
-    (Arg.conv_parser Arg.string, Arg.conv_printer Arg.string)
-  in
-  let odoc_dir_parser str =
-    let () = if create then Fs.Directory.(mkdir_p (of_string str)) in
-    match dir_parser str with
-    | Ok res -> Ok (Fs.Directory.of_string res)
-    | Error (`Msg e) -> Error e
-  in
-  let odoc_dir_printer fmt dir = dir_printer fmt (Fs.Directory.to_string dir) in
-  Arg.conv' (odoc_dir_parser, odoc_dir_printer)
-
-(** On top of the conversion 'file' that checks that the passed file exists. *)
-let convert_fpath =
-  let parse inp =
-    match Arg.(conv_parser file) inp with
-    | Ok s -> Ok (Fs.File.of_string s)
-    | Error _ as e -> e
-  and print = Fpath.pp in
-  Arg.conv (parse, print)
-
-let convert_named_root =
-  let parse inp =
-    match String.cuts inp ~sep:":" with
-    | [ s1; s2 ] -> Ok (s1, Fs.Directory.of_string s2)
-    | _ -> Error (`Msg "")
-  in
-  let print ppf (s, t) =
-    Format.fprintf ppf "%s:%s" s (Fs.Directory.to_string t)
-  in
-  Arg.conv (parse, print)
-
-let handle_error = function
-  | Ok () -> ()
-  | Error (`Cli_error msg) ->
-      Printf.eprintf "%s\n%!" msg;
-      exit 2
-  | Error (`Msg msg) ->
-      Printf.eprintf "ERROR: %s\n%!" msg;
-      exit 1
-
-module Antichain = struct
-  let absolute_normalization p =
-    let p =
-      if Fpath.is_rel p then Fpath.( // ) (Fpath.v (Sys.getcwd ())) p else p
-    in
-    Fpath.normalize p
-
-  (** Check that a list of directories form an antichain: they are all disjoints
-  *)
-  let check ~opt l =
-    let l =
-      List.map
-        ~f:(fun p -> p |> Fs.Directory.to_fpath |> absolute_normalization)
-        l
-    in
-    let rec check = function
-      | [] -> true
-      | p1 :: rest ->
-          List.for_all
-            ~f:(fun p2 ->
-              (not (Fpath.is_prefix p1 p2)) && not (Fpath.is_prefix p2 p1))
-            rest
-          && check rest
-    in
-    if check l then Ok ()
-    else
-      let msg =
-        Format.sprintf "Paths given to all %s options must be disjoint" opt
-      in
-      Error (`Msg msg)
-end
-
-let docs = "ARGUMENTS"
-
-let odoc_file_directories =
-  let doc =
-    "Where to look for required $(i,.odoc) files. Can be present several times."
-  in
-  Arg.(
-    value
-    & opt_all (convert_directory ()) []
-    & info ~docs ~docv:"DIR" ~doc [ "I" ])
-
-let hidden =
-  let doc =
-    "Mark the unit as hidden. (Useful for files included in module packs)."
-  in
-  Arg.(value & flag & info ~docs ~doc [ "hidden" ])
-
-let extra_suffix =
-  let doc =
-    "Extra suffix to append to generated filenames. This is intended for \
-     expect tests to use."
-  in
-  let default = None in
-  Arg.(
-    value
-    & opt (some string) default
-    & info ~docv:"SUFFIX" ~doc [ "extra-suffix" ])
-
-let warnings_options =
-  let warn_error =
-    let doc = "Turn warnings into errors." in
-    let env =
-      Cmd.Env.info "ODOC_WARN_ERROR" ~doc:(doc ^ " See option $(opt).")
-    in
-    Arg.(value & flag & info ~docs ~doc ~env [ "warn-error" ])
-  in
-  let print_warnings =
-    let doc =
-      "Whether warnings should be printed to stderr. See the $(b,errors) \
-       command."
-    in
-    let env = Cmd.Env.info "ODOC_PRINT_WARNINGS" ~doc in
-    Arg.(value & opt bool true & info ~docs ~doc ~env [ "print-warnings" ])
-  in
-  let enable_missing_root_warning =
-    let doc =
-      "Produce a warning when a root is missing. This is usually a build \
-       system problem so is disabled for users by default."
-    in
-    let env = Cmd.Env.info "ODOC_ENABLE_MISSING_ROOT_WARNING" ~doc in
-    Arg.(value & flag & info ~docs ~doc ~env [ "enable-missing-root-warning" ])
-  in
-  let warnings_tag =
-    let doc =
-      "Warnings tag. This is useful when you want to declare that warnings \
-       that would be generated resolving the references defined in this unit \
-       should be ignored if they end up in expansions in other units. If this \
-       option is passed, link-time warnings will be suppressed unless the link \
-       command is passed the tag via the --warnings-tags parameter. A suitable \
-       tag would be the name of the package."
-    in
-    let env = Cmd.Env.info "ODOC_WARNINGS_TAG" ~doc in
-    Arg.(
-      value & opt (some string) None & info ~docs ~doc ~env [ "warnings-tag" ])
-  in
-  Term.(
-    const
-      (fun warn_error print_warnings enable_missing_root_warning warnings_tag ->
-        Odoc_model.Error.enable_missing_root_warning :=
-          enable_missing_root_warning;
-        { Odoc_model.Error.warn_error; print_warnings; warnings_tag })
-    $ warn_error $ print_warnings $ enable_missing_root_warning $ warnings_tag)
-
-let dst ?create () =
-  let doc = "Output directory where the HTML tree is expected to be saved." in
-  Arg.(
-    required
-    & opt (some (convert_directory ?create ())) None
-    & info ~docs ~docv:"DIR" ~doc [ "o"; "output-dir" ])
-
-let open_modules =
-  let doc =
-    "Initially open module. Can be used more than once. Defaults to 'Stdlib'"
-  in
-  let default = [ "Stdlib" ] in
-  Arg.(value & opt_all string default & info ~docv:"MODULE" ~doc [ "open" ])
+let convert_directory = Cli_helpers.convert_directory
+let convert_fpath = Cli_helpers.convert_fpath
+let convert_named_root = Cli_helpers.convert_named_root
+let handle_error = Cli_helpers.handle_error
+module Antichain = Cli_helpers.Antichain
+let docs = Cli_helpers.docs
+let odoc_file_directories = Cli_helpers.odoc_file_directories
+let hidden = Cli_helpers.hidden
+let extra_suffix = Cli_helpers.extra_suffix
+let warnings_options = Cli_helpers.warnings_options
+let dst = Cli_helpers.dst
+let open_modules = Cli_helpers.open_modules
 
 module Compile : sig
   val output_file : dst:string option -> input:Fs.file -> Fs.file
@@ -615,7 +455,7 @@ end
 
 module Support_files_command = struct
   let support_files without_theme output_dir =
-    Support_files.write ~without_theme output_dir
+    Odoc_html_bin.Support_files.write ~without_theme output_dir
 
   let without_theme =
     let doc = "Don't copy the default theme to output directory." in
@@ -822,279 +662,6 @@ end = struct
     Cmd.info ~docs ~doc ~man "link"
 end
 
-module type S = sig
-  type args
-
-  val renderer : args Odoc_document.Renderer.t
-
-  val extra_args : args Cmdliner.Term.t
-end
-
-module Make_renderer (R : S) : sig
-  val process : docs:string -> unit Term.t * Cmd.info
-
-  val targets : docs:string -> unit Term.t * Cmd.info
-
-  val targets_source : docs:string -> unit Term.t * Cmd.info
-
-  val generate : docs:string -> unit Term.t * Cmd.info
-
-  val generate_source : docs:string -> unit Term.t * Cmd.info
-
-  val generate_asset : docs:string -> unit Term.t * Cmd.info
-end = struct
-  let input_odoc =
-    let doc = "Input file." in
-    Arg.(required & pos 0 (some file) None & info ~doc ~docv:"FILE.odoc" [])
-
-  let input_odocl =
-    let doc = "Input file." in
-    Arg.(required & pos 0 (some file) None & info ~doc ~docv:"FILE.odocl" [])
-
-  let input_odocl_list =
-    let doc = "Input file(s)." in
-    Arg.(non_empty & pos_all file [] & info ~doc ~docv:"FILE.odocl" [])
-
-  module Process = struct
-    let process extra _hidden directories output_dir syntax input_file
-        warnings_options =
-      let resolver =
-        Resolver.create ~important_digests:false ~directories ~open_modules:[]
-          ~roots:None
-      in
-      let file = Fs.File.of_string input_file in
-      Rendering.render_odoc ~renderer:R.renderer ~resolver ~warnings_options
-        ~syntax ~output:output_dir extra file
-
-    let cmd =
-      let syntax =
-        let doc = "Available options: ml | re" in
-        let env = Cmd.Env.info "ODOC_SYNTAX" in
-        Arg.(
-          value
-          & opt convert_syntax Odoc_document.Renderer.OCaml
-            @@ info ~docv:"SYNTAX" ~doc ~env [ "syntax" ])
-      in
-      Term.(
-        const handle_error
-        $ (const process $ R.extra_args $ hidden $ odoc_file_directories
-         $ dst ~create:true () $ syntax $ input_odoc $ warnings_options))
-
-    let info ~docs =
-      let doc =
-        Format.sprintf
-          "Render %s files from a $(i,.odoc). $(i,link) then $(i,%s-generate) \
-           should be used instead."
-          R.renderer.name R.renderer.name
-      in
-      Cmd.info ~docs ~doc R.renderer.name
-  end
-
-  let process ~docs = Process.(cmd, info ~docs)
-
-  module Generate = struct
-    let generate extra _hidden output_dir syntax extra_suffix input_files
-        warnings_options sidebar =
-      let process_file input_file =
-        let file = Fs.File.of_string input_file in
-        Rendering.generate_odoc ~renderer:R.renderer ~warnings_options ~syntax
-          ~output:output_dir ~extra_suffix ~sidebar extra file
-      in
-      List.fold_left
-        ~f:(fun acc input_file -> acc >>= fun () -> process_file input_file)
-        ~init:(Ok ()) input_files
-
-    let sidebar =
-      let doc = "A .odoc-index file, used eg to generate the sidebar." in
-      Arg.(
-        value
-        & opt (some convert_fpath) None
-        & info [ "sidebar" ] ~doc ~docv:"FILE.odoc-sidebar")
-
-    let cmd =
-      let syntax =
-        let doc = "Available options: ml | re" in
-        let env = Cmd.Env.info "ODOC_SYNTAX" in
-        Arg.(
-          value
-          & opt convert_syntax Odoc_document.Renderer.OCaml
-            @@ info ~docv:"SYNTAX" ~doc ~env [ "syntax" ])
-      in
-      Term.(
-        const handle_error
-        $ (const generate $ R.extra_args $ hidden $ dst ~create:true () $ syntax
-         $ extra_suffix $ input_odocl_list $ warnings_options $ sidebar))
-
-    let info ~docs =
-      let doc =
-        Format.sprintf "Generate %s files from one or more $(i,.odocl) files."
-          R.renderer.name
-      in
-      Cmd.info ~docs ~doc (R.renderer.name ^ "-generate")
-  end
-
-  let generate ~docs = Generate.(cmd, info ~docs)
-
-  module Generate_source = struct
-    let generate extra output_dir syntax extra_suffix input_file
-        warnings_options source_file sidebar =
-      Rendering.generate_source_odoc ~renderer:R.renderer ~warnings_options
-        ~syntax ~output:output_dir ~extra_suffix ~source_file ~sidebar extra
-        input_file
-
-    let input_odocl =
-      let doc = "Linked implementation file." in
-      Arg.(
-        required
-        & opt (some convert_fpath) None
-        & info [ "impl" ] ~doc ~docv:"impl-FILE.odocl")
-
-    let source_file =
-      let doc = "Source code for the implementation unit." in
-      Arg.(
-        required
-        & pos 0 (some convert_fpath) None
-        & info ~doc ~docv:"FILE.ml" [])
-
-    let cmd =
-      let syntax =
-        let doc = "Available options: ml | re" in
-        let env = Cmd.Env.info "ODOC_SYNTAX" in
-        Arg.(
-          value
-          & opt convert_syntax Odoc_document.Renderer.OCaml
-            @@ info ~docv:"SYNTAX" ~doc ~env [ "syntax" ])
-      in
-      let sidebar = Generate.sidebar in
-      Term.(
-        const handle_error
-        $ (const generate $ R.extra_args $ dst ~create:true () $ syntax
-         $ extra_suffix $ input_odocl $ warnings_options $ source_file $ sidebar
-          ))
-
-    let info ~docs =
-      let doc =
-        Format.sprintf "Generate %s files from a $(i,impl-*.odocl)."
-          R.renderer.name
-      in
-      Cmd.info ~docs ~doc (R.renderer.name ^ "-generate-source")
-  end
-
-  let generate_source ~docs = Generate_source.(cmd, info ~docs)
-
-  module Generate_asset = struct
-    let generate extra output_dir extra_suffix input_file warnings_options
-        asset_file =
-      Rendering.generate_asset_odoc ~renderer:R.renderer ~warnings_options
-        ~output:output_dir ~extra_suffix ~asset_file extra input_file
-
-    let input_odocl =
-      let doc = "Odoc asset unit." in
-      Arg.(
-        required
-        & opt (some convert_fpath) None
-        & info [ "asset-unit" ] ~doc ~docv:"asset-FILE.odocl")
-
-    let asset_file =
-      let doc = "The asset file" in
-      Arg.(
-        required
-        & pos 0 (some convert_fpath) None
-        & info ~doc ~docv:"FILE.ext" [])
-
-    let cmd =
-      Term.(
-        const handle_error
-        $ (const generate $ R.extra_args $ dst ~create:true () $ extra_suffix
-         $ input_odocl $ warnings_options $ asset_file))
-
-    let info ~docs =
-      let doc =
-        Format.sprintf "Generate %s files from a $(i,impl-*.odocl)."
-          R.renderer.name
-      in
-      Cmd.info ~docs ~doc (R.renderer.name ^ "-generate-asset")
-  end
-
-  let generate_asset ~docs = Generate_asset.(cmd, info ~docs)
-
-  module Targets = struct
-    let list_targets output_dir directories extra odoc_file =
-      let odoc_file = Fs.File.of_string odoc_file in
-      let resolver =
-        Resolver.create ~important_digests:false ~directories ~open_modules:[]
-          ~roots:None
-      in
-      let warnings_options =
-        {
-          Odoc_model.Error.warn_error = false;
-          print_warnings = false;
-          warnings_tag = None;
-        }
-      in
-      Rendering.targets_odoc ~resolver ~warnings_options ~syntax:OCaml
-        ~renderer:R.renderer ~output:output_dir ~extra odoc_file
-
-    let back_compat =
-      let doc =
-        "For backwards compatibility when processing $(i,.odoc) rather than \
-         $(i,.odocl) files."
-      in
-      Arg.(
-        value
-        & opt_all (convert_directory ()) []
-        & info ~docs ~docv:"DIR" ~doc [ "I" ])
-
-    let cmd =
-      Term.(
-        const handle_error
-        $ (const list_targets $ dst () $ back_compat $ R.extra_args
-         $ input_odocl))
-
-    let info ~docs =
-      let doc =
-        Format.sprintf
-          "Print the files that would be generated by $(i,%s-generate)."
-          R.renderer.name
-      in
-      Cmd.info (R.renderer.name ^ "-targets") ~docs ~doc
-  end
-
-  let targets ~docs = Targets.(cmd, info ~docs)
-
-  module Targets_source = struct
-    let list_targets output_dir source_file extra odoc_file =
-      let warnings_options =
-        {
-          Odoc_model.Error.warn_error = false;
-          print_warnings = false;
-          warnings_tag = None;
-        }
-      in
-      Rendering.targets_source_odoc ~warnings_options ~syntax:OCaml
-        ~renderer:R.renderer ~output:output_dir ~extra ~source_file odoc_file
-
-    let source_file = Generate_source.source_file
-    let input_odocl = Generate_source.input_odocl
-
-    let cmd =
-      Term.(
-        const handle_error
-        $ (const list_targets $ dst () $ source_file $ R.extra_args
-         $ input_odocl))
-
-    let info ~docs =
-      let doc =
-        Format.sprintf
-          "Print the files that would be generated by $(i,%s-generate-source)."
-          R.renderer.name
-      in
-      Cmd.info (R.renderer.name ^ "-targets-source") ~docs ~doc
-  end
-
-  let targets_source ~docs = Targets_source.(cmd, info ~docs)
-end
-
 module Odoc_latex_url : sig
   val cmd : unit Term.t
 
@@ -1116,196 +683,14 @@ end = struct
       "latex-url"
 end
 
-module Odoc_html_args = struct
-  include Html_page
+module Odoc_html = Make_renderer.Make (struct
+  type args = Odoc_html_bin.Html_args.args
 
-  let semantic_uris =
-    let doc = "Generate pretty (semantic) links." in
-    Arg.(value & flag (info ~doc [ "semantic-uris"; "pretty-uris" ]))
+  let renderer = Odoc_html_bin.Html_args.renderer
+  let extra_args = Odoc_html_bin.Html_args.extra_args
+end)
 
-  let closed_details =
-    let doc =
-      "If this flag is passed <details> tags (used for includes) will be \
-       closed by default."
-    in
-    Arg.(value & flag (info ~doc [ "closed-details" ]))
-
-  let indent =
-    let doc = "Format the output HTML files with indentation." in
-    Arg.(value & flag (info ~doc [ "indent" ]))
-
-  module Uri = struct
-    (* Very basic validation and normalization for URI paths. *)
-
-    open Odoc_html.Types
-
-    let is_absolute str =
-      List.exists [ "http"; "https"; "file"; "data"; "ftp" ] ~f:(fun scheme ->
-          Astring.String.is_prefix ~affix:(scheme ^ ":") str)
-      || str.[0] = '/'
-
-    let conv_rel_dir rel =
-      let l = String.cuts ~sep:"/" rel in
-      List.fold_left
-        ~f:(fun acc seg ->
-          Some Odoc_document.Url.Path.{ kind = `Page; parent = acc; name = seg })
-        l ~init:None
-
-    let convert_dir : uri Arg.conv =
-      let parser str =
-        if String.length str = 0 then Error "invalid URI"
-        else
-          (* The URI is absolute if it starts with a scheme or with '/'. *)
-          let last_char = str.[String.length str - 1] in
-          let str =
-            if last_char <> '/' then str
-            else String.with_range ~len:(String.length str - 1) str
-          in
-          Ok
-            (if is_absolute str then (Absolute str : uri)
-             else
-               Relative
-                 (let u = conv_rel_dir str in
-                  match u with
-                  | None -> None
-                  | Some u -> Some { u with kind = `Page }))
-      in
-      let printer ppf = function
-        | (Absolute uri : uri) -> Format.pp_print_string ppf uri
-        | Relative _uri -> Format.pp_print_string ppf ""
-      in
-      Arg.conv' (parser, printer)
-
-    let convert_file_uri : Odoc_html.Types.file_uri Arg.conv =
-      let parser str =
-        if String.length str = 0 then Error "invalid URI"
-        else
-          let conv_rel_file rel =
-            match String.cut ~rev:true ~sep:"/" rel with
-            | Some (before, after) ->
-                let base = conv_rel_dir before in
-                Odoc_document.Url.Path.
-                  { kind = `File; parent = base; name = after }
-            | None ->
-                Odoc_document.Url.Path.
-                  { kind = `File; parent = None; name = rel }
-          in
-          Ok
-            (if is_absolute str then (Absolute str : file_uri)
-             else Relative (conv_rel_file str))
-      in
-      let printer ppf = function
-        | Odoc_html.Types.Absolute uri -> Format.pp_print_string ppf uri
-        | Odoc_html.Types.Relative _uri -> Format.pp_print_string ppf ""
-      in
-      Arg.conv' (parser, printer)
-  end
-
-  let home_breadcrumb =
-    let doc =
-      "Name for a 'Home' breadcrumb to go up the root of the given sidebar."
-    in
-    Arg.(
-      value
-      & opt (some string) None
-      & info ~docv:"escape" ~doc [ "home-breadcrumb" ])
-
-  let theme_uri =
-    let doc =
-      "Where to look for theme files (e.g. `URI/odoc.css'). Relative URIs are \
-       resolved using `--output-dir' as a target."
-    in
-    let default : Odoc_html.Types.uri = Odoc_html.Types.Relative None in
-    Arg.(
-      value
-      & opt Uri.convert_dir default
-      & info ~docv:"URI" ~doc [ "theme-uri" ])
-
-  let support_uri =
-    let doc =
-      "Where to look for support files (e.g. `URI/highlite.pack.js'). Relative \
-       URIs are resolved using `--output-dir' as a target."
-    in
-    let default : Odoc_html.Types.uri = Odoc_html.Types.Relative None in
-    Arg.(
-      value
-      & opt Uri.convert_dir default
-      & info ~docv:"URI" ~doc [ "support-uri" ])
-
-  let search_uri =
-    let doc =
-      "Where to look for search scripts. Relative URIs are resolved using \
-       `--output-dir' as a target."
-    in
-    Arg.(
-      value
-      & opt_all Uri.convert_file_uri []
-      & info ~docv:"URI" ~doc [ "search-uri" ])
-
-  let flat =
-    let doc =
-      "Output HTML files in 'flat' mode, where the hierarchy of modules / \
-       module types / classes and class types are reflected in the filenames \
-       rather than in the directory structure."
-    in
-    Arg.(value & flag & info ~docs ~doc [ "flat" ])
-
-  let as_json =
-    let doc =
-      "EXPERIMENTAL: Output HTML files in 'embeddable json' mode, where HTML \
-       fragments (preamble, content) together with metadata (uses_katex, \
-       breadcrumbs, table of contents) are emitted in JSON format. The \
-       structure of the output should be considered unstable and no guarantees \
-       are made about backward compatibility."
-    in
-    Arg.(value & flag & info ~doc [ "as-json" ])
-
-  let remap =
-    let convert_remap =
-      let parse inp =
-        match String.cut ~sep:":" inp with
-        | Some (orig, mapped) -> Ok (orig, mapped)
-        | _ -> Error (`Msg "Map must be of the form '<orig>:https://...'")
-      and print fmt (orig, mapped) = Format.fprintf fmt "%s:%s" orig mapped in
-      Arg.conv (parse, print)
-    in
-    let doc = "Remap an identifier to an external URL." in
-    Arg.(value & opt_all convert_remap [] & info [ "R" ] ~doc)
-
-  let remap_file =
-    let doc = "File containing remap rules." in
-    Arg.(value & opt (some file) None & info ~docv:"FILE" ~doc [ "remap-file" ])
-
-  let extra_args =
-    let config semantic_uris closed_details indent theme_uri support_uri
-        search_uris flat as_json remap remap_file home_breadcrumb =
-      let open_details = not closed_details in
-      let remap =
-        match remap_file with
-        | None -> remap
-        | Some f ->
-            Io_utils.fold_lines f
-              (fun line acc ->
-                match String.cut ~sep:":" line with
-                | Some (orig, mapped) -> (orig, mapped) :: acc
-                | None -> acc)
-              []
-      in
-      let html_config =
-        Odoc_html.Config.v ~theme_uri ~support_uri ~search_uris ~semantic_uris
-          ~indent ~flat ~open_details ~as_json ~remap ?home_breadcrumb ()
-      in
-      { Html_page.html_config }
-    in
-    Term.(
-      const config $ semantic_uris $ closed_details $ indent $ theme_uri
-      $ support_uri $ search_uri $ flat $ as_json $ remap $ remap_file
-      $ home_breadcrumb)
-end
-
-module Odoc_html = Make_renderer (Odoc_html_args)
-
-module Odoc_markdown_cmd = Make_renderer (struct
+module Odoc_markdown_cmd = Make_renderer.Make (struct
   type args = Odoc_markdown.Config.t
 
   let render config _sidebar page = Odoc_markdown.Generator.render ~config page
@@ -1333,12 +718,12 @@ end = struct
     let doc = "The reference to be resolved and whose url to be generated." in
     Arg.(required & pos 0 (some string) None & info ~doc ~docv:"REF" [])
 
-  let reference_to_url = Url.reference_to_url_html
+  let reference_to_url = Odoc_html_bin.Url.reference_to_url_html
 
   let cmd =
     Term.(
       const handle_error
-      $ (const reference_to_url $ Odoc_html_args.extra_args $ root_url
+      $ (const reference_to_url $ Odoc_html_bin.Html_args.extra_args $ root_url
        $ odoc_file_directories $ reference))
 
   let info ~docs =
@@ -1365,8 +750,8 @@ end = struct
         let last_char = xref_base_uri.[String.length xref_base_uri - 1] in
         if last_char <> '/' then xref_base_uri ^ "/" else xref_base_uri
     in
-    Html_fragment.from_mld ~resolver ~xref_base_uri ~output:output_file
-      ~warnings_options input_file
+    Odoc_html_bin.Html_fragment.from_mld ~resolver ~xref_base_uri
+      ~output:output_file ~warnings_options input_file
 
   let cmd =
     let output =
@@ -1396,7 +781,7 @@ end = struct
       "html-fragment"
 end
 
-module Odoc_manpage = Make_renderer (struct
+module Odoc_manpage = Make_renderer.Make (struct
   type args = unit
 
   let renderer = Man_page.renderer
@@ -1404,7 +789,7 @@ module Odoc_manpage = Make_renderer (struct
   let extra_args = Term.const ()
 end)
 
-module Odoc_latex = Make_renderer (struct
+module Odoc_latex = Make_renderer.Make (struct
   type args = Latex.args
 
   let renderer = Latex.renderer
@@ -1564,7 +949,8 @@ module Targets = struct
 
   module Support_files = struct
     let list_targets without_theme output_directory =
-      Support_files.print_filenames ~without_theme output_directory
+      Odoc_html_bin.Support_files.print_filenames ~without_theme
+        output_directory
 
     let cmd =
       Term.(const list_targets $ Support_files_command.without_theme $ dst ())
