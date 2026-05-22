@@ -21,12 +21,12 @@ Since -L subfolders are omitted from -P roots, the index page should not be adde
   $ odoc compile-index --root _odoc/pkg/
   $ odoc sidebar-generate index.odoc-index
 
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/page-file.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/dir1/page-my_page.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/dir1/page-index.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/page-index.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/libname/unit.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/libname/page-index.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/page-file.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/dir1/page-my_page.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/dir1/page-index.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/page-index.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/libname/unit.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/libname/page-index.odocl
 
   $ cat html/pkg/index.html | grep odoc-global-toc -A 15
      <nav class="odoc-toc odoc-global-toc">

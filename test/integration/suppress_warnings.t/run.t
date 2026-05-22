@@ -7,8 +7,8 @@
   File "module_with_errors.mli", line 7, characters 6-10:
   Warning: While resolving the expansion of include at File "main.mli", line 1, character 0
   Reference to 't' is ambiguous. Please specify its kind: section-t, type-t.
-  $ odoc html-generate -o html main.odocl
-  $ odoc support-files -o html
+  $ odoc-html generate -o html main.odocl
+  $ odoc-html support-files -o html
 
   $ odoc compile --warnings-tag foo module_with_errors.cmti
   $ odoc compile main.cmti -I .
@@ -19,8 +19,8 @@
   Warning: While resolving the expansion of include at File "main.mli", line 1, character 0
   Reference to 't' is ambiguous. Please specify its kind: section-t, type-t.
 
-  $ odoc html-generate -o html2 main.odocl
-  $ odoc support-files -o html2
+  $ odoc-html generate -o html2 main.odocl
+  $ odoc-html support-files -o html2
 
 
 

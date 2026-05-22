@@ -59,8 +59,8 @@ See the comments on the types at the end of test.mli for the expectation.
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
   $ odoc link test.odoc
-  $ odoc html-generate test.odocl --indent -o .
-  $ odoc support-files -o .
+  $ odoc-html generate test.odocl --indent -o .
+  $ odoc-html support-files -o .
   $ find Test -type f | sort
   Test/A/index.html
   Test/A_nonhidden/index.html

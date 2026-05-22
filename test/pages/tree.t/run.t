@@ -53,7 +53,7 @@ Now link everything:
   $ for i in *.odoc; do odoc link -I . $i; done
 
 And output the HTML:
-  $ for i in *.odocl; do odoc html-generate -o html $i; done
+  $ for i in *.odocl; do odoc-html generate -o html $i; done
 
 Let's see what we've got!
   $ find html -type f | sort

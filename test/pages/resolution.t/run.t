@@ -21,7 +21,7 @@ Check resolution works
   $ odoc compile m1.cmti -I . --parent sub1
   $ odoc compile m1.mld -I . --parent sub2
   $ for i in *.odoc; do odoc link -I . $i; done
-  $ for i in *.odocl; do odoc html-generate -o html $i; done
+  $ for i in *.odocl; do odoc-html generate -o html $i; done
 
 If everything has worked to plan, we'll have resolved references for all of the 'child' refs in the various pages. Additionally, the
 references should be to the correct identifiers - so top1 should be a RootPage, sub1 is a Page, sub2 is a LeafPage, and m1 is a Root.
@@ -95,7 +95,7 @@ This is the '{!childmodule:M1}' reference
 
 Let's also check the hierarchy of files produced:
 
-  $ odoc support-files -o html
+  $ odoc-html support-files -o html
   $ find html -type f | sort
   html/fonts/KaTeX_AMS-Regular.woff2
   html/fonts/KaTeX_Caligraphic-Bold.woff2

@@ -18,10 +18,10 @@ Checking that source parents are kept, using include.
   $ odoc link -I . impl-main.odoc
   $ odoc link -I . impl-main__A.odoc
 
-  $ odoc html-generate-source --impl impl-main.odocl --indent -o html main.ml
-  $ odoc html-generate --indent -o html main.odocl
-  $ odoc html-generate-source --impl impl-main__A.odocl --indent -o html a.ml
-  $ odoc html-generate --hidden --indent -o html main__A.odocl
+  $ odoc-html generate-source --impl impl-main.odocl --indent -o html main.ml
+  $ odoc-html generate --indent -o html main.odocl
+  $ odoc-html generate-source --impl impl-main__A.odocl --indent -o html a.ml
+  $ odoc-html generate --hidden --indent -o html main__A.odocl
 
 In Main.A, the source parent of value x should be to Main__A, while the
 source parent of value y should be left to B.

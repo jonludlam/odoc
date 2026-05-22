@@ -11,31 +11,31 @@ Test the JSON output in the presence of expanded modules.
   $ odoc link -I . main__A.odoc
   $ odoc link -I . main.odoc
 
-  $ odoc html-targets -o html main__A.odocl
+  $ odoc-html targets -o html main__A.odocl
   html/Main__A/index.html
-  $ odoc html-targets -o html main.odocl
+  $ odoc-html targets -o html main.odocl
   html/Main/index.html
   html/Main/A/index.html
   html/Main/A/B/index.html
-  $ odoc html-targets --as-json -o html main__A.odocl
+  $ odoc-html targets --as-json -o html main__A.odocl
   html/Main__A/index.html.json
-  $ odoc html-targets --as-json -o html main.odocl
+  $ odoc-html targets --as-json -o html main.odocl
   html/Main/index.html.json
   html/Main/A/index.html.json
   html/Main/A/B/index.html.json
-  $ odoc html-targets-source --impl impl-main__A.odocl -o html a.ml
+  $ odoc-html targets-source --impl impl-main__A.odocl -o html a.ml
   html/src/a.ml.html
-  $ odoc html-targets-source --impl impl-main.odocl -o html main.ml
+  $ odoc-html targets-source --impl impl-main.odocl -o html main.ml
   html/src/main.ml.html
-  $ odoc html-targets-source --impl impl-main__A.odocl --as-json -o html a.ml
+  $ odoc-html targets-source --impl impl-main__A.odocl --as-json -o html a.ml
   html/src/a.ml.html.json
-  $ odoc html-targets-source --impl impl-main.odocl --as-json -o html main.ml
+  $ odoc-html targets-source --impl impl-main.odocl --as-json -o html main.ml
   html/src/main.ml.html.json
 
-  $ odoc html-generate-source --impl impl-main__A.odocl --as-json -o html a.ml
-  $ odoc html-generate --as-json -o html main__A.odocl
-  $ odoc html-generate-source --impl impl-main.odocl --as-json -o html main.ml
-  $ odoc html-generate --as-json -o html main.odocl
+  $ odoc-html generate-source --impl impl-main__A.odocl --as-json -o html a.ml
+  $ odoc-html generate --as-json -o html main__A.odocl
+  $ odoc-html generate-source --impl impl-main.odocl --as-json -o html main.ml
+  $ odoc-html generate --as-json -o html main.odocl
 
   $ cat html/Main/index.html.json
   {"header":"<h1>Module <code><span>Main</span></code><a href=\"../src/main.ml.html\" class=\"source_link\">Source</a></h1>","type":"documentation","uses_katex":false,"breadcrumbs":[{"name":"Index","href":"../index.html","kind":"leaf-page"},{"name":"Main","href":"#","kind":"module"}],"toc":[],"source_anchor":"../src/main.ml.html","preamble":"","content":"<div class=\"odoc-spec\"><div class=\"spec module anchored\" id=\"module-A\"><a href=\"#module-A\" class=\"anchor\"></a><a href=\"../src/a.ml.html\" class=\"source_link\">Source</a><code><span><span class=\"keyword\">module</span> <a href=\"A/index.html\">A</a></span><span> : <span class=\"keyword\">sig</span> ... <span class=\"keyword\">end</span></span></code></div></div>"}

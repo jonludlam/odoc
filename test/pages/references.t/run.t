@@ -15,5 +15,5 @@
   $ odoc link foo.odoc -I .
   $ odoc link moo.odoc -I .
 
-  $ for i in *.odocl; do odoc html-generate $i -o html; done
-  $ odoc support-files -o html
+  $ for i in *.odocl; do odoc-html generate $i -o html; done
+  $ odoc-html support-files -o html

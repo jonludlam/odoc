@@ -98,9 +98,9 @@ Compile the pages with the --source option:
   $ odoc compile -I . a.cmt
   $ odoc link -I . a.odoc
   $ odoc link -I . impl-a.odoc
-  $ odoc html-generate --indent -o html a.odocl
-  $ odoc html-generate-source --impl impl-a.odocl --indent -o html a.ml
-  $ odoc support-files -o html
+  $ odoc-html generate --indent -o html a.odocl
+  $ odoc-html generate-source --impl impl-a.odocl --indent -o html a.ml
+  $ odoc-html support-files -o html
 
 Source links generated in the documentation:
 
@@ -386,11 +386,11 @@ Ids generated in the source code:
 
 Html generation for implementation and mld/interface uses different commands
 
-  $ ! odoc html-generate-source --indent -o html a.odocl > /dev/null 2>&1
-  $ ! odoc html-generate-source --indent -o html --impl a.odocl a.ml > /dev/null 2>&1
-  $ ! odoc html-generate-source --indent -o html --impl impl-a.odocl > /dev/null 2>&1
-  $ ! odoc html-generate-source --indent -o html a.ml > /dev/null 2>&1
-  $ ! odoc html-generate --source a.ml --indent -o html impl-a.odocl > /dev/null 2>&1
+  $ ! odoc-html generate-source --indent -o html a.odocl > /dev/null 2>&1
+  $ ! odoc-html generate-source --indent -o html --impl a.odocl a.ml > /dev/null 2>&1
+  $ ! odoc-html generate-source --indent -o html --impl impl-a.odocl > /dev/null 2>&1
+  $ ! odoc-html generate-source --indent -o html a.ml > /dev/null 2>&1
+  $ ! odoc-html generate --source a.ml --indent -o html impl-a.odocl > /dev/null 2>&1
 
 Compiling without --source-id makes it impossible to generate the source:
 
@@ -398,7 +398,7 @@ Compiling without --source-id makes it impossible to generate the source:
   $ odoc compile -I . a.cmt
   $ odoc link -I . a.odoc
   $ odoc link -I . impl-a.odoc
-  $ odoc html-generate --indent -o html a.odocl
-  $ odoc html-generate-source --impl impl-a.odocl --indent -o html a.ml
+  $ odoc-html generate --indent -o html a.odocl
+  $ odoc-html generate-source --impl impl-a.odocl --indent -o html a.ml
   ERROR: The implementation unit was not compiled with --source-id.
   [1]

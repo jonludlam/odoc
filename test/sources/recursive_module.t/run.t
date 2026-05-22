@@ -5,8 +5,8 @@ Checking that source links exists inside recursive modules.
   $ odoc compile -I . main.cmt
   $ odoc link -I . impl-main.odoc
   $ odoc link -I . main.odoc
-  $ odoc html-generate --indent -o html main.odocl
-  $ odoc html-generate-source --impl impl-main.odocl --indent -o html main.ml
+  $ odoc-html generate --indent -o html main.odocl
+  $ odoc-html generate-source --impl impl-main.odocl --indent -o html main.ml
 
 Both modules should contain source links
 

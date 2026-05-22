@@ -5,7 +5,7 @@ A quick test to repro the issue found in #857
   $ odoc compile a.cmti
   $ odoc link a.odoc
 
-  $ odoc html-generate --indent -o html/ a.odocl
+  $ odoc-html generate --indent -o html/ a.odocl
   $ odoc latex-generate -o latex/ a.odocl
 
 In latex, labels in subpages should be disambiguated since the subpage is inlined inside the generated latex source.

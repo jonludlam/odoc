@@ -26,11 +26,11 @@ Let's html-generate it (with a sidebar):
   $ odoc compile-index --root _odoc/pkg/doc/ --root _odoc/pkg/lib/libname
   $ odoc sidebar-generate index.odoc-index
 
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/page-file.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/dir1/page-my_page.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/dir1/page-index.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/page-index.odocl
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/lib/libname/unit.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/page-file.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/dir1/page-my_page.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/dir1/page-index.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/doc/page-index.odocl
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o html _odoc/pkg/lib/libname/unit.odocl
 
 Now, let's see the result
 

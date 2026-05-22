@@ -1,8 +1,8 @@
   $ ocamlc -c -bin-annot test.ml
   $ odoc compile test.cmt
   $ odoc link test.odoc
-  $ odoc html-generate -o html --indent test.odocl
-  $ odoc support-files -o html
+  $ odoc-html generate -o html --indent test.odocl
+  $ odoc-html support-files -o html
 
 We should have an 'Optional' argument (as opposed to a 'RawOptional' one)
 

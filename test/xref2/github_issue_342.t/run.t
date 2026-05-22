@@ -5,7 +5,7 @@ A quick test to repro the issue found in #342
   $ odoc compile foo.cmti
   $ odoc link foo.odoc
 
-  $ odoc html-generate --indent -o html/ foo.odocl
+  $ odoc-html generate --indent -o html/ foo.odocl
 
 The table of content:
 

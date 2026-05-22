@@ -10,7 +10,7 @@
   $ odoc compile-index --root _odoc
   $ odoc sidebar-generate index.odoc-index
 
-  $ odoc html-generate --sidebar sidebar.odoc-sidebar --indent --output-dir _html _odoc/page-foo.odocl
+  $ odoc-html generate --sidebar sidebar.odoc-sidebar --indent --output-dir _html _odoc/page-foo.odocl
 
 Missing index for Baz makes it unclickable but use the ID for the name.
 Root is used for the missing index in the unnamed root directory. TODO

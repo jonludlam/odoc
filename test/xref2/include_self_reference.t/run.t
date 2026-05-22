@@ -45,7 +45,7 @@ Check that bin_read_unit has type reader (resolved to the outer type):
 
 Generate HTML and verify the output is correct:
 
-  $ odoc html-generate test.odocl -o html --indent
+  $ odoc-html generate test.odocl -o html --indent
 
 The module type Read should show both the type and the value:
 

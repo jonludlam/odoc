@@ -19,7 +19,7 @@ as they are both referencing items that won't be expanded.
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
   $ odoc link test.odoc
-  $ odoc html-generate -o html test.odocl
+  $ odoc-html generate -o html test.odocl
   $ odoc_print test.odocl | jq ".content.Module.items[2]"
   {
     "Comment": {

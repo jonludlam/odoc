@@ -14,7 +14,7 @@ faulty reference.
 
 Let's now check that the reference point to the right page/anchor:
 
-  $ odoc html-generate --output-dir html --indent a.odocl
+  $ odoc-html generate --output-dir html --indent a.odocl
 
   $ cat html/A/index.html | grep \# | grep Foo | grep -v anchor
      <p><a href="#type-u.Foo"><code>Foo</code></a> 

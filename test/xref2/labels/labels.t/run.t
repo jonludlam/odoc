@@ -36,7 +36,7 @@ We expect resolved references and the heading text filled in.
   [{"`Resolved":{"`Label":[{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Test"]},"M"]}},"B"]}},[{"`Word":"Potentially"},"`Space",{"`Word":"conflicting"},"`Space",{"`Word":"label"}]]
   [{"`Resolved":{"`Label":[{"`Identifier":{"`Module":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Test"]},"N"]}},"B"]}},[{"`Word":"An"},"`Space",{"`Word":"other"},"`Space",{"`Word":"conflicting"},"`Space",{"`Word":"label"}]]
 
-  $ odoc html-generate --indent -o html test.odocl
+  $ odoc-html generate --indent -o html test.odocl
 
 There are two references in N, one should point to a local label and the other to M.
 

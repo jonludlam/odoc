@@ -20,33 +20,33 @@ relative, they are interpreted as relative to the `-o` option).
 
 Let us check that `--search-uri` works well:
 
-  $ odoc html-generate --search-uri test.js -o html page-page.odocl
+  $ odoc-html generate --search-uri test.js -o html page-page.odocl
   $ grep -E "test\.js" html/page/index.html
   let search_urls = ['../test.js'];
 
-  $ odoc html-generate --search-uri page/test.js -o html page-page.odocl
+  $ odoc-html generate --search-uri page/test.js -o html page-page.odocl
   $ grep -E "test\.js" html/page/index.html
   let search_urls = ['test.js'];
 
-  $ odoc html-generate --search-uri search_scripts/test.js -o html page-page.odocl
+  $ odoc-html generate --search-uri search_scripts/test.js -o html page-page.odocl
   $ grep -E "test\.js" html/page/index.html
   let search_urls = ['../search_scripts/test.js'];
 
-  $ odoc html-generate --search-uri /tmp/test.js -o html page-page.odocl
+  $ odoc-html generate --search-uri /tmp/test.js -o html page-page.odocl
   $ grep -E "test\.js" html/page/index.html
   let search_urls = ['/tmp/test.js'];
 
-  $ odoc html-generate --search-uri https://example.org/test.js -o html page-page.odocl
+  $ odoc-html generate --search-uri https://example.org/test.js -o html page-page.odocl
   $ grep -E "test\.js" html/page/index.html
   let search_urls = ['https://example.org/test.js'];
 
 In this test, we use `fuse.js.js` (a search engine) combined to `index.js`, a file that
 we will generate.
 
-  $ odoc html-generate --search-uri fuse.js.js --search-uri index.js -o html j.odocl
-  $ odoc html-generate --search-uri fuse.js.js --search-uri index.js -o html main.odocl
-  $ odoc html-generate --search-uri fuse.js.js --search-uri index.js -o html page-page.odocl
-  $ odoc support-files -o html
+  $ odoc-html generate --search-uri fuse.js.js --search-uri index.js -o html j.odocl
+  $ odoc-html generate --search-uri fuse.js.js --search-uri index.js -o html main.odocl
+  $ odoc-html generate --search-uri fuse.js.js --search-uri index.js -o html page-page.odocl
+  $ odoc-html support-files -o html
 
 We now focus on how to generate the index.js file.
 

@@ -16,8 +16,8 @@ be able to link anywhere because we don't render the inner signature anywhere.
   odoc compile page.mld --child module-test
   odoc compile -I . --parent page test.cmt
   odoc link -I . test.odoc
-  odoc html-generate --indent -o html test.odocl
-  odoc support-files -o html
+  odoc-html generate --indent -o html test.odocl
+  odoc-html support-files -o html
   
 
   $ ./compile.sh

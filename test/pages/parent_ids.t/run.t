@@ -39,7 +39,7 @@ Link and generate the HTML:
   package/page-package.odoc
   package/test.odoc
   $ for i in $(find . -name *.odoc); do odoc link -I . $i; done
-  $ for i in $(find . -name *.odocl); do odoc html-generate $i -o html; done
+  $ for i in $(find . -name *.odocl); do odoc-html generate $i -o html; done
 
 We should see a directory structure here where the module 'Test' is found underneath the top-level directory 'package'. Also, the contents of the
 file 'package.mld' should be written to the file 'package/index.html'.

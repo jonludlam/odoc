@@ -6,4 +6,4 @@
 
 (cram
  (package odoc)
- (deps %{bin:odoc} %{bin:odoc_print} %{bin:print_index}))
+ (deps %{bin:odoc} %{bin:odoc-html} %{bin:odoc_print} %{bin:print_index}))

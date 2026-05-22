@@ -27,13 +27,13 @@
 Turn the index into a sidebar (removes all unnecessary entries)
   $ odoc sidebar-generate index.odoc-index
 
-  $ odoc html-generate --indent --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/page-index.odocl
-  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/page-content.odocl
-  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/page-omitted.odocl
-  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/dir1/page-index.odocl
-  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/dir1/page-content_in_dir.odocl
-  $ odoc html-generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/dir1/page-dontent.odocl
-  $ odoc support-files -o _html
+  $ odoc-html generate --indent --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/page-index.odocl
+  $ odoc-html generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/page-content.odocl
+  $ odoc-html generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/page-omitted.odocl
+  $ odoc-html generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/dir1/page-index.odocl
+  $ odoc-html generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/dir1/page-content_in_dir.odocl
+  $ odoc-html generate --sidebar sidebar.odoc-sidebar -o _html  _odoc/pkg/dir1/page-dontent.odocl
+  $ odoc-html support-files -o _html
 
   $ odoc_print _odoc/pkg/page-index.odocl | jq .frontmatter
   {

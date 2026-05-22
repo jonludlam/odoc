@@ -1,7 +1,7 @@
   $ ocamlc -bin-annot file.ml
   $ odoc compile file.cmt
   $ odoc link file.odoc
-  $ odoc html-generate --indent -o html file.odocl
+  $ odoc-html generate --indent -o html file.odocl
 
 Module X inherits from X__Hidden's top comment:
 

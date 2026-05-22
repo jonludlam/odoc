@@ -7,7 +7,7 @@
  (package odoc)
  (enabled_if
   (>= %{ocaml_version} 4.04.1))
- (deps %{bin:odoc} %{bin:odoc_print}))
+ (deps %{bin:odoc} %{bin:odoc-html} %{bin:odoc_print}))
 
 (cram
  (applies_to medias)

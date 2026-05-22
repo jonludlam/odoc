@@ -21,7 +21,7 @@ Contains some ambiguous labels:
   {"`Label":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Test"]},"example"]}
   {"`Label":[{"`Root":[{"Some":{"`Page":["None","test"]}},"Test"]},"example_3"]}
 
-  $ odoc html-generate --indent -o html test.odocl
+  $ odoc-html generate --indent -o html test.odocl
 
 The table of content should point to unique anchors:
 

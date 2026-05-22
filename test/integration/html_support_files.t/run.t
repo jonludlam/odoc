@@ -1,4 +1,4 @@
-  $ odoc support-files -o with-theme
+  $ odoc-html support-files -o with-theme
   $ find with-theme | sort
   with-theme
   with-theme/fonts
@@ -39,7 +39,7 @@
   with-theme/odoc.css
   with-theme/odoc_search.js
 
-  $ odoc support-files --without-theme -o without-theme
+  $ odoc-html support-files --without-theme -o without-theme
   $ find without-theme | sort
   without-theme
   without-theme/fonts

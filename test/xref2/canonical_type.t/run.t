@@ -69,8 +69,8 @@ Now we can run odoc
 We only need to link `foo` as all the others are hidden
 
   $ odoc link -I . foo.odoc
-  $ odoc html-generate foo.odocl -o html
-  $ odoc support-files -o html
+  $ odoc-html generate foo.odocl -o html
+  $ odoc-html support-files -o html
 
 Now we check that any types with 'equations' found in `foo` are equal to
 polymorphic variants rather than Constrs

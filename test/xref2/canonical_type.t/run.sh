@@ -11,5 +11,5 @@ odoc compile --package x -I . foo__type0.cmt
 odoc compile --package x -I . foo__type.cmt
 odoc compile --package x -I . foo.cmt
 odoc link -I . foo.odoc
-odoc html-generate foo.odocl -o html
-odoc support-files -o html
+odoc-html generate foo.odocl -o html
+odoc-html support-files -o html

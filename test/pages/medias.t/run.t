@@ -17,8 +17,8 @@ Link (and generate the HTML):
   Warning: Failed to resolve reference ./camezfzeffl.gif Path 'camezfzeffl.gif' not found
   File "index.mld", line 11, characters 31-53:
   Warning: Failed to resolve reference ./caqzdqzdml.gif Path 'caqzdqzdml.gif' not found
-  $ odoc html-generate -o html --indent _odoc/pkg1/page-index.odocl
-  $ odoc support-files -o html
+  $ odoc-html generate -o html --indent _odoc/pkg1/page-index.odocl
+  $ odoc-html support-files -o html
 
 To test visually, indent:
  $ cp -r html /tmp/

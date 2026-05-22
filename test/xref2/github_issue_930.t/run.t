@@ -56,8 +56,8 @@ Multipath_use1 and Multipath_use2 both include variations of Multipath_base:
 
 === Test 5: Verify HTML generation succeeds and shows correct types ===
 
-  $ odoc html-generate test.odocl -o html --indent
-  $ odoc html-generate edge_cases.odocl -o html --indent
+  $ odoc-html generate test.odocl -o html --indent
+  $ odoc-html generate edge_cases.odocl -o html --indent
 
 S2.x should show "unit" (TypeSubstitution applied through include of S1):
 

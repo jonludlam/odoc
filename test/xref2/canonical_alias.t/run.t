@@ -1,8 +1,8 @@
   $ ocamlc -c -bin-annot test.mli
   $ odoc compile test.cmti
   $ odoc link test.odoc
-  $ odoc html-generate test.odocl -o html
-  $ odoc support-files -o html
+  $ odoc-html generate test.odocl -o html
+  $ odoc-html support-files -o html
 
 The following should be resolved as identifier Test.A
   $ odoc_print -r test test.odocl | jq '.equation.manifest.Some.Constr[0]["`Resolved"]["`Type"][0]["`Canonical"][1]'

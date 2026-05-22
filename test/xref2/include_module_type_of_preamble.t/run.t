@@ -1,6 +1,6 @@
   $ compile foo.mli bar.ml
-  $ odoc html-generate -o html --indent foo.odocl
-  $ odoc html-generate -o html --indent bar.odocl
+  $ odoc-html generate -o html --indent foo.odocl
+  $ odoc-html generate -o html --indent bar.odocl
 
 Foo contains "Preamble for O" once.
 

@@ -8,8 +8,8 @@ A quick test to repro the issue found in #941
   $ odoc link -I . foo.odoc
   $ odoc link -I . page-page.odoc
 
-  $ odoc html-generate --indent -o html/ foo.odocl
-  $ odoc html-generate --indent -o html/ page-page.odocl
+  $ odoc-html generate --indent -o html/ foo.odocl
+  $ odoc-html generate --indent -o html/ page-page.odocl
 
 The rendered html
 

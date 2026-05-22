@@ -48,8 +48,8 @@ type `t`, but in the subsequent include, the type `t` within the signature _isn'
          end)
       type t = int
     end
-  $ odoc html-generate a.odocl -o html
-  $ odoc support-files -o html
+  $ odoc-html generate a.odocl -o html
+  $ odoc-html support-files -o html
 
 
 For comparison, another test case that didn't have the bug:

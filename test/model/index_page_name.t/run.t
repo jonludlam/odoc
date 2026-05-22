@@ -7,7 +7,7 @@ parent page of 'index.mld' also generates the file 'parent/index.html'.
 
   $ odoc compile --package test index.mld
   $ odoc link page-index.odoc
-  $ odoc html-generate -o . --indent page-index.odocl
+  $ odoc-html generate -o . --indent page-index.odocl
 
 The breadcrumbs shouldn't show the name of the page, "index".
 Expected to fail:

@@ -7,6 +7,7 @@
  (package odoc)
  (deps
   (package odoc)
+  (package odoc-html)
   %{bin:odoc_print}))
 
 (cram

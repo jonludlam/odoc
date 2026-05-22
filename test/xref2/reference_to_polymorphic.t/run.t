@@ -10,7 +10,7 @@
   File "main.ml", line 16, characters 5-10:
   Warning: Failed to resolve reference unresolvedroot(On) Couldn't find "On"
 
-  $ odoc html-generate -o html --indent main.odocl
+  $ odoc-html generate -o html --indent main.odocl
   $ cat html/Main/index.html | grep "<li>" -A 3
      <ul><li><a href="#type-switch.On"><code>switch.`On</code></a></li>
       <li><a href="#type-switch.Off"><code>switch.`Off</code></a></li>
