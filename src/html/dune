@@ -1,6 +1,6 @@
 (library
  (name odoc_html)
- (public_name odoc.html)
+ (public_name odoc-html.html)
  (instrumentation
   (backend landmarks --auto))
  (instrumentation

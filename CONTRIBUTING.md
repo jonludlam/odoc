@@ -100,7 +100,7 @@ Resolution of Paths, Fragments and References, and Expansion of Modules and Modu
 
 The generic documentation intermediate format is defined in the [`odoc.document`](https://ocaml.github.io/odoc/odoc/odoc.document/) library.
 
-The three current renderers are implemented within the following libraries: [`odoc.html`](https://ocaml.github.io/odoc/odoc/odoc.html/), [`odoc.latex`](https://ocaml.github.io/odoc/odoc/odoc.latex/), and [`odoc.manpage`](https://ocaml.github.io/odoc/odoc/odoc.manpage/).
+The three current renderers are implemented within the following libraries: [`odoc-html.html`](https://ocaml.github.io/odoc/odoc-html/odoc-html.html/), [`odoc.latex`](https://ocaml.github.io/odoc/odoc/odoc.latex/), and [`odoc.manpage`](https://ocaml.github.io/odoc/odoc/odoc.manpage/).
 
 ### CLI and Driver
 

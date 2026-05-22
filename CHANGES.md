@@ -27,6 +27,19 @@
   build-time `crunch` tool. `latex-generate`, `manpage-generate`, and
   `markdown-generate` remain in the core package.
 
+  The HTML library stack has also moved to the `odoc-html` package and is now
+  exposed under the `odoc-html.*` findlib namespace:
+  - `odoc.html`               → `odoc-html.html`
+  - `odoc.html_support_files` → `odoc-html.html_support_files`
+  - `odoc.search`             → `odoc-html.search`
+  - `odoc.search_html_frontend` → `odoc-html.search_html_frontend`
+  - `odoc.json_index`         → `odoc-html.json_index`
+
+  Code using `ocamlfind … -package odoc.html` (etc.) must switch to
+  `-package odoc-html.html`. The default HTML theme/CSS/fonts now install
+  under `<prefix>/share/odoc-html/odoc-theme/default/...` (previously
+  `<prefix>/share/odoc/odoc-theme/default/...`).
+
 - Support for OxCaml unboxed named types (@art-w, #1407)
 
 # 3.2.1

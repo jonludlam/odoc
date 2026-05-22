@@ -4,7 +4,7 @@
 (rule
  (aliases runtest support-files)
  (target odoc_html_support_files.ml)
- (package odoc)
+ (package odoc-html)
  (deps
   (glob_files *.js)
   (glob_files *.css)
@@ -32,7 +32,7 @@
 
 (library
  (name odoc_html_support_files)
- (public_name odoc.html_support_files)
+ (public_name odoc-html.html_support_files)
  (instrumentation
   (backend landmarks --auto))
  (instrumentation
@@ -40,7 +40,7 @@
  (wrapped false))
 
 (install
- (package odoc)
+ (package odoc-html)
  (section share)
  (files
   (odoc.css as odoc-theme/default/odoc.css)

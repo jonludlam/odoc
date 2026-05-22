@@ -5,7 +5,7 @@
   db_store
   fpath
   tyxml
-  odoc.search
+  odoc-html.search
   odoc.model
   odoc.odoc
   cmdliner))

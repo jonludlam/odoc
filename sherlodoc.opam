@@ -11,6 +11,7 @@ depends: [
   "dune" {>= "3.21"}
   "ocaml" {>= "4.0.8"}
   "odoc" {= version}
+  "odoc-html" {= version}
   "base64" {>= "3.5.1"}
   "bigstringaf" {>= "0.9.1"}
   "js_of_ocaml" {>= "5.6.0"}
