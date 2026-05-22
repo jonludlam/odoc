@@ -6,13 +6,11 @@
   odoc_document
   odoc_html
   odoc_html_support_files
-  odoc_json_index
   odoc_loader
   odoc_model
   odoc_odoc
   odoc_xref2
-  tyxml
-  unix)
+  tyxml)
  (modules :standard \ main)
  (instrumentation
   (backend landmarks --auto))

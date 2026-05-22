@@ -17,7 +17,6 @@ module Antichain = Cli_helpers.Antichain
 let docs = Cli_helpers.docs
 let odoc_file_directories = Cli_helpers.odoc_file_directories
 let hidden = Cli_helpers.hidden
-let extra_suffix = Cli_helpers.extra_suffix
 let warnings_options = Cli_helpers.warnings_options
 let dst = Cli_helpers.dst
 let open_modules = Cli_helpers.open_modules
