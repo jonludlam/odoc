@@ -1,7 +1,7 @@
 (library
  (name odoc_html_frontend)
  (public_name odoc.search_html_frontend)
- (libraries tyxml odoc_utils)
+ (libraries odoc_utils)
  (modules odoc_html_frontend))
 
 (library

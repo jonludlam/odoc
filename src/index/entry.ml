@@ -1,8 +1,6 @@
 open Odoc_model.Lang
 open Odoc_model.Paths
 
-module Html = Tyxml.Html
-
 type type_decl_entry = {
   canonical : Path.Type.t option;
   equation : TypeDecl.Equation.t;
