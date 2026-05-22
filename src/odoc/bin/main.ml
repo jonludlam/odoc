@@ -984,17 +984,10 @@ let section_pipeline = "COMMANDS: Compilation pipeline"
 let section_generators = "COMMANDS: Alternative generators"
 let section_support = "COMMANDS: Scripting"
 let section_legacy = "COMMANDS: Legacy pipeline"
-let section_deprecated = "COMMANDS: Deprecated"
 
 (** Sections in the order they should appear. *)
 let main_page_sections =
-  [
-    section_pipeline;
-    section_generators;
-    section_support;
-    section_legacy;
-    section_deprecated;
-  ]
+  [ section_pipeline; section_generators; section_support; section_legacy ]
 
 let () =
   Printexc.record_backtrace true;
