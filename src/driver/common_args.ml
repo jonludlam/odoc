@@ -117,4 +117,13 @@ let term =
   and+ odoc_html_bin = odoc_html_bin
   and+ odoc_md_bin = odoc_md_bin
   and+ generate_json = generate_json in
-  { verbose; html_dir; stats; nb_workers; odoc_bin; odoc_html_bin; odoc_md_bin; generate_json }
+  {
+    verbose;
+    html_dir;
+    stats;
+    nb_workers;
+    odoc_bin;
+    odoc_html_bin;
+    odoc_md_bin;
+    generate_json;
+  }

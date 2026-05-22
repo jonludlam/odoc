@@ -211,6 +211,12 @@ let compute_metric_int prefix suffix description values =
           ];
       ]
 
+let binary_for_cmd = function
+  | "generate" -> "odoc-html"
+  | _ -> "odoc"
+
+let cmd_label cmd = binary_for_cmd cmd ^ " " ^ cmd
+
 let compute_metric_cmd cmd =
   let open Run in
   let cmds = filter_commands cmd in
@@ -224,7 +230,7 @@ let compute_metric_cmd cmd =
             ("name", `String ("total-" ^ cmd));
             ("value", `Int count);
             ( "description",
-              `String ("Number of time 'odoc " ^ cmd ^ "' has run.") );
+              `String ("Number of time '" ^ cmd_label cmd ^ "' has run.") );
           ];
         `Assoc
           [
@@ -235,7 +241,8 @@ let compute_metric_cmd cmd =
                   ("min", `Float min); ("max", `Float max); ("avg", `Float avg);
                 ] );
             ("units", `String "s");
-            ("description", `String ("Time taken by 'odoc " ^ cmd ^ "'"));
+            ( "description",
+              `String ("Time taken by '" ^ cmd_label cmd ^ "'") );
             ("trend", `String "lower-is-better");
           ];
       ]
@@ -252,7 +259,7 @@ let compute_produced_cmd cmd =
   in
   let sizes = List.filter_map output_file_size (Run.filter_commands cmd) in
   compute_metric_int "produced" cmd
-    ("files produced by 'odoc " ^ cmd ^ "'")
+    ("files produced by '" ^ cmd_label cmd ^ "'")
     sizes
 
 (** Analyze the size of files outputed to the given directory. *)
@@ -264,7 +271,8 @@ let compute_produced_tree cmd dir =
   in
   Bos.OS.Dir.fold_contents ~dotfiles:true ~elements:`Files acc_file_sizes [] dir
   |> Result.value ~default:[]
-  |> compute_metric_int "produced" cmd ("files produced by 'odoc " ^ cmd ^ "'")
+  |> compute_metric_int "produced" cmd
+       ("files produced by '" ^ cmd_label cmd ^ "'")
 
 (** Analyze the running time of the slowest commands. *)
 let compute_longest_cmd cmd =
