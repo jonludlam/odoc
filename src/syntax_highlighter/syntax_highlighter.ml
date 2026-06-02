@@ -119,32 +119,13 @@ let tag_of_token (tok : Parser.token) =
   | WHEN -> "WHEN"
   | WHILE -> "WHILE"
   | WITH -> "WITH"
-(* Removed *)
-#if OCAML_VERSION <= (4,2,3)
-  | INT32 _ -> "INT32"
-  | INT64 _ -> "INT64"
-  | NATIVEINT _ -> "NATIVEINT"
-#endif
-#if OCAML_VERSION <= (4,3,0)
-  | SHARP -> "SHARP"
-  | SHARPOP _ -> "SHARPOP"
-#endif
-(* Added *)
-#if OCAML_VERSION >= (4,4,0)
   | HASH -> "HASH"
   | HASHOP _ -> "HASHOP"
-#endif
-#if OCAML_VERSION >= (4,6,0)
   | DOTOP _ -> "DOTOP"
-#endif
-#if OCAML_VERSION >= (4,11,0)
   | QUOTED_STRING_EXPR _ -> "QUOTED_STRING_EXPR"
   | QUOTED_STRING_ITEM _ -> "QUOTED_STRING_ITEM"
-#endif
-#if OCAML_VERSION >= (4,8,0)
   | ANDOP _ -> "ANDOP"
   | LETOP _ -> "LETOP"
-#endif
 #if defined OXCAML
   | AT -> "AT"
   | ATAT -> "ATAT"
@@ -171,12 +152,10 @@ let tag_of_token (tok : Parser.token) =
   | STACK -> "STACK"
   | UNIQUE -> "UNIQUE"
 #endif
-#if OCAML_VERSION >= (5,3,0)
   | METAOCAML_ESCAPE -> "METAOCAML_ESCAPE"
   | METAOCAML_BRACKET_OPEN -> "METAOCAML_BRACKET_OPEN"
   | METAOCAML_BRACKET_CLOSE -> "METAOCAML_BRACKET_CLOSE"
   | EFFECT -> "EFFECT"
-#endif
 #if defined OXCAML
   | BORROW -> "BORROW"
   | HASHTRUE -> "HASHTRUE"
@@ -189,11 +168,7 @@ let tag_of_token (tok : Parser.token) =
 let syntax_highlighting_locs src =
   try
     Lexer.init ();
-    let lexbuf = Lexing.from_string
-  #if OCAML_VERSION >= (4,8,0)
-        ~with_positions:true
-  #endif
-        src in
+    let lexbuf = Lexing.from_string ~with_positions:true src in
     let rec collect lexbuf tokens =
       let tok = Lexer.token_with_comments lexbuf in
       let loc_start, loc_end = (lexbuf.lex_start_p, lexbuf.lex_curr_p) in
