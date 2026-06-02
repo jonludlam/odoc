@@ -1,4 +1,3 @@
-#if OCAML_VERSION >= (5, 0, 0)
 module Format = struct
   include Format
 
@@ -21,4 +20,3 @@ module Format = struct
     } in
     Format.pp_set_formatter_stag_functions formatter stag_fns
 end
-#endif
