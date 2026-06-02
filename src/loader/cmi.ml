@@ -34,10 +34,7 @@ type env = {
 let empty_doc env = { Odoc_model.Comment.elements = []; warnings_tag = env.warnings_tag }
 
 module Compat = struct
-#if OCAML_VERSION >= (4, 14, 0)
-#if OCAML_VERSION >= (5, 3, 0)
   let newty2 = Btype.newty2
-#endif
 
   (** this is the type on which physical equality is meaningful *)
   type repr_type_node = Types.transient_expr
@@ -60,32 +57,7 @@ module Compat = struct
   let concr_mem = Types.Meths.mem
   let csig_concr x = x.Types.csig_meths
   let eq_type = Types.eq_type
-#if OCAML_VERSION >= (5,4,0) || defined OXCAML
   let invisible_wrap ty = newty2 ~level:Btype.generic_level (Ttuple [None,ty])
-#else
-  let invisible_wrap ty = newty2 ~level:Btype.generic_level (Ttuple [ty])
-#endif
-#else
-  type repr_type_node = Types.type_expr
-  let repr = Btype.repr
-  let get_desc x = (repr x).Types.desc
-  let get_row_name x = x.Types.row_name
-  let row_field_repr = Btype.row_field_repr
-  let field_kind_repr = Btype.field_kind_repr
-  let static_row_repr x = Btype.static_row (Btype.row_repr x)
-  let row_closed x = x.Types.row_closed
-  let row_fields x = x.Types.row_fields
-  let field_public = Types.Fpresent
-  let self_type = Ctype.self_type
-  let csig_self x = Btype.repr x.Types.csig_self
-  let row_repr = Btype.row_repr
-  let concr_mem = Types.Concr.mem
-  let csig_concr x = x.Types.csig_concr
-  let eq_type x y = x == y || repr x == repr y
-  (** Create a new node pointing to [ty] that is printed in the same way as
-      [ty]*)
-  let invisible_wrap ty = Btype.(newty2 generic_level (Ttuple [ty]))
-#endif
 end
 
 let proxy ty = Compat.(repr (Btype.proxy ty))
@@ -100,16 +72,7 @@ let opt_iter f = function
 
 let read_label lbl =
   let open TypeExpr in
-#if OCAML_VERSION < (4,3,0)
-  (* NOTE(@ostera): 4.02 does not have an Asttypes variant for whether the
-   * label exists, and is an optional label or not, so I went back to string
-   * manipulation *)
-  if String.length lbl == 0
-  then None
-  else match String.get lbl 0 with
-      | '?' -> Some (Optional (String.sub lbl 1 (String.length lbl - 1)))
-      | _ -> Some (Label lbl)
-#elif defined OXCAML
+#if defined OXCAML
   match lbl with
   | Types.Nolabel -> None
   | Types.Labelled s -> Some (Label s)
@@ -232,11 +195,7 @@ let namable_row row =
   List.for_all
     (fun (_, f) ->
        match Compat.row_field_repr f with
-#if OCAML_VERSION >= (4, 14, 0)
        | Reither(c, l, _) ->
-#else
-       | Reither(c, l, _, _) ->
-#endif
            Compat.row_closed row && if c then l = [] else List.length l = 1
        | _ -> true)
     (Compat.row_fields row)
@@ -256,11 +215,7 @@ let mark_type ty =
       | Tarrow(_, ty1, ty2, _) ->
           loop visited ty1;
           loop visited ty2
-#if OCAML_VERSION >= (5,4,0) || defined OXCAML
       | Ttuple tyl -> List.iter (fun (_lbl,x) -> loop visited x) tyl
-#else
-      | Ttuple tyl -> List.iter (loop visited) tyl
-#endif
 #if defined OXCAML
       | Tunboxed_tuple tyl -> List.iter (fun (_, ty) -> loop visited ty) tyl
 #endif
@@ -300,27 +255,9 @@ let mark_type ty =
       | Tpoly (ty, tyl) ->
           List.iter (fun t -> add_alias t) tyl;
           loop visited ty
-#if OCAML_VERSION>=(5,5,0)
-      | Tpackage p ->
-          List.iter (fun (_,x) -> loop visited x) p.pack_constraints
-      | Tfunctor (_lbl, _id, pkg, ret_type) ->
-          List.iter (fun (_,x) -> loop visited x) pkg.pack_constraints;
-          loop visited ret_type
-#elif OCAML_VERSION>=(5,4,0)
       | Tpackage p ->
           List.iter (fun (_,x) -> loop visited x) p.pack_cstrs
-#elif OCAML_VERSION>=(4,13,0)
-      | Tpackage(_,tyl) ->
-          List.iter (fun (_,x) -> loop visited x) tyl
-#else
-      | Tpackage(_, _, tyl) ->
-          List.iter (loop visited) tyl
-#endif
-#if OCAML_VERSION<(4,13,0)
-      | Tsubst ty -> loop visited ty
-#else
       | Tsubst (ty,_) -> loop visited ty
-#endif
       | Tlink _ -> assert false
 #if defined OXCAML
       | Tquote typ -> loop visited typ
@@ -350,11 +287,7 @@ let mark_type_parameter param =
   mark_type param;
   if aliasable param then use_alias px
 
-#if OCAML_VERSION<(4,13,0)
-let tvar_none ty = ty.desc <- Tvar None
-#elif OCAML_VERSION < (4,14,0)
-let tvar_none ty = Types.Private_type_expr.set_desc ty (Tvar None)
-#elif defined OXCAML
+#if defined OXCAML
 let tvar_none ty jkind =
   Types.Transient_expr.(set_desc (coerce ty) (Tvar { name = None; jkind }))
 #else
@@ -396,9 +329,6 @@ let prepare_type_parameters params manifest =
 
 (* NOTE(@ostera): constructor with inlined records were introduced post 4.02 *)
 let mark_constructor_args =
-#if OCAML_VERSION < (4,3,0)
-  List.iter mark_type
-#else
   function
 #if defined OXCAML
    | Cstr_tuple args -> List.iter (fun carg -> mark_type carg.ca_type) args
@@ -406,20 +336,13 @@ let mark_constructor_args =
    | Cstr_tuple args -> List.iter mark_type args
 #endif
    | Cstr_record lds -> List.iter (fun ld -> mark_type ld.ld_type) lds
-#endif
 
 let mark_type_kind = function
-#if OCAML_VERSION >= (5,2,0)
   | Type_abstract _ -> ()
-#else
-  | Type_abstract -> ()
-#endif
 #if defined OXCAML
   | Type_variant (cds,_,_) ->
-#elif OCAML_VERSION >= (4,13,0)
-  | Type_variant (cds,_) ->
 #else
-  | Type_variant cds ->
+  | Type_variant (cds,_) ->
 #endif
       List.iter
         (fun cd ->
@@ -435,9 +358,6 @@ let mark_type_kind = function
 #endif
       List.iter (fun ld -> mark_type ld.ld_type) lds
   | Type_open -> ()
-#if OCAML_VERSION >= (5,5,0)
-  | Type_external _ -> ()
-#endif
 
 let mark_type_declaration decl =
   let params = prepare_type_parameters decl.type_params decl.type_manifest in
@@ -583,11 +503,7 @@ let rec read_type_expr env typ =
           let res = read_type_expr env res in
             Arrow(lbl, arg, res)
       | Ttuple typs ->
-#if OCAML_VERSION >= (5,4,0) || defined OXCAML
           let typs = List.map (fun (lbl,x) -> lbl, read_type_expr env x) typs in
-#else
-          let typs = List.map (fun x -> None, read_type_expr env x) typs in
-#endif
           Tuple typs
 #if defined OXCAML
       | Tunboxed_tuple typs ->
@@ -613,43 +529,11 @@ let rec read_type_expr env typ =
             remove_names tyl;
             Poly(vars_with_kinds, typ)
       | Tunivar _ -> Var (name_of_type typ)
-#if OCAML_VERSION>=(5,5,0)
-      | Tpackage {pack_path=p; pack_constraints } ->
-        let eqs = List.filter_map (fun (l,ty) -> Option.map (fun x -> x, ty) (Longident.unflatten l)) pack_constraints in
-#elif OCAML_VERSION>=(5,4,0)
       | Tpackage {pack_path=p; pack_cstrs } ->
         let eqs = List.filter_map (fun (l,ty) -> Option.map (fun x -> x, ty) (Longident.unflatten l)) pack_cstrs in
-#elif OCAML_VERSION>=(4,13,0)
-      | Tpackage(p,eqs) ->
-#else
-      | Tpackage(p, frags, tyl) ->
-        let eqs = List.combine frags tyl in
-#endif
         let package = read_package env eqs p in
         Package package
-#if OCAML_VERSION<(4,13,0)
-      | Tsubst typ -> read_type_expr env typ
-#else
       | Tsubst (typ,_) -> read_type_expr env typ
-#endif
-#if OCAML_VERSION >= (5,5,0)
-  | Tfunctor (lbl, id, pkg, ret_type) ->
-    let lbl = read_label lbl in
-    let parent = Identifier.fresh_module_arg_parent () in
-    let id = Ocaml_ident.of_unscoped id in
-    let e', id =
-      Env.add_module_arg parent id (ModuleName.hidden_of_ident id)
-        env.ident_env
-    in
-    let env = {env with ident_env = e'} in
-    let ret = read_type_expr env ret_type in
-    let eqs =
-      List.filter_map (fun (l,ty) -> Option.map (fun x -> x, ty) (Longident.unflatten l)) pkg.pack_constraints
-    in
-    let package = read_package env eqs pkg.pack_path in
-    Arrow_functor(lbl, {id ; package}, ret)
-
-#endif
       | Tlink _ -> assert false
 #if defined OXCAML
       | Tquote typ -> Quote (read_type_expr env typ)
@@ -721,11 +605,7 @@ and read_row env _px row =
                   arguments = [read_type_expr env typ];
                   doc;
                 }
-#if OCAML_VERSION >= (4, 14, 0)
               | Reither(constant, typs, _) ->
-#else
-              | Reither(constant, typs, _, _) ->
-#endif
                 let arguments =
                   List.map (read_type_expr env) typs
                 in
@@ -829,12 +709,6 @@ let read_label_declaration env parent ld =
     {id; doc; mutable_; type_}
 
 let read_constructor_declaration_arguments env parent arg =
-#if OCAML_VERSION < (4,3,0)
-  (* NOTE(@ostera): constructor with inlined records were introduced post 4.02
-     so it's safe to use Tuple here *)
-  ignore parent;
-  TypeDecl.Constructor.Tuple(List.map (read_type_expr env) arg)
-#else
   let open TypeDecl.Constructor in
     match arg with
 #if defined OXCAML
@@ -844,7 +718,6 @@ let read_constructor_declaration_arguments env parent arg =
 #endif
     | Cstr_record lds ->
         Record (List.map (read_label_declaration env parent) lds)
-#endif
 
 let read_constructor_declaration env parent cd =
   let open TypeDecl.Constructor in
@@ -860,18 +733,12 @@ let read_constructor_declaration env parent cd =
 
 let read_type_kind env parent =
   let open TypeDecl.Representation in function
-#if OCAML_VERSION >= (5,2,0)
   | Type_abstract _ ->
-#else
-  | Type_abstract ->
-#endif
     None
 #if defined OXCAML
   | Type_variant (cstrs,_,_) ->
-#elif OCAML_VERSION >= (4,13,0)
-  | Type_variant (cstrs,_) ->
 #else
-  | Type_variant cstrs ->
+  | Type_variant (cstrs,_) ->
 #endif
         let cstrs =
           List.map (read_constructor_declaration env parent) cstrs
@@ -896,16 +763,9 @@ let read_type_kind env parent =
         in
           Some (Record lbls)
     | Type_open ->  Some Extensible
-#if OCAML_VERSION >= (5,5,0)
-    | Type_external _ -> None
-#endif
 
 let read_injectivity var =
-#if OCAML_VERSION < (5, 1, 0)
-  let _, _, _, inj = Variance.get_lower var in
-#else
   let _, _, inj = Variance.get_lower var in
-#endif
   inj
 
 let read_type_parameter abstr var param =
@@ -959,11 +819,7 @@ let read_type_declaration env parent id decl =
   let representation = read_type_kind env (id :> Identifier.DataType.t) decl.type_kind in
   let abstr =
     match decl.type_kind with
-#if OCAML_VERSION >= (5,2,0)
     | Type_abstract _ ->
-#else
-    | Type_abstract ->
-#endif
         decl.type_manifest = None || decl.type_private = Private
     | Type_record _ ->
         decl.type_private = Private
@@ -973,19 +829,13 @@ let read_type_declaration env parent id decl =
 #endif
 #if defined OXCAML
   | Type_variant (tll,_,_) ->
-#elif OCAML_VERSION >= (4,13,0)
-  | Type_variant (tll,_) ->
 #else
-  | Type_variant tll ->
+  | Type_variant (tll,_) ->
 #endif
         decl.type_private = Private ||
         List.exists (fun cd -> cd.cd_res <> None) tll
     | Type_open ->
         decl.type_manifest = None
-#if OCAML_VERSION >= (5,5,0)
-    | Type_external _ ->
-        decl.type_manifest = None || decl.type_private = Private
-#endif
   in
   let params =
     List.map2 (read_type_parameter abstr) decl.type_variance params
@@ -1342,13 +1192,8 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
             else shadowed
           in
             loop (ModuleType mtd :: acc, shadowed) rest
-#if OCAML_VERSION < (5,1,0)
-    | Sig_class(id, cl, rec_status, _) :: Sig_class_type _
-      :: Sig_type _ :: Sig_type _ :: rest ->
-#else
     | Sig_class(id, cl, rec_status, _) :: Sig_class_type _
       :: Sig_type _ :: rest ->
-#endif
           let cl = read_class_declaration env parent id cl in
           let shadowed =
             if Env.is_shadowed env.ident_env id
@@ -1363,11 +1208,7 @@ and read_signature_noenv env parent (items : Odoc_model.Compat.signature) =
             else shadowed
           in
             loop (Class (read_type_rec_status rec_status, cl)::acc, shadowed) rest
-#if OCAML_VERSION < (5,1,0)
-    | Sig_class_type(id, cltyp, rec_status, _)::Sig_type _::Sig_type _::rest ->
-#else
     | Sig_class_type(id, cltyp, rec_status, _)::Sig_type _::rest ->
-#endif
         let cltyp = read_class_type_declaration env parent id cltyp in
         let shadowed =
           if Env.is_shadowed env.ident_env id

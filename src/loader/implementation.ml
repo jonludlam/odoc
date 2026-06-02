@@ -1,12 +1,9 @@
-#if OCAML_VERSION >= (4, 14, 0)
 
 let rec is_persistent : Path.t -> bool = function
   | Path.Pident id -> Ident_env.ident_is_global_or_predef id
   | Path.Pdot(p, _) -> is_persistent p
   | Path.Papply(p, _) -> is_persistent p
-#if OCAML_VERSION >= (5,1,0)
   | Path.Pextra_ty (p, _) -> is_persistent p
-#endif
 
 let pos_of_loc loc = (loc.Location.loc_start.pos_cnum, loc.loc_end.pos_cnum)
 
@@ -409,19 +406,3 @@ let read_cmt_infos source_id shape_info impl digest root imports =
         shape_info;
         imports;
       }
-
-
-#else
-
-let read_cmt_infos source_id shape_info _impl digest root imports =
-  {
-    Odoc_model.Lang.Implementation.id = source_id;
-    source_info = [];
-    digest;
-    root;
-    linked = false;
-    shape_info;
-    imports;
-  }
-
-#endif

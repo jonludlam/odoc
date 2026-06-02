@@ -113,29 +113,20 @@ and extract_signature_type_items_extract vis ~hidden item rest =
       then extract_signature_type_items vis rest
       else
         let constrs = match td.type_kind with
-#if OCAML_VERSION < (5,2,0)
-          | Types.Type_abstract -> []
-#else
           | Types.Type_abstract _ -> []
-#endif
 #if defined OXCAML
           | Type_record (_, _, _) -> []
           | Type_record_unboxed_product (_, _, _) -> []
 #else
           | Type_record (_, _) -> []
 #endif
-#if OCAML_VERSION < (4,13,0)
-          | Type_variant cstrs ->
-#elif defined OXCAML
+#if defined OXCAML
           | Type_variant (cstrs, _, _) ->
 #else
           | Type_variant (cstrs, _) ->
 #endif
             List.map (fun c -> `Constructor (c.Types.cd_id, id, Some c.cd_loc)) cstrs
           | Type_open -> []
-#if OCAML_VERSION >= (5,5,0)
-          | Type_external _ -> []
-#endif
           in
         `Type (id, hidden, None) :: constrs @ extract_signature_type_items vis rest
 
@@ -147,19 +138,6 @@ and extract_signature_type_items_extract vis ~hidden item rest =
 
     | Sig_value(id, _, _), _ ->
       `Value (id, hidden, None) :: extract_signature_type_items vis rest
-#if OCAML_VERSION < (5,1,0)
-    | Sig_class(id, _, _, _),
-      Sig_class_type(ty_id, _, _, _)
-      :: Sig_type(obj_id, _, _, _)
-      :: Sig_type(cl_id, _, _, _) :: _ ->
-      `Class (id, ty_id, obj_id, Some cl_id, hidden, None)
-      :: extract_signature_type_items vis rest
-
-    | Sig_class_type(id, _, _, _),
-      Sig_type(obj_id, _, _, _) :: Sig_type(cl_id, _, _, _) :: _ ->
-      `ClassType (id, obj_id, Some cl_id, hidden, None)
-      :: extract_signature_type_items vis rest
-#else
     | Sig_class(id, _, _, _),
       Sig_class_type(ty_id, _, _, _) :: Sig_type(obj_id, _, _, _) :: _ ->
       `Class (id, ty_id, obj_id, None, hidden, None)
@@ -168,7 +146,6 @@ and extract_signature_type_items_extract vis ~hidden item rest =
     | Sig_class_type(id, _, _, _), Sig_type(obj_id, _, _, _) :: _ ->
       `ClassType (id, obj_id, None, hidden, None)
       :: extract_signature_type_items vis rest
-#endif
 
     | Sig_typext (id, constr, Text_exception, _), _ ->
       `Exception (id, Some constr.ext_loc)
@@ -196,22 +173,16 @@ and extract_signature_type_items_skip vis item rest =
   | Sig_class _, _
   | Sig_class_type _, _ -> assert false
 
-#if OCAML_VERSION >= (4,8,0)
 
 let extract_extended_open o =
   let open Typedtree in
   extract_signature_type_items Hidden (Compat.signature o.open_bound_items)
-#endif
 
 
 let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> items list = fun hide_item items ->
   let open Typedtree in
   match items with
-#if OCAML_VERSION < (4,3,0)
-  | { sig_desc = Tsig_type decls; _} :: rest ->
-#else
   | { sig_desc = Tsig_type (_, decls); _} :: rest ->
-#endif
     Odoc_utils.List.concat_map (fun decl ->
       if Btype.is_row_name (Ident.name decl.typ_id)
       then []
@@ -225,17 +196,10 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
         | Ttype_record_unboxed_product _ -> []
 #endif
         | Ttype_open -> []
-#if OCAML_VERSION >= (5,5,0)
-        | Ttype_external _ -> []
-#endif
           )
       decls @ extract_signature_tree_items hide_item rest
 
-#if OCAML_VERSION < (4,8,0)
-    | { sig_desc = Tsig_exception tyexn_constructor; _ } :: rest ->
-#else
     | { sig_desc = Tsig_exception { tyexn_constructor; _ }; _ } :: rest ->
-#endif
        `Exception (tyexn_constructor.ext_id, Some tyexn_constructor.ext_loc) :: extract_signature_tree_items hide_item rest
 
   | { sig_desc = Tsig_typext { tyext_constructors; _ }; _} :: rest ->
@@ -243,7 +207,6 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
     x @ extract_signature_tree_items hide_item rest
 
 
-#if OCAML_VERSION >= (4,10,0)
   | { sig_desc = Tsig_module { md_id = Some id; _ }; sig_loc; _} :: rest ->
       [`Module (id, hide_item, Some sig_loc)] @ extract_signature_tree_items hide_item rest
   | { sig_desc = Tsig_module _; _ } :: rest ->
@@ -255,13 +218,6 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
         | Some id -> `Module (id, hide_item, Some md.md_loc) :: items
         | None -> items)
       mds [] @ extract_signature_tree_items hide_item rest
-#else 
-  | { sig_desc = Tsig_module{ md_id; _}; _} :: rest ->
-      [`Module (md_id, hide_item, None)] @ extract_signature_tree_items hide_item rest
-  | { sig_desc = Tsig_recmodule mds; _ } :: rest ->
-    List.map (fun md -> `Module (md.md_id, hide_item, None))
-      mds @ extract_signature_tree_items hide_item rest
-#endif
   | { sig_desc = Tsig_value {val_id; _}; sig_loc; _ } :: rest->
       [`Value (val_id, hide_item, Some sig_loc)] @ extract_signature_tree_items hide_item rest 
   | { sig_desc = Tsig_modtype mtd; sig_loc; _} :: rest ->
@@ -278,43 +234,24 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
   | {sig_desc = Tsig_class cls; _} :: rest ->
       List.map
         (fun cld ->
-            let typehash =
-#if OCAML_VERSION < (4,4,0)
-            Some cld.ci_id_typesharp
-#elif OCAML_VERSION < (5,1,0)
-            Some cld.ci_id_typehash
-#else
-            None
-#endif
+            let typehash = None
           in
           `Class (cld.ci_id_class, cld.ci_id_class_type, cld.ci_id_object, typehash, hide_item, Some cld.ci_id_name.loc))
             cls @ extract_signature_tree_items hide_item rest
   | { sig_desc = Tsig_class_type cltyps; _ } :: rest ->
     List.map
       (fun clty ->
-          let typehash =
-#if OCAML_VERSION < (4,4,0)
-            Some clty.ci_id_typesharp
-#elif OCAML_VERSION < (5,1,0)
-            Some clty.ci_id_typehash
-#else
-            None
-#endif
+            let typehash = None
             in
-            
             `ClassType (clty.ci_id_class_type, clty.ci_id_object, typehash, hide_item, Some clty.ci_id_name.loc))
               cltyps @ extract_signature_tree_items hide_item rest
-#if OCAML_VERSION >= (4,8,0)
     | { sig_desc = Tsig_modsubst ms; sig_loc; _ } :: rest ->
       [`Module (ms.ms_id, hide_item, Some sig_loc )] @ extract_signature_tree_items hide_item rest
     | { sig_desc = Tsig_typesubst ts; sig_loc; _} :: rest ->
-      List.map (fun decl -> `Type (decl.typ_id, hide_item, Some sig_loc)) 
+      List.map (fun decl -> `Type (decl.typ_id, hide_item, Some sig_loc))
         ts @ extract_signature_tree_items hide_item rest
-#endif
-#if OCAML_VERSION >= (4,13,0)
     | { sig_desc = Tsig_modtypesubst mtd; sig_loc; _ } :: rest ->
       [`ModuleType (mtd.mtd_id, hide_item, Some sig_loc)] @ extract_signature_tree_items hide_item rest
-#endif
     | { sig_desc = Tsig_open _;_} :: rest -> extract_signature_tree_items hide_item rest
 #if defined OXCAML
     | { sig_desc = Tsig_jkind _;_} :: rest -> extract_signature_tree_items hide_item rest
@@ -324,20 +261,14 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
 let rec read_pattern hide_item pat =
   let open Typedtree in
   match pat.pat_desc with
-#if OCAML_VERSION < (5,2,0)
-  | Tpat_var(id, loc) ->
-#elif defined OXCAML
+#if defined OXCAML
   | Tpat_var(id, loc, _, _, _) ->
 #else
   | Tpat_var(id, loc, _) ->
 #endif
     [`Value(id, hide_item, Some loc.loc)]
-#if OCAML_VERSION < (5,2,0)
-  | Tpat_alias(pat, id, loc) ->
-#elif defined OXCAML
+#if defined OXCAML
   | Tpat_alias(pat, id, loc, _, _, _, _) ->
-#elif OCAML_VERSION < (5,4,0)
-  | Tpat_alias(pat, id, loc, _) ->
 #else
   | Tpat_alias(pat, id, loc, _, _) ->
 #endif
@@ -348,27 +279,16 @@ let rec read_pattern hide_item pat =
   | Tpat_record_unboxed_product(pats, _) ->
       List.concat (List.map (fun (_, _, pat) -> read_pattern hide_item pat) pats)
 #endif
-#if OCAML_VERSION < (4,13,0)
-  | Tpat_construct(_, _, pats)
-#else
   | Tpat_construct(_, _, pats, _)
-#endif
 #if defined OXCAML
   | Tpat_array (_, _, pats) ->
       List.concat (List.map (fun pat -> read_pattern hide_item pat) pats)
-#elif OCAML_VERSION < (5,4,0)
-  | Tpat_array pats ->
-    List.concat (List.map (fun pat -> read_pattern hide_item pat) pats)
 #else
   | Tpat_array (_,pats) ->
     List.concat (List.map (fun pat -> read_pattern hide_item pat) pats)
 #endif
   | Tpat_tuple pats ->
-#if OCAML_VERSION >= (5,4,0) || defined OXCAML
      List.concat (List.map (fun (_lbl,pat) -> read_pattern hide_item pat) pats)
-#else
-     List.concat (List.map (fun pat -> read_pattern hide_item pat) pats)
-#endif
 #if defined OXCAML
   | Tpat_unboxed_tuple pats ->
       List.concat (List.map (fun (_, pat, _) -> read_pattern hide_item pat) pats)
@@ -377,9 +297,6 @@ let rec read_pattern hide_item pat =
   | Tpat_variant(_, Some pat, _)
   | Tpat_lazy pat -> read_pattern hide_item pat
   | Tpat_any | Tpat_constant _ | Tpat_variant(_, None, _) -> []
-#if OCAML_VERSION >= (4,8,0) && OCAML_VERSION < (4,11,0)
-  | Tpat_exception pat -> read_pattern hide_item pat
-#endif
 #if defined OXCAML
   | Tpat_unboxed_unit -> []
   | Tpat_unboxed_bool _ -> []
@@ -388,11 +305,7 @@ let rec read_pattern hide_item pat =
 let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> items list = fun hide_item items ->
   let open Typedtree in
     match items with
-#if OCAML_VERSION < (4,3,0)
-    | { str_desc = Tstr_type decls; _ } :: rest ->
-#else
     | { str_desc = Tstr_type (_, decls); _ } :: rest -> (* TODO: handle rec_flag *)
-#endif
   Odoc_utils.List.concat_map (fun decl ->
       `Type (decl.typ_id, hide_item, Some decl.typ_loc) ::
         (match decl.typ_kind with
@@ -403,48 +316,29 @@ let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> 
         | Ttype_record_unboxed_product _ -> []
 #endif
         | Ttype_open -> []
-#if OCAML_VERSION >= (5,5,0)
-        | Ttype_external _ -> []
-#endif
           ))
            decls @ extract_structure_tree_items hide_item rest
 
-#if OCAML_VERSION < (4,8,0)
-    | { str_desc = Tstr_exception tyexn_constructor; _ } :: rest ->
-#else
     | { str_desc = Tstr_exception { tyexn_constructor; _ }; _ } :: rest ->
-#endif
        `Exception (tyexn_constructor.ext_id, Some tyexn_constructor.ext_loc) :: extract_structure_tree_items hide_item rest
 
   | { str_desc = Tstr_typext { tyext_constructors; _ }; _} :: rest ->
     let x = List.map (fun { ext_id; ext_loc; _ } -> `Extension (ext_id, Some ext_loc)) tyext_constructors in
     x @ extract_structure_tree_items hide_item rest
 
-#if OCAML_VERSION < (4,3,0)
-    | { str_desc = Tstr_value (_, vbs ); _} :: rest ->
-#else
     | { str_desc = Tstr_value (_, vbs); _ } :: rest -> (*TODO: handle rec_flag *)
-#endif
    ( List.map (fun vb -> read_pattern hide_item vb.vb_pat) vbs
       |> List.flatten) @ extract_structure_tree_items hide_item rest
 
-#if OCAML_VERSION >= (4,10,0)
     | { str_desc = Tstr_module { mb_id = Some id; mb_loc; _}; _} :: rest ->
       [`Module (id, hide_item, Some mb_loc)] @ extract_structure_tree_items hide_item rest
     | { str_desc = Tstr_module _; _} :: rest -> extract_structure_tree_items hide_item rest
     | { str_desc = Tstr_recmodule mbs; _ } :: rest ->
-        List.fold_right 
+        List.fold_right
           (fun mb items ->
             match mb.mb_id with
             | Some id -> `Module (id, hide_item, Some mb.mb_loc) :: items
             | None -> items) mbs [] @ extract_structure_tree_items hide_item rest
-#else
-    | { str_desc = Tstr_module { mb_id; mb_loc; _}; _} :: rest ->
-        [`Module (mb_id, hide_item, Some mb_loc)] @ extract_structure_tree_items hide_item rest
-    | { str_desc = Tstr_recmodule mbs; _} :: rest ->
-        List.map (fun mb -> `Module (mb.mb_id, hide_item, None))
-          mbs @ extract_structure_tree_items hide_item rest
-#endif
     | { str_desc = Tstr_modtype mtd; str_loc; _} :: rest ->
         [`ModuleType (mtd.mtd_id, hide_item, Some str_loc)] @ extract_structure_tree_items hide_item rest
     | { str_desc = Tstr_include incl; _ } :: rest ->
@@ -454,20 +348,10 @@ let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> 
         extract_structure_tree_items hide_item rest
     | { str_desc = Tstr_class cls; _ } :: rest ->
         List.map
-#if OCAML_VERSION < (4,3,0)
-          (fun (cld, _, _) ->
-#else
           (fun (cld, _) ->
-#endif
              `Class (cld.ci_id_class,
                cld.ci_id_class_type, cld.ci_id_object,
-#if OCAML_VERSION < (4,4,0)
-               Some cld.ci_id_typesharp,
-#elif OCAML_VERSION < (5,1,0)
-               Some cld.ci_id_typehash,
-#else
                None,
-#endif
               hide_item, Some cld.ci_id_name.loc
              )) cls @ extract_structure_tree_items hide_item rest
     | {str_desc = Tstr_class_type cltyps; _ } :: rest ->
@@ -475,21 +359,11 @@ let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> 
           (fun (_, _, clty) ->
              `ClassType (clty.ci_id_class_type,
                clty.ci_id_object,
-#if OCAML_VERSION < (4,4,0)
-               Some clty.ci_id_typesharp,
-#elif OCAML_VERSION < (5,1,0)
-               Some clty.ci_id_typehash,
-#else
                None,
-#endif
               hide_item, Some clty.ci_id_name.loc
              )) cltyps @ extract_structure_tree_items hide_item rest
-#if OCAML_VERSION < (4,8,0)
-    | { str_desc = Tstr_open _; _} :: rest -> extract_structure_tree_items hide_item rest
-#else
     | { str_desc = Tstr_open o; _ } :: rest ->
         ((extract_extended_open o) :> items list)  @ extract_structure_tree_items hide_item rest
-#endif
     | { str_desc = Tstr_primitive {val_id; _}; str_loc; _ } :: rest ->
       [`Value (val_id, false, Some str_loc)] @ extract_structure_tree_items hide_item rest
     | { str_desc = Tstr_eval _; _} :: rest -> extract_structure_tree_items hide_item rest
@@ -795,72 +669,38 @@ module Path = struct
 
   let rec read_module : t -> Path.t -> Paths.Path.Module.t = fun env -> function
     | Path.Pident id -> read_module_ident env id
-#if OCAML_VERSION >= (4,8,0)
     | Path.Pdot(p, s) -> `Dot(read_module env p, ModuleName.make_std s)
-#else
-    | Path.Pdot(p, s, _) -> `Dot(read_module env p, ModuleName.make_std s)
-#endif
     | Path.Papply(p, arg) -> `Apply(read_module env p, read_module env arg)
-#if OCAML_VERSION >= (5,1,0)
     | Path.Pextra_ty _ -> assert false
-#endif
 
   let read_module_type env = function
     | Path.Pident id -> read_module_type_ident env id
-#if OCAML_VERSION >= (4,8,0)
     | Path.Pdot(p, s) -> `DotMT(read_module env p, ModuleTypeName.make_std s)
-#else
-    | Path.Pdot(p, s, _) -> `DotMT(read_module env p, ModuleTypeName.make_std s)
-#endif
     | Path.Papply(_, _)-> assert false
-#if OCAML_VERSION >= (5,1,0)
     | Path.Pextra_ty _ -> assert false
-#endif
 
   let read_class_type env = function
     | Path.Pident id -> read_class_type_ident env id
-#if OCAML_VERSION >= (4,8,0)
     | Path.Pdot(p, s) -> `DotT(read_module env p, TypeName.make_std (strip_hash s))
-#else
-    | Path.Pdot(p, s, _) -> `DotT(read_module env p, TypeName.make_std (strip_hash s))
-#endif
     | Path.Papply(_, _)-> assert false
-#if OCAML_VERSION >= (5,1,0)
     | Path.Pextra_ty _ -> assert false
-#endif
 
-#if OCAML_VERSION < (5,1,0)
-  let read_type env = function
-#else
     let rec read_type env = function
-#endif
     | Path.Pident id -> read_type_ident env id
-#if OCAML_VERSION >= (4,8,0)
     | Path.Pdot(p, s) ->
-#else
-    | Path.Pdot(p, s, _) ->
-#endif
         `DotT(read_module env p, TypeName.make_std (strip_hash s))
     | Path.Papply(_, _)-> assert false
 #if defined OXCAML
     | Path.Pextra_ty (p, Punboxed_ty) ->
         `Unbox (read_type env p)
 #endif
-#if OCAML_VERSION >= (5,1,0)
     | Path.Pextra_ty (p,_) -> read_type env p
-#endif
 
   let read_value env = function
     | Path.Pident id -> read_value_ident env id
-#if OCAML_VERSION >= (4,8,0)
     | Path.Pdot(p, s) -> `DotV(read_module env p, ValueName.make_std s)
-#else
-    | Path.Pdot(p, s, _) -> `DotV(read_module env p, ValueName.make_std s)
-#endif
     | Path.Papply(_, _) -> assert false
-#if OCAML_VERSION >= (5,1,0)
     | Path.Pextra_ty _ -> assert false
-#endif
 
 end
 
@@ -868,11 +708,7 @@ module Fragment = struct
 
   let lmap read_module = function
     | Longident.Lident s -> `Dot (`Root, s)
-#if OCAML_VERSION >= (5,4,0)
     | Longident.Ldot (p,s) -> `Dot (read_module p.txt, s.txt)
-#else
-    | Longident.Ldot (p,s) -> `Dot (read_module p, s)
-#endif
     | _ -> assert false
 
 

@@ -1,4 +1,3 @@
-#if OCAML_VERSION >= (4, 14, 0)
 
 module Analysis = struct
   type annotation =
@@ -32,22 +31,16 @@ module Analysis = struct
           match pat_desc with
 #if defined OXCAML
           | Tpat_var (id, loc, _uid, _, _) -> (
-#elif OCAML_VERSION >= (5, 2, 0)
-          | Tpat_var (id, loc, _uid) -> (
 #else
-          | Tpat_var (id, loc) -> (
+          | Tpat_var (id, loc, _uid) -> (
 #endif
               match maybe_localvalue id loc.loc with
               | Some x -> poses := x :: !poses
               | None -> ())
 #if defined OXCAML
           | Tpat_alias (_, id, loc, _uid, _, _, _) -> (
-#elif OCAML_VERSION >= (5, 4, 0)
-          | Tpat_alias (_, id, loc, _uid, _ty) -> (
-#elif OCAML_VERSION >= (5, 2, 0)
-          | Tpat_alias (_, id, loc, _uid) -> (
 #else
-          | Tpat_alias (_, id, loc) -> (
+          | Tpat_alias (_, id, loc, _uid, _ty) -> (
 #endif
               match maybe_localvalue id loc.loc with
               | Some x -> poses := x :: !poses
@@ -126,7 +119,3 @@ let of_cmt env structure =
   in
   iterator.structure iterator structure;
   !poses
-
-#else
-
-#endif
