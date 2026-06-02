@@ -18,38 +18,19 @@ utop # Resolve.signature Env.empty sg
 
 let _ = Toploop.set_paths ()
 
-#if defined OXCAML
-let dummy_compilation_unit = Compilation_unit.of_string ""
-let dummy_unit_info = Unit_info.make_dummy ~input_name:"" dummy_compilation_unit
-#endif
-
 let cmti_of_string s =
     Odoc_xref2.Tools.reset_caches ();
     let env = Compmisc.initial_env () in
     let l = Lexing.from_string s in
     let p = Parse.interface l in
     Typemod.type_interface
-#if OCAML_VERSION >= (4,4,0) && OCAML_VERSION < (4,9,0)
-    ""
-#elif defined OXCAML
-    ~sourcefile:""
-    dummy_compilation_unit
-#endif
     env p;;
 
 let cmt_of_string s =
     let env = Compmisc.initial_env () in
     let l = Lexing.from_string s in
     let p = Parse.implementation l in
-#if defined OXCAML
-    Typemod.type_implementation dummy_unit_info dummy_compilation_unit env p
-#elif OCAML_VERSION < (5,2,0)
-    Typemod.type_implementation "" "" "" env p
-#elif OCAML_VERSION < (5,3,0)
-    Typemod.type_implementation (Unit_info.make ~source_file:"" "") env p
-#else
     Typemod.type_implementation Unit_info.(make ~source_file:"" Impl "") env p
-#endif
 
 let parent = Odoc_model.Paths.Identifier.Mk.page (None, PageName.make_std "None")
 let id = Odoc_model.Paths.Identifier.Mk.root (Some parent, ModuleName.make_std "Root")
@@ -83,11 +64,7 @@ let model_of_string str =
     Odoc_loader__Cmti.read_interface (Some parent) "Root" ~warnings_tag:None cmti
 
 let model_of_string_impl str =
-#if OCAML_VERSION < (4,13,0)
-    let (cmt,_) = cmt_of_string str in
-#else
     let cmt = (cmt_of_string str).structure in
-#endif
     Odoc_loader__Cmt.read_implementation (Some parent) "Root" ~warnings_tag:None cmt
 
 let signature_of_mli_string str =
@@ -620,14 +597,8 @@ let mkresolver () =
   Odoc_odoc.Resolver.create
  ~roots:None     ~important_digests:false
     ~directories:(List.map Odoc_odoc.Fs.Directory.of_string
-#if OCAML_VERSION >= (5,2,0)
   (let paths = Load_path.get_paths () in
    List.filter (fun s -> s <> "") (paths.visible @ paths.hidden))
-#elif OCAML_VERSION >= (4,8,0)
-    (Load_path.get_paths () |> List.filter (fun s -> s <> ""))
-#else
-    !Config.load_path
-#endif
     ) ~open_modules:[]
 
 let warnings_options =

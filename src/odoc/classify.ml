@@ -15,17 +15,10 @@ let debug = ref false
 let log fmt =
   if !debug then Format.printf fmt else Format.ifprintf Format.std_formatter fmt
 
-#if defined OXCAML
-let name_of_import import = Import_info.name import |> Compilation_unit.Name.to_string
-let intf_info import = Option.map snd (Import_info.Intf.info import)
-let cmt_imports cmt_infos = Array.to_list cmt_infos.Cmt_format.cmt_imports
-let cmi_crcs cmi_infos = Array.to_list cmi_infos.Cmi_format.cmi_crcs
-#else
 let name_of_import (cu, _) = cu
 let intf_info (_, info) = info
 let cmt_imports cmt_infos = cmt_infos.Cmt_format.cmt_imports
 let cmi_crcs cmi_infos = cmi_infos.Cmi_format.cmi_crcs
-#endif
 
 module Archive = struct
   type name = string
@@ -51,11 +44,7 @@ module Archive = struct
       impl_deps = StringSet.diff s.impl_deps s.modules;
     }
 
-#if defined OXCAML
-  let cu_imports cu = Array.to_list cu.cu_imports
-#else
   let cu_imports cu = cu.cu_imports
-#endif
 
   let add_cu lib cu =
     normalise
@@ -77,9 +66,6 @@ module Archive = struct
   let add_unit_info lib (unit, cmis, cmxs) =
     let name =
       unit
-#if defined OXCAML
-      |> Compilation_unit.name_as_string
-#endif
     in
     normalise
       {
@@ -192,32 +178,11 @@ let read_cma ic init =
 let read_cmxa ic init =
   let li = (input_value ic : Cmx_format.library_infos) in
   close_in ic;
-#if defined OXCAML
-  (* FIXME: This OxCaml-specific code is awful and can be gotten rid of
-     once this PR (which was inspired by having to write this very code) is merged:
-     https://github.com/oxcaml/oxcaml/pull/2673 *)
-  let get_masked array i ~mask =
-    if Misc.Bitmap.get mask i then Some (Array.get array i) else None
-  in
-  let bitmap_to_list b ~array =
-    List.init (Array.length array) (fun i -> i)
-    |> List.filter_map (fun i -> get_masked array i ~mask:b)
-  in
-  let units =
-    List.map
-      (fun (unit : Cmx_format.lib_unit_info) ->
-         let cmis = bitmap_to_list unit.li_imports_cmi ~array:li.lib_imports_cmi in
-         let cmxs = bitmap_to_list unit.li_imports_cmx ~array:li.lib_imports_cmx in
-         unit.li_name, cmis, cmxs)
-      li.lib_units
-  in
-#else
   let units =
     List.map
       (fun (u, _) -> u.Cmx_format.ui_name, u.ui_imports_cmi, u.ui_imports_cmx)
       li.lib_units
   in
-#endif
   Ok (List.fold_left Archive.add_unit_info init units)
 
 
@@ -227,11 +192,7 @@ let read_library ic init =
   let open Magic_number in
   match read_current_info ~expected_kind:None ic with
   | Ok { kind = Cma; version = _ } -> read_cma ic init
-#if defined OXCAML
-  | Ok { kind = Cmxa; version = _ } ->
-#else
   | Ok { kind = Cmxa _; version = _ } ->
-#endif
       read_cmxa ic init
   | Ok { kind = _; version = _ } -> Error (`Msg "Not a valid library")
   | Error _ -> Error (`Msg "Not a valid file")

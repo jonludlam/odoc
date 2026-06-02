@@ -29,7 +29,6 @@ synopsis: "Meta package defining dependencies for the benchmark rule. Not releas
 
 depends: [
   "cmdliner" {>= "1.3.0"}
-  "cppo" {build & >= "1.1.0"}
   "dune" {>= "3.21.0"}
   "fpath"
   "ocaml" {>= "5.4.0" & < "5.5.0"}

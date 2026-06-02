@@ -12,11 +12,7 @@ module Analysis = struct
     if exp_loc.loc_ghost then ()
     else
       match expr.exp_desc with
-#if defined OXCAML
-      | Texp_ident (p, _, _, _, _, _) ->
-#else
       | Texp_ident (p, _, _) ->
-#endif
           poses := (Value p, exp_loc) :: !poses
       | _ -> ()
 
@@ -29,19 +25,11 @@ module Analysis = struct
         in
         let () =
           match pat_desc with
-#if defined OXCAML
-          | Tpat_var (id, loc, _uid, _, _) -> (
-#else
           | Tpat_var (id, loc, _uid) -> (
-#endif
               match maybe_localvalue id loc.loc with
               | Some x -> poses := x :: !poses
               | None -> ())
-#if defined OXCAML
-          | Tpat_alias (_, id, loc, _uid, _, _, _) -> (
-#else
           | Tpat_alias (_, id, loc, _uid, _ty) -> (
-#endif
               match maybe_localvalue id loc.loc with
               | Some x -> poses := x :: !poses
               | None -> ())

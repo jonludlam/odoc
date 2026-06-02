@@ -101,13 +101,8 @@ let compilation_unit_of_sig ~make_root ~imports ~interface ?sourcefile ~name ~id
   make_compilation_unit ~make_root ~imports ~interface ?sourcefile ~name ~id
     ?canonical content
 
-#if defined OXCAML
-let unit_name_as_string = Compilation_unit.name_as_string
-let name_to_string = Compilation_unit.Name.to_string
-#else
 let unit_name_as_string x = x
 let name_to_string x = x
-#endif
 
 let read_cmti ~make_root ~parent ~filename ~warnings_tag () =
   let cmt_info = Cmt_format.read_cmt filename in
@@ -130,17 +125,7 @@ let read_cmti ~make_root ~parent ~filename ~warnings_tag () =
           let id, sg, canonical =
             Cmti.read_interface parent name ~warnings_tag intf
           in
-#if defined OXCAML
-          let imports =
-            cmt_info.cmt_imports
-            |> Array.map (fun import ->
-              Import_info.name import |> Compilation_unit.Name.to_string,
-              Import_info.crc import)
-            |> Array.to_list
-          in
-#else
           let imports = cmt_info.cmt_imports in
-#endif
           compilation_unit_of_sig ~make_root ~imports
             ~interface ~sourcefile ~name ~id ?canonical sg)
   | _ -> raise Not_an_interface
@@ -167,17 +152,7 @@ let read_cmt ~make_root ~parent ~filename ~warnings_tag () =
       | Some digest -> (
           try Odoc_model.Names.set_unique_ident (Digest.to_hex digest)
           with _ -> ()));
-#if defined OXCAML
-      let imports =
-        cmt_info.cmt_imports
-        |> Array.map (fun import ->
-             Import_info.name import |> Compilation_unit.Name.to_string,
-             Import_info.crc import)
-        |> Array.to_list
-      in
-#else
       let imports = cmt_info.cmt_imports in
-#endif
       match cmt_info.cmt_annots with
       | Packed (_, files) ->
           let id =
@@ -216,24 +191,10 @@ let read_cmt ~make_root ~parent ~filename ~warnings_tag () =
             ~name ~id ?canonical sg
       | _ -> raise Not_an_implementation)
 
-#if defined OXCAML
-let compilation_unit_of_import_info (info : Import_info.Intf.Nonalias.t option) =
-  match info with
-  | None -> None
-  | Some (Parameter, _) -> None
-  | Some (Normal cu, _) -> Some (cu |> Compilation_unit.full_path_as_string)
-#else
 let compilation_unit_of_import_info info =
   Option.map snd info
-#endif
 
-#if defined OXCAML
-let cmi_crcs cmi_info =
-  List.map (fun import -> Import_info.name import, Import_info.Intf.info import)
-    (Array.to_list cmi_info.Cmi_format.cmi_crcs)
-#else
 let cmi_crcs cmi_info = cmi_info.Cmi_format.cmi_crcs
-#endif
 
 let read_cmi ~make_root ~parent ~filename ~warnings_tag () =
   let cmi_info = Cmi_format.read_cmi filename in
@@ -245,15 +206,6 @@ let read_cmi ~make_root ~parent ~filename ~warnings_tag () =
         Cmi.read_interface parent name ~warnings_tag
           (Odoc_model.Compat.signature cmi_info.cmi_sign)
       in
-#if defined OXCAML
-      let imports =
-        imports
-        |> List.map (fun (name, info_opt) ->
-             name |> Compilation_unit.Name.to_string,
-             compilation_unit_of_import_info info_opt)
-      in
-      let interface = interface |> Option.map snd in
-#endif
       compilation_unit_of_sig ~make_root ~imports ~interface ~name ~id sg
   | _ -> raise Corrupted
 
@@ -270,15 +222,6 @@ let read_impl ~make_root ~filename ~source_id () =
       in
       let interface = cmt_info.cmt_interface_digest in
       let imports = cmt_info.cmt_imports in
-#if defined OXCAML
-      let imports =
-        imports
-        |> Array.map (fun import ->
-          Import_info.name import |> Compilation_unit.Name.to_string,
-          Import_info.crc import)
-        |> Array.to_list
-      in
-#endif
       match cmt_info.cmt_annots with
       | Implementation _impl ->
           let digest =

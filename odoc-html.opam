@@ -42,7 +42,6 @@ the `tyxml` dependency.
 depends: [
   "odoc" {= version}
   "cmdliner" {>= "1.3.0"}
-  "cppo" {build & >= "1.1.0"}
   "crunch" {build & >= "1.4.1"}
   "dune" {>= "3.21.0"}
   "fpath" {>= "0.7.3"}
@@ -56,7 +55,6 @@ depends: [
 
 conflicts: [
   "ocaml-option-bytecode-only"
-  "oxcaml-compiler" {< "5.2.0minus31"}
 ]
 
 build: [

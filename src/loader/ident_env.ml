@@ -114,17 +114,8 @@ and extract_signature_type_items_extract vis ~hidden item rest =
       else
         let constrs = match td.type_kind with
           | Types.Type_abstract _ -> []
-#if defined OXCAML
-          | Type_record (_, _, _) -> []
-          | Type_record_unboxed_product (_, _, _) -> []
-#else
           | Type_record (_, _) -> []
-#endif
-#if defined OXCAML
-          | Type_variant (cstrs, _, _) ->
-#else
           | Type_variant (cstrs, _) ->
-#endif
             List.map (fun c -> `Constructor (c.Types.cd_id, id, Some c.cd_loc)) cstrs
           | Type_open -> []
           in
@@ -192,9 +183,6 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
           Ttype_abstract -> []
         | Ttype_variant constrs -> List.map (fun c -> `Constructor (c.cd_id, decl.typ_id, Some c.cd_loc)) constrs
         | Ttype_record _ -> []
-#if defined OXCAML
-        | Ttype_record_unboxed_product _ -> []
-#endif
         | Ttype_open -> []
           )
       decls @ extract_signature_tree_items hide_item rest
@@ -222,11 +210,7 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
       [`Value (val_id, hide_item, Some sig_loc)] @ extract_signature_tree_items hide_item rest 
   | { sig_desc = Tsig_modtype mtd; sig_loc; _} :: rest ->
       [`ModuleType (mtd.mtd_id, hide_item, Some sig_loc)] @ extract_signature_tree_items hide_item rest
-#if defined OXCAML
-  | {sig_desc = Tsig_include (incl, _); _ } :: rest ->
-#else
   | {sig_desc = Tsig_include incl; _ } :: rest ->
-#endif
       [`Include (extract_signature_type_items Exported (Compat.signature incl.incl_type))] @ extract_signature_tree_items hide_item rest
   | {sig_desc = Tsig_attribute attr; _ } :: rest ->
       let hide_item = if Doc_attr.is_stop_comment attr then not hide_item else hide_item in
@@ -253,54 +237,26 @@ let rec extract_signature_tree_items : bool -> Typedtree.signature_item list -> 
     | { sig_desc = Tsig_modtypesubst mtd; sig_loc; _ } :: rest ->
       [`ModuleType (mtd.mtd_id, hide_item, Some sig_loc)] @ extract_signature_tree_items hide_item rest
     | { sig_desc = Tsig_open _;_} :: rest -> extract_signature_tree_items hide_item rest
-#if defined OXCAML
-    | { sig_desc = Tsig_jkind _;_} :: rest -> extract_signature_tree_items hide_item rest
-#endif
     | [] -> []
 
 let rec read_pattern hide_item pat =
   let open Typedtree in
   match pat.pat_desc with
-#if defined OXCAML
-  | Tpat_var(id, loc, _, _, _) ->
-#else
   | Tpat_var(id, loc, _) ->
-#endif
     [`Value(id, hide_item, Some loc.loc)]
-#if defined OXCAML
-  | Tpat_alias(pat, id, loc, _, _, _, _) ->
-#else
   | Tpat_alias(pat, id, loc, _, _) ->
-#endif
     `Value(id, hide_item, Some loc.loc) :: read_pattern hide_item pat
   | Tpat_record(pats, _) -> 
       List.concat (List.map (fun (_, _, pat) -> read_pattern hide_item pat) pats)
-#if defined OXCAML
-  | Tpat_record_unboxed_product(pats, _) ->
-      List.concat (List.map (fun (_, _, pat) -> read_pattern hide_item pat) pats)
-#endif
   | Tpat_construct(_, _, pats, _)
-#if defined OXCAML
-  | Tpat_array (_, _, pats) ->
-      List.concat (List.map (fun pat -> read_pattern hide_item pat) pats)
-#else
   | Tpat_array (_,pats) ->
     List.concat (List.map (fun pat -> read_pattern hide_item pat) pats)
-#endif
   | Tpat_tuple pats ->
      List.concat (List.map (fun (_lbl,pat) -> read_pattern hide_item pat) pats)
-#if defined OXCAML
-  | Tpat_unboxed_tuple pats ->
-      List.concat (List.map (fun (_, pat, _) -> read_pattern hide_item pat) pats)
-#endif
   | Tpat_or(pat, _, _)
   | Tpat_variant(_, Some pat, _)
   | Tpat_lazy pat -> read_pattern hide_item pat
   | Tpat_any | Tpat_constant _ | Tpat_variant(_, None, _) -> []
-#if defined OXCAML
-  | Tpat_unboxed_unit -> []
-  | Tpat_unboxed_bool _ -> []
-#endif
 
 let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> items list = fun hide_item items ->
   let open Typedtree in
@@ -312,9 +268,6 @@ let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> 
           Ttype_abstract -> []
         | Ttype_variant constrs -> List.map (fun c -> `Constructor (c.cd_id, decl.typ_id, Some c.cd_loc)) constrs
         | Ttype_record _ -> []
-#if defined OXCAML
-        | Ttype_record_unboxed_product _ -> []
-#endif
         | Ttype_open -> []
           ))
            decls @ extract_structure_tree_items hide_item rest
@@ -367,9 +320,6 @@ let rec extract_structure_tree_items : bool -> Typedtree.structure_item list -> 
     | { str_desc = Tstr_primitive {val_id; _}; str_loc; _ } :: rest ->
       [`Value (val_id, false, Some str_loc)] @ extract_structure_tree_items hide_item rest
     | { str_desc = Tstr_eval _; _} :: rest -> extract_structure_tree_items hide_item rest
-#if defined OXCAML
-    | { str_desc = Tstr_jkind _; _ } :: rest -> extract_structure_tree_items hide_item rest
-#endif
     | [] -> []
 
 
@@ -611,11 +561,7 @@ let find_class_type_identifier env id =
   Ident.find_same id env.class_types
 
 let ident_is_global_or_predef id =
-#if defined OXCAML
-  Ident.is_global_or_predef id
-#else
   Ident.persistent id
-#endif
 
 let is_shadowed
  env id =
@@ -690,10 +636,6 @@ module Path = struct
     | Path.Pdot(p, s) ->
         `DotT(read_module env p, TypeName.make_std (strip_hash s))
     | Path.Papply(_, _)-> assert false
-#if defined OXCAML
-    | Path.Pextra_ty (p, Punboxed_ty) ->
-        `Unbox (read_type env p)
-#endif
     | Path.Pextra_ty (p,_) -> read_type env p
 
   let read_value env = function

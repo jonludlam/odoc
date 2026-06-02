@@ -41,22 +41,14 @@ let rec read_pattern env parent doc pat =
   let open Signature in
     match pat.pat_desc with
     | Tpat_any -> []
-#if defined OXCAML
-    | Tpat_var(id, _, _uid, _, _) ->
-#else
     | Tpat_var(id, _, _uid) ->
-#endif
         let open Value in
         let id = Env.find_value_identifier env.ident_env id in
           Cmi.mark_type_expr pat.pat_type;
           let type_ = Cmi.read_type_expr env pat.pat_type in
           let value = Abstract in
           [Value {id; source_loc; doc; type_; value}]
-#if defined OXCAML
-    | Tpat_alias(pat, id, _, _, _, _, _) ->
-#else
     | Tpat_alias(pat, id,_,_,_) ->
-#endif
         let open Value in
         let id = Env.find_value_identifier env.ident_env id in
           Cmi.mark_type_expr pat.pat_type;
@@ -67,10 +59,6 @@ let rec read_pattern env parent doc pat =
     | Tpat_tuple pats ->
       let pats = List.map snd pats (* remove labels *) in
       List.concat (List.map (read_pattern env parent doc) pats)
-#if defined OXCAML
-    | Tpat_unboxed_tuple pats ->
-        List.concat (List.map (fun (_, p, _) -> read_pattern env parent doc p) pats)
-#endif
     | Tpat_construct(_,_,pats,_) ->
         List.concat (List.map (read_pattern env parent doc) pats)
     | Tpat_variant(_, None, _) -> []
@@ -81,25 +69,12 @@ let rec read_pattern env parent doc pat =
           (List.map
              (fun (_, _, pat) -> read_pattern env parent doc pat)
           pats)
-#if defined OXCAML
-    | Tpat_record_unboxed_product(pats, _) ->
-        List.concat
-          (List.map
-             (fun (_, _, pat) -> read_pattern env parent doc pat)
-          pats)
-    | Tpat_array (_, _, pats) ->
-#else
     | Tpat_array (_, pats) ->
-#endif
         List.concat (List.map (read_pattern env parent doc) pats)
     | Tpat_or(pat, _, _) ->
         read_pattern env parent doc pat
     | Tpat_lazy pat ->
         read_pattern env parent doc pat
-#if defined OXCAML
-    | Tpat_unboxed_unit -> []
-    | Tpat_unboxed_bool _ -> []
-#endif
 
 let read_value_binding env parent vb =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
@@ -377,11 +352,7 @@ let rec read_module_expr env parent label_parent mexpr =
         let f_parameter, env =
           match parameter with
           | Unit -> FunctorParameter.Unit, env
-#if defined OXCAML
-          | Named (id_opt, _, arg, _) ->
-#else
           | Named (id_opt, _, arg) ->
-#endif
               let id, env =
                 match id_opt with
                 | None -> Identifier.Mk.parameter (parent, Odoc_model.Names.ModuleName.make_std "_"), env
@@ -398,13 +369,8 @@ let rec read_module_expr env parent label_parent mexpr =
         Cmi.read_module_type env parent (Odoc_model.Compat.module_type mexpr.mod_type)
     | Tmod_apply_unit _ ->
         Cmi.read_module_type env parent (Odoc_model.Compat.module_type mexpr.mod_type)
-#if defined OXCAML
-    | Tmod_constraint(_, _, Tmodtype_explicit (mty, _), _) ->
-        Cmti.read_module_type env parent label_parent mty
-#else
     | Tmod_constraint(_, _, Tmodtype_explicit mty, _) ->
         Cmti.read_module_type env parent label_parent mty
-#endif
     | Tmod_constraint(mexpr, _, Tmodtype_implicit, _) ->
         read_module_expr env parent label_parent mexpr
     | Tmod_unpack(_, mty) ->
@@ -513,9 +479,6 @@ and read_structure_item env parent item =
     | Tstr_class_type cltyps ->
         let cltyps = List.map (fun (_, _, clty) -> clty) cltyps in
           Cmti.read_class_type_declarations env parent cltyps
-#if defined OXCAML
-    | Tstr_jkind _ -> []
-#endif
     | Tstr_attribute attr ->
       let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
           match Doc_attr.standalone container ~warnings_tag:env.warnings_tag attr with
@@ -528,16 +491,8 @@ and read_include env parent incl =
   let container = (parent : Identifier.Signature.t :> Identifier.LabelParent.t) in
   let doc, status = Doc_attr.attached ~warnings_tag:env.warnings_tag Odoc_model.Semantics.Expect_status container incl.incl_attributes in
   let decl_modty =
-#if defined OXCAML
-    match unwrap_module_expr_desc incl.incl_mod.mod_desc, incl.incl_kind with
-    | _, (Tincl_functor _ | Tincl_gen_functor _) ->
-      (* TODO: Handle [include functor] *)
-      None
-    | Tmod_ident(p, _), Tincl_structure ->
-#else
     match unwrap_module_expr_desc incl.incl_mod.mod_desc with
     | Tmod_ident(p, _) ->
-#endif
       let p = Env.Path.read_module env.ident_env p in
       Some (ModuleType.U.TypeOf (ModuleType.StructInclude p, p))
     | _ ->

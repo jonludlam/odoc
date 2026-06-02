@@ -14,15 +14,11 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-(* Compatibility for older versions of OCaml *)
+(* Compatibility shim for the OCaml compiler-libs' types module.
 
-(* This module contains a subset of the types in ocaml.git/typing/types.ml from
-   the latest version of the compiler. There is also conditionally compiled code
-   for older versions of the compiler to convert from their version of types.ml
-   to this version. This simplifies the support for older versions of OCaml.
-
-   This is only done for the subsets of the types that contain the most invasive
-   changes. For other simpler changes we use in-line cppo directives *)
+   This module contains a subset of the types in ocaml.git/typing/types.ml that
+   odoc cares about, together with conversion functions from the compiler's
+   types.ml to this version. *)
 
 type visibility =
   | Exported
@@ -77,13 +73,7 @@ and modtype_declaration =
 let opt conv = function | None -> None | Some x -> Some (conv x)
 
 let rec signature : Types.signature -> signature = fun x ->
-#if defined OXCAML
-  List.filter_map (function
-    | Types.Sig_jkind _ -> None
-    | si -> Some (signature_item si)) x
-#else
   List.map signature_item x
-#endif
 
 and signature_item : Types.signature_item -> signature_item = function
   | Types.Sig_value (a,b,c) -> Sig_value (a,b,visibility c)
@@ -93,9 +83,6 @@ and signature_item : Types.signature_item -> signature_item = function
   | Types.Sig_modtype (a,b,c) -> Sig_modtype (a, modtype_declaration b, visibility c)
   | Types.Sig_class (a,b,c,d) -> Sig_class (a,b,c, visibility d)
   | Types.Sig_class_type (a,b,c,d) -> Sig_class_type (a,b,c, visibility d)
-#if defined OXCAML
-  | Types.Sig_jkind _ -> assert false  (* filtered in [signature] *)
-#endif
 
 and visibility : Types.visibility -> visibility = function
   | Types.Hidden -> Hidden
@@ -104,31 +91,12 @@ and visibility : Types.visibility -> visibility = function
 and module_type : Types.module_type -> module_type = function
   | Types.Mty_ident p -> Mty_ident p
   | Types.Mty_signature s -> Mty_signature (signature s)
-#if defined OXCAML
-  (* oxcaml: [Mty_functor] gained a third [Mode.Alloc.lr] argument;
-     odoc has no use for the mode so we drop it. *)
-  | Types.Mty_functor (a, b, _mode) -> Mty_functor(functor_parameter a, module_type b)
-#else
   | Types.Mty_functor (a, b) -> Mty_functor(functor_parameter a, module_type b)
-#endif
   | Types.Mty_alias p -> Mty_alias p
-#if defined OXCAML
-  | Types.Mty_strengthen (mty,p,a) ->
-      Mty_strengthen (module_type mty, p, aliasability a)
-
-and aliasability : Types.Aliasability.t -> Aliasability.t = function
-  | Types.Aliasability.Not_aliasable -> Aliasability.Not_aliasable
-  | Types.Aliasability.Aliasable -> Aliasability.Aliasable
-#endif
 
 and functor_parameter : Types.functor_parameter -> functor_parameter = function
   | Types.Unit -> Unit
-#if defined OXCAML
-  (* oxcaml adds a [Mode.Alloc.lr] third argument that odoc ignores. *)
-  | Types.Named (a, b, _mode) -> Named (a, module_type b)
-#else
   | Types.Named (a, b) -> Named (a, module_type b)
-#endif
 
 and module_presence : Types.module_presence -> module_presence = function
   | Types.Mp_present -> Mp_present
@@ -170,22 +138,11 @@ let shape_info_of_cmt_infos : Cmt_format.cmt_infos -> (shape * uid_to_loc) optio
     | Module_type mt -> mt.mtd_loc
     | Class cd -> cd.ci_id_name.loc
     | Class_type ctd -> ctd.ci_id_name.loc
-#if defined OXCAML
-    | Jkind _ -> Location.none  (* oxcaml: odoc ignores jkind declarations *)
-#endif
   in
   fun x -> Option.map (fun s -> (s, Shape.Uid.Tbl.map x.cmt_uid_to_decl loc_of_declaration)) x.cmt_impl_shape
 
-#if defined OXCAML
-
-let compunit_name : Compilation_unit.t -> string = Compilation_unit.name_as_string
-
-let required_compunit_names x = List.map compunit_name x.Cmo_format.cu_required_compunits
-
-#else
 
 let compunit_name : Cmo_format.compunit -> string = function | Compunit x -> x
 
 let required_compunit_names x = List.map compunit_name x.Cmo_format.cu_required_compunits
 
-#endif

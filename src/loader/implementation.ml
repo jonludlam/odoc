@@ -35,9 +35,6 @@ module Env = struct
     | Tsig_exception _ | Tsig_modsubst _ | Tsig_open _ | Tsig_include _
     | Tsig_class _ | Tsig_class_type _ | Tsig_attribute _ ->
         ()
-#if defined OXCAML
-    | Tsig_jkind _ -> ()
-#endif
 
   and module_declaration env _parent md =
     match md.md_id with
@@ -64,20 +61,12 @@ module Env = struct
     | Tstr_class_type _ | Tstr_include _ | Tstr_attribute _ | Tstr_primitive _
     | Tstr_type _ | Tstr_typext _ | Tstr_exception _ ->
         ()
-#if defined OXCAML
-    | Tstr_jkind _ -> ()
-#endif
 
   and module_type env (parent : Identifier.Signature.t) mty =
     match mty.mty_desc with
     | Tmty_signature sg -> signature env (parent : Identifier.Signature.t) sg
     | Tmty_with (mty, _) -> module_type env parent mty
-#if defined OXCAML
-    | Tmty_functor (_, t, _) -> module_type env parent t
-    | Tmty_strengthen (t, _, _) -> module_type env parent t
-#else
     | Tmty_functor (_, t) -> module_type env parent t
-#endif
     | Tmty_ident _ | Tmty_alias _ | Tmty_typeof _ -> ()
 
   and module_bindings env parent mbs = List.iter (module_binding env parent) mbs
@@ -106,11 +95,7 @@ module Env = struct
         let env =
           match parameter with
           | Unit -> env
-#if defined OXCAML
-          | Named (id_opt, _, arg, _) -> (
-#else
           | Named (id_opt, _, arg) -> (
-#endif
               match id_opt with
               | Some id ->
                   let env =
@@ -127,11 +112,7 @@ module Env = struct
         let () =
           match constr with
           | Tmodtype_implicit -> ()
-#if defined OXCAML
-          | Tmodtype_explicit (mt, _) -> module_type env parent mt
-#else
           | Tmodtype_explicit mt -> module_type env parent mt
-#endif
         in
         module_expr env parent me
     | _ -> ()

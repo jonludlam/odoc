@@ -6,8 +6,6 @@ type enabledif =
   | Min of string
   | Max of string
   | MinMax of string * string
-  | OxCaml
-  | MinNotOxCaml of string
 
 type test_case = {
   input : Fpath.t;
@@ -51,20 +49,6 @@ module Dune = struct
                   Atom "and";
                   List [ Atom ">="; Atom "%{ocaml_version}"; Atom min ];
                   List [ Atom "<="; Atom "%{ocaml_version}"; Atom max ];
-                ];
-            ];
-        ]
-    | Some OxCaml -> [ List [ Atom "enabled_if"; Atom "%{ocaml-config:ox}" ] ]
-    | Some (MinNotOxCaml v) ->
-        [
-          List
-            [
-              Atom "enabled_if";
-              List
-                [
-                  Atom "and";
-                  List [ Atom ">="; Atom "%{ocaml_version}"; Atom v ];
-                  List [ Atom "not"; Atom "%{ocaml-config:ox}" ];
                 ];
             ];
         ]

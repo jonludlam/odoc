@@ -1,4 +1,3 @@
-document/*.cppo.ml
 loader/cmi.ml
 loader/cmi.mli
 loader/cmt.ml
@@ -11,9 +10,4 @@ loader/lookup_def.mli
 loader/odoc_loader.ml
 loader/typedtree_traverse.ml
 syntax_highlighter/syntax_highlighter.ml
-model/*.cppo.ml
-odoc/*.cppo.ml
 html_support_files/*.ml
-xref2/shape_tools.*
-odoc/classify.cppo.ml
-

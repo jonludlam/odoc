@@ -72,18 +72,10 @@ let opt_iter f = function
 
 let read_label lbl =
   let open TypeExpr in
-#if defined OXCAML
-  match lbl with
-  | Types.Nolabel -> None
-  | Types.Labelled s -> Some (Label s)
-  | Types.Optional s -> Some (Optional s)
-  | Types.Position s -> (* FIXME: do better? *) Some (Label s)
-#else
   match lbl with
   | Asttypes.Nolabel -> None
   | Asttypes.Labelled s -> Some (Label s)
   | Asttypes.Optional s -> Some (Optional s)
-#endif
 
 (* Handle type variable names *)
 
@@ -128,11 +120,7 @@ let name_of_type_repr (ty : Compat.repr_type_node) =
   with Not_found ->
     let base =
       match ty.desc with
-#if defined OXCAML
-      | Tvar { name = Some name; _ } | Tunivar { name = Some name; _ } -> name
-#else
       | Tvar (Some name) | Tunivar (Some name) -> name
-#endif
       | _ -> next_name ()
     in
     let name = fresh_name base in
@@ -162,11 +150,7 @@ let add_alias_proxy px =
   if not (List.memq px !aliased) then begin
     aliased := px :: !aliased;
     match px.desc with
-#if defined OXCAML
-    | Tvar { name; _ } | Tunivar { name; _ } ->
-#else
     | Tvar name | Tunivar name ->
-#endif
         reserve_name name
     | _ -> ()
   end
@@ -206,19 +190,12 @@ let mark_type ty =
     if List.memq px visited && aliasable ty then add_alias_proxy px else
       let visited = px :: visited in
       match Compat.get_desc ty with
-#if defined OXCAML
-      | Tvar { name; _ } | Tunivar { name; _ } ->
-#else
       | Tvar name | Tunivar name ->
-#endif
           reserve_name name
       | Tarrow(_, ty1, ty2, _) ->
           loop visited ty1;
           loop visited ty2
       | Ttuple tyl -> List.iter (fun (_lbl,x) -> loop visited x) tyl
-#if defined OXCAML
-      | Tunboxed_tuple tyl -> List.iter (fun (_, ty) -> loop visited ty) tyl
-#endif
       | Tconstr(_, tyl, _) ->
           List.iter (loop visited) tyl
       | Tvariant row ->
@@ -259,12 +236,6 @@ let mark_type ty =
           List.iter (fun (_,x) -> loop visited x) p.pack_cstrs
       | Tsubst (ty,_) -> loop visited ty
       | Tlink _ -> assert false
-#if defined OXCAML
-      | Tquote typ -> loop visited typ
-      | Tsplice typ -> loop visited typ
-      | Tof_kind _ -> ()
-      | Trepr _ -> ()
-#endif
   in
   loop [] ty
 
@@ -287,12 +258,7 @@ let mark_type_parameter param =
   mark_type param;
   if aliasable param then use_alias px
 
-#if defined OXCAML
-let tvar_none ty jkind =
-  Types.Transient_expr.(set_desc (coerce ty) (Tvar { name = None; jkind }))
-#else
 let tvar_none ty = Types.Transient_expr.(set_desc (coerce ty) (Tvar None))
-#endif
 
 let wrap_constrained_params tyl =
   let params =
@@ -314,13 +280,8 @@ let prepare_type_parameters params manifest =
         let vars = Ctype.free_variables ty in
           List.iter
             (fun ty -> match Compat.get_desc ty with
-#if defined OXCAML
-              | Tvar { name = Some "_"; jkind } ->
-                if List.memq ty vars then tvar_none ty jkind
-#else
               | Tvar (Some "_") ->
                 if List.memq ty vars then tvar_none ty
-#endif
               | _ -> ())
             params
     | None -> ()
@@ -330,32 +291,18 @@ let prepare_type_parameters params manifest =
 (* NOTE(@ostera): constructor with inlined records were introduced post 4.02 *)
 let mark_constructor_args =
   function
-#if defined OXCAML
-   | Cstr_tuple args -> List.iter (fun carg -> mark_type carg.ca_type) args
-#else
    | Cstr_tuple args -> List.iter mark_type args
-#endif
    | Cstr_record lds -> List.iter (fun ld -> mark_type ld.ld_type) lds
 
 let mark_type_kind = function
   | Type_abstract _ -> ()
-#if defined OXCAML
-  | Type_variant (cds,_,_) ->
-#else
   | Type_variant (cds,_) ->
-#endif
       List.iter
         (fun cd ->
            mark_constructor_args cd.cd_args;
            opt_iter mark_type cd.cd_res)
         cds
-#if defined OXCAML
-  | Type_record_unboxed_product(lds, _, _) ->
-      List.iter (fun ld -> mark_type ld.ld_type) lds
-  | Type_record(lds, _, _) ->
-#else
   | Type_record(lds, _) ->
-#endif
       List.iter (fun ld -> mark_type ld.ld_type) lds
   | Type_open -> ()
 
@@ -420,50 +367,9 @@ let mark_class_declaration cld =
   List.iter mark_type_parameter cld.cty_params;
   mark_class_type cld.cty_params cld.cty_type
 
-#if defined OXCAML
-let read_parsetree_core_type (ct : Parsetree.core_type) =
-  let open TypeExpr in
-  match ct.ptyp_desc with
-  | Ptyp_var (s, _) -> Var s
-  | Ptyp_any _ -> Any
-  | _ -> failwith "invalid core type"
-
-let rec read_jkind_annotation (jk : Parsetree.jkind_annotation) =
-  let open Kind in
-  match jk.pjka_desc with
-  | Pjk_default -> Default
-  | Pjk_abbreviation s -> Abbreviation (Env.Fragment.read_type s.txt)
-  | Pjk_mod (jk', modes) ->
-    let modes = List.map (fun (m : Parsetree.mode Location.loc) ->
-      let (Parsetree.Mode s) = m.txt in s) modes in
-    Mod (read_jkind_annotation jk', modes)
-  | Pjk_with (jk', cty, modalities) ->
-    let ty = read_parsetree_core_type cty in
-    let modalities = List.map (fun (m : Parsetree.modality Location.loc) ->
-      let (Parsetree.Modality s) = m.txt in s) modalities in
-    With (read_jkind_annotation jk', ty, modalities)
-  | Pjk_kind_of cty ->
-    Kind_of (read_parsetree_core_type cty)
-  | Pjk_product jks ->
-    Product (List.map read_jkind_annotation jks)
-
-let read_jkind_annotation = function
-  | None -> Kind.Default
-  | Some jk ->
-    match read_jkind_annotation jk with
-    | Abbreviation (`Dot (`Root, "value")) -> Default
-    | k -> k
-
-let jkind_of_type_desc te =
-  match  te with
-  | Tvar { jkind; _ } | Tunivar { jkind; _ } ->
-      read_jkind_annotation jkind.annotation
-  | _ -> Kind.Default
-#else
 
 let jkind_of_type_desc _te = Kind.Default
 
-#endif
 
 let rec read_type_expr env typ =
   let open TypeExpr in
@@ -483,11 +389,7 @@ let rec read_type_expr env typ =
           let name = name_of_type typ in
             if name = "_" then Any
             else Var name
-#if defined OXCAML
-      | Tarrow((lbl,_,_), arg, res, _) ->
-#else
       | Tarrow(lbl, arg, res, _) ->
-#endif
           let lbl = read_label lbl in
           let lbl,arg =
             match lbl with
@@ -505,11 +407,6 @@ let rec read_type_expr env typ =
       | Ttuple typs ->
           let typs = List.map (fun (lbl,x) -> lbl, read_type_expr env x) typs in
           Tuple typs
-#if defined OXCAML
-      | Tunboxed_tuple typs ->
-          let typs = List.map (fun (l,t) -> l, read_type_expr env t) typs in
-            Unboxed_tuple typs
-#endif
       | Tconstr(p, params, _) ->
           let p = Env.Path.read_type env.ident_env p in
           let params = List.map (read_type_expr env) params in
@@ -535,12 +432,6 @@ let rec read_type_expr env typ =
         Package package
       | Tsubst (typ,_) -> read_type_expr env typ
       | Tlink _ -> assert false
-#if defined OXCAML
-      | Tquote typ -> Quote (read_type_expr env typ)
-      | Tsplice typ -> Splice (read_type_expr env typ)
-      | Tof_kind _ -> assert false
-      | Trepr _ -> Any  (* oxcaml: representation annotations are ignored *)
-#endif
     in
       match alias with
       | None -> typ
@@ -674,11 +565,7 @@ let read_value_description ({ident_env ; warnings_tag} as env) parent id vd =
   let type_ = read_type_expr env vd.val_type in
   let value =
     match vd.val_kind with
-#if defined OXCAML
-    | Val_reg _ -> Value.Abstract
-#else
     | Val_reg -> Value.Abstract
-#endif
     | Val_prim desc ->
         let primitives =
           let open Primitive in
@@ -690,11 +577,7 @@ let read_value_description ({ident_env ; warnings_tag} as env) parent id vd =
   in
   Value { Value.id; source_loc; doc; type_; value }
 
-#if defined OXCAML
-let is_mutable = Types.is_mutable
-#else
 let is_mutable ld = ld = Mutable
-#endif
 
 let read_label_declaration env parent ld =
   let open TypeDecl.Field in
@@ -711,11 +594,7 @@ let read_label_declaration env parent ld =
 let read_constructor_declaration_arguments env parent arg =
   let open TypeDecl.Constructor in
     match arg with
-#if defined OXCAML
-    | Cstr_tuple args -> Tuple (List.map (fun arg -> read_type_expr env arg.ca_type) args)
-#else
     | Cstr_tuple args -> Tuple (List.map (read_type_expr env) args)
-#endif
     | Cstr_record lds ->
         Record (List.map (read_label_declaration env parent) lds)
 
@@ -735,27 +614,12 @@ let read_type_kind env parent =
   let open TypeDecl.Representation in function
   | Type_abstract _ ->
     None
-#if defined OXCAML
-  | Type_variant (cstrs,_,_) ->
-#else
   | Type_variant (cstrs,_) ->
-#endif
         let cstrs =
           List.map (read_constructor_declaration env parent) cstrs
         in
           Some (Variant cstrs)
-#if defined OXCAML
-    | Type_record_unboxed_product(lbls, _, _) ->
-        let lbls =
-          List.map
-            (read_label_declaration env (parent :> Identifier.FieldParent.t))
-            lbls
-        in
-          Some (Record lbls)
-    | Type_record(lbls, _, _) ->
-#else
     | Type_record(lbls, _) ->
-#endif
         let lbls =
           List.map
             (read_label_declaration env (parent :> Identifier.FieldParent.t))
@@ -823,15 +687,7 @@ let read_type_declaration env parent id decl =
         decl.type_manifest = None || decl.type_private = Private
     | Type_record _ ->
         decl.type_private = Private
-#if defined OXCAML
-    | Type_record_unboxed_product _ ->
-        decl.type_private = Private
-#endif
-#if defined OXCAML
-  | Type_variant (tll,_,_) ->
-#else
   | Type_variant (tll,_) ->
-#endif
         decl.type_private = Private ||
         List.exists (fun cd -> cd.cd_res <> None) tll
     | Type_open ->
@@ -842,11 +698,7 @@ let read_type_declaration env parent id decl =
   in
   let private_ = (decl.type_private = Private) in
   let kind =
-#if defined OXCAML
-    read_jkind_annotation decl.type_jkind.annotation
-#else
     Kind.Default
-#endif
   in
   let equation = Equation.{params; manifest; constraints; private_; kind} in
   {id; source_loc; doc; canonical; equation; representation}
