@@ -225,7 +225,7 @@ let load_mld line_directives oc names input =
 let extract ~dst ~input ~names ~line_directives ~warnings_options =
   let ( let* ) = Result.bind in
   let* loader =
-    match input |> Fpath.v |> Fpath.get_ext with
+    match Filename.extension input with
     | ".mld" -> Ok load_mld
     | ".cmti" -> Ok (load_cmti ~warnings_options)
     | _ -> Error (`Msg "Input must have either mld or cmti as extension")

@@ -60,7 +60,7 @@ module Path = struct
 
   let as_filename ~config (url : Url.Path.t) =
     let dir, file = get_dir_and_file ~config url in
-    Fpath.(v @@ String.concat Fpath.dir_sep (dir @ [ file ]))
+    Odoc_utils.Path.normalize (String.concat Filename.dir_sep (dir @ [ file ]))
 end
 
 type resolve = Current of Url.Path.t | Base of string

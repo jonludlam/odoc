@@ -7,7 +7,6 @@
   (backend landmarks --auto))
  (libraries
   odoc_model
-  fpath
   syntax_highlighter
   odoc_utils
   odoc_index))

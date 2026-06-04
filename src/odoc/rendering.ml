@@ -6,10 +6,10 @@ open Odoc_model
 let prepare ~extra_suffix ~output_dir filename =
   let filename =
     match extra_suffix with
-    | Some s -> Fpath.add_ext s filename
+    | Some s -> Path.add_ext s filename
     | None -> filename
   in
-  let filename = Fpath.normalize @@ Fs.File.append output_dir filename in
+  let filename = Path.normalize @@ Fs.File.append output_dir filename in
   let directory = Fs.File.dirname filename in
   Fs.Directory.mkdir_p directory;
   filename
@@ -125,15 +125,15 @@ let generate_asset_odoc ~warnings_options:_ ~renderer ~output ~asset_file
 let targets_odoc ~resolver ~warnings_options ~syntax ~renderer ~output:root_dir
     ~extra odoctree =
   let doc =
-    if Fpath.get_ext odoctree = ".odoc" then
+    if Path.get_ext odoctree = ".odoc" then
       document_of_input ~resolver ~warnings_options ~syntax odoctree
     else document_of_odocl ~syntax odoctree
   in
   doc >>= fun doc ->
   let pages = renderer.Renderer.render extra None doc in
   Renderer.traverse pages ~f:(fun filename _content ->
-      let filename = Fpath.normalize @@ Fs.File.append root_dir filename in
-      Format.printf "%a\n" Fpath.pp filename);
+      let filename = Path.normalize @@ Fs.File.append root_dir filename in
+      Format.printf "%a\n" Path.pp filename);
   Ok ()
 
 let targets_source_odoc ~syntax ~warnings_options ~renderer ~output:root_dir
@@ -148,9 +148,9 @@ let targets_source_odoc ~syntax ~warnings_options ~renderer ~output:root_dir
           let pages = renderer.Renderer.render extra None doc in
           Renderer.traverse pages ~f:(fun filename _content ->
               let filename =
-                Fpath.normalize @@ Fs.File.append root_dir filename
+                Path.normalize @@ Fs.File.append root_dir filename
               in
-              Format.printf "%a\n" Fpath.pp filename))
+              Format.printf "%a\n" Path.pp filename))
         docs;
       Ok ()
   | Page_content _ | Unit_content _ | Asset_content _ ->

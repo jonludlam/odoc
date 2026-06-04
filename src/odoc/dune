@@ -4,7 +4,6 @@
  (libraries
   cmdliner
   compiler-libs.common
-  fpath
   odoc_markdown
   odoc_latex
   odoc_loader

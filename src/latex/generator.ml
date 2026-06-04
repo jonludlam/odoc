@@ -46,8 +46,10 @@ module Link = struct
 
   let filename ?(add_ext = true) url =
     let dir, file = get_dir_and_file url in
-    let file = Fpath.(v (String.concat dir_sep (dir @ [ file ]))) in
-    if add_ext then Fpath.add_ext "tex" file else file
+    let file =
+      Odoc_utils.Path.normalize (String.concat Filename.dir_sep (dir @ [ file ]))
+    in
+    if add_ext then Odoc_utils.Path.add_ext "tex" file else file
 end
 
 module Expansion = struct
@@ -190,7 +192,7 @@ let rec pp_elt ppf = function
   | Indented x -> Raw.indent pp ppf x
   | Ligaturable s -> Format.pp_print_string ppf s
   | Tag (s, t) -> tag s ppf t
-  | Image target -> Raw.includegraphics Fpath.pp ppf target
+  | Image target -> Raw.includegraphics Odoc_utils.Path.pp ppf target
 
 and pp ppf = function
   | [] -> ()
@@ -319,11 +321,14 @@ let alt_text ~in_source (target : Target.t) alt =
 
 let image ~in_source (internal_url : Url.t) alt =
   let dir, file = Link.get_dir_and_file internal_url.page in
-  match Fpath.(get_ext @@ v file) with
+  match Filename.extension file with
   (* list imported from pdftex.def *)
   | "" | ".pdf" | ".png" | ".jpg" | ".mps" | ".jpeg" | ".jbig2" | ".jb2"
   | ".PDF" | ".PNG" | ".JPG" | ".JPEG" | ".JBIG2" | ".JB2" ->
-      let fpath = Fpath.v (String.concat Fpath.dir_sep (dir @ [ file ])) in
+      let fpath =
+        Odoc_utils.Path.normalize
+          (String.concat Filename.dir_sep (dir @ [ file ]))
+      in
       [ Image fpath ]
   | _ -> alt_text ~in_source (Internal (Resolved internal_url)) alt
 

@@ -11,5 +11,5 @@ module Path : sig
 
   val for_printing : Url.Path.t -> string list
 
-  val as_filename : config:Config.t -> Url.Path.t -> Fpath.t
+  val as_filename : config:Config.t -> Url.Path.t -> string
 end

@@ -3,7 +3,6 @@
  (package odoc-html)
  (libraries
   cmdliner
-  fpath
   odoc_document
   odoc_html
   odoc_html_support_files

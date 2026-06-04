@@ -9,5 +9,5 @@ module Path : sig
 
   val for_printing : Odoc_document.Url.Path.t -> string list
 
-  val as_filename : config:Config.t -> Odoc_document.Url.Path.t -> Fpath.t
+  val as_filename : config:Config.t -> Odoc_document.Url.Path.t -> string
 end

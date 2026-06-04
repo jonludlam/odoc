@@ -44,7 +44,7 @@ let json_of_sidebar config sidebar =
 let make ~config ~preamble ~url ~breadcrumbs ~toc ~uses_katex ~source_anchor
     ~header content children =
   let filename = Link.Path.as_filename ~config url in
-  let filename = Fpath.add_ext ".json" filename in
+  let filename = Path.add_ext ".json" filename in
   let json_to_string json = Json.to_string json in
   let source_anchor =
     match source_anchor with Some url -> `String url | None -> `Null
@@ -68,7 +68,7 @@ let make ~config ~preamble ~url ~breadcrumbs ~toc ~uses_katex ~source_anchor
 
 let make_src ~config ~url ~breadcrumbs ~sidebar ~header content =
   let filename = Link.Path.as_filename ~config url in
-  let filename = Fpath.add_ext ".json" filename in
+  let filename = Path.add_ext ".json" filename in
   let htmlpp = Html.pp_elt ~indent:(Config.indent config) () in
   let json_to_string json = Json.to_string json in
   let global_toc = json_of_sidebar config sidebar in

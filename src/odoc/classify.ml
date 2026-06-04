@@ -208,12 +208,12 @@ let read_cmi ic =
   | Error _ -> Error (`Msg "Not a valid file")
 
 let classify files libraries =
-  let libraries = Fpath.Set.elements libraries in
+  let libraries = Path.Set.elements libraries in
 
   let archives =
     List.map
       (fun lpath ->
-        let path ext = Fpath.(set_ext ext lpath |> to_string) in
+        let path ext = Path.set_ext ext lpath in
         let paths = [ path ".cma"; path ".cmxa" ] in
         List.fold_left
           (fun cur path ->
@@ -225,20 +225,20 @@ let classify files libraries =
               | Error (`Msg m) ->
                   Format.eprintf "Error reading library: %s\n%!" m;
                   cur))
-          (Archive.empty (Fpath.basename lpath)) paths)
+          (Archive.empty (Path.basename lpath)) paths)
       libraries
   in
 
-  let cmis = List.filter (Fpath.has_ext ".cmi") files in
+  let cmis = List.filter (Path.has_ext ~ext:".cmi") files in
   let cmi_names =
     List.map
-      (fun f -> Fpath.(rem_ext f |> basename |> String.capitalize_ascii))
+      (fun f -> Path.rem_ext f |> Path.basename |> String.capitalize_ascii)
       cmis
   in
 
   let _impls, intfs =
     let check f ext =
-      Sys.file_exists Fpath.(set_ext ext f |> to_string)
+      Sys.file_exists (Path.set_ext ext f)
     in
     List.partition (fun f -> check f ".cmo" || check f "cmx") cmis
   in
@@ -247,9 +247,9 @@ let classify files libraries =
     List.map
       (fun f ->
         let modname =
-          Filename.chop_suffix (Fpath.basename f) ".cmi" |> String.capitalize_ascii
+          Filename.chop_suffix (Path.basename f) ".cmi" |> String.capitalize_ascii
         in
-        (modname, Cmi.get_deps Fpath.(f |> to_string)))
+        (modname, Cmi.get_deps f))
       intfs
   in
 
@@ -416,16 +416,16 @@ let classify files libraries =
 let classify dirs =
   let files =
     List.map (fun dir ->
-      Sys.readdir dir |> Array.to_list |> List.map (fun p -> Fpath.(v dir / p))) dirs |> List.flatten in
+      Sys.readdir dir |> Array.to_list |> List.map (fun p -> Path.append dir p)) dirs |> List.flatten in
 
   let libraries =
     List.fold_left
       (fun acc p ->
-        if Fpath.has_ext ".cma" p || Fpath.has_ext ".cmxa" p then
-          Fpath.Set.add Fpath.(rem_ext p) acc
+        if Path.has_ext ~ext:".cma" p || Path.has_ext ~ext:".cmxa" p then
+          Path.Set.add (Path.rem_ext p) acc
         else acc)
-      Fpath.Set.empty files
+      Path.Set.empty files
   in
 
-  if Fpath.Set.cardinal libraries = 0 then Ok ()
+  if Path.Set.cardinal libraries = 0 then Ok ()
   else Ok (classify files libraries)

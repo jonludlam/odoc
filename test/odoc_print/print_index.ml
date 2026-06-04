@@ -1,7 +1,6 @@
 open Cmdliner
 
 let run inp =
-  let inp = Fpath.v inp in
   let index =
     Odoc_odoc.Odoc_file.load_index inp |> function
     | Ok x -> x

@@ -12,7 +12,7 @@ val handle_error :
   (unit, [< `Cli_error of string | `Msg of string ]) result -> unit
 
 module Antichain : sig
-  val absolute_normalization : Fpath.t -> Fpath.t
+  val absolute_normalization : string -> string
 
   val check :
     opt:string -> Fs.Directory.t list -> (unit, [> `Msg of string ]) result

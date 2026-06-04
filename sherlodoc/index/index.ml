@@ -3,9 +3,11 @@ let handle_file register file =
   let open Odoc_odoc in
   let open Odoc_index in
   match Fpath.get_ext file with
-  | ".odoc-index" -> Odoc_file.load_index file >>= fun index -> Ok (register index)
+  | ".odoc-index" ->
+      Odoc_file.load_index (Fpath.to_string file)
+      >>= fun index -> Ok (register index)
   | ".odocl" ->
-      Odoc_file.load file
+      Odoc_file.load (Fpath.to_string file)
       >>= fun unit' ->
       (match unit' with
        | { Odoc_file.content = Unit_content unit'; _ } when unit'.hidden ->

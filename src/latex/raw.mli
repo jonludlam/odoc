@@ -64,7 +64,7 @@ val item : 'a t with_options
 
 val small_table : ('a, Types.alignment list option * 'a list list) tr
 
-val input : Format.formatter -> Fpath.t -> unit
+val input : Format.formatter -> string -> unit
 
 val includegraphics : 'a t
 

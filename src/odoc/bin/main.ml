@@ -253,25 +253,23 @@ module Compile_impl = struct
 
   let output_file output_dir parent_id input =
     let name =
-      Fs.File.basename input |> Fpath.set_ext "odoc" |> Fs.File.to_string
+      Fs.File.basename input |> Path.set_ext "odoc"
       |> String.uncapitalize_ascii
     in
     let name = prefix ^ name in
 
-    let dir = Fpath.(append output_dir parent_id) in
-    Fs.File.create
-      ~directory:(Fpath.to_string dir |> Fs.Directory.of_string)
-      ~name
+    let dir = Path.append output_dir parent_id in
+    Fs.File.create ~directory:(Fs.Directory.of_string dir) ~name
 
   let compile_impl directories output_dir parent_id source_id input
       warnings_options =
     let input = Fs.File.of_string input in
     let output_dir =
-      match output_dir with Some x -> Fpath.v x | None -> Fpath.v "."
+      match output_dir with Some x -> x | None -> "."
     in
     let output =
       output_file output_dir
-        (match parent_id with Some x -> Fpath.v x | None -> Fpath.v ".")
+        (match parent_id with Some x -> x | None -> ".")
         input
     in
     let resolver =
@@ -317,7 +315,7 @@ end
 module Indexing = struct
   let output_file ~dst =
     match dst with
-    | Some file when not (Fpath.has_ext "odoc-index" (Fpath.v file)) ->
+    | Some file when not (Path.has_ext ~ext:"odoc-index" file) ->
         Error
           (`Msg
              "When generating a binary index, the output must have a \
@@ -386,7 +384,7 @@ end
 module Sidebar = struct
   let output_file ~dst =
     match dst with
-    | Some file when not (Fpath.has_ext "odoc-sidebar" (Fpath.v file)) ->
+    | Some file when not (Path.has_ext ~ext:"odoc-sidebar" file) ->
         Error
           (`Msg
              "When generating sidebar, the output must have a .odoc-sidebar \
@@ -445,7 +443,7 @@ end = struct
     | _ ->
         Odoc_utils.List.find_map
           (fun (root, orig_path, norm_path) ->
-            if Fpath.is_prefix norm_path o then Some (root, orig_path) else None)
+            if Path.is_prefix ~root:norm_path o then Some (root, orig_path) else None)
           l
 
   let current_library_of_input lib_roots input =

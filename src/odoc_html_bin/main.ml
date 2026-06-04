@@ -141,8 +141,8 @@ module Sidebar_json = struct
     match dst with
     | Some file
       when not
-             (Fpath.has_ext "json" (Fpath.v file)
-             || Fpath.has_ext "js" (Fpath.v file)) ->
+             (Path.has_ext ~ext:"json" file
+             || Path.has_ext ~ext:"js" file) ->
         Error
           (`Msg
              "When generating a json sidebar, the output must have a .json or \
@@ -198,8 +198,8 @@ module Compile_index_json = struct
     match dst with
     | Some file
       when not
-             (Fpath.has_ext "json" (Fpath.v file)
-             || Fpath.has_ext "js" (Fpath.v file)) ->
+             (Path.has_ext ~ext:"json" file
+             || Path.has_ext ~ext:"js" file) ->
         Error
           (`Msg
              "When generating a json index, the output must have a .json or \

@@ -171,7 +171,7 @@ let rightarrow ppf = math "rightarrow" ppf
 
 (** Latex uses forward slash even on Windows. *)
 let latex_path ppf path =
-  let path_s = String.concat "/" (Fpath.segs path) in
+  let path_s = String.concat "/" (Odoc_utils.Path.segs path) in
   Format.pp_print_string ppf path_s
 
 let input ppf x = create "input" latex_path ppf x

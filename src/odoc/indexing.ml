@@ -19,9 +19,9 @@ let parse_input_files input =
 
 let absolute_normalization p =
   let p =
-    if Fpath.is_rel p then Fpath.( // ) (Fpath.v (Sys.getcwd ())) p else p
+    if Path.is_relative p then Path.append (Sys.getcwd ()) p else p
   in
-  Fpath.normalize p
+  Path.normalize p
 
 let build_hierarchies ~warnings_options ~occurrences ~roots ~inputs_in_file
     ~odocls =
@@ -43,12 +43,12 @@ let build_hierarchies ~warnings_options ~occurrences ~roots ~inputs_in_file
          (fun set include_rec ->
            Fs.Directory.fold_files_rec ~ext:"odocl"
              (fun files file ->
-               Fpath.Set.add (absolute_normalization file) files)
+               Path.Set.add (absolute_normalization file) files)
              set include_rec)
-         Fpath.Set.empty
-    |> fun set -> Fpath.Set.fold (fun a l -> a :: l) set []
+         Path.Set.empty
+    |> fun set -> Path.Set.fold (fun a l -> a :: l) set []
   in
-  (* let () = List.iter (Format.printf "%a\n" Fpath.pp) all_files in *)
+  (* let () = List.iter (Format.printf "%a\n" Path.pp) all_files in *)
   let root_groups =
     (* We group the files we have found by root.
 
@@ -62,14 +62,15 @@ let build_hierarchies ~warnings_options ~occurrences ~roots ~inputs_in_file
     let roots =
       (* Make sure that we treat first the "deepest" one *)
       List.sort
-        (fun (_, p1) (_, p2) -> if Fpath.is_prefix p1 p2 then 1 else -1)
+        (fun (_, p1) (_, p2) ->
+          if Path.is_prefix ~root:p1 p2 then 1 else -1)
         roots
     in
     let groups, _ =
       List.fold_left
         (fun (acc, remaining_files) (i, root) ->
           let root_files, remaining_files =
-            List.partition (Fpath.is_prefix root) remaining_files
+            List.partition (Path.is_prefix ~root) remaining_files
           in
           ((i, root_files) :: acc, remaining_files))
         ([], all_files) roots

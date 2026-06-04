@@ -27,12 +27,12 @@ let compile ~resolver ~output ~warnings_options ~source_id input =
     match source_id with
     | None -> Ok None
     | Some source_id ->
-        let parent_id, name = Fpath.(split_base (v source_id)) in
-        if parent_id = Fpath.v "./" then
+        let parent_id, name = Path.split_base source_id in
+        if parent_id = "." then
           Error (`Msg "Source id cannot be in the root directory")
         else
           let parent =
-            match Compile.mk_id Fpath.(to_string (rem_empty_seg parent_id)) with
+            match Compile.mk_id (Path.rem_empty_seg parent_id) with
             | Some s -> Ok s
             | None ->
                 Error
@@ -41,7 +41,7 @@ let compile ~resolver ~output ~warnings_options ~source_id input =
           in
           parent >>= fun parent ->
           let source_id =
-            Paths.Identifier.Mk.source_page (parent, Fpath.to_string name)
+            Paths.Identifier.Mk.source_page (parent, name)
           in
           Ok (Some source_id)
   in

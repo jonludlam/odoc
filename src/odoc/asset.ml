@@ -15,7 +15,7 @@ let compile ~parent_id ~name ~output_dir =
   in
   let directory =
     Compile.path_of_id output_dir (Some parent_id)
-    |> Fpath.to_string |> Fs.Directory.of_string
+    |> Fs.Directory.of_string
   in
   let name = "asset-" ^ name ^ ".odoc" in
   let output = Fs.File.create ~directory ~name in

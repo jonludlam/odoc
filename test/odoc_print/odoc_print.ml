@@ -214,7 +214,6 @@ let print_short c elt =
 
 let run inp short long_paths show_canonical show_expansions
     show_include_expansions show_removed ref =
-  let inp = Fpath.v inp in
   let c =
     {
       Odoc_xref2.Component.Fmt.short_paths = not long_paths;

@@ -19,36 +19,36 @@ open Odoc_model.Names
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *)
 
-type package_spec = { package : string; output : Fpath.t }
+type package_spec = { package : string; output : string }
 type parent_spec = {
   parent : string option;
   children : string list;
-  output : Fpath.t;
+  output : string;
 }
 
 type parent_id_spec = { parent_id : string; output_dir : string }
 
 type cli_spec =
-  | CliNoParent of Fpath.t
+  | CliNoParent of string
   | CliPackage of package_spec
   | CliParent of parent_spec
   | CliParentId of parent_id_spec
 
 type spec = {
   parent_id : Paths.Identifier.ContainerPage.t option;
-  output : Fpath.t;
+  output : string;
   parents_children : Lang.Page.child list option;
   children : string list;
 }
 
 let rec path_of_id output_dir id =
   match id with
-  | None -> Fpath.v output_dir
+  | None -> output_dir
   | Some id -> (
       match (id : Paths.Identifier.ContainerPage.t).iv with
       | `Page (parent, p) ->
           let d = path_of_id output_dir parent in
-          Fpath.(d / PageName.to_string p))
+          Path.append d (PageName.to_string p))
 
 let check_is_empty msg = function [] -> Ok () | _ :: _ -> Error (`Msg msg)
 
@@ -192,7 +192,7 @@ let root_of_compilation_unit ~parent_id ~parents_children ~hidden ~output
 
 (*
      let d = path_of_id parent in
-     Fs.Directory.mkdir_p (Fs.Directory.of_string (Fpath.to_string d));
+     Fs.Directory.mkdir_p (Fs.Directory.of_string ((fun s -> s) d));
      let file = Odoc_file.create_unit ~force_hidden:hidden module_name in
      Ok {
        id = Paths.Identifier.Mk.root (Some parent, ModuleName.make_std module_name);
@@ -377,15 +377,14 @@ let resolve_spec ~input resolver cli_spec =
   | CliParentId { parent_id; output_dir } ->
       let parent_id = mk_id parent_id in
       let directory =
-        path_of_id output_dir parent_id
-        |> Fpath.to_string |> Fs.Directory.of_string
+        path_of_id output_dir parent_id |> Fs.Directory.of_string
       in
       let name =
         let ext = Fs.File.get_ext input in
         let name = Fs.File.set_ext ".odoc" input in
         let name = Fs.File.basename name in
         if ext = ".mld" then "page-" ^ Fs.File.to_string name
-        else name |> Fpath.to_string |> String.uncapitalize_ascii
+        else String.uncapitalize_ascii name
       in
       let output = Fs.File.create ~directory ~name in
       Ok { parent_id; output; parents_children = None; children = [] }

@@ -8,7 +8,7 @@ val render_odoc :
   renderer:'a Renderer.t ->
   output:Fs.directory ->
   'a ->
-  Fpath.t ->
+  string ->
   (unit, [> msg ]) result
 
 val generate_odoc :
@@ -17,9 +17,9 @@ val generate_odoc :
   renderer:'a Renderer.t ->
   output:Fs.directory ->
   extra_suffix:string option ->
-  sidebar:Fpath.t option ->
+  sidebar:string option ->
   'a ->
-  Fpath.t ->
+  string ->
   (unit, [> msg ]) result
 
 val generate_source_odoc :
@@ -27,11 +27,11 @@ val generate_source_odoc :
   warnings_options:Odoc_model.Error.warnings_options ->
   renderer:'a Renderer.t ->
   output:Fs.directory ->
-  source_file:Fpath.t ->
+  source_file:string ->
   extra_suffix:string option ->
-  sidebar:Fpath.t option ->
+  sidebar:string option ->
   'a ->
-  Fpath.t ->
+  string ->
   (unit, [> msg ]) result
 
 val generate_asset_odoc :
@@ -51,7 +51,7 @@ val targets_odoc :
   renderer:'a Renderer.t ->
   output:Fs.directory ->
   extra:'a ->
-  Fpath.t ->
+  string ->
   (unit, [> msg ]) result
 
 val targets_source_odoc :
@@ -60,6 +60,6 @@ val targets_source_odoc :
   renderer:'a Renderer.t ->
   output:Fs.directory ->
   extra:'a ->
-  source_file:Fpath.t ->
+  source_file:string ->
   Fs.file ->
   (unit, [> msg ]) result

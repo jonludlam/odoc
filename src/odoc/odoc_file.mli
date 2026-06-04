@@ -60,4 +60,4 @@ val save_sidebar : Fs.File.t -> Odoc_document.Sidebar.t -> unit
 val load_sidebar : Fs.File.t -> (Odoc_document.Sidebar.t, [> msg ]) result
 (** Load a [.odoc-index] file. *)
 
-val save_asset : Fpath.t -> warnings:Error.t list -> Lang.Asset.t -> unit
+val save_asset : string -> warnings:Error.t list -> Lang.Asset.t -> unit

@@ -32,7 +32,7 @@ let convert_fpath =
     match Arg.(conv_parser file) inp with
     | Ok s -> Ok (Fs.File.of_string s)
     | Error _ as e -> e
-  and print = Fpath.pp in
+  and print = Path.pp in
   Arg.conv (parse, print)
 
 let convert_named_root =
@@ -58,9 +58,9 @@ let handle_error = function
 module Antichain = struct
   let absolute_normalization p =
     let p =
-      if Fpath.is_rel p then Fpath.( // ) (Fpath.v (Sys.getcwd ())) p else p
+      if Path.is_relative p then Path.append (Sys.getcwd ()) p else p
     in
-    Fpath.normalize p
+    Path.normalize p
 
   let check ~opt l =
     let l =
@@ -73,7 +73,8 @@ module Antichain = struct
       | p1 :: rest ->
           List.for_all
             ~f:(fun p2 ->
-              (not (Fpath.is_prefix p1 p2)) && not (Fpath.is_prefix p2 p1))
+              (not (Path.is_prefix ~root:p1 p2))
+              && not (Path.is_prefix ~root:p2 p1))
             rest
           && check rest
     in

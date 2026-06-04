@@ -18,17 +18,17 @@ open Odoc_utils
 open Odoc_model
 open Odoc_model.Paths
 
-type package_spec = { package : string; output : Fpath.t }
+type package_spec = { package : string; output : string }
 type parent_spec = {
   parent : string option;
   children : string list;
-  output : Fpath.t;
+  output : string;
 }
 
 type parent_id_spec = { parent_id : string; output_dir : string }
 
 type cli_spec =
-  | CliNoParent of Fpath.t
+  | CliNoParent of string
   | CliPackage of package_spec
   | CliParent of parent_spec
   | CliParentId of parent_id_spec
@@ -51,7 +51,7 @@ val resolve_parent_page :
 
 val mk_id : string -> Identifier.ContainerPage.t option
 val path_of_id :
-  string -> Comment.Identifier.Id.container_page option -> Fpath.t
+  string -> Comment.Identifier.Id.container_page option -> string
 
 val compile :
   resolver:Resolver.t ->
@@ -59,6 +59,6 @@ val compile :
   cli_spec:cli_spec ->
   warnings_options:Odoc_model.Error.warnings_options ->
   short_title:string option ->
-  Fpath.t ->
+  string ->
   (unit, [> msg ]) result
 (** Produces .odoc files out of [.cm{i,t,ti}] or .mld files. *)

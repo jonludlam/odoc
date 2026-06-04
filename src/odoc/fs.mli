@@ -18,7 +18,7 @@ open Odoc_utils
 
 (** Utilities to manipulate files and paths. *)
 
-type file = Fpath.t
+type file = string
 
 type directory
 
@@ -43,7 +43,7 @@ module Directory : sig
 
   val to_string : t -> string
 
-  val to_fpath : t -> Fpath.t
+  val to_fpath : t -> string
 
   val fold_files_rec : ?ext:string -> ('a -> file -> 'a) -> 'a -> t -> 'a
   (** [fold_files_rec_result ~ext f acc d] recursively folds [f] over the files

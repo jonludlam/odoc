@@ -153,3 +153,129 @@ module String = struct
     in
     loop [] 0
 end
+
+module Path = struct
+  let dir_sep = Filename.dir_sep
+
+  let dir_sep_char = Filename.dir_sep.[0]
+
+  let of_string s =
+    if s = "" then Error (`Msg "empty path")
+    else Ok s
+
+  let v s =
+    match of_string s with
+    | Ok p -> p
+    | Error (`Msg e) -> invalid_arg ("Odoc_utils.Path.v: " ^ e)
+
+  let to_string p = p
+
+  let pp = Format.pp_print_string
+
+  let basename = Filename.basename
+  let dirname = Filename.dirname
+
+  (** Like Fpath.parent: returns the directory portion with a trailing
+      separator. Equivalent to [Filename.dirname p ^ "/"]. *)
+  let parent p =
+    let d = Filename.dirname p in
+    if d = "" || d.[String.length d - 1] = dir_sep_char then d
+    else d ^ dir_sep
+
+  let append = Filename.concat
+  let concat = Filename.concat
+
+  let is_relative = Filename.is_relative
+
+  let extension p = Filename.extension p
+
+  let has_ext ~ext p =
+    let want =
+      if String.length ext > 0 && ext.[0] = '.' then ext else "." ^ ext
+    in
+    Filename.extension p = want
+
+  let get_ext = Filename.extension
+
+  let rem_ext = Filename.remove_extension
+
+  let add_ext ext p =
+    let dot_ext =
+      if String.length ext > 0 && ext.[0] = '.' then ext else "." ^ ext
+    in
+    p ^ dot_ext
+
+  let set_ext ext p = add_ext ext (Filename.remove_extension p)
+
+  (** Split path into segments, dropping empty segments from consecutive
+      separators and trailing separators. *)
+  let segs p =
+    String.split_on_char dir_sep_char p
+    |> List.filter (fun s -> s <> "")
+
+  (** Normalize: collapse "." and ".." segments, dedupe slashes. *)
+  let normalize p =
+    if p = "" then "."
+    else
+      let absolute = p.[0] = dir_sep_char in
+      let parts = segs p in
+      let rec go acc = function
+        | [] -> List.rev acc
+        | "." :: rest -> go acc rest
+        | ".." :: rest ->
+            (match acc with
+             | top :: tl when top <> ".." -> go tl rest
+             | [] when absolute -> go [] rest
+             | _ -> go (".." :: acc) rest)
+        | s :: rest -> go (s :: acc) rest
+      in
+      let normalized = go [] parts in
+      let body = String.concat dir_sep normalized in
+      if absolute then dir_sep ^ body
+      else if body = "" then "."
+      else body
+
+  let is_prefix ~root p =
+    let r = normalize root in
+    let p = normalize p in
+    let rlen = String.length r in
+    String.length p >= rlen
+    && String.starts_with ~prefix:r p
+    && (String.length p = rlen || p.[rlen] = dir_sep_char
+        || (rlen > 0 && r.[rlen - 1] = dir_sep_char))
+
+  let rem_prefix root p =
+    if is_prefix ~root p then
+      let r = normalize root in
+      let p = normalize p in
+      let rlen = String.length r in
+      if String.length p = rlen then Some "."
+      else
+        let start =
+          if rlen > 0 && r.[rlen - 1] = dir_sep_char then rlen else rlen + 1
+        in
+        if start >= String.length p then Some "."
+        else Some (String.sub p start (String.length p - start))
+    else None
+
+  let relativize ~root p = rem_prefix root p
+
+  let split_base p = (Filename.dirname p, Filename.basename p)
+
+  let to_dir_path p =
+    if p = "" || p.[String.length p - 1] = dir_sep_char then p
+    else p ^ dir_sep
+
+  let rem_empty_seg p =
+    let n = String.length p in
+    if n > 1 && p.[n - 1] = dir_sep_char then String.sub p 0 (n - 1)
+    else p
+
+  let filename = Filename.basename
+
+  let compare = String.compare
+  let equal = String.equal
+
+  module Set = Set.Make (String)
+  module Map = Map.Make (String)
+end

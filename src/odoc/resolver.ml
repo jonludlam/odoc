@@ -84,7 +84,7 @@ end = struct
   let current_root t = Option.map snd t.current_root
 
   let find_by_path ?root { table = cache; current_root; _ } ~path =
-    let path = Fpath.normalize path in
+    let path = Path.normalize path in
     let root =
       match (root, current_root) with
       | Some pkg, _ | None, Some (pkg, _) -> Ok pkg
@@ -96,7 +96,7 @@ end = struct
         match hashtbl_find_opt cache path with
         | Some x -> Ok (Some x)
         | None ->
-            let full_path = Fpath.( // ) (Fs.Directory.to_fpath root) path in
+            let full_path = Path.append (Fs.Directory.to_fpath root) path in
             if Fs.File.exists full_path then (
               Hashtbl.add cache path full_path;
               Ok (Some full_path))
@@ -109,7 +109,7 @@ end = struct
       match
         Fs.Directory.fold_files_rec_result
           (fun () path ->
-            let name = Fpath.filename path in
+            let name = Path.filename path in
             Ok (Hashtbl.add flat_namespace name path))
           () root
       with
@@ -144,7 +144,7 @@ module Accessible_paths : sig
 
   val find : t -> string -> Fs.File.t list
 end = struct
-  type t = (string, Fpath.t (* list *)) Hashtbl.t
+  type t = (string, string (* list *)) Hashtbl.t
 
   let create ~directories =
     let unit_cache = Hashtbl.create 42 in
@@ -154,11 +154,10 @@ end = struct
           let files = Sys.readdir (Fs.Directory.to_string directory) in
           Array.iter
             (fun file ->
-              let file = Fpath.v file in
-              if Fpath.has_ext "odoc" file then
+              if Path.has_ext ~ext:"odoc" file then
                 Hashtbl.add unit_cache
                   (String.capitalize_ascii
-                     (file |> Fpath.rem_ext |> Fpath.basename))
+                     (file |> Path.rem_ext |> Path.basename))
                   (Fs.File.append directory file))
             files
         with Sys_error _ ->

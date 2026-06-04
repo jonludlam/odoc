@@ -2,7 +2,7 @@ open Odoc_utils
 open ResultMonad
 
 let handle_file file ~f =
-  if String.starts_with ~prefix:"impl-" (Fpath.filename file) then
+  if String.starts_with ~prefix:"impl-" (Path.filename file) then
     Odoc_file.load file |> function
     | Error _ as e -> e
     | Ok unit' -> (
@@ -47,7 +47,7 @@ let parse_input_files input =
   >>= fun files -> Ok (List.concat files)
 
 let read_occurrences file : Odoc_occurrences.Table.t =
-  Io_utils.unmarshal (Fpath.to_string file)
+  Io_utils.unmarshal file
 
 let aggregate files file_list ~strip_path ~warnings_options:_ ~dst =
   try

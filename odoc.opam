@@ -43,7 +43,6 @@ depends: [
   "odoc-html" {= version & with-test}
   "cmdliner" {>= "1.3.0"}
   "dune" {>= "3.21.0"}
-  "fpath" {>= "0.7.3"}
   "ocaml" {>= "5.4.0" & < "5.5.0"}
   "ocamlfind" {with-test}
   "yojson" {>= "2.1.0" & with-test}

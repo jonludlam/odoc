@@ -17,46 +17,46 @@
 open Odoc_utils
 open StdLabels
 
-type directory = Fpath.t
+type directory = string
 
-type file = Fpath.t
+type file = string
 
 let mkdir_p dir =
   let mkdir d =
-    try Unix.mkdir (Fpath.to_string d) 0o755 with
+    try Unix.mkdir d 0o755 with
     | Unix.Unix_error (Unix.EEXIST, _, _) -> ()
     | exn -> raise exn
   in
   let rec dirs_to_create p acc =
-    if Sys.file_exists (Fpath.to_string p) then acc
-    else dirs_to_create (Fpath.parent p) (p :: acc)
+    if Sys.file_exists p then acc
+    else dirs_to_create (Path.parent p) (p :: acc)
   in
-  List.iter (dirs_to_create (Fpath.normalize dir) []) ~f:mkdir
+  List.iter (dirs_to_create (Path.normalize dir) []) ~f:mkdir
 
 module File = struct
   type t = file
 
-  let dirname = Fpath.parent
+  let dirname = Path.parent
 
-  let basename = Fpath.base
+  let basename = Path.basename
 
-  let append = Fpath.append
+  let append = Path.append
 
-  let set_ext e p = Fpath.set_ext e p
+  let set_ext e p = Path.set_ext e p
 
-  let has_ext e p = Fpath.has_ext e p
+  let has_ext e p = Path.has_ext ~ext:e p
 
-  let get_ext e = Fpath.get_ext e
+  let get_ext e = Path.get_ext e
 
   let create ~directory ~name =
-    match Fpath.of_string name with
+    match Path.of_string name with
     | Error (`Msg e) -> invalid_arg ("Odoc.Fs.File.create: " ^ e)
-    | Ok psuf -> Fpath.(normalize @@ (directory // psuf))
+    | Ok psuf -> Path.normalize (Path.append directory psuf)
 
-  let to_string = Fpath.to_string
+  let to_string p = p
 
   let of_string s =
-    match Fpath.of_string s with
+    match Path.of_string s with
     | Error (`Msg e) -> invalid_arg ("Odoc.Fs.File.of_string: " ^ e)
     | Ok p -> p
 
@@ -83,7 +83,6 @@ module File = struct
       loop ()
     in
     try
-      let file = Fpath.to_string file in
       let with_ic k =
         if file = "-" then k stdin else Io_utils.with_open_in_bin file k
       in
@@ -98,9 +97,9 @@ module File = struct
 
   let copy ~src ~dst =
     try
-      Io_utils.with_open_in_bin (Fpath.to_string src) (fun ic ->
+      Io_utils.with_open_in_bin src (fun ic ->
           mkdir_p (dirname dst);
-          Io_utils.with_open_out_bin (Fpath.to_string dst) (fun oc ->
+          Io_utils.with_open_out_bin dst (fun oc ->
               let len = 65536 in
               let buf = Bytes.create len in
               let rec loop () =
@@ -112,43 +111,43 @@ module File = struct
               Ok (loop ())))
     with Sys_error e -> Error (`Msg e)
 
-  let exists file = Sys.file_exists (Fpath.to_string file)
+  let exists file = Sys.file_exists file
 
   let rec of_segs_tl acc = function
     | [] -> acc
-    | hd :: tl -> of_segs_tl (Fpath.( / ) acc hd) tl
+    | hd :: tl -> of_segs_tl (Path.append acc hd) tl
 
   let of_segs = function
     | [] -> invalid_arg "Fs.File.of_segs"
-    | "" :: rest -> of_segs_tl (Fpath.v "/") rest
-    | first :: rest -> of_segs_tl (Fpath.v first) rest
+    | "" :: rest -> of_segs_tl "/" rest
+    | first :: rest -> of_segs_tl first rest
 end
 
 module Directory = struct
   type t = directory
 
-  let dirname = Fpath.parent
+  let dirname = Path.parent
 
-  let basename = Fpath.base
+  let basename = Path.basename
 
-  let append = Fpath.append
+  let append = Path.append
 
-  let contains ~parentdir f = Fpath.is_rooted ~root:parentdir f
+  let contains ~parentdir f = Path.is_prefix ~root:parentdir f
 
-  let compare = Fpath.compare
+  let compare = Path.compare
 
   let mkdir_p dir = mkdir_p dir
 
-  let to_string = Fpath.to_string
+  let to_string p = p
 
   let to_fpath x = x
 
   let of_string s =
-    match Fpath.of_string s with
+    match Path.of_string s with
     | Error (`Msg e) -> invalid_arg ("Odoc.Fs.Directory.of_string: " ^ e)
-    | Ok p -> Fpath.to_dir_path p
+    | Ok p -> Path.to_dir_path p
 
-  let of_file f = Fpath.to_dir_path f
+  let of_file f = Path.to_dir_path f
 
   let fold_files_rec ?(ext = "") f acc d =
     let fold_non_dirs ext f acc files =
@@ -156,7 +155,7 @@ module Directory = struct
       let has_ext ext file = Filename.check_suffix file ext in
       let dirs, files = List.partition ~f:is_dir files in
       let files = List.find_all ~f:(has_ext ext) files in
-      let f acc fn = f acc (Fpath.v fn) in
+      let f acc fn = f acc fn in
       (List.fold_left ~f ~init:acc files, dirs)
     in
     let rec loop ext f acc = function
@@ -170,7 +169,7 @@ module Directory = struct
       | [] :: up -> loop ext f acc up
       | [] -> acc
     in
-    loop ext f acc [ [ Fpath.to_string d ] ]
+    loop ext f acc [ [ d ] ]
 
   exception Stop_iter of msg
 
