@@ -140,8 +140,6 @@ module Directory = struct
 
   let to_string p = p
 
-  let to_fpath x = x
-
   let of_string s =
     match Path.of_string s with
     | Error (`Msg e) -> invalid_arg ("Odoc.Fs.Directory.of_string: " ^ e)

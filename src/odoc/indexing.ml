@@ -55,7 +55,7 @@ let build_hierarchies ~warnings_options ~occurrences ~roots ~inputs_in_file
        Some files may belong to multiple roots. In this case, we associate the
        file to the root that is the deepest in the hierarchy.
     *)
-    let roots = List.map Fs.Directory.to_fpath roots in
+    let roots = List.map Fs.Directory.to_string roots in
     let roots = List.map absolute_normalization roots in
     (* Add an index to keep the original order *)
     let roots = List.mapi (fun i c -> (i, c)) roots in

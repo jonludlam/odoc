@@ -434,7 +434,7 @@ end = struct
     let l =
       List.map
         ~f:(fun (x, p) ->
-          (x, p, p |> Fs.Directory.to_fpath |> Antichain.absolute_normalization))
+          (x, p, p |> Fs.Directory.to_string |> Antichain.absolute_normalization))
         l
     in
     let o = Antichain.absolute_normalization o in

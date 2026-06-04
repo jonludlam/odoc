@@ -96,7 +96,7 @@ end = struct
         match hashtbl_find_opt cache path with
         | Some x -> Ok (Some x)
         | None ->
-            let full_path = Path.append (Fs.Directory.to_fpath root) path in
+            let full_path = Path.append (Fs.Directory.to_string root) path in
             if Fs.File.exists full_path then (
               Hashtbl.add cache path full_path;
               Ok (Some full_path))

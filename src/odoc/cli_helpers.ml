@@ -65,7 +65,7 @@ module Antichain = struct
   let check ~opt l =
     let l =
       List.map
-        ~f:(fun p -> p |> Fs.Directory.to_fpath |> absolute_normalization)
+        ~f:(fun p -> p |> Fs.Directory.to_string |> absolute_normalization)
         l
     in
     let rec check = function
