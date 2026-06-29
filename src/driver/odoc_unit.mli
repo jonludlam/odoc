@@ -39,6 +39,10 @@ type 'a t = {
   odocl_file : Fpath.t;
   pkg_args : Pkg_args.t;
   pkgname : string option;
+  lib_deps : Util.StringSet.t;
+      (** The unit's own library plus that library's dependencies. Used by
+          [Compile.includes_of_deps] to disambiguate which provider of a
+          dependency hash to add to the compile [-I] set. *)
   index : index option;
   enable_warnings : bool;
   to_output : bool;
@@ -52,7 +56,11 @@ type intf_extra = {
 }
 and intf = [ `Intf of intf_extra ]
 
-type impl_extra = { src_id : Odoc.Id.t; src_path : Fpath.t }
+type impl_extra = {
+  src_id : Odoc.Id.t;
+  src_path : Fpath.t;
+  deps : (string * Digest.t) list;
+}
 type impl = [ `Impl of impl_extra ]
 
 type mld = [ `Mld ]

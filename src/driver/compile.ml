@@ -99,23 +99,60 @@ let find_partials odoc_dir :
 
 let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
   let hashes = mk_byhash all in
+  let other_hashes, tbl =
+    match partial with
+    | Some _ -> find_partials partial_dir
+    | None -> (Util.StringMap.empty, Hashtbl.create 10)
+  in
+  let hashes =
+    Odoc_unit.fix_virtual ~precompiled_units:other_hashes ~units:hashes
+  in
+  let all_hashes =
+    Util.StringMap.union (fun _x o1 o2 -> Some (o1 @ o2)) hashes other_hashes
+  in
+  (* Include set for compiling a unit: the directories that provide the modules
+     it actually depends on. Each dependency carries the interface hash of the
+     module it refers to, so we look that hash up in [all_hashes] (this run's
+     units plus the partials of already-compiled dependencies) and add the
+     directory of a providing unit. This is more precise than including whole
+     libraries and doesn't depend on the META files declaring every
+     transitively-needed library.
+
+     A single hash can be offered by more than one unit — the interface of a
+     virtual library and each of its implementations all share it, for instance.
+     When that happens we prefer a provider whose library is in [prefer] (the
+     unit's own library plus that library's dependencies), so a unit resolves
+     its actual dependency rather than an unrelated sibling implementation. If
+     none of the providers is a dependency we pick an arbitrary one; sharing the
+     interface hash, they are interchangeable for compilation anyway. *)
+  let lib_name_of (u : Odoc_unit.intf Odoc_unit.t) =
+    match u.Odoc_unit.kind with
+    | `Intf ({ lib_name; _ } : Odoc_unit.intf_extra) -> lib_name
+  in
+  let includes_of_deps ~prefer deps =
+    List.fold_left
+      (fun acc (_name, dep_hash) ->
+        match Util.StringMap.find_opt dep_hash all_hashes with
+        | None | Some [] -> acc
+        | Some units ->
+            let chosen =
+              match
+                List.find_opt
+                  (fun u -> Util.StringSet.mem (lib_name_of u) prefer)
+                  units
+              with
+              | Some u -> u
+              | None -> List.hd units
+            in
+            Fpath.Set.add (Fpath.parent chosen.Odoc_unit.odoc_file) acc)
+      Fpath.Set.empty deps
+  in
   let compile_mod =
     (* Modules have a more complicated compilation because:
        - They have dependencies and must be compiled in the right order
        - In Voodoo mode, there might exists already compiled parts *)
-    let other_hashes, tbl =
-      match partial with
-      | Some _ -> find_partials partial_dir
-      | None -> (Util.StringMap.empty, Hashtbl.create 10)
-    in
-    let hashes =
-      Odoc_unit.fix_virtual ~precompiled_units:other_hashes ~units:hashes
-    in
-    let all_hashes =
-      Util.StringMap.union (fun _x o1 o2 -> Some (o1 @ o2)) hashes other_hashes
-    in
     let compile_one compile_other (unit : Odoc_unit.intf Odoc_unit.t) =
-      let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
+      let (`Intf ({ deps; _ } : Odoc_unit.intf_extra)) = unit.kind in
       let _fibers =
         Fiber.List.map
           (fun (other_unit_name, other_unit_hash) ->
@@ -131,12 +168,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
                 None)
           deps
       in
-      let includes =
-        List.fold_left
-          (fun acc (_lib, path) -> Fpath.Set.add path acc)
-          Fpath.Set.empty
-          (Odoc_unit.Pkg_args.compiled_libs unit.pkg_args)
-      in
+      let includes = includes_of_deps ~prefer:unit.Odoc_unit.lib_deps deps in
       Odoc.compile ~output_dir:unit.output_dir ~input_file:unit.input_file
         ~includes ~warnings_tag:unit.pkgname ~parent_id:unit.parent_id
         ~ignore_output:(not unit.enable_warnings);
@@ -178,10 +210,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
     | `Intf intf -> (compile_mod intf.hash :> (Odoc_unit.any list, _) Result.t)
     | `Impl src ->
         let includes =
-          List.fold_left
-            (fun acc (_lib, path) -> Fpath.Set.add path acc)
-            Fpath.Set.empty
-            (Odoc_unit.Pkg_args.compiled_libs unit.pkg_args)
+          includes_of_deps ~prefer:unit.Odoc_unit.lib_deps src.deps
         in
         let source_id = src.src_id in
         Odoc.compile_impl ~output_dir:unit.output_dir

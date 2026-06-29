@@ -141,6 +141,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       output_dir = odoc_dir;
       pkgname = Some pkg.Packages.name;
       pkg_args;
+      lib_deps;
       parent_id;
       input_file;
       input_copy;
@@ -176,7 +177,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
           let src_id =
             Fpath.(src_lib_dir pkg lib / src_name) |> Odoc.Id.of_fpath
           in
-          `Impl { src_id; src_path }
+          `Impl { src_id; src_path; deps = impl.mip_deps }
         in
         let name =
           impl.mip_path |> Fpath.rem_ext |> Fpath.basename

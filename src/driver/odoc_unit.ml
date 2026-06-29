@@ -83,6 +83,12 @@ type 'a t = {
   odocl_file : Fpath.t;
   pkg_args : Pkg_args.t;
   pkgname : string option;
+  lib_deps : Util.StringSet.t;
+      (* The unit's own library plus that library's dependencies. Used by
+         [Compile.includes_of_deps] to pick the right provider when a dependency
+         hash is offered by more than one unit (e.g. virtual-library
+         implementations). Not the link-step arguments — those live in
+         [pkg_args]. *)
   index : index option;
   enable_warnings : bool;
   to_output : bool;
@@ -97,7 +103,11 @@ type intf_extra = {
 
 and intf = [ `Intf of intf_extra ]
 
-type impl_extra = { src_id : Odoc.Id.t; src_path : Fpath.t }
+type impl_extra = {
+  src_id : Odoc.Id.t;
+  src_path : Fpath.t;
+  deps : (string * Digest.t) list;
+}
 type impl = [ `Impl of impl_extra ]
 
 type mld = [ `Mld ]
@@ -122,9 +132,11 @@ and pp_intf_extra fmt x =
     x.deps
 
 and pp_impl_extra fmt x =
-  Format.fprintf fmt "@[<hov>src_id: %s@;src_path: %a@]"
+  Format.fprintf fmt "@[<hov>src_id: %s@;src_path: %a@;deps: [%a]@]"
     (Odoc.Id.to_string x.src_id)
     Fpath.pp x.src_path
+    Fmt.Dump.(list (pair string string))
+    x.deps
 
 and pp : all_kinds t Fmt.t =
  fun fmt x ->
@@ -136,12 +148,15 @@ and pp : all_kinds t Fmt.t =
      odocl_file: %a@;\
      pkg_args: %a@;\
      pkgname: %a@;\
+     lib_deps: [%a]@;\
      index: %a@;\
      kind:%a@;\
      @]"
     (Odoc.Id.to_string x.parent_id)
     Fpath.pp x.input_file Fpath.pp x.output_dir Fpath.pp x.odoc_file Fpath.pp
     x.odocl_file Pkg_args.pp x.pkg_args (Fmt.option Fmt.string) x.pkgname
+    Fmt.Dump.(list string)
+    (Util.StringSet.elements x.lib_deps)
     (Fmt.option pp_index) x.index pp_kind
     (x.kind :> all_kinds)
 
