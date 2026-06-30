@@ -9,6 +9,8 @@
 ### Fixed
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
 - Fix resolving functor through `module type of` (@Leonidas-from-XIV, #1471)
+- Display items included via `include functor` as included via the functor
+  (@Leonidas-from-XIV, #1452)
 
 # 3.2.1
 
