@@ -444,6 +444,35 @@ added. (Note that these dependencies can be circular, as they
 happen during the link phase and only require the artifact from the compile
 phase.)
 
+The reference driver decides this set {e per package}: aside from one exception
+noted below, every library and every page of a package is linked with the same
+[-P], [-L] and [-I] arguments, so they resolve references against the same
+units. For a package [<p>], the driver puts the following in scope:
+
+{ul
+{- every library of [<p>] itself;}
+{- the {e direct} dependencies of those libraries — the libraries named in each
+   [META] [requires] field — but {e not} the full transitive closure;}
+{- the OCaml standard library;}
+{- anything named in [<p>]'s [odoc-config.sexp] (see below).}}
+
+Each in-scope library becomes a [-L] argument (and its directory is added to the
+[-I] search path); each package owning an in-scope library, or named in
+[odoc-config.sexp], becomes a [-P] argument. This is the driver side of the
+{{!odoc_for_authors.reference_scope}reference scope} seen by authors; other
+drivers should aim for equivalent behaviour. If you need to reference something
+in a transitive dependency, name it explicitly in the [META] [requires] field or
+in [odoc-config.sexp].
+
+The exception to "the same arguments for the whole package" is virtual
+libraries. A {e virtual} library can have several implementations (for example a
+[.client] and a [.server] flavour) whose modules share both their names {e and}
+their interface hashes. [odoc] disambiguates same-named units by digest, but
+these digests are identical, so two such implementations cannot coexist on a
+single search path. The driver therefore keeps alternative implementations off
+each other's [-L], [-P] and [-I] paths: when linking one implementation, its
+sibling implementations are excluded from the scope above.
+
 An installed package [<p>] specifies its tree dependencies in a file at
 [<opam root>/doc/<p>/odoc-config.sexp]. This file contains s-expressions.
 
