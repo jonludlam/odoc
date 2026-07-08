@@ -1,3 +1,5 @@
+(* Arguments for the link step ([-L] / [-P] / [-I]); not used by compile, which
+   derives its includes per module (see [Compile.includes_of_deps]). *)
 module Pkg_args = struct
   type t = {
     odoc_dir : Fpath.t;
@@ -99,6 +101,7 @@ type intf_extra = {
   hidden : bool;
   hash : string;
   deps : (string * Digest.t) list;
+  lib_name : string;
 }
 
 and intf = [ `Intf of intf_extra ]
@@ -107,6 +110,7 @@ type impl_extra = {
   src_id : Odoc.Id.t;
   src_path : Fpath.t;
   deps : (string * Digest.t) list;
+  lib_name : string;
 }
 type impl = [ `Impl of impl_extra ]
 
@@ -127,14 +131,16 @@ let rec pp_kind : all_kinds Fmt.t =
   | `Asset -> Format.fprintf fmt "`Asset"
 
 and pp_intf_extra fmt x =
-  Format.fprintf fmt "@[<hov>hidden: %b@;hash: %s@;deps: [%a]@]" x.hidden x.hash
+  Format.fprintf fmt "@[<hov>hidden: %b@;hash: %s@;lib_name: %s@;deps: [%a]@]"
+    x.hidden x.hash x.lib_name
     Fmt.Dump.(list (pair string string))
     x.deps
 
 and pp_impl_extra fmt x =
-  Format.fprintf fmt "@[<hov>src_id: %s@;src_path: %a@;deps: [%a]@]"
+  Format.fprintf fmt
+    "@[<hov>src_id: %s@;src_path: %a@;lib_name: %s@;deps: [%a]@]"
     (Odoc.Id.to_string x.src_id)
-    Fpath.pp x.src_path
+    Fpath.pp x.src_path x.lib_name
     Fmt.Dump.(list (pair string string))
     x.deps
 

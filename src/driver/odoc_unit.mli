@@ -1,3 +1,6 @@
+(** Arguments for the {e link} step ([-L] / [-P] / [-I]). The compile step does
+    not use these — it derives its includes per module from the unit's own
+    dependencies (see [Compile.includes_of_deps]). *)
 module Pkg_args : sig
   type t
 
@@ -37,7 +40,7 @@ type 'a t = {
   output_dir : Fpath.t;
   odoc_file : Fpath.t;
   odocl_file : Fpath.t;
-  pkg_args : Pkg_args.t;
+  pkg_args : Pkg_args.t;  (** Consumed only at link time (see {!Pkg_args}). *)
   pkgname : string option;
   lib_deps : Util.StringSet.t;
       (** The unit's own library plus that library's dependencies. Used by
@@ -53,6 +56,7 @@ type intf_extra = {
   hidden : bool;
   hash : string;
   deps : (string * Digest.t) list;
+  lib_name : string;
 }
 and intf = [ `Intf of intf_extra ]
 
@@ -60,6 +64,7 @@ type impl_extra = {
   src_id : Odoc.Id.t;
   src_path : Fpath.t;
   deps : (string * Digest.t) list;
+  lib_name : string;
 }
 type impl = [ `Impl of impl_extra ]
 
