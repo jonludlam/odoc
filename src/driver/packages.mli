@@ -110,3 +110,9 @@ val of_libs : packages_dir:Fpath.t option -> Util.StringSet.t -> t list
 val of_packages : packages_dir:Fpath.t option -> string list -> t list
 
 val remap_virtual : t list -> t list
+
+val virtual_siblings : t list -> Util.StringSet.t Util.StringMap.t
+(** [virtual_siblings pkgs] maps each library to the set of {e other} libraries
+    implementing the same virtual library. They must be kept off each other's
+    include paths: their same-name, same-hash modules can't be disambiguated by
+    digest. *)

@@ -588,26 +588,57 @@ let remap_virtual_interfaces duplicate_hashes pkgs =
       })
     pkgs
 
+(* Modules grouped by interface hash, keeping only hashes shared by more than
+   one module (a virtual library's modules with those of its implementations),
+   each paired with its library. Underlies both interface remapping and
+   sibling-implementation exclusion. *)
+let virtual_modules pkgs =
+  let by_hash =
+    List.fold_left
+      (fun acc pkg ->
+        List.fold_left
+          (fun acc lib ->
+            List.fold_left
+              (fun acc m ->
+                Util.StringMap.update m.m_intf.mif_hash
+                  (function
+                    | None -> Some [ (lib, m) ] | Some l -> Some ((lib, m) :: l))
+                  acc)
+              acc lib.modules)
+          acc pkg.libraries)
+      Util.StringMap.empty pkgs
+  in
+  Util.StringMap.filter (fun _hash ms -> List.length ms > 1) by_hash
+
 let remap_virtual all =
   let virtual_check =
-    let hashes =
-      List.fold_left
-        (fun acc pkg ->
-          List.fold_left
-            (fun acc lib ->
-              List.fold_left
-                (fun acc m ->
-                  let hash = m.m_intf.mif_hash in
-                  Util.StringMap.update hash
-                    (function
-                      | None -> Some [ m.m_intf ]
-                      | Some l -> Some (m.m_intf :: l))
-                    acc)
-                acc lib.modules)
-            acc pkg.libraries)
-        Util.StringMap.empty all
-    in
-    Util.StringMap.filter (fun _hash intfs -> List.length intfs > 1) hashes
+    Util.StringMap.map
+      (List.map (fun (_lib, m) -> m.m_intf))
+      (virtual_modules all)
   in
-
   remap_virtual_interfaces virtual_check all
+
+(* For each library, the {e other} libraries implementing the same virtual
+   library: within a shared-hash group, the ones whose module has a [.cmt] (the
+   interface-only library is excluded). They must be kept off each other's
+   include paths, since their same-hash modules can't be told apart by digest. *)
+let virtual_siblings pkgs =
+  Util.StringMap.fold
+    (fun _hash ms acc ->
+      let impl_libs =
+        List.filter_map
+          (fun (lib, m) ->
+            match m.m_impl with Some _ -> Some lib.lib_name | None -> None)
+          ms
+        |> Util.StringSet.of_list
+      in
+      Util.StringSet.fold
+        (fun lib_name acc ->
+          let others = Util.StringSet.remove lib_name impl_libs in
+          Util.StringMap.update lib_name
+            (function
+              | None -> Some others
+              | Some s -> Some (Util.StringSet.union s others))
+            acc)
+        impl_libs acc)
+    (virtual_modules pkgs) Util.StringMap.empty

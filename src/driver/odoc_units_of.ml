@@ -61,6 +61,15 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       libs_of_pkg Util.StringMap.empty
   in
 
+  (* Alternative implementations of a virtual library, to keep off each other's
+     include paths (see {!Packages.virtual_siblings}). *)
+  let virtual_siblings = Packages.virtual_siblings pkgs in
+  let siblings_of lib_name =
+    match Util.StringMap.find_opt lib_name virtual_siblings with
+    | Some s -> s
+    | None -> Util.StringSet.empty
+  in
+
   (* Link arguments ([-L]/[-P]/[-I]) are computed per package, so every unit in
      a package gets the same set. [-L] is the directly-declared library
      dependencies of all the package's libraries (which therefore includes the
@@ -72,8 +81,8 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
      [odoc-config.sexp]. *)
   let link_args_of =
     let cache = Hashtbl.create 10 in
-    fun pkg _lib_deps : Pkg_args.t ->
-      match Hashtbl.find_opt cache pkg.Packages.name with
+    fun pkg ~exclude _lib_deps : Pkg_args.t ->
+      match Hashtbl.find_opt cache (pkg.Packages.name, exclude) with
       | Some res -> res
       | None ->
           let {
@@ -105,6 +114,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
                  (Util.StringSet.of_list cfg_libs)
                  libs_of_cfg_pkgs)
           in
+          (* Drop sibling virtual-library implementations so their same-name,
+             same-hash modules don't collide on this unit's paths. *)
+          let lib_set = Util.StringSet.diff lib_set exclude in
           let libs = List.concat_map dash_l (Util.StringSet.to_list lib_set) in
           let includes = List.map snd libs in
           let pkg_set =
@@ -125,7 +137,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
                    | None -> None)
           in
           let result = Pkg_args.v ~pages ~libs ~includes ~odoc_dir ~odocl_dir in
-          Hashtbl.add cache pkg.Packages.name result;
+          Hashtbl.add cache (pkg.Packages.name, exclude) result;
           result
   in
 
@@ -146,13 +158,13 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     }
   in
 
-  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_deps ~enable_warnings
-      ~to_output ~stash_input : _ t =
+  let make_unit ~exclude ~name ~kind ~rel_dir ~input_file ~pkg ~lib_deps
+      ~enable_warnings ~to_output ~stash_input : _ t =
     let to_output = to_output || not remap in
     (* If we haven't got active remapping, we output everything *)
     let ( // ) = Fpath.( // ) in
     let ( / ) = Fpath.( / ) in
-    let pkg_args = link_args_of pkg lib_deps in
+    let pkg_args = link_args_of pkg ~exclude lib_deps in
     let parent_id = rel_dir |> Odoc.Id.of_fpath in
     let odoc_file =
       odoc_dir // rel_dir / (String.uncapitalize_ascii name ^ ".odoc")
@@ -195,8 +207,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     in
     let name = intf.mif_path |> Fpath.rem_ext |> Fpath.basename in
     let stash_input = lib.archive_name = None in
-    make_unit ~name ~kind ~rel_dir ~input_file:intf.mif_path ~pkg ~lib_deps
-      ~enable_warnings:pkg.selected ~to_output:pkg.selected ~stash_input
+    make_unit ~exclude:(siblings_of lib.lib_name) ~name ~kind ~rel_dir
+      ~input_file:intf.mif_path ~pkg ~lib_deps ~enable_warnings:pkg.selected
+      ~to_output:pkg.selected ~stash_input
   in
   let of_impl pkg lib lib_deps (impl : Packages.impl) : impl t option =
     match impl.mip_src_info with
@@ -216,9 +229,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
           |> String.uncapitalize_ascii |> ( ^ ) "impl-"
         in
         let unit =
-          make_unit ~name ~kind ~rel_dir ~input_file:impl.mip_path ~pkg
-            ~lib_deps ~enable_warnings:false ~to_output:pkg.selected
-            ~stash_input:false
+          make_unit ~exclude:(siblings_of lib.lib_name) ~name ~kind ~rel_dir
+            ~input_file:impl.mip_path ~pkg ~lib_deps ~enable_warnings:false
+            ~to_output:pkg.selected ~stash_input:false
         in
         Some unit
   in
@@ -252,8 +265,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       |> Util.StringSet.of_list
     in
     let unit =
-      make_unit ~name ~kind ~rel_dir ~input_file:mld_path ~pkg ~lib_deps
-        ~enable_warnings:pkg.selected ~to_output:pkg.selected ~stash_input:false
+      make_unit ~exclude:Util.StringSet.empty ~name ~kind ~rel_dir
+        ~input_file:mld_path ~pkg ~lib_deps ~enable_warnings:pkg.selected
+        ~to_output:pkg.selected ~stash_input:false
     in
     [ unit ]
   in
@@ -272,9 +286,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
         in
         let lib_deps = Util.StringSet.empty in
         let unit =
-          make_unit ~name ~kind ~rel_dir ~input_file:md_path ~pkg ~lib_deps
-            ~enable_warnings:pkg.selected ~to_output:pkg.selected
-            ~stash_input:false
+          make_unit ~exclude:Util.StringSet.empty ~name ~kind ~rel_dir
+            ~input_file:md_path ~pkg ~lib_deps ~enable_warnings:pkg.selected
+            ~to_output:pkg.selected ~stash_input:false
         in
         [ unit ]
     | _ ->
@@ -291,9 +305,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     let kind = `Asset in
     let unit =
       let name = asset_path |> Fpath.basename |> ( ^ ) "asset-" in
-      make_unit ~name ~kind ~rel_dir ~input_file:asset_path ~pkg
-        ~lib_deps:Util.StringSet.empty ~enable_warnings:false ~to_output:true
-        ~stash_input:false
+      make_unit ~exclude:Util.StringSet.empty ~name ~kind ~rel_dir
+        ~input_file:asset_path ~pkg ~lib_deps:Util.StringSet.empty
+        ~enable_warnings:false ~to_output:true ~stash_input:false
     in
     [ unit ]
   in
