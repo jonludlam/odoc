@@ -276,6 +276,13 @@ let lookup_unit_with_digest ap target_name digest =
   | Some (m, _) -> Ok (Odoc_xref2.Env.Found m)
   | None -> Error `Not_found
 
+(** The interface digest the referring unit recorded for [name], if any. *)
+let recorded_digest imports_map name =
+  match StringMap.find_opt name imports_map with
+  | Some (Odoc_model.Lang.Compilation_unit.Import.Unresolved (_, d)) -> d
+  | Some (Resolved (root, _)) -> Some root.Odoc_model.Root.digest
+  | None -> None
+
 (** Lookup a compilation unit matching a name. If there is more than one result,
     report on stderr and return the first one.
 
@@ -321,15 +328,15 @@ let lookup_unit_by_name ~important_digests ~imports_map ap target_name =
     | Some m -> Ok (Odoc_xref2.Env.Found m)
     | None -> Error `Not_found
   in
-  match StringMap.find target_name imports_map with
-  | Odoc_model.Lang.Compilation_unit.Import.Unresolved (_, Some digest) ->
-      lookup_unit_with_digest ap target_name digest
-  | Unresolved (_, None) ->
-      if important_digests then Ok Odoc_xref2.Env.Forward_reference
-      else of_option (lookup_unit_by_name ap target_name)
-  | Resolved (root, _) -> lookup_unit_with_digest ap target_name root.digest
-  | exception Not_found ->
-      if important_digests then Error `Not_found
+  match recorded_digest imports_map target_name with
+  | Some digest -> lookup_unit_with_digest ap target_name digest
+  | None ->
+      (* No digest recorded: either [target_name] is imported but its digest
+         isn't known yet (a forward reference), or it isn't imported at all. *)
+      if important_digests then
+        if StringMap.mem target_name imports_map then
+          Ok Odoc_xref2.Env.Forward_reference
+        else Error `Not_found
       else of_option (lookup_unit_by_name ap target_name)
 
 (** Lookup a page.
@@ -348,15 +355,30 @@ let lookup_page_by_name ap target_name =
   | None -> Error `Not_found
 
 (** Lookup an implementation. *)
-let lookup_impl ap target_name =
-  let target_name = "impl-" ^ Astring.String.Ascii.uncapitalize target_name in
+let lookup_impl ~imports_map ap target_name =
+  let file_name = "impl-" ^ Astring.String.Ascii.uncapitalize target_name in
   let is_impl u =
     match u with
     | Odoc_file.Impl_content p -> Some p
     | Page_content _ | Unit_content _ | Asset_content _ -> None
   in
-  let units = load_units_from_name ap target_name in
-  match find_map is_impl units with Some (p, _) -> Some p | None -> None
+  let impls = List.filter_map is_impl (load_units_from_name ap file_name) in
+  (* Disambiguate same-named implementations by digest, as [lookup_unit_by_name]
+     does for interfaces; otherwise the first found wins and source resolution
+     breaks. Virtual-library implementations share an interface digest and can't
+     be told apart here -- the driver keeps them off each other's paths. *)
+  let by_digest =
+    match recorded_digest imports_map target_name with
+    | Some digest ->
+        List.find_opt
+          (fun p ->
+            Digest.compare p.Odoc_model.Lang.Implementation.digest digest = 0)
+          impls
+    | None -> None
+  in
+  match by_digest with
+  | Some _ as r -> r
+  | None -> ( match impls with p :: _ -> Some p | [] -> None)
 
 (** Add the current unit to the cache. No need to load other units with the same
     name. *)
@@ -536,7 +558,7 @@ let build_compile_env_for_unit
     lookup_unit ~important_digests ~imports_map ap ~libs:None ~hierarchy:None
   and lookup_page _ = Error `Not_found
   and lookup_asset _ = Error `Not_found
-  and lookup_impl = lookup_impl ap in
+  and lookup_impl = lookup_impl ~imports_map ap in
   let resolver =
     { Env.open_units; lookup_unit; lookup_page; lookup_impl; lookup_asset }
   in
@@ -563,7 +585,7 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
     lookup_unit ~important_digests ~imports_map extended_ap ~libs ~hierarchy
   and lookup_page = lookup_page ap ~pages ~hierarchy
   and lookup_asset = lookup_asset ~pages ~hierarchy
-  and lookup_impl = lookup_impl ap in
+  and lookup_impl = lookup_impl ~imports_map ap in
   { Env.open_units; lookup_unit; lookup_page; lookup_impl; lookup_asset }
 
 let build_compile_env_for_impl t i =
@@ -575,7 +597,33 @@ let build_compile_env_for_impl t i =
 
 let build_link_env_for_unit t m =
   add_unit_to_cache (Odoc_file.Unit_content m);
-  let imports_map = build_imports_map m.imports in
+  let name = root_name m.Odoc_model.Lang.Compilation_unit.root in
+  (* The [.cmti] imports cover only interface-level deps, but source resolution
+     walks the implementation's shapes, which reach impl-only modules and this
+     unit itself. Add the matching impl's imports (found by this unit's digest)
+     so [lookup_impl] can disambiguate those by digest too. *)
+  let impl_imports =
+    let impls =
+      List.filter_map
+        (function Odoc_file.Impl_content i -> Some i | _ -> None)
+        (load_units_from_name t.ap
+           ("impl-" ^ Astring.String.Ascii.uncapitalize name))
+    in
+    match
+      List.find_opt
+        (fun i ->
+          Digest.compare i.Odoc_model.Lang.Implementation.digest m.digest = 0)
+        impls
+    with
+    | Some i -> i.Odoc_model.Lang.Implementation.imports
+    | None -> []
+  in
+  let imports_map = build_imports_map (m.imports @ impl_imports) in
+  let imports_map =
+    StringMap.add name
+      (Odoc_model.Lang.Compilation_unit.Import.Unresolved (name, Some m.digest))
+      imports_map
+  in
   let resolver = build ~imports_map ?hierarchy_roots:t.libs t in
   Env.env_of_unit m ~linking:true resolver
 

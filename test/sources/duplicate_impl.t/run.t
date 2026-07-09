@@ -35,10 +35,10 @@ same-named `Common` must not shadow `liba`'s when resolving source links:
   $ odoc html-generate-source --impl _odoc/liba/impl-user.odocl -o html liba/user.ml
   $ odoc html-generate -o html _odoc/liba/user.odocl
 
-The source link for the included value `x` should point to `liba`'s
-`common.ml`, not `libb`'s. odoc currently resolves implementations by module
-name alone and picks the first same-named `Common` it finds — here `libb`'s —
-so the source link points to the wrong library:
+The source link for the included value `x` must point to `liba`'s `common.ml`,
+not `libb`'s. Before the digest-aware implementation lookup, odoc resolved this
+by module name alone and picked `libb`'s `Common`, producing
+`src/libb/common.ml.html#val-x`:
 
   $ grep -o 'src/lib./common.ml.html#val-x' html/liba/User/index.html
-  src/libb/common.ml.html#val-x
+  src/liba/common.ml.html#val-x
