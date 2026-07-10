@@ -201,8 +201,6 @@ val prefix_signature :
 
 val assert_not_functor : expansion -> (Component.Signature.t, 'err) result
 
-val assert_functor : expansion -> (Component.Signature.t, 'err) result
-
 val expansion_of_module_path :
   Env.t ->
   strengthen:bool ->
@@ -242,7 +240,6 @@ val expansion_of_module_type_expr :
 val signature_of_u_module_type_expr :
   Env.t ->
   Component.ModuleType.U.expr ->
-  allow_functor:bool ->
   (Component.Signature.t, expansion_of_module_error) result
 (** The following functions are use for the resolution of
     {{!type:Odoc_model.Paths.Fragment.t}Fragments} Whilst resolving fragments it
