@@ -28,6 +28,8 @@
 - `odoc compile`: `-o` now overrides the output path computed from
   `--parent-id` and `--output-dir`, which is no longer required in that case
   (@jonludlam, #1462)
+- `odoc compile-impl`: `-o` now overrides the output path computed from
+  `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
 
 ### Fixed
 - `odoc link` resolves paths among the libraries a unit was compiled against,
