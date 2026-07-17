@@ -1,16 +1,17 @@
+(** Arguments for the {e link} step: the reference scope, [-L] (module trees,
+    one per library) and [-P] (page trees, one per package). The [-I] include
+    path is computed per library (see [Compile.library_includes]), not here. *)
 module Pkg_args : sig
   type t
 
   val compiled_pages : t -> (string * Fpath.t) list
   val compiled_libs : t -> (string * Fpath.t) list
-  val includes : t -> Fpath.t list
   val linked_pages : t -> (string * Fpath.t) list
   val linked_libs : t -> (string * Fpath.t) list
 
   val v :
     odoc_dir:Fpath.t ->
     odocl_dir:Fpath.t ->
-    includes:Fpath.t list ->
     pages:(string * Fpath.t) list ->
     libs:(string * Fpath.t) list ->
     t

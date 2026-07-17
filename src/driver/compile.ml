@@ -97,6 +97,35 @@ let find_partials odoc_dir :
   | Ok h -> (h, tbl)
   | Error _ -> (* odoc_dir doesn't exist...? *) (Util.StringMap.empty, tbl)
 
+(* Build a [digest -> library name(s)] map from the partials written by earlier
+   [compile] runs under [odoc_dir]. Each partial is keyed by interface hash and
+   its units carry their [lib_name], so this reconstructs the same information
+   [Packages.lib_name_by_hash] gives for in-memory packages — but for
+   already-compiled dependencies, as needed in voodoo mode. *)
+let lib_name_by_hash_of_partials odoc_dir : string list Util.StringMap.t =
+  let result =
+    OS.Dir.fold_contents ~dotfiles:false ~elements:`Dirs
+      (fun p acc ->
+        let index_m = Fpath.( / ) p odoc_partial_filename in
+        match OS.File.exists index_m with
+        | Ok true ->
+            Util.StringMap.fold
+              (fun h units acc ->
+                List.fold_left
+                  (fun acc u ->
+                    let lib_name = u.Odoc_unit.lib_name in
+                    Util.StringMap.update h
+                      (function
+                        | None -> Some [ lib_name ]
+                        | Some l -> Some (lib_name :: l))
+                      acc)
+                  acc units)
+              (unmarshal index_m) acc
+        | _ -> acc)
+      Util.StringMap.empty odoc_dir
+  in
+  match result with Ok m -> m | Error _ -> Util.StringMap.empty
+
 (* Include set for compiling a unit: the directories that provide the modules
    it actually depends on. Each dependency carries the interface hash of the
    module it refers to, so we look that hash up in [all_hashes] (this run's
