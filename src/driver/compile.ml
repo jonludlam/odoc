@@ -97,6 +97,39 @@ let find_partials odoc_dir :
   | Ok h -> (h, tbl)
   | Error _ -> (* odoc_dir doesn't exist...? *) (Util.StringMap.empty, tbl)
 
+(* Include set for compiling a unit: the directories that provide the modules
+   it actually depends on. Each dependency carries the interface hash of the
+   module it refers to, so we look that hash up in [all_hashes] (this run's
+   units plus the partials of already-compiled dependencies) and add the
+   directory of a providing unit. This is more precise than including whole
+   libraries and doesn't depend on the META files declaring every
+   transitively-needed library.
+
+   A single hash can be offered by more than one unit — the interface of a
+   virtual library and each of its implementations all share it, for instance.
+   When that happens we prefer a provider whose library is in [prefer] (the
+   unit's own library plus that library's dependencies), so a unit resolves
+   its actual dependency rather than an unrelated sibling implementation. If
+   none of the providers is a dependency we pick an arbitrary one; sharing the
+   interface hash, they are interchangeable for compilation anyway. *)
+let includes_of_deps ~all_hashes ~prefer deps =
+  List.fold_left
+    (fun acc (_name, dep_hash) ->
+      match Util.StringMap.find_opt dep_hash all_hashes with
+      | None | Some [] -> acc
+      | Some units ->
+          let chosen =
+            match
+              List.find_opt
+                (fun u -> Util.StringSet.mem u.Odoc_unit.lib_name prefer)
+                units
+            with
+            | Some u -> u
+            | None -> List.hd units
+          in
+          Fpath.Set.add (Fpath.parent chosen.Odoc_unit.odoc_file) acc)
+    Fpath.Set.empty deps
+
 let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
   let hashes = mk_byhash all in
   let other_hashes, tbl =
@@ -109,25 +142,6 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
   in
   let all_hashes =
     Util.StringMap.union (fun _x o1 o2 -> Some (o1 @ o2)) hashes other_hashes
-  in
-  (* Include set for compiling a unit: the directories that provide the modules
-     it actually depends on. Each dependency carries the interface hash of the
-     module it refers to, so we look that hash up in [all_hashes] (this run's
-     units plus the partials of already-compiled dependencies) and add the
-     directory of every providing unit. This is more precise than including
-     whole libraries and doesn't depend on the META files declaring every
-     transitively-needed library. *)
-  let includes_of_deps deps =
-    List.fold_left
-      (fun acc (_name, dep_hash) ->
-        match Util.StringMap.find_opt dep_hash all_hashes with
-        | Some units ->
-            List.fold_left
-              (fun acc (u : Odoc_unit.intf Odoc_unit.t) ->
-                Fpath.Set.add (Fpath.parent u.Odoc_unit.odoc_file) acc)
-              acc units
-        | None -> acc)
-      Fpath.Set.empty deps
   in
   let compile_mod =
     (* Modules have a more complicated compilation because:
@@ -150,7 +164,9 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
                 None)
           deps
       in
-      let includes = includes_of_deps deps in
+      let includes =
+        includes_of_deps ~all_hashes ~prefer:unit.Odoc_unit.lib_deps deps
+      in
       Odoc.compile ~output_dir:unit.output_dir ~input_file:unit.input_file
         ~includes ~warnings_tag:unit.pkgname ~parent_id:unit.parent_id
         ~ignore_output:(not unit.enable_warnings);
@@ -191,7 +207,10 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
     match unit.kind with
     | `Intf intf -> (compile_mod intf.hash :> (Odoc_unit.any list, _) Result.t)
     | `Impl src ->
-        let includes = includes_of_deps unit.Odoc_unit.deps in
+        let includes =
+          includes_of_deps ~all_hashes ~prefer:unit.Odoc_unit.lib_deps
+            unit.Odoc_unit.deps
+        in
         let source_id = src.src_id in
         Odoc.compile_impl ~output_dir:unit.output_dir
           ~input_file:unit.input_file ~includes ~parent_id:unit.parent_id
