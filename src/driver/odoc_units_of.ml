@@ -146,8 +146,8 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     }
   in
 
-  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_name ~deps
-      ~lib_deps ~enable_warnings ~to_output ~stash_input : _ t =
+  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_name ~deps ~lib_deps
+      ~enable_warnings ~to_output ~input_copy : _ t =
     let to_output = to_output || not remap in
     (* If we haven't got active remapping, we output everything *)
     let ( // ) = Fpath.( // ) in
@@ -160,11 +160,6 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     (* odoc will uncapitalise the output filename *)
     let odocl_file =
       odocl_dir // rel_dir / (String.uncapitalize_ascii name ^ ".odocl")
-    in
-    let input_copy =
-      if stash_input then
-        Some (odoc_dir // rel_dir / (String.uncapitalize_ascii name ^ ".cmti"))
-      else None
     in
     {
       output_dir = odoc_dir;
@@ -189,12 +184,17 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       : intf t =
     let rel_dir = lib_dir pkg lib in
     let kind = `Intf { hidden; hash = intf.mif_hash } in
-    let name = intf.mif_path |> Fpath.rem_ext |> Fpath.basename in
-    let stash_input = lib.archive_name = None in
-    make_unit ~name ~kind ~rel_dir
-      ~input_file:intf.mif_path ~pkg ~lib_name:lib.lib_name ~deps:intf.mif_deps
-      ~lib_deps ~enable_warnings:pkg.selected ~to_output:pkg.selected
-      ~stash_input
+    let name = intf_unit_name intf in
+    (* A virtual library has no archive; stash its interface so that
+       implementations compiled by later runs can be pointed at it. *)
+    let input_copy =
+      match lib.archive_name with
+      | Some _ -> None
+      | None -> Some Fpath.(odoc_dir // rel_dir / stash_basename intf)
+    in
+    make_unit ~name ~kind ~rel_dir ~input_file:intf.mif_path ~pkg
+      ~lib_name:lib.lib_name ~deps:intf.mif_deps ~lib_deps
+      ~enable_warnings:pkg.selected ~to_output:pkg.selected ~input_copy
   in
   let of_impl pkg lib lib_deps (impl : Packages.impl) : impl t option =
     match impl.mip_src_info with
@@ -213,10 +213,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
           |> String.uncapitalize_ascii |> ( ^ ) "impl-"
         in
         let unit =
-          make_unit ~name ~kind ~rel_dir
-            ~input_file:impl.mip_path ~pkg ~lib_name:lib.lib_name
-            ~deps:impl.mip_deps ~lib_deps ~enable_warnings:false
-            ~to_output:pkg.selected ~stash_input:false
+          make_unit ~name ~kind ~rel_dir ~input_file:impl.mip_path ~pkg
+            ~lib_name:lib.lib_name ~deps:impl.mip_deps ~lib_deps
+            ~enable_warnings:false ~to_output:pkg.selected ~input_copy:None
         in
         Some unit
   in
@@ -250,9 +249,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       |> Util.StringSet.of_list
     in
     let unit =
-      make_unit ~name ~kind ~rel_dir
-        ~input_file:mld_path ~pkg ~lib_name:"" ~deps:[] ~lib_deps
-        ~enable_warnings:pkg.selected ~to_output:pkg.selected ~stash_input:false
+      make_unit ~name ~kind ~rel_dir ~input_file:mld_path ~pkg ~lib_name:""
+        ~deps:[] ~lib_deps ~enable_warnings:pkg.selected ~to_output:pkg.selected
+        ~input_copy:None
     in
     [ unit ]
   in
@@ -271,10 +270,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
         in
         let lib_deps = Util.StringSet.empty in
         let unit =
-          make_unit ~name ~kind ~rel_dir
-            ~input_file:md_path ~pkg ~lib_name:"" ~deps:[] ~lib_deps
-            ~enable_warnings:pkg.selected ~to_output:pkg.selected
-            ~stash_input:false
+          make_unit ~name ~kind ~rel_dir ~input_file:md_path ~pkg ~lib_name:""
+            ~deps:[] ~lib_deps ~enable_warnings:pkg.selected
+            ~to_output:pkg.selected ~input_copy:None
         in
         [ unit ]
     | _ ->
@@ -291,10 +289,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     let kind = `Asset in
     let unit =
       let name = asset_path |> Fpath.basename |> ( ^ ) "asset-" in
-      make_unit ~name ~kind ~rel_dir
-        ~input_file:asset_path ~pkg ~lib_name:"" ~deps:[]
-        ~lib_deps:Util.StringSet.empty ~enable_warnings:false ~to_output:true
-        ~stash_input:false
+      make_unit ~name ~kind ~rel_dir ~input_file:asset_path ~pkg ~lib_name:""
+        ~deps:[] ~lib_deps:Util.StringSet.empty ~enable_warnings:false
+        ~to_output:true ~input_copy:None
     in
     [ unit ]
   in

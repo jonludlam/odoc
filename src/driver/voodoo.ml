@@ -13,9 +13,10 @@ type pkg = {
 let prep_path = ref "prep"
 
 (* We mark the paths that contain compiled units for both packages and libraries
-   by dropping in a marker file. The contents of the file is unimportant, as we
-   can determine which package or library we're looking at simply by its path. *)
-let lib_marker = ".odoc_lib_marker"
+   by dropping in a marker file. Which package or library we are looking at is
+   determined by the path alone, so the package marker's contents are
+   unimportant; the library marker additionally records what a later run needs
+   to know about the library it marks (see {!Lib_marker}). *)
 let pkg_marker = ".odoc_pkg_marker"
 
 let top_dir pkg =
@@ -279,6 +280,8 @@ type extra_paths = {
   pkgs : Fpath.t Util.StringMap.t;
   libs : Fpath.t Util.StringMap.t;
   libs_of_pkg : string list Util.StringMap.t;
+  lib_deps : Util.StringSet.t Util.StringMap.t;
+  virtual_cmtis : (string * Fpath.t) list Util.StringMap.t;
 }
 
 let empty_extra_paths =
@@ -286,7 +289,47 @@ let empty_extra_paths =
     pkgs = Util.StringMap.empty;
     libs = Util.StringMap.empty;
     libs_of_pkg = Util.StringMap.empty;
+    lib_deps = Util.StringMap.empty;
+    virtual_cmtis = Util.StringMap.empty;
   }
+
+(* Fold the contents of one library marker into the accumulator. A marker we
+   cannot parse still tells us that the directory holds a library, which is all
+   the marker used to convey; we just learn nothing more about it. *)
+let read_lib_marker ~abs_path ~rel_dir acc =
+  match Bos.OS.File.read abs_path with
+  | Error (`Msg msg) ->
+      Logs.debug (fun m ->
+          m "Failed to read library marker %a: %s" Fpath.pp abs_path msg);
+      acc
+  | Ok contents -> (
+      match Lib_marker.of_string contents with
+      | None ->
+          Logs.debug (fun m ->
+              m "Ignoring library marker %a: not of the current format" Fpath.pp
+                abs_path);
+          acc
+      | Some { Lib_marker.lib_name; requires; modules; pkg_name = _ } ->
+          let lib_deps =
+            Util.StringMap.add lib_name
+              (Util.StringSet.of_list requires)
+              acc.lib_deps
+          in
+          let virtual_cmtis =
+            List.fold_left
+              (fun acc (m : Lib_marker.module_info) ->
+                match m.stashed_cmti with
+                | None -> acc
+                | Some cmti ->
+                    Util.StringMap.update m.digest
+                      (fun prev ->
+                        Some
+                          ((m.m_name, Fpath.(rel_dir / cmti))
+                          :: Option.value ~default:[] prev))
+                      acc)
+              acc.virtual_cmtis modules
+          in
+          { acc with lib_deps; virtual_cmtis })
 
 let extra_paths compile_dir =
   let contents =
@@ -294,46 +337,43 @@ let extra_paths compile_dir =
       (fun p acc -> p :: acc)
       [] compile_dir
   in
-  let add_libs pkgname libname libs_of_pkg =
-    Util.StringMap.update pkgname
-      (function None -> Some [ libname ] | Some l -> Some (libname :: l))
-      libs_of_pkg
+  let add_lib ~abs_path ~rel_dir ~pkg ~libname acc =
+    Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp rel_dir);
+    let acc =
+      {
+        acc with
+        libs = Util.StringMap.add libname rel_dir acc.libs;
+        libs_of_pkg =
+          Util.StringMap.update pkg
+            (function
+              | None -> Some [ libname ] | Some l -> Some (libname :: l))
+            acc.libs_of_pkg;
+      }
+    in
+    read_lib_marker ~abs_path ~rel_dir acc
   in
-  let pkgs, libs, libs_of_pkg =
-    match contents with
-    | Error _ ->
-        (Util.StringMap.empty, Util.StringMap.empty, Util.StringMap.empty)
-    | Ok c ->
-        List.fold_left
-          (fun (pkgs, libs, libs_of_pkg) abs_path ->
-            let path = Fpath.rem_prefix compile_dir abs_path |> Option.get in
-            match Fpath.segs path with
-            | [ "p"; pkg; _version; "doc"; libname; l ] when l = lib_marker ->
-                Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-                ( pkgs,
-                  Util.StringMap.add libname (Fpath.parent path) libs,
-                  add_libs pkg libname libs_of_pkg )
-            | [ "p"; pkg; _version; "doc"; l ] when l = pkg_marker ->
-                Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-                ( Util.StringMap.add pkg (Fpath.parent path) pkgs,
-                  libs,
-                  libs_of_pkg )
-            | [ "u"; _universe; pkg; _version; "doc"; libname; l ]
-              when l = lib_marker ->
-                Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-                ( pkgs,
-                  Util.StringMap.add libname (Fpath.parent path) libs,
-                  add_libs pkg libname libs_of_pkg )
-            | [ "u"; _universe; pkg; _version; "doc"; l ] when l = pkg_marker ->
-                Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-                ( Util.StringMap.add pkg (Fpath.parent path) pkgs,
-                  libs,
-                  libs_of_pkg )
-            | _ -> (pkgs, libs, libs_of_pkg))
-          (Util.StringMap.empty, Util.StringMap.empty, Util.StringMap.empty)
-          c
+  let add_pkg ~rel_dir ~pkg acc =
+    Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp rel_dir);
+    { acc with pkgs = Util.StringMap.add pkg rel_dir acc.pkgs }
   in
-  { pkgs; libs; libs_of_pkg }
+  match contents with
+  | Error _ -> empty_extra_paths
+  | Ok c ->
+      List.fold_left
+        (fun acc abs_path ->
+          let path = Fpath.rem_prefix compile_dir abs_path |> Option.get in
+          let rel_dir = Fpath.parent path in
+          match Fpath.segs path with
+          | [ "p"; pkg; _version; "doc"; libname; l ]
+          | [ "u"; _; pkg; _version; "doc"; libname; l ]
+            when l = Lib_marker.filename ->
+              add_lib ~abs_path ~rel_dir ~pkg ~libname acc
+          | [ "p"; pkg; _version; "doc"; l ]
+          | [ "u"; _; pkg; _version; "doc"; l ]
+            when l = pkg_marker ->
+              add_pkg ~rel_dir ~pkg acc
+          | _ -> acc)
+        empty_extra_paths c
 
 let write_lib_markers odoc_dir pkgs =
   let write file str =
@@ -356,11 +396,8 @@ let write_lib_markers odoc_dir pkgs =
       List.iter
         (fun (lib : Packages.libty) ->
           let lib_dir = Odoc_unit.lib_dir pkg lib in
-          let marker = Fpath.(odoc_dir // lib_dir / lib_marker) in
+          let marker = Fpath.(odoc_dir // lib_dir / Lib_marker.filename) in
           write marker
-            (Fmt.str
-               "This marks this directory as the location of odoc files for \
-                library %s in package %s"
-               lib.lib_name pkg.name))
+            (Lib_marker.to_string (Lib_marker.of_lib ~pkg_name:pkg.name lib)))
         libs)
     pkgs

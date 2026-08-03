@@ -65,6 +65,15 @@ type any = [ impl | intf | mld | asset | md ] t
 
 val pp : any Fmt.t
 
+val intf_unit_name : Packages.intf -> string
+(** The name odoc gives a unit compiled from this interface. *)
+
+val stash_basename : Packages.intf -> string
+(** Basename of the [.cmti] copy the compile step stashes beside a virtual
+    library's [.odoc], so that implementations compiled by later runs — after
+    the virtual library's build tree is gone — can still be compiled against its
+    interface. *)
+
 val pkg_dir : Packages.t -> Fpath.t
 val lib_dir : Packages.t -> Packages.libty -> Fpath.t
 val doc_dir : Packages.t -> Fpath.t

@@ -139,6 +139,20 @@ let lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   match lib.id_override with
   | Some id -> Fpath.v id
   | None -> Fpath.(doc_dir pkg / lib.Packages.lib_name)
+
+(* The name odoc gives a unit compiled from [intf]: the basename of the
+   interface file, which odoc uncapitalises when forming output filenames. *)
+let intf_unit_name (intf : Packages.intf) =
+  intf.mif_path |> Fpath.rem_ext |> Fpath.basename
+
+(* A virtual library ships a [.cmti] and no archive, and its interface is
+   compiled once per implementation, each in the implementation's own tree. An
+   implementation in another package is compiled after the virtual library's
+   build tree is gone, so the compile step stashes a copy of the [.cmti] beside
+   the [.odoc] under this name, and the library marker records it. *)
+let stash_basename intf =
+  String.uncapitalize_ascii (intf_unit_name intf) ^ ".cmti"
+
 let src_dir pkg = Fpath.(doc_dir pkg / "src")
 let src_lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   match lib.id_override with
