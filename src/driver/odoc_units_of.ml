@@ -124,9 +124,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
                    | Some path -> Some (dash_p pkgname path)
                    | None -> None)
           in
-          let result =
-            Pkg_args.v ~pages ~libs ~includes:[] ~odoc_dir ~odocl_dir
-          in
+          let result = Pkg_args.v ~pages ~libs ~odoc_dir in
           Hashtbl.add cache pkg.Packages.name result;
           result
   in

@@ -1,24 +1,18 @@
-(** Arguments for the {e link} step ([-L] / [-P] / [-I]). The compile step does
-    not use these — it derives its includes per module from the unit's own
+(** The {e reference scope} passed to the link step: the page trees ([-P]) and
+    module trees ([-L]) against which references in this unit resolve. The
+    search path ([-I]) is not part of this — it is derived from the unit's own
     dependencies (see [Compile.includes_of_deps]). *)
 module Pkg_args : sig
   type t
 
   val compiled_pages : t -> (string * Fpath.t) list
   val compiled_libs : t -> (string * Fpath.t) list
-  val includes : t -> Fpath.t list
-  val linked_pages : t -> (string * Fpath.t) list
-  val linked_libs : t -> (string * Fpath.t) list
 
   val v :
     odoc_dir:Fpath.t ->
-    odocl_dir:Fpath.t ->
-    includes:Fpath.t list ->
     pages:(string * Fpath.t) list ->
     libs:(string * Fpath.t) list ->
     t
-
-  val combine : t -> t -> t
 
   val pp : t Fmt.t
 end
