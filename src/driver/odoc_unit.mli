@@ -1,7 +1,7 @@
 (** The {e reference scope} passed to the link step: the page trees ([-P]) and
     module trees ([-L]) against which references in this unit resolve. The
-    search path ([-I]) is not part of this — it is derived from the unit's own
-    dependencies (see [Compile.includes_of_deps]). *)
+    search path ([-I]) is a separate, deeper thing and lives in the [includes]
+    field of {!t}. *)
 module Pkg_args : sig
   type t
 
@@ -41,10 +41,11 @@ type 'a t = {
   deps : (string * Digest.t) list;
       (** The unit's per-module dependencies (interface deps for [`Intf], the
           implementation's for [`Impl]; empty otherwise). *)
-  lib_deps : Util.StringSet.t;
-      (** The unit's own library plus that library's dependencies. Used by
-          [Compile.includes_of_deps] to disambiguate which provider of a
-          dependency hash to add to the compile [-I] set. *)
+  includes : Fpath.Set.t;
+      (** The search path ([-I]) used to compile and to link this unit: the
+          directories holding the odoc files of its library and of that
+          library's dependency closure. Empty for pages and assets. Every unit
+          of a library shares one set. *)
   index : index option;
   enable_warnings : bool;
   to_output : bool;

@@ -1,6 +1,5 @@
 (* The reference scope passed to the link step ([-P] / [-L]). The search path
-   ([-I]) is not part of this: it is derived from the unit's own dependencies
-   (see [Compile.includes_of_deps]). *)
+   ([-I]) is a separate, deeper thing: see the [includes] field below. *)
 module Pkg_args = struct
   type t = {
     odoc_dir : Fpath.t;
@@ -64,12 +63,11 @@ type 'a t = {
   deps : (string * Digest.t) list;
       (* The unit's per-module dependencies (interface deps for [`Intf], the
          implementation's for [`Impl]; empty otherwise). *)
-  lib_deps : Util.StringSet.t;
-      (* The unit's own library plus that library's dependencies. Used by
-         [Compile.includes_of_deps] to pick the right provider when a dependency
-         hash is offered by more than one unit (e.g. virtual-library
-         implementations). Not the link-step arguments — those live in
-         [pkg_args]. *)
+  includes : Fpath.Set.t;
+      (* The search path ([-I]) for both compiling and linking this unit: the
+         directories holding the odoc files of its library and of that library's
+         dependency closure. Empty for pages and assets. Shared by every unit of
+         a library; see [Odoc_units_of.includes_of_lib]. *)
   index : index option;
   enable_warnings : bool;
   to_output : bool;
@@ -118,7 +116,7 @@ and pp : all_kinds t Fmt.t =
      pkgname: %a@;\
      lib_name: %s@;\
      deps: [%a]@;\
-     lib_deps: [%a]@;\
+     includes: %a@;\
      index: %a@;\
      kind:%a@;\
      @]"
@@ -128,8 +126,8 @@ and pp : all_kinds t Fmt.t =
     x.lib_name
     Fmt.Dump.(list (pair string string))
     x.deps
-    Fmt.Dump.(list string)
-    (Util.StringSet.elements x.lib_deps)
+    Fmt.Dump.(list Fpath.pp)
+    (Fpath.Set.elements x.includes)
     (Fmt.option pp_index) x.index pp_kind
     (x.kind :> all_kinds)
 

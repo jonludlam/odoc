@@ -61,6 +61,83 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       libs_of_pkg Util.StringMap.empty
   in
 
+  (* The library graph: each library's declared dependencies. The libraries
+     being built now are authoritative; the rest come from the markers earlier
+     runs left behind, which is the only way voodoo mode -- holding just one
+     package's META files -- learns about libraries outside its own package. *)
+  let lib_deps_of =
+    List.fold_left
+      (fun acc pkg ->
+        List.fold_left
+          (fun acc (lib : Packages.libty) ->
+            Util.StringMap.add lib.lib_name lib.lib_deps acc)
+          acc pkg.Packages.libraries)
+      extra_paths.Voodoo.lib_deps pkgs
+  in
+
+  (* Transitive closure over [lib_deps_of]. The entry is memoised /before/
+     recursing: a cycle then yields a slightly small closure rather than
+     looping. The build graph cannot contain one -- mutually dependent libraries
+     could not have been compiled -- but the graph assembled here is not one
+     coherent installation, since markers from different versions of a package
+     can coexist in a warm odoc dir. *)
+  let lib_closure =
+    let cache = Hashtbl.create 64 in
+    let rec close lib_name =
+      match Hashtbl.find_opt cache lib_name with
+      | Some deps -> deps
+      | None ->
+          Hashtbl.add cache lib_name Util.StringSet.empty;
+          let direct =
+            Option.value ~default:Util.StringSet.empty
+              (Util.StringMap.find_opt lib_name lib_deps_of)
+          in
+          let deps =
+            Util.StringSet.fold
+              (fun dep acc ->
+                Util.StringSet.union (Util.StringSet.add dep (close dep)) acc)
+              direct Util.StringSet.empty
+          in
+          Hashtbl.replace cache lib_name deps;
+          deps
+    in
+    close
+  in
+
+  (* The search path ([-I]) shared by a library's units: the directories holding
+     the odoc files of the library itself and of its dependency closure -- the
+     same directories the compiler was given when it built the library.
+
+     This is deeper than the reference scope below, and deliberately so: it
+     resolves each unit's imports, their expansions and its source links, which
+     can reach past the directly-declared dependencies. It is kept per library
+     rather than shared across the package so that alternative implementations
+     of a virtual library never appear on one search path: each publishes a
+     module of the same name with the same interface digest, and odoc resolves
+     such an import to whichever it finds first. *)
+  let includes_of_lib =
+    let cache = Hashtbl.create 16 in
+    fun lib_name ->
+      match Hashtbl.find_opt cache lib_name with
+      | Some dirs -> dirs
+      | None ->
+          let dirs =
+            Util.StringSet.fold
+              (fun l acc ->
+                match Util.StringMap.find_opt l lib_dirs with
+                | Some dir -> Fpath.Set.add Fpath.(odoc_dir // dir) acc
+                | None ->
+                    Logs.debug (fun m ->
+                        m "No directory known for library %s, needed by %s" l
+                          lib_name);
+                    acc)
+              (Util.StringSet.add lib_name (lib_closure lib_name))
+              Fpath.Set.empty
+          in
+          Hashtbl.add cache lib_name dirs;
+          dirs
+  in
+
   (* Link arguments ([-L]/[-P]) are computed per package, so every unit in
      a package gets the same set. [-L] is the directly-declared library
      dependencies of all the package's libraries (which therefore includes the
@@ -69,11 +146,11 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
      dependencies the META files omit are recovered earlier by digest
      ([Packages.fix_missing_deps]). [-P] is every package that provides one of
      those libraries, plus the package itself and any package named in
-     [odoc-config.sexp]. [-I] is computed per unit instead (see
-     [Compile.includes_of_deps] / [Compile.unit_includes]). *)
+     [odoc-config.sexp]. The search path ([-I]) is computed per library
+     instead, and is deeper: see [includes_of_lib] above. *)
   let link_args_of =
     let cache = Hashtbl.create 10 in
-    fun pkg _lib_deps : Pkg_args.t ->
+    fun pkg : Pkg_args.t ->
       match Hashtbl.find_opt cache pkg.Packages.name with
       | Some res -> res
       | None ->
@@ -146,13 +223,13 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     }
   in
 
-  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_name ~deps ~lib_deps
+  let make_unit ~name ~kind ~rel_dir ~input_file ~pkg ~lib_name ~deps ~includes
       ~enable_warnings ~to_output ~input_copy : _ t =
     let to_output = to_output || not remap in
     (* If we haven't got active remapping, we output everything *)
     let ( // ) = Fpath.( // ) in
     let ( / ) = Fpath.( / ) in
-    let pkg_args = link_args_of pkg lib_deps in
+    let pkg_args = link_args_of pkg in
     let parent_id = rel_dir |> Odoc.Id.of_fpath in
     let odoc_file =
       odoc_dir // rel_dir / (String.uncapitalize_ascii name ^ ".odoc")
@@ -167,7 +244,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       pkg_args;
       lib_name;
       deps;
-      lib_deps;
+      includes;
       parent_id;
       input_file;
       input_copy;
@@ -180,8 +257,8 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     }
   in
 
-  let of_intf hidden pkg (lib : Packages.libty) lib_deps (intf : Packages.intf)
-      : intf t =
+  let of_intf hidden pkg (lib : Packages.libty) (intf : Packages.intf) : intf t
+      =
     let rel_dir = lib_dir pkg lib in
     let kind = `Intf { hidden; hash = intf.mif_hash } in
     let name = intf_unit_name intf in
@@ -193,10 +270,12 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       | None -> Some Fpath.(odoc_dir // rel_dir / stash_basename intf)
     in
     make_unit ~name ~kind ~rel_dir ~input_file:intf.mif_path ~pkg
-      ~lib_name:lib.lib_name ~deps:intf.mif_deps ~lib_deps
+      ~lib_name:lib.lib_name ~deps:intf.mif_deps
+      ~includes:(includes_of_lib lib.lib_name)
       ~enable_warnings:pkg.selected ~to_output:pkg.selected ~input_copy
   in
-  let of_impl pkg lib lib_deps (impl : Packages.impl) : impl t option =
+  let of_impl pkg (lib : Packages.libty) (impl : Packages.impl) : impl t option
+      =
     match impl.mip_src_info with
     | None -> None
     | Some { src_path } ->
@@ -214,24 +293,23 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
         in
         let unit =
           make_unit ~name ~kind ~rel_dir ~input_file:impl.mip_path ~pkg
-            ~lib_name:lib.lib_name ~deps:impl.mip_deps ~lib_deps
+            ~lib_name:lib.lib_name ~deps:impl.mip_deps
+            ~includes:(includes_of_lib lib.lib_name)
             ~enable_warnings:false ~to_output:pkg.selected ~input_copy:None
         in
         Some unit
   in
 
-  let of_module pkg (lib : Packages.libty) lib_deps (m : Packages.modulety) :
-      any list =
-    let i :> any = of_intf m.m_hidden pkg lib lib_deps m.m_intf in
+  let of_module pkg (lib : Packages.libty) (m : Packages.modulety) : any list =
+    let i :> any = of_intf m.m_hidden pkg lib m.m_intf in
     let m :> any list =
-      Option.bind m.m_impl (of_impl pkg lib lib_deps) |> Option.to_list
+      Option.bind m.m_impl (of_impl pkg lib) |> Option.to_list
     in
     i :: m
   in
   let of_lib pkg (lib : Packages.libty) =
-    let lib_deps = Util.StringSet.add lib.lib_name lib.lib_deps in
     let index = index_of pkg in
-    let units = List.concat_map (of_module pkg lib lib_deps) lib.modules in
+    let units = List.concat_map (of_module pkg lib) lib.modules in
     if remap && not pkg.selected then units
     else
       let landing_page :> any = Landing_pages.library ~dirs ~pkg ~index lib in
@@ -243,15 +321,10 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     let rel_dir = doc_dir pkg // Fpath.parent mld_rel_path |> Fpath.normalize in
     let kind = `Mld in
     let name = mld_path |> Fpath.rem_ext |> Fpath.basename |> ( ^ ) "page-" in
-    let lib_deps =
-      pkg.libraries
-      |> List.map (fun lib -> lib.Packages.lib_name)
-      |> Util.StringSet.of_list
-    in
     let unit =
       make_unit ~name ~kind ~rel_dir ~input_file:mld_path ~pkg ~lib_name:""
-        ~deps:[] ~lib_deps ~enable_warnings:pkg.selected ~to_output:pkg.selected
-        ~input_copy:None
+        ~deps:[] ~includes:Fpath.Set.empty ~enable_warnings:pkg.selected
+        ~to_output:pkg.selected ~input_copy:None
     in
     [ unit ]
   in
@@ -268,10 +341,9 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
         let name =
           md_path |> Fpath.rem_ext |> Fpath.basename |> ( ^ ) "page-"
         in
-        let lib_deps = Util.StringSet.empty in
         let unit =
           make_unit ~name ~kind ~rel_dir ~input_file:md_path ~pkg ~lib_name:""
-            ~deps:[] ~lib_deps ~enable_warnings:pkg.selected
+            ~deps:[] ~includes:Fpath.Set.empty ~enable_warnings:pkg.selected
             ~to_output:pkg.selected ~input_copy:None
         in
         [ unit ]
@@ -290,7 +362,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     let unit =
       let name = asset_path |> Fpath.basename |> ( ^ ) "asset-" in
       make_unit ~name ~kind ~rel_dir ~input_file:asset_path ~pkg ~lib_name:""
-        ~deps:[] ~lib_deps:Util.StringSet.empty ~enable_warnings:false
+        ~deps:[] ~includes:Fpath.Set.empty ~enable_warnings:false
         ~to_output:true ~input_copy:None
     in
     [ unit ]

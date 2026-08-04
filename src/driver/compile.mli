@@ -22,8 +22,6 @@ type linked
 val link :
   warnings_tags:string list ->
   custom_layout:bool ->
-  ?partial:Fpath.t ->
-  partial_dir:Fpath.t ->
   compiled list ->
   linked list
 

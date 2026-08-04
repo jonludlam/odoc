@@ -117,8 +117,8 @@ let run package_name blessed actions odoc_dir odocl_dir
     | CompileOnly -> ()
     | LinkAndGen | All ->
         let linked =
-          Compile.link ?partial ~partial_dir:odoc_dir
-            ~warnings_tags:[ package_name ] ~custom_layout:false compiled
+          Compile.link ~warnings_tags:[ package_name ] ~custom_layout:false
+            compiled
         in
         let () =
           Odoc.count_occurrences ~input:odocl_dirs ~output:occurrence_file
