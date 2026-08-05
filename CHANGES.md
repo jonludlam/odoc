@@ -13,6 +13,7 @@
 - Fix OxCaml with-bounds for arbitrary types (@art-w, #1466)
 - Display items included via `include functor` as included via the functor
   (@Leonidas-from-XIV, #1452)
+- Support for OCaml 5.6 (@jonludlam, #1472)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
