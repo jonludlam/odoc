@@ -104,9 +104,6 @@ let build_all_hashes ?partial ~partial_dir all =
     | Some _ -> find_partials partial_dir
     | None -> (Util.StringMap.empty, Hashtbl.create 10)
   in
-  let hashes =
-    Odoc_unit.fix_virtual ~precompiled_units:other_hashes ~units:hashes
-  in
   let all_hashes =
     Util.StringMap.union (fun _x o1 o2 -> Some (o1 @ o2)) hashes other_hashes
   in

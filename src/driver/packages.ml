@@ -483,67 +483,96 @@ let of_packages ~packages_dir packages =
   Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) packages);
   (packages, all_lib_deps)
 
-let remap_virtual_interfaces duplicate_hashes pkgs =
+(* A virtual library ships a [.cmti] and no archive; each of its
+   implementations ships the corresponding [.cmt] and no [.mli], because the
+   interface -- and the documentation written in it -- belongs to the virtual
+   library. The interface of an implementation is therefore documented by
+   compiling the virtual library's [.cmti] again under the implementation's own
+   parent id, so [checkseum.cmti] is compiled once for [checkseum] and once more
+   for each of [checkseum.c] and [checkseum.ocaml].
+
+   Point every such [.cmt] at the [.cmti] that constrains it. The two share an
+   interface digest, which is how the [.cmti] is found. It comes either from a
+   library being built now, or -- when the virtual library belongs to a package
+   compiled by an earlier run, whose build tree is long gone -- from the copy
+   that run stashed beside its [.odoc] and recorded in its marker.
+
+   For a candidate we hold in memory the whole [intf] is taken, so that the
+   dependencies describe the [.cmti] actually being compiled. For a stashed one
+   only the path is, since we have not read its dependencies: those of the
+   [.cmt] are a superset of the interface's, which is what the ordering they
+   feed needs. *)
+let remap_virtual ~precompiled pkgs =
+  (* Interfaces grouped by digest, keeping only digests offered by more than one
+     module -- a virtual library's, together with its implementations'. *)
+  let by_digest =
+    let all =
+      List.fold_left
+        (fun acc pkg ->
+          List.fold_left
+            (fun acc lib ->
+              List.fold_left
+                (fun acc m ->
+                  Util.StringMap.update m.m_intf.mif_hash
+                    (fun prev ->
+                      Some (m.m_intf :: Option.value ~default:[] prev))
+                    acc)
+                acc lib.modules)
+            acc pkg.libraries)
+        Util.StringMap.empty pkgs
+    in
+    Util.StringMap.filter (fun _ intfs -> List.length intfs > 1) all
+  in
+  let module_name intf = Fpath.rem_ext intf.mif_path |> Fpath.basename in
+  let remap m =
+    if not (Fpath.has_ext "cmt" m.m_intf.mif_path) then m.m_intf
+    else
+      let name = module_name m.m_intf in
+      let in_memory =
+        match Util.StringMap.find_opt m.m_intf.mif_hash by_digest with
+        | None -> []
+        | Some intfs ->
+            List.filter
+              (fun intf ->
+                Fpath.has_ext "cmti" intf.mif_path && module_name intf = name)
+              intfs
+      in
+      match in_memory with
+      | [ intf ] -> intf
+      | intfs -> (
+          if List.length intfs > 1 then
+            Logs.debug (fun l ->
+                l "%d interfaces in memory match digest %s for module %s"
+                  (List.length intfs) m.m_intf.mif_hash name);
+          let stashed =
+            Util.StringMap.find_opt m.m_intf.mif_hash precompiled
+            |> Option.value ~default:[]
+            |> List.filter (fun (m_name, path) ->
+                   (* A marker can name a stash this run did not write, so the
+                      file has to be there before we point at it. *)
+                   m_name = m.m_name
+                   && Bos.OS.File.exists path |> Result.value ~default:false)
+          in
+          match stashed with
+          | (_, path) :: _ ->
+              Logs.debug (fun l ->
+                  l "Using stashed interface %a for module %s" Fpath.pp path
+                    name);
+              { m.m_intf with mif_path = path }
+          | [] -> m.m_intf)
+  in
   List.map
     (fun pkg ->
       {
         pkg with
         libraries =
-          pkg.libraries
-          |> List.map (fun lib ->
-                 {
-                   lib with
-                   modules =
-                     lib.modules
-                     |> List.map (fun m ->
-                            let m_intf =
-                              if
-                                Util.StringMap.mem m.m_intf.mif_hash
-                                  duplicate_hashes
-                                && Fpath.has_ext "cmt" m.m_intf.mif_path
-                              then
-                                match
-                                  List.filter
-                                    (fun intf ->
-                                      Fpath.has_ext "cmti" intf.mif_path)
-                                    (Util.StringMap.find m.m_intf.mif_hash
-                                       duplicate_hashes)
-                                with
-                                | [ x ] -> x
-                                | _ -> m.m_intf
-                              else m.m_intf
-                            in
-                            { m with m_intf });
-                 });
+          List.map
+            (fun lib ->
+              {
+                lib with
+                modules =
+                  List.map (fun m -> { m with m_intf = remap m }) lib.modules;
+              })
+            pkg.libraries;
       })
     pkgs
-
-(* Modules grouped by interface hash, keeping only hashes shared by more than
-   one module (a virtual library's modules with those of its implementations),
-   each paired with its library. Underlies both interface remapping and
-   sibling-implementation exclusion. *)
-let virtual_modules pkgs =
-  let by_hash =
-    List.fold_left
-      (fun acc pkg ->
-        List.fold_left
-          (fun acc lib ->
-            List.fold_left
-              (fun acc m ->
-                Util.StringMap.update m.m_intf.mif_hash
-                  (function
-                    | None -> Some [ (lib, m) ] | Some l -> Some ((lib, m) :: l))
-                  acc)
-              acc lib.modules)
-          acc pkg.libraries)
-      Util.StringMap.empty pkgs
-  in
-  Util.StringMap.filter (fun _hash ms -> List.length ms > 1) by_hash
-
-let remap_virtual all =
-  let virtual_check =
-    Util.StringMap.map
-      (List.map (fun (_lib, m) -> m.m_intf))
-      (virtual_modules all)
-  in
-  remap_virtual_interfaces virtual_check all

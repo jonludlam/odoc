@@ -36,7 +36,7 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
       generate_json )
   in
 
-  let all = Packages.remap_virtual all in
+  let all = Packages.remap_virtual ~precompiled:Util.StringMap.empty all in
 
   Logs.app (fun m -> m "Starting the compilation process...");
   let () =

@@ -108,4 +108,15 @@ val of_libs :
 val of_packages :
   packages_dir:Fpath.t option -> string list -> t list * lib_graph
 
-val remap_virtual : t list -> t list
+val remap_virtual :
+  precompiled:(string * Fpath.t) list Util.StringMap.t -> t list -> t list
+(** [remap_virtual ~precompiled pkgs] points each module of an implementation of
+    a virtual library at the [.cmti] that constrains it — the one belonging to
+    the virtual library, which is what carries the interface and its
+    documentation. Implementations ship only a [.cmt].
+
+    The [.cmti] is found by interface digest, either among [pkgs] or, when the
+    virtual library was compiled by an earlier run and its build tree is gone,
+    among [precompiled]: a map from interface digest to the
+    [(module name, path)] pairs of [.cmti] files stashed beside earlier output
+    and recorded in its {!Marker.Lib}. Paths must be usable as they stand. *)

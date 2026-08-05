@@ -80,7 +80,16 @@ let run package_name blessed actions odoc_dir odocl_dir
     (all, lib_graph, extra_paths, actions, true, occurrence_file, odocl_dirs)
   in
 
-  let all = Packages.remap_virtual [ all ] in
+  (* Interfaces stashed by earlier runs, whose build trees are gone. The paths
+     the markers record are relative to the odoc dir. *)
+  let all =
+    let precompiled =
+      Util.StringMap.map
+        (List.map (fun (name, path) -> (name, Fpath.(odoc_dir // path))))
+        extra_paths.Voodoo.virtual_cmtis
+    in
+    Packages.remap_virtual ~precompiled [ all ]
+  in
 
   let partial =
     match all with
