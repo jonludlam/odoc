@@ -121,6 +121,8 @@ let pp fmt t =
     t.mlds (Fmt.Dump.list pp_asset) t.assets t.selected (Fmt.Dump.list pp_md)
     t.other_docs Fpath.pp t.pkg_dir
 
+type lib_graph = Util.StringSet.t Util.StringMap.t
+
 let maybe_prepend_top top_dir dir =
   match top_dir with None -> dir | Some d -> Fpath.(d // dir)
 
@@ -375,7 +377,7 @@ let of_libs ~packages_dir libs =
               acc)
       archives_by_dir Util.StringMap.empty
   in
-  Util.StringMap.bindings packages |> List.map snd
+  (Util.StringMap.bindings packages |> List.map snd, all_lib_deps)
 
 let of_packages ~packages_dir packages =
   Logs.app (fun m -> m "Deciding which packages to build...");
@@ -479,7 +481,7 @@ let of_packages ~packages_dir packages =
       all
   in
   Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) packages);
-  packages
+  (packages, all_lib_deps)
 
 let remap_virtual_interfaces duplicate_hashes pkgs =
   List.map

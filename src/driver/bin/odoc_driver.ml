@@ -49,7 +49,7 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let () = Worker_pool.start_workers env sw nb_workers in
-  let all = Packages.of_packages ~packages_dir:None packages in
+  let all, lib_graph = Packages.of_packages ~packages_dir:None packages in
   let all = Packages.remap_virtual all in
   let extra_paths = Voodoo.empty_extra_paths in
 
@@ -67,7 +67,7 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
           Odoc_units_of.packages ~dirs
             ~indices_style:
               (Odoc_units_of.Normal { toplevel_content = index_mld_content })
-            ~extra_paths ~remap all
+            ~extra_paths ~remap ~lib_graph all
         in
         Compile.init_stats units;
         let compiled = Compile.compile ~partial_dir:odoc_dir units in

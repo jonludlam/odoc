@@ -89,11 +89,23 @@ type t = {
 
 val pp : Format.formatter -> t -> unit
 
+type lib_graph = Util.StringSet.t Util.StringMap.t
+(** Every library the driver has seen a declaration for, mapped to the libraries
+    its [META] [requires] names — not transitively closed.
+
+    This is deliberately not built from the libraries that were compiled. A
+    library with no archive of its own never becomes a {!libty}, so a graph
+    assembled from those would dead-end at every ocamlfind wrapper package —
+    [num], whose modules live in [num.core], or [compiler-libs] — and nothing
+    depending on one could reach what it actually provides. *)
+
 val mk_mlds : Opam.doc_file list -> mld list * asset list * md list
 
-val of_libs : packages_dir:Fpath.t option -> Util.StringSet.t -> t list
+val of_libs :
+  packages_dir:Fpath.t option -> Util.StringSet.t -> t list * lib_graph
 (** Turns a set of libraries into a map from package name to package *)
 
-val of_packages : packages_dir:Fpath.t option -> string list -> t list
+val of_packages :
+  packages_dir:Fpath.t option -> string list -> t list * lib_graph
 
 val remap_virtual : t list -> t list

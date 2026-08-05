@@ -56,12 +56,18 @@ let run package_name blessed actions odoc_dir odocl_dir
   let () = Worker_pool.start_workers env sw nb_workers in
   let odocl_dir = Option.value odocl_dir ~default:odoc_dir in
 
-  let all, extra_paths, actions, generate_json, occurrence_file, odocl_dirs =
+  let ( all,
+        lib_graph,
+        extra_paths,
+        actions,
+        generate_json,
+        occurrence_file,
+        odocl_dirs ) =
     let pkg =
       let pkg_opt = Voodoo.find_pkg package_name ~blessed in
       match pkg_opt with Some pkg -> pkg | None -> exit 1
     in
-    let all = Voodoo.of_voodoo pkg in
+    let all, lib_graph = Voodoo.of_voodoo pkg in
     let odocl_dirs =
       List.map
         (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_dir all l))
@@ -71,7 +77,7 @@ let run package_name blessed actions odoc_dir odocl_dir
       Fpath.(odocl_dir // Voodoo.occurrence_file_of_pkg pkg)
     in
     let extra_paths = Voodoo.extra_paths odoc_dir in
-    (all, extra_paths, actions, true, occurrence_file, odocl_dirs)
+    (all, lib_graph, extra_paths, actions, true, occurrence_file, odocl_dirs)
   in
 
   let all = Packages.remap_virtual [ all ] in
@@ -86,7 +92,7 @@ let run package_name blessed actions odoc_dir odocl_dir
   let units =
     let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
     Odoc_units_of.packages ~dirs ~indices_style:Voodoo ~extra_paths ~remap:false
-      all
+      ~lib_graph all
   in
   Compile.init_stats units;
   let compiled =
@@ -94,7 +100,7 @@ let run package_name blessed actions odoc_dir odocl_dir
     | LinkAndGen -> units
     | CompileOnly | All -> Compile.compile ?partial ~partial_dir:odoc_dir units
   in
-  let () = Voodoo.write_lib_markers odoc_dir all in
+  let () = Voodoo.write_markers odoc_dir ~lib_graph all in
   let () =
     match actions with
     | CompileOnly -> ()

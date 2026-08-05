@@ -74,7 +74,7 @@ let of_dune_build dir ~extra_pkgs ~extra_libs =
     Bos.OS.Dir.fold_contents ~dotfiles:true (fun p acc -> p :: acc) [] root
   in
   match contents with
-  | Error _ -> []
+  | Error _ -> ([], Util.StringMap.empty)
   | Ok c ->
       let cset = Fpath.Set.of_list c in
       let libs = dune_describe dir in
@@ -242,10 +242,18 @@ let of_dune_build dir ~extra_pkgs ~extra_libs =
           };
         ]
       in
-      let global =
+      let global, global_graph =
         Packages.of_libs
           ~packages_dir:(Some (Fpath.v "opam_switch"))
           (List.map (fun (l : library) -> l.name) global_libs
           |> Util.StringSet.of_list)
       in
-      local @ global
+      (* [all_lib_deps] describes every library dune told us about; the switch's
+         own libraries are described by ocamlfind. Dune's entry wins where both
+         have one. *)
+      let graph =
+        Util.StringMap.union
+          (fun _ dune _ -> Some dune)
+          all_lib_deps global_graph
+      in
+      (local @ global, graph)

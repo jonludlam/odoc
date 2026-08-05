@@ -7,7 +7,9 @@ val find_pkg : string -> blessed:bool -> pkg option
 (** [get_pkg name ~blessed] looks for a package named [name] in the prep
     directory *)
 
-val of_voodoo : pkg -> Packages.t
+val of_voodoo : pkg -> Packages.t * Packages.lib_graph
+(** The graph describes every library this package's [META] files declare,
+    including those with no archive of their own. *)
 
 val occurrence_file_of_pkg : pkg -> Fpath.t
 (** [occurrences_file_of_pkg pkg odoc_dir] returns an appropriate filename for
@@ -22,9 +24,6 @@ type extra_paths = {
           runs one package at a time and only has that package's [META] files,
           so this is how the library graph is known beyond the current package.
           Libraries whose marker predates {!Lib_marker} are absent. *)
-  libs_of_digest : string list Util.StringMap.t;
-      (** Which already-compiled library provides each module interface digest.
-          Used to recover a dependency that a [META] fails to declare. *)
   virtual_cmtis : (string * Fpath.t) list Util.StringMap.t;
       (** Interface digest to the [(module name, stashed [.cmti])] pairs
           offering it. A virtual library's interface is compiled once per
@@ -44,7 +43,8 @@ val extra_paths : Fpath.t -> extra_paths
     voodoo mode have compiled below [odoc_dir]. Those invocations must have
     called {!write_lib_markers}. *)
 
-val write_lib_markers : Fpath.t -> Packages.t list -> unit
-(** [write_lib_markers odoc_dir pkgs] writes marker files to show the locations
-    of the compilation units associated with packages and libraries in [pkgs].
-*)
+val write_markers :
+  Fpath.t -> lib_graph:Packages.lib_graph -> Packages.t list -> unit
+(** [write_markers odoc_dir ~lib_graph pkgs] writes the {!Marker} records that
+    show where the compilation units of [pkgs] live, and what a later run needs
+    to know about them. [lib_graph] is recorded in the package marker. *)

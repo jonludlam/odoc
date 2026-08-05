@@ -12,13 +12,6 @@ type pkg = {
 
 let prep_path = ref "prep"
 
-(* We mark the paths that contain compiled units for both packages and libraries
-   by dropping in a marker file. Which package or library we are looking at is
-   determined by the path alone, so the package marker's contents are
-   unimportant; the library marker additionally records what a later run needs
-   to know about the library it marks (see {!Lib_marker}). *)
-let pkg_marker = ".odoc_pkg_marker"
-
 let top_dir pkg =
   if pkg.blessed then Fpath.(v "p" / pkg.name / pkg.version)
   else Fpath.(v "u" / pkg.universe / pkg.name / pkg.version)
@@ -218,7 +211,7 @@ let of_voodoo pkg =
       config;
     }
   in
-  result
+  (result, all_lib_deps)
 
 let pp ppf v =
   Format.fprintf ppf "n: %s v: %s u: %s [\n" v.name v.version v.universe;
@@ -281,7 +274,6 @@ type extra_paths = {
   libs : Fpath.t Util.StringMap.t;
   libs_of_pkg : string list Util.StringMap.t;
   lib_deps : Util.StringSet.t Util.StringMap.t;
-  libs_of_digest : string list Util.StringMap.t;
   virtual_cmtis : (string * Fpath.t) list Util.StringMap.t;
 }
 
@@ -291,9 +283,37 @@ let empty_extra_paths =
     libs = Util.StringMap.empty;
     libs_of_pkg = Util.StringMap.empty;
     lib_deps = Util.StringMap.empty;
-    libs_of_digest = Util.StringMap.empty;
     virtual_cmtis = Util.StringMap.empty;
   }
+
+(* The package marker carries the library graph of the package that wrote it:
+   every library its META files declare, including the archive-less wrapper
+   packages that never become libraries of their own and so have no library
+   marker. Together, the markers of all previously-compiled packages give the
+   graph beyond the package being built now. *)
+let read_pkg_marker ~abs_path acc =
+  match Bos.OS.File.read abs_path with
+  | Error (`Msg msg) ->
+      Logs.debug (fun m ->
+          m "Failed to read package marker %a: %s" Fpath.pp abs_path msg);
+      acc
+  | Ok contents -> (
+      match Marker.Pkg.of_string contents with
+      | None ->
+          Logs.debug (fun m ->
+              m "Ignoring package marker %a: not of the current format" Fpath.pp
+                abs_path);
+          acc
+      | Some { Marker.Pkg.libraries; pkg_name = _ } ->
+          let lib_deps =
+            List.fold_left
+              (fun acc (lib_name, requires) ->
+                Util.StringMap.add lib_name
+                  (Util.StringSet.of_list requires)
+                  acc)
+              acc.lib_deps libraries
+          in
+          { acc with lib_deps })
 
 (* Fold the contents of one library marker into the accumulator. A marker we
    cannot parse still tells us that the directory holds a library, which is all
@@ -305,29 +325,16 @@ let read_lib_marker ~abs_path ~rel_dir acc =
           m "Failed to read library marker %a: %s" Fpath.pp abs_path msg);
       acc
   | Ok contents -> (
-      match Lib_marker.of_string contents with
+      match Marker.Lib.of_string contents with
       | None ->
           Logs.debug (fun m ->
               m "Ignoring library marker %a: not of the current format" Fpath.pp
                 abs_path);
           acc
-      | Some { Lib_marker.lib_name; requires; modules; pkg_name = _ } ->
-          let lib_deps =
-            Util.StringMap.add lib_name
-              (Util.StringSet.of_list requires)
-              acc.lib_deps
-          in
-          let libs_of_digest =
-            List.fold_left
-              (fun acc (m : Lib_marker.module_info) ->
-                Util.StringMap.update m.digest
-                  (fun prev -> Some (lib_name :: Option.value ~default:[] prev))
-                  acc)
-              acc.libs_of_digest modules
-          in
+      | Some { Marker.Lib.modules; lib_name = _; pkg_name = _ } ->
           let virtual_cmtis =
             List.fold_left
-              (fun acc (m : Lib_marker.module_info) ->
+              (fun acc (m : Marker.Lib.module_info) ->
                 match m.stashed_cmti with
                 | None -> acc
                 | Some cmti ->
@@ -339,7 +346,7 @@ let read_lib_marker ~abs_path ~rel_dir acc =
                       acc)
               acc.virtual_cmtis modules
           in
-          { acc with lib_deps; libs_of_digest; virtual_cmtis })
+          { acc with virtual_cmtis })
 
 let extra_paths compile_dir =
   let contents =
@@ -362,9 +369,10 @@ let extra_paths compile_dir =
     in
     read_lib_marker ~abs_path ~rel_dir acc
   in
-  let add_pkg ~rel_dir ~pkg acc =
+  let add_pkg ~abs_path ~rel_dir ~pkg acc =
     Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp rel_dir);
-    { acc with pkgs = Util.StringMap.add pkg rel_dir acc.pkgs }
+    let acc = { acc with pkgs = Util.StringMap.add pkg rel_dir acc.pkgs } in
+    read_pkg_marker ~abs_path acc
   in
   match contents with
   | Error _ -> empty_extra_paths
@@ -376,38 +384,36 @@ let extra_paths compile_dir =
           match Fpath.segs path with
           | [ "p"; pkg; _version; "doc"; libname; l ]
           | [ "u"; _; pkg; _version; "doc"; libname; l ]
-            when l = Lib_marker.filename ->
+            when l = Marker.Lib.filename ->
               add_lib ~abs_path ~rel_dir ~pkg ~libname acc
           | [ "p"; pkg; _version; "doc"; l ]
           | [ "u"; _; pkg; _version; "doc"; l ]
-            when l = pkg_marker ->
-              add_pkg ~rel_dir ~pkg acc
+            when l = Marker.Pkg.filename ->
+              add_pkg ~abs_path ~rel_dir ~pkg acc
           | _ -> acc)
         empty_extra_paths c
 
-let write_lib_markers odoc_dir pkgs =
+let write_markers odoc_dir ~lib_graph pkgs =
   let write file str =
     match Bos.OS.File.write file str with
     | Ok () -> ()
-    | Error (`Msg msg) ->
-        Logs.err (fun m -> m "Failed to write lib marker: %s" msg)
+    | Error (`Msg msg) -> Logs.err (fun m -> m "Failed to write marker: %s" msg)
+  in
+  let libraries =
+    Util.StringMap.bindings lib_graph
+    |> List.map (fun (name, deps) -> (name, Util.StringSet.elements deps))
   in
   List.iter
     (fun (pkg : Packages.t) ->
-      let libs = pkg.libraries in
       let pkg_path = Odoc_unit.doc_dir pkg in
-      let marker = Fpath.(odoc_dir // pkg_path / pkg_marker) in
-      write marker
-        (Fmt.str
-           "This marks this directory as the location of odoc files for the \
-            package %s"
-           pkg.name);
-
+      write
+        Fpath.(odoc_dir // pkg_path / Marker.Pkg.filename)
+        (Marker.Pkg.to_string { pkg_name = pkg.name; libraries });
       List.iter
         (fun (lib : Packages.libty) ->
           let lib_dir = Odoc_unit.lib_dir pkg lib in
-          let marker = Fpath.(odoc_dir // lib_dir / Lib_marker.filename) in
-          write marker
-            (Lib_marker.to_string (Lib_marker.of_lib ~pkg_name:pkg.name lib)))
-        libs)
+          write
+            Fpath.(odoc_dir // lib_dir / Marker.Lib.filename)
+            (Marker.Lib.to_string (Marker.Lib.of_lib ~pkg_name:pkg.name lib)))
+        pkg.libraries)
     pkgs

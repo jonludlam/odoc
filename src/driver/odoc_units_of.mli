@@ -9,6 +9,7 @@ val packages :
   dirs:dirs ->
   extra_paths:Voodoo.extra_paths ->
   remap:bool ->
+  lib_graph:Packages.lib_graph ->
   indices_style:indices_style ->
   Packages.t list ->
   any list
