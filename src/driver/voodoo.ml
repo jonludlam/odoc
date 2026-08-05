@@ -105,11 +105,11 @@ let of_voodoo pkg =
       (Util.StringMap.empty, []) metas
   in
 
-  (* [all_lib_deps] holds only the directly-declared META dependencies of each
-     library. We deliberately do not take the transitive closure here: missing
-     dependencies are instead recovered by digest (see
-     [Packages.fix_missing_deps_with] wired into the voodoo driver), which is
-     both more precise and able to reach libraries the META files omit. *)
+  (* [all_lib_deps] holds the directly-declared META dependencies of each library
+     in this package. Libraries outside it are described by no META file we have;
+     their dependencies are read back from the markers earlier runs left behind
+     (see [extra_paths]), and the two halves are combined into a single graph in
+     [Odoc_units_of]. *)
   let ss_pp fmt ss = Format.fprintf fmt "[%d]" (Util.StringSet.cardinal ss) in
   Logs.debug (fun m ->
       m "all_lib_deps: %a\n%!"
@@ -281,6 +281,7 @@ type extra_paths = {
   libs : Fpath.t Util.StringMap.t;
   libs_of_pkg : string list Util.StringMap.t;
   lib_deps : Util.StringSet.t Util.StringMap.t;
+  libs_of_digest : string list Util.StringMap.t;
   virtual_cmtis : (string * Fpath.t) list Util.StringMap.t;
 }
 
@@ -290,6 +291,7 @@ let empty_extra_paths =
     libs = Util.StringMap.empty;
     libs_of_pkg = Util.StringMap.empty;
     lib_deps = Util.StringMap.empty;
+    libs_of_digest = Util.StringMap.empty;
     virtual_cmtis = Util.StringMap.empty;
   }
 
@@ -315,6 +317,14 @@ let read_lib_marker ~abs_path ~rel_dir acc =
               (Util.StringSet.of_list requires)
               acc.lib_deps
           in
+          let libs_of_digest =
+            List.fold_left
+              (fun acc (m : Lib_marker.module_info) ->
+                Util.StringMap.update m.digest
+                  (fun prev -> Some (lib_name :: Option.value ~default:[] prev))
+                  acc)
+              acc.libs_of_digest modules
+          in
           let virtual_cmtis =
             List.fold_left
               (fun acc (m : Lib_marker.module_info) ->
@@ -329,7 +339,7 @@ let read_lib_marker ~abs_path ~rel_dir acc =
                       acc)
               acc.virtual_cmtis modules
           in
-          { acc with lib_deps; virtual_cmtis })
+          { acc with lib_deps; libs_of_digest; virtual_cmtis })
 
 let extra_paths compile_dir =
   let contents =

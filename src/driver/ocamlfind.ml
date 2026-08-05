@@ -121,9 +121,9 @@ module Db = struct
     in
     let all_libs = Util.StringSet.elements all_libs_set in
 
-    (* The directly-declared dependencies of each library. We deliberately keep
-       these un-closed: transitive gaps are recovered by digest later
-       ([Packages.fix_missing_deps]). *)
+    (* The directly-declared dependencies of each library, deliberately
+       un-closed: these are the reference scope ([-L]/[-P]). The search path is
+       derived from their transitive closure separately, in [Odoc_units_of]. *)
     let all_lib_deps =
       List.fold_right
         (fun lib_name acc ->

@@ -303,76 +303,6 @@ let mk_mlds docs =
             { md_path = doc.file; md_rel_path = doc.rel_path } :: others ))
     ([], [], []) docs
 
-(* Map from a module's interface hash to the name(s) of the library(ies) that
-   provide it. This is the raw material [fix_missing_deps] uses to recover
-   library dependencies that a package's META files fail to declare. *)
-let lib_name_by_hash pkgs =
-  List.fold_right
-    (fun pkg acc ->
-      List.fold_left
-        (fun acc lib ->
-          List.fold_left
-            (fun acc m ->
-              Util.StringMap.update m.m_intf.mif_hash
-                (function
-                  | None -> Some [ lib.lib_name ]
-                  | Some l -> Some (lib.lib_name :: l))
-                acc)
-            acc lib.modules)
-        acc pkg.libraries)
-    pkgs Util.StringMap.empty
-
-(* Like [fix_missing_deps] but with a caller-supplied [lib_name_by_hash]. In
-   voodoo mode the dependencies' modules aren't loaded in memory, so the map is
-   assembled from the [lib_name] recorded in the partials of already-compiled
-   dependencies and merged with the current package's own modules. *)
-let fix_missing_deps_with lib_name_by_hash pkgs =
-  List.map
-    (fun pkg ->
-      let libraries =
-        List.map
-          (fun lib ->
-            let lib_deps = lib.lib_deps in
-            let new_lib_deps =
-              List.fold_left
-                (fun acc m ->
-                  let if_deps =
-                    Util.StringSet.of_list (List.map snd m.m_intf.mif_deps)
-                  in
-                  let impl_deps =
-                    match m.m_impl with
-                    | Some i -> Util.StringSet.of_list (List.map snd i.mip_deps)
-                    | None -> Util.StringSet.empty
-                  in
-                  let deps = Util.StringSet.union if_deps impl_deps in
-                  Util.StringSet.fold
-                    (fun hash acc ->
-                      match Util.StringMap.find hash lib_name_by_hash with
-                      | exception Not_found -> acc
-                      | deps ->
-                          if
-                            List.mem lib.lib_name deps
-                            || List.exists
-                                 (fun d -> Util.StringSet.mem d lib_deps)
-                                 deps
-                          then acc
-                          else Util.StringSet.add (List.hd deps) acc)
-                    deps acc)
-                Util.StringSet.empty lib.modules
-            in
-            if Util.StringSet.cardinal new_lib_deps > 0 then
-              Logs.debug (fun m ->
-                  m "Adding missing deps to %s: %a" lib.lib_name
-                    Fmt.(list string)
-                    (Util.StringSet.elements new_lib_deps));
-            { lib with lib_deps = Util.StringSet.union new_lib_deps lib_deps })
-          pkg.libraries
-      in
-      { pkg with libraries })
-    pkgs
-
-let fix_missing_deps pkgs = fix_missing_deps_with (lib_name_by_hash pkgs) pkgs
-
 let of_libs ~packages_dir libs =
   let Ocamlfind.Db.
         { archives_by_dir; libname_of_archive; cmi_only_libs; all_lib_deps; _ }
@@ -445,8 +375,7 @@ let of_libs ~packages_dir libs =
               acc)
       archives_by_dir Util.StringMap.empty
   in
-  let packages = Util.StringMap.bindings packages |> List.map snd in
-  fix_missing_deps packages
+  Util.StringMap.bindings packages |> List.map snd
 
 let of_packages ~packages_dir packages =
   Logs.app (fun m -> m "Deciding which packages to build...");
@@ -549,9 +478,8 @@ let of_packages ~packages_dir packages =
         })
       all
   in
-  let res = fix_missing_deps packages in
-  Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) res);
-  res
+  Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) packages);
+  packages
 
 let remap_virtual_interfaces duplicate_hashes pkgs =
   List.map

@@ -22,6 +22,9 @@ type extra_paths = {
           runs one package at a time and only has that package's [META] files,
           so this is how the library graph is known beyond the current package.
           Libraries whose marker predates {!Lib_marker} are absent. *)
+  libs_of_digest : string list Util.StringMap.t;
+      (** Which already-compiled library provides each module interface digest.
+          Used to recover a dependency that a [META] fails to declare. *)
   virtual_cmtis : (string * Fpath.t) list Util.StringMap.t;
       (** Interface digest to the [(module name, stashed [.cmti])] pairs
           offering it. A virtual library's interface is compiled once per

@@ -104,9 +104,95 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
     close
   in
 
+  (* Which library provides each module interface digest: the modules being
+     compiled now, plus those earlier runs recorded in their markers. *)
+  let libs_of_digest =
+    List.fold_left
+      (fun acc pkg ->
+        List.fold_left
+          (fun acc (lib : Packages.libty) ->
+            List.fold_left
+              (fun acc (m : Packages.modulety) ->
+                Util.StringMap.update m.m_intf.mif_hash
+                  (fun prev ->
+                    Some (lib.lib_name :: Option.value ~default:[] prev))
+                  acc)
+              acc lib.modules)
+          acc pkg.Packages.libraries)
+      extra_paths.Voodoo.libs_of_digest pkgs
+  in
+
+  (* The libraries a library's modules actually import but its [META] does not
+     reach. A [requires] field is not always complete -- [sexplib.num] uses
+     [num.core]'s [Big_int] without declaring it -- and a unit that cannot find
+     one of its own imports silently loses every reference through it. Each
+     dependency names the interface digest of the module it refers to, so the
+     provider is known exactly.
+
+     This widens the search path only. The reference scope ([-L]/[-P]) stays as
+     declared: an author who wants to reference something in a transitive
+     dependency says so in [requires] or in [odoc-config.sexp]. *)
+  let undeclared_imports_of =
+    List.fold_left
+      (fun acc pkg ->
+        List.fold_left
+          (fun acc (lib : Packages.libty) ->
+            let known =
+              Util.StringSet.add lib.lib_name (lib_closure lib.lib_name)
+            in
+            let recovered =
+              List.fold_left
+                (fun acc (m : Packages.modulety) ->
+                  let deps =
+                    m.m_intf.mif_deps
+                    @
+                    match m.m_impl with
+                    | Some impl -> impl.mip_deps
+                    | None -> []
+                  in
+                  List.fold_left
+                    (fun acc (_name, digest) ->
+                      match Util.StringMap.find_opt digest libs_of_digest with
+                      | None | Some [] -> acc
+                      | Some providers ->
+                          if
+                            List.exists
+                              (fun p -> Util.StringSet.mem p known)
+                              providers
+                          then acc
+                          else (
+                            (* Several providers and none of them declared means
+                               a virtual library reached by no [requires]; they
+                               are interchangeable for resolution, so take one
+                               and say which. *)
+                            (match providers with
+                            | _ :: _ :: _ ->
+                                Logs.debug (fun m ->
+                                    m
+                                      "%s imports a module offered by several \
+                                       undeclared libraries (%a); using %s"
+                                      lib.lib_name
+                                      Fmt.(list ~sep:comma string)
+                                      providers (List.hd providers))
+                            | _ -> ());
+                            Util.StringSet.add (List.hd providers) acc))
+                    acc deps)
+                Util.StringSet.empty lib.modules
+            in
+            if not (Util.StringSet.is_empty recovered) then
+              Logs.debug (fun m ->
+                  m "Undeclared imports of %s: %a" lib.lib_name
+                    Fmt.(list ~sep:comma string)
+                    (Util.StringSet.elements recovered));
+            Util.StringMap.add lib.lib_name recovered acc)
+          acc pkg.Packages.libraries)
+      Util.StringMap.empty pkgs
+  in
+
   (* The search path ([-I]) shared by a library's units: the directories holding
-     the odoc files of the library itself and of its dependency closure -- the
-     same directories the compiler was given when it built the library.
+     the odoc files of the library itself, of its dependency closure, and of any
+     library it imports without declaring -- the same directories the compiler
+     was given when it built the library.
 
      This is deeper than the reference scope below, and deliberately so: it
      resolves each unit's imports, their expansions and its source links, which
@@ -121,6 +207,12 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       match Hashtbl.find_opt cache lib_name with
       | Some dirs -> dirs
       | None ->
+          let libs =
+            Util.StringSet.add lib_name
+              (Util.StringSet.union (lib_closure lib_name)
+                 (Option.value ~default:Util.StringSet.empty
+                    (Util.StringMap.find_opt lib_name undeclared_imports_of)))
+          in
           let dirs =
             Util.StringSet.fold
               (fun l acc ->
@@ -131,8 +223,7 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
                         m "No directory known for library %s, needed by %s" l
                           lib_name);
                     acc)
-              (Util.StringSet.add lib_name (lib_closure lib_name))
-              Fpath.Set.empty
+              libs Fpath.Set.empty
           in
           Hashtbl.add cache lib_name dirs;
           dirs
