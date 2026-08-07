@@ -497,10 +497,19 @@ The [-I] search path has a different job from [-P]/[-L]: it resolves each unit's
 imports, their expansions, and source links, which can reach {e deeper} than the
 declared scope — rendering a source link into a functor's body needs the functor
 library's own dependencies (e.g. [uutf] for [tyxml.functor]). The units of a
-library share a single [-I]: the union of their dependency cones, i.e. the
-directories the compiler used to build the library (see the compile phase). This
-is sufficient for the same reason, and providing it does not widen the reference
-scope defined by [-P] and [-L].
+library therefore share a single [-I], holding the library's own directory and
+those of its dependencies {e transitively closed} — the same directories the
+compiler was given when it built the library. Being deeper than the reference
+scope is the point, and providing it does not widen the scope that [-P] and
+[-L] define: the two serve the different resolution mechanisms described above.
+
+Keeping this per library rather than per package matters where a virtual
+library is concerned. Every implementation of one publishes a module of the
+same name with the same interface digest, and odoc resolves an import to
+whichever it finds first on the search path; a package-wide [-I] would put
+sibling implementations on one path, while the closure of a single library's
+own dependencies never does, since a consumer requires the virtual library and
+not its implementations.
 
 Virtual libraries affect what a driver should compile. An implementation
 ships its modules as [.cmt] files only; the [.mli] and the documentation
