@@ -101,10 +101,6 @@ type lib_graph = Util.StringSet.t Util.StringMap.t
 
 val mk_mlds : Opam.doc_file list -> mld list * asset list * md list
 
-val of_libs :
-  packages_dir:Fpath.t option -> Util.StringSet.t -> t list * lib_graph
-(** Turns a set of libraries into a map from package name to package *)
-
 val of_packages :
   packages_dir:Fpath.t option -> string list -> t list * lib_graph
 

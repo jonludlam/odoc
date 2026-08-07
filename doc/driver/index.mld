@@ -22,11 +22,10 @@ has a small number of options to allow for modification of the layout of what's 
 
 {2 Drivers}
 
-[odoc_driver] is actually three drivers:
+[odoc_driver] is actually two drivers:
 
 - [odoc_driver] - The standard driver.
 - [odoc_driver_voodoo] - The driver adapted for producing the documentation used by ocaml.org.
-- [odoc_driver_monorepo] - An experimental driver for producing documentation of a dune-managed monorepo.
 
 What follows applies mostly to the first of these.
 
