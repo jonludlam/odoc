@@ -9,7 +9,7 @@
 ### Fixed
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
 - Fix resolving functor through `module type of` (@Leonidas-from-XIV, #1471)
-- Use Findlib to detect library directories in odoc_driver, avoiding hard-coding (@katrinafyi, #1474)
+- Use Findlib to detect library directories in odoc_driver, requires ocamlfind >= 1.9.8 (@katrinafyi, #1474)
 
 # 3.2.1
 
