@@ -145,6 +145,32 @@ let leaf_inline_element :
           Location.same element (`Code_span s)
       | Some target -> Location.same element (`Raw_markup (target, s)))
 
+(* Lever B experiment: merge maximal runs of [`Word]/[`Space] leaf elements into
+   a single [`Word], so comments carry roughly one located node per run/sentence
+   instead of one per word. This removes the bulk of the per-word location
+   metadata (spans/points) and the per-word list/variant blocks. HTML rendering
+   is unchanged because the document backend concatenates the text of adjacent
+   words and spaces (see src/document/comment.ml). Heading anchors are preserved
+   by [generate_heading_label] below, which hyphenates spaces inside a [`Word]. *)
+let merge_word_runs elements =
+  let flush spans texts acc =
+    match texts with
+    | [] -> acc
+    | _ ->
+        let value = `Word (String.concat ~sep:"" (List.rev texts)) in
+        let location = Location.span (List.rev spans) in
+        { Location_.value; location } :: acc
+  in
+  let rec loop spans texts acc = function
+    | [] -> List.rev (flush spans texts acc)
+    | { Location_.value = `Word w; location } :: tl ->
+        loop (location :: spans) (w :: texts) acc tl
+    | { Location_.value = `Space; location } :: tl ->
+        loop (location :: spans) (" " :: texts) acc tl
+    | elt :: tl -> loop [] [] (elt :: flush spans texts acc) tl
+  in
+  loop [] [] [] elements
+
 type surrounding =
   [ `Link of
     string * Odoc_parser.Ast.inline_element Location_.with_location list
@@ -178,7 +204,7 @@ let rec non_link_inline_element :
       |> Location.same element
 
 and non_link_inline_elements ~surrounding elements =
-  List.map (non_link_inline_element ~surrounding) elements
+  merge_word_runs (List.map (non_link_inline_element ~surrounding) elements)
 
 let rec inline_element :
     Odoc_parser.Ast.inline_element with_location ->
@@ -207,7 +233,7 @@ let rec inline_element :
       `Link (target, non_link_inline_elements ~surrounding:value content)
       |> Location.at location
 
-and inline_elements elements = List.map inline_element elements
+and inline_elements elements = merge_word_runs (List.map inline_element elements)
 
 let rec nestable_block_element :
     Odoc_parser.Ast.nestable_block_element with_location ->
@@ -362,7 +388,9 @@ let generate_heading_label : Comment.inline_element with_location list -> string
         let anchor =
           match (element : Comment.inline_element) with
           | `Space -> anchor ^ "-"
-          | `Word w -> anchor ^ Astring.String.Ascii.lowercase w
+          (* [`Word] may contain spaces after Lever B merging; hyphenate them so
+             anchors match the pre-merge (one-word-per-node) behaviour. *)
+          | `Word w -> anchor ^ replace_spaces_with_hyphens_and_lowercase w
           | `Code_span c | `Math_span c ->
               anchor ^ replace_spaces_with_hyphens_and_lowercase c
           | `Raw_markup _ ->
