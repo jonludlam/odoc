@@ -28,6 +28,14 @@ type content =
 
 type t = { content : content; warnings : Odoc_model.Error.t list }
 
+(* EXPERIMENT (Lever A): transparently zstd-compress marshalled payloads using
+   the compiler's [Compression] module (compiler-libs.common) -- the exact
+   mechanism used for .cmt/.cmti. Falls back to plain Marshal when the running
+   compiler lacks zstd. NOTE: [Compression] exists only on OCaml >= 5.1; a real
+   PR would guard this with cppo and fall back to Marshal on older compilers. *)
+let output_value oc v = Compression.output_value oc v
+let input_value ic = Compression.input_value ic
+
 (** Written at the top of the files. Checked when loading. *)
 let magic = "odoc-%%VERSION%%"
 
@@ -40,8 +48,8 @@ let save_ file f =
 
 let save_unit file (root : Root.t) (t : t) =
   save_ file (fun oc ->
-      Marshal.to_channel oc root [];
-      Marshal.to_channel oc t [])
+      output_value oc root;
+      output_value oc t)
 
 let save_page file ~warnings page =
   let dir = Fs.File.dirname file in
@@ -100,19 +108,19 @@ let load_ file f =
 
 let load file =
   load_ file (fun ic ->
-      let _root = Marshal.from_channel ic in
-      Ok (Marshal.from_channel ic))
+      let _root = input_value ic in
+      Ok (input_value ic))
 
 (** The root is saved separately in the files to support this function. *)
 let load_root file =
   load_ file (fun ic ->
-      let root = Marshal.from_channel ic in
+      let root = input_value ic in
       Ok root)
 
-let save_index dst idx = save_ dst (fun oc -> Marshal.to_channel oc idx [])
+let save_index dst idx = save_ dst (fun oc -> output_value oc idx)
 
-let load_index file = load_ file (fun ic -> Ok (Marshal.from_channel ic))
+let load_index file = load_ file (fun ic -> Ok (input_value ic))
 
-let save_sidebar dst idx = save_ dst (fun oc -> Marshal.to_channel oc idx [])
+let save_sidebar dst idx = save_ dst (fun oc -> output_value oc idx)
 
-let load_sidebar file = load_ file (fun ic -> Ok (Marshal.from_channel ic))
+let load_sidebar file = load_ file (fun ic -> Ok (input_value ic))
