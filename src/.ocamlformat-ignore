@@ -16,4 +16,4 @@ odoc/*.cppo.ml
 html_support_files/*.ml
 xref2/shape_tools.*
 odoc/classify.cppo.ml
-
+utils/*.cppo.ml*
