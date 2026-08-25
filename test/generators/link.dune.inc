@@ -11957,14 +11957,8 @@
    Oxcaml-No_include_functor-Make-argument-1-T.html.gen
    Oxcaml-No_include_functor-T.html.gen
    Oxcaml-Include_functor.html.gen
-   Oxcaml-Include_functor-BODY_8.html.gen
    Oxcaml-Include_functor-Make.html.gen
    Oxcaml-Include_functor-Make-argument-1-T.html.gen
-   Oxcaml-Include_functor-Make.html.gen
-   Oxcaml-Include_functor-Make-argument-1-T.html.gen
-   Oxcaml-Include_functor-INCLUDE_11.html.gen
-   Oxcaml-Include_functor-INCLUDE_11-argument-1-T.html.gen
-   Oxcaml-Include_functor-APPLIED_12.html.gen
    Oxcaml-Include_functor_desugared.html.gen
    Oxcaml-Include_functor_desugared-Make.html.gen
    Oxcaml-Include_functor_desugared-Make-argument-1-T.html.gen
@@ -11972,30 +11966,12 @@
    Oxcaml-Include_functor_named_type_desugared-module-type-MakeType.html.gen
    Oxcaml-Include_functor_named_type_desugared-module-type-MakeType-argument-1-_.html.gen
    Oxcaml-Include_functor_named_type.html.gen
-   Oxcaml-Include_functor_named_type-BODY_21.html.gen
    Oxcaml-Include_functor_named_type-module-type-MakeType.html.gen
    Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.html.gen
-   Oxcaml-Include_functor_named_type-module-type-MakeType.html.gen
-   Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.html.gen
-   Oxcaml-Include_functor_named_type-INCLUDE_24.html.gen
-   Oxcaml-Include_functor_named_type-INCLUDE_24-argument-1-_.html.gen
-   Oxcaml-Include_functor_named_type-APPLIED_25.html.gen
    Oxcaml-Include_functor_inline.html.gen
-   Oxcaml-Include_functor_inline-BODY_26.html.gen
    Oxcaml-Include_functor_inline-module-type-Make.html.gen
    Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.html.gen
-   Oxcaml-Include_functor_inline-module-type-Make.html.gen
-   Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.html.gen
-   Oxcaml-Include_functor_inline-INCLUDE_29.html.gen
-   Oxcaml-Include_functor_inline-INCLUDE_29-argument-1-_.html.gen
-   Oxcaml-Include_functor_inline-APPLIED_30.html.gen
    Oxcaml-Anonymous_functor.html.gen
-   Oxcaml-Anonymous_functor-BODY_31.html.gen
-   Oxcaml-Anonymous_functor-INCLUDE_34.html.gen
-   Oxcaml-Anonymous_functor-include10_-argument-1-T.html.gen
-   Oxcaml-Anonymous_functor-INCLUDE_34.html.gen
-   Oxcaml-Anonymous_functor-include10_-argument-1-T.html.gen
-   Oxcaml-Anonymous_functor-APPLIED_35.html.gen
    Oxcaml-Anonymous_functor_desugared.html.gen)
   (package odoc)
   (action
@@ -12081,14 +12057,6 @@
   (package odoc)
   (action
    (diff
-    Oxcaml-Include_functor-BODY_8.html
-    Oxcaml-Include_functor-BODY_8.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
     Oxcaml-Include_functor-Make.html
     Oxcaml-Include_functor-Make.html.gen))
   (enabled_if %{ocaml-config:ox}))
@@ -12099,46 +12067,6 @@
    (diff
     Oxcaml-Include_functor-Make-argument-1-T.html
     Oxcaml-Include_functor-Make-argument-1-T.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-Make.html
-    Oxcaml-Include_functor-Make.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-Make-argument-1-T.html
-    Oxcaml-Include_functor-Make-argument-1-T.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-INCLUDE_11.html
-    Oxcaml-Include_functor-INCLUDE_11.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-INCLUDE_11-argument-1-T.html
-    Oxcaml-Include_functor-INCLUDE_11-argument-1-T.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-APPLIED_12.html
-    Oxcaml-Include_functor-APPLIED_12.html.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -12201,14 +12129,6 @@
   (package odoc)
   (action
    (diff
-    Oxcaml-Include_functor_named_type-BODY_21.html
-    Oxcaml-Include_functor_named_type-BODY_21.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
     Oxcaml-Include_functor_named_type-module-type-MakeType.html
     Oxcaml-Include_functor_named_type-module-type-MakeType.html.gen))
   (enabled_if %{ocaml-config:ox}))
@@ -12219,46 +12139,6 @@
    (diff
     Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.html
     Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-module-type-MakeType.html
-    Oxcaml-Include_functor_named_type-module-type-MakeType.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.html
-    Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-INCLUDE_24.html
-    Oxcaml-Include_functor_named_type-INCLUDE_24.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-INCLUDE_24-argument-1-_.html
-    Oxcaml-Include_functor_named_type-INCLUDE_24-argument-1-_.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-APPLIED_25.html
-    Oxcaml-Include_functor_named_type-APPLIED_25.html.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -12273,14 +12153,6 @@
   (package odoc)
   (action
    (diff
-    Oxcaml-Include_functor_inline-BODY_26.html
-    Oxcaml-Include_functor_inline-BODY_26.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
     Oxcaml-Include_functor_inline-module-type-Make.html
     Oxcaml-Include_functor_inline-module-type-Make.html.gen))
   (enabled_if %{ocaml-config:ox}))
@@ -12291,100 +12163,12 @@
    (diff
     Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.html
     Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-module-type-Make.html
-    Oxcaml-Include_functor_inline-module-type-Make.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.html
-    Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-INCLUDE_29.html
-    Oxcaml-Include_functor_inline-INCLUDE_29.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-INCLUDE_29-argument-1-_.html
-    Oxcaml-Include_functor_inline-INCLUDE_29-argument-1-_.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-APPLIED_30.html
-    Oxcaml-Include_functor_inline-APPLIED_30.html.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
   (package odoc)
   (action
    (diff Oxcaml-Anonymous_functor.html Oxcaml-Anonymous_functor.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-BODY_31.html
-    Oxcaml-Anonymous_functor-BODY_31.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-INCLUDE_34.html
-    Oxcaml-Anonymous_functor-INCLUDE_34.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.html
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-INCLUDE_34.html
-    Oxcaml-Anonymous_functor-INCLUDE_34.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.html
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-APPLIED_35.html
-    Oxcaml-Anonymous_functor-APPLIED_35.html.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -12462,27 +12246,13 @@
    Oxcaml.No_include_functor.Make.3o.gen
    Oxcaml.No_include_functor.T.3o.gen
    Oxcaml.Include_functor.3o.gen
-   Oxcaml.Include_functor.BODY_8.3o.gen
    Oxcaml.Include_functor.Make.3o.gen
-   Oxcaml.Include_functor.Make.3o.gen
-   Oxcaml.Include_functor.INCLUDE_11.3o.gen
-   Oxcaml.Include_functor.APPLIED_12.3o.gen
    Oxcaml.Include_functor_desugared.3o.gen
    Oxcaml.Include_functor_desugared.Make.3o.gen
    Oxcaml.Include_functor_named_type_desugared.3o.gen
    Oxcaml.Include_functor_named_type.3o.gen
-   Oxcaml.Include_functor_named_type.BODY_21.3o.gen
-   Oxcaml.Include_functor_named_type.INCLUDE_24.3o.gen
-   Oxcaml.Include_functor_named_type.APPLIED_25.3o.gen
    Oxcaml.Include_functor_inline.3o.gen
-   Oxcaml.Include_functor_inline.BODY_26.3o.gen
-   Oxcaml.Include_functor_inline.INCLUDE_29.3o.gen
-   Oxcaml.Include_functor_inline.APPLIED_30.3o.gen
    Oxcaml.Anonymous_functor.3o.gen
-   Oxcaml.Anonymous_functor.BODY_31.3o.gen
-   Oxcaml.Anonymous_functor.INCLUDE_34.3o.gen
-   Oxcaml.Anonymous_functor.INCLUDE_34.3o.gen
-   Oxcaml.Anonymous_functor.APPLIED_35.3o.gen
    Oxcaml.Anonymous_functor_desugared.3o.gen)
   (package odoc)
   (action
@@ -12542,37 +12312,7 @@
   (alias runtest)
   (package odoc)
   (action
-   (diff
-    Oxcaml.Include_functor.BODY_8.3o
-    Oxcaml.Include_functor.BODY_8.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
    (diff Oxcaml.Include_functor.Make.3o Oxcaml.Include_functor.Make.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff Oxcaml.Include_functor.Make.3o Oxcaml.Include_functor.Make.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Include_functor.INCLUDE_11.3o
-    Oxcaml.Include_functor.INCLUDE_11.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Include_functor.APPLIED_12.3o
-    Oxcaml.Include_functor.APPLIED_12.3o.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -12611,30 +12351,6 @@
   (package odoc)
   (action
    (diff
-    Oxcaml.Include_functor_named_type.BODY_21.3o
-    Oxcaml.Include_functor_named_type.BODY_21.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Include_functor_named_type.INCLUDE_24.3o
-    Oxcaml.Include_functor_named_type.INCLUDE_24.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Include_functor_named_type.APPLIED_25.3o
-    Oxcaml.Include_functor_named_type.APPLIED_25.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
     Oxcaml.Include_functor_inline.3o
     Oxcaml.Include_functor_inline.3o.gen))
   (enabled_if %{ocaml-config:ox}))
@@ -12642,63 +12358,7 @@
   (alias runtest)
   (package odoc)
   (action
-   (diff
-    Oxcaml.Include_functor_inline.BODY_26.3o
-    Oxcaml.Include_functor_inline.BODY_26.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Include_functor_inline.INCLUDE_29.3o
-    Oxcaml.Include_functor_inline.INCLUDE_29.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Include_functor_inline.APPLIED_30.3o
-    Oxcaml.Include_functor_inline.APPLIED_30.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
    (diff Oxcaml.Anonymous_functor.3o Oxcaml.Anonymous_functor.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Anonymous_functor.BODY_31.3o
-    Oxcaml.Anonymous_functor.BODY_31.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Anonymous_functor.INCLUDE_34.3o
-    Oxcaml.Anonymous_functor.INCLUDE_34.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Anonymous_functor.INCLUDE_34.3o
-    Oxcaml.Anonymous_functor.INCLUDE_34.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml.Anonymous_functor.APPLIED_35.3o
-    Oxcaml.Anonymous_functor.APPLIED_35.3o.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -12740,14 +12400,8 @@
    Oxcaml-No_include_functor-Make-argument-1-T.md.gen
    Oxcaml-No_include_functor-T.md.gen
    Oxcaml-Include_functor.md.gen
-   Oxcaml-Include_functor-BODY_8.md.gen
    Oxcaml-Include_functor-Make.md.gen
    Oxcaml-Include_functor-Make-argument-1-T.md.gen
-   Oxcaml-Include_functor-Make.md.gen
-   Oxcaml-Include_functor-Make-argument-1-T.md.gen
-   Oxcaml-Include_functor-INCLUDE_11.md.gen
-   Oxcaml-Include_functor-INCLUDE_11-argument-1-T.md.gen
-   Oxcaml-Include_functor-APPLIED_12.md.gen
    Oxcaml-Include_functor_desugared.md.gen
    Oxcaml-Include_functor_desugared-Make.md.gen
    Oxcaml-Include_functor_desugared-Make-argument-1-T.md.gen
@@ -12755,30 +12409,12 @@
    Oxcaml-Include_functor_named_type_desugared-module-type-MakeType.md.gen
    Oxcaml-Include_functor_named_type_desugared-module-type-MakeType-argument-1-_.md.gen
    Oxcaml-Include_functor_named_type.md.gen
-   Oxcaml-Include_functor_named_type-BODY_21.md.gen
    Oxcaml-Include_functor_named_type-module-type-MakeType.md.gen
    Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.md.gen
-   Oxcaml-Include_functor_named_type-module-type-MakeType.md.gen
-   Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.md.gen
-   Oxcaml-Include_functor_named_type-INCLUDE_24.md.gen
-   Oxcaml-Include_functor_named_type-INCLUDE_24-argument-1-_.md.gen
-   Oxcaml-Include_functor_named_type-APPLIED_25.md.gen
    Oxcaml-Include_functor_inline.md.gen
-   Oxcaml-Include_functor_inline-BODY_26.md.gen
    Oxcaml-Include_functor_inline-module-type-Make.md.gen
    Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.md.gen
-   Oxcaml-Include_functor_inline-module-type-Make.md.gen
-   Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.md.gen
-   Oxcaml-Include_functor_inline-INCLUDE_29.md.gen
-   Oxcaml-Include_functor_inline-INCLUDE_29-argument-1-_.md.gen
-   Oxcaml-Include_functor_inline-APPLIED_30.md.gen
    Oxcaml-Anonymous_functor.md.gen
-   Oxcaml-Anonymous_functor-BODY_31.md.gen
-   Oxcaml-Anonymous_functor-INCLUDE_34.md.gen
-   Oxcaml-Anonymous_functor-include10_-argument-1-T.md.gen
-   Oxcaml-Anonymous_functor-INCLUDE_34.md.gen
-   Oxcaml-Anonymous_functor-include10_-argument-1-T.md.gen
-   Oxcaml-Anonymous_functor-APPLIED_35.md.gen
    Oxcaml-Anonymous_functor_desugared.md.gen)
   (package odoc)
   (action
@@ -12859,14 +12495,6 @@
   (alias runtest)
   (package odoc)
   (action
-   (diff
-    Oxcaml-Include_functor-BODY_8.md
-    Oxcaml-Include_functor-BODY_8.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
    (diff Oxcaml-Include_functor-Make.md Oxcaml-Include_functor-Make.md.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
@@ -12876,44 +12504,6 @@
    (diff
     Oxcaml-Include_functor-Make-argument-1-T.md
     Oxcaml-Include_functor-Make-argument-1-T.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff Oxcaml-Include_functor-Make.md Oxcaml-Include_functor-Make.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-Make-argument-1-T.md
-    Oxcaml-Include_functor-Make-argument-1-T.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-INCLUDE_11.md
-    Oxcaml-Include_functor-INCLUDE_11.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-INCLUDE_11-argument-1-T.md
-    Oxcaml-Include_functor-INCLUDE_11-argument-1-T.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor-APPLIED_12.md
-    Oxcaml-Include_functor-APPLIED_12.md.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -12976,14 +12566,6 @@
   (package odoc)
   (action
    (diff
-    Oxcaml-Include_functor_named_type-BODY_21.md
-    Oxcaml-Include_functor_named_type-BODY_21.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
     Oxcaml-Include_functor_named_type-module-type-MakeType.md
     Oxcaml-Include_functor_named_type-module-type-MakeType.md.gen))
   (enabled_if %{ocaml-config:ox}))
@@ -12994,46 +12576,6 @@
    (diff
     Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.md
     Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-module-type-MakeType.md
-    Oxcaml-Include_functor_named_type-module-type-MakeType.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.md
-    Oxcaml-Include_functor_named_type-module-type-MakeType-argument-1-_.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-INCLUDE_24.md
-    Oxcaml-Include_functor_named_type-INCLUDE_24.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-INCLUDE_24-argument-1-_.md
-    Oxcaml-Include_functor_named_type-INCLUDE_24-argument-1-_.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_named_type-APPLIED_25.md
-    Oxcaml-Include_functor_named_type-APPLIED_25.md.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -13048,14 +12590,6 @@
   (package odoc)
   (action
    (diff
-    Oxcaml-Include_functor_inline-BODY_26.md
-    Oxcaml-Include_functor_inline-BODY_26.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
     Oxcaml-Include_functor_inline-module-type-Make.md
     Oxcaml-Include_functor_inline-module-type-Make.md.gen))
   (enabled_if %{ocaml-config:ox}))
@@ -13066,100 +12600,12 @@
    (diff
     Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.md
     Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-module-type-Make.md
-    Oxcaml-Include_functor_inline-module-type-Make.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.md
-    Oxcaml-Include_functor_inline-module-type-Make-argument-1-_.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-INCLUDE_29.md
-    Oxcaml-Include_functor_inline-INCLUDE_29.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-INCLUDE_29-argument-1-_.md
-    Oxcaml-Include_functor_inline-INCLUDE_29-argument-1-_.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Include_functor_inline-APPLIED_30.md
-    Oxcaml-Include_functor_inline-APPLIED_30.md.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
   (package odoc)
   (action
    (diff Oxcaml-Anonymous_functor.md Oxcaml-Anonymous_functor.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-BODY_31.md
-    Oxcaml-Anonymous_functor-BODY_31.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-INCLUDE_34.md
-    Oxcaml-Anonymous_functor-INCLUDE_34.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.md
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-INCLUDE_34.md
-    Oxcaml-Anonymous_functor-INCLUDE_34.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.md
-    Oxcaml-Anonymous_functor-include10_-argument-1-T.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml-Anonymous_functor-APPLIED_35.md
-    Oxcaml-Anonymous_functor-APPLIED_35.md.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -13195,9 +12641,6 @@
    Oxcaml_impl-To_be_included.html.gen
    Oxcaml_impl-Including.html.gen
    Oxcaml_impl-Include_functor.html.gen
-   Oxcaml_impl-Include_functor-BODY_4.html.gen
-   Oxcaml_impl-Include_functor-Make.html.gen
-   Oxcaml_impl-Include_functor-Make-argument-1-T.html.gen
    Oxcaml_impl-Include_functor-Make.html.gen
    Oxcaml_impl-Include_functor-Make-argument-1-T.html.gen
    Oxcaml_impl-Include_functor_desugared.html.gen
@@ -13206,8 +12649,7 @@
    Oxcaml_impl-Resolve_functor.html.gen
    Oxcaml_impl-Resolve_functor-F.html.gen
    Oxcaml_impl-Resolve_functor-F-argument-1-I.html.gen
-   Oxcaml_impl-Resolve_functor-M.html.gen
-   Oxcaml_impl-Resolve_functor-M-BODY_14.html.gen)
+   Oxcaml_impl-Resolve_functor-M.html.gen)
   (package odoc)
   (action
    (run
@@ -13246,30 +12688,6 @@
    (diff
     Oxcaml_impl-Include_functor.html
     Oxcaml_impl-Include_functor.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Include_functor-BODY_4.html
-    Oxcaml_impl-Include_functor-BODY_4.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Include_functor-Make.html
-    Oxcaml_impl-Include_functor-Make.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Include_functor-Make-argument-1-T.html
-    Oxcaml_impl-Include_functor-Make-argument-1-T.html.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -13342,14 +12760,6 @@
    (diff
     Oxcaml_impl-Resolve_functor-M.html
     Oxcaml_impl-Resolve_functor-M.html.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Resolve_functor-M-BODY_14.html
-    Oxcaml_impl-Resolve_functor-M-BODY_14.html.gen))
   (enabled_if %{ocaml-config:ox})))
 
 (subdir
@@ -13416,15 +12826,12 @@
    Oxcaml_impl.To_be_included.3o.gen
    Oxcaml_impl.Including.3o.gen
    Oxcaml_impl.Include_functor.3o.gen
-   Oxcaml_impl.Include_functor.BODY_4.3o.gen
-   Oxcaml_impl.Include_functor.Make.3o.gen
    Oxcaml_impl.Include_functor.Make.3o.gen
    Oxcaml_impl.Include_functor_desugared.3o.gen
    Oxcaml_impl.Include_functor_desugared.Make.3o.gen
    Oxcaml_impl.Resolve_functor.3o.gen
    Oxcaml_impl.Resolve_functor.F.3o.gen
-   Oxcaml_impl.Resolve_functor.M.3o.gen
-   Oxcaml_impl.Resolve_functor.M.BODY_14.3o.gen)
+   Oxcaml_impl.Resolve_functor.M.3o.gen)
   (package odoc)
   (action
    (run
@@ -13459,22 +12866,6 @@
   (package odoc)
   (action
    (diff Oxcaml_impl.Include_functor.3o Oxcaml_impl.Include_functor.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl.Include_functor.BODY_4.3o
-    Oxcaml_impl.Include_functor.BODY_4.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl.Include_functor.Make.3o
-    Oxcaml_impl.Include_functor.Make.3o.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -13521,14 +12912,6 @@
    (diff
     Oxcaml_impl.Resolve_functor.M.3o
     Oxcaml_impl.Resolve_functor.M.3o.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl.Resolve_functor.M.BODY_14.3o
-    Oxcaml_impl.Resolve_functor.M.BODY_14.3o.gen))
   (enabled_if %{ocaml-config:ox})))
 
 (subdir
@@ -13556,9 +12939,6 @@
    Oxcaml_impl-To_be_included.md.gen
    Oxcaml_impl-Including.md.gen
    Oxcaml_impl-Include_functor.md.gen
-   Oxcaml_impl-Include_functor-BODY_4.md.gen
-   Oxcaml_impl-Include_functor-Make.md.gen
-   Oxcaml_impl-Include_functor-Make-argument-1-T.md.gen
    Oxcaml_impl-Include_functor-Make.md.gen
    Oxcaml_impl-Include_functor-Make-argument-1-T.md.gen
    Oxcaml_impl-Include_functor_desugared.md.gen
@@ -13567,8 +12947,7 @@
    Oxcaml_impl-Resolve_functor.md.gen
    Oxcaml_impl-Resolve_functor-F.md.gen
    Oxcaml_impl-Resolve_functor-F-argument-1-I.md.gen
-   Oxcaml_impl-Resolve_functor-M.md.gen
-   Oxcaml_impl-Resolve_functor-M-BODY_14.md.gen)
+   Oxcaml_impl-Resolve_functor-M.md.gen)
   (package odoc)
   (action
    (run
@@ -13603,30 +12982,6 @@
   (package odoc)
   (action
    (diff Oxcaml_impl-Include_functor.md Oxcaml_impl-Include_functor.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Include_functor-BODY_4.md
-    Oxcaml_impl-Include_functor-BODY_4.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Include_functor-Make.md
-    Oxcaml_impl-Include_functor-Make.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Include_functor-Make-argument-1-T.md
-    Oxcaml_impl-Include_functor-Make-argument-1-T.md.gen))
   (enabled_if %{ocaml-config:ox}))
  (rule
   (alias runtest)
@@ -13697,14 +13052,6 @@
    (diff
     Oxcaml_impl-Resolve_functor-M.md
     Oxcaml_impl-Resolve_functor-M.md.gen))
-  (enabled_if %{ocaml-config:ox}))
- (rule
-  (alias runtest)
-  (package odoc)
-  (action
-   (diff
-    Oxcaml_impl-Resolve_functor-M-BODY_14.md
-    Oxcaml_impl-Resolve_functor-M-BODY_14.md.gen))
   (enabled_if %{ocaml-config:ox})))
 
 (subdir
