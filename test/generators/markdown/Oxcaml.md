@@ -356,6 +356,9 @@ module No_include_functor : sig ... end
 module Include_functor : sig ... end
 ```
 ```ocaml
+module Include_functor_argument_shapes : sig ... end
+```
+```ocaml
 module Include_functor_desugared : sig ... end
 ```
 ```ocaml
@@ -372,4 +375,10 @@ module Anonymous_functor : sig ... end
 ```
 ```ocaml
 module Anonymous_functor_desugared : sig ... end
+```
+```ocaml
+module Multiple_include_functors : sig ... end
+```
+```ocaml
+module Include_functor_not_last : sig ... end
 ```
