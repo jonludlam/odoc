@@ -617,20 +617,23 @@ let my_compilation_unit id (s : Odoc_model.Lang.Signature.t) =
 }
 
 let mkresolver () =
-  Odoc_odoc.Resolver.create
- ~roots:None     ~important_digests:false
-    ~directories:(List.map Odoc_odoc.Fs.Directory.of_string
+  let str_dirs =
 #if defined OXCAML
-  (let paths = Load_path.get_paths () in
-   let visible = List.map (fun (v : Clflags.visible_include) -> v.path) paths.visible in
-   List.filter (fun s -> s <> "") (visible @ paths.hidden))
+    let paths = Load_path.get_paths () in
+    let visible = List.map (fun (v : Clflags.visible_include) -> v.path) paths.visible in
+    visible @ paths.hidden
 #elif OCAML_VERSION >= (5,2,0)
-  (let paths = Load_path.get_paths () in
-   List.filter (fun s -> s <> "") (paths.visible @ paths.hidden))
-#else
-    (Load_path.get_paths () |> List.filter (fun s -> s <> ""))
+    let paths = Load_path.get_paths () in
+    paths.visible @ paths.hidden
+#else 
+    Load_path.get_paths ()
 #endif
-    ) ~open_modules:[]
+  in
+  let nonempty_str_dirs = List.filter (fun s -> s <> "") str_dirs in
+  let directories = List.map Odoc_odoc.Fs.Directory.of_string nonempty_str_dirs in
+  Odoc_odoc.Resolver.create
+    ~roots:None ~important_digests:false
+    ~directories ~open_modules:[]
 
 let warnings_options =
   { Odoc_model.Error.warn_error = false; print_warnings = true; warnings_tag = None }
