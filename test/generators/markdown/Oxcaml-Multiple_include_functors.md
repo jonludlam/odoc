@@ -16,7 +16,7 @@ type t
 type between
 ```
 ```ocaml
-type second = BODY__46.first
+type second = BODY__41.first
 ```
 ```ocaml
 type third
