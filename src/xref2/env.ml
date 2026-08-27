@@ -131,16 +131,9 @@ module ElementsById : sig
 
   val empty : t
 
-  val add :
-    [< Identifier.t ] ->
-    [< Component.Element.any ] ->
-    t ->
-    t
+  val add : [< Identifier.t ] -> [< Component.Element.any ] -> t -> t
 
-  val find_by_id :
-    [< Identifier.t ] ->
-    t ->
-    Component.Element.any option
+  val find_by_id : [< Identifier.t ] -> t -> Component.Element.any option
 end = struct
   module IdMap = Identifier.Maps.Any
 
@@ -440,9 +433,7 @@ let lookup_root_module name env =
         | Ok Forward_reference -> Some Forward
         | Error `Not_found -> None
         | Ok (Found u) ->
-            let (`Root _ as id) =
-              u.id
-            in
+            let (`Root _ as id) = u.id in
             let m = module_of_unit u in
             Some (Resolved (u.root, id, m)))
   in
@@ -551,8 +542,7 @@ let lookup_by_id (scope : 'a scope) id env : 'a option =
   | None -> (
       (* Format.eprintf "Can't find %a\n%!" Component.Fmt.model_identifier (id :> Identifier.t); *)
       match (id :> Identifier.t) with
-      | `Root (_, name) ->
-          scope.root (ModuleName.to_string name) env
+      | `Root (_, name) -> scope.root (ModuleName.to_string name) env
       | _ -> None)
 
 let lookup_root_module_fallback name t =
