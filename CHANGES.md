@@ -12,6 +12,8 @@
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
 - Fix resolving functor through `module type of` (@Leonidas-from-XIV, #1471)
 - Fix odoc_driver's detection of `stdlib` when it is in `$prefix/lib64`, requires ocamlfind >= 1.9.8 (@katrinafyi, #1477, #1474)
+- Strip expanded include decls from .odoc files, reducing link memory and file size,
+  particularly on ppx_template-heavy code in OxCaml (@jonludlam, #1481)
 
 # 3.2.1
 
