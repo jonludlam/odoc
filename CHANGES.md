@@ -8,6 +8,9 @@
 - Support for OxCaml modes (@art-w, #1454)
 - Fix OxCaml with-bounds for arbitrary types (@art-w, #1466)
 
+### Performance
+- Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
+
 ### Fixed
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
 - Fix resolving functor through `module type of` (@Leonidas-from-XIV, #1471)
