@@ -1,11 +1,11 @@
 Members that come from `include module type of X`, where X is an alias to a
 module containing an include, render as aliases
-([Make = X0.Make]) — unless a `with type t := ...` substitution triggers a
-re-derivation that expands them in place instead. [User] and [User2] below
-differ only in the substitution, and render differently. Both forms are
-sound: `module type of <alias>` is fully strengthened by the compiler.
-Note the abstract type [u]: re-derivation loses its [= X0.u] manifest in
-[User], while [User2] keeps it.
+([Make = X0.Make]). Previously a `with type t := ...` substitution would
+trigger a re-derivation that expanded them in place instead, so [User] and
+[User2] below rendered differently. Now that compiled includes are reused,
+both render the aliased form. Both forms are
+sound: `module type of <alias>` is fully strengthened by the compiler —
+note the abstract type [u] is [X0.u] in both [User] and [User2] below.
 The include matters because re-derivation happens per include: members
 declared directly in X0 render as aliases either way.
 
@@ -40,10 +40,10 @@ declared directly in X0 render as aliases either way.
         (sig :
           include S with [t(params ) = X.t]
             (sig :
-              type u
+              type u = X0.u
               val v : u
-              module type H = sig val h : int end
-              module Make : (X/29 : H) -> sig val mk : X.t end
+              module type H = X0.H
+              module Make = X0.Make
              end)
          end)
     end
