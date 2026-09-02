@@ -41,18 +41,18 @@ destructive substitution still refers to the first one, and `N` includes `M.R`:
   $ odoc link test.odoc
   $ odoc html-generate --indent -o html test.odocl
 
-The shadowed `t` is `int` - the compiler only permits the shadowing at all
-because that makes it re-expressible - so odoc should render it as `int`.
-Instead it falls back on the internal disambiguated name:
+The shadowed `t` is `int`, and the compiler only permits the shadowing because
+that makes it re-expressible. odoc should say so, rather than falling back on
+the internal disambiguated name:
 
   $ grep -A4 'val</span> equal' html/Test/N/index.html
             <span><span class="keyword">val</span> equal : 
-                                                             
-             <span>
-              <span class="xref-unresolved">
-               M.{t}1/shadowed/(cdea9b2680f8a23222003ffe0f120bb2)
+             <span>int <span class="arrow">&#45;&gt;</span></span> 
+             <span>int <span class="arrow">&#45;&gt;</span></span> bool
+            </span>
+           </code>
 
-and that name leaks into the output:
+Nothing anywhere in the output should contain the internal form:
 
   $ grep -rl 'shadowed/(' html/ || echo "no internal names leaked"
-  html/Test/N/index.html
+  no internal names leaked
