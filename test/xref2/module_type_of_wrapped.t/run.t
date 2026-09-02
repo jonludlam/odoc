@@ -52,15 +52,14 @@ page:
   html/B/index.html
 
 Every reference to it out of `B` - the `module type` spec, and both links in
-the package type of `make`, which came in through the `@inline` include -
-should point at that page. The spec does; the two from the inlined `make` do
-not, and point at a `B/module-type-S_fc/` that was never generated:
+the package type of `make`, which came in through the `@inline` include - must
+point at that page rather than at a `B/module-type-S_fc/` that was never
+generated:
 
   $ grep -o 'href="[^"]*module-type-S_fc[^"]*"' html/B/index.html | sed 's/href="//;s/"$//' | sort -u
   #module-type-S_fc
   ../A/Comparator/module-type-S_fc/index.html
-  module-type-S_fc/index.html
-  module-type-S_fc/index.html#type-comparable_t
+  ../A/Comparator/module-type-S_fc/index.html#type-comparable_t
 
   $ test -e html/A/Comparator/module-type-S_fc/index.html && echo "target exists"
   target exists
