@@ -12,6 +12,8 @@
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
 - Fix resolving functor through `module type of` (@Leonidas-from-XIV, #1471)
 - Fix odoc_driver's detection of `stdlib` when it is in `$prefix/lib64`, requires ocamlfind >= 1.9.8 (@katrinafyi, #1477, #1474)
+- Don't let an unrelated `@canonical` tag halt the search for a self-canonical
+  module, which lost the expansion of the module it named (@jonludlam, #1483)
 
 # 3.2.1
 
