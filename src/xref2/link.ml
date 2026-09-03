@@ -117,6 +117,10 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
       should_reresolve (x :> t) || should_resolve (y :> Paths.Path.t)
   | `Apply (x, y) ->
       should_reresolve (x :> t) || should_reresolve (y :> Paths.Path.Resolved.t)
+  | `ApplyParam (x, y, z) ->
+      should_reresolve (x :> t)
+      || should_reresolve (y :> t)
+      || should_reresolve (z :> t)
   | `SubstT (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
   | `Alias (y, x) ->
       should_resolve (x :> Paths.Path.t) || should_reresolve (y :> t)
@@ -158,29 +162,7 @@ let type_path : Env.t -> Paths.Path.Type.t -> Paths.Path.Type.t =
             Errors.report ~what:(`Type_path cp) ~tools_error:e `Lookup;
             p)
 
-let rec is_instance : Paths.Path.Module.t -> bool = function
-  | `ApplyParam _ -> true
-  | `Dot (parent, _) -> is_instance parent
-  | _ -> false
-
-let rec unfold_alias env (m : Paths.Path.Module.t) : Paths.Path.Module.t =
-  let alias_target =
-    let cp = Component.Of_Lang.(module_path (empty ()) m) in
-    match Tools.resolve_module env cp with
-    | Ok (_, md) -> (
-        match (Component.Delayed.get md).Component.Module.type_ with
-        | Alias (target, _) -> Some Lang_of.(Path.module_ (empty ()) target)
-        | ModuleType _ -> None)
-    | Error _ -> None
-  in
-  match alias_target with
-  | Some target -> target
-  | None -> (
-      match m with
-      | `Dot (parent, name) -> `Dot (unfold_alias env parent, name)
-      | _ -> m)
-
-let rec value_path : Env.t -> Paths.Path.Value.t -> Paths.Path.Value.t =
+let value_path : Env.t -> Paths.Path.Value.t -> Paths.Path.Value.t =
  fun env p ->
   if not (should_resolve (p :> Paths.Path.t)) then p
   else
@@ -194,20 +176,11 @@ let rec value_path : Env.t -> Paths.Path.Value.t -> Paths.Path.Value.t =
         | Ok p' ->
             let result = Tools.reresolve_value env p' in
             `Resolved Lang_of.(Path.resolved_value (empty ()) result)
-        | Error e -> (
-            let instance =
-              match p with
-              | `DotV (m, v) ->
-                  instance_prefix env m |> Opt.map (fun m -> `DotV (m, v))
-              | _ -> None
-            in
-            match instance with
-            | Some p -> p
-            | None ->
-                Errors.report ~what:(`Value_path cp) ~tools_error:e `Lookup;
-                p))
+        | Error e ->
+            Errors.report ~what:(`Value_path cp) ~tools_error:e `Lookup;
+            p)
 
-and class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
+let class_type_path : Env.t -> Paths.Path.ClassType.t -> Paths.Path.ClassType.t
     =
  fun env p ->
   if not (should_resolve (p :> Paths.Path.t)) then p
@@ -241,19 +214,9 @@ and module_type_path :
         | Ok p' ->
             let result = Tools.reresolve_module_type env p' in
             `Resolved Lang_of.(Path.resolved_module_type (empty ()) result)
-        | Error e -> (
-            let instance =
-              match p with
-              | `DotMT (m, mt) ->
-                  instance_prefix env m |> Opt.map (fun m -> `DotMT (m, mt))
-              | _ -> None
-            in
-            match instance with
-            | Some p -> p
-            | None ->
-                Errors.report ~what:(`Module_type_path cp) ~tools_error:e
-                  `Resolve;
-                p))
+        | Error e ->
+            Errors.report ~what:(`Module_type_path cp) ~tools_error:e `Resolve;
+            p)
 
 and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
  fun env p ->
@@ -270,39 +233,9 @@ and module_path : Env.t -> Paths.Path.Module.t -> Paths.Path.Module.t =
             let result = Tools.reresolve_module env p' in
             `Resolved Lang_of.(Path.resolved_module (empty ()) result)
         | Error _ when is_forward p -> p
-        | Error _ when is_instance p -> p
-        | Error e -> (
-            match instance_prefix env p with
-            | Some p -> p
-            | None ->
-                Errors.report ~what:(`Module_path cp) ~tools_error:e `Resolve;
-                p))
-
-and resolve_module_path_parts env (m : Paths.Path.Module.t) :
-    Paths.Path.Module.t =
-  match m with
-  | `Apply (fn, arg) ->
-      `Apply
-        (resolve_module_path_parts env fn, resolve_module_path_parts env arg)
-  | `ApplyParam (inst, param, arg) ->
-      `ApplyParam
-        ( resolve_module_path_parts env inst,
-          resolve_module_path_parts env param,
-          resolve_module_path_parts env arg )
-  | _ -> module_path env m
-
-and instance_prefix env (m : Paths.Path.Module.t) : Paths.Path.Module.t option =
-  let unfolded = unfold_alias env m in
-  if unfolded = m || not (is_instance unfolded) then None
-  else Some (resolve_module_path_parts env unfolded)
-
-let resolve_type_path_prefix env (p : Paths.Path.Type.t) : Paths.Path.Type.t =
-  match p with
-  | `DotT (m, t) -> (
-      match instance_prefix env m with
-      | Some m -> `DotT (m, t)
-      | None -> `DotT (resolve_module_path_parts env m, t))
-  | _ -> p
+        | Error e ->
+            Errors.report ~what:(`Module_path cp) ~tools_error:e `Resolve;
+            p)
 
 let rec comment_inline_element :
     loc:_ ->
@@ -1280,7 +1213,7 @@ and type_expression : Env.t -> Id.Signature.t -> _ -> _ =
         | Ok (_cp, `FType_removed (_, x, _eq)) ->
             (* Type variables ? *)
             Lang_of.(type_expr (empty ()) (parent :> Id.LabelParent.t) x)
-        | Error _ -> Constr (resolve_type_path_prefix env path', ts))
+        | Error _ -> Constr (path', ts))
   | Polymorphic_variant v ->
       Polymorphic_variant (type_expression_polyvar env parent visited v)
   | Object o -> Object (type_expression_object env parent visited o)
