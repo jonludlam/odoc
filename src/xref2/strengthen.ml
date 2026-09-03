@@ -136,7 +136,9 @@ and include_ :
     Include.t ->
     Include.t * Ident.module_ list * Ident.module_type list =
  fun path i ->
-  let expansion_, strengthened, strengthened_mts = sig_items path i.expansion_ in
+  let expansion_, strengthened, strengthened_mts =
+    sig_items path i.expansion_
+  in
   ( { i with expansion_; strengthened = Some path },
     strengthened,
     strengthened_mts )
