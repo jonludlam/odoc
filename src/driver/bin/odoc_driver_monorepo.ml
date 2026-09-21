@@ -42,13 +42,13 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
   let () =
     Eio.Fiber.both
       (fun () ->
-        let units =
+        let pkgs =
           let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
           Odoc_units_of.packages ~dirs ~indices_style:Odoc_units_of.Automatic
             ~extra_paths ~remap:false all
         in
-        Compile.init_stats units;
-        let compiled = Compile.compile ~partial_dir:odoc_dir units in
+        Compile.init_stats pkgs;
+        let compiled = Compile.compile ~partial_dir:odoc_dir pkgs in
         let linked =
           Compile.link ~warnings_tags:[] ~custom_layout:true compiled
         in

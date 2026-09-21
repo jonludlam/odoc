@@ -1,52 +1,34 @@
-module Pkg_args : sig
-  type t
-
-  val compiled_pages : t -> (string * Fpath.t) list
-  val compiled_libs : t -> (string * Fpath.t) list
-  val includes : t -> Fpath.t list
-  val linked_pages : t -> (string * Fpath.t) list
-  val linked_libs : t -> (string * Fpath.t) list
-
-  val v :
-    odoc_dir:Fpath.t ->
-    odocl_dir:Fpath.t ->
-    includes:Fpath.t list ->
-    pages:(string * Fpath.t) list ->
-    libs:(string * Fpath.t) list ->
-    t
-
-  val combine : t -> t -> t
-
-  val pp : t Fmt.t
-end
+type scope = { pages : (string * Fpath.t) list; libs : (string * Fpath.t) list }
+(** The link-time reference scope of a package: the page trees ([-P]) and the
+    module trees ([-L]) that its units may refer to. Every unit of a package is
+    linked with the same scope. Paths are absolute. *)
 
 type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
 
-(* An index is built from the [.odocl] files of the units that refer to it (see
-   [Compile.html_generate]), so it is defined by its output, not by input
-   directories. *)
 type index = {
   output_file : Fpath.t;
   json : bool;
   search_dir : Fpath.t;
   sidebar : sidebar option;
 }
+(** An index is built from the [.odocl] files of the units of its package (see
+    [Compile.html_generate]), so it is defined by its output, not by input
+    directories. *)
 
 type 'a t = {
   parent_id : Odoc.Id.t;
   input_file : Fpath.t;
   input_copy : Fpath.t option;
-      (* Used to stash cmtis from virtual libraries into the odoc dir for voodoo mode *)
-  output_dir : Fpath.t;
+      (** Used to stash cmtis from virtual libraries into the odoc dir for
+          voodoo mode. *)
   odoc_file : Fpath.t;
   odocl_file : Fpath.t;
-  pkg_args : Pkg_args.t;
-  pkgname : string option;
-  index : index option;
   enable_warnings : bool;
   to_output : bool;
   kind : 'a;
 }
+(** A single artifact. What is shared by the units of a library or of a package
+    lives in {!lib} and {!pkg} instead. *)
 
 type intf_extra = {
   hidden : bool;
@@ -66,6 +48,25 @@ type any = [ impl | intf | mld | asset | md ] t
 
 val pp : any Fmt.t
 
+type lib = { lib_name : string; includes : Fpath.t list; units : any list }
+(** A library: its modules and their implementations, and the [-I] search path
+    they are compiled and linked with. *)
+
+type pkg = {
+  pkgname : string option;
+  scope : scope;
+  index : index option;
+  libs : lib list;
+  pages : any list;
+}
+(** A package, the unit of building: its libraries, its pages (including the
+    generated landing pages), the reference scope they all link with, and the
+    index they are gathered in. [pkgname] is [None] only for the top-level index
+    page, which belongs to no package. *)
+
+val all_units : pkg -> any list
+val pp_pkg : pkg Fmt.t
+
 val pkg_dir : Packages.t -> Fpath.t
 
 val lib_dir : Packages.t -> Packages.libty -> Fpath.t
@@ -82,6 +83,12 @@ val lib_obj_dir : Packages.t -> Packages.libty -> Fpath.t
 val doc_dir : Packages.t -> Fpath.t
 val src_dir : Packages.t -> Fpath.t
 val src_lib_dir : Packages.t -> Packages.libty -> Fpath.t
+
+val output_root : _ t -> Fpath.t
+(** [output_root u] is the directory below which [odoc] places [u]'s output when
+    given [--output-dir] and [--parent-id] rather than [-o]: the directory of
+    [u.odoc_file] with the parent id stripped. Used for the commands that have
+    no [-o] ([compile-asset], [odoc-md]). *)
 
 type dirs = {
   odoc_dir : Fpath.t;

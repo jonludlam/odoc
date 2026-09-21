@@ -11,4 +11,7 @@ val packages :
   remap:bool ->
   indices_style:indices_style ->
   Packages.t list ->
-  any list
+  pkg list
+(** The units to build for [pkgs], grouped by package and library. With [Normal]
+    indices, the first element is the top-level index, which belongs to no
+    package. *)

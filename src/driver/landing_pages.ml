@@ -3,29 +3,17 @@ open Packages
 
 let fpf = Format.fprintf
 
-let make_index ~dirs ~rel_dir ~libs ~pkgs ~index ~enable_warnings ~content :
+let make_index ~dirs ~rel_dir ~enable_warnings ~content :
     Odoc_unit.mld Odoc_unit.t =
   let { odoc_dir; odocl_dir; mld_dir; _ } = dirs in
   let input_file = Fpath.(mld_dir // rel_dir / "index.mld") in
   let odoc_file = Fpath.(odoc_dir // rel_dir / "page-index.odoc") in
   let odocl_file = Fpath.(odocl_dir // rel_dir / "page-index.odocl") in
   let parent_id = rel_dir |> Odoc.Id.of_fpath in
-  let pages =
-    List.map (fun pkg -> (pkg.Packages.name, Odoc_unit.doc_dir pkg)) pkgs
-  in
-  let libs =
-    List.map
-      (fun (pkg, lib) -> (lib.Packages.lib_name, Odoc_unit.lib_obj_dir pkg lib))
-      libs
-  in
-  let pkg_args = Pkg_args.v ~pages ~libs ~includes:[] ~odoc_dir ~odocl_dir in
   Util.with_out_to input_file (fun oc ->
       fpf (Format.formatter_of_out_channel oc) "%t@?" content)
   |> Result.get_ok;
   {
-    output_dir = dirs.odoc_dir;
-    pkgname = None;
-    pkg_args;
     parent_id;
     input_file;
     input_copy = None;
@@ -34,7 +22,6 @@ let make_index ~dirs ~rel_dir ~libs ~pkgs ~index ~enable_warnings ~content :
     enable_warnings;
     to_output = true;
     kind = `Mld;
-    index;
   }
 
 let module_list ppf lib =
@@ -49,7 +36,7 @@ let module_list ppf lib =
       List.iter (fun m -> fpf ppf " %s" m.m_name) modules;
       fpf ppf "}@\n"
 
-let library ~dirs ~pkg ~index lib =
+let library ~dirs ~pkg lib =
   let content ppf =
     fpf ppf "%@toc_status hidden\n";
     fpf ppf "%@order_category libraries\n";
@@ -57,11 +44,9 @@ let library ~dirs ~pkg ~index lib =
     fpf ppf "%a@\n" module_list lib
   in
   let rel_dir = lib_dir pkg lib in
-  let libs = [ (pkg, lib) ] in
-  make_index ~dirs ~rel_dir ~libs ~pkgs:[] ~index:(Some index) ~content
-    ~enable_warnings:false
+  make_index ~dirs ~rel_dir ~content ~enable_warnings:false
 
-let package ~dirs ~pkg ~index =
+let package ~dirs ~pkg =
   let library_list ppf pkg =
     let print_lib lib =
       fpf ppf "{2 Library %s}@\n%a@\n" lib.lib_name module_list lib
@@ -85,11 +70,9 @@ let package ~dirs ~pkg ~index =
   in
   let content = content pkg in
   let rel_dir = doc_dir pkg in
-  let libs = List.map (fun lib -> (pkg, lib)) pkg.libraries in
-  make_index ~dirs ~rel_dir ~index:(Some index) ~content ~pkgs:[ pkg ] ~libs
-    ~enable_warnings:false
+  make_index ~dirs ~rel_dir ~content ~enable_warnings:false
 
-let src ~dirs ~pkg ~index =
+let src ~dirs ~pkg =
   let content ppf =
     fpf ppf "%@order_category source\n";
     fpf ppf
@@ -99,8 +82,7 @@ let src ~dirs ~pkg ~index =
       pkg.name
   in
   let rel_dir = src_dir pkg in
-  make_index ~dirs ~pkgs:[] ~libs:[] ~rel_dir ~index:(Some index) ~content
-    ~enable_warnings:true
+  make_index ~dirs ~rel_dir ~content ~enable_warnings:true
 
 let package_list ~dirs ~remap all =
   let content all ppf =
@@ -116,8 +98,7 @@ let package_list ~dirs ~remap all =
   in
   let content = content all in
   let rel_dir = Fpath.v "./" in
-  make_index ~dirs ~rel_dir ~pkgs:all ~libs:[] ~index:None ~content
-    ~enable_warnings:true
+  make_index ~dirs ~rel_dir ~content ~enable_warnings:true
 
 let content dir _pkg libs _src subdirs all_libs pfp =
   let is_root = Fpath.to_string dir = "./" in
@@ -157,8 +138,7 @@ let content dir _pkg libs _src subdirs all_libs pfp =
         fpf pfp "  %a@\n" module_list lib)
       all_libs)
 
-let make_custom dirs index_of (pkg : Packages.t) :
-    Odoc_unit.mld Odoc_unit.t list =
+let make_custom dirs (pkg : Packages.t) : Odoc_unit.mld Odoc_unit.t list =
   let pkgs = [ pkg ] in
   let pkg_dirs =
     List.fold_right
@@ -274,7 +254,6 @@ let make_custom dirs index_of (pkg : Packages.t) :
               (Option.map (fun p -> p.Packages.name) pkg_src)
               (Fmt.Dump.list Fpath.pp)
               (Fpath.Set.elements subdirs));
-        let index = Some (index_of pkg) in
         let pkgs = pkgs in
         let all_libs = pkg.libraries in
         Logs.debug (fun m ->
@@ -282,9 +261,9 @@ let make_custom dirs index_of (pkg : Packages.t) :
               Fmt.Dump.(list string)
               (List.map (fun p -> p.Packages.name) pkgs));
         let idx =
-          make_index ~dirs ~rel_dir:p ~libs ~pkgs
+          make_index ~dirs ~rel_dir:p
             ~content:(content p pkg libs src subdirs all_libs)
-            ~index ~enable_warnings:false
+            ~enable_warnings:false
         in
         idx :: acc)
     all_dirs []

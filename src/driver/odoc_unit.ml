@@ -1,60 +1,16 @@
-module Pkg_args = struct
-  type t = {
-    odoc_dir : Fpath.t;
-    odocl_dir : Fpath.t;
-    includes : Fpath.Set.t;
-    pages : Fpath.t Util.StringMap.t;
-    libs : Fpath.t Util.StringMap.t;
-  }
+(* The link-time reference scope of a package: the page trees ([-P]) and the
+   module trees ([-L]) that its units may refer to. Every unit of a package is
+   linked with the same scope. Paths are absolute. *)
+type scope = { pages : (string * Fpath.t) list; libs : (string * Fpath.t) list }
 
-  let v ~odoc_dir ~odocl_dir ~includes ~pages ~libs =
-    let includes = Fpath.Set.of_list includes in
-    let pages, libs = Util.StringMap.(of_list pages, of_list libs) in
-    { odoc_dir; odocl_dir; includes; pages; libs }
-
-  let map_rel dir m =
-    Util.StringMap.fold (fun a b acc -> (a, Fpath.(dir // b)) :: acc) m []
-
-  let compiled_pages v = map_rel v.odoc_dir v.pages
-  let compiled_libs v = map_rel v.odoc_dir v.libs
-  let includes (x : t) =
-    List.map (fun y -> Fpath.(x.odoc_dir // y)) (Fpath.Set.to_list x.includes)
-  let linked_pages v = map_rel v.odocl_dir v.pages
-  let linked_libs v = map_rel v.odocl_dir v.libs
-
-  let combine v1 v2 =
-    if v1.odoc_dir <> v2.odoc_dir then
-      Fmt.invalid_arg "combine: odoc_dir differs";
-    if v1.odocl_dir <> v2.odocl_dir then
-      Fmt.invalid_arg "combine: odocl_dir differs";
-    {
-      odoc_dir = v1.odoc_dir;
-      odocl_dir = v1.odocl_dir;
-      includes = Fpath.Set.union v1.includes v2.includes;
-      pages = Util.StringMap.union (fun _ x _ -> Some x) v1.pages v2.pages;
-      libs = Util.StringMap.union (fun _ x _ -> Some x) v1.libs v2.libs;
-    }
-
-  let pp fmt x =
-    let sfp_pp =
-      Fmt.(
-        list ~sep:comma (fun fmt (a, b) ->
-            Format.fprintf fmt "(%s, %a)" a Fpath.pp b))
-    in
-    Format.fprintf fmt
-      "@[<hov>odoc_dir: %a@;\
-       odocl_dir: %a@;\
-       includes: %a@;\
-       pages: [%a]@;\
-       libs: [%a]@]"
-      Fpath.pp x.odoc_dir Fpath.pp x.odocl_dir
-      Fmt.Dump.(list Fpath.pp)
-      (Fpath.Set.to_list x.includes)
-      sfp_pp
-      (Util.StringMap.bindings x.pages)
-      sfp_pp
-      (Util.StringMap.bindings x.libs)
-end
+let pp_scope fmt x =
+  let sfp_pp =
+    Fmt.(
+      list ~sep:comma (fun fmt (a, b) ->
+          Format.fprintf fmt "(%s, %a)" a Fpath.pp b))
+  in
+  Format.fprintf fmt "@[<hov>pages: [%a]@;libs: [%a]@]" sfp_pp x.pages sfp_pp
+    x.libs
 
 type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
 
@@ -75,12 +31,8 @@ type 'a t = {
   input_copy : Fpath.t option;
       (* Used to stash cmtis from virtual libraries into the odoc dir for voodoo mode.
          See https://github.com/ocaml/odoc/pull/1309 *)
-  output_dir : Fpath.t;
   odoc_file : Fpath.t;
   odocl_file : Fpath.t;
-  pkg_args : Pkg_args.t;
-  pkgname : string option;
-  index : index option;
   enable_warnings : bool;
   to_output : bool;
   kind : 'a;
@@ -128,19 +80,47 @@ and pp : all_kinds t Fmt.t =
   Format.fprintf fmt
     "@[<hov>parent_id: %s@;\
      input_file: %a@;\
-     output_dir: %a@;\
      odoc_file: %a@;\
      odocl_file: %a@;\
-     pkg_args: %a@;\
-     pkgname: %a@;\
-     index: %a@;\
      kind:%a@;\
      @]"
     (Odoc.Id.to_string x.parent_id)
-    Fpath.pp x.input_file Fpath.pp x.output_dir Fpath.pp x.odoc_file Fpath.pp
-    x.odocl_file Pkg_args.pp x.pkg_args (Fmt.option Fmt.string) x.pkgname
-    (Fmt.option pp_index) x.index pp_kind
+    Fpath.pp x.input_file Fpath.pp x.odoc_file Fpath.pp x.odocl_file pp_kind
     (x.kind :> all_kinds)
+
+(* A library: its modules and their implementations, and the [-I] search path
+   they are compiled and linked with. *)
+type lib = { lib_name : string; includes : Fpath.t list; units : any list }
+
+let pp_lib fmt x =
+  Format.fprintf fmt "@[<hov>lib_name: %s@;includes: %a@;units: %a@]" x.lib_name
+    Fmt.Dump.(list Fpath.pp)
+    x.includes
+    Fmt.Dump.(list pp)
+    x.units
+
+(* A package, the unit of building: its libraries, its pages (including the
+   generated landing pages), the reference scope they all link with, and the
+   index they are gathered in. *)
+type pkg = {
+  pkgname : string option;
+  scope : scope;
+  index : index option;
+  libs : lib list;
+  pages : any list;
+}
+
+let all_units pkg = pkg.pages @ List.concat_map (fun l -> l.units) pkg.libs
+
+let pp_pkg fmt x =
+  Format.fprintf fmt
+    "@[<hov>pkgname: %a@;scope: %a@;index: %a@;libs: %a@;pages: %a@]"
+    (Fmt.option Fmt.string) x.pkgname pp_scope x.scope (Fmt.option pp_index)
+    x.index
+    Fmt.Dump.(list pp_lib)
+    x.libs
+    Fmt.Dump.(list pp)
+    x.pages
 
 let pkg_dir : Packages.t -> Fpath.t = fun pkg -> pkg.pkg_dir
 let doc_dir : Packages.t -> Fpath.t = fun pkg -> pkg.doc_dir
@@ -156,13 +136,20 @@ let src_lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   | Some id -> Fpath.v id
   | None -> Fpath.(src_dir pkg / lib.Packages.lib_name)
 
+let output_root (u : _ t) =
+  let dir = Fpath.parent u.odoc_file in
+  match Odoc.Id.to_string u.parent_id with
+  | "" -> dir
+  | id ->
+      let rec up d = function 0 -> d | n -> up (Fpath.parent d) (n - 1) in
+      up dir (List.length (String.split_on_char '/' id))
+
 type dirs = {
   odoc_dir : Fpath.t;
   odocl_dir : Fpath.t;
   index_dir : Fpath.t;
   mld_dir : Fpath.t;
 }
-
 let fix_virtual ~(precompiled_units : intf t list Util.StringMap.t)
     ~(units : intf t list Util.StringMap.t) =
   Logs.debug (fun m ->

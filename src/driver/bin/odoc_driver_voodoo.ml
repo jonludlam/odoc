@@ -83,16 +83,16 @@ let run package_name blessed actions odoc_dir odocl_dir
         Some output_path
     | _ -> failwith "Error, expecting singleton library in voodoo mode"
   in
-  let units =
+  let pkgs =
     let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
     Odoc_units_of.packages ~dirs ~indices_style:Voodoo ~extra_paths ~remap:false
       all
   in
-  Compile.init_stats units;
+  Compile.init_stats pkgs;
   let compiled =
     match actions with
-    | LinkAndGen -> units
-    | CompileOnly | All -> Compile.compile ?partial ~partial_dir:odoc_dir units
+    | LinkAndGen -> pkgs
+    | CompileOnly | All -> Compile.compile ?partial ~partial_dir:odoc_dir pkgs
   in
   let () = Voodoo.write_lib_markers odoc_dir all in
   let () =

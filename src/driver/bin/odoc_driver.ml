@@ -62,15 +62,15 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
   let () =
     Eio.Fiber.both
       (fun () ->
-        let units =
+        let pkgs =
           let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
           Odoc_units_of.packages ~dirs
             ~indices_style:
               (Odoc_units_of.Normal { toplevel_content = index_mld_content })
             ~extra_paths ~remap all
         in
-        Compile.init_stats units;
-        let compiled = Compile.compile ~partial_dir:odoc_dir units in
+        Compile.init_stats pkgs;
+        let compiled = Compile.compile ~partial_dir:odoc_dir pkgs in
         (* Libraries sharing an object directory share an odoc directory, so
            their [-L] roots overlap; [--custom-layout] tells odoc that is
            intended. *)
