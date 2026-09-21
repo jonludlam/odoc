@@ -75,6 +75,23 @@ let deps pkgs =
        (Util.StringSet.singleton "stdlib")
        (List.map (Result.value ~default:Util.StringSet.empty) results))
 
+(* The directly-declared dependencies of a library: its META [requires] field,
+   read as written rather than resolved ([Fl_package_base.requires] fails
+   outright when an optional dependency such as [faraday-async] is not
+   installed, which would lose the library's other dependencies too). *)
+let direct_deps pkg =
+  init ();
+  try
+    let package = Fl_package_base.query pkg in
+    let lookup preds =
+      try Fl_metascanner.lookup "requires" preds package.package_defs
+      with Not_found -> ""
+    in
+    let names = Fl_split.in_words in
+    let requires = names (lookup []) @ names (lookup [ "ppx_driver" ]) in
+    Ok (Util.StringSet.add "stdlib" (Util.StringSet.of_list requires))
+  with e -> Error (`Msg (Printexc.to_string e))
+
 module Db = struct
   type t = {
     all_libs : Util.StringSet.t;
@@ -104,11 +121,13 @@ module Db = struct
     in
     let all_libs = Util.StringSet.elements all_libs_set in
 
-    (* Now we need the dependency tree of those libraries *)
+    (* The directly-declared dependencies of each library. We deliberately keep
+       these un-closed: -L/-P are computed from the direct dependencies, and
+       the closure needed for -I is taken later ([Odoc_units_of]). *)
     let all_lib_deps =
       List.fold_right
         (fun lib_name acc ->
-          match deps [ lib_name ] with
+          match direct_deps lib_name with
           | Ok deps -> Util.StringMap.add lib_name deps acc
           | Error (`Msg msg) ->
               Logs.err (fun m ->

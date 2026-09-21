@@ -18,6 +18,9 @@ type extra_paths = {
   libs : Fpath.t Util.StringMap.t;
   libs_of_pkg : string list Util.StringMap.t;
 }
+(** What is known of the already-built dependencies: the doc directory of each
+    package, the directory holding each library's [.odoc] files, and which
+    package provides each library. Paths are relative to the odoc directory. *)
 
 val empty_extra_paths : extra_paths
 (** When [odoc_driver] is not running in voodoo mode, this value can be passed

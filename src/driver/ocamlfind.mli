@@ -13,6 +13,10 @@ val sub_libraries : string -> Util.StringSet.t
 val deps : string list -> (Util.StringSet.t, [> `Msg of string ]) result
 (** Returns the list of transitive package dependencies of given libraries *)
 
+val direct_deps : string -> (Util.StringSet.t, [> `Msg of string ]) result
+(** The directly-declared dependencies of a library (its META [requires], plus
+    [stdlib]), not transitively closed. *)
+
 module Db : sig
   type t = {
     all_libs : Util.StringSet.t;

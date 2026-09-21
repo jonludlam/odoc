@@ -45,6 +45,39 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
       extra_libs_of_pkg pkgs
   in
 
+  (* Which package provides a library. *)
+  let pkg_of_lib =
+    Util.StringMap.fold
+      (fun pkgname libs acc ->
+        List.fold_left
+          (fun acc lib -> Util.StringMap.add lib pkgname acc)
+          acc libs)
+      libs_of_pkg Util.StringMap.empty
+  in
+
+  let lib_deps = Packages.lib_requires pkgs in
+
+  (* The dependency cone of a library: itself and the transitive closure of its
+     META dependencies. This is what the compiler saw when building it, so it
+     is the [-I] search path of its units. *)
+  let cone =
+    let cache = Hashtbl.create 100 in
+    fun lib_name ->
+      match Hashtbl.find_opt cache lib_name with
+      | Some c -> c
+      | None ->
+          let rec walk acc = function
+            | [] -> acc
+            | l :: todo when Util.StringSet.mem l acc -> walk acc todo
+            | l :: todo ->
+                walk (Util.StringSet.add l acc)
+                  (Util.StringSet.elements (lib_deps l) @ todo)
+          in
+          let c = walk Util.StringSet.empty [ lib_name ] in
+          Hashtbl.add cache lib_name c;
+          c
+  in
+
   let dash_p pkgname path = (pkgname, Fpath.(odoc_dir // path)) in
 
   let dash_l lib_name =
@@ -55,24 +88,15 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
         []
   in
 
-  (* The reference scope of a package, shared by all its units. [-P] is the
-     package's own pages plus the packages named in its [odoc-config.sexp]; [-L]
-     is its own libraries, their dependencies, and the libraries named in the
-     config file, directly or through a named package. *)
+  (* The reference scope of a package, shared by all its units (see the
+     "reference scope" section of driver.mld). [-L] is its own libraries, their
+     direct META dependencies -- not the transitive closure -- and the libraries
+     named in its [odoc-config.sexp], directly or through a named package. [-P]
+     is the package itself, the packages providing those libraries, and the
+     packages named in the config file. *)
   let scope_of (pkg : Packages.t) : scope =
     let { Global_config.deps = { packages = cfg_pkgs; libraries = cfg_libs } } =
       pkg.config
-    in
-    let pages =
-      dash_p pkg.name (doc_dir pkg)
-      :: List.filter_map
-           (fun pkgname ->
-             match Util.StringMap.find_opt pkgname pkg_paths with
-             | None ->
-                 Logs.debug (fun m -> m "Package '%s' not found" pkgname);
-                 None
-             | Some path -> Some (dash_p pkgname path))
-           cfg_pkgs
     in
     let lib_set =
       List.fold_left
@@ -90,15 +114,49 @@ let packages ~dirs ~extra_paths ~remap ~indices_style (pkgs : Packages.t list) :
           | None -> acc)
         lib_set cfg_pkgs
     in
+    (* A library that provides no modules of its own -- [num] forwarding to
+       [num.core], [threads.posix] to [threads] -- is only an alias for its
+       requires: stand those in for it. *)
+    let lib_set =
+      let rec expand seen acc = function
+        | [] -> acc
+        | l :: todo when Util.StringSet.mem l seen -> expand seen acc todo
+        | l :: todo ->
+            let seen = Util.StringSet.add l seen in
+            if Util.StringMap.mem l lib_dirs then
+              expand seen (Util.StringSet.add l acc) todo
+            else expand seen acc (Util.StringSet.elements (lib_deps l) @ todo)
+      in
+      expand Util.StringSet.empty Util.StringSet.empty
+        (Util.StringSet.elements lib_set)
+    in
     let libs = List.concat_map dash_l (Util.StringSet.elements lib_set) in
+    let pkg_set =
+      Util.StringSet.fold
+        (fun lib acc ->
+          match Util.StringMap.find_opt lib pkg_of_lib with
+          | Some p -> Util.StringSet.add p acc
+          | None -> acc)
+        lib_set
+        (Util.StringSet.add pkg.name (Util.StringSet.of_list cfg_pkgs))
+    in
+    let pages =
+      Util.StringSet.elements pkg_set
+      |> List.filter_map (fun pkgname ->
+             match Util.StringMap.find_opt pkgname pkg_paths with
+             | None ->
+                 Logs.debug (fun m -> m "Package '%s' not found" pkgname);
+                 None
+             | Some path -> Some (dash_p pkgname path))
+    in
     { pages; libs }
   in
 
-  (* The [-I] search path of a library: the directories of its dependencies
-     and its own. *)
+  (* The [-I] search path of a library: the directories of its dependency
+     cone. *)
   let includes_of (lib : Packages.libty) =
-    Util.StringSet.add lib.lib_name lib.lib_deps
-    |> Util.StringSet.elements |> List.concat_map dash_l |> List.map snd
+    cone lib.lib_name |> Util.StringSet.elements |> List.concat_map dash_l
+    |> List.map snd
     |> List.sort_uniq Fpath.compare
   in
 

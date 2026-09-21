@@ -112,32 +112,8 @@ let of_dune_build dir ~extra_pkgs ~extra_libs =
           Util.StringMap.empty (local_libs @ global_libs)
       in
 
-      let rec with_trans_deps =
-        let cache = Hashtbl.create (List.length libs) in
-        fun lib_name ->
-          try Hashtbl.find cache lib_name
-          with Not_found ->
-            let libs =
-              try Util.StringMap.find lib_name all_lib_deps
-              with Not_found ->
-                Logs.debug (fun m -> m "No lib deps for library %s" lib_name);
-                Util.StringSet.empty
-            in
-            let result =
-              Util.StringSet.fold
-                (fun l acc -> Util.StringSet.union (with_trans_deps l) acc)
-                libs libs
-            in
-            Hashtbl.add cache lib_name result;
-            result
-      in
-
-      let all_lib_deps =
-        Util.StringMap.mapi
-          (fun lib_name _ -> with_trans_deps lib_name)
-          all_lib_deps
-      in
-
+      (* Direct dependencies only; the closure needed for -I is taken in
+         [Odoc_units_of]. *)
       let colon = Fmt.any ":" in
       Format.eprintf "all_lib_deps: %a@."
         Fmt.(list ~sep:comma (pair ~sep:colon string (list ~sep:semi string)))
