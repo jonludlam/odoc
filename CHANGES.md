@@ -13,6 +13,26 @@
 - Fix OxCaml with-bounds for arbitrary types (@art-w, #1466)
 - Display items included via `include functor` as included via the functor
   (@Leonidas-from-XIV, #1452)
+- `odoc compile`: `-o` now overrides the output path computed from
+  `--parent-id` and `--output-dir`, which is no longer required in that case
+  (@jonludlam, #1462)
+- `odoc compile-impl`: `-o` now overrides the output path computed from
+  `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
+- `{!modules: ...}` lists accept path references (`{!modules: /lib/Module}`),
+  so a generated page can name the library a module belongs to (@jonludlam,
+  #1461)
+- odoc-driver: build package by package, in dependency order, the way
+  ocaml.org does; the "partials" that let voodoo mode reconstruct its
+  dependencies' compiled units are gone (@jonludlam, #1461)
+- odoc-driver: lay `.odoc` files out like the compiled objects, so that
+  co-located libraries share a directory and `-I` mirrors the compiler's;
+  this replaces the digest-based recovery of undeclared dependencies
+  (@jonludlam, #1461)
+- odoc-driver: compute the reference scope per package as documented in
+  `driver.mld` — `-L` from the direct META requires, `-P` from the packages
+  providing them, `-I` from the library's dependency cone (@jonludlam, #1461)
+- Document the odoc 3 reference scope and driving model in `driver.mld` and
+  `odoc_for_authors.mld` (@jonludlam, #1461)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
@@ -21,11 +41,6 @@
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
 - Store comment text as one node per run of words rather than one per word,
   which makes `.odoc` and `.odocl` files substantially smaller (@jonludlam, #1487)
-- `odoc compile`: `-o` now overrides the output path computed from
-  `--parent-id` and `--output-dir`, which is no longer required in that case
-  (@jonludlam, #1462)
-- `odoc compile-impl`: `-o` now overrides the output path computed from
-  `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
 
 ### Fixed
 - Fix optional arguments rendering as `?arg:???` in modules without an mli on
