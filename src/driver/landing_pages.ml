@@ -24,6 +24,9 @@ let make_index ~dirs ~rel_dir ~enable_warnings ~content :
     kind = `Mld;
   }
 
+(* Name the library in each reference ([/lib/Module]): every library of the
+   package is in scope, and a virtual library's modules share their names with
+   those of its implementations. *)
 let module_list ppf lib =
   let modules = List.filter (fun m -> not m.m_hidden) lib.modules in
   match modules with
@@ -33,7 +36,7 @@ let module_list ppf lib =
         List.sort (fun m m' -> String.compare m.m_name m'.m_name) modules
       in
       fpf ppf "{!modules:";
-      List.iter (fun m -> fpf ppf " %s" m.m_name) modules;
+      List.iter (fun m -> fpf ppf " /%s/%s" lib.lib_name m.m_name) modules;
       fpf ppf "}@\n"
 
 let library ~dirs ~pkg lib =
