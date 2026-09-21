@@ -48,20 +48,12 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
             ~extra_paths ~remap:false all
         in
         Compile.init_stats pkgs;
-        let compiled = Compile.compile ~partial_dir:odoc_dir pkgs in
+        let compiled = Compile.compile pkgs in
         let linked =
           Compile.link ~warnings_tags:[] ~custom_layout:true compiled
         in
-        let occurrence_file =
-          let output =
-            Fpath.( / ) odoc_dir "occurrences-all.odoc-occurrences"
-          in
-          let () = Odoc.count_occurrences ~input:[ odoc_dir ] ~output in
-          output
-        in
         let () =
-          Compile.html_generate ~occurrence_file ~remaps:[] ~generate_json
-            ~simplified_search_output:false html_dir linked
+          Compile.html_generate ~remaps:[] ~generate_json html_dir linked
         in
         let _ = Odoc.support_files html_dir in
         Stats.stats.finished <- true;

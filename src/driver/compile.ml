@@ -4,8 +4,6 @@ open Bos
 
 type compiled = Odoc_unit.pkg
 
-let odoc_partial_filename = "__odoc_partial.m"
-
 let mk_byhash (units : Odoc_unit.any list) =
   List.fold_left
     (fun acc (u : Odoc_unit.any) ->
@@ -52,48 +50,6 @@ let init_stats (pkgs : Odoc_unit.pkg list) =
 
 open Eio.Std
 
-type partial = Odoc_unit.intf Odoc_unit.t list Util.StringMap.t
-
-let unmarshal filename : partial =
-  let ic = open_in_bin (Fpath.to_string filename) in
-  Fun.protect
-    ~finally:(fun () -> close_in ic)
-    (fun () -> Marshal.from_channel ic)
-
-let marshal (v : partial) filename =
-  let _ = OS.Dir.create (Fpath.parent filename) |> Result.get_ok in
-  let oc = open_out_bin (Fpath.to_string filename) in
-  Fun.protect
-    ~finally:(fun () -> close_out oc)
-    (fun () -> Marshal.to_channel oc v [])
-
-let find_partials odoc_dir :
-    Odoc_unit.intf Odoc_unit.t list Util.StringMap.t * _ =
-  let tbl = Hashtbl.create 1000 in
-  let hashes_result =
-    OS.Dir.fold_contents ~dotfiles:false ~elements:`Dirs
-      (fun p hashes ->
-        let index_m = Fpath.( / ) p odoc_partial_filename in
-        match OS.File.exists index_m with
-        | Ok true ->
-            let hashes' = unmarshal index_m in
-            Util.StringMap.iter
-              (fun h units ->
-                List.iter
-                  (fun u ->
-                    Hashtbl.replace tbl
-                      (h, Odoc.Id.to_string u.Odoc_unit.parent_id)
-                      (Promise.create_resolved ()))
-                  units)
-              hashes';
-            Util.StringMap.union (fun _x o1 _o2 -> Some o1) hashes hashes'
-        | _ -> hashes)
-      Util.StringMap.empty odoc_dir
-  in
-  match hashes_result with
-  | Ok h -> (h, tbl)
-  | Error _ -> (* odoc_dir doesn't exist...? *) (Util.StringMap.empty, tbl)
-
 (* What a unit inherits from its library and package for the compile step. *)
 type ctx = { includes : Fpath.Set.t; pkgname : string option }
 
@@ -117,25 +73,46 @@ let contexts (pkgs : Odoc_unit.pkg list) : (Fpath.t, ctx) Hashtbl.t * _ list =
   in
   (tbl, all)
 
-let compile ?partial ~partial_dir (pkgs : Odoc_unit.pkg list) =
+(* An implementation of a virtual library ships its modules as [.cmt] files
+   only: the interface, and the documentation written in it, belong to the
+   virtual library's [.cmti], which shares the module's digest. When the
+   virtual library is built in the same run, [Packages.remap_virtual] has
+   already substituted the [.cmti]; when it was built earlier (voodoo mode),
+   the copy stashed next to its [.odoc] file ([input_copy]) is on the
+   implementation's dependency cone, so look for a same-named [.cmti] with the
+   right digest along the unit's [-I] path. *)
+let find_virtual_interface ~includes (unit : Odoc_unit.intf Odoc_unit.t) =
+  if not (Fpath.has_ext "cmt" unit.input_file) then unit
+  else
+    let (`Intf { Odoc_unit.hash; _ }) = unit.kind in
+    let name = Fpath.(unit.input_file |> rem_ext |> basename) in
+    let candidate dir =
+      let cmti = Fpath.(dir / (name ^ ".cmti")) in
+      match OS.File.exists cmti with
+      | Ok true -> (
+          match Odoc.compile_deps cmti with
+          | Ok { digest; _ } when digest = hash -> Some cmti
+          | _ -> None)
+      | _ -> None
+    in
+    match List.find_map candidate (Fpath.Set.elements includes) with
+    | None -> unit
+    | Some cmti ->
+        Logs.debug (fun m ->
+            m "Using %a as the interface of %a" Fpath.pp cmti Fpath.pp
+              unit.input_file);
+        { unit with input_file = cmti }
+
+let compile (pkgs : Odoc_unit.pkg list) =
   let ctx_tbl, all = contexts pkgs in
   let ctx (u : _ Odoc_unit.t) = Hashtbl.find ctx_tbl u.odoc_file in
   let hashes = mk_byhash all in
   let compile_mod =
-    (* Modules have a more complicated compilation because:
-       - They have dependencies and must be compiled in the right order
-       - In Voodoo mode, there might exists already compiled parts *)
-    let other_hashes, tbl =
-      match partial with
-      | Some _ -> find_partials partial_dir
-      | None -> (Util.StringMap.empty, Hashtbl.create 10)
-    in
-    let hashes =
-      Odoc_unit.fix_virtual ~precompiled_units:other_hashes ~units:hashes
-    in
-    let all_hashes =
-      Util.StringMap.union (fun _x o1 o2 -> Some (o1 @ o2)) hashes other_hashes
-    in
+    (* Modules have dependencies and must be compiled in the right order. Only
+       the modules of [pkgs] are compiled here: a dependency whose digest is
+       not among them belongs to a package built earlier, and its [.odoc] is
+       found through the [-I] path. *)
+    let tbl = Hashtbl.create 1000 in
     let compile_one compile_other (unit : Odoc_unit.intf Odoc_unit.t) =
       let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
       let _fibers =
@@ -146,14 +123,15 @@ let compile ?partial ~partial_dir (pkgs : Odoc_unit.pkg list) =
             | Error _exn ->
                 Logs.debug (fun m ->
                     m
-                      "Error during compilation of module %s (hash %s, \
-                       required by %s)"
+                      "Module %s (hash %s, required by %s) is not being \
+                       compiled in this run"
                       other_unit_name other_unit_hash
                       (Fpath.filename unit.input_file));
                 None)
           deps
       in
       let { includes; pkgname } = ctx unit in
+      let unit = find_virtual_interface ~includes unit in
       Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
         ~includes ~warnings_tag:pkgname ~parent_id:unit.parent_id
         ~ignore_output:(not unit.enable_warnings);
@@ -181,7 +159,7 @@ let compile ?partial ~partial_dir (pkgs : Odoc_unit.pkg list) =
                 Some unit)
       in
       try
-        let units = Util.StringMap.find hash all_hashes in
+        let units = Util.StringMap.find hash hashes in
         let r = map_units units in
         Ok (List.filter_map Fun.id r)
       with Not_found ->
@@ -223,10 +201,6 @@ let compile ?partial ~partial_dir (pkgs : Odoc_unit.pkg list) =
         Ok [ unit ]
   in
   let _ = Fiber.List.map compile all in
-  (match partial with
-  | Some l -> marshal hashes Fpath.(l / odoc_partial_filename)
-  | None -> ());
-
   pkgs
 
 type linked = Odoc_unit.pkg
@@ -276,37 +250,35 @@ let sherlodoc_index_one ~output_dir (index : Odoc_unit.index) =
   Sherlodoc.index ~format:`js ~inputs ~dst ();
   rel_path
 
-let html_generate ~occurrence_file ~remaps ~generate_json
-    ~simplified_search_output output_dir (pkgs : linked list) =
+(* The index of a package is built from the [.odocl] files of its linked units.
+   Listing them explicitly puts the package's pages and modules in one hierarchy
+   even though they live in different directories. *)
+let index_file_list (pkg : Odoc_unit.pkg) (index : Odoc_unit.index) =
+  let inputs =
+    Odoc_unit.all_units pkg
+    |> List.filter_map (fun (l : Odoc_unit.any) ->
+           match l.kind with
+           | `Intf { hidden = true; _ } -> None
+           | _ when l.to_output -> Some l.odocl_file
+           | _ -> None)
+    |> List.sort_uniq Fpath.compare
+  in
+  let file_list = Fpath.(parent index.output_file / "index-inputs.txt") in
+  Util.with_out_to file_list (fun oc ->
+      List.iter (fun f -> Printf.fprintf oc "%s\n" (Fpath.to_string f)) inputs)
+  |> Result.get_ok;
+  file_list
+
+let html_generate ~remaps ~generate_json output_dir (pkgs : linked list) =
   let _ = OS.Dir.create output_dir |> Result.get_ok in
   Sherlodoc.js Fpath.(output_dir // Sherlodoc.js_file);
-  (* The index of a package is built from the [.odocl] files of its linked
-     units. Listing them explicitly puts the package's pages and modules in one
-     hierarchy even though they live in different directories. *)
   let compile_index (pkg : Odoc_unit.pkg)
       ({ output_file; json; search_dir = _; sidebar } as index :
         Odoc_unit.index) =
-    let file_list =
-      let inputs =
-        Odoc_unit.all_units pkg
-        |> List.filter_map (fun (l : Odoc_unit.any) ->
-               match l.kind with
-               | `Intf { hidden = true; _ } -> None
-               | _ when l.to_output -> Some l.odocl_file
-               | _ -> None)
-        |> List.sort_uniq Fpath.compare
-      in
-      let file_list = Fpath.(parent output_file / "index-inputs.txt") in
-      Util.with_out_to file_list (fun oc ->
-          List.iter
-            (fun f -> Printf.fprintf oc "%s\n" (Fpath.to_string f))
-            inputs)
-      |> Result.get_ok;
-      file_list
-    in
+    let file_list = index_file_list pkg index in
     let () =
-      Odoc.compile_index ~json ~occurrence_file ~output_file ~file_list
-        ~simplified:false ~wrap:false ()
+      Odoc.compile_index ~json ~output_file ~file_list ~simplified:false
+        ~wrap:false ()
     in
     let sidebar =
       match sidebar with
@@ -316,11 +288,6 @@ let html_generate ~occurrence_file ~remaps ~generate_json
           Odoc.sidebar_generate
             ~output_file:Fpath.(output_dir // pkg_dir / "sidebar.json")
             ~json:true index.output_file ();
-          if simplified_search_output then
-            Odoc.compile_index ~json:true ~occurrence_file
-              ~output_file:Fpath.(output_dir // pkg_dir / "index.js")
-              ~simplified:true ~wrap:true ~file_list ();
-
           Some output_file
     in
     let db_path = sherlodoc_index_one ~output_dir index in
@@ -373,3 +340,17 @@ let html_generate ~occurrence_file ~remaps ~generate_json
         Fiber.List.iter (generate_pkg (Some fpath)) pkgs)
       ()
     |> ignore
+
+(* The JSON search index of a package, for ocaml.org. It is the only consumer
+   of the occurrence counts, which is why it is a separate, final step. *)
+let json_index ~occurrence_file output_dir (pkgs : linked list) =
+  Fiber.List.iter
+    (fun (pkg : Odoc_unit.pkg) ->
+      match pkg.index with
+      | Some ({ sidebar = Some { pkg_dir; _ }; _ } as index) ->
+          let file_list = index_file_list pkg index in
+          Odoc.compile_index ~json:true ~occurrence_file
+            ~output_file:Fpath.(output_dir // pkg_dir / "index.js")
+            ~simplified:true ~wrap:true ~file_list ()
+      | _ -> ())
+    pkgs

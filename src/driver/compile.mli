@@ -2,13 +2,11 @@ type compiled = Odoc_unit.pkg
 
 val init_stats : Odoc_unit.pkg list -> unit
 
-val compile :
-  ?partial:Fpath.t -> partial_dir:Fpath.t -> Odoc_unit.pkg list -> compiled list
+val compile : Odoc_unit.pkg list -> compiled list
 (** Compile the units of the given packages. Modules are compiled with their
-    library's [-I] search path, in dependency order.
-
-    Use [partial] to reuse the output of a previous call to [compile]. Useful in
-    the voodoo context. *)
+    library's [-I] search path, in dependency order; a dependency that is not
+    among these packages is expected to have been compiled already and to be
+    reachable through that search path. *)
 
 type linked
 
@@ -22,12 +20,15 @@ val link :
     well. *)
 
 val html_generate :
-  occurrence_file:Fpath.t ->
   remaps:(string * string) list ->
   generate_json:bool ->
-  simplified_search_output:bool ->
   Fpath.t ->
   linked list ->
   unit
-(** Build each package's index and sidebar, then generate the HTML of its units.
-*)
+(** Build each package's index, sidebar and search database, then generate the
+    HTML of its units. *)
+
+val json_index : occurrence_file:Fpath.t -> Fpath.t -> linked list -> unit
+(** [json_index ~occurrence_file html_dir pkgs] writes each package's JSON
+    search index ([index.js]), with occurrence counts, into the HTML directory.
+    This is the only step that uses the occurrence counts. *)

@@ -76,13 +76,6 @@ let run package_name blessed actions odoc_dir odocl_dir
 
   let all = Packages.remap_virtual [ all ] in
 
-  let partial =
-    match all with
-    | [ p ] ->
-        let output_path = Fpath.(odoc_dir // p.pkg_dir) in
-        Some output_path
-    | _ -> failwith "Error, expecting singleton library in voodoo mode"
-  in
   let pkgs =
     let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
     Odoc_units_of.packages ~dirs ~indices_style:Voodoo ~extra_paths ~remap:false
@@ -92,7 +85,7 @@ let run package_name blessed actions odoc_dir odocl_dir
   let compiled =
     match actions with
     | LinkAndGen -> pkgs
-    | CompileOnly | All -> Compile.compile ?partial ~partial_dir:odoc_dir pkgs
+    | CompileOnly | All -> Compile.compile pkgs
   in
   let () = Voodoo.write_lib_markers odoc_dir all in
   let () =
@@ -104,15 +97,16 @@ let run package_name blessed actions odoc_dir odocl_dir
             compiled
         in
         let () =
-          Odoc.count_occurrences ~input:odocl_dirs ~output:occurrence_file
-        in
-        let () =
-          Compile.html_generate ~occurrence_file ~remaps:[] ~generate_json
-            ~simplified_search_output:true html_dir linked
+          Compile.html_generate ~remaps:[] ~generate_json html_dir linked
         in
         List.iter (generate_status ~html_dir) all;
         let _ = Odoc.support_files html_dir in
-        ()
+        (* Occurrence counts feed only the JSON search index, so they are a
+           final step over the linked output. *)
+        let () =
+          Odoc.count_occurrences ~input:odocl_dirs ~output:occurrence_file
+        in
+        Compile.json_index ~occurrence_file html_dir linked
   in
 
   List.iter
