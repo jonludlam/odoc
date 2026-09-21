@@ -184,7 +184,8 @@ let of_dune_build dir ~extra_pkgs ~extra_libs =
                 | _ -> ());
                 if Fpath.Set.mem cmtidir cset then
                   Some
-                    (Packages.Lib.v ~libname_of_archive ~pkg_name:lib.name
+                    (Packages.Lib.v ~roots:[ dir ] ~libname_of_archive
+                       ~pkg_name:lib.name
                        ~dir:(Fpath.append dir (Fpath.v lib.source_dir))
                        ~cmtidir:(Some cmtidir) ~all_lib_deps ~cmi_only_libs:[]
                        ~id_override)

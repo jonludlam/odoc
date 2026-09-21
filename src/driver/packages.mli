@@ -52,7 +52,12 @@ val pp_asset : Format.formatter -> asset -> unit
 
 type libty = {
   lib_name : string;
-  dir : Fpath.t;
+  dir : Fpath.t;  (** Where the library's objects were found. *)
+  rel_dir : Fpath.t;
+      (** The library's object directory relative to its install root. The
+          library's [.odoc] files are written at this relative path below the
+          odoc directory, mirroring the layout of the objects (see
+          {!Odoc_unit.lib_obj_dir}). *)
   archive_name : string option;
   lib_deps : Util.StringSet.t;
   modules : modulety list;
@@ -61,6 +66,7 @@ type libty = {
 
 module Lib : sig
   val v :
+    roots:Fpath.t list ->
     libname_of_archive:string Fpath.Map.t ->
     pkg_name:string ->
     dir:Fpath.t ->
@@ -88,8 +94,6 @@ type t = {
 }
 
 val pp : Format.formatter -> t -> unit
-
-val fix_missing_deps : t list -> t list
 
 val mk_mlds : Opam.doc_file list -> mld list * asset list * md list
 

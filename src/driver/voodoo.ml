@@ -12,9 +12,13 @@ type pkg = {
 
 let prep_path = ref "prep"
 
-(* We mark the paths that contain compiled units for both packages and libraries
-   by dropping in a marker file. The contents of the file is unimportant, as we
-   can determine which package or library we're looking at simply by its path. *)
+(* We mark the paths that contain compiled units for packages and libraries by
+   dropping in marker files. A package marker sits in the package's doc
+   directory, whose path tells us the package. A library marker sits in the
+   library's identifier directory ([doc/<lib>]), whose path tells us the
+   library; its contents is the path (relative to the odoc dir) of the
+   directory holding the library's [.odoc] files, which mirrors the library's
+   object directory and may be shared with other libraries. *)
 let lib_marker = ".odoc_lib_marker"
 let pkg_marker = ".odoc_pkg_marker"
 
@@ -173,9 +177,9 @@ let of_voodoo pkg =
                 (fun directory ->
                   Logs.debug (fun m ->
                       m "Processing directory: %a\n%!" Fpath.pp directory);
-                  Packages.Lib.v ~libname_of_archive ~pkg_name:pkg.name
-                    ~dir:directory ~cmtidir:None ~all_lib_deps ~cmi_only_libs
-                    ~id_override:None)
+                  Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
+                    ~pkg_name:pkg.name ~dir:directory ~cmtidir:None
+                    ~all_lib_deps ~cmi_only_libs ~id_override:None)
                 Fpath.(Set.to_list directories)))
     |> List.flatten
   in
@@ -216,7 +220,8 @@ let of_voodoo pkg =
         in
         Logs.debug (fun m ->
             m "Processing directory without META: %a" Fpath.pp libdir);
-        Packages.Lib.v ~libname_of_archive ~pkg_name:pkg.name
+        Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
+          ~pkg_name:pkg.name
           ~dir:Fpath.(pkg_path // libdir)
           ~cmtidir:None ~all_lib_deps ~cmi_only_libs:[] ~id_override:None)
       libdirs_without_meta
@@ -322,6 +327,20 @@ let extra_paths compile_dir =
       (function None -> Some [ libname ] | Some l -> Some (libname :: l))
       libs_of_pkg
   in
+  (* The lib marker's contents is the directory (relative to the odoc dir)
+     holding the library's [.odoc] files. *)
+  let lib_odoc_dir abs_path path =
+    match Bos.OS.File.read abs_path with
+    | Ok contents when String.trim contents <> "" ->
+        Fpath.v (String.trim contents)
+    | _ ->
+        Logs.warn (fun m ->
+            m
+              "Lib marker %a has no contents; assuming the odoc files are \
+               alongside it"
+              Fpath.pp path);
+        Fpath.parent path
+  in
   let pkgs, libs, libs_of_pkg =
     match contents with
     | Error _ ->
@@ -334,7 +353,7 @@ let extra_paths compile_dir =
             | [ "p"; pkg; _version; "doc"; libname; l ] when l = lib_marker ->
                 Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
                 ( pkgs,
-                  Util.StringMap.add libname (Fpath.parent path) libs,
+                  Util.StringMap.add libname (lib_odoc_dir abs_path path) libs,
                   add_libs pkg libname libs_of_pkg )
             | [ "p"; pkg; _version; "doc"; l ] when l = pkg_marker ->
                 Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
@@ -345,7 +364,7 @@ let extra_paths compile_dir =
               when l = lib_marker ->
                 Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
                 ( pkgs,
-                  Util.StringMap.add libname (Fpath.parent path) libs,
+                  Util.StringMap.add libname (lib_odoc_dir abs_path path) libs,
                   add_libs pkg libname libs_of_pkg )
             | [ "u"; _universe; pkg; _version; "doc"; l ] when l = pkg_marker ->
                 Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
@@ -380,10 +399,6 @@ let write_lib_markers odoc_dir pkgs =
         (fun (lib : Packages.libty) ->
           let lib_dir = Odoc_unit.lib_dir pkg lib in
           let marker = Fpath.(odoc_dir // lib_dir / lib_marker) in
-          write marker
-            (Fmt.str
-               "This marks this directory as the location of odoc files for \
-                library %s in package %s"
-               lib.lib_name pkg.name))
+          write marker (Fpath.to_string (Odoc_unit.lib_obj_dir pkg lib)))
         libs)
     pkgs

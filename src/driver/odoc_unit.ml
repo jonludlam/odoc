@@ -59,7 +59,6 @@ end
 type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
 
 type index = {
-  roots : Fpath.t list;
   output_file : Fpath.t;
   json : bool;
   search_dir : Fpath.t;
@@ -67,10 +66,8 @@ type index = {
 }
 
 let pp_index fmt x =
-  Format.fprintf fmt
-    "@[<hov>roots: %a@;output_file: %a@;json: %b@;search_dir: %a@]"
-    (Fmt.list Fpath.pp) x.roots Fpath.pp x.output_file x.json Fpath.pp
-    x.search_dir
+  Format.fprintf fmt "@[<hov>output_file: %a@;json: %b@;search_dir: %a@]"
+    Fpath.pp x.output_file x.json Fpath.pp x.search_dir
 
 type 'a t = {
   parent_id : Odoc.Id.t;
@@ -151,6 +148,8 @@ let lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   match lib.id_override with
   | Some id -> Fpath.v id
   | None -> Fpath.(doc_dir pkg / lib.Packages.lib_name)
+let lib_obj_dir (pkg : Packages.t) (lib : Packages.libty) =
+  Fpath.(pkg_dir pkg // lib.Packages.rel_dir)
 let src_dir pkg = Fpath.(doc_dir pkg / "src")
 let src_lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   match lib.id_override with

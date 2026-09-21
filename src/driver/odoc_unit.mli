@@ -21,8 +21,11 @@ module Pkg_args : sig
 end
 
 type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
+
+(* An index is built from the [.odocl] files of the units that refer to it (see
+   [Compile.html_generate]), so it is defined by its output, not by input
+   directories. *)
 type index = {
-  roots : Fpath.t list;
   output_file : Fpath.t;
   json : bool;
   search_dir : Fpath.t;
@@ -64,7 +67,18 @@ type any = [ impl | intf | mld | asset | md ] t
 val pp : any Fmt.t
 
 val pkg_dir : Packages.t -> Fpath.t
+
 val lib_dir : Packages.t -> Packages.libty -> Fpath.t
+(** [lib_dir pkg lib] is the parent id of the library's units: it determines
+    their identifiers and the URLs of their pages. *)
+
+val lib_obj_dir : Packages.t -> Packages.libty -> Fpath.t
+(** [lib_obj_dir pkg lib] is where the library's [.odoc] (and [.odocl]) files
+    are written, relative to the odoc (resp. odocl) directory. It mirrors the
+    library's object directory -- the compiled documentation is laid out like
+    the compiled objects -- so libraries sharing an object directory share an
+    odoc directory, and the [-I] set of a unit mirrors the compiler's. *)
+
 val doc_dir : Packages.t -> Fpath.t
 val src_dir : Packages.t -> Fpath.t
 val src_lib_dir : Packages.t -> Packages.libty -> Fpath.t

@@ -31,5 +31,7 @@ val extra_paths : Fpath.t -> extra_paths
 
 val write_lib_markers : Fpath.t -> Packages.t list -> unit
 (** [write_lib_markers odoc_dir pkgs] writes marker files to show the locations
-    of the compilation units associated with packages and libraries in [pkgs].
-*)
+    of the compilation units associated with packages and libraries in [pkgs]. A
+    library's marker is written in its identifier directory and contains the
+    path of the directory holding its [.odoc] files (see
+    {!Odoc_unit.lib_obj_dir}). *)

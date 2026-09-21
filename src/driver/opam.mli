@@ -25,3 +25,7 @@ val deps : string list -> package list
 val pkg_to_dir_map : unit -> fpaths_of_package * package_of_fpath
 val pp : Format.formatter -> package -> unit
 val prefix : unit -> string
+
+val install_roots : unit -> Fpath.t list
+(** The directories below which installed files live: the opam switch prefix
+    and, when running under [dune exec], the dune install directory. *)

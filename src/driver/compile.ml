@@ -137,7 +137,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
           Fpath.Set.empty
           (Odoc_unit.Pkg_args.compiled_libs unit.pkg_args)
       in
-      Odoc.compile ~output_dir:unit.output_dir ~input_file:unit.input_file
+      Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
         ~includes ~warnings_tag:unit.pkgname ~parent_id:unit.parent_id
         ~ignore_output:(not unit.enable_warnings);
       (match unit.input_copy with
@@ -184,7 +184,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
             (Odoc_unit.Pkg_args.compiled_libs unit.pkg_args)
         in
         let source_id = src.src_id in
-        Odoc.compile_impl ~output_dir:unit.output_dir
+        Odoc.compile_impl ~output_file:unit.odoc_file
           ~input_file:unit.input_file ~includes ~parent_id:unit.parent_id
           ~source_id;
         Atomic.incr Stats.stats.compiled_impls;
@@ -196,7 +196,7 @@ let compile ?partial ~partial_dir (all : Odoc_unit.any list) =
         Ok [ unit ]
     | `Mld ->
         let includes = Fpath.Set.empty in
-        Odoc.compile ~output_dir:unit.output_dir ~input_file:unit.input_file
+        Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
           ~includes ~warnings_tag:None ~parent_id:unit.parent_id
           ~ignore_output:(not unit.enable_warnings);
         Atomic.incr Stats.stats.compiled_mlds;
@@ -260,13 +260,45 @@ let html_generate ~occurrence_file ~remaps ~generate_json
   let tbl = Hashtbl.create 10 in
   let _ = OS.Dir.create output_dir |> Result.get_ok in
   Sherlodoc.js Fpath.(output_dir // Sherlodoc.js_file);
+  (* The inputs of each index: the [.odocl] files of the linked units that refer
+     to it. Listing them explicitly puts a package's pages and modules in one
+     hierarchy even though they live in different directories. *)
+  let index_inputs : (Fpath.t, Fpath.t list) Hashtbl.t =
+    let inputs = Hashtbl.create 10 in
+    List.iter
+      (fun (l : linked) ->
+        match (l.index, l.kind) with
+        | None, _ | _, `Intf { hidden = true; _ } -> ()
+        | Some index, _ when l.to_output ->
+            let prev =
+              Option.value ~default:[]
+                (Hashtbl.find_opt inputs index.output_file)
+            in
+            Hashtbl.replace inputs index.output_file (l.odocl_file :: prev)
+        | Some _, _ -> ())
+      linked;
+    inputs
+  in
   let compile_index : Odoc_unit.index -> _ =
    fun index ->
     let compile_index_one
-        ({ roots; output_file; json; search_dir = _; sidebar } as index :
+        ({ output_file; json; search_dir = _; sidebar } as index :
           Odoc_unit.index) =
+      let file_list =
+        let inputs =
+          Option.value ~default:[] (Hashtbl.find_opt index_inputs output_file)
+          |> List.sort_uniq Fpath.compare
+        in
+        let file_list = Fpath.(parent output_file / "index-inputs.txt") in
+        Util.with_out_to file_list (fun oc ->
+            List.iter
+              (fun f -> Printf.fprintf oc "%s\n" (Fpath.to_string f))
+              inputs)
+        |> Result.get_ok;
+        file_list
+      in
       let () =
-        Odoc.compile_index ~json ~occurrence_file ~output_file ~roots
+        Odoc.compile_index ~json ~occurrence_file ~output_file ~file_list
           ~simplified:false ~wrap:false ()
       in
       let sidebar =
@@ -280,7 +312,7 @@ let html_generate ~occurrence_file ~remaps ~generate_json
             if simplified_search_output then
               Odoc.compile_index ~json:true ~occurrence_file
                 ~output_file:Fpath.(output_dir // pkg_dir / "index.js")
-                ~simplified:true ~wrap:true ~roots ();
+                ~simplified:true ~wrap:true ~file_list ();
 
             Some output_file
       in

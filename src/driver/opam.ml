@@ -226,61 +226,71 @@ let find_odoc_config prefix only_package contents =
 
   Option.map (fun p -> Fpath.(prefix // p)) opt
 
-let dune_overrides () =
-  let ocamlpath = Sys.getenv_opt "OCAMLPATH" in
-  match ocamlpath with
-  | None -> []
+(* When run under [dune exec], OCAMLPATH points at the dune install directory,
+   e.g. [/Users/jon/odoc/_build/install/default/lib]. Strip the [lib] off to
+   find the root of the installed files. *)
+let dune_install_base () =
+  match Sys.getenv_opt "OCAMLPATH" with
+  | None -> None
   | Some path -> (
-      (* OCAMLPATH is set in dune to be e.g. /Users/jon/odoc/_build/install/default/lib *)
-      (* Let's strip the 'lib' off and we can find the installed files *)
       let path = Fpath.v path in
       match Fpath.segs path |> List.rev with
-      | "lib" :: _ :: "install" :: "_build" :: _ -> (
-          (* Check it's of the right form *)
-          let base = Fpath.split_base path |> fst in
-          let contents =
-            Bos.OS.Dir.fold_contents
-              (fun x acc ->
-                match Fpath.relativize ~root:base x with
-                | None -> acc
-                | Some r -> r :: acc)
-              [] base
-          in
-          match contents with
-          | Ok contents ->
-              Logs.debug (fun m ->
-                  m "dune install contents: %a"
-                    Fmt.(Dump.list Fpath.pp)
-                    contents);
-              let packages =
-                List.fold_left
-                  (fun acc fpath ->
-                    match Fpath.segs fpath with
-                    | "lib" :: pkg :: _ :: _ -> Util.StringSet.add pkg acc
-                    | "doc" :: pkg :: _ :: _ -> Util.StringSet.add pkg acc
-                    | _ -> acc)
-                  Util.StringSet.empty contents
-              in
+      | "lib" :: _ :: "install" :: "_build" :: _ ->
+          Some (Fpath.split_base path |> fst)
+      | _ -> None)
 
+(* The roots below which installed files live: the opam switch prefix and, when
+   running under dune, the dune install directory. A library's object directory
+   is recorded relative to one of these (see [Packages.libty.rel_dir]). *)
+let install_roots () =
+  let prefix = Fpath.v (prefix ()) in
+  match dune_install_base () with
+  | None -> [ prefix ]
+  | Some base -> [ prefix; base ]
+
+let dune_overrides () =
+  match dune_install_base () with
+  | None -> []
+  | Some base -> (
+      let contents =
+        Bos.OS.Dir.fold_contents
+          (fun x acc ->
+            match Fpath.relativize ~root:base x with
+            | None -> acc
+            | Some r -> r :: acc)
+          [] base
+      in
+      match contents with
+      | Ok contents ->
+          Logs.debug (fun m ->
+              m "dune install contents: %a" Fmt.(Dump.list Fpath.pp) contents);
+          let packages =
+            List.fold_left
+              (fun acc fpath ->
+                match Fpath.segs fpath with
+                | "lib" :: pkg :: _ :: _ -> Util.StringSet.add pkg acc
+                | "doc" :: pkg :: _ :: _ -> Util.StringSet.add pkg acc
+                | _ -> acc)
+              Util.StringSet.empty contents
+          in
+
+          Logs.debug (fun m ->
+              m "Found packages: %a"
+                Fmt.(Dump.list string)
+                (Util.StringSet.elements packages));
+          Util.StringSet.fold
+            (fun pkg acc ->
+              let libs = classify_libs base (Some pkg) contents in
+              let docs = classify_docs base (Some pkg) contents in
+              let odoc_config = find_odoc_config base (Some pkg) contents in
               Logs.debug (fun m ->
-                  m "Found packages: %a"
-                    Fmt.(Dump.list string)
-                    (Util.StringSet.elements packages));
-              Util.StringSet.fold
-                (fun pkg acc ->
-                  let libs = classify_libs base (Some pkg) contents in
-                  let docs = classify_docs base (Some pkg) contents in
-                  let odoc_config = find_odoc_config base (Some pkg) contents in
-                  Logs.debug (fun m ->
-                      m "pkg %s Found %d docs" pkg (List.length docs));
-                  ({ name = pkg; version = "dev" }, { libs; docs; odoc_config })
-                  :: acc)
-                packages []
-          | Error (`Msg msg) ->
-              Logs.err (fun m ->
-                  m "Error listing dune install directory: %s" msg);
-              [])
-      | _ -> [])
+                  m "pkg %s Found %d docs" pkg (List.length docs));
+              ({ name = pkg; version = "dev" }, { libs; docs; odoc_config })
+              :: acc)
+            packages []
+      | Error (`Msg msg) ->
+          Logs.err (fun m -> m "Error listing dune install directory: %s" msg);
+          [])
 
 let check pkgs =
   let cmd =

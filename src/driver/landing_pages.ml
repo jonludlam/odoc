@@ -15,7 +15,7 @@ let make_index ~dirs ~rel_dir ~libs ~pkgs ~index ~enable_warnings ~content :
   in
   let libs =
     List.map
-      (fun (pkg, lib) -> (lib.Packages.lib_name, Odoc_unit.lib_dir pkg lib))
+      (fun (pkg, lib) -> (lib.Packages.lib_name, Odoc_unit.lib_obj_dir pkg lib))
       libs
   in
   let pkg_args = Pkg_args.v ~pages ~libs ~includes:[] ~odoc_dir ~odocl_dir in

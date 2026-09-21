@@ -71,15 +71,18 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
         in
         Compile.init_stats units;
         let compiled = Compile.compile ~partial_dir:odoc_dir units in
+        (* Libraries sharing an object directory share an odoc directory, so
+           their [-L] roots overlap; [--custom-layout] tells odoc that is
+           intended. *)
         let linked =
-          Compile.link ~warnings_tags:packages ~custom_layout:false compiled
+          Compile.link ~warnings_tags:packages ~custom_layout:true compiled
         in
         let odoc_dirs =
           List.fold_left
             (fun acc pkg ->
               let lib_dirs =
                 List.map
-                  (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_dir pkg l))
+                  (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_obj_dir pkg l))
                   pkg.libraries
               in
               Fpath.Set.union acc (Fpath.Set.of_list lib_dirs))

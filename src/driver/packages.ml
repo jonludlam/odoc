@@ -65,6 +65,7 @@ let pp_asset fmt m =
 type libty = {
   lib_name : string;
   dir : Fpath.t;
+  rel_dir : Fpath.t;
   archive_name : string option;
   lib_deps : Util.StringSet.t;
   modules : modulety list;
@@ -76,12 +77,13 @@ let pp_libty fmt l =
     "@[<hov>{@,\
      lib_name: %s;@,\
      dir: %a;@,\
+     rel_dir: %a;@,\
      archive_name: %a;@,\
      lib_deps: %a;@,\
      modules: %a@,\
      id_override: %a@,\n\
     \     }@]"
-    l.lib_name Fpath.pp l.dir
+    l.lib_name Fpath.pp l.dir Fpath.pp l.rel_dir
     (Fmt.Dump.option Fmt.string)
     l.archive_name
     (Fmt.list ~sep:Fmt.comma Fmt.string)
@@ -204,7 +206,27 @@ module Module = struct
 end
 
 module Lib = struct
-  let handle_virtual_lib ~dir ~id_override ~lib_name ~all_lib_deps =
+  (* The object directory of a library -- where its [cmi]/[cmt] files live --
+     relative to the first of [roots] that contains it. The [.odoc] files of
+     the library are written to the same relative path below the odoc
+     directory, so that the directory structure of compiled documentation
+     mirrors that of the compiled objects. Libraries installed in a single
+     directory (e.g. the [compiler-libs.*] family) therefore share an odoc
+     directory too, and a [-I] pointing at it finds every one of them, just
+     as the compiler's does. *)
+  let rel_dir ~roots dir =
+    let dir = Fpath.normalize dir in
+    match List.find_map (fun root -> Fpath.rem_prefix root dir) roots with
+    | Some rel -> rel
+    | None -> (
+        if Fpath.is_rel dir then dir
+        else
+          (* Not below any root: drop the leading '/' and use the path as is. *)
+          match Fpath.segs dir with
+          | "" :: segs -> Fpath.v (String.concat "/" segs)
+          | _ -> dir)
+
+  let handle_virtual_lib ~roots ~dir ~id_override ~lib_name ~all_lib_deps =
     let modules =
       match
         Bos.OS.Dir.fold_contents
@@ -225,16 +247,32 @@ module Lib = struct
       try Util.StringMap.find lib_name all_lib_deps
       with _ -> Util.StringSet.empty
     in
-    [ { lib_name; archive_name = None; modules; lib_deps; dir; id_override } ]
+    let rel_dir = rel_dir ~roots dir in
+    [
+      {
+        lib_name;
+        archive_name = None;
+        modules;
+        lib_deps;
+        dir;
+        rel_dir;
+        id_override;
+      };
+    ]
 
-  let v ~libname_of_archive ~pkg_name ~dir ~cmtidir ~all_lib_deps ~cmi_only_libs
-      ~id_override =
+  let v ~roots ~libname_of_archive ~pkg_name ~dir ~cmtidir ~all_lib_deps
+      ~cmi_only_libs ~id_override =
     Logs.debug (fun m ->
         m "Classifying dir %a for package %s" Fpath.pp dir pkg_name);
     let dirs =
       match cmtidir with None -> [ dir ] | Some dir2 -> [ dir; dir2 ]
     in
     let results = Odoc.classify dirs in
+    (* The objects live in [cmtidir] when there is one (dune layout), else in
+       [dir]. *)
+    let rel_dir =
+      rel_dir ~roots (match cmtidir with None -> dir | Some d -> d)
+    in
     match List.length results with
     | 0 -> (
         match
@@ -243,7 +281,7 @@ module Lib = struct
         | None -> []
         | Some dir ->
             let lib_name = List.assoc dir cmi_only_libs in
-            handle_virtual_lib ~dir ~lib_name ~all_lib_deps ~id_override)
+            handle_virtual_lib ~roots ~dir ~lib_name ~all_lib_deps ~id_override)
     | _ ->
         Logs.debug (fun m -> m "Got %d lines" (List.length results));
         List.filter_map
@@ -264,6 +302,7 @@ module Lib = struct
                     modules;
                     lib_deps;
                     dir;
+                    rel_dir;
                     id_override;
                   }
             | None ->
@@ -303,67 +342,6 @@ let mk_mlds docs =
             { md_path = doc.file; md_rel_path = doc.rel_path } :: others ))
     ([], [], []) docs
 
-let fix_missing_deps pkgs =
-  let lib_name_by_hash =
-    List.fold_right
-      (fun pkg acc ->
-        List.fold_left
-          (fun acc lib ->
-            List.fold_left
-              (fun acc m ->
-                Util.StringMap.update m.m_intf.mif_hash
-                  (function
-                    | None -> Some [ lib.lib_name ]
-                    | Some l -> Some (lib.lib_name :: l))
-                  acc)
-              acc lib.modules)
-          acc pkg.libraries)
-      pkgs Util.StringMap.empty
-  in
-  List.map
-    (fun pkg ->
-      let libraries =
-        List.map
-          (fun lib ->
-            let lib_deps = lib.lib_deps in
-            let new_lib_deps =
-              List.fold_left
-                (fun acc m ->
-                  let if_deps =
-                    Util.StringSet.of_list (List.map snd m.m_intf.mif_deps)
-                  in
-                  let impl_deps =
-                    match m.m_impl with
-                    | Some i -> Util.StringSet.of_list (List.map snd i.mip_deps)
-                    | None -> Util.StringSet.empty
-                  in
-                  let deps = Util.StringSet.union if_deps impl_deps in
-                  Util.StringSet.fold
-                    (fun hash acc ->
-                      match Util.StringMap.find hash lib_name_by_hash with
-                      | exception Not_found -> acc
-                      | deps ->
-                          if
-                            List.mem lib.lib_name deps
-                            || List.exists
-                                 (fun d -> Util.StringSet.mem d lib_deps)
-                                 deps
-                          then acc
-                          else Util.StringSet.add (List.hd deps) acc)
-                    deps acc)
-                Util.StringSet.empty lib.modules
-            in
-            if Util.StringSet.cardinal new_lib_deps > 0 then
-              Logs.debug (fun m ->
-                  m "Adding missing deps to %s: %a" lib.lib_name
-                    Fmt.(list string)
-                    (Util.StringSet.elements new_lib_deps));
-            { lib with lib_deps = Util.StringSet.union new_lib_deps lib_deps })
-          pkg.libraries
-      in
-      { pkg with libraries })
-    pkgs
-
 let of_libs ~packages_dir libs =
   let Ocamlfind.Db.
         { archives_by_dir; libname_of_archive; cmi_only_libs; all_lib_deps; _ }
@@ -373,6 +351,7 @@ let of_libs ~packages_dir libs =
 
   (* Opam gives us a map of packages to directories, and vice-versa *)
   let opam_map, opam_rmap = Opam.pkg_to_dir_map () in
+  let roots = Opam.install_roots () in
 
   (* Now we can construct the packages *)
   let packages =
@@ -384,8 +363,8 @@ let of_libs ~packages_dir libs =
             acc
         | Some pkg ->
             let libraries =
-              Lib.v ~libname_of_archive ~pkg_name:pkg.name ~dir ~cmtidir:None
-                ~all_lib_deps ~cmi_only_libs ~id_override:None
+              Lib.v ~roots ~libname_of_archive ~pkg_name:pkg.name ~dir
+                ~cmtidir:None ~all_lib_deps ~cmi_only_libs ~id_override:None
             in
             let libraries =
               List.filter
@@ -436,8 +415,7 @@ let of_libs ~packages_dir libs =
               acc)
       archives_by_dir Util.StringMap.empty
   in
-  let packages = Util.StringMap.bindings packages |> List.map snd in
-  fix_missing_deps packages
+  Util.StringMap.bindings packages |> List.map snd
 
 let of_packages ~packages_dir packages =
   Logs.app (fun m -> m "Deciding which packages to build...");
@@ -450,6 +428,7 @@ let of_packages ~packages_dir packages =
   in
 
   let opam_map, _opam_rmap = Opam.pkg_to_dir_map () in
+  let roots = Opam.install_roots () in
 
   let ps =
     List.filter_map
@@ -489,7 +468,7 @@ let of_packages ~packages_dir packages =
         let libraries =
           List.fold_left
             (fun acc dir ->
-              Lib.v ~libname_of_archive ~pkg_name:pkg.Opam.name ~dir
+              Lib.v ~roots ~libname_of_archive ~pkg_name:pkg.Opam.name ~dir
                 ~cmtidir:None ~all_lib_deps ~cmi_only_libs ~id_override:None
               @ acc)
             []
@@ -540,9 +519,8 @@ let of_packages ~packages_dir packages =
         })
       all
   in
-  let res = fix_missing_deps packages in
-  Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) res);
-  res
+  Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) packages);
+  packages
 
 let remap_virtual_interfaces duplicate_hashes pkgs =
   List.map

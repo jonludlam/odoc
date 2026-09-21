@@ -15,20 +15,24 @@ type compile_deps = { digest : Digest.t; deps : (string * Digest.t) list }
 val compile_deps : Fpath.t -> (compile_deps, [> `Msg of string ]) result
 val classify : Fpath.t list -> (string * string list) list
 val compile_impl :
-  output_dir:Fpath.t ->
+  output_file:Fpath.t ->
   input_file:Fpath.t ->
   includes:Fpath.set ->
   parent_id:Id.t ->
   source_id:Id.t ->
   unit
+
 val compile :
-  output_dir:Fpath.t ->
+  output_file:Fpath.t ->
   input_file:Fpath.t ->
   includes:Fpath.set ->
   warnings_tag:string option ->
   parent_id:Id.t ->
   ignore_output:bool ->
   unit
+(** [parent_id] determines the identifier of the compiled unit; [output_file] is
+    where the [.odoc] file is written, independently of [parent_id]. *)
+
 val compile_md :
   output_dir:Fpath.t -> input_file:Fpath.t -> parent_id:Id.t -> unit
 
@@ -52,11 +56,12 @@ val compile_index :
   output_file:Fpath.t ->
   ?occurrence_file:Fpath.t ->
   json:bool ->
-  roots:Fpath.t list ->
+  file_list:Fpath.t ->
   simplified:bool ->
   wrap:bool ->
   unit ->
   unit
+(** [file_list] is a file listing the [.odocl] files to index, one per line. *)
 
 val sidebar_generate :
   ?ignore_output:bool ->

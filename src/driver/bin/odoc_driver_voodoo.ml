@@ -64,7 +64,7 @@ let run package_name blessed actions odoc_dir odocl_dir
     let all = Voodoo.of_voodoo pkg in
     let odocl_dirs =
       List.map
-        (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_dir all l))
+        (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_obj_dir all l))
         all.libraries
     in
     let occurrence_file =
@@ -100,7 +100,7 @@ let run package_name blessed actions odoc_dir odocl_dir
     | CompileOnly -> ()
     | LinkAndGen | All ->
         let linked =
-          Compile.link ~warnings_tags:[ package_name ] ~custom_layout:false
+          Compile.link ~warnings_tags:[ package_name ] ~custom_layout:true
             compiled
         in
         let () =
