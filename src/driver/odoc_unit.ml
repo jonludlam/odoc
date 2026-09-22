@@ -78,9 +78,7 @@ let all_units pkg =
 let pkg_dir : Packages.t -> Fpath.t = fun pkg -> pkg.pkg_dir
 let doc_dir : Packages.t -> Fpath.t = fun pkg -> pkg.doc_dir
 let lib_dir (pkg : Packages.t) (lib : Packages.libty) =
-  match lib.id_override with
-  | Some id -> Fpath.v id
-  | None -> Fpath.(doc_dir pkg / lib.Packages.lib_name)
+  Fpath.(doc_dir pkg / lib.Packages.lib_name)
 
 (* Where the [.odoc] files go, relative to the odoc directory, which mirrors
    the switch: a library's modules beside where its objects are installed
@@ -94,9 +92,7 @@ let page_obj_dir (pkg : Packages.t) rel_dir =
   | None -> Fpath.(pages_dir pkg // rel_dir |> normalize)
 let src_dir pkg = Fpath.(doc_dir pkg / "src")
 let src_lib_dir (pkg : Packages.t) (lib : Packages.libty) =
-  match lib.id_override with
-  | Some id -> Fpath.v id
-  | None -> Fpath.(src_dir pkg / lib.Packages.lib_name)
+  Fpath.(src_dir pkg / lib.Packages.lib_name)
 
 let output_root (u : _ t) =
   let dir = Fpath.parent u.odoc_file in

@@ -18,26 +18,6 @@ let top_dir pkg =
 
 (* Use output from Voodoo Prep as input *)
 
-let find_universe_and_version pkg_name =
-  Bos.OS.Dir.contents Fpath.(v !prep_path / "universes") >>= fun universes ->
-  let universe =
-    match
-      List.find_opt
-        (fun u ->
-          match Bos.OS.Dir.exists Fpath.(u / pkg_name) with
-          | Ok b -> b
-          | Error _ -> false)
-        universes
-    with
-    | Some u -> Ok u
-    | None -> Error (`Msg (Format.sprintf "Failed to find package %s" pkg_name))
-  in
-  universe >>= fun u ->
-  Bos.OS.Dir.contents ~rel:true Fpath.(u / pkg_name) >>= fun version ->
-  match (Fpath.segs u, version) with
-  | _ :: _ :: u :: _, [ version ] -> Ok (u, Fpath.to_string version)
-  | _ -> Error (`Msg (Format.sprintf "Failed to find package %s" pkg_name))
-
 (* Given a directory containing for example [a.cma] and [b.cma], this
    function returns a Fpath.Map.t mapping [dir/a.cma -> a] and [dir/b.cma -> b] *)
 let libname_of_archives_of_dir dir =
@@ -143,8 +123,8 @@ let of_voodoo pkg =
                   Logs.debug (fun m ->
                       m "Processing directory: %a\n%!" Fpath.pp directory);
                   Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
-                    ~pkg_name:pkg.name ~dir:directory ~cmtidir:None
-                    ~all_lib_deps ~cmi_only_libs ~id_override:None)
+                    ~pkg_name:pkg.name ~dir:directory ~all_lib_deps
+                    ~cmi_only_libs)
                 Fpath.(Set.to_list directories)))
     |> List.flatten
   in
@@ -188,7 +168,7 @@ let of_voodoo pkg =
         Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
           ~pkg_name:pkg.name
           ~dir:Fpath.(pkg_path // libdir)
-          ~cmtidir:None ~all_lib_deps ~cmi_only_libs:[] ~id_override:None)
+          ~all_lib_deps ~cmi_only_libs:[])
       libdirs_without_meta
     |> List.flatten
   in

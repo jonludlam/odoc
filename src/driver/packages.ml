@@ -69,7 +69,6 @@ type libty = {
   archive_name : string option;
   lib_deps : Util.StringSet.t;
   modules : modulety list;
-  id_override : string option;
 }
 
 let pp_libty fmt l =
@@ -81,8 +80,7 @@ let pp_libty fmt l =
      archive_name: %a;@,\
      lib_deps: %a;@,\
      modules: %a@,\
-     id_override: %a@,\n\
-    \     }@]"
+     }@]"
     l.lib_name Fpath.pp l.dir Fpath.pp l.rel_dir
     (Fmt.Dump.option Fmt.string)
     l.archive_name
@@ -90,8 +88,6 @@ let pp_libty fmt l =
     (Util.StringSet.elements l.lib_deps)
     (Fmt.Dump.list pp_modulety)
     l.modules
-    Fmt.Dump.(option string)
-    l.id_override
 
 type t = {
   name : string;
@@ -137,8 +133,7 @@ module Module = struct
 
   let is_hidden name = Astring.String.is_infix ~affix:"__" name
 
-  let vs libsdir cmtidir modules =
-    let dir = match cmtidir with None -> libsdir | Some dir -> dir in
+  let vs dir modules =
     let mk m_name =
       let exists ext =
         let p =
@@ -163,13 +158,8 @@ module Module = struct
         | Error _ -> failwith "bad deps"
       in
       let mk_impl mip_path =
-        (* Directories in which we should look for source files *)
-        let src_dirs =
-          match cmtidir with None -> [ libsdir ] | Some d2 -> [ libsdir; d2 ]
-        in
-
         let mip_src_info =
-          match Ocamlobjinfo.get_source mip_path src_dirs with
+          match Ocamlobjinfo.get_source mip_path [ dir ] with
           | None ->
               Logs.debug (fun m -> m "No source found for module %s" m_name);
               None
@@ -226,7 +216,7 @@ module Lib = struct
           | "" :: segs -> Fpath.v (String.concat "/" segs)
           | _ -> dir)
 
-  let handle_virtual_lib ~roots ~dir ~id_override ~lib_name ~all_lib_deps =
+  let handle_virtual_lib ~roots ~dir ~lib_name ~all_lib_deps =
     let modules =
       match
         Bos.OS.Dir.fold_contents
@@ -242,46 +232,25 @@ module Lib = struct
           Logs.err (fun m -> m "Error reading dir %a: %s" Fpath.pp dir e);
           []
     in
-    let modules = Module.vs dir None modules in
+    let modules = Module.vs dir modules in
     let lib_deps =
       try Util.StringMap.find lib_name all_lib_deps
       with _ -> Util.StringSet.empty
     in
     let rel_dir = rel_dir ~roots dir in
-    [
-      {
-        lib_name;
-        archive_name = None;
-        modules;
-        lib_deps;
-        dir;
-        rel_dir;
-        id_override;
-      };
-    ]
+    [ { lib_name; archive_name = None; modules; lib_deps; dir; rel_dir } ]
 
-  let v ~roots ~libname_of_archive ~pkg_name ~dir ~cmtidir ~all_lib_deps
-      ~cmi_only_libs ~id_override =
+  let v ~roots ~libname_of_archive ~pkg_name ~dir ~all_lib_deps ~cmi_only_libs =
     Logs.debug (fun m ->
         m "Classifying dir %a for package %s" Fpath.pp dir pkg_name);
-    let dirs =
-      match cmtidir with None -> [ dir ] | Some dir2 -> [ dir; dir2 ]
-    in
-    let results = Odoc.classify dirs in
-    (* The objects live in [cmtidir] when there is one (dune layout), else in
-       [dir]. *)
-    let rel_dir =
-      rel_dir ~roots (match cmtidir with None -> dir | Some d -> d)
-    in
+    let results = Odoc.classify [ dir ] in
+    let rel_dir = rel_dir ~roots dir in
     match List.length results with
     | 0 -> (
-        match
-          List.find_opt (fun dir -> List.mem_assoc dir cmi_only_libs) dirs
-        with
+        match List.assoc_opt dir cmi_only_libs with
         | None -> []
-        | Some dir ->
-            let lib_name = List.assoc dir cmi_only_libs in
-            handle_virtual_lib ~roots ~dir ~lib_name ~all_lib_deps ~id_override)
+        | Some lib_name ->
+            handle_virtual_lib ~roots ~dir ~lib_name ~all_lib_deps)
     | _ ->
         Logs.debug (fun m -> m "Got %d lines" (List.length results));
         List.filter_map
@@ -290,7 +259,7 @@ module Lib = struct
               Fpath.Map.find Fpath.(dir / archive_name) libname_of_archive
             with
             | Some lib_name ->
-                let modules = Module.vs dir cmtidir modules in
+                let modules = Module.vs dir modules in
                 let lib_deps =
                   try Util.StringMap.find lib_name all_lib_deps
                   with _ -> Util.StringSet.empty
@@ -303,7 +272,6 @@ module Lib = struct
                     lib_deps;
                     dir;
                     rel_dir;
-                    id_override;
                   }
             | None ->
                 Logs.info (fun m ->
@@ -341,81 +309,6 @@ let mk_mlds docs =
             assets,
             { md_path = doc.file; md_rel_path = doc.rel_path } :: others ))
     ([], [], []) docs
-
-let of_libs ~packages_dir libs =
-  let Ocamlfind.Db.
-        { archives_by_dir; libname_of_archive; cmi_only_libs; all_lib_deps; _ }
-      =
-    Ocamlfind.Db.create libs
-  in
-
-  (* Opam gives us a map of packages to directories, and vice-versa *)
-  let opam_map, opam_rmap = Opam.pkg_to_dir_map () in
-  let roots = Opam.install_roots () in
-
-  (* Now we can construct the packages *)
-  let packages =
-    Fpath.Map.fold
-      (fun dir archives acc ->
-        match Fpath.Map.find dir opam_rmap with
-        | None ->
-            Logs.debug (fun m -> m "No package for dir %a\n%!" Fpath.pp dir);
-            acc
-        | Some pkg ->
-            let libraries =
-              Lib.v ~roots ~libname_of_archive ~pkg_name:pkg.name ~dir
-                ~cmtidir:None ~all_lib_deps ~cmi_only_libs ~id_override:None
-            in
-            let libraries =
-              List.filter
-                (fun l ->
-                  match l.archive_name with
-                  | None -> true
-                  | Some a -> Util.StringSet.mem a archives)
-                libraries
-            in
-            Util.StringMap.update pkg.name
-              (function
-                | Some pkg ->
-                    let libraries = libraries @ pkg.libraries in
-                    Some { pkg with libraries }
-                | None ->
-                    let pkg_dir = pkg_dir packages_dir pkg.name in
-
-                    let _, { Opam.docs; odoc_config; _ } =
-                      List.find
-                        (fun (pkg', _) ->
-                          (* Logs.debug (fun m ->
-                              m "Checking %s against %s" pkg.Opam.name pkg'.Opam.name); *)
-                          pkg = pkg')
-                        opam_map
-                    in
-
-                    let config =
-                      match odoc_config with
-                      | None -> Global_config.empty
-                      | Some f -> Global_config.load f
-                    in
-
-                    let mlds, assets, _ = mk_mlds docs in
-                    Some
-                      {
-                        name = pkg.name;
-                        version = pkg.version;
-                        libraries;
-                        mlds;
-                        assets;
-                        selected = false;
-                        remaps = [];
-                        other_docs = [];
-                        pkg_dir;
-                        doc_dir = pkg_dir;
-                        config;
-                      })
-              acc)
-      archives_by_dir Util.StringMap.empty
-  in
-  Util.StringMap.bindings packages |> List.map snd
 
 let of_packages ~packages_dir packages =
   Logs.app (fun m -> m "Deciding which packages to build...");
@@ -469,7 +362,7 @@ let of_packages ~packages_dir packages =
           List.fold_left
             (fun acc dir ->
               Lib.v ~roots ~libname_of_archive ~pkg_name:pkg.Opam.name ~dir
-                ~cmtidir:None ~all_lib_deps ~cmi_only_libs ~id_override:None
+                ~all_lib_deps ~cmi_only_libs
               @ acc)
             []
             (files.Opam.libs |> Fpath.Set.to_list)

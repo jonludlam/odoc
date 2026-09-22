@@ -61,7 +61,6 @@ type libty = {
   archive_name : string option;
   lib_deps : Util.StringSet.t;
   modules : modulety list;
-  id_override : string option;
 }
 
 module Lib : sig
@@ -75,10 +74,8 @@ module Lib : sig
     libname_of_archive:string Fpath.Map.t ->
     pkg_name:string ->
     dir:Fpath.t ->
-    cmtidir:Fpath.t option ->
     all_lib_deps:Util.StringSet.t Util.StringMap.t ->
     cmi_only_libs:(Fpath.t * string) list ->
-    id_override:string option ->
     libty list
 
   val pp : Format.formatter -> libty -> unit
@@ -101,9 +98,6 @@ type t = {
 val pp : Format.formatter -> t -> unit
 
 val mk_mlds : Opam.doc_file list -> mld list * asset list * md list
-
-val of_libs : packages_dir:Fpath.t option -> Util.StringSet.t -> t list
-(** Turns a set of libraries into a map from package name to package *)
 
 val of_packages : packages_dir:Fpath.t option -> string list -> t list
 

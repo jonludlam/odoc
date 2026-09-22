@@ -1,6 +1,3 @@
-val find_universe_and_version :
-  string -> (string * string, [> `Msg of string ]) result
-
 type pkg
 
 val find_pkg : string -> blessed:bool -> pkg option

@@ -1,9 +1,6 @@
 open Odoc_unit
 
-type indices_style =
-  | Voodoo
-  | Normal of { toplevel_content : string option }
-  | Automatic
+type indices_style = Voodoo | Normal of { toplevel_content : string option }
 
 (* Everything known about libraries and packages: those being built, and any
    other through findlib -- the libraries being installed in the switch in
@@ -314,43 +311,35 @@ let of_asset ctx (pkg : Packages.t) (asset : Packages.asset) : asset t =
     ~to_output:true
 
 (* The landing pages the driver writes for a package: one for the package
-   (unless it ships its own index.mld), one per library, one for the sources.
-   In monorepo mode, one per directory instead. *)
-let landing_pages ctx ~indices_style (pkg : Packages.t) : mld t list =
+   (unless it ships its own index.mld), one per library, one for the sources. *)
+let landing_pages ctx (pkg : Packages.t) : mld t list =
   if ctx.remap && not pkg.selected then []
   else
-    match indices_style with
-    | Automatic when pkg.name = Monorepo_style.monorepo_pkg_name ->
-        Landing_pages.make_custom ctx.dirs pkg
-        @ List.map (Landing_pages.library ~dirs:ctx.dirs ~pkg) pkg.libraries
-    | Normal _ | Voodoo | Automatic ->
-        let has_index_page =
+    let has_index_page =
+      List.exists
+        (fun (mld : Packages.mld) ->
+          Fpath.equal (Fpath.normalize mld.mld_rel_path) (Fpath.v "index.mld"))
+        pkg.mlds
+    in
+    let has_sources =
+      List.exists
+        (fun (lib : Packages.libty) ->
           List.exists
-            (fun (mld : Packages.mld) ->
-              Fpath.equal
-                (Fpath.normalize mld.mld_rel_path)
-                (Fpath.v "index.mld"))
-            pkg.mlds
-        in
-        let has_sources =
-          List.exists
-            (fun (lib : Packages.libty) ->
-              List.exists
-                (fun (m : Packages.modulety) ->
-                  match m.m_impl with
-                  | Some { mip_src_info = Some _; _ } -> true
-                  | _ -> false)
-                lib.modules)
-            pkg.libraries
-        in
-        (if has_index_page then []
-         else [ Landing_pages.package ~dirs:ctx.dirs ~pkg ])
-        @ (if has_sources then [ Landing_pages.src ~dirs:ctx.dirs ~pkg ] else [])
-        @ List.map (Landing_pages.library ~dirs:ctx.dirs ~pkg) pkg.libraries
+            (fun (m : Packages.modulety) ->
+              match m.m_impl with
+              | Some { mip_src_info = Some _; _ } -> true
+              | _ -> false)
+            lib.modules)
+        pkg.libraries
+    in
+    (if has_index_page then []
+     else [ Landing_pages.package ~dirs:ctx.dirs ~pkg ])
+    @ (if has_sources then [ Landing_pages.src ~dirs:ctx.dirs ~pkg ] else [])
+    @ List.map (Landing_pages.library ~dirs:ctx.dirs ~pkg) pkg.libraries
 
-let of_package ctx ~indices_style (pkg : Packages.t) : Odoc_unit.pkg =
+let of_package ctx (pkg : Packages.t) : Odoc_unit.pkg =
   let pages =
-    (landing_pages ctx ~indices_style pkg :> page list)
+    (landing_pages ctx pkg :> page list)
     @ (List.map (of_mld ctx pkg) pkg.mlds :> page list)
     @ (List.filter_map (of_md ctx pkg) pkg.other_docs :> page list)
     @ (List.map (of_asset ctx pkg) pkg.assets :> page list)
@@ -386,7 +375,7 @@ let toplevel known (pkgs : Packages.t list) (page : mld t) : Odoc_unit.pkg =
 let packages ~dirs ~remap ~indices_style (pkgs : Packages.t list) : pkg list =
   let known = known ~odoc_dir:dirs.odoc_dir pkgs in
   let ctx = { known; dirs; remap } in
-  let built = List.map (of_package ctx ~indices_style) pkgs in
+  let built = List.map (of_package ctx) pkgs in
   match indices_style with
   | Normal { toplevel_content = None } ->
       built
@@ -398,4 +387,4 @@ let packages ~dirs ~remap ~indices_style (pkgs : Packages.t list) : pkg list =
           ~obj_dir:(Fpath.v "./") ~enable_warnings:true ~content
       in
       built @ [ toplevel known pkgs page ]
-  | Voodoo | Automatic -> built
+  | Voodoo -> built

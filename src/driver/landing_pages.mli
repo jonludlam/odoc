@@ -15,5 +15,3 @@ val package : dirs:dirs -> pkg:Packages.t -> mld t
 val src : dirs:dirs -> pkg:Packages.t -> mld t
 
 val package_list : dirs:dirs -> remap:bool -> Packages.t list -> mld t
-
-val make_custom : dirs -> Packages.t -> mld t list
