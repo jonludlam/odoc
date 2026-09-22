@@ -162,7 +162,22 @@ let scope_of known (pkg : Packages.t) : scope =
       (fun acc p -> Util.StringSet.union (libs_of_pkg p) acc)
       named cfg_pkgs
   in
-  let libs = resolve known named in
+  (* A library is worth naming as a root if it is being built in this run or
+     was built before, that is if its directory exists already. Otherwise it
+     stands for the libraries it requires: an alias such as [threads.posix]
+     for an in-run [threads], or an optional dependency that is not
+     documented at all, which then contributes nothing. *)
+  let built_or_building ~building name dir =
+    Util.StringSet.mem name building || Bos.OS.Dir.exists dir = Ok true
+  in
+  let libs =
+    close known
+      ~keep:(fun l ->
+        match known.lib_dir l with
+        | Some dir -> built_or_building ~building:known.building l dir
+        | None -> false)
+      named
+  in
   let pkgs =
     Util.StringSet.fold
       (fun lib acc ->
@@ -172,9 +187,6 @@ let scope_of known (pkg : Packages.t) : scope =
       libs
       (Util.StringSet.add pkg.name (Util.StringSet.of_list cfg_pkgs))
   in
-  (* A root is worth passing if it is being built in this run or was built
-     before: for a library, if we know where it is; for a package, if its
-     pages directory exists already. *)
   let lib_roots =
     Util.StringSet.fold
       (fun lib acc ->
@@ -187,9 +199,7 @@ let scope_of known (pkg : Packages.t) : scope =
     Util.StringSet.fold
       (fun p acc ->
         let dir = pkg_pages_dir known p in
-        if
-          Util.StringSet.mem p known.packages || Bos.OS.Dir.exists dir = Ok true
-        then (p, dir) :: acc
+        if built_or_building ~building:known.packages p dir then (p, dir) :: acc
         else acc)
       pkgs []
   in
