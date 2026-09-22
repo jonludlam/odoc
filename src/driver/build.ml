@@ -1,17 +1,23 @@
 (* Build packages one at a time.
 
-   Libraries are compiled in dependency order the way [Compile.compile_lib]
-   orders modules: [compile_lib] compiles a library after the libraries it
-   requires, memoised by name. The recursion is over libraries rather than
-   packages because META requires form a DAG between libraries even where
-   packages depend on each other (ppx_deriving.api needs ppxlib,
-   ppxlib.traverse needs ppx_deriving.runtime).
+   Libraries are compiled in dependency order, the same way
+   [Compile.compile_lib] orders modules: [compile_lib] compiles a library
+   after the libraries it requires, and remembers which libraries it has done.
+
+   The recursion is over libraries, not packages. Two packages can depend on
+   each other: ppx_deriving has a library that requires ppxlib, and ppxlib has
+   a library that requires ppx_deriving. Neither package can be compiled
+   first. But no two libraries require each other, since the compiler could
+   not have built them if they did: ppx_deriving.api requires ppxlib, and
+   ppxlib.traverse requires ppx_deriving.runtime, and that is fine. So an
+   order always exists between libraries, even when none exists between
+   packages.
 
    Linking a package needs every package in its reference scope, and
-   odoc-config.sexp can put a package built later there -- eio points at
-   eio_main, odoc at odoc-driver. So before a package is linked, whatever its
-   scope names is compiled too. This is the split that voodoo mode exposes as
-   [--actions compile-only] / [--actions link-and-gen].
+   odoc-config.sexp can put a package built later there: eio's documentation
+   points at eio_main, odoc's at odoc-driver. So before a package is linked,
+   whatever its scope names is compiled too. This is the split that voodoo
+   mode exposes as [--actions compile-only] and [--actions link-and-gen].
 
    The top-level index, whose scope is every package, is expected last. *)
 
