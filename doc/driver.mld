@@ -349,8 +349,8 @@ it depends on, so that their [.odoc] files exist when [odoc] looks for them.
 Between libraries, a library is compiled after the libraries it requires:
 [fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
 libraries compiled so far and compiles a library's requirements first,
-recursively. Requirements form a tree between libraries even where packages
-depend on each other, so this never cycles.
+recursively. Requiring is a relation between libraries, not packages, and no
+library requires itself even indirectly, so this always ends.
 
 The compile command for [fmt_cli.cmti] was shown {{!pipeline}above}. Its [-I]
 arguments name the four directories of the cone; [lib/fmt/fmt.odoc] is already

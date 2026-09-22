@@ -3,15 +3,10 @@
    Libraries are compiled in dependency order, the same way
    [Compile.compile_lib] orders modules: [compile_lib] compiles a library
    after the libraries it requires, and remembers which libraries it has done.
-
-   The recursion is over libraries, not packages. Two packages can depend on
-   each other: ppx_deriving has a library that requires ppxlib, and ppxlib has
-   a library that requires ppx_deriving. Neither package can be compiled
-   first. But no two libraries require each other, since the compiler could
-   not have built them if they did: ppx_deriving.api requires ppxlib, and
-   ppxlib.traverse requires ppx_deriving.runtime, and that is fine. So an
-   order always exists between libraries, even when none exists between
-   packages.
+   The recursion is over libraries because requiring is a relation between
+   libraries; a package is only a grouping of them. No library requires
+   itself, directly or not, since the compiler could not have built it, so
+   the recursion always ends.
 
    Linking a package needs every package in its reference scope, and
    odoc-config.sexp can put a package built later there: eio's documentation

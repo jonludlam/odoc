@@ -17,9 +17,10 @@ val archives : string -> string list
     requires. *)
 
 val direct_deps : string -> (Util.StringSet.t, [> `Msg of string ]) result
-(** The libraries a library requires directly: its [META] [requires] field, plus
-    [stdlib]. The field is read as written, so a requirement on a library that
-    is not installed is kept. An error for a library that is not installed. *)
+(** The libraries a library requires directly: its [META] [requires] field under
+    the [ppx_driver] predicate, plus [stdlib]. The field is read as written, so
+    a requirement on a library that is not installed is kept. An error for a
+    library that is not installed. *)
 
 (** Everything the driver needs to know about a set of libraries and their
     dependencies, gathered in one pass. *)

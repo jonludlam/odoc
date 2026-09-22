@@ -78,21 +78,28 @@ let deps pkgs =
        (Util.StringSet.singleton "stdlib")
        (List.map (Result.value ~default:Util.StringSet.empty) results))
 
-(* The directly-declared dependencies of a library: its META [requires] field,
-   read as written rather than resolved ([Fl_package_base.requires] fails
-   outright when an optional dependency such as [faraday-async] is not
-   installed, which would lose the library's other dependencies too). *)
+(* The libraries a library requires directly: its META [requires] field. The
+   field is read as written rather than resolved, because
+   [Fl_package_base.requires] fails outright when an optional dependency such
+   as [faraday-async] is not installed, which would lose the library's other
+   dependencies too.
+
+   It is read under the [ppx_driver] predicate, as the compiler does when
+   building against the library. Without it, the [requires(-ppx_driver)]
+   stanzas of ppx libraries would add the ppx runner ([ppx_deriving], say) to
+   the dependencies of a library that merely offers a rewriter; those stanzas
+   are for programs using the rewriter, not for the library's modules. *)
 let direct_deps pkg =
   init ();
   try
     let package = Fl_package_base.query pkg in
-    let lookup preds =
-      try Fl_metascanner.lookup "requires" preds package.package_defs
+    let requires =
+      try Fl_metascanner.lookup "requires" [ "ppx_driver" ] package.package_defs
       with Not_found -> ""
     in
-    let names = Fl_split.in_words in
-    let requires = names (lookup []) @ names (lookup [ "ppx_driver" ]) in
-    Ok (Util.StringSet.add "stdlib" (Util.StringSet.of_list requires))
+    Ok
+      (Util.StringSet.add "stdlib"
+         (Util.StringSet.of_list (Fl_split.in_words requires)))
   with e -> Error (`Msg (Printexc.to_string e))
 
 module Db = struct
