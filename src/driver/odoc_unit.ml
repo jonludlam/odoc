@@ -75,27 +75,23 @@ let all_units pkg =
   (pkg.pages :> any list)
   @ List.concat_map (fun l -> (l.units :> any list)) pkg.libs
 
-(* What an earlier run left behind, for the packages being built to refer to:
-   for each library, the package providing it and the directory of its [.odoc]
-   files; for each package, its doc directory. Paths are relative to the odoc
-   directory. *)
-module Prebuilt = struct
-  type t = {
-    libs : (string * Fpath.t) Util.StringMap.t;
-    pkgs : Fpath.t Util.StringMap.t;
-  }
-
-  let empty = { libs = Util.StringMap.empty; pkgs = Util.StringMap.empty }
-end
-
 let pkg_dir : Packages.t -> Fpath.t = fun pkg -> pkg.pkg_dir
 let doc_dir : Packages.t -> Fpath.t = fun pkg -> pkg.doc_dir
 let lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   match lib.id_override with
   | Some id -> Fpath.v id
   | None -> Fpath.(doc_dir pkg / lib.Packages.lib_name)
-let lib_obj_dir (pkg : Packages.t) (lib : Packages.libty) =
-  Fpath.(pkg_dir pkg // lib.Packages.rel_dir)
+
+(* Where the [.odoc] files go, relative to the odoc directory, which mirrors
+   the switch: a library's modules beside where its objects are installed
+   ([lib/<findlib dir>]), a package's pages below [doc/<pkg>], the layout of
+   their identifiers ([doc_dir]) reproduced there. *)
+let lib_obj_dir (lib : Packages.libty) = lib.Packages.rel_dir
+let pages_dir (pkg : Packages.t) = Fpath.(v "doc" / pkg.name)
+let page_obj_dir (pkg : Packages.t) rel_dir =
+  match Fpath.relativize ~root:(doc_dir pkg) rel_dir with
+  | Some rel -> Fpath.(pages_dir pkg // rel |> normalize)
+  | None -> Fpath.(pages_dir pkg // rel_dir |> normalize)
 let src_dir pkg = Fpath.(doc_dir pkg / "src")
 let src_lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   match lib.id_override with

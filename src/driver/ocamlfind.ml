@@ -12,7 +12,10 @@ let get_dir lib =
     Fl_package_base.query lib |> fun x ->
     Ok Fpath.(v x.package_dir |> to_dir_path)
   with e ->
-    Logs.err (fun m -> m "Error: %s\n" (Printexc.to_string e));
+    (* Routinely a library named in a META [requires] that is not installed,
+       an optional dependency. *)
+    Logs.debug (fun m ->
+        m "No findlib directory for '%s': %s" lib (Printexc.to_string e));
     Error (`Msg "Error getting directory")
 
 let archives pkg =

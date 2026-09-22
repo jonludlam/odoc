@@ -65,8 +65,7 @@ let run package_name blessed actions odoc_dir odocl_dir
   let units =
     let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
     match
-      Odoc_units_of.packages ~dirs ~indices_style:Voodoo
-        ~prebuilt:(Voodoo.prebuilt odoc_dir) ~remap:false all
+      Odoc_units_of.packages ~dirs ~indices_style:Voodoo ~remap:false all
     with
     | [ units ] -> units
     | _ -> failwith "Error, expecting a single package in voodoo mode"
@@ -80,7 +79,6 @@ let run package_name blessed actions odoc_dir odocl_dir
   | CompileOnly | All ->
       List.iter (Compile.compile_lib units) units.libs;
       Compile.compile_pages units);
-  Voodoo.write_lib_markers odoc_dir all;
   (match actions with
   | CompileOnly -> ()
   | LinkAndGen | All ->
@@ -93,9 +91,14 @@ let run package_name blessed actions odoc_dir odocl_dir
       let occurrence_file =
         Fpath.(odocl_dir // Voodoo.occurrence_file_of_pkg pkg)
       in
-      (* Every .odocl of the package lies below its directory. *)
       let odocl_dirs =
-        List.map (fun (p : Packages.t) -> Fpath.(odocl_dir // p.pkg_dir)) all
+        List.concat_map
+          (fun (p : Packages.t) ->
+            Fpath.(odocl_dir // Odoc_unit.pages_dir p)
+            :: List.map
+                 (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_obj_dir l))
+                 p.libraries)
+          all
       in
       Odoc.count_occurrences ~input:odocl_dirs ~output:occurrence_file;
       Compile.json_index ~occurrence_file html_dir units);

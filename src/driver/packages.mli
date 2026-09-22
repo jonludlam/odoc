@@ -65,6 +65,11 @@ type libty = {
 }
 
 module Lib : sig
+  val rel_dir : roots:Fpath.t list -> Fpath.t -> Fpath.t
+  (** [rel_dir ~roots dir] is the object directory [dir] relative to the first
+      of [roots] containing it (the install roots, see {!Opam.install_roots}).
+  *)
+
   val v :
     roots:Fpath.t list ->
     libname_of_archive:string Fpath.Map.t ->

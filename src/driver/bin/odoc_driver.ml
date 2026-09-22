@@ -66,7 +66,7 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
           Odoc_units_of.packages ~dirs
             ~indices_style:
               (Odoc_units_of.Normal { toplevel_content = index_mld_content })
-            ~prebuilt:Odoc_unit.Prebuilt.empty ~remap all
+            ~remap all
         in
         Compile.init_stats pkgs;
         Build.all ~html_dir ~remaps ~generate_json ~warnings_tags:packages pkgs;

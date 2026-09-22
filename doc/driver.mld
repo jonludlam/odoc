@@ -119,12 +119,14 @@ Let's have a look at a generic invocation of [odoc] during the compile phase:
   the set of directories passed to odoc via the [-I] argument, where each
   directory passed to the compiler containing cmi files should have an
   equivalent directory passed to odoc containing the corresponding odoc files.
-  The reference driver achieves this by laying out its [.odoc] files like the
-  compiled objects: a library's files are written below the odoc directory
-  at the same relative path as its object directory in the switch, so
-  libraries installed in a single directory (the [compiler-libs.*] family,
-  say) share an odoc directory too, and one [-I] finds them all, just as one
-  [-I] found their [.cmi] files.
+  The reference driver achieves this by making its odoc directory a mirror
+  of the switch: a library's [.odoc] files are written at the same relative
+  path as its object directory ([lib/<findlib dir>]), so libraries installed
+  in a single directory (the [compiler-libs.*] family, say) share an odoc
+  directory too, and one [-I] finds them all, just as one [-I] found their
+  [.cmi] files; a package's pages are written below [doc/<package>], where
+  its [.mld] files are installed. Pointing the odoc directory at the switch
+  prefix itself is then a legitimate choice.
 
 Note that a unit's identifier — which determines how references to it resolve
 and the URLs of its generated pages — is computed from [--parent-id] at
@@ -562,10 +564,13 @@ also how ocaml.org builds its documentation, where every package is a separate
 job that only sees its own installed files plus the [.odoc] files of its
 dependencies.
 
-Everything a package needs from its dependencies is derived from names: the
-directory of a library's [.odoc] files from its object directory, and the
-reference scope from the [META] [requires] fields. No state other than the
-[.odoc] files themselves is carried from one package to the next. When a
+Everything a package needs from its dependencies is derived from names, with
+findlib and opam as the only oracles: the directory of a library's [.odoc]
+files from its object directory, that of a package's pages from its name, the
+reference scope from the [META] [requires] fields, and which package to name
+in [-P] for a library from opam's record of installed files. No state other
+than the [.odoc] files themselves is carried from one package to the next.
+When a
 module of the package being built depends on a module compiled with an
 earlier package, odoc finds the latter's [.odoc] file through the [-I] path,
 by name and digest, exactly as the compiler found its [.cmi].

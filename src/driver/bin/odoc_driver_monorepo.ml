@@ -41,7 +41,7 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
         let pkgs =
           let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
           Odoc_units_of.packages ~dirs ~indices_style:Odoc_units_of.Automatic
-            ~prebuilt:Odoc_unit.Prebuilt.empty ~remap:false all
+            ~remap:false all
         in
         Compile.init_stats pkgs;
         Build.all ~html_dir ~remaps:[] ~generate_json ~warnings_tags:[] pkgs;

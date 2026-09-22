@@ -12,16 +12,6 @@ type pkg = {
 
 let prep_path = ref "prep"
 
-(* We mark the paths that contain compiled units for packages and libraries by
-   dropping in marker files. A package marker sits in the package's doc
-   directory, whose path tells us the package. A library marker sits in the
-   library's identifier directory ([doc/<lib>]), whose path tells us the
-   library; its contents is the path (relative to the odoc dir) of the
-   directory holding the library's [.odoc] files, which mirrors the library's
-   object directory and may be shared with other libraries. *)
-let lib_marker = ".odoc_lib_marker"
-let pkg_marker = ".odoc_pkg_marker"
-
 let top_dir pkg =
   if pkg.blessed then Fpath.(v "p" / pkg.name / pkg.version)
   else Fpath.(v "u" / pkg.universe / pkg.name / pkg.version)
@@ -277,78 +267,3 @@ let find_pkg pkg_name ~blessed =
 let occurrence_file_of_pkg pkg =
   let top_dir = top_dir pkg in
   Fpath.(top_dir / "occurrences-all.odoc-occurrences")
-
-(* Read back what earlier runs built, from the marker files they left in
-   [odoc_dir] (see [write_lib_markers]). *)
-let prebuilt odoc_dir : Odoc_unit.Prebuilt.t =
-  let contents =
-    Bos.OS.Dir.fold_contents ~dotfiles:true (fun p acc -> p :: acc) [] odoc_dir
-  in
-  (* The lib marker's contents is the directory (relative to the odoc dir)
-     holding the library's [.odoc] files. *)
-  let lib_odoc_dir abs_path path =
-    match Bos.OS.File.read abs_path with
-    | Ok contents when String.trim contents <> "" ->
-        Fpath.v (String.trim contents)
-    | _ ->
-        Logs.warn (fun m ->
-            m
-              "Lib marker %a has no contents; assuming the odoc files are \
-               alongside it"
-              Fpath.pp path);
-        Fpath.parent path
-  in
-  match contents with
-  | Error _ -> Odoc_unit.Prebuilt.empty
-  | Ok c ->
-      List.fold_left
-        (fun (acc : Odoc_unit.Prebuilt.t) abs_path ->
-          let path = Fpath.rem_prefix odoc_dir abs_path |> Option.get in
-          match Fpath.segs path with
-          | [ "p"; pkg; _version; "doc"; libname; l ]
-          | [ "u"; _; pkg; _version; "doc"; libname; l ]
-            when l = lib_marker ->
-              Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-              {
-                acc with
-                libs =
-                  Util.StringMap.add libname
-                    (pkg, lib_odoc_dir abs_path path)
-                    acc.libs;
-              }
-          | [ "p"; pkg; _version; "doc"; l ]
-          | [ "u"; _; pkg; _version; "doc"; l ]
-            when l = pkg_marker ->
-              Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-              {
-                acc with
-                pkgs = Util.StringMap.add pkg (Fpath.parent path) acc.pkgs;
-              }
-          | _ -> acc)
-        Odoc_unit.Prebuilt.empty c
-
-let write_lib_markers odoc_dir pkgs =
-  let write file str =
-    match Bos.OS.File.write file str with
-    | Ok () -> ()
-    | Error (`Msg msg) ->
-        Logs.err (fun m -> m "Failed to write lib marker: %s" msg)
-  in
-  List.iter
-    (fun (pkg : Packages.t) ->
-      let libs = pkg.libraries in
-      let pkg_path = Odoc_unit.doc_dir pkg in
-      let marker = Fpath.(odoc_dir // pkg_path / pkg_marker) in
-      write marker
-        (Fmt.str
-           "This marks this directory as the location of odoc files for the \
-            package %s"
-           pkg.name);
-
-      List.iter
-        (fun (lib : Packages.libty) ->
-          let lib_dir = Odoc_unit.lib_dir pkg lib in
-          let marker = Fpath.(odoc_dir // lib_dir / lib_marker) in
-          write marker (Fpath.to_string (Odoc_unit.lib_obj_dir pkg lib)))
-        libs)
-    pkgs

@@ -3,12 +3,12 @@ open Packages
 
 let fpf = Format.fprintf
 
-let make_index ~dirs ~rel_dir ~enable_warnings ~content :
+let make_index ~dirs ~rel_dir ~obj_dir ~enable_warnings ~content :
     Odoc_unit.mld Odoc_unit.t =
   let { odoc_dir; odocl_dir; mld_dir; _ } = dirs in
   let input_file = Fpath.(mld_dir // rel_dir / "index.mld") in
-  let odoc_file = Fpath.(odoc_dir // rel_dir / "page-index.odoc") in
-  let odocl_file = Fpath.(odocl_dir // rel_dir / "page-index.odocl") in
+  let odoc_file = Fpath.(odoc_dir // obj_dir / "page-index.odoc") in
+  let odocl_file = Fpath.(odocl_dir // obj_dir / "page-index.odocl") in
   let parent_id = rel_dir |> Odoc.Id.of_fpath in
   Util.with_out_to input_file (fun oc ->
       fpf (Format.formatter_of_out_channel oc) "%t@?" content)
@@ -47,7 +47,8 @@ let library ~dirs ~pkg lib =
     fpf ppf "%a@\n" module_list lib
   in
   let rel_dir = lib_dir pkg lib in
-  make_index ~dirs ~rel_dir ~content ~enable_warnings:false
+  make_index ~dirs ~rel_dir ~obj_dir:(page_obj_dir pkg rel_dir) ~content
+    ~enable_warnings:false
 
 let package ~dirs ~pkg =
   let library_list ppf pkg =
@@ -73,7 +74,8 @@ let package ~dirs ~pkg =
   in
   let content = content pkg in
   let rel_dir = doc_dir pkg in
-  make_index ~dirs ~rel_dir ~content ~enable_warnings:false
+  make_index ~dirs ~rel_dir ~obj_dir:(page_obj_dir pkg rel_dir) ~content
+    ~enable_warnings:false
 
 let src ~dirs ~pkg =
   let content ppf =
@@ -85,7 +87,8 @@ let src ~dirs ~pkg =
       pkg.name
   in
   let rel_dir = src_dir pkg in
-  make_index ~dirs ~rel_dir ~content ~enable_warnings:true
+  make_index ~dirs ~rel_dir ~obj_dir:(page_obj_dir pkg rel_dir) ~content
+    ~enable_warnings:true
 
 let package_list ~dirs ~remap all =
   let content all ppf =
@@ -101,7 +104,7 @@ let package_list ~dirs ~remap all =
   in
   let content = content all in
   let rel_dir = Fpath.v "./" in
-  make_index ~dirs ~rel_dir ~content ~enable_warnings:true
+  make_index ~dirs ~rel_dir ~obj_dir:rel_dir ~content ~enable_warnings:true
 
 let content dir _pkg libs _src subdirs all_libs pfp =
   let is_root = Fpath.to_string dir = "./" in
@@ -264,7 +267,7 @@ let make_custom dirs (pkg : Packages.t) : Odoc_unit.mld Odoc_unit.t list =
               Fmt.Dump.(list string)
               (List.map (fun p -> p.Packages.name) pkgs));
         let idx =
-          make_index ~dirs ~rel_dir:p
+          make_index ~dirs ~rel_dir:p ~obj_dir:(page_obj_dir pkg p)
             ~content:(content p pkg libs src subdirs all_libs)
             ~enable_warnings:false
         in

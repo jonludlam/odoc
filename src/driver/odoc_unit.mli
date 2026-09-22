@@ -70,21 +70,8 @@ type pkg = {
   libs : lib list;
   pages : page list;
 }
-(** A package, the unit of building: its libraries, its pages (including the
-    generated landing pages), the reference scope they all link with, and the
-    index they are gathered in. [pkgname] is [None] only for the top-level index
-    page, which belongs to no package. *)
 
 val all_units : pkg -> any list
-
-module Prebuilt : sig
-  type t = {
-    libs : (string * Fpath.t) Util.StringMap.t;
-    pkgs : Fpath.t Util.StringMap.t;
-  }
-
-  val empty : t
-end
 
 val pkg_dir : Packages.t -> Fpath.t
 
@@ -92,12 +79,24 @@ val lib_dir : Packages.t -> Packages.libty -> Fpath.t
 (** [lib_dir pkg lib] is the parent id of the library's units: it determines
     their identifiers and the URLs of their pages. *)
 
-val lib_obj_dir : Packages.t -> Packages.libty -> Fpath.t
-(** [lib_obj_dir pkg lib] is where the library's [.odoc] (and [.odocl]) files
-    are written, relative to the odoc (resp. odocl) directory. It mirrors the
-    library's object directory -- the compiled documentation is laid out like
-    the compiled objects -- so libraries sharing an object directory share an
-    odoc directory, and the [-I] set of a unit mirrors the compiler's. *)
+(** {2 Where the files go}
+
+    The odoc directory mirrors the switch: a library's [.odoc] files are
+    written beside where its objects are installed ([lib/<findlib dir>], so
+    libraries sharing an object directory share an odoc directory and the
+    [-I] set mirrors the compiler's), and a package's pages below
+    [doc/<pkg>], reproducing the layout of their identifiers. Every location
+    is thus a function of a library or package name, and an earlier run's
+    output is found without any record of it. The same paths hold below the
+    odocl directory. *)
+
+val lib_obj_dir : Packages.libty -> Fpath.t
+val pages_dir : Packages.t -> Fpath.t
+
+val page_obj_dir : Packages.t -> Fpath.t -> Fpath.t
+(** [page_obj_dir pkg rel_dir] is where a page whose parent id is [rel_dir]
+    goes: [rel_dir]'s position below the package's {!doc_dir}, reproduced below
+    its {!pages_dir}. *)
 
 val doc_dir : Packages.t -> Fpath.t
 val src_dir : Packages.t -> Fpath.t

@@ -3,6 +3,7 @@ open Odoc_unit
 val make_index :
   dirs:dirs ->
   rel_dir:Fpath.t ->
+  obj_dir:Fpath.t ->
   enable_warnings:bool ->
   content:(Format.formatter -> unit) ->
   mld Odoc_unit.t

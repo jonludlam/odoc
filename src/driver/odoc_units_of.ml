@@ -5,90 +5,121 @@ type indices_style =
   | Normal of { toplevel_content : string option }
   | Automatic
 
-(* Everything known about libraries and packages: those being built and those
-   an earlier run built. Paths are absolute. *)
+(* Everything known about libraries and packages: those being built, and any
+   other through findlib -- the libraries being installed in the switch in
+   every mode -- and the layout convention (see [Odoc_unit.lib_obj_dir]).
+   Paths are absolute. *)
 type known = {
-  lib_dir : Fpath.t Util.StringMap.t;
-      (** library -> directory of its [.odoc] files *)
-  lib_pkg : string Util.StringMap.t;  (** library -> package providing it *)
-  pkg_dir : Fpath.t Util.StringMap.t;  (** package -> its doc directory *)
+  odoc_root : Fpath.t;  (** the odoc directory *)
+  packages : Util.StringSet.t;  (** the packages being built *)
   building : Util.StringSet.t;  (** the libraries being built *)
+  lib_dir : string -> Fpath.t option;
+      (** library -> directory of its [.odoc] files *)
+  lib_pkg : string -> string option;  (** library -> package providing it *)
   requires : string -> Util.StringSet.t;  (** direct META requires *)
 }
 
-let known ~odoc_dir ~(prebuilt : Prebuilt.t) (pkgs : Packages.t list) =
-  let abs p = Fpath.(odoc_dir // p) in
-  let lib_dir, lib_pkg =
-    Util.StringMap.fold
-      (fun lib (pkg, dir) (dirs, pkgs) ->
-        (Util.StringMap.add lib (abs dir) dirs, Util.StringMap.add lib pkg pkgs))
-      prebuilt.libs
-      (Util.StringMap.empty, Util.StringMap.empty)
-  in
-  let lib_dir, lib_pkg, building, own_requires =
+let memo f =
+  let cache = Hashtbl.create 100 in
+  fun x ->
+    match Hashtbl.find_opt cache x with
+    | Some y -> y
+    | None ->
+        let y = f x in
+        Hashtbl.add cache x y;
+        y
+
+let known ~odoc_dir (pkgs : Packages.t list) =
+  let own =
     List.fold_left
       (fun acc (pkg : Packages.t) ->
         List.fold_left
-          (fun (dirs, pkgs, building, reqs) (lib : Packages.libty) ->
-            ( Util.StringMap.add lib.lib_name (abs (lib_obj_dir pkg lib)) dirs,
-              Util.StringMap.add lib.lib_name pkg.name pkgs,
-              Util.StringSet.add lib.lib_name building,
-              Util.StringMap.add lib.lib_name lib.lib_deps reqs ))
+          (fun acc (lib : Packages.libty) ->
+            Util.StringMap.add lib.lib_name (pkg, lib) acc)
           acc pkg.libraries)
-      (lib_dir, lib_pkg, Util.StringSet.empty, Util.StringMap.empty)
-      pkgs
+      Util.StringMap.empty pkgs
   in
-  let pkg_dir =
+  let building =
+    Util.StringMap.fold
+      (fun l _ acc -> Util.StringSet.add l acc)
+      own Util.StringSet.empty
+  in
+  let packages =
     List.fold_left
-      (fun acc (pkg : Packages.t) ->
-        Util.StringMap.add pkg.name (abs (doc_dir pkg)) acc)
-      (Util.StringMap.map abs prebuilt.pkgs)
-      pkgs
+      (fun acc (p : Packages.t) -> Util.StringSet.add p.name acc)
+      Util.StringSet.empty pkgs
   in
-  (* The requires of a library being built are known; for any other -- one an
-     earlier run built, or one providing no modules, which has no libty -- ask
-     findlib, the libraries being installed in the switch in every mode. *)
+  let roots = lazy (Opam.install_roots ()) in
+  let lib_dir =
+    memo (fun lib ->
+        match Util.StringMap.find_opt lib own with
+        | Some (_, l) -> Some Fpath.(odoc_dir // lib_obj_dir l)
+        | None -> (
+            match Ocamlfind.get_dir lib with
+            | Ok dir ->
+                Some
+                  Fpath.(
+                    odoc_dir
+                    // Packages.Lib.rel_dir ~roots:(Lazy.force roots) dir)
+            | Error _ -> None))
+  in
+  (* Findlib does not know which opam package installed a library; opam's
+     record of installed files does (and ocaml-docs-ci keeps it for every
+     package in a build's stack). Only consulted for libraries outside this
+     run. *)
+  let installed_by = lazy (snd (Opam.pkg_to_dir_map ())) in
+  let lib_pkg =
+    memo (fun lib ->
+        match Util.StringMap.find_opt lib own with
+        | Some (pkg, _) -> Some pkg.name
+        | None -> (
+            match Ocamlfind.get_dir lib with
+            | Error _ -> None
+            | Ok dir ->
+                Option.map
+                  (fun (p : Opam.package) -> p.name)
+                  (Fpath.Map.find_opt dir (Lazy.force installed_by))))
+  in
   let requires =
-    let cache = Hashtbl.create 100 in
-    fun lib ->
-      match Util.StringMap.find_opt lib own_requires with
-      | Some deps -> deps
-      | None -> (
-          match Hashtbl.find_opt cache lib with
-          | Some deps -> deps
-          | None ->
-              let deps =
-                match Ocamlfind.direct_deps lib with
-                | Ok deps -> deps
-                | Error (`Msg msg) ->
-                    Logs.debug (fun m ->
-                        m "No META dependencies for library '%s': %s" lib msg);
-                    Util.StringSet.empty
-              in
-              Hashtbl.add cache lib deps;
-              deps)
+    memo (fun lib ->
+        match Util.StringMap.find_opt lib own with
+        | Some (_, l) -> l.lib_deps
+        | None -> (
+            match Ocamlfind.direct_deps lib with
+            | Ok deps -> deps
+            | Error (`Msg msg) ->
+                Logs.debug (fun m ->
+                    m "No META dependencies for library '%s': %s" lib msg);
+                Util.StringSet.empty))
   in
-  { lib_dir; lib_pkg; pkg_dir; building; requires }
+  { odoc_root = odoc_dir; packages; building; lib_dir; lib_pkg; requires }
+
+(* Where a package's pages are, by convention. *)
+let pkg_pages_dir known name = Fpath.(known.odoc_root / "doc" / name)
 
 (* What unit construction needs to know: the world of libraries and packages,
    where the output goes, and whether unselected packages are remapped. *)
 type ctx = { known : known; dirs : dirs; remap : bool }
 
-(* The libraries a list of requires actually names. A library that provides no
-   modules of its own -- [num] forwarding to [num.core], [threads.posix] to
-   [threads] -- is only an alias for its own requires, which stand in for it.
-   Libraries we know nothing about are dropped. *)
-let resolve known names =
+(* Walk [names] and, transitively, the requires of those that do not satisfy
+   [keep], collecting those that do. A library providing no modules of its
+   own -- [num] forwarding to [num.core], [threads.posix] to [threads] -- is
+   thereby stood in for by its requires. *)
+let close known ~keep names =
   let rec go seen acc = function
     | [] -> acc
     | l :: todo when Util.StringSet.mem l seen -> go seen acc todo
     | l :: todo ->
         let seen = Util.StringSet.add l seen in
-        if Util.StringMap.mem l known.lib_dir then
-          go seen (Util.StringSet.add l acc) todo
+        if keep l then go seen (Util.StringSet.add l acc) todo
         else go seen acc (Util.StringSet.elements (known.requires l) @ todo)
   in
   go Util.StringSet.empty Util.StringSet.empty (Util.StringSet.elements names)
+
+(* The libraries a list of requires actually names, among those we know the
+   directory of. *)
+let resolve known names =
+  close known ~keep:(fun l -> Option.is_some (known.lib_dir l)) names
 
 (* The dependency cone of a library: itself and, transitively, what it
    requires. This is what the compiler saw when building it. *)
@@ -105,9 +136,7 @@ let cone known lib =
 let dirs_of known libs =
   Util.StringSet.fold
     (fun l acc ->
-      match Util.StringMap.find_opt l known.lib_dir with
-      | Some d -> Fpath.Set.add d acc
-      | None -> acc)
+      match known.lib_dir l with Some d -> Fpath.Set.add d acc | None -> acc)
     libs Fpath.Set.empty
   |> Fpath.Set.elements
 
@@ -122,9 +151,7 @@ let scope_of known (pkg : Packages.t) : scope =
     pkg.config
   in
   let libs_of_pkg p =
-    Util.StringMap.fold
-      (fun lib p' acc -> if p = p' then Util.StringSet.add lib acc else acc)
-      known.lib_pkg Util.StringSet.empty
+    Util.StringSet.filter (fun lib -> known.lib_pkg lib = Some p) known.building
   in
   let named =
     List.fold_left
@@ -142,26 +169,34 @@ let scope_of known (pkg : Packages.t) : scope =
   let pkgs =
     Util.StringSet.fold
       (fun lib acc ->
-        match Util.StringMap.find_opt lib known.lib_pkg with
+        match known.lib_pkg lib with
         | Some p -> Util.StringSet.add p acc
         | None -> acc)
       libs
       (Util.StringSet.add pkg.name (Util.StringSet.of_list cfg_pkgs))
   in
-  let with_dirs table names =
+  (* A root is worth passing if it is being built in this run or was built
+     before: for a library, if we know where it is; for a package, if its
+     pages directory exists already. *)
+  let lib_roots =
     Util.StringSet.fold
-      (fun name acc ->
-        match Util.StringMap.find_opt name table with
-        | Some dir -> (name, dir) :: acc
-        | None ->
-            Logs.debug (fun m -> m "'%s' not found" name);
-            acc)
-      names []
+      (fun lib acc ->
+        match known.lib_dir lib with
+        | Some dir -> (lib, dir) :: acc
+        | None -> acc)
+      libs []
   in
-  {
-    page_roots = with_dirs known.pkg_dir pkgs;
-    lib_roots = with_dirs known.lib_dir libs;
-  }
+  let page_roots =
+    Util.StringSet.fold
+      (fun p acc ->
+        let dir = pkg_pages_dir known p in
+        if
+          Util.StringSet.mem p known.packages || Bos.OS.Dir.exists dir = Ok true
+        then (p, dir) :: acc
+        else acc)
+      pkgs []
+  in
+  { page_roots; lib_roots }
 
 let index_of ~dirs (pkg : Packages.t) : index =
   {
@@ -206,7 +241,7 @@ let of_intf ctx (pkg : Packages.t) (lib : Packages.libty)
   in
   let name = intf.mif_path |> Fpath.rem_ext |> Fpath.basename in
   make_unit ctx ~name ~kind ~rel_dir:(lib_dir pkg lib)
-    ~obj_dir:(lib_obj_dir pkg lib) ~input_file:intf.mif_path
+    ~obj_dir:(lib_obj_dir lib) ~input_file:intf.mif_path
     ~enable_warnings:pkg.selected ~to_output:pkg.selected
     ~stash_input:(lib.archive_name = None)
 
@@ -221,7 +256,7 @@ let of_impl ctx (pkg : Packages.t) lib (impl : Packages.impl) : impl t option =
       Some
         (make_unit ctx ~name
            ~kind:(`Impl { src_id; src_path })
-           ~rel_dir:(lib_dir pkg lib) ~obj_dir:(lib_obj_dir pkg lib)
+           ~rel_dir:(lib_dir pkg lib) ~obj_dir:(lib_obj_dir lib)
            ~input_file:impl.mip_path ~enable_warnings:false
            ~to_output:pkg.selected ~stash_input:false)
 
@@ -234,9 +269,12 @@ let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) : Odoc_unit.lib =
         (i :> module_unit) :: (Option.to_list impl :> module_unit list))
       lib.modules
   in
+  (* The libraries of this run to compile first: what this one requires,
+     followed through libraries outside the run (aliases in particular). *)
   let requires =
-    resolve ctx.known lib.lib_deps
-    |> Util.StringSet.inter ctx.known.building
+    close ctx.known
+      ~keep:(fun l -> Util.StringSet.mem l ctx.known.building)
+      lib.lib_deps
     |> Util.StringSet.remove lib.lib_name
     |> Util.StringSet.elements
   in
@@ -248,8 +286,8 @@ let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) : Odoc_unit.lib =
 let of_doc ctx (pkg : Packages.t) ~kind ~name ~rel_path ~file ~enable_warnings
     ~to_output =
   let rel_dir = Fpath.(doc_dir pkg // parent rel_path |> normalize) in
-  make_unit ctx ~name ~kind ~rel_dir ~obj_dir:rel_dir ~input_file:file
-    ~enable_warnings ~to_output ~stash_input:false
+  make_unit ctx ~name ~kind ~rel_dir ~obj_dir:(page_obj_dir pkg rel_dir)
+    ~input_file:file ~enable_warnings ~to_output ~stash_input:false
 
 let of_mld ctx (pkg : Packages.t) (mld : Packages.mld) : mld t =
   of_doc ctx pkg ~kind:`Mld
@@ -327,28 +365,37 @@ let of_package ctx ~indices_style (pkg : Packages.t) : Odoc_unit.pkg =
 
 (* The top-level index belongs to no package; its scope is every package and
    library we know of. *)
-let toplevel known (page : mld t) : Odoc_unit.pkg =
+let toplevel known (pkgs : Packages.t list) (page : mld t) : Odoc_unit.pkg =
   let scope =
     {
-      page_roots = Util.StringMap.bindings known.pkg_dir;
-      lib_roots = Util.StringMap.bindings known.lib_dir;
+      page_roots =
+        List.map
+          (fun (p : Packages.t) -> (p.name, pkg_pages_dir known p.name))
+          pkgs;
+      lib_roots =
+        Util.StringSet.fold
+          (fun lib acc ->
+            match known.lib_dir lib with
+            | Some d -> (lib, d) :: acc
+            | None -> acc)
+          known.building [];
     }
   in
   { pkgname = None; scope; index = None; libs = []; pages = [ (page :> page) ] }
 
-let packages ~dirs ~prebuilt ~remap ~indices_style (pkgs : Packages.t list) :
-    pkg list =
-  let known = known ~odoc_dir:dirs.odoc_dir ~prebuilt pkgs in
+let packages ~dirs ~remap ~indices_style (pkgs : Packages.t list) : pkg list =
+  let known = known ~odoc_dir:dirs.odoc_dir pkgs in
   let ctx = { known; dirs; remap } in
   let built = List.map (of_package ctx ~indices_style) pkgs in
   match indices_style with
   | Normal { toplevel_content = None } ->
-      built @ [ toplevel known (Landing_pages.package_list ~dirs ~remap pkgs) ]
+      built
+      @ [ toplevel known pkgs (Landing_pages.package_list ~dirs ~remap pkgs) ]
   | Normal { toplevel_content = Some content } ->
       let content ppf = Format.fprintf ppf "%s" content in
       let page =
         Landing_pages.make_index ~dirs ~rel_dir:(Fpath.v "./")
-          ~enable_warnings:true ~content
+          ~obj_dir:(Fpath.v "./") ~enable_warnings:true ~content
       in
-      built @ [ toplevel known page ]
+      built @ [ toplevel known pkgs page ]
   | Voodoo | Automatic -> built
