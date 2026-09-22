@@ -278,29 +278,11 @@ let occurrence_file_of_pkg pkg =
   let top_dir = top_dir pkg in
   Fpath.(top_dir / "occurrences-all.odoc-occurrences")
 
-type extra_paths = {
-  pkgs : Fpath.t Util.StringMap.t;
-  libs : Fpath.t Util.StringMap.t;
-  libs_of_pkg : string list Util.StringMap.t;
-}
-
-let empty_extra_paths =
-  {
-    pkgs = Util.StringMap.empty;
-    libs = Util.StringMap.empty;
-    libs_of_pkg = Util.StringMap.empty;
-  }
-
-let extra_paths compile_dir =
+(* Read back what earlier runs built, from the marker files they left in
+   [odoc_dir] (see [write_lib_markers]). *)
+let prebuilt odoc_dir : Odoc_unit.Prebuilt.t =
   let contents =
-    Bos.OS.Dir.fold_contents ~dotfiles:true
-      (fun p acc -> p :: acc)
-      [] compile_dir
-  in
-  let add_libs pkgname libname libs_of_pkg =
-    Util.StringMap.update pkgname
-      (function None -> Some [ libname ] | Some l -> Some (libname :: l))
-      libs_of_pkg
+    Bos.OS.Dir.fold_contents ~dotfiles:true (fun p acc -> p :: acc) [] odoc_dir
   in
   (* The lib marker's contents is the directory (relative to the odoc dir)
      holding the library's [.odoc] files. *)
@@ -316,41 +298,34 @@ let extra_paths compile_dir =
               Fpath.pp path);
         Fpath.parent path
   in
-  let pkgs, libs, libs_of_pkg =
-    match contents with
-    | Error _ ->
-        (Util.StringMap.empty, Util.StringMap.empty, Util.StringMap.empty)
-    | Ok c ->
-        List.fold_left
-          (fun (pkgs, libs, libs_of_pkg) abs_path ->
-            let path = Fpath.rem_prefix compile_dir abs_path |> Option.get in
-            match Fpath.segs path with
-            | [ "p"; pkg; _version; "doc"; libname; l ] when l = lib_marker ->
-                Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-                ( pkgs,
-                  Util.StringMap.add libname (lib_odoc_dir abs_path path) libs,
-                  add_libs pkg libname libs_of_pkg )
-            | [ "p"; pkg; _version; "doc"; l ] when l = pkg_marker ->
-                Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-                ( Util.StringMap.add pkg (Fpath.parent path) pkgs,
-                  libs,
-                  libs_of_pkg )
-            | [ "u"; _universe; pkg; _version; "doc"; libname; l ]
-              when l = lib_marker ->
-                Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-                ( pkgs,
-                  Util.StringMap.add libname (lib_odoc_dir abs_path path) libs,
-                  add_libs pkg libname libs_of_pkg )
-            | [ "u"; _universe; pkg; _version; "doc"; l ] when l = pkg_marker ->
-                Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-                ( Util.StringMap.add pkg (Fpath.parent path) pkgs,
-                  libs,
-                  libs_of_pkg )
-            | _ -> (pkgs, libs, libs_of_pkg))
-          (Util.StringMap.empty, Util.StringMap.empty, Util.StringMap.empty)
-          c
-  in
-  { pkgs; libs; libs_of_pkg }
+  match contents with
+  | Error _ -> Odoc_unit.Prebuilt.empty
+  | Ok c ->
+      List.fold_left
+        (fun (acc : Odoc_unit.Prebuilt.t) abs_path ->
+          let path = Fpath.rem_prefix odoc_dir abs_path |> Option.get in
+          match Fpath.segs path with
+          | [ "p"; pkg; _version; "doc"; libname; l ]
+          | [ "u"; _; pkg; _version; "doc"; libname; l ]
+            when l = lib_marker ->
+              Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
+              {
+                acc with
+                libs =
+                  Util.StringMap.add libname
+                    (pkg, lib_odoc_dir abs_path path)
+                    acc.libs;
+              }
+          | [ "p"; pkg; _version; "doc"; l ]
+          | [ "u"; _; pkg; _version; "doc"; l ]
+            when l = pkg_marker ->
+              Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
+              {
+                acc with
+                pkgs = Util.StringMap.add pkg (Fpath.parent path) acc.pkgs;
+              }
+          | _ -> acc)
+        Odoc_unit.Prebuilt.empty c
 
 let write_lib_markers odoc_dir pkgs =
   let write file str =

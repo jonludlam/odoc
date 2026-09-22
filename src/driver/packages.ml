@@ -580,31 +580,3 @@ let remap_virtual all =
   in
 
   remap_virtual_interfaces virtual_check all
-
-let lib_requires pkgs =
-  let known =
-    List.fold_left
-      (fun acc pkg ->
-        List.fold_left
-          (fun acc lib -> Util.StringMap.add lib.lib_name lib.lib_deps acc)
-          acc pkg.libraries)
-      Util.StringMap.empty pkgs
-  in
-  let cache = Hashtbl.create 100 in
-  fun lib_name ->
-    match Util.StringMap.find_opt lib_name known with
-    | Some deps -> deps
-    | None -> (
-        match Hashtbl.find_opt cache lib_name with
-        | Some deps -> deps
-        | None ->
-            let deps =
-              match Ocamlfind.direct_deps lib_name with
-              | Ok deps -> deps
-              | Error (`Msg msg) ->
-                  Logs.debug (fun m ->
-                      m "No META dependencies for library '%s': %s" lib_name msg);
-                  Util.StringSet.empty
-            in
-            Hashtbl.add cache lib_name deps;
-            deps)

@@ -30,11 +30,7 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
   Stats.init_nprocs nb_workers;
   let () = Worker_pool.start_workers env sw nb_workers in
 
-  let all, extra_paths, generate_json =
-    ( Monorepo_style.of_dune_build path ~extra_pkgs ~extra_libs,
-      Voodoo.empty_extra_paths,
-      generate_json )
-  in
+  let all = Monorepo_style.of_dune_build path ~extra_pkgs ~extra_libs in
 
   let all = Packages.remap_virtual all in
 
@@ -45,17 +41,10 @@ let real_run ~odoc_dir ~odocl_dir ~index_dir ~mld_dir path extra_pkgs extra_libs
         let pkgs =
           let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
           Odoc_units_of.packages ~dirs ~indices_style:Odoc_units_of.Automatic
-            ~extra_paths ~remap:false all
+            ~prebuilt:Odoc_unit.Prebuilt.empty ~remap:false all
         in
         Compile.init_stats pkgs;
-        let compiled = Compile.compile pkgs in
-        let linked =
-          Compile.link ~warnings_tags:[] ~custom_layout:true compiled
-        in
-        let () =
-          Compile.html_generate ~remaps:[] ~generate_json html_dir linked
-        in
-        let _ = Odoc.support_files html_dir in
+        Build.all ~html_dir ~remaps:[] ~generate_json ~warnings_tags:[] pkgs;
         Stats.stats.finished <- true;
         ())
       (fun () -> Stats.render_stats env ~generate_json nb_workers)

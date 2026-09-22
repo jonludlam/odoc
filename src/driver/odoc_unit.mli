@@ -1,21 +1,20 @@
-type scope = { pages : (string * Fpath.t) list; libs : (string * Fpath.t) list }
-(** The link-time reference scope of a package: the page trees ([-P]) and the
-    module trees ([-L]) that its units may refer to. Every unit of a package is
-    linked with the same scope. Paths are absolute. *)
-
-type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
-
+type scope = {
+  page_roots : (string * Fpath.t) list;
+  lib_roots : (string * Fpath.t) list;
+}
+(** A package's index, built from the [.odocl] files of its units (see
+    [Compile.generate]), the sidebar derived from it, and the directory of the
+    package's HTML, where the search database and the JSON sidebar go. *)
 type index = {
-  output_file : Fpath.t;
-  json : bool;
-  search_dir : Fpath.t;
-  sidebar : sidebar option;
+  index_file : Fpath.t;
+  sidebar_file : Fpath.t;
+  html_dir : Fpath.t;
 }
 (** An index is built from the [.odocl] files of the units of its package (see
     [Compile.html_generate]), so it is defined by its output, not by input
     directories. *)
 
-type 'a t = {
+type +'a t = {
   parent_id : Odoc.Id.t;
   input_file : Fpath.t;
   input_copy : Fpath.t option;
@@ -46,18 +45,30 @@ type asset = [ `Asset ]
 
 type any = [ impl | intf | mld | asset | md ] t
 
-val pp : any Fmt.t
+type module_unit = [ intf | impl ] t
+(** An interface or an implementation: the units of a library. *)
 
-type lib = { lib_name : string; includes : Fpath.t list; units : any list }
-(** A library: its modules and their implementations, and the [-I] search path
-    they are compiled and linked with. *)
+type page = [ mld | md | asset ] t
+(** A page or an asset: the units of a package's documentation. *)
+
+type lib = {
+  lib_name : string;
+  requires : string list;
+  includes : Fpath.t list;
+  units : module_unit list;
+}
+(** A library: its modules and their implementations, the libraries of this
+    build that must be compiled before it ([requires]: its direct META
+    dependencies, restricted to the libraries being built and with alias
+    libraries expanded), and the [-I] search path its units are compiled and
+    linked with ([includes]: the directories of its dependency cone). *)
 
 type pkg = {
   pkgname : string option;
   scope : scope;
   index : index option;
   libs : lib list;
-  pages : any list;
+  pages : page list;
 }
 (** A package, the unit of building: its libraries, its pages (including the
     generated landing pages), the reference scope they all link with, and the
@@ -65,7 +76,15 @@ type pkg = {
     page, which belongs to no package. *)
 
 val all_units : pkg -> any list
-val pp_pkg : pkg Fmt.t
+
+module Prebuilt : sig
+  type t = {
+    libs : (string * Fpath.t) Util.StringMap.t;
+    pkgs : Fpath.t Util.StringMap.t;
+  }
+
+  val empty : t
+end
 
 val pkg_dir : Packages.t -> Fpath.t
 

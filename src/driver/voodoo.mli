@@ -13,24 +13,10 @@ val occurrence_file_of_pkg : pkg -> Fpath.t
 (** [occurrences_file_of_pkg pkg odoc_dir] returns an appropriate filename for
     the occurrences file for [pkg]. *)
 
-type extra_paths = {
-  pkgs : Fpath.t Util.StringMap.t;
-  libs : Fpath.t Util.StringMap.t;
-  libs_of_pkg : string list Util.StringMap.t;
-}
-(** What is known of the already-built dependencies: the doc directory of each
-    package, the directory holding each library's [.odoc] files, and which
-    package provides each library. Paths are relative to the odoc directory. *)
-
-val empty_extra_paths : extra_paths
-(** When [odoc_driver] is not running in voodoo mode, this value can be passed
-    to {!Odoc_units_of.packages} *)
-
-val extra_paths : Fpath.t -> extra_paths
-(** [extra_paths odoc_dir] returns the paths to packages and libraries that have
-    previously been compiled by odoc_driver running in voodoo mode. In order to
-    find these, the previous invocation of odoc_driver will need to have written
-    marker files by calling {!write_lib_markers} *)
+val prebuilt : Fpath.t -> Odoc_unit.Prebuilt.t
+(** [prebuilt odoc_dir] describes the packages and libraries that earlier runs
+    of the voodoo driver built into [odoc_dir], found through the marker files
+    they wrote with {!write_lib_markers}. *)
 
 val write_lib_markers : Fpath.t -> Packages.t list -> unit
 (** [write_lib_markers odoc_dir pkgs] writes marker files to show the locations

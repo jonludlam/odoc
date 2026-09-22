@@ -1,31 +1,21 @@
 (* The link-time reference scope of a package: the page trees ([-P]) and the
    module trees ([-L]) that its units may refer to. Every unit of a package is
    linked with the same scope. Paths are absolute. *)
-type scope = { pages : (string * Fpath.t) list; libs : (string * Fpath.t) list }
-
-let pp_scope fmt x =
-  let sfp_pp =
-    Fmt.(
-      list ~sep:comma (fun fmt (a, b) ->
-          Format.fprintf fmt "(%s, %a)" a Fpath.pp b))
-  in
-  Format.fprintf fmt "@[<hov>pages: [%a]@;libs: [%a]@]" sfp_pp x.pages sfp_pp
-    x.libs
-
-type sidebar = { output_file : Fpath.t; json : bool; pkg_dir : Fpath.t }
-
-type index = {
-  output_file : Fpath.t;
-  json : bool;
-  search_dir : Fpath.t;
-  sidebar : sidebar option;
+type scope = {
+  page_roots : (string * Fpath.t) list;
+  lib_roots : (string * Fpath.t) list;
 }
 
-let pp_index fmt x =
-  Format.fprintf fmt "@[<hov>output_file: %a@;json: %b@;search_dir: %a@]"
-    Fpath.pp x.output_file x.json Fpath.pp x.search_dir
+(* A package's index and the sidebar derived from it, both binary, and the
+   directory of the package's HTML, where the search database and the JSON
+   sidebar go. *)
+type index = {
+  index_file : Fpath.t;
+  sidebar_file : Fpath.t;
+  html_dir : Fpath.t;
+}
 
-type 'a t = {
+type +'a t = {
   parent_id : Odoc.Id.t;
   input_file : Fpath.t;
   input_copy : Fpath.t option;
@@ -56,48 +46,19 @@ type asset = [ `Asset ]
 type all_kinds = [ impl | intf | mld | asset | md ]
 type any = all_kinds t
 
-let rec pp_kind : all_kinds Fmt.t =
- fun fmt x ->
-  match x with
-  | `Intf x -> Format.fprintf fmt "`Intf %a" pp_intf_extra x
-  | `Impl x -> Format.fprintf fmt "`Impl %a" pp_impl_extra x
-  | `Mld -> Format.fprintf fmt "`Mld"
-  | `Md -> Format.fprintf fmt "`Md"
-  | `Asset -> Format.fprintf fmt "`Asset"
+(* The units of a library, and those of a package's documentation. *)
+type module_unit = [ intf | impl ] t
+type page = [ mld | md | asset ] t
 
-and pp_intf_extra fmt x =
-  Format.fprintf fmt "@[<hov>hidden: %b@;hash: %s@;deps: [%a]@]" x.hidden x.hash
-    Fmt.Dump.(list (pair string string))
-    x.deps
-
-and pp_impl_extra fmt x =
-  Format.fprintf fmt "@[<hov>src_id: %s@;src_path: %a@]"
-    (Odoc.Id.to_string x.src_id)
-    Fpath.pp x.src_path
-
-and pp : all_kinds t Fmt.t =
- fun fmt x ->
-  Format.fprintf fmt
-    "@[<hov>parent_id: %s@;\
-     input_file: %a@;\
-     odoc_file: %a@;\
-     odocl_file: %a@;\
-     kind:%a@;\
-     @]"
-    (Odoc.Id.to_string x.parent_id)
-    Fpath.pp x.input_file Fpath.pp x.odoc_file Fpath.pp x.odocl_file pp_kind
-    (x.kind :> all_kinds)
-
-(* A library: its modules and their implementations, and the [-I] search path
-   they are compiled and linked with. *)
-type lib = { lib_name : string; includes : Fpath.t list; units : any list }
-
-let pp_lib fmt x =
-  Format.fprintf fmt "@[<hov>lib_name: %s@;includes: %a@;units: %a@]" x.lib_name
-    Fmt.Dump.(list Fpath.pp)
-    x.includes
-    Fmt.Dump.(list pp)
-    x.units
+(* A library: its modules and their implementations, the libraries of this
+   build that must be compiled before it, and the [-I] search path its units
+   are compiled and linked with (the directories of its dependency cone). *)
+type lib = {
+  lib_name : string;
+  requires : string list;
+  includes : Fpath.t list;
+  units : module_unit list;
+}
 
 (* A package, the unit of building: its libraries, its pages (including the
    generated landing pages), the reference scope they all link with, and the
@@ -107,20 +68,25 @@ type pkg = {
   scope : scope;
   index : index option;
   libs : lib list;
-  pages : any list;
+  pages : page list;
 }
 
-let all_units pkg = pkg.pages @ List.concat_map (fun l -> l.units) pkg.libs
+let all_units pkg =
+  (pkg.pages :> any list)
+  @ List.concat_map (fun l -> (l.units :> any list)) pkg.libs
 
-let pp_pkg fmt x =
-  Format.fprintf fmt
-    "@[<hov>pkgname: %a@;scope: %a@;index: %a@;libs: %a@;pages: %a@]"
-    (Fmt.option Fmt.string) x.pkgname pp_scope x.scope (Fmt.option pp_index)
-    x.index
-    Fmt.Dump.(list pp_lib)
-    x.libs
-    Fmt.Dump.(list pp)
-    x.pages
+(* What an earlier run left behind, for the packages being built to refer to:
+   for each library, the package providing it and the directory of its [.odoc]
+   files; for each package, its doc directory. Paths are relative to the odoc
+   directory. *)
+module Prebuilt = struct
+  type t = {
+    libs : (string * Fpath.t) Util.StringMap.t;
+    pkgs : Fpath.t Util.StringMap.t;
+  }
+
+  let empty = { libs = Util.StringMap.empty; pkgs = Util.StringMap.empty }
+end
 
 let pkg_dir : Packages.t -> Fpath.t = fun pkg -> pkg.pkg_dir
 let doc_dir : Packages.t -> Fpath.t = fun pkg -> pkg.doc_dir

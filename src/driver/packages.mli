@@ -103,10 +103,3 @@ val of_libs : packages_dir:Fpath.t option -> Util.StringSet.t -> t list
 val of_packages : packages_dir:Fpath.t option -> string list -> t list
 
 val remap_virtual : t list -> t list
-
-val lib_requires : t list -> string -> Util.StringSet.t
-(** [lib_requires pkgs lib] is the set of libraries [lib] directly requires (its
-    META [requires], plus [stdlib]). It is taken from [pkgs] when [lib] is one
-    of their libraries, and from findlib otherwise -- an already-built
-    dependency in voodoo mode, or a library that provides no modules and so has
-    no {!libty}. Memoised. *)
