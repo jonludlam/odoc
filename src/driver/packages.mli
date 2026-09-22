@@ -1,73 +1,74 @@
-(** {1 OCaml compilation unit} *)
+(** The packages to document, as found in the switch.
 
-(** {2 Interface part} *)
+    A package has libraries and documentation. A library has modules; each
+    module has an interface and may have an implementation. Everything the later
+    steps need about a package is gathered here, once, before anything is
+    compiled. *)
+
+(** {1 Modules} *)
 
 type dep = string * Digest.t
+(** A module a unit depends on: its name and the digest of its interface, as
+    reported by [odoc compile-deps]. *)
 
-type intf = { mif_hash : string; mif_path : Fpath.t; mif_deps : dep list }
-
-val pp_intf : Format.formatter -> intf -> unit
-
-(** {2 Implementation part} *)
+type intf = {
+  mif_hash : string;  (** The digest of the interface. *)
+  mif_path : Fpath.t;
+  mif_deps : dep list;  (** The modules the interface refers to. *)
+}
+(** The interface of a module: a [.cmti] file, or the [.cmt] file when there is
+    no [.mli]. *)
 
 type src_info = { src_path : Fpath.t }
 
 type impl = {
   mip_path : Fpath.t;
-  mip_src_info : src_info option;
+  mip_src_info : src_info option;  (** Its source file, when found. *)
   mip_deps : dep list;
 }
-
-val pp_impl : Format.formatter -> impl -> unit
-
-(** {2 OCaml Compilation unit} *)
+(** The implementation of a module: its [.cmt] file. *)
 
 type modulety = {
   m_name : string;
   m_intf : intf;
   m_impl : impl option;
   m_hidden : bool;
+      (** A module whose name contains [__], not shown to readers. *)
 }
 
-(** {1 Standalone pages units} *)
+(** {1 Documentation} *)
 
 type mld = { mld_path : Fpath.t; mld_rel_path : Fpath.t }
+(** An [.mld] page, with its path below the package's pages directory. *)
 
 type md = { md_path : Fpath.t; md_rel_path : Fpath.t }
-
-val pp_mld : Format.formatter -> mld -> unit
-
-val pp_md : Format.formatter -> md -> unit
-
-(** {1 Asset units} *)
+(** A Markdown file, such as a README, likewise. *)
 
 type asset = { asset_path : Fpath.t; asset_rel_path : Fpath.t }
+(** A file shipped with the pages, such as an image, likewise. *)
 
-val pp_asset : Format.formatter -> asset -> unit
+val mk_mlds : Opam.doc_file list -> mld list * asset list * md list
+(** Sort a package's documentation files into pages, assets and other files. *)
 
-(** {1 Packages} *)
-
-(** Compilation units are associated to libraries, while documentation are
-    associated to package *)
+(** {1 Libraries} *)
 
 type libty = {
-  lib_name : string;
-  dir : Fpath.t;  (** Where the library's objects were found. *)
+  lib_name : string;  (** The findlib name. *)
+  dir : Fpath.t;  (** Where its objects are. *)
   rel_dir : Fpath.t;
-      (** The library's object directory relative to its install root. The
-          library's [.odoc] files are written at this relative path below the
-          odoc directory, mirroring the layout of the objects (see
-          {!Odoc_unit.lib_obj_dir}). *)
+      (** [dir] relative to its install root. The library's [.odoc] files are
+          written at this path below the odoc directory, so that the odoc
+          directory mirrors the switch. See {!Odoc_unit.lib_obj_dir}. *)
   archive_name : string option;
-  lib_deps : Util.StringSet.t;
+      (** The archive without its extension. [None] for a virtual library. *)
+  lib_deps : Util.StringSet.t;  (** The libraries it requires directly. *)
   modules : modulety list;
 }
 
 module Lib : sig
   val rel_dir : roots:Fpath.t list -> Fpath.t -> Fpath.t
-  (** [rel_dir ~roots dir] is the object directory [dir] relative to the first
-      of [roots] containing it (the install roots, see {!Opam.install_roots}).
-  *)
+  (** [rel_dir ~roots dir] is [dir] relative to the first of [roots] that
+      contains it. See {!Opam.install_roots}. *)
 
   val v :
     roots:Fpath.t list ->
@@ -77,9 +78,15 @@ module Lib : sig
     all_lib_deps:Util.StringSet.t Util.StringMap.t ->
     cmi_only_libs:(Fpath.t * string) list ->
     libty list
+  (** The libraries whose objects are in [dir]. Each archive found there gives a
+      library, named through [libname_of_archive]. A directory with no archive
+      is a virtual library if [cmi_only_libs] names it. Every module is analysed
+      with [odoc compile-deps]. *)
 
   val pp : Format.formatter -> libty -> unit
 end
+
+(** {1 Packages} *)
 
 type t = {
   name : string;
@@ -88,17 +95,35 @@ type t = {
   mlds : mld list;
   assets : asset list;
   selected : bool;
+      (** Named on the command line, rather than pulled in as a dependency.
+          Warnings are reported for selected packages only. *)
   remaps : (string * string) list;
+      (** For an unselected package when remapping is on: prefixes of local
+          links to replace by links to ocaml.org. *)
   other_docs : md list;
   pkg_dir : Fpath.t;
+      (** The root of the package's pages in the HTML output, and the parent id
+          of its top-level page. *)
   doc_dir : Fpath.t;
-  config : Global_config.t;
+      (** The parent id below which its pages live. Equal to [pkg_dir] for an
+          opam package; [pkg_dir/doc] in voodoo mode. *)
+  config : Global_config.t;  (** Its [odoc-config.sexp]. *)
 }
 
 val pp : Format.formatter -> t -> unit
 
-val mk_mlds : Opam.doc_file list -> mld list * asset list * md list
-
 val of_packages : packages_dir:Fpath.t option -> string list -> t list
+(** [of_packages ~packages_dir names] finds the named packages and everything
+    they depend on in the switch, and analyses all their modules. With no names,
+    every installed package. The named packages are [selected]. [packages_dir]
+    is a prefix for every package's [pkg_dir]. *)
 
 val remap_virtual : t list -> t list
+(** Point the modules of a virtual library's implementations at the virtual
+    library's interface.
+
+    An implementation ships its modules as [.cmt] files only; the [.mli] and the
+    documentation written in it belong to the virtual library, which ships the
+    [.cmti]. Both have the same interface digest. For every module whose
+    interface is a [.cmt] and whose digest is shared with a [.cmti] elsewhere in
+    the given packages, use that [.cmti] instead. *)

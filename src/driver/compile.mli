@@ -1,33 +1,37 @@
-(** The steps of building one package. *)
+(** The steps that turn a package's units into HTML. Each function runs the odoc
+    commands for one library or one package; {!Build} decides the order. *)
 
 val init_stats : Odoc_unit.pkg list -> unit
+(** Tell the progress display how much there is to do. *)
 
 val compile_lib : Odoc_unit.pkg -> Odoc_unit.lib -> unit
-(** Compile the modules of a library, in dependency order, with the library's
-    [-I] search path. Modules of other libraries are expected to have been
-    compiled already and to be reachable through that search path. *)
+(** [odoc compile] the modules of a library, a module after the modules it
+    depends on, and [odoc compile-impl] their implementations, all with the
+    library's [-I] search path. A module of another library must have been
+    compiled already; it is found through the search path. *)
 
 val compile_pages : Odoc_unit.pkg -> unit
 (** Compile the pages and assets of a package. *)
 
 val link : warnings_tags:string list -> Odoc_unit.pkg -> unit
-(** Link the units of a package: every unit with the package's reference scope
-    ([-P]/[-L]), modules with their library's [-I] as well. Everything the scope
-    names must have been compiled. *)
+(** [odoc link] the units of a package with the package's scope, and each
+    library's units with its [-I] search path as well. Everything the scope
+    names must have been compiled. Warnings are reported for the packages in
+    [warnings_tags]. *)
 
 val html_support : Fpath.t -> unit
 (** Write the files every page relies on into the HTML directory. *)
 
 val with_remaps : (string * string) list -> (Fpath.t option -> 'a) -> 'a
-(** [with_remaps remaps f] calls [f] with a file describing [remaps], for
-    {!generate}, or with [None] when there are none. *)
+(** [with_remaps remaps f] calls [f] with a file describing the link
+    redirections, for {!generate}, or with [None] when there are none. *)
 
 val generate :
   ?remap_file:Fpath.t -> generate_json:bool -> Fpath.t -> Odoc_unit.pkg -> unit
-(** Build a package's index, sidebar and search database, then render the HTML
-    of its units into the given directory. *)
+(** Build a package's index, sidebar and search database, then render its units
+    as HTML into the given directory. *)
 
 val json_index : occurrence_file:Fpath.t -> Fpath.t -> Odoc_unit.pkg -> unit
-(** [json_index ~occurrence_file html_dir pkg] writes the package's JSON search
-    index ([index.js]), with occurrence counts, into the HTML directory. This is
-    the only step that uses the occurrence counts. *)
+(** Write a package's search index as JSON ([index.js]) into the HTML directory,
+    with the occurrence counts from [occurrence_file]. This is the only step
+    that uses occurrence counts. *)

@@ -1,48 +1,51 @@
-type scope = {
-  page_roots : (string * Fpath.t) list;
-  lib_roots : (string * Fpath.t) list;
-}
-(** A package's index, built from the [.odocl] files of its units (see
-    [Compile.generate]), the sidebar derived from it, and the directory of the
-    package's HTML, where the search database and the JSON sidebar go. *)
-type index = {
-  index_file : Fpath.t;
-  sidebar_file : Fpath.t;
-  html_dir : Fpath.t;
-}
-(** An index is built from the [.odocl] files of the units of its package (see
-    [Compile.html_generate]), so it is defined by its output, not by input
-    directories. *)
+(** What the driver builds: units, grouped into libraries and packages.
+
+    A {e unit} is one artifact odoc compiles: a module interface, a module
+    implementation, a page or an asset. A {e library} groups the units of its
+    modules. A {e package} groups its libraries and its pages, and is the thing
+    the driver builds in one go. See {!Odoc_units_of} for how these are made
+    from what is installed, and {!Compile} and {!Build} for what is done with
+    them. *)
+
+(** {1 Units} *)
 
 type +'a t = {
   parent_id : Odoc.Id.t;
+      (** Decides the unit's identifier, and so how references to it resolve and
+          where its HTML goes. *)
   input_file : Fpath.t;
+      (** The [.cmti], [.cmt], [.mld], [.md] or asset file. *)
   input_copy : Fpath.t option;
-      (** Used to stash cmtis from virtual libraries into the odoc dir for
-          voodoo mode. *)
-  odoc_file : Fpath.t;
-  odocl_file : Fpath.t;
-  enable_warnings : bool;
-  to_output : bool;
+      (** For the interface of a virtual library: a place to copy the [.cmti]
+          to, next to the [.odoc] file, so that a later run documenting an
+          implementation can find it. *)
+  odoc_file : Fpath.t;  (** Where [odoc compile] writes. *)
+  odocl_file : Fpath.t;  (** Where [odoc link] writes. *)
+  enable_warnings : bool;  (** Report odoc's warnings for this unit. *)
+  to_output : bool;  (** Link and render this unit. *)
   kind : 'a;
 }
-(** A single artifact. What is shared by the units of a library or of a package
-    lives in {!lib} and {!pkg} instead. *)
+(** One unit. What all the units of a library or of a package share lives in
+    {!lib} and {!pkg} instead. *)
 
 type intf_extra = {
-  hidden : bool;
-  hash : string;
+  hidden : bool;  (** Not shown to readers; compiled but not linked. *)
+  hash : string;  (** The digest of the interface. *)
   deps : (string * Digest.t) list;
+      (** The modules it depends on, which must be compiled first. *)
 }
+
 and intf = [ `Intf of intf_extra ]
 
-type impl_extra = { src_id : Odoc.Id.t; src_path : Fpath.t }
-type impl = [ `Impl of impl_extra ]
+type impl_extra = {
+  src_id : Odoc.Id.t;  (** The identifier of the rendered source page. *)
+  src_path : Fpath.t;  (** The source file. *)
+}
 
+type impl = [ `Impl of impl_extra ]
 type mld = [ `Mld ]
 type md = [ `Md ]
 type asset = [ `Asset ]
-
 type any = [ impl | intf | mld | asset | md ] t
 
 type module_unit = [ intf | impl ] t
@@ -51,66 +54,104 @@ type module_unit = [ intf | impl ] t
 type page = [ mld | md | asset ] t
 (** A page or an asset: the units of a package's documentation. *)
 
+(** {1 Libraries and packages} *)
+
 type lib = {
   lib_name : string;
   requires : string list;
+      (** The libraries of this build that must be compiled before this one: the
+          libraries it requires, restricted to those being built. A required
+          library that provides no modules stands for the libraries it requires
+          in turn. *)
   includes : Fpath.t list;
+      (** The [-I] search path of its units: the directories holding the [.odoc]
+          files of every library it depends on, directly or not. This is the set
+          of directories the compiler had when it built the library. *)
   units : module_unit list;
 }
-(** A library: its modules and their implementations, the libraries of this
-    build that must be compiled before it ([requires]: its direct META
-    dependencies, restricted to the libraries being built and with alias
-    libraries expanded), and the [-I] search path its units are compiled and
-    linked with ([includes]: the directories of its dependency cone). *)
+(** A library and its modules. *)
+
+type scope = {
+  page_roots : (string * Fpath.t) list;
+      (** The packages whose pages may be referred to, with the directory of
+          their [.odoc] files: the [-P] arguments. *)
+  lib_roots : (string * Fpath.t) list;
+      (** The libraries whose modules may be referred to, likewise: the [-L]
+          arguments. *)
+}
+(** What the units of a package may refer to at link time. Every unit of a
+    package is linked with the same scope. *)
+
+type index = {
+  index_file : Fpath.t;  (** The [.odoc-index] file. *)
+  sidebar_file : Fpath.t;  (** The [.odoc-sidebar] file derived from it. *)
+  html_dir : Fpath.t;
+      (** The package's directory in the HTML output, where the search database
+          and the JSON sidebar go. *)
+}
+(** A package's index, built from the [.odocl] files of its units. *)
 
 type pkg = {
   pkgname : string option;
+      (** [None] for the top-level index, which belongs to no package. *)
   scope : scope;
-  index : index option;
+  index : index option;  (** [None] for the top-level index. *)
   libs : lib list;
-  pages : page list;
+  pages : page list;  (** Including the landing pages the driver writes. *)
 }
+(** A package, the thing the driver builds in one go. *)
 
 val all_units : pkg -> any list
 
+(** {1 Where things go}
+
+    Identifiers follow one layout and files on disk another.
+
+    {e Identifiers} put a package's pages under the package's name and a
+    library's modules under [<pkg>/<lib>]. They decide the URLs.
+
+    {e Files} mirror the switch. A library's [.odoc] files are written at the
+    path of its object directory, [lib/<findlib dir>], so libraries that share a
+    directory in the switch share one here and the [-I] search path is the
+    compiler's. A package's pages are written below [doc/<pkg>]. Every location
+    is a function of a name, so a run finds what earlier runs built without any
+    record of it. The same paths hold below the odocl directory. *)
+
 val pkg_dir : Packages.t -> Fpath.t
-
-val lib_dir : Packages.t -> Packages.libty -> Fpath.t
-(** [lib_dir pkg lib] is the parent id of the library's units: it determines
-    their identifiers and the URLs of their pages. *)
-
-(** {2 Where the files go}
-
-    The odoc directory mirrors the switch: a library's [.odoc] files are
-    written beside where its objects are installed ([lib/<findlib dir>], so
-    libraries sharing an object directory share an odoc directory and the
-    [-I] set mirrors the compiler's), and a package's pages below
-    [doc/<pkg>], reproducing the layout of their identifiers. Every location
-    is thus a function of a library or package name, and an earlier run's
-    output is found without any record of it. The same paths hold below the
-    odocl directory. *)
-
-val lib_obj_dir : Packages.libty -> Fpath.t
-val pages_dir : Packages.t -> Fpath.t
-
-val page_obj_dir : Packages.t -> Fpath.t -> Fpath.t
-(** [page_obj_dir pkg rel_dir] is where a page whose parent id is [rel_dir]
-    goes: [rel_dir]'s position below the package's {!doc_dir}, reproduced below
-    its {!pages_dir}. *)
+(** The identifier of the package's top-level page, and the root of its HTML. *)
 
 val doc_dir : Packages.t -> Fpath.t
+(** The identifier below which the package's pages live. *)
+
+val lib_dir : Packages.t -> Packages.libty -> Fpath.t
+(** The identifier of a library's modules. *)
+
 val src_dir : Packages.t -> Fpath.t
+(** The identifier below which rendered sources live. *)
+
 val src_lib_dir : Packages.t -> Packages.libty -> Fpath.t
+(** The identifier below which a library's rendered sources live. *)
+
+val lib_obj_dir : Packages.libty -> Fpath.t
+(** Where a library's [.odoc] files go, relative to the odoc directory. *)
+
+val pages_dir : Packages.t -> Fpath.t
+(** Where a package's pages go, relative to the odoc directory. *)
+
+val page_obj_dir : Packages.t -> Fpath.t -> Fpath.t
+(** [page_obj_dir pkg id] is where a page with identifier [id] goes: the
+    position of [id] below {!doc_dir}, reproduced below {!pages_dir}. *)
 
 val output_root : _ t -> Fpath.t
-(** [output_root u] is the directory below which [odoc] places [u]'s output when
-    given [--output-dir] and [--parent-id] rather than [-o]: the directory of
-    [u.odoc_file] with the parent id stripped. Used for the commands that have
-    no [-o] ([compile-asset], [odoc-md]). *)
+(** The directory to give as [--output-dir] to the odoc commands that have no
+    [-o] option, so that they write the unit's [odoc_file]. *)
+
+(** {1 Directories} *)
 
 type dirs = {
-  odoc_dir : Fpath.t;
-  odocl_dir : Fpath.t;
-  index_dir : Fpath.t;
-  mld_dir : Fpath.t;
+  odoc_dir : Fpath.t;  (** [.odoc] files. *)
+  odocl_dir : Fpath.t;  (** [.odocl] files. *)
+  index_dir : Fpath.t;  (** Index and sidebar files. *)
+  mld_dir : Fpath.t;  (** The pages the driver writes itself. *)
 }
+(** Where intermediate files go. *)

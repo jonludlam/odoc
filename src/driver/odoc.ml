@@ -133,8 +133,8 @@ let lib_args libs =
       v "-L" % s %% acc)
     Cmd.empty libs
 
-let link ?(ignore_output = false) ~custom_layout ~input_file:file ?output_file
-    ~docs ~libs ~includes ~warnings_tags ?current_package () =
+let link ?(ignore_output = false) ~input_file:file ?output_file ~docs ~libs
+    ~includes ~warnings_tags ?current_package () =
   let open Cmd in
   let output_file =
     match output_file with Some f -> f | None -> Fpath.set_ext "odocl" file
@@ -160,7 +160,7 @@ let link ?(ignore_output = false) ~custom_layout ~input_file:file ?output_file
     List.fold_left (fun acc k -> acc % "--warnings-tags" % k) cmd warnings_tags
   in
   let desc = Printf.sprintf "Linking %s" (Fpath.to_string file) in
-  let cmd = if custom_layout then cmd % "--custom-layout" else cmd in
+  let cmd = cmd % "--custom-layout" in
   let log =
     if ignore_output then None else Some (`Link, Fpath.to_string file)
   in

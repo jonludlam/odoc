@@ -160,8 +160,8 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
            their -L roots overlap; --custom-layout tells odoc that is
            intended. *)
         if c.to_output then
-          Odoc.link ~custom_layout:true ~input_file:c.odoc_file
-            ~output_file:c.odocl_file ~libs:lib_roots ~docs:page_roots ~includes
+          Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file
+            ~libs:lib_roots ~docs:page_roots ~includes
             ~ignore_output:(not c.enable_warnings) ~warnings_tags
             ?current_package:pkg.pkgname ();
         Atomic.incr
@@ -233,7 +233,7 @@ let generate ?remap_file ~generate_json html_dir (pkg : Odoc_unit.pkg) =
         Odoc.sidebar_generate
           ~output_file:Fpath.(html_dir // pkg_html / "sidebar.json")
           ~json:true index_file ();
-        let db = Fpath.(pkg_html / "sherlodoc_db.js") in
+        let db = Sherlodoc.db_js_file pkg_html in
         let _ = OS.Dir.create Fpath.(html_dir // pkg_html) |> Result.get_ok in
         Sherlodoc.index ~format:`js ~inputs:[ index_file ]
           ~dst:Fpath.(html_dir // db)

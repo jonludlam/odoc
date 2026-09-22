@@ -1,11 +1,23 @@
+(** Input for ocaml.org, which builds documentation one package per job.
+
+    Each job runs the voodoo driver on a package prepared by [voodoo-prep]: a
+    directory [prep/universes/<universe>/<pkg>/<version>] holding the files the
+    package installed. Dependencies are not in [prep]; they are installed in the
+    job's switch, and their [.odoc] files are those earlier jobs wrote into the
+    odoc directory. *)
+
 type pkg
+(** A prepared package. *)
 
 val find_pkg : string -> blessed:bool -> pkg option
-(** [get_pkg name ~blessed] looks for a package named [name] in the prep
-    directory *)
+(** Find the prepared package of the given name. [blessed] marks the version
+    ocaml.org shows by default; it decides the identifiers, see {!of_voodoo}. *)
 
 val of_voodoo : pkg -> Packages.t
+(** Read the package's [META] files, objects and documentation from the prep
+    directory. Identifiers start with [p/<pkg>/<version>] for a blessed package
+    and [u/<universe>/<pkg>/<version>] otherwise. *)
 
 val occurrence_file_of_pkg : pkg -> Fpath.t
-(** [occurrences_file_of_pkg pkg odoc_dir] returns an appropriate filename for
-    the occurrences file for [pkg]. *)
+(** Where the package's occurrence counts go, relative to the odocl directory.
+*)
