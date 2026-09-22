@@ -27,7 +27,10 @@ has a small number of options to allow for modification of the layout of what's 
 - [odoc_driver] - The standard driver.
 - [odoc_driver_voodoo] - The driver adapted for producing the documentation used by ocaml.org.
 
-What follows applies mostly to the first of these.
+What follows applies mostly to the first of these. For how the driver works
+inside, step by step, see {{!/odoc/page-driver}How to drive odoc} in the [odoc]
+documentation, which walks through a package and names the modules of this
+library that handle each step.
 
 {2 Documentation errors}
 
