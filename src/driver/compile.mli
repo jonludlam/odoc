@@ -5,10 +5,11 @@ val init_stats : Odoc_unit.pkg list -> unit
 (** Tell the progress display how much there is to do. *)
 
 val compile_lib : Odoc_unit.pkg -> Odoc_unit.lib -> unit
-(** [odoc compile] the modules of a library, a module after the modules it
-    depends on, and [odoc compile-impl] their implementations, all with the
-    library's [-I] search path. A module of another library must have been
-    compiled already; it is found through the search path. *)
+(** Compile the modules of a library, each module after the modules it depends
+    on. Interfaces go through [odoc compile] and implementations through
+    [odoc compile-impl], all with the library's [-I] search path. All
+    dependencies in other libraries must have been compiled already; odoc finds
+    them through the search path. *)
 
 val compile_pages : Odoc_unit.pkg -> unit
 (** Compile the pages and assets of a package. *)
