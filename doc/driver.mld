@@ -1,517 +1,625 @@
 {0 How to Drive [odoc]}
 
-[odoc] is a CLI tool to create API and documentation for OCaml
-projects. However, it operates at a rather low level, taking individual files
-through several distinct phases until the HTML output is generated.
+[odoc] is a command-line tool. It turns the compiled modules and the [.mld]
+pages of a project into documentation, one file at a time, through several
+distinct phases. Like a compiler, it needs something to call it in the right
+order with the right arguments. That something is a {e driver}.
 
-For this reason, just like for building any multifiles OCaml project, [odoc]
-needs to be driven by a higher level tool. The driver will take care of calling
-the [odoc] command with the right arguments throughout the different
-phases. The {{!/odoc-driver/page-index}odoc-driver} package contains a "reference driver", that is kept up-to-date
-with the latest development of [odoc], 
-
-Several drivers for [odoc] exist, such as:
+The {{!/odoc-driver/page-index}odoc-driver} package holds the {e reference
+driver}, which is kept in step with [odoc]. Other drivers exist, such as
 {{:https://dune.readthedocs.io/en/stable/documentation.html}dune} and
 {{!/odig/page-index}odig}.
 
-This document explains how to drive [odoc], as of version 3. It is not needed to
-know any of this to {e use} [odoc], it is targeted at driver authors, tools that
-interact with [odoc], or any curious passerby. This includes several subjects:
+This document is for people who write drivers, tools that call [odoc], or
+anyone curious. You do not need it to {e use} [odoc]. It covers:
 
-- A big picture view of the doc generation model,
-- A unified explanation for the various command line flags,
-- An explanation of the [odoc] pipeline,
-- A convention for building docs for [opam]-installed packages.
+- the model [odoc] uses to organise documentation: {{!units}trees};
+- the four {{!pipeline}phases} and the command line of each;
+- a {{!walkthrough}walkthrough} of what the reference driver does for one
+  package, then what changes for {{!other}other kinds of packages} and for
+  {{!ocamlorg}ocaml.org};
+- the {{!conv}convention} that drivers and installed packages follow so that
+  they work together.
 
-In addition to the documentation, the reference driver is a good tool to
-understand how to build [odoc] projects. It can be useful to look at the
-implementation code, but it can also help to simply look at all invocations of
-[odoc] during a run of the driver.
+The walkthrough names the modules of the reference driver that carry out each
+step. Reading it next to the {{!/odoc-driver/Odoc_driver_lib}library's own
+documentation} is a good way to understand the whole process.
 
 {1:units Trees of documentation}
 
-In its third major version, [odoc] has been improved so that the same
-documentation can work on multiple scenarios, from local switches to big
-monorepos, or the {{:https://ocaml.org/packages}ocaml.org} hub of documentation for all packages, without
-anything breaking, especially references.
+The same documentation must work in several settings: a local switch, a large
+monorepo, or the {{:https://ocaml.org/packages}ocaml.org} hub for all
+packages. In each setting the pages live at different places, and references
+between them must still resolve.
 
-The idea is that we have named groups of documentation, that we'll call {e trees}
-here. We have two kinds of trees: page trees, and modules trees. Inside the
-trees, the hierarchy is managed by [odoc]. The driver is free to "root" them
-however they like in the overall hierarchy. So [odoc] is responsible for the
-hierarchy below the trees root, and the driver is responsible for the one
-outside of the trees. In order to reference another tree, a documentation author
-can use the name of the tree in the reference.
+[odoc] solves this with named groups of documentation, called {e trees}.
+There are two kinds: {e page trees} and {e module trees}. [odoc] manages the
+hierarchy inside a tree. The driver decides where each tree is rooted in the
+overall hierarchy. A documentation author refers to another tree by its name,
+not by its location.
 
-Different situations will give different meanings to the trees. In the case of
-[opam] packages, though, there is a natural meaning to give to those trees
-(you'll find more details in the {{!section-conv}convention for opam-installed packages}). Any
-opam package will have an associated "documentation tree", named with the name
-of the package. Any of its libraries will have an associated "module tree",
-named with the name of the library. Another package can thus refer to the doc
-using the package name, or to any of its library using the library name, no
-matter where the package is located in the hierarchy.
+For opam packages the trees have a natural meaning. Each package has a page
+tree named after the package. Each of its libraries has a module tree named
+after the library. Another package can refer to the pages by the package name,
+and to a module by the library name, wherever the package ends up in the
+hierarchy. The {{!conv}convention} below spells this out.
 
-{1 The doc generation pipeline}
+{1:pipeline The pipeline}
 
-Just like when compiling OCaml modules, generating docs for these modules need
-to be run in a specific order, as some information for generating docs for a
-file might reside in another one. However, [odoc] actually allows a particular
-file to reference a module that depends on it, seemingly creating a circular
-dependency.
+Documentation is generated in four phases. A file may refer to a module that
+depends on it, so the phases are separated to break this apparent cycle.
 
-This circular dependency problem is one of the reasons we have several phases in
-[odoc]. Let's review them:
+- The {e compile} phase turns [.cmi], [.cmt], [.cmti] and [.mld] files into
+  [.odoc] files. Here [odoc] does work similar to the compiler's, such as
+  computing the expansion of each module type. The dependencies between
+  inputs are those of the compiled modules themselves.
 
-- The [compile] phase, which is used to create the [.odoc] artifacts from
-  [.cm{i;t;ti}] and [.mld] files. This is where [odoc] does similar work to
-  that of the OCaml compiler, computing expansions for each module types. The dependencies
-  between are the same as the ones for the [.cm{i;t;ti}] input.
+- The {e link} phase turns [.odoc] files into [.odocl] files. It resolves the
+  references written in documentation comments, and canonical paths.
 
-- The [link] phase transforms the [.odoc] artifacts to [.odocl]. The main result
-  of this phase is to resolve odoc references, which also has an effect on
-  canonical modules.
+- The {e indexing} phase gathers [.odocl] files into [.odoc-index] files, from
+  which the sidebar and the search index are made.
 
-- The [indexing] phase generates [.odoc-index] files from sets of [.odocl]
-  files. These index files will be used both for generating a global sidebar,
-  and for generating a search index.
-
-- The [generation] phase takes the [.odocl] and [.odoc-index] files and turns
-  them into either HTML, man pages or Latex files.
+- The {e generation} phase renders [.odocl] and [.odoc-index] files as HTML,
+  man pages or LaTeX.
 
 {2 The compile phase}
 
-The compile phase takes as input a set of [.cm{i;t;ti}] as well as [.mld] files,
-and builds a directory hierarchy of [.odoc] files.
-
-There are distinct commands for this phase: [odoc compile] for interfaces and
-pages, [odoc compile-impl] for implementations, and [odoc compile-asset] for
+There is one command per kind of input: [odoc compile] for interfaces and
+pages, [odoc compile-impl] for implementations, [odoc compile-asset] for
 assets.
 
-{3 Compiling interfaces}
-
-Let's have a look at a generic invocation of [odoc] during the compile phase:
+{3 Compiling interfaces and pages}
 
 {@shell[
-  $ odoc compile --output-dir <od> --parent-id <pid> -I <dir1> -I <dir2> <input-file>.<ext>
+  $ odoc compile --parent-id <pid> -o <file>.odoc -L <lib1>:<dir1> -L <lib2>:<dir2> <input>
 ]}
 
-- [<input-file>.<ext>] is the input file, either a [.cm{i;t;ti}] file or an [.mld]
-  file. Prefer [.cmti] files over the other formats!
+- [<input>] is a [.cmi], [.cmt], [.cmti] or [.mld] file. Prefer [.cmti] files
+  over the other compiled forms: they hold the documentation of the [.mli].
 
-- [--output-dir <od>] allows to specify the directory that will contain all the
-  [.odoc] files. This directory has to be fully managed by [odoc] and should not
-  be modified by another tool! The output file depends on the [--parent-id]
-  option.
+- [--parent-id <pid>] places the unit in the documentation hierarchy. It is a
+  path of non-empty names separated by [/]. Together with the input's name it
+  gives the unit its {e identifier}, which decides how references to the unit
+  resolve and where its HTML goes. Units of one {{!units}tree} share a common
+  prefix of their parent ids. The identifier is stored inside the [.odoc] file.
 
-- [--parent-id <pid>] allows to place the output [.odoc] file in the
-  documentation hierarchy. This consists in a [/] separated sequence of non
-  empty strings (used as directory name). This "path" determines where the
-  [.odoc] file will be located below the [<od>] output dir. The name of the
-  output file is [<input-file>.odoc] for modules, and [page-<input-file>.odoc]
-  for pages. Documentation artifacts that will be in the same {{!units}unit of
-  documentation} need to hare a common root in their parent id.
+- [-o <file>.odoc] is where the file goes. The name must be the input's name
+  with the [.odoc] extension, prefixed by [page-] for an [.mld]. The location
+  is independent of the identifier: later phases find files only through the
+  paths they are given, so the driver may place them as it likes. Without
+  [-o], [odoc] writes the file below [--output-dir] at the path given by
+  [--parent-id].
 
-- [-I <dir>] corresponds to the search path for other [.odoc] files. Multiple
-  directory can be added to the search path, so every required [.odoc] file is
-  in the search path. The required [.odoc] files are the one generated from a
-  [.cm{i;t;ti}] file listed when calling [odoc compile-deps] on the input
-  file.
+- [-L <name>:<dir>] names a library and the directory of its [.odoc] files.
+  The directory is searched for the modules the input depends on, those
+  [odoc compile-deps] lists for it, so each directory the compiler searched
+  for [.cmi] files when it built the input should have a counterpart here.
+  Several files of the same name may be on the search path; [odoc] picks the
+  one whose interface digest matches.
 
-A concrete example for such command would be:
+  The names are written into the [.odoc] file. They are the libraries the
+  compiler could see when the unit was built, and [odoc link] uses them later:
+  resolution that follows a path or a reference {e into} this unit carries on
+  among these libraries, so a module named inside it is the one it was built
+  against. Without that, two libraries built against different modules of the
+  same name are indistinguishable from the outside.
+
+- [-I <dir>] does the same without naming a library, and so records nothing.
+  It is what drivers passed before [-L] existed.
+
+For example, for the [fmt] package the reference driver runs:
 
 {@shell[
-  $ odoc compile
-       ~/.opam/5.2.0/lib/ppxlib/ppxlib__Extension.cmti
-       --output-dir _odoc/
-       -I _odoc/ocaml-base-compiler/compiler-libs.common
-       -I _odoc/ocaml-base-compiler/stdlib
-       -I _odoc/ocaml-compiler-libs/ocaml-compiler-libs.common
-       -I _odoc/ppxlib/ppxlib
-       -I _odoc/ppxlib/ppxlib.ast
-       -I _odoc/ppxlib/ppxlib.astlib
-       -I _odoc/ppxlib/ppxlib.stdppx
-       -I _odoc/ppxlib/ppxlib.traverse_builtins
-       -I _odoc/sexplib0/sexplib0
-       --parent-id ppxlib/ppxlib
+  $ odoc compile ~/.opam/5.5.0/lib/fmt/fmt.cmti
+      -o _odoc/lib/fmt/fmt.odoc
+      -L fmt:_odoc/lib/fmt/ -L ocaml:_odoc/lib/ocaml/
+      --parent-id fmt/fmt --warnings-tag fmt --enable-missing-root-warning
 ]}
 
 {3 Compiling implementations}
 
-A [compile-impl] command is pretty similar:
-
 {@shell[
-  $ odoc compile-impl --output-dir <od> --source-id <sid> --parent-id <pid> -I <dir1> -I <dir2> <input-file>.<ext>
+  $ odoc compile-impl --parent-id <pid> --source-id <sid> -o impl-<file>.odoc -I <dir1> <input>.cmt
 ]}
 
-- [<input-file>.cmt] is the input file, it has to be a [.cmt] file.
-
-- [--output-dir <od>] has the same meaning as for [odoc compile].
-
-- [--parent-id <pid>] also has the same meaning as for [odoc compile]. However,
-  the name of the output file is [impl-<input-file>.odoc]. Implementations need
-  to be available through the [-I] search path, so it is very likely that one
-  wants the implementation and interface [.odoc] files to share the same parent
-  id.
-
-- [-I <dir>] also corresponds to the search path for other [.odoc] files.
-
-- [source-id <sid>] is a new argument specific to [compile-impl]. This corresponds to the location of the rendering of the source, which is required to generate links to it.
-
-A concrete example for such command would be:
-
-{@shell[
-  $ odoc compile-impl
-        ~/.opam/5.2.0/lib/ppxlib/ppxlib__Spellcheck.cmt
-        --output-dir _odoc/
-        -I _odoc/ocaml-base-compiler/compiler-libs.common
-        -I _odoc/ocaml-base-compiler/stdlib
-        -I _odoc/ocaml-compiler-libs/ocaml-compiler-libs.common
-        -I _odoc/ppxlib/ppxlib
-        -I _odoc/ppxlib/ppxlib.ast
-        -I _odoc/ppxlib/ppxlib.astlib
-        -I _odoc/ppxlib/ppxlib.stdppx
-        -I _odoc/sexplib0/sexplib0
-        --enable-missing-root-warning
-        --parent-id ppxlib/ppxlib
-        --source-id ppxlib/src/ppxlib/spellcheck.ml
-]}
+The input is a [.cmt] file. The output name is [impl-] followed by the input's
+name. [--parent-id] and [-I] mean the same as above; the implementation is
+usually given the same parent id as its interface. [--source-id <sid>] is the
+identifier of the page that will show the rendered source; links to the source
+point there.
 
 {3 Compiling assets}
 
-Assets are given during the generation phase. But we still need to create an
-[.odoc] file, for [odoc]'s resolution mechanism.
-
 {@shell[
-  $ odoc compile-asset --output-dir <od> --parent-id <pid> --name <assetname>
+  $ odoc compile-asset --output-dir <od> --parent-id <pid> --name <file>
 ]}
 
-- [--output-dir] and [--parent-id] are identical to the [compile] and
-  [compile-impl] commands,
-
-- [--name <assetname>] gives the asset name.
-
-- The output file name is computed from the previous values as
-  [<output-dir>/<parent-id>/asset-<assetname>.odoc].
+An asset is copied at generation time, but it needs a unit so that references
+to it resolve. This command has no [-o]: the unit goes to
+[<od>/<pid>/asset-<file>.odoc].
 
 {2 The link phase}
 
-The link phase requires the directory of the [compile] phase to generate its set
-of [.odocl] files. This phase resolves references and canonicals.
-
-A generic link command is:
-
 {@shell[
-  $ odoc link
-      -I <dir1> -I <dir2>
-      -P <pname1>:<pdir1> -P <pname2>:<pdir2>
-      -L <lname1>:<ldir1> -L <lname2>:<ldir2>
-      <path/to/file.odoc>
+  $ odoc link <file>.odoc -o <file>.odocl
+      -P <pkg1>:<dir1> -P <pkg2>:<dir2>
+      -L <lib1>:<dir3> -L <lib2>:<dir4>
+      -I <dir5> -I <dir6>
 ]}
 
-- [<path/to/file.odoc] is the input [.odoc] file. The result of this command is
-  [path/to/file.odocl]. This path was determined by [--output-dir] and
-  [--parent-id] from the link phase, and it is important for the indexing phase
-  that it stays in the same location.
+- [-P <name>:<dir>] names a page tree and the directory of its [.odoc] files.
+  References such as [{!/ocamlfind/index}] resolve against it.
 
-- [-P <name>:<dir>] are used to list the "page trees", used to resolve
-  references such as [{!/ocamlfind/index}].
+- [-L <name>:<dir>] names a module tree likewise. References such as
+  [{!/findlib.dynload/Fl_dynload}] resolve against it, and references by
+  plain name search its directory.
 
-- [-L <name>:<dir>] are used to list the "module trees", used to resolve
-  references such as [{!/findlib.dynload/Fl_dynload}]. This also adds [<dir>] to
-  the search path.
+- [-I <dir>] adds a directory to the search path.
 
-- [-I <dir>] adds [<dir>] to the search path. The search path is used to resolve
-  references that do not use the "named tree" mechanism, such as [{!Module}] and
-  [{!page-pagename}].
+Odoc looks up a module by name in these directories, but not all at once, and
+what it tries first depends on whose name it is resolving.
+
+While it resolves the unit named on the command line, it searches the [-I]
+directories first and the [-L] directories only if that finds nothing. The
+[-I] directories hold the modules the compiler gave that unit, so a name they
+answer means the module it was built against. This holds for every name odoc
+resolves: the modules a signature mentions, the aliases in it, canonical
+paths, and references written in documentation comments.
+
+When resolution follows a path or a reference {e into} another unit, it
+carries on among the libraries that unit recorded at compile time, which are
+what its own compiler could see. This is what lets a page name a submodule of
+one library rather than of its sibling, and lets a module list show each
+module's own first paragraph resolved as that module's page resolves it.
+
+A module of a library that is in neither is found by the wider search, which
+has no digest to tell same-named candidates apart: odoc takes the first and
+warns. Authors can avoid the ambiguity with a path reference that names the
+tree, [{!/foo/A}] for the module [A] of library [foo].
+
+The directories given to [-P] and [-L] must not be nested or shared. Where the
+layout makes that impossible, several libraries installed in one directory
+for instance, pass [--custom-layout], which disables the check.
 
 {2 The indexing phase}
 
-The indexing phase refers to the "crunching" of information split in several
-[.odocl] files. Currently, there are two use-cases for this phase:
-
-- Generating a search index. This requires all information from linked
-  interfaces and pages, but also form linked implementations in order to sort
-  results (by number of occurrences).
-
-- Generating a global sidebar.
-
 {3 Counting occurrences}
 
-This step counts the number of occurrences of each value/type/... in the
-implementation, and stores them in a table. A generic invocation is:
-
 {@shell[
-  $ odoc count-occurrences <dir1> <dir2> -o <path/to/name.odoc-occurrences>
+  $ odoc count-occurrences <dir1> <dir2> -o <file>.odoc-occurrences
 ]}
 
-An example of such command:
-
-{@shell[
-  $ odoc count-occurrences _odoc/ -o _odoc/occurrences-all.odoc-occurrences
-]}
+This counts how often each item is used by the implementations found below the
+directories. The counts are used only by the JSON search index below.
 
 {3 Indexing entries}
 
-The [odoc compile-index] produces an [.odoc-index] file, from [.odocl] files,
-other [.odoc-index] files, and possibly some [.odoc-occurrences] files.
-
-To create an index for the page and documentation units, we use the [-P] and
-[-L] arguments.
-
 {@shell[
-  $ odoc compile-index
-      -o path/to/<indexname>.odoc-index
-      -P <pname1>:<ppath1>
-      -P <pname2>:<ppath2>
-      -L <lname1>:<lpath1>
-      -L <lname2>:<lpath2>
-      --occurrences <path/to/name.odoc-occurrences>
+  $ odoc compile-index -o <file>.odoc-index --file-list <list> [--occurrences <file>]
 ]}
 
-An example of such command:
+[<list>] names a file with one [.odocl] path per line. [odoc] builds one
+hierarchy from these units' identifiers. Directories can be given instead with
+[--root <dir>], but each root then gives a hierarchy of its own, which is
+wrong when a package's pages and modules live in different directories. The
+binary index does not use occurrence counts; only the JSON form does, with
+[--json].
 
 {@shell[
-  $ odoc compile-index
-      -o _odoc/ppxlib/index.odoc-index
-      -P ppxlib:_odoc/ppxlib
-      -L ppxlib:_odoc/ppxlib/ppxlib
-      -L ppxlib.ast:_odoc/ppxlib/ppxlib.ast
-      -L ppxlib.astlib:_odoc/ppxlib/ppxlib.astlib
-      -L ppxlib.metaquot:_odoc/ppxlib/ppxlib.metaquot
-      -L ppxlib.metaquot_lifters:_odoc/ppxlib/ppxlib.metaquot_lifters
-      -L ppxlib.print_diff:_odoc/ppxlib/ppxlib.print_diff
-      -L ppxlib.runner:_odoc/ppxlib/ppxlib.runner
-      -L ppxlib.runner_as_ppx:_odoc/ppxlib/ppxlib.runner_as_ppx
-      -L ppxlib.stdppx:_odoc/ppxlib/ppxlib.stdppx
-      -L ppxlib.traverse:_odoc/ppxlib/ppxlib.traverse
-      -L ppxlib.traverse_builtins:_odoc/ppxlib/ppxlib.traverse_builtins
-      --occurrences _odoc/occurrences-all.odoc-occurrences
+  $ odoc sidebar-generate -o <file>.odoc-sidebar <file>.odoc-index
 ]}
+
+This derives the sidebar from an index. With [--json] it writes the JSON form
+used by ocaml.org.
 
 {2 The generation phase}
 
-The generation phase is the phase that takes all information computed in
-previous files, and actually generates the documentation. It can take the form
-of HTML, Latex and manpages, although currently HTML is the [odoc] backend that
-supports the most functionalities (such as images, videos, ...).
-
-In this manual, we describe the HTML generation usecase. Usually,
-generating for other backend boils down to replacing [html-generate] by
-[latex-generate] or [man-generate], refer to the manpage to see the diverging
-options.
-
-Given an [.odocl] file, [odoc] might generate a single [.html] file, or a
-complete directory of [.html] files. The [--output-dir] option specifies the
-root for generating those outputs.
-
-{3 A JavaScript file for search requests}
-
-[odoc] provides a way to plugin a JavaScript file, containing the code to answer
-user's queries. In order to never block the UI, this file will be loaded in a
-web worker to perform searches:
-
-- The search query will be sent as a plain string to the web worker, using the
-  standard mechanism of message passing.
-
-- The web worker has to send back the result as a message to the main thread,
-  containing the results. The format for the result message is a string that can
-  be parsed as a list of JSON objects. Each object contain two keys-value pairs:
-  a key ["url"] which contains a relative URL from [--ouput-dir]; and a key
-  ["html"] which contain the html showing the search entry.
-
-- The JavaScript file must be manually put in the [--output-dir] values, the driver can
-  decide where.
-
-{3 Interfaces and pages}
-
-A generic [html-generate] command for interfaces has the following form:
-
 {@shell[
-  $ odoc html-generate
-    --output-dir <odir>
-    --index <path/to/file.odoc-index>
-    --search-uri <relative/to/output-dir/file.js>
-    --search-uri <relative/to/output-dir/file2.js>
-    <path/to/file.odocl>
+  $ odoc html-generate <file>.odocl -o <html-dir>
+      --sidebar <file>.odoc-sidebar
+      --search-uri <path.js> --search-uri <path2.js>
 ]}
 
-- [--output-dir <odir>] is used to specify the root output for the generated
-  [.html].
-
-- [--index <path/to/file.odoc-index>] is given to [odoc] for sidebar generation.
-
-- [--search-uri <relative/to/output-dir/file.js>] tells [odoc] which file(s) to
-  load in a web worker.
-
-The output directory or file can be computed from this command's [--output-dir],
-the initial [--parent-id] given when creating the [.odoc] file, as well as the
-unit name. In the case of a module, the output is a directory named with the
-name of the module. In the case of a page, the output is a file with the name of
-the page and the [.html] extension.
-
-An example of such command is:
+The output goes below [<html-dir>] at the path given by the unit's identifier:
+a directory named after a module, a file named after a page. [--sidebar] gives
+the sidebar to show. Each [--search-uri] is a JavaScript file, relative to the
+HTML directory, that the page loads in a web worker to answer search queries.
+The worker receives the query as a string and replies with a string holding a
+JSON list of objects with a [url] and an [html] field.
 
 {@shell[
-  $ odoc html-generate
-      _odoc/ppxlib/page-index.odocl
-      --index _odoc/ppxlib/index.odoc-index
-      --search-uri ppxlib/sherlodoc_db.js
-      --search-uri sherlodoc.js
-      -o _html/
+  $ odoc html-generate-source --impl impl-<file>.odocl <source>.ml -o <html-dir>
+  $ odoc html-generate-asset --asset-unit asset-<file>.odoc <file> -o <html-dir>
+  $ odoc support-files -o <html-dir>
 ]}
 
-{3 Source code}
+These render a source file, copy an asset to its place, and write the
+stylesheets and scripts every page needs.
+
+{1:walkthrough What the reference driver does}
+
+This section follows the reference driver through one ordinary package, then
+looks at the cases that need something more. The driver is the
+{{!/odoc-driver/Odoc_driver_lib}[Odoc_driver_lib]} library, with two
+executables on top: [odoc_driver] for a switch, [odoc_driver_voodoo] for
+ocaml.org.
+
+{2:standard A standard package: [fmt]}
+
+The [fmt] package installs these files in the switch:
+
+{v
+lib/fmt/META
+lib/fmt/fmt.cmi  fmt.cmti  fmt.cmt  fmt.mli  fmt.ml  fmt.cma ...
+lib/fmt/cli/fmt_cli.cmi  fmt_cli.cmti  fmt_cli.cmt  fmt_cli.cma ...
+lib/fmt/tty/fmt_tty.cmi  fmt_tty.cmti  fmt_tty.cmt  fmt_tty.cma ...
+doc/fmt/odoc-pages/index.mld
+doc/fmt/README.md  CHANGES.md  LICENSE.md
+v}
+
+The [META] file defines three libraries. [fmt] requires nothing; [fmt.cli]
+requires [cmdliner] and [fmt]; [fmt.tty] requires [unix] and [fmt].
+
+Running [odoc_driver fmt] documents it and the packages it depends on.
+
+{3 Step 1: finding out what is installed}
+
+{{!/odoc-driver/Odoc_driver_lib.Packages}[Packages]} asks opam which packages
+[fmt] depends on and which files each package installed, and asks findlib
+({{!/odoc-driver/Odoc_driver_lib.Ocamlfind}[Ocamlfind]}) about every library:
+its directory, its archives and its [requires]. From that it builds one
+{{!/odoc-driver/Odoc_driver_lib.Packages.t}[Packages.t]} per package. For
+[fmt] this holds three libraries, each with the modules of its archive found by
+[odoc classify], and each module analysed with [odoc compile-deps] to get the
+digest of its interface and the modules it depends on. It also holds the
+page [index.mld], the Markdown files, and the contents of [odoc-config.sexp]
+if the package has one.
+
+Two facts fixed here drive everything after: a library's [requires], read
+from its [META] file, and its object directory relative to the switch,
+[lib/fmt/cli] for [fmt.cli].
+
+{3 Step 2: deciding identifiers and locations}
+
+{{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} turns each
+[Packages.t] into an {{!/odoc-driver/Odoc_driver_lib.Odoc_unit.pkg}[Odoc_unit.pkg]}:
+the list of units to build, grouped by library, with everything the later
+steps need.
+
+Each unit gets an {e identifier} and a {e location}. They follow different
+layouts, and keeping them apart is the point.
+
+The identifier follows the {{!conv}convention}: the package's pages under the
+package name, a library's modules under [<pkg>/<lib>]. It decides the URLs.
+
+{v
+fmt/page-index          the package's index page, from doc/fmt/odoc-pages/index.mld
+fmt/fmt/Fmt             the module Fmt of library fmt
+fmt/fmt.cli/Fmt_cli     the module Fmt_cli of library fmt.cli
+fmt/fmt/page-index      the library's landing page, written by the driver
+v}
+
+The location mirrors the switch. A library's [.odoc] files are written at the
+path of its object directory, and a package's pages under [doc/<pkg>]:
+
+{v
+_odoc/lib/fmt/fmt.odoc            beside lib/fmt/fmt.cmi in the switch
+_odoc/lib/fmt/cli/fmt_cli.odoc
+_odoc/doc/fmt/page-index.odoc     the package's index page
+_odoc/doc/fmt/fmt/page-index.odoc the landing page of library fmt
+v}
+
+The same paths hold under the directory for [.odocl] files. See
+{{!/odoc-driver/Odoc_driver_lib.Odoc_unit}[Odoc_unit]} for the functions that
+compute both layouts.
+
+Mirroring the switch has two consequences. Libraries installed in one
+directory share one odoc directory, so a single [-I] finds all of them, exactly
+as a single [-I] found their [.cmi] files. And every location is a function of
+a name: a library's from its findlib directory, a package's from its name. A
+run that documents a package on its own can therefore find what earlier runs
+built without any record of it. This is how ocaml.org works, see
+{{!ocamlorg}below}. The odoc directory may even be the switch prefix itself.
+
+{3:scope Step 3: the search path and the scope}
+
+For each library, [Odoc_units_of] computes its {e dependency cone}: the
+library itself and, transitively, what it requires, each with the directory of
+its [.odoc] files. This is what the compiler searched when it built the
+library. For [fmt.cli] it is [fmt.cli], [fmt], [cmdliner] and the standard
+library. The cone is given to [odoc compile] with [-L], which both finds the
+files and writes the names into the units, and to [odoc link] with [-I].
+
+For each package it computes the {e reference scope}: the [-P] and [-L]
+arguments its units are linked with. Every unit of the package gets the same
+scope. It is not the transitive closure:
+
+- [-L]: the package's own libraries, the libraries they require directly, and
+  the libraries named in [odoc-config.sexp];
+- [-P]: the package itself, the packages providing those libraries, and the
+  packages named in [odoc-config.sexp].
+
+The page the driver writes for a library is linked with that library's [-I]
+as well, although it is a page and has no modules of its own. It shows a
+synopsis for each module, and needs to reach what those synopses name.
+
+For [fmt], with [cmdliner] not installed as a dependency, the link command of
+[Fmt] is:
 
 {@shell[
-  $ odoc html-generate-source --output-dir <odir> --impl <path/to/impl-file.odocl> <path/to/source/file.ml>
+  $ odoc link _odoc/lib/fmt/fmt.odoc -o _odocl/lib/fmt/fmt.odocl
+      -P fmt:_odoc/doc/fmt -P ocaml-compiler:_odoc/doc/ocaml-compiler
+      -L fmt:_odoc/lib/fmt/ -L fmt.cli:_odoc/lib/fmt/cli/ -L fmt.tty:_odoc/lib/fmt/tty/
+      -L stdlib:_odoc/lib/ocaml/ -L unix:_odoc/lib/ocaml/unix/
+      -I _odoc/lib/fmt/ -I _odoc/lib/ocaml/
+      --current-package fmt --warnings-tags fmt --custom-layout --enable-missing-root-warning
 ]}
 
-- [--output-dir <odir>] has been covered already
+Which package provides a library comes from opam's record of installed files:
+[stdlib] and [unix] are in [lib/ocaml], installed by [ocaml-compiler]. A
+library that provides no modules, [num] requiring only [num.core] or
+[threads.posix] requiring only [threads], is an alias for the libraries it
+requires, and those stand in for it. A library that is not documented at all,
+here [cmdliner], is left out.
 
-- [--impl <path/to/impl-file.odocl>] allows to give the implementation file.
+{3 Step 4: compiling}
 
-- [<path/to/source/file.ml>] is the source file.
+{{!/odoc-driver/Odoc_driver_lib.Build}[Build]} drives the whole run, package
+by package, in the order the packages were found. For each package it compiles
+its libraries with
+{{!/odoc-driver/Odoc_driver_lib.Compile.compile_lib}[Compile.compile_lib]}
+and its pages with
+{{!/odoc-driver/Odoc_driver_lib.Compile.compile_pages}[Compile.compile_pages]}.
 
-The output file can be computed from this command's [--output-dir], and the
-initial [--source-id] and [--name] given when creating the [impl-*.odoc] file.
+Order matters twice. Within a library, a module is compiled after the modules
+it depends on, so that their [.odoc] files exist when [odoc] looks for them.
+Between libraries, a library is compiled after the libraries it requires:
+[fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
+libraries compiled so far and compiles a library's requirements first,
+recursively. Requiring is a relation between libraries, not packages, and no
+library requires itself even indirectly, so this always ends.
 
-An example of such command is:
+The compile command for [fmt_cli.cmti] was shown {{!pipeline}above}. Its [-L]
+arguments name the four libraries of the cone with their directories;
+[lib/fmt/fmt.odoc] is already there because [fmt] was compiled first, and
+[lib/ocaml/stdlib.odoc] because [ocaml-compiler] was an earlier package. The
+names go into [fmt_cli.odoc], so a later run resolving something into that
+module knows the four libraries it may look in.
 
-{@shell[
-  $ odoc html-generate-source
-      --impl _odoc/ppxlib/ppxlib/impl-ppxlib__Reconcile.odocl
-      /home/panglesd/.opam/5.2.0/lib/ppxlib/reconcile.ml
-      -o _html/
-]}
+{3 Step 5: linking}
 
-{3 Generating docs for assets}
+{{!/odoc-driver/Odoc_driver_lib.Compile.link}[Compile.link]} links every unit
+of the package with the package's scope, and each library's units with its
+[-I] path as well, its page included. Linking needs the [.odoc] files of
+everything the scope names, so [Build] makes sure each package in the scope
+has been compiled before it links. For [fmt] that is already so. When it is
+not, see the {{!forward}forward references} below.
 
-This is the phase where we pass the actual asset. We pass it as a positional
-argument, and give the asset unit using [--asset-unit].
+{3 Step 6: index, sidebar, search and HTML}
 
-{@shell[
-  $ odoc html-generate-asset --output-dir <odir> --asset-unit <path/to/asset-file.odocl> <path/to/asset/file.ext>
-]}
+{{!/odoc-driver/Odoc_driver_lib.Compile.generate}[Compile.generate]} finishes
+the package. It writes the list of the package's [.odocl] files and runs
+[odoc compile-index] on it, so that pages and modules, though in different
+directories, form one hierarchy. From the index it makes the sidebar with
+[odoc sidebar-generate] and the search database with [sherlodoc]. Then it
+runs [odoc html-generate] on each unit, and [odoc html-generate-source] on
+each implementation whose source was found. The output:
+
+{v
+_html/fmt/index.html                the package page
+_html/fmt/fmt/index.html            the library landing page
+_html/fmt/fmt/Fmt/index.html        the module
+_html/fmt/src/fmt/fmt.ml.html       its rendered source
+_html/fmt/sidebar.json              the sidebar, for ocaml.org
+_html/fmt/sherlodoc_db.js           the search database
+_html/index.html                    the list of documented packages
+v}
+
+Warnings [odoc] printed while compiling and linking [fmt] are shown at the end
+of the run. Those of dependency packages are not: the driver is for fixing the
+documentation of the packages you asked for.
+
+{2:other Other kinds of packages}
+
+{3 Several libraries in one directory}
+
+The compiler's libraries [compiler-libs.common], [compiler-libs.optcomp] and
+the others all live in [lib/ocaml/compiler-libs]. A module of one may use a
+module of another without the [META] file saying so; the compiler never
+noticed because one [-I] covered them all. Mirroring the switch gives the
+driver the same behaviour: their [.odoc] files share
+[_odoc/lib/ocaml/compiler-libs], and one [-I] finds all of them. Their [-L]
+roots then name the same directory, which is why the driver always passes
+[--custom-layout].
+
+{3 Virtual libraries}
+
+[checkseum] is a virtual library with two implementations, [checkseum.c] and
+[checkseum.ocaml]. An implementation ships its modules as [.cmt] files only;
+the [.mli], and the documentation in it, belong to the virtual library, which
+ships the [.cmti]. Both have the same interface digest.
+
+The driver documents each implementation by compiling the virtual library's
+[.cmti] again, under the implementation's own parent id:
+[checkseum.cmti] is compiled three times, under [checkseum/checkseum],
+[checkseum/checkseum.c] and [checkseum/checkseum.ocaml].
+{{!/odoc-driver/Odoc_driver_lib.Packages.remap_virtual}[Packages.remap_virtual]}
+makes the substitution when the virtual library is part of the run. When it
+was built by an earlier run, as on ocaml.org, [Compile.compile_lib] looks for
+a same-named [.cmti] with the right digest along the implementation's [-I]
+path; the driver copies the [.cmti] next to the virtual library's [.odoc] file
+for this purpose.
+
+The package's landing pages list each library's modules with path references,
+[{!modules: /checkseum.c/Checkseum}], because three modules named [Checkseum]
+are in scope and a plain [{!Checkseum}] would pick one at random.
+
+{3:siblings Libraries that share module names}
+
+A package may ship two libraries that define the same module names on purpose.
+[eliom] is the example: [eliom.client] and [eliom.server] mirror each other,
+and that symmetry is the point of the framework. Nothing in the reference scope
+tells them apart, so a plain [{!Eliom_content}] in a doc comment is ambiguous:
+odoc warns and takes the first it finds. An author who means one of them writes
+a path reference, [{!/eliom.client/Eliom_content}].
+
+A module's own documentation is not affected. Its [-I] holds its library's
+dependency cone and never both siblings, and odoc searches that first, so the
+types it shows, the modules its signature mentions and the references its
+comments make all stay on the side they were written on.
+
+Nor is what a page of the package says about those modules, although a page
+has no cone of its own. A reference into one of them, [{!/eliom.client/
+Eliom_content.Html}], and the first paragraph a module list shows beside each
+entry, both resolve among the libraries that module recorded when it was
+compiled. What remains ambiguous is only a name that says nothing about where
+it comes from, the plain [{!Eliom_content}] above.
+
+{3 Alias libraries}
+
+Some findlib packages provide no modules and exist only to require others:
+[num] requires [num.core], [threads.posix] requires [threads],
+[compiler-libs] requires [compiler-libs.common]. A [META] file naming one of
+these means the libraries it requires. The driver follows the requirement when
+computing the scope and the compile order, so that [sexplib.num], which
+requires [num], gets [-L num.core] and is compiled after it.
+
+{3:forward Forward references through [odoc-config.sexp]}
+
+A package's pages may refer to a package built on top of it. [eio]'s
+documentation points at [Eio_main.run], and [eio_main] depends on [eio].
+[eio] declares this in [doc/eio/odoc-config.sexp]:
+
+{v
+(packages eio_main bigstring)
+(libraries unix)
+v}
+
+This adds [eio_main]'s pages and libraries to [eio]'s scope. But [eio_main]
+comes later in the build, so its [.odoc] files do not exist when [eio] would
+be linked. [Build] handles this by compiling first and linking later: before
+it links a package, it compiles every package the scope names. So it compiles
+[eio], then [eio_main], then links [eio], and later links [eio_main] in its
+turn. Compiling never needs the forward reference, since it follows
+[requires] only, and linking only needs the [.odoc] files. This is the same
+split ocaml.org makes between the two phases, see below.
+
+{3 Packages with no libraries, or no pages}
+
+A package with pages but no libraries, or with libraries but no pages, is
+ordinary. The driver writes a landing page for every package that does not
+ship an [index.mld], and one for every library, so every package has an entry
+point. Modules whose names contain [__] are hidden: they are compiled, because
+other modules depend on them, but not linked or rendered.
+
+{3 Dependencies documented elsewhere}
+
+By default every dependency is documented too, so that links into them work.
+With [--remap], dependencies are compiled, because the selected packages'
+units depend on their [.odoc] files, but not linked or rendered, and links
+into them are rewritten to point at their documentation on ocaml.org.
+
+{2:ocamlorg ocaml.org: one package per job}
+
+ocaml.org documents every version of every package. Each is built by a
+separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]:
+a directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
+installed. The dependencies are installed in the job's switch, so findlib and
+opam answer for them as usual, and their [.odoc] files are those earlier jobs
+wrote into the odoc directory, at the locations the mirror layout predicts.
+{{!/odoc-driver/Odoc_driver_lib.Voodoo}[Voodoo]} reads the prepared package
+into a [Packages.t]; everything after that is the same code as for a switch,
+applied to one package. Identifiers start with [p/<pkg>/<version>], or
+[u/<universe>/<pkg>/<version>] for a version that is not the one ocaml.org
+shows by default.
+
+The job scheduler needs the compile and link phases separately, for the same
+forward-reference reason as above: [--actions compile-only] compiles a
+package, [--actions link-and-gen] links and renders it once the packages its
+scope names are compiled. Occurrence counts and the JSON search index that
+uses them are produced at the end of the link job.
 
 {1:conv Convention for installed packages}
 
-In order to build the documentation for installed packages, the driver needs to
-give a meaning to the various concepts above. In particular, it needs to
-define the pages and libraries trees, know where to find the pages and assets,
-what id to give them, when linking it needs to know to which trees the artifact
-may be linking...
+For drivers and installed packages to work together, both follow the
+convention below. The reference driver implements it; other drivers should
+give the same results.
 
-So that the different drivers and installed packages play well together, we
-define here a convention for building installed packages. If both the package
-and the driver follow it, building the docs should go well!
+{2 Trees and their roots}
 
-{2 The [-P] and [-L] trees, and their root ids}
+Each installed package [<p>] defines one page tree, named [<p>], with root
+identifier [<p>]. Each of its libraries [<l>] defines one module tree, named
+[<l>], with root identifier [<p>/<l>].
 
-Each package defines a set of trees, each of them having a root id. These roots
-will be used in [--parent-id] and in [-P] and [-L].
+A package [foo] with libraries [foo] and [foo.bar] thus defines three trees:
+the page tree [foo], and the module trees [foo] rooted at [foo/foo] and
+[foo.bar] rooted at [foo/foo.bar]. Another package refers to them with
+[-P foo:<dir>], [-L foo:<dir>] and [-L foo.bar:<dir>] at link time, where each
+[<dir>] holds the tree's [.odoc] files.
 
-The driver can decide any set of mutually disjoint set of roots, without posing
-problem to the reference resolution. For instance, both [-P
-pkg:<output_dir>/pkg] and [-P pkg:<output_dir>/pkg/version] are
-acceptable versions. However, we define here "canonical" roots:
+The driver may root the trees differently as long as references still
+resolve; ocaml.org puts the version in the root identifier.
 
-Each installed package [<p>] defines a single page root id: [<p>].
+{2:pkg_units The units of a package}
 
-For each package [<p>], each library [<l>] defines a library root id:
-[<p>/<l>].
+The module units of a package are the compiled modules of the libraries it
+installed below [lib]. The page units are the [.mld] files below
+[doc/<p>/odoc-pages]. The asset units are the other files below
+[doc/<p>/odoc-pages], and all files below [doc/<p>/odoc-assets].
 
-For instance, a package [foo] with two libraries: [foo] and [foo.bar] will
-define three trees:
+{2 Parent ids}
 
-- A documentation tree named [foo], with root id [foo]. When referred
-  from other trees, a [-P foo:<odoc_dir>/foo] argument needs to be added
-  at the link phase.
+Interface and implementation units have the root of their library tree as
+parent id: [<p>/<l>].
 
-- A module tree named [foo], with root id [foo/foo]. When referred from
-  other trees, a [-L foo:<odoc_dir>/foo/foo] argument needs to be added
-  at the link phase.
+A page found at [doc/<p>/odoc-pages/<relpath>/<name>.mld] has the parent id
+[<p>/<relpath>]. An asset found there likewise. An asset found at
+[doc/<p>/odoc-assets/<name>] has the parent id [<p>/_assets].
 
-- A module tree named [foo.bar], with root id [foo/foo.bar]. When referred from
-  other trees, a [-L foo.bar:<odoc_dir>/foo/foo.bar] argument needs to be
-  added at the link phase.
+Implementation units have the source id [<p>/src/<l>/<name>.ml].
 
-{2 Link-time dependencies}
+{2 The reference scope}
 
-Installed OPAM packages need to specify which trees they may be referencing
-during the link phase, so that the proper [-P] and [-L] arguments are
-added. (Note that these dependencies can be circular, as they
-happen during the link phase and only require the artifact from the compile
-phase.)
+A package's units are linked with the scope described in the
+{{!standard}walkthrough}: [-L] for its own libraries, the libraries they
+require directly, and those named in [odoc-config.sexp]; [-P] for itself, the
+packages providing those libraries, and those named in [odoc-config.sexp].
+The transitive closure is deliberately not included. To refer to something in
+a transitive dependency, name it in the [META] [requires] field or in
+[odoc-config.sexp]. This is the driver side of the
+{{!odoc_for_authors.reference_scope}reference scope} that authors see.
 
-An installed package [<p>] specifies its tree dependencies in a file at
-[<opam root>/doc/<p>/odoc-config.sexp]. This file contains s-expressions.
+The dependency cone is a different matter: it must reach everything a unit's
+modules depend on, transitively, because expansions and source links do. The
+driver gives it to [odoc compile] as [-L], naming each library, and to
+[odoc link] as [-I]. Odoc searches it before the scope, so where a name is in
+both, a unit gets the module it was built against; and because the names are
+written into the units, that holds for another run resolving into them as
+well, not only for the unit on the command line. The page the driver writes
+for a library is given that library's cone for the same reason.
 
-Stanzas of the form [(packages p1 p2 ...)] specifies that page trees [p1],
-[p2], ..., should be added using the [-P] argument: with the canonical roots, it
-would be [-P p1:<output_dir>/p1 -P p2:<output_dir>/p2 -P ...].
+{2 [odoc-config.sexp]}
 
-Stanzas of the form [(libraries l1 l2 ...)] specifies that module trees [l1],
-[l2], ..., should be added using the [-L] argument: with the canonical roots, it
-would be [-L l1:<output_dir>/p1/l1 -L l2<output_dir>/p2/l2 -L ...],
-where [p1] is the package [l1] is in, etc.
+A package [<p>] may install [doc/<p>/odoc-config.sexp], holding
+s-expressions:
 
-{2 The units}
-
-The module units of a package [p] are all files installed by [p] that can be
-found in [<opam root>/lib/p/] or a subdirectory.
-
-The page units are those files that can be found in [<opam
-root>/doc/odoc-pages/] or a subdirectory, and that have an [.mld] extension.
-
-The asset units are those files that can be found in [<opam
-root>/doc/odoc-pages/] or a subdirectory, but that do not have an [.mld]
-extension. Additionally, they are all files found in [<opam
-root>/doc/odoc-assets/].
-
-{2 The [--parent-id] arguments}
-
-Interface and implementation units have as parent id the root of the library
-tree they belong to: with "canonical" roots, [<pkgname>/<libname>].
-
-Page units that are found in [<opam
-root>/doc/<pkgname>/odoc-pages/<relpath>/<name>.mld] have the parent id from
-their page tree, followed by [<relpath>]. So, with canonical roots,
-[<pkgname>/<relpath>].
-
-Asset units that are found in [<opam
-root>/doc/<pkgname>/odoc-pages/<relpath>/<name>.<ext>] have the parent id from
-their page tree, followed by [<relpath>]. With canonical roots,
-[<pkgname>/<relpath>].
-
-Asset units that are found in [<opam root>/doc/<pkgname>/odoc-assets/<filename>]
-have the parent id from their page tree, followed by [_asset/<filename>]
-[<p>/_assets/<filename>].
-
-{2 The [--source-id] arguments}
-
-The driver could choose the source id without breaking references. However,
-following the canonical roots convention, implementation units must have as
-source id: [<pkgname>/src/<libraryname>/<filename>.ml].
+- [(packages p1 p2 ...)] adds the page trees [p1], [p2], ... to the scope;
+- [(libraries l1 l2 ...)] adds the module trees [l1], [l2], ... to the scope,
+  and the page trees of the packages providing them.
 
 {2 Ordering the generated pages}
 
-The canonical hierarchy introduces directories (one per library) that may not be
-ordered by the author, either by omitting it in the [@children_order] tag or by
-not specifying any [@children_order] tag. In this case, [odoc] needs to come up
-with a reasonable default order, which may not be easy without some help from
-the driver.
+The convention introduces directories, one per library, whose order in the
+sidebar an author cannot set with [@children_order]. In the pages it writes
+itself, the driver uses the [@order_category <name>] tag to help [odoc] sort
+them. The resulting order is:
 
-In auto-generated pages (either [index.mld] in a directory, or [page.mld]),
-[odoc] supports the [@order_category <category_name>] tag, to help sorting the
-pages, if it is not sorted by the parent's [@children_order]. The resulting
-order is:
+- first, pages in the order given by their parent's [@children_order];
+- then, pages ordered by their [@order_category], an undefined category
+  coming before a defined one;
+- within a category, pages ordered by their first title;
+- two pages with the same title, by their file name.
 
-- First, pages in the order given in their parent's [@children_order],
-- Then, pages ordered lexicographically by their [@order_category]. An undefined
-  category comes before a defined one.
-- Inside a category, pages are ordered lexicographically by their first title,
-- Two pages with the same name will be ordered using their file name!
-
-Note that [@order_category] is not suitable for author use, as it may change in
-the future. Use this tag only in the driver's autogenerated pages!
+[@order_category] may change and is not for authors to use. It is for the
+pages a driver generates.
