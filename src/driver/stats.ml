@@ -168,13 +168,6 @@ let k_longest_commands cmd k =
   |> List.sort (fun a b -> Float.compare b.time a.time)
   |> List.filteri (fun i _ -> i < k)
 
-let dump () =
-  let open Run in
-  List.iter print_cmd (List.rev !commands);
-  List.iter print_cmd (k_longest_commands "compile" 5);
-  List.iter print_cmd (k_longest_commands "link" 5);
-  List.iter print_cmd (k_longest_commands "html-generate" 5)
-
 let rec compute_min_max_avg min_ max_ total count = function
   | [] -> (min_, max_, total /. float count, count)
   | hd :: tl ->
@@ -320,8 +313,3 @@ let bench_results html_dir =
       ]
   in
   Yojson.to_file "driver-benchmarks.json" result
-
-let total_time () =
-  let open Run in
-  let cmds = !commands in
-  List.fold_left (fun acc c -> acc +. c.time) 0.0 cmds

@@ -12,37 +12,11 @@ type pkg = {
 
 let prep_path = ref "prep"
 
-(* We mark the paths that contain compiled units for both packages and libraries
-   by dropping in a marker file. The contents of the file is unimportant, as we
-   can determine which package or library we're looking at simply by its path. *)
-let lib_marker = ".odoc_lib_marker"
-let pkg_marker = ".odoc_pkg_marker"
-
 let top_dir pkg =
   if pkg.blessed then Fpath.(v "p" / pkg.name / pkg.version)
   else Fpath.(v "u" / pkg.universe / pkg.name / pkg.version)
 
 (* Use output from Voodoo Prep as input *)
-
-let find_universe_and_version pkg_name =
-  Bos.OS.Dir.contents Fpath.(v !prep_path / "universes") >>= fun universes ->
-  let universe =
-    match
-      List.find_opt
-        (fun u ->
-          match Bos.OS.Dir.exists Fpath.(u / pkg_name) with
-          | Ok b -> b
-          | Error _ -> false)
-        universes
-    with
-    | Some u -> Ok u
-    | None -> Error (`Msg (Format.sprintf "Failed to find package %s" pkg_name))
-  in
-  universe >>= fun u ->
-  Bos.OS.Dir.contents ~rel:true Fpath.(u / pkg_name) >>= fun version ->
-  match (Fpath.segs u, version) with
-  | _ :: _ :: u :: _, [ version ] -> Ok (u, Fpath.to_string version)
-  | _ -> Error (`Msg (Format.sprintf "Failed to find package %s" pkg_name))
 
 (* Given a directory containing for example [a.cma] and [b.cma], this
    function returns a Fpath.Map.t mapping [dir/a.cma -> a] and [dir/b.cma -> b] *)
@@ -104,34 +78,9 @@ let of_voodoo pkg =
       (Util.StringMap.empty, []) metas
   in
 
-  (* Transitively close [all_lib_deps] over itself so each lib's deps
-     reflect every lib reachable through META requires. *)
-  let all_lib_deps =
-    let cache : (string, Util.StringSet.t) Hashtbl.t =
-      Hashtbl.create (Util.StringMap.cardinal all_lib_deps)
-    in
-    let rec close lib =
-      match Hashtbl.find_opt cache lib with
-      | Some r -> r
-      | None ->
-          Hashtbl.add cache lib Util.StringSet.empty;
-          let direct =
-            match Util.StringMap.find_opt lib all_lib_deps with
-            | Some s -> s
-            | None -> Util.StringSet.empty
-          in
-          let closed =
-            Util.StringSet.fold
-              (fun dep acc ->
-                Util.StringSet.union (Util.StringSet.add dep (close dep)) acc)
-              direct Util.StringSet.empty
-          in
-          Hashtbl.replace cache lib closed;
-          closed
-    in
-    Util.StringMap.mapi (fun lib _ -> close lib) all_lib_deps
-  in
-
+  (* [all_lib_deps] holds the directly-declared META dependencies of each
+     library, as the reference scope wants; the closure needed for -I is taken
+     in [Odoc_units_of]. *)
   let ss_pp fmt ss = Format.fprintf fmt "[%d]" (Util.StringSet.cardinal ss) in
   Logs.debug (fun m ->
       m "all_lib_deps: %a\n%!"
@@ -173,9 +122,9 @@ let of_voodoo pkg =
                 (fun directory ->
                   Logs.debug (fun m ->
                       m "Processing directory: %a\n%!" Fpath.pp directory);
-                  Packages.Lib.v ~libname_of_archive ~pkg_name:pkg.name
-                    ~dir:directory ~cmtidir:None ~all_lib_deps ~cmi_only_libs
-                    ~id_override:None)
+                  Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
+                    ~pkg_name:pkg.name ~dir:directory ~all_lib_deps
+                    ~cmi_only_libs)
                 Fpath.(Set.to_list directories)))
     |> List.flatten
   in
@@ -216,9 +165,10 @@ let of_voodoo pkg =
         in
         Logs.debug (fun m ->
             m "Processing directory without META: %a" Fpath.pp libdir);
-        Packages.Lib.v ~libname_of_archive ~pkg_name:pkg.name
+        Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
+          ~pkg_name:pkg.name
           ~dir:Fpath.(pkg_path // libdir)
-          ~cmtidir:None ~all_lib_deps ~cmi_only_libs:[] ~id_override:None)
+          ~all_lib_deps ~cmi_only_libs:[])
       libdirs_without_meta
     |> List.flatten
   in
@@ -297,93 +247,3 @@ let find_pkg pkg_name ~blessed =
 let occurrence_file_of_pkg pkg =
   let top_dir = top_dir pkg in
   Fpath.(top_dir / "occurrences-all.odoc-occurrences")
-
-type extra_paths = {
-  pkgs : Fpath.t Util.StringMap.t;
-  libs : Fpath.t Util.StringMap.t;
-  libs_of_pkg : string list Util.StringMap.t;
-}
-
-let empty_extra_paths =
-  {
-    pkgs = Util.StringMap.empty;
-    libs = Util.StringMap.empty;
-    libs_of_pkg = Util.StringMap.empty;
-  }
-
-let extra_paths compile_dir =
-  let contents =
-    Bos.OS.Dir.fold_contents ~dotfiles:true
-      (fun p acc -> p :: acc)
-      [] compile_dir
-  in
-  let add_libs pkgname libname libs_of_pkg =
-    Util.StringMap.update pkgname
-      (function None -> Some [ libname ] | Some l -> Some (libname :: l))
-      libs_of_pkg
-  in
-  let pkgs, libs, libs_of_pkg =
-    match contents with
-    | Error _ ->
-        (Util.StringMap.empty, Util.StringMap.empty, Util.StringMap.empty)
-    | Ok c ->
-        List.fold_left
-          (fun (pkgs, libs, libs_of_pkg) abs_path ->
-            let path = Fpath.rem_prefix compile_dir abs_path |> Option.get in
-            match Fpath.segs path with
-            | [ "p"; pkg; _version; "doc"; libname; l ] when l = lib_marker ->
-                Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-                ( pkgs,
-                  Util.StringMap.add libname (Fpath.parent path) libs,
-                  add_libs pkg libname libs_of_pkg )
-            | [ "p"; pkg; _version; "doc"; l ] when l = pkg_marker ->
-                Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-                ( Util.StringMap.add pkg (Fpath.parent path) pkgs,
-                  libs,
-                  libs_of_pkg )
-            | [ "u"; _universe; pkg; _version; "doc"; libname; l ]
-              when l = lib_marker ->
-                Logs.debug (fun m -> m "Found lib marker: %a" Fpath.pp path);
-                ( pkgs,
-                  Util.StringMap.add libname (Fpath.parent path) libs,
-                  add_libs pkg libname libs_of_pkg )
-            | [ "u"; _universe; pkg; _version; "doc"; l ] when l = pkg_marker ->
-                Logs.debug (fun m -> m "Found pkg marker: %a" Fpath.pp path);
-                ( Util.StringMap.add pkg (Fpath.parent path) pkgs,
-                  libs,
-                  libs_of_pkg )
-            | _ -> (pkgs, libs, libs_of_pkg))
-          (Util.StringMap.empty, Util.StringMap.empty, Util.StringMap.empty)
-          c
-  in
-  { pkgs; libs; libs_of_pkg }
-
-let write_lib_markers odoc_dir pkgs =
-  let write file str =
-    match Bos.OS.File.write file str with
-    | Ok () -> ()
-    | Error (`Msg msg) ->
-        Logs.err (fun m -> m "Failed to write lib marker: %s" msg)
-  in
-  List.iter
-    (fun (pkg : Packages.t) ->
-      let libs = pkg.libraries in
-      let pkg_path = Odoc_unit.doc_dir pkg in
-      let marker = Fpath.(odoc_dir // pkg_path / pkg_marker) in
-      write marker
-        (Fmt.str
-           "This marks this directory as the location of odoc files for the \
-            package %s"
-           pkg.name);
-
-      List.iter
-        (fun (lib : Packages.libty) ->
-          let lib_dir = Odoc_unit.lib_dir pkg lib in
-          let marker = Fpath.(odoc_dir // lib_dir / lib_marker) in
-          write marker
-            (Fmt.str
-               "This marks this directory as the location of odoc files for \
-                library %s in package %s"
-               lib.lib_name pkg.name))
-        libs)
-    pkgs

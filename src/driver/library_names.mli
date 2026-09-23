@@ -1,23 +1,28 @@
+(** Reading the libraries a [META] file defines.
+
+    Used in voodoo mode, where the package's [META] files are read from the prep
+    directory rather than through findlib. *)
+
 type library = {
-  name : string;
+  name : string;  (** The findlib name, for example [tyxml.functor]. *)
   archive_name : string option;
+      (** The archive without its extension, for example [tyxml_f]. [None] for a
+          library with no archive: a virtual library, or an alias for other
+          libraries. *)
   dir : string option;
-  deps : string list;
+      (** The [directory] field: a subdirectory of the [META] file's directory,
+          or [None] for the directory itself. *)
+  deps : string list;  (** The [requires] field. *)
 }
 
 type t = { meta_dir : Fpath.t; libraries : library list }
 
 val process_meta_file : Fpath.t -> t
-(** From a path to a [Meta] file, returns the list of libraries defined in this
-    file. *)
+(** Read a [META] file and the libraries it defines. *)
 
 val libname_of_archive : t -> string Fpath.map
-(** [libname_of_archive meta_dir libraries] computes a map from the
-    fully-qualified archive path to the name of the library. [meta_path] is the
-    path of the directory where the META file is found, and [libraries] are the
-    libraries defined in that META file. *)
+(** Map from the full path of each archive, without extension, to the name of
+    its library. *)
 
 val directories : t -> Fpath.set
-(** [directories meta_dir libraries] computes a set of directories containing
-    the libraries in [libraries] defined in the META file found in [meta_path].
-*)
+(** The directories holding the libraries' objects. *)

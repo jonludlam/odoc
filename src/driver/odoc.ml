@@ -36,7 +36,9 @@ let compile_deps f =
   | [ (_, digest) ], deps -> Ok { digest; deps }
   | _ -> Error (`Msg "odd")
 
-let compile ~output_dir ~input_file:file ~includes ~warnings_tag ~parent_id
+(* [parent_id] determines the unit's identifier; [output_file] is where the
+   [.odoc] file goes, which need not be below [parent_id]. *)
+let compile ~output_file ~input_file:file ~includes ~warnings_tag ~parent_id
     ~ignore_output =
   let open Cmd in
   let includes =
@@ -44,15 +46,11 @@ let compile ~output_dir ~input_file:file ~includes ~warnings_tag ~parent_id
       (fun path acc -> Cmd.(acc % "-I" % p path))
       includes Cmd.empty
   in
-
-  let output_file =
-    let _, f = Fpath.split_base file in
-    Some Fpath.(output_dir // Id.to_fpath parent_id // set_ext "odoc" f)
-  in
   let cmd =
-    !odoc % "compile" % Fpath.to_string file % "--output-dir" % p output_dir
-    %% includes % "--enable-missing-root-warning"
+    !odoc % "compile" % Fpath.to_string file % "-o" % p output_file %% includes
+    % "--enable-missing-root-warning"
   in
+  let output_file = Some output_file in
   let cmd = cmd % "--parent-id" % Id.to_string parent_id in
   let cmd =
     match warnings_tag with
@@ -97,7 +95,7 @@ let compile_asset ~output_dir ~name ~parent_id =
   let desc = Printf.sprintf "Compiling %s" name in
   ignore @@ Cmd_outputs.submit (Some (`Compile, name)) desc cmd output_file
 
-let compile_impl ~output_dir ~input_file:file ~includes ~parent_id ~source_id =
+let compile_impl ~output_file ~input_file:file ~includes ~parent_id ~source_id =
   let open Cmd in
   let includes =
     Fpath.Set.fold
@@ -105,16 +103,10 @@ let compile_impl ~output_dir ~input_file:file ~includes ~parent_id ~source_id =
       includes Cmd.empty
   in
   let cmd =
-    !odoc % "compile-impl" % Fpath.to_string file % "--output-dir"
-    % p output_dir %% includes % "--enable-missing-root-warning"
+    !odoc % "compile-impl" % Fpath.to_string file % "-o" % p output_file
+    %% includes % "--enable-missing-root-warning"
   in
-  let output_file =
-    let _, f = Fpath.split_base file in
-    Some
-      Fpath.(
-        output_dir // Id.to_fpath parent_id
-        / ("impl-" ^ to_string (set_ext "odoc" f)))
-  in
+  let output_file = Some output_file in
   let cmd = cmd % "--parent-id" % Id.to_string parent_id in
   let cmd = cmd % "--source-id" % Id.to_string source_id in
   let desc =
@@ -141,8 +133,8 @@ let lib_args libs =
       v "-L" % s %% acc)
     Cmd.empty libs
 
-let link ?(ignore_output = false) ~custom_layout ~input_file:file ?output_file
-    ~docs ~libs ~includes ~warnings_tags ?current_package () =
+let link ?(ignore_output = false) ~input_file:file ?output_file ~docs ~libs
+    ~includes ~warnings_tags ?current_package () =
   let open Cmd in
   let output_file =
     match output_file with Some f -> f | None -> Fpath.set_ext "odocl" file
@@ -168,17 +160,18 @@ let link ?(ignore_output = false) ~custom_layout ~input_file:file ?output_file
     List.fold_left (fun acc k -> acc % "--warnings-tags" % k) cmd warnings_tags
   in
   let desc = Printf.sprintf "Linking %s" (Fpath.to_string file) in
-  let cmd = if custom_layout then cmd % "--custom-layout" else cmd in
+  let cmd = cmd % "--custom-layout" in
   let log =
     if ignore_output then None else Some (`Link, Fpath.to_string file)
   in
   ignore @@ Cmd_outputs.submit log desc cmd (Some output_file)
 
+(* [file_list] names a file listing the [.odocl] files to index, one per line.
+   Passing the files explicitly (rather than [--root] directories) puts them
+   all in one hierarchy, whatever their layout on disk. *)
 let compile_index ?(ignore_output = false) ~output_file ?occurrence_file ~json
-    ~roots ~simplified ~wrap () =
-  let roots =
-    List.fold_left (fun c r -> Cmd.(c % "--root" % p r)) Cmd.empty roots
-  in
+    ~file_list ~simplified ~wrap () =
+  let inputs = Cmd.(v "--file-list" % p file_list) in
   let json = if json then Cmd.v "--json" else Cmd.empty in
   let simplified =
     if simplified then Cmd.v "--simplified-json" else Cmd.empty
@@ -192,7 +185,7 @@ let compile_index ?(ignore_output = false) ~output_file ?occurrence_file ~json
   let cmd =
     Cmd.(
       !odoc % "compile-index" %% json %% simplified %% wrap %% v "-o"
-      % p output_file %% roots %% occ)
+      % p output_file %% inputs %% occ)
   in
   let desc =
     Printf.sprintf "Generating index for %s" (Fpath.to_string output_file)
