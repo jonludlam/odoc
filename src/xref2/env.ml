@@ -12,7 +12,9 @@ type lookup_error = [ `Not_found ]
 
 type resolver = {
   open_units : string list;
-  lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
+  lookup_unit :
+    scope:string list -> path_query -> (lookup_unit_result, lookup_error) result;
+  scope_of_unit : Identifier.RootModule.t -> string list;
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -166,6 +168,11 @@ type t = {
     Component.Element.label amb_err Identifier.Maps.Label.t;
       [@warning "-unused-field"]
   resolver : resolver option;
+  scope : string list;
+      (* The libraries a name may be resolved among, by name. Empty means no
+         limit. It is the [libraries] of the unit whose contents are being
+         resolved, which is what the compiler could see when that unit was
+         built. *)
   recorder : recorder option;
   warnings_tags : string list;
   fragmentroot : (int * Component.Signature.t) option;
@@ -180,6 +187,14 @@ let set_warnings_tags env tags = { env with warnings_tags = tags }
 let is_linking env = env.linking
 
 let set_resolver t resolver = { t with resolver = Some resolver }
+
+let scope t = t.scope
+
+let with_scope scope t =
+  if scope = t.scope then t else { t with scope; id = unique_id () }
+
+let scope_of_unit id t =
+  match t.resolver with None -> [] | Some r -> r.scope_of_unit id
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
 
@@ -210,6 +225,7 @@ let empty =
     elts = ElementsByName.empty;
     ids = ElementsById.empty;
     resolver = None;
+    scope = [];
     recorder = None;
     ambiguous_labels = Identifier.Maps.Label.empty;
     ambiguous_unboxed_labels = Identifier.Maps.Label.empty;
@@ -432,7 +448,9 @@ let lookup_root_module name env =
     match env.resolver with
     | None -> None
     | Some r -> (
-        match r.lookup_unit (`Name (ModuleName.to_string name)) with
+        match
+          r.lookup_unit ~scope:env.scope (`Name (ModuleName.to_string name))
+        with
         | Ok Forward_reference -> Some Forward
         | Error `Not_found -> None
         | Ok (Found u) ->
@@ -467,7 +485,7 @@ let lookup_asset query env =
 let lookup_unit query env =
   match env.resolver with
   | None -> Error `Not_found
-  | Some r -> r.lookup_unit query
+  | Some r -> r.lookup_unit ~scope:env.scope query
 
 let lookup_impl name env =
   match env.resolver with None -> None | Some r -> r.lookup_impl name
@@ -872,7 +890,7 @@ let open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t =
 let open_units resolver env =
   List.fold_left
     (fun env m ->
-      match resolver.lookup_unit (`Name m) with
+      match resolver.lookup_unit ~scope:[] (`Name m) with
       | Ok (Found unit) -> (
           match unit.content with
           | Module sg -> open_signature sg env
@@ -884,7 +902,9 @@ let inherit_resolver env =
   match env.resolver with
   | Some r ->
       let e = set_resolver empty r in
-      open_units r e
+      (* Keep the scope: the documentation being resolved in the fresh
+         environment belongs to the unit the scope names. *)
+      { (open_units r e) with scope = env.scope }
   | None -> empty
 
 let env_of_unit t ~linking resolver =
@@ -925,7 +945,10 @@ let verify_lookups env lookups =
           match env.resolver with
           | None -> None
           | Some r -> (
-              match r.lookup_unit (`Name (ModuleName.to_string name)) with
+              match
+                r.lookup_unit ~scope:env.scope
+                  (`Name (ModuleName.to_string name))
+              with
               | Ok Forward_reference -> Some `Forward
               | Ok (Found u) -> Some (`Resolved u.root.digest)
               | Error `Not_found -> None)

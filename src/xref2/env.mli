@@ -11,7 +11,14 @@ type lookup_error = [ `Not_found ]
 
 type resolver = {
   open_units : string list;
-  lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
+  lookup_unit :
+    scope:string list -> path_query -> (lookup_unit_result, lookup_error) result;
+      (** Finds the unit a name refers to, whether the name comes from a path, a
+          canonical path or a reference. [scope] names the libraries the name
+          may come from, and the search is made among those first; the empty
+          list means no limit. *)
+  scope_of_unit : Identifier.RootModule.t -> string list;
+      (** The libraries a unit was compiled against, as it recorded them. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -42,6 +49,18 @@ val is_linking : t -> bool
 val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t
+
+val scope : t -> string list
+(** The libraries names may currently be resolved among. *)
+
+val with_scope : string list -> t -> t
+(** [with_scope libs env] resolves names among [libs] from now on. Resolution
+    that has reached a unit continues in that unit's libraries, since those are
+    what the compiler could see when the unit was built. The empty list is no
+    limit. *)
+
+val scope_of_unit : Identifier.RootModule.t -> t -> string list
+(** The libraries the given unit recorded at compile time. *)
 
 val has_resolver : t -> bool
 

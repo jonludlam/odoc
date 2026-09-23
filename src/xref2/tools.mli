@@ -169,6 +169,14 @@ val reresolve_class_type :
     module only, allowing that module to reuse the machinery in this module for
     the resolution of {{!module:Odoc_model.Paths.Reference}References} *)
 
+val enter_unit : Env.t -> Cpath.Resolved.module_ -> Env.t
+(** [enter_unit env p] is [env] with the scope of the unit [p] names, when it
+    names one. What is written inside a unit was written against the libraries
+    that unit was compiled with, so resolution carries on among those. *)
+
+val enter_unit_parent : Env.t -> Cpath.Resolved.parent -> Env.t
+(** {!enter_unit} for a parent. *)
+
 val reresolve_parent : Env.t -> Cpath.Resolved.parent -> Cpath.Resolved.parent
 
 val handle_module_type_lookup :

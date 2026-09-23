@@ -559,6 +559,13 @@ module rec Compilation_unit : sig
     linked : bool;  (** Whether this unit has been linked. *)
     source_loc : Identifier.SourceLocation.t option;
     canonical : Path.Module.t option;
+    libraries : string list;
+        (** The libraries that were in scope when this unit was compiled, by the
+            names [odoc compile] was given with [-L]. Once resolution has
+            reached this unit, by following a path or a reference into it, the
+            names this unit mentions are looked up among these libraries first,
+            since they are what the compiler could see. The empty list means the
+            driver named none, and resolution is not limited. *)
   }
 end =
   Compilation_unit

@@ -886,6 +886,30 @@ and lookup_class_type :
   in
   res
 
+(* The unit a resolved path lives in, when it names one. *)
+and root_module_of :
+    Cpath.Resolved.module_ -> Odoc_model.Paths.Identifier.RootModule.t option =
+  function
+  | `Gpath (`Identifier (`Root _ as id)) -> Some id
+  | `Substituted p | `Hidden p | `Canonical (p, _) | `OpaqueModule p ->
+      root_module_of p
+  | `Subst (_, p) -> root_module_of p
+  | `Alias (p, _, _) -> root_module_of p
+  | `Apply (p, _) -> root_module_of p
+  | `Gpath _ | `Local _ | `Module _ -> None
+
+(* What is inside a unit was written against the libraries that unit was
+   compiled with, so carry on resolving among those. *)
+and enter_unit env parent =
+  match root_module_of parent with
+  | None -> env
+  | Some id -> Env.with_scope (Env.scope_of_unit id env) env
+
+and enter_unit_parent env (parent : Cpath.Resolved.parent) =
+  match parent with
+  | `Module m -> enter_unit env m
+  | `ModuleType _ | `FragmentRoot -> env
+
 and resolve_and_lookup_parent :
     Env.t ->
     Cpath.module_ ->
@@ -895,6 +919,7 @@ and resolve_and_lookup_parent :
  fun env parent ->
   resolve_module env parent |> map_error (fun e -> `Parent (`Parent_module e))
   >>= fun (parent, _) ->
+  let env = enter_unit env parent in
   lookup_parent env (`Module parent) >>= fun (parent_sig, sub) ->
   Ok (`Module parent, parent_sig, sub)
 

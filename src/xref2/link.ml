@@ -364,6 +364,18 @@ and comment_nestable_block_element env warnings_tag parent ~loc:_
                   Ref_tools.resolve_module_reference env r.module_reference)
             with
             | Ok (r, _, m) ->
+                (* The paragraph belongs to the module it is lifted from, so
+                   resolve it among the libraries that module was compiled
+                   with, as its own page does. *)
+                let env =
+                  match
+                    Paths.Reference.Resolved.identifier
+                      (r :> Paths.Reference.Resolved.t)
+                  with
+                  | Some (`Root _ as id) ->
+                      Env.with_scope (Env.scope_of_unit id env) env
+                  | Some _ | None -> env
+                in
                 let module_synopsis =
                   Opt.map
                     (resolve_external_synopsis env warnings_tag)

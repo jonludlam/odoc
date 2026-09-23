@@ -152,6 +152,7 @@ let find find sg conv name =
   | None -> Error (`Find_by_name (`Any, (conv name : string)))
 
 let module_lookup_to_signature_lookup env (ref, cp, m) =
+  let env = Tools.enter_unit env cp in
   let rec handle_expansion : Tools.expansion -> _ = function
     | Functor (_, expr) -> (
         match Tools.expansion_of_module_type_expr env expr with
@@ -207,6 +208,7 @@ module M = struct
 
   let in_signature env ((parent, parent_cp, sg) : signature_lookup_result) name
       =
+    let env = Tools.enter_unit_parent env parent_cp in
     let parent_cp = Tools.reresolve_parent env parent_cp in
     let sg = Tools.prefix_signature (parent_cp, sg) in
     find Find.module_in_sig sg ModuleName.to_string name
@@ -892,6 +894,7 @@ let resolved_page_path_lookup = function
   | `P (r, _) -> resolved1 r
 
 let resolve_reference_dot_sg env ~parent_path ~parent_ref ~parent_sg name =
+  let env = Tools.enter_unit_parent env parent_path in
   let parent_path = Tools.reresolve_parent env parent_path in
   let parent_sg = Tools.prefix_signature (parent_path, parent_sg) in
   find_ambiguous Find.any_in_sig parent_sg name >>= function
