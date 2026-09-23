@@ -82,7 +82,8 @@ let by_hash (units : [ Odoc_unit.intf | Odoc_unit.impl ] Odoc_unit.t list) =
     Util.StringMap.empty units
 
 let compile_lib (pkg : Odoc_unit.pkg) (lib : Odoc_unit.lib) =
-  let includes = Fpath.Set.of_list lib.includes in
+  let libs = lib.includes in
+  let includes = Fpath.Set.of_list (Odoc_unit.include_dirs lib) in
   let hashes = by_hash lib.units in
   (* A module is compiled after the modules it imports: [compile_mod] on a
      digest compiles the interfaces with that digest, once, awaiting any
@@ -108,9 +109,11 @@ let compile_lib (pkg : Odoc_unit.pkg) (lib : Odoc_unit.lib) =
   and compile_intf (unit : Odoc_unit.intf Odoc_unit.t) =
     let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
     Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
-    let unit = find_virtual_interface ~includes:lib.includes unit in
-    Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
-      ~includes ~warnings_tag:pkg.pkgname ~parent_id:unit.parent_id
+    let unit =
+      find_virtual_interface ~includes:(Odoc_unit.include_dirs lib) unit
+    in
+    Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file ~libs
+      ~warnings_tag:pkg.pkgname ~parent_id:unit.parent_id
       ~ignore_output:(not unit.enable_warnings);
     (match unit.input_copy with
     | None -> ()
@@ -133,7 +136,7 @@ let compile_pages (pkg : Odoc_unit.pkg) =
     match unit.kind with
     | `Mld ->
         Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
-          ~includes:Fpath.Set.empty ~warnings_tag:None ~parent_id:unit.parent_id
+          ~libs:[] ~warnings_tag:None ~parent_id:unit.parent_id
           ~ignore_output:(not unit.enable_warnings);
         Atomic.incr Stats.stats.compiled_mlds
     | `Md ->
@@ -186,8 +189,9 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
             | None -> []
             | Some p -> [ (p :> Odoc_unit.any) ]
           in
+          let includes = Odoc_unit.include_dirs lib in
           List.map
-            (fun u -> (pkg.scope, lib.includes, u))
+            (fun u -> (pkg.scope, includes, u))
             (page @ (lib.units :> Odoc_unit.any list)))
         pkg.libs
   in

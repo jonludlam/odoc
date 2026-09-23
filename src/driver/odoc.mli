@@ -38,15 +38,16 @@ val classify : Fpath.t list -> (string * string list) list
 val compile :
   output_file:Fpath.t ->
   input_file:Fpath.t ->
-  includes:Fpath.set ->
+  libs:(string * Fpath.t) list ->
   warnings_tag:string option ->
   parent_id:Id.t ->
   ignore_output:bool ->
   unit
 (** [odoc compile] of an interface or a page. [parent_id] decides the unit's
     identifier. [output_file] is where the [.odoc] file goes; it need not lie
-    below the parent id. [includes] are the directories searched for the [.odoc]
-    files of the modules the input depends on. *)
+    below the parent id. [libs] are the libraries the input was built against,
+    each with the directory of its [.odoc] files: they are searched for the
+    modules the input depends on, and their names are written into the unit. *)
 
 val compile_impl :
   output_file:Fpath.t ->
