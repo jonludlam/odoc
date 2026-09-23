@@ -15,8 +15,9 @@ plain ones like [Content] and [Wrap]. [Content__Html] is the shape a wrapped
 library has instead, and it is what carries the canonical path, the other half
 of what the issue reports.
 
-This test records what odoc does today, for issue #1450. Several of the
-results below are wrong, and the text says which.
+This test records what odoc does today, for issue #1450. The units of each
+library come out right; what a page of the package can say about them does
+not, and the text below says where.
 
   $ for lib in client server; do
   >   for m in content__Html content wrap; do
@@ -39,39 +40,21 @@ Both libraries are in the reference scope of every unit, with [-L]. The
   >     odoc link -I h/pkg/$lib $L h/pkg/$lib/$m.odoc
   >   done
   > done
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
 
-Which library the root modules named in each unit come from. The first two
-are wrong. The client's [Content] should name its own [Content__Html], through
-the alias [Html] and the canonical path written on it, and the client's [Wrap]
-should name its own [Content], through the alias [C]. Both name the server's.
-Neither name is among the imports of the unit that mentions it, so no digest
-is there to tell the two libraries apart, and the search covers the [-L] directories as
-well as the [-I] ones. The server's units are right by chance: it is the last
-directory searched that wins.
+Which library the root modules named in each unit come from. Each unit stays
+on its own side: the alias [Html], the canonical path written on
+[Content__Html], the alias [C] and the reference [{!Content.Html}] in the
+documentation all name a module of the unit's own library, and no lookup is
+ambiguous. None of these names is among the imports of the unit that mentions
+it, so no digest tells the two libraries apart; what does is that the [-I]
+directories are searched before the [-L] ones, and a unit's [-I] holds the
+library it was built against.
 
   $ roots() { odoc_print $1 | jq -c '[.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
   $ roots h/pkg/client/content.odocl
-  ["client/Content","server/Content__Html"]
+  ["client/Content","client/Content__Html"]
   $ roots h/pkg/client/wrap.odocl
-  ["client/Wrap","server/Content"]
+  ["client/Content","client/Wrap"]
   $ roots h/pkg/server/content.odocl
   ["server/Content","server/Content__Html"]
   $ roots h/pkg/server/wrap.odocl

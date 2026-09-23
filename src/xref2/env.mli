@@ -12,6 +12,10 @@ type lookup_error = [ `Not_found ]
 type resolver = {
   open_units : string list;
   lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
+      (** Finds the unit a name refers to, whether the name comes from a path, a
+          canonical path or a reference. A unit the compiler saw, one in the
+          [-I] directories, is preferred over one that is merely in scope for
+          references, one in the [-L] directories. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
