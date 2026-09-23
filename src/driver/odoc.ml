@@ -38,16 +38,17 @@ let compile_deps f =
 
 (* [parent_id] determines the unit's identifier; [output_file] is where the
    [.odoc] file goes, which need not be below [parent_id]. *)
-let compile ~output_file ~input_file:file ~includes ~warnings_tag ~parent_id
+let compile ~output_file ~input_file:file ~libs ~warnings_tag ~parent_id
     ~ignore_output =
   let open Cmd in
-  let includes =
-    Fpath.Set.fold
-      (fun path acc -> Cmd.(acc % "-I" % p path))
-      includes Cmd.empty
+  let libs =
+    List.fold_left
+      (fun acc (name, path) ->
+        Cmd.(acc % "-L" % (name ^ ":" ^ Fpath.to_string path)))
+      Cmd.empty libs
   in
   let cmd =
-    !odoc % "compile" % Fpath.to_string file % "-o" % p output_file %% includes
+    !odoc % "compile" % Fpath.to_string file % "-o" % p output_file %% libs
     % "--enable-missing-root-warning"
   in
   let output_file = Some output_file in

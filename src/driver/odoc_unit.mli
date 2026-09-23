@@ -74,10 +74,12 @@ type lib = {
           libraries it requires, restricted to those being built. A required
           library that provides no modules stands for the libraries it requires
           in turn. *)
-  includes : Fpath.t list;
-      (** The [-I] search path of its units: the directories holding the [.odoc]
-          files of every library it depends on, directly or not. This is the set
-          of directories the compiler had when it built the library. *)
+  includes : (string * Fpath.t) list;
+      (** The libraries this one was built against: itself and, transitively,
+          what it requires, each with the directory holding its [.odoc] files.
+          This is what the compiler could see. The units are compiled with it as
+          [-L], which both finds the files and records the names in them, and
+          linked with the directories as [-I]. *)
   units : module_unit list;
   page : mld t option;
       (** The page the driver writes to list the library's modules. [None] when
@@ -106,6 +108,9 @@ type pkg = {
   pages : page list;  (** Including the landing pages the driver writes. *)
 }
 (** A package, the thing the driver builds in one go. *)
+
+val include_dirs : lib -> Fpath.t list
+(** The directories of {!lib.includes}. *)
 
 val all_units : pkg -> any list
 

@@ -57,10 +57,12 @@ type page = [ mld | md | asset ] t
 type lib = {
   lib_name : string;
   requires : string list;
-  includes : Fpath.t list;
+  includes : (string * Fpath.t) list;
   units : module_unit list;
   page : mld t option;
 }
+
+let include_dirs lib = List.map snd lib.includes
 
 (* A package, the unit of building: its libraries, its pages (including the
    generated landing pages), the reference scope they all link with, and the

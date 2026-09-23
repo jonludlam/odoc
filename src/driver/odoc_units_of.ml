@@ -137,6 +137,16 @@ let dirs_of known libs =
     libs Fpath.Set.empty
   |> Fpath.Set.elements
 
+(* The same, keeping each library's name: [odoc compile] is given these with
+   [-L] and writes the names into the units, so that a later [odoc link]
+   resolving into a unit knows which libraries it could see. *)
+let named_dirs_of known libs =
+  Util.StringSet.fold
+    (fun l acc ->
+      match known.lib_dir l with Some d -> (l, d) :: acc | None -> acc)
+    libs []
+  |> List.sort_uniq compare
+
 (* The reference scope of a package, shared by all its units (see the
    "reference scope" section of driver.mld). [-L] is its own libraries, their
    direct META requires -- not the transitive closure -- and the libraries
@@ -288,7 +298,7 @@ let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) : Odoc_unit.lib =
     |> Util.StringSet.remove lib.lib_name
     |> Util.StringSet.elements
   in
-  let includes = dirs_of ctx.known (cone ctx.known lib.lib_name) in
+  let includes = named_dirs_of ctx.known (cone ctx.known lib.lib_name) in
   let page =
     if writes_pages ctx pkg then
       Some (Landing_pages.library ~dirs:ctx.dirs ~pkg lib)
