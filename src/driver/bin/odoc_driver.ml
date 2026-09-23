@@ -51,7 +51,6 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
   let () = Worker_pool.start_workers env sw nb_workers in
   let all = Packages.of_packages ~packages_dir:None packages in
   let all = Packages.remap_virtual all in
-  let extra_paths = Voodoo.empty_extra_paths in
 
   let remaps =
     if remap then List.concat_map (fun pkg -> pkg.Packages.remaps) all else []
@@ -62,48 +61,16 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
   let () =
     Eio.Fiber.both
       (fun () ->
-        let units =
+        let pkgs =
           let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
           Odoc_units_of.packages ~dirs
             ~indices_style:
               (Odoc_units_of.Normal { toplevel_content = index_mld_content })
-            ~extra_paths ~remap all
+            ~remap all
         in
-        Compile.init_stats units;
-        let compiled = Compile.compile ~partial_dir:odoc_dir units in
-        let linked =
-          Compile.link ~warnings_tags:packages ~custom_layout:false compiled
-        in
-        let odoc_dirs =
-          List.fold_left
-            (fun acc pkg ->
-              let lib_dirs =
-                List.map
-                  (fun l -> Fpath.(odocl_dir // Odoc_unit.lib_dir pkg l))
-                  pkg.libraries
-              in
-              Fpath.Set.union acc (Fpath.Set.of_list lib_dirs))
-            Fpath.Set.empty all
-        in
-
-        Logs.debug (fun m ->
-            m "odoc_dirs: %a" (Fmt.Dump.list Fpath.pp)
-              (Fpath.Set.to_list odoc_dirs));
-        let occurrence_file =
-          let output =
-            Fpath.( / ) odocl_dir "occurrences-all.odoc-occurrences"
-          in
-          let () =
-            Odoc.count_occurrences ~input:(Fpath.Set.to_list odoc_dirs) ~output
-          in
-          output
-        in
-        let () =
-          Compile.html_generate ~occurrence_file ~remaps ~generate_json
-            ~simplified_search_output:false html_dir linked
-        in
+        Compile.init_stats pkgs;
+        Build.all ~html_dir ~remaps ~generate_json ~warnings_tags:packages pkgs;
         List.iter (fun pkg -> Status.file ~html_dir ~pkg ()) all;
-        let _ = Odoc.support_files html_dir in
         Stats.stats.finished <- true;
         ())
       (fun () -> Stats.render_stats env ~generate_json nb_workers)

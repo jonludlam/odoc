@@ -1,13 +1,4 @@
-let instrument = false
-
 open Bos
-
-let instrument_dir =
-  lazy
-    (let dir = Fpath.v "landmarks" in
-     OS.Dir.delete dir |> Result.get_ok;
-     OS.Dir.create dir |> Result.get_ok |> ignore;
-     dir)
 
 type t = {
   cmd : string list;
@@ -17,8 +8,6 @@ type t = {
   errors : string;
   status : [ `Exited of int | `Signaled of int ];
 }
-
-(* Environment variables passed to commands. *)
 
 (* Record the commands executed, their running time and optionally the path to
    the produced file. *)
@@ -96,8 +85,6 @@ let run env cmd output_file =
             result.cmd result.output result.errors));
   result
 
-(** Print an executed command and its time. *)
-
 let filter_commands cmd =
   match
     List.filter
@@ -106,12 +93,3 @@ let filter_commands cmd =
   with
   | [] -> []
   | _ :: _ as cmds -> cmds
-
-let print_cmd c =
-  Printf.printf "[%4.2f] $ %s\n" c.time (String.concat " " c.cmd)
-
-(** Returns the [k] commands that took the most time for a given subcommand. *)
-let k_longest_commands cmd k =
-  filter_commands cmd
-  |> List.sort (fun a b -> Float.compare b.time a.time)
-  |> List.filteri (fun i _ -> i < k)

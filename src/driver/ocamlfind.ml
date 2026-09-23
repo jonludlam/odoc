@@ -12,7 +12,10 @@ let get_dir lib =
     Fl_package_base.query lib |> fun x ->
     Ok Fpath.(v x.package_dir |> to_dir_path)
   with e ->
-    Logs.err (fun m -> m "Error: %s\n" (Printexc.to_string e));
+    (* Routinely a library named in a META [requires] that is not installed,
+       an optional dependency. *)
+    Logs.debug (fun m ->
+        m "No findlib directory for '%s': %s" lib (Printexc.to_string e));
     Error (`Msg "Error getting directory")
 
 let archives pkg =
@@ -75,6 +78,30 @@ let deps pkgs =
        (Util.StringSet.singleton "stdlib")
        (List.map (Result.value ~default:Util.StringSet.empty) results))
 
+(* The libraries a library requires directly: its META [requires] field. The
+   field is read as written rather than resolved, because
+   [Fl_package_base.requires] fails outright when an optional dependency such
+   as [faraday-async] is not installed, which would lose the library's other
+   dependencies too.
+
+   It is read under the [ppx_driver] predicate, as the compiler does when
+   building against the library. Without it, the [requires(-ppx_driver)]
+   stanzas of ppx libraries would add the ppx runner ([ppx_deriving], say) to
+   the dependencies of a library that merely offers a rewriter; those stanzas
+   are for programs using the rewriter, not for the library's modules. *)
+let direct_deps pkg =
+  init ();
+  try
+    let package = Fl_package_base.query pkg in
+    let requires =
+      try Fl_metascanner.lookup "requires" [ "ppx_driver" ] package.package_defs
+      with Not_found -> ""
+    in
+    Ok
+      (Util.StringSet.add "stdlib"
+         (Util.StringSet.of_list (Fl_split.in_words requires)))
+  with e -> Error (`Msg (Printexc.to_string e))
+
 module Db = struct
   type t = {
     all_libs : Util.StringSet.t;
@@ -104,11 +131,13 @@ module Db = struct
     in
     let all_libs = Util.StringSet.elements all_libs_set in
 
-    (* Now we need the dependency tree of those libraries *)
+    (* The directly-declared dependencies of each library. We deliberately keep
+       these un-closed: -L/-P are computed from the direct dependencies, and
+       the closure needed for -I is taken later ([Odoc_units_of]). *)
     let all_lib_deps =
       List.fold_right
         (fun lib_name acc ->
-          match deps [ lib_name ] with
+          match direct_deps lib_name with
           | Ok deps -> Util.StringMap.add lib_name deps acc
           | Error (`Msg msg) ->
               Logs.err (fun m ->
