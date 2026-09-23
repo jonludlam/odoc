@@ -304,7 +304,7 @@ run that documents a package on its own can therefore find what earlier runs
 built without any record of it. This is how ocaml.org works, see
 {{!ocamlorg}below}. The odoc directory may even be the switch prefix itself.
 
-{3 Step 3: the search path and the scope}
+{3:scope Step 3: the search path and the scope}
 
 For each library, [Odoc_units_of] computes the [-I] search path of its units:
 the directories of its {e dependency cone}, the library itself and,
@@ -320,6 +320,13 @@ scope. It is not the transitive closure:
   the libraries named in [odoc-config.sexp];
 - [-P]: the package itself, the packages providing those libraries, and the
   packages named in [odoc-config.sexp].
+
+The page the driver writes for a library is linked with that library's [-I]
+as well, although it is a page and has no modules of its own. It shows a
+synopsis for each module, lifted from the module and resolved as the page is
+linked, so it needs to reach what those synopses name, and to reach this
+library's modules rather than the same-named modules of another, see
+{{!siblings}below}.
 
 For [fmt], with [cmdliner] not installed as a dependency, the link command of
 [Fmt] is:
@@ -366,10 +373,10 @@ there because [fmt] was compiled first, and [lib/ocaml/stdlib.odoc] because
 
 {{!/odoc-driver/Odoc_driver_lib.Compile.link}[Compile.link]} links every unit
 of the package with the package's scope, and each library's units with its
-[-I] path as well. Linking needs the [.odoc] files of everything the scope
-names, so [Build] makes sure each package in the scope has been compiled
-before it links. For [fmt] that is already so. When it is not, see the
-{{!forward}forward references} below.
+[-I] path as well, its page included. Linking needs the [.odoc] files of
+everything the scope names, so [Build] makes sure each package in the scope
+has been compiled before it links. For [fmt] that is already so. When it is
+not, see the {{!forward}forward references} below.
 
 {3 Step 6: index, sidebar, search and HTML}
 
@@ -429,6 +436,22 @@ for this purpose.
 The package's landing pages list each library's modules with path references,
 [{!modules: /checkseum.c/Checkseum}], because three modules named [Checkseum]
 are in scope and a plain [{!Checkseum}] would pick one at random.
+
+{3:siblings Libraries that share module names}
+
+A package may ship two libraries that define the same module names on purpose.
+[eliom] is the example: [eliom.client] and [eliom.server] mirror each other,
+and that symmetry is the point of the framework. Nothing in the reference scope
+tells them apart, so a plain [{!Eliom_content}] in a doc comment is ambiguous:
+odoc warns and takes the first it finds. An author who means one of them writes
+a path reference, [{!/eliom.client/Eliom_content}].
+
+A module's own documentation is not affected. Its [-I] holds its library's
+dependency cone and never both siblings, and odoc searches that first, so the
+types it shows, the modules its signature mentions and the references its
+comments make all stay on the side they were written on. The page the driver
+writes for each of the two libraries is given that library's [-I] for the same
+reason.
 
 {3 Alias libraries}
 
@@ -545,8 +568,10 @@ a transitive dependency, name it in the [META] [requires] field or in
 {{!odoc_for_authors.reference_scope}reference scope} that authors see.
 
 The [-I] search path is a different matter: it must reach everything a unit's
-modules depend on, transitively, because expansions and source links do. It
-does not widen the scope references resolve in.
+modules depend on, transitively, because expansions and source links do. Odoc
+searches it before the scope, so where a name is in both, a unit gets the
+module it was built against. The page the driver writes for a library is given
+that library's [-I] for that reason.
 
 {2 [odoc-config.sexp]}
 

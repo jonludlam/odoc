@@ -56,6 +56,17 @@ type page = [ mld | md | asset ] t
 
 (** {1 Libraries and packages} *)
 
+type scope = {
+  page_roots : (string * Fpath.t) list;
+      (** The packages whose pages may be referred to, with the directory of
+          their [.odoc] files: the [-P] arguments. *)
+  lib_roots : (string * Fpath.t) list;
+      (** The libraries whose modules may be referred to, likewise: the [-L]
+          arguments. *)
+}
+(** What a unit may refer to at link time. Every unit a package's authors wrote
+    is linked with the same scope, the package's. *)
+
 type lib = {
   lib_name : string;
   requires : string list;
@@ -68,19 +79,14 @@ type lib = {
           files of every library it depends on, directly or not. This is the set
           of directories the compiler had when it built the library. *)
   units : module_unit list;
+  page : mld t option;
+      (** The page the driver writes to list the library's modules. [None] when
+          the driver writes no pages for this package. It is linked with
+          {!includes}, like the library's modules: what it shows of them is
+          taken from this library, and odoc prefers a module found there to a
+          same-named module of another library. *)
 }
 (** A library and its modules. *)
-
-type scope = {
-  page_roots : (string * Fpath.t) list;
-      (** The packages whose pages may be referred to, with the directory of
-          their [.odoc] files: the [-P] arguments. *)
-  lib_roots : (string * Fpath.t) list;
-      (** The libraries whose modules may be referred to, likewise: the [-L]
-          arguments. *)
-}
-(** What the units of a package may refer to at link time. Every unit of a
-    package is linked with the same scope. *)
 
 type index = {
   index_file : Fpath.t;  (** The [.odoc-index] file. *)

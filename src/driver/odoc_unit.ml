@@ -51,13 +51,15 @@ type module_unit = [ intf | impl ] t
 type page = [ mld | md | asset ] t
 
 (* A library: its modules and their implementations, the libraries of this
-   build that must be compiled before it, and the [-I] search path its units
-   are compiled and linked with (the directories of its dependency cone). *)
+   build that must be compiled before it, the [-I] search path its units are
+   compiled and linked with (the directories of its dependency cone), and the
+   page the driver writes to list its modules. *)
 type lib = {
   lib_name : string;
   requires : string list;
   includes : Fpath.t list;
   units : module_unit list;
+  page : mld t option;
 }
 
 (* A package, the unit of building: its libraries, its pages (including the
@@ -73,7 +75,9 @@ type pkg = {
 
 let all_units pkg =
   (pkg.pages :> any list)
-  @ List.concat_map (fun l -> (l.units :> any list)) pkg.libs
+  @ List.concat_map
+      (fun l -> (Option.to_list l.page :> any list) @ (l.units :> any list))
+      pkg.libs
 
 let pkg_dir : Packages.t -> Fpath.t = fun pkg -> pkg.pkg_dir
 let doc_dir : Packages.t -> Fpath.t = fun pkg -> pkg.doc_dir

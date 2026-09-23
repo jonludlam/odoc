@@ -205,6 +205,9 @@ let scope_of known (pkg : Packages.t) : scope =
   in
   { page_roots; lib_roots }
 
+(* The driver writes no pages of its own for a package it only remaps. *)
+let writes_pages ctx (pkg : Packages.t) = (not ctx.remap) || pkg.selected
+
 let index_of ~dirs (pkg : Packages.t) : index =
   {
     index_file = Fpath.(dirs.index_dir / pkg.name / Odoc.index_filename);
@@ -286,7 +289,12 @@ let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) : Odoc_unit.lib =
     |> Util.StringSet.elements
   in
   let includes = dirs_of ctx.known (cone ctx.known lib.lib_name) in
-  { lib_name = lib.lib_name; requires; includes; units }
+  let page =
+    if writes_pages ctx pkg then
+      Some (Landing_pages.library ~dirs:ctx.dirs ~pkg lib)
+    else None
+  in
+  { lib_name = lib.lib_name; requires; includes; units; page }
 
 (* A page of the package's documentation: the parent id follows its path below
    the doc directory, and so does the file. *)
@@ -321,9 +329,11 @@ let of_asset ctx (pkg : Packages.t) (asset : Packages.asset) : asset t =
     ~to_output:true
 
 (* The landing pages the driver writes for a package: one for the package
-   (unless it ships its own index.mld), one per library, one for the sources. *)
+   (unless it ships its own index.mld) and one for the sources. The page of a
+   library is made with the library, in [of_lib], because it is linked with the
+   library's search path. *)
 let landing_pages ctx (pkg : Packages.t) : mld t list =
-  if ctx.remap && not pkg.selected then []
+  if not (writes_pages ctx pkg) then []
   else
     let has_index_page =
       List.exists
@@ -344,8 +354,7 @@ let landing_pages ctx (pkg : Packages.t) : mld t list =
     in
     (if has_index_page then []
      else [ Landing_pages.package ~dirs:ctx.dirs ~pkg ])
-    @ (if has_sources then [ Landing_pages.src ~dirs:ctx.dirs ~pkg ] else [])
-    @ List.map (Landing_pages.library ~dirs:ctx.dirs ~pkg) pkg.libraries
+    @ if has_sources then [ Landing_pages.src ~dirs:ctx.dirs ~pkg ] else []
 
 let of_package ctx (pkg : Packages.t) : Odoc_unit.pkg =
   let pages =

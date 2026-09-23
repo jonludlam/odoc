@@ -18,11 +18,6 @@
   (@jonludlam, #1462)
 - `odoc compile-impl`: `-o` now overrides the output path computed from
   `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
-- `odoc link`: a module name is looked up in the `-I` directories first and in
-  the `-L` directories only if that finds nothing, so a unit gets the module it
-  was compiled against. Two libraries of one package with same-named modules,
-  such as eliom.client and eliom.server, no longer resolve to each other's
-  modules, in paths, canonical paths or references (@jonludlam, #1450, #1461)
 - `{!modules: ...}` lists accept path references (`{!modules: /lib/Module}`),
   so a generated page can name the library a module belongs to (@jonludlam,
   #1461)
@@ -35,9 +30,16 @@
   (@jonludlam, #1461)
 - odoc-driver: compute the reference scope per package as documented in
   `driver.mld` — `-L` from the direct META requires, `-P` from the packages
-  providing them, `-I` from the library's dependency cone (@jonludlam, #1461)
+  providing them, `-I` from the library's dependency cone. The page written for
+  a library is linked with that library's `-I`, so the synopses it shows resolve
+  the way the modules' own pages do (@jonludlam, #1461)
 - Document the odoc 3 reference scope and driving model in `driver.mld` and
   `odoc_for_authors.mld` (@jonludlam, #1461)
+- `odoc link`: a module name is looked up in the `-I` directories first and in
+  the `-L` directories only if that finds nothing, so a unit gets the module it
+  was compiled against. Two libraries of one package with same-named modules,
+  such as eliom.client and eliom.server, no longer resolve to each other's
+  modules, in paths, canonical paths or references (@jonludlam, #1450, #1461)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

@@ -148,11 +148,14 @@ let compile_pages (pkg : Odoc_unit.pkg) =
           ~name:(Fpath.filename unit.input_file);
         Atomic.incr Stats.stats.compiled_assets
   in
-  Fiber.List.iter compile pkg.pages
+  let lib_pages =
+    List.filter_map (fun (l : Odoc_unit.lib) -> l.page) pkg.libs
+  in
+  Fiber.List.iter compile (pkg.pages @ (lib_pages :> Odoc_unit.page list))
 
 let link ~warnings_tags (pkg : Odoc_unit.pkg) =
-  let { Odoc_unit.page_roots; lib_roots } = pkg.scope in
-  let link ~includes (c : Odoc_unit.any) =
+  let link ~scope ~includes (c : Odoc_unit.any) =
+    let { Odoc_unit.page_roots; lib_roots } = scope in
     match c.kind with
     | `Intf { hidden = true; _ } -> ()
     | _ ->
@@ -171,15 +174,24 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
           | `Mld | `Md | `Asset -> Stats.stats.linked_mlds)
   in
   let jobs =
-    List.map (fun u -> ([], u)) (pkg.pages :> Odoc_unit.any list)
+    List.map (fun u -> (pkg.scope, [], u)) (pkg.pages :> Odoc_unit.any list)
     @ List.concat_map
         (fun (lib : Odoc_unit.lib) ->
+          (* The page the driver writes for the library shows what the
+             library's modules say, so it is linked with their search path:
+             odoc then prefers this library's modules to the same-named
+             modules of another library in the scope. *)
+          let page =
+            match lib.page with
+            | None -> []
+            | Some p -> [ (p :> Odoc_unit.any) ]
+          in
           List.map
-            (fun u -> (lib.includes, u))
-            (lib.units :> Odoc_unit.any list))
+            (fun u -> (pkg.scope, lib.includes, u))
+            (page @ (lib.units :> Odoc_unit.any list)))
         pkg.libs
   in
-  Fiber.List.iter (fun (includes, u) -> link ~includes u) jobs
+  Fiber.List.iter (fun (scope, includes, u) -> link ~scope ~includes u) jobs
 
 (* The index of a package is built from the [.odocl] files of its linked units.
    Listing them explicitly puts the package's pages and modules in one hierarchy
