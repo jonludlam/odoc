@@ -314,8 +314,21 @@ let lookup_unit_by_name ap target_name =
   | None -> None
 
 (** Lookup an unit. First looks into [imports_map] then searches into the paths.
-*)
-let lookup_unit_by_name ~important_digests ~imports_map ap target_name =
+
+    [ap] holds the [-I] directories, the modules the unit was built against, and
+    [extended_ap] holds the [-L] directories as well, the modules its
+    documentation may name. A name found among the first means the module the
+    compiler saw, so it wins: two libraries that define the same module name are
+    told apart, whether the name comes from a path, a canonical path or a
+    reference. The wider search is what finds a module of another library, which
+    the compiler never showed this unit. *)
+let lookup_unit_by_name ~important_digests ~imports_map ap extended_ap
+    target_name =
+  let by_name () =
+    match lookup_unit_by_name ap target_name with
+    | Some _ as m -> m
+    | None -> lookup_unit_by_name extended_ap target_name
+  in
   let of_option f =
     match f with
     | Some m -> Ok (Odoc_xref2.Env.Found m)
@@ -323,14 +336,14 @@ let lookup_unit_by_name ~important_digests ~imports_map ap target_name =
   in
   match StringMap.find target_name imports_map with
   | Odoc_model.Lang.Compilation_unit.Import.Unresolved (_, Some digest) ->
-      lookup_unit_with_digest ap target_name digest
+      lookup_unit_with_digest extended_ap target_name digest
   | Unresolved (_, None) ->
       if important_digests then Ok Odoc_xref2.Env.Forward_reference
-      else of_option (lookup_unit_by_name ap target_name)
-  | Resolved (root, _) -> lookup_unit_with_digest ap target_name root.digest
+      else of_option (by_name ())
+  | Resolved (root, _) ->
+      lookup_unit_with_digest extended_ap target_name root.digest
   | exception Not_found ->
-      if important_digests then Error `Not_found
-      else of_option (lookup_unit_by_name ap target_name)
+      if important_digests then Error `Not_found else of_option (by_name ())
 
 (** Lookup a page.
 
@@ -447,9 +460,11 @@ let lookup_unit_by_path ~libs ~hierarchy path =
   | Ok _ -> Error `Not_found (* TODO: Report is not a module. *)
   | Error _ as e -> e
 
-let lookup_unit ~important_digests ~imports_map ap ~libs ~hierarchy = function
+let lookup_unit ~important_digests ~imports_map ap extended_ap ~libs ~hierarchy
+    = function
   | `Path p -> lookup_unit_by_path ~libs ~hierarchy p
-  | `Name n -> lookup_unit_by_name ~important_digests ~imports_map ap n
+  | `Name n ->
+      lookup_unit_by_name ~important_digests ~imports_map ap extended_ap n
 
 let lookup_page ap ~pages ~hierarchy = function
   | `Path p -> lookup_page_by_path ~pages ~hierarchy p
@@ -533,7 +548,7 @@ let build_compile_env_for_unit
      On the other hand, [lookup_unit] is needed at compile time and the
      compilation order is known by the driver. *)
   let lookup_unit =
-    lookup_unit ~important_digests ~imports_map ap ~libs:None ~hierarchy:None
+    lookup_unit ~important_digests ~imports_map ap ap ~libs:None ~hierarchy:None
   and lookup_page _ = Error `Not_found
   and lookup_asset _ = Error `Not_found
   and lookup_impl = lookup_impl ap in
@@ -568,7 +583,7 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
     Some (Hierarchy.make ~hierarchy_root ~current_dir)
   in
   let lookup_unit =
-    lookup_unit ~important_digests ~imports_map extended_ap ~libs ~hierarchy
+    lookup_unit ~important_digests ~imports_map ap extended_ap ~libs ~hierarchy
   and lookup_page = lookup_page ap ~pages ~hierarchy
   and lookup_asset = lookup_asset ~pages ~hierarchy
   and lookup_impl = lookup_impl ap in

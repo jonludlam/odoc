@@ -142,18 +142,23 @@ to it resolve. This command has no [-o]: the unit goes to
   References such as [{!/ocamlfind/index}] resolve against it.
 
 - [-L <name>:<dir>] names a module tree likewise. References such as
-  [{!/findlib.dynload/Fl_dynload}] resolve against it, and its directory joins
-  the search path.
+  [{!/findlib.dynload/Fl_dynload}] resolve against it, and references by
+  plain name search its directory.
 
 - [-I <dir>] adds a directory to the search path.
 
-Two different mechanisms use these directories. The modules the unit was
-compiled against are looked up by name across the whole search path, [-I] and
-[-L] alike, and told apart by their interface digest. References written in
-documentation comments are looked up by name too, but with no digest to tell
-same-named candidates apart: [odoc] takes the first and warns. Authors can
-avoid the ambiguity with a path reference that names the tree,
-[{!/foo/A}] for the module [A] of library [foo].
+Odoc looks up a module by name in both, but not at the same time. It searches
+the [-I] directories first and the [-L] directories only if that finds
+nothing. The [-I] directories hold the modules the compiler gave the unit, so
+a name it can answer means the module the unit was built against. This is what
+tells two libraries with same-named modules apart, and it holds for every name
+odoc resolves: the modules a signature mentions, the aliases in it, canonical
+paths, and references written in documentation comments.
+
+A module of a library the unit does not depend on is found by the wider
+search, which has no digest to tell same-named candidates apart: odoc takes
+the first and warns. Authors can avoid the ambiguity with a path reference
+that names the tree, [{!/foo/A}] for the module [A] of library [foo].
 
 The directories given to [-P] and [-L] must not be nested or shared. Where the
 layout makes that impossible, several libraries installed in one directory

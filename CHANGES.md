@@ -18,6 +18,11 @@
   (@jonludlam, #1462)
 - `odoc compile-impl`: `-o` now overrides the output path computed from
   `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
+- `odoc link`: a module name is looked up in the `-I` directories first and in
+  the `-L` directories only if that finds nothing, so a unit gets the module it
+  was compiled against. Two libraries of one package with same-named modules,
+  such as eliom.client and eliom.server, no longer resolve to each other's
+  modules, in paths, canonical paths or references (@jonludlam, #1450, #1461)
 - `{!modules: ...}` lists accept path references (`{!modules: /lib/Module}`),
   so a generated page can name the library a module belongs to (@jonludlam,
   #1461)
