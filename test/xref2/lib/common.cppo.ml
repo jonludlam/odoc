@@ -613,6 +613,7 @@ let my_compilation_unit id (s : Odoc_model.Lang.Signature.t) =
     ; linked = false
     ; canonical = None
     ; source_loc = None
+    ; libraries = []
 }
 
 let mkresolver () =

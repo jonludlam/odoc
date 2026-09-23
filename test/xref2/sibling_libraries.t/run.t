@@ -27,7 +27,7 @@ not, and the text below says where.
 
   $ for lib in client server; do
   >   for m in content__Html content wrap; do
-  >     odoc compile --output-dir h --parent-id pkg/$lib -I h/pkg/$lib $lib/$m.cmti
+  >     odoc compile --output-dir h --parent-id pkg/$lib -L $lib:h/pkg/$lib $lib/$m.cmti
   >   done
   > done
 
@@ -68,45 +68,25 @@ each library, one by plain name, and a submodule of each.
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
   $ refs() { odoc_print $1 | jq -c '[.. | objects | select(has("`Reference")) | .["`Reference"][0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique | join(" ")]'; }
 Where each reference on the page points, in the order they are written. The
 first two name a root module one library at a time, and a path reference says
 which library it means, so both land where they were aimed. The third is the
 plain [{!Content}], which is ambiguous, and odoc says so and takes one.
 
-The fourth is [{!/client/Content.Html}], and it is wrong. Naming the library
-covers the root and no more: [Content.Html] is an alias, so odoc resolves
-[Content__Html] by name once the root is found, and a page about two libraries
-has no [-I] to answer that. Both submodule references land on the server, so
-there is nothing an author can write on this page to reach the client's.
+The fourth and fifth name a submodule of each. Naming the library covers the
+root and no more, since [Content.Html] is an alias and [Content__Html] is
+looked up once the root is found. The page has no [-I] of its own to answer
+that, so what settles it is the libraries each unit recorded when it was
+compiled: resolution that has reached the client's [Content] carries on among
+the client's libraries.
 
   $ refs h/pkg/page-all.odocl
-  ["client/Content","server/Content","server/Content","client/Content server/Content server/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html"]
+  ["client/Content","server/Content","server/Content","client/Content client/Content__Html","server/Content server/Content__Html","client/Content client/Content__Html","server/Content server/Content__Html"]
   $ modules() { odoc_print $1 | jq -c 'def libs: [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique; [.. | objects | select(has("`Modules")) | .["`Modules"][] | {shown: (.[0] | libs), says: (.[1] | libs)}]'; }
 A module list shows, beside each module it names, that module's own first
 paragraph. The paragraph is resolved as the page is linked, not as the module
-was, so it points where the page can reach rather than where its author meant.
+was, and it too is resolved among the libraries of the module it came from.
 
   $ modules h/pkg/page-all.odocl
-  [{"shown":["server/Content"],"says":["server/Content","server/Content__Html"]}]
+  [{"shown":["client/Content"],"says":["client/Content","client/Content__Html"]},{"shown":["server/Content"],"says":["server/Content","server/Content__Html"]}]

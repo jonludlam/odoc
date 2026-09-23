@@ -223,14 +223,18 @@ end = struct
         in
         Fs.File.(set_ext ".odoc" output)
 
-  let compile hidden directories resolve_fwd_refs dst output_dir package_opt
-      parent_name_opt parent_id_opt open_modules children input warnings_options
-      unique_id short_title =
+  let compile hidden directories lib_roots resolve_fwd_refs dst output_dir
+      package_opt parent_name_opt parent_id_opt open_modules children input
+      warnings_options unique_id short_title =
     let _ =
       match unique_id with
       | Some id -> Odoc_model.Names.set_unique_ident id
       | None -> ()
     in
+    (* A library named with -L is searched like a directory given with -I, and
+       its name is written into the unit. *)
+    let directories = directories @ List.map ~f:snd lib_roots in
+    let libraries = List.map ~f:fst lib_roots in
     let resolver =
       Resolver.create ~important_digests:(not resolve_fwd_refs) ~directories
         ~open_modules ~roots:None
@@ -282,7 +286,7 @@ end = struct
     cli_spec >>= fun cli_spec ->
     Fs.Directory.mkdir_p (Fs.File.dirname output);
     Compile.compile ~resolver ~cli_spec ~hidden ~warnings_options ~short_title
-      input
+      ~libraries input
 
   let input =
     let doc = "Input $(i,.cmti), $(i,.cmt), $(i,.cmi) or $(i,.mld) file." in
@@ -305,6 +309,19 @@ end = struct
       value
       & opt (some string) None
       & info ~docs ~docv:"PATH" ~doc [ "output-dir" ])
+
+  let compile_lib_roots =
+    let doc =
+      "Specifies a library called libname whose $(i,.odoc) files are in \
+       directory DIR. The directory is searched like one given with -I, and \
+       the library's name is written into the unit, so that a later $(b,odoc \
+       link) resolving a path or a reference into this unit knows which \
+       libraries it was compiled against. Prefer this to -I."
+    in
+    Arg.(
+      value
+      & opt_all convert_named_root []
+      & info ~docs ~docv:"libname:DIR" ~doc [ "L" ])
 
   let children =
     let doc =
@@ -352,9 +369,10 @@ end = struct
     in
     Term.(
       const handle_error
-      $ (const compile $ hidden $ odoc_file_directories $ resolve_fwd_refs $ dst
-       $ output_dir $ package_opt $ parent_opt $ parent_id_opt $ open_modules
-       $ children $ input $ warnings_options $ unique_id $ short_title))
+      $ (const compile $ hidden $ odoc_file_directories $ compile_lib_roots
+       $ resolve_fwd_refs $ dst $ output_dir $ package_opt $ parent_opt
+       $ parent_id_opt $ open_modules $ children $ input $ warnings_options
+       $ unique_id $ short_title))
 
   let info ~docs =
     let man =

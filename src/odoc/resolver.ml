@@ -221,12 +221,31 @@ let unit_name
 
 let unit_cache = Hashtbl.create 42
 
+(* The libraries each unit recorded at compile time, by identifier, filled as
+   units are loaded. Resolution that reaches a unit continues in these. *)
+let unit_libraries = Odoc_model.Paths.Identifier.Hashtbl.RootModule.create 42
+
+let remember_libraries (u : Odoc_file.content) =
+  match u with
+  | Odoc_file.Unit_content m ->
+      Odoc_model.Paths.Identifier.Hashtbl.RootModule.replace unit_libraries m.id
+        m.libraries
+  | Page_content _ | Impl_content _ | Asset_content _ -> ()
+
+let scope_of_unit id =
+  try Odoc_model.Paths.Identifier.Hashtbl.RootModule.find unit_libraries id
+  with Not_found -> []
+
 let load_unit_from_file path =
-  try Hashtbl.find unit_cache path
-  with Not_found ->
-    let r = Odoc_file.load path >>= fun u -> Ok u.content in
-    Hashtbl.add unit_cache path r;
-    r
+  let r =
+    try Hashtbl.find unit_cache path
+    with Not_found ->
+      let r = Odoc_file.load path >>= fun u -> Ok u.content in
+      Hashtbl.add unit_cache path r;
+      r
+  in
+  (match r with Ok u -> remember_libraries u | Error _ -> ());
+  r
 
 let self = ref None
 
@@ -322,12 +341,30 @@ let lookup_unit_by_name ap target_name =
     told apart, whether the name comes from a path, a canonical path or a
     reference. The wider search is what finds a module of another library, which
     the compiler never showed this unit. *)
-let lookup_unit_by_name ~important_digests ~imports_map ap extended_ap
-    target_name =
+let lookup_unit_in_scope lib_aps scope target_name =
+  let rec go = function
+    | [] -> None
+    | lib :: tl -> (
+        match List.assoc_opt lib lib_aps with
+        | None -> go tl
+        | Some ap -> (
+            match lookup_unit_by_name ap target_name with
+            | Some _ as m -> m
+            | None -> go tl))
+  in
+  go scope
+
+let lookup_unit_by_name ~important_digests ~imports_map ~scope lib_aps ap
+    extended_ap target_name =
   let by_name () =
-    match lookup_unit_by_name ap target_name with
+    (* The libraries the unit being resolved was compiled against answer
+       first, since they are what its author could name. *)
+    match lookup_unit_in_scope lib_aps scope target_name with
     | Some _ as m -> m
-    | None -> lookup_unit_by_name extended_ap target_name
+    | None -> (
+        match lookup_unit_by_name ap target_name with
+        | Some _ as m -> m
+        | None -> lookup_unit_by_name extended_ap target_name)
   in
   let of_option f =
     match f with
@@ -374,6 +411,7 @@ let lookup_impl ap target_name =
 (** Add the current unit to the cache. No need to load other units with the same
     name. *)
 let add_unit_to_cache u =
+  remember_libraries u;
   let target_name =
     (match u with
     | Odoc_file.Page_content _ -> "page-"
@@ -460,11 +498,12 @@ let lookup_unit_by_path ~libs ~hierarchy path =
   | Ok _ -> Error `Not_found (* TODO: Report is not a module. *)
   | Error _ as e -> e
 
-let lookup_unit ~important_digests ~imports_map ap extended_ap ~libs ~hierarchy
-    = function
+let lookup_unit ~important_digests ~imports_map lib_aps ap extended_ap ~libs
+    ~hierarchy ~scope = function
   | `Path p -> lookup_unit_by_path ~libs ~hierarchy p
   | `Name n ->
-      lookup_unit_by_name ~important_digests ~imports_map ap extended_ap n
+      lookup_unit_by_name ~important_digests ~imports_map ~scope lib_aps ap
+        extended_ap n
 
 let lookup_page ap ~pages ~hierarchy = function
   | `Path p -> lookup_page_by_path ~pages ~hierarchy p
@@ -478,6 +517,9 @@ type t = {
   important_digests : bool;
   ap : Accessible_paths.t;
   extended_ap : Accessible_paths.t;
+  lib_aps : (string * Accessible_paths.t) list;
+      (** One search path per library named with [-L], for resolving within the
+          libraries a unit was compiled against. *)
   pages : Named_roots.t option;
   libs : Named_roots.t option;
   open_modules : string list;
@@ -516,6 +558,15 @@ let create ~important_digests ~directories ~open_modules ~roots =
         (Some pages, Some libs, Some current_dir, directories)
   in
   let ap = Accessible_paths.create ~directories in
+  let lib_aps =
+    match roots with
+    | None -> []
+    | Some { lib_roots; _ } ->
+        List.map
+          (fun (name, dir) ->
+            (name, Accessible_paths.create ~directories:[ dir ]))
+          lib_roots
+  in
   let extended_directories =
     match roots with
     | None -> directories
@@ -525,7 +576,16 @@ let create ~important_digests ~directories ~open_modules ~roots =
     List.sort_uniq Fs.Directory.compare extended_directories
   in
   let extended_ap = Accessible_paths.create ~directories:extended_directories in
-  { important_digests; ap; extended_ap; open_modules; pages; libs; current_dir }
+  {
+    important_digests;
+    ap;
+    extended_ap;
+    lib_aps;
+    open_modules;
+    pages;
+    libs;
+    current_dir;
+  }
 
 (** Helpers for creating xref2 env. *)
 
@@ -536,6 +596,7 @@ let build_compile_env_for_unit
       important_digests;
       ap;
       extended_ap = _;
+      lib_aps = _;
       open_modules = open_units;
       pages = _;
       libs = _;
@@ -548,7 +609,8 @@ let build_compile_env_for_unit
      On the other hand, [lookup_unit] is needed at compile time and the
      compilation order is known by the driver. *)
   let lookup_unit =
-    lookup_unit ~important_digests ~imports_map ap ap ~libs:None ~hierarchy:None
+    lookup_unit ~important_digests ~imports_map [] ap ap ~libs:None
+      ~hierarchy:None
   and lookup_page _ = Error `Not_found
   and lookup_asset _ = Error `Not_found
   and lookup_impl = lookup_impl ap in
@@ -557,6 +619,7 @@ let build_compile_env_for_unit
     {
       Env.open_units;
       lookup_unit;
+      scope_of_unit;
       lookup_page;
       lookup_impl;
       lookup_asset;
@@ -571,6 +634,7 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
       important_digests;
       ap;
       extended_ap;
+      lib_aps;
       open_modules = open_units;
       pages;
       libs;
@@ -583,7 +647,8 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
     Some (Hierarchy.make ~hierarchy_root ~current_dir)
   in
   let lookup_unit =
-    lookup_unit ~important_digests ~imports_map ap extended_ap ~libs ~hierarchy
+    lookup_unit ~important_digests ~imports_map lib_aps ap extended_ap ~libs
+      ~hierarchy
   and lookup_page = lookup_page ap ~pages ~hierarchy
   and lookup_asset = lookup_asset ~pages ~hierarchy
   and lookup_impl = lookup_impl ap in
@@ -591,6 +656,7 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
   {
     Env.open_units;
     lookup_unit;
+    scope_of_unit;
     lookup_page;
     lookup_impl;
     lookup_asset;
@@ -609,6 +675,7 @@ let build_link_env_for_unit t m =
   let imports_map = build_imports_map m.imports in
   let resolver = build ~imports_map ?hierarchy_roots:t.libs t in
   Env.env_of_unit m ~linking:true resolver
+  |> Env.with_scope m.Odoc_model.Lang.Compilation_unit.libraries
 
 let build_link_env_for_impl t i =
   let imports_map =
