@@ -613,6 +613,11 @@ v}
 This will generate a list of links to these modules. If the module has a synopsis
 (see {{!synopsis}later}), this will be inserted into the list.
 
+The entries may be path references naming the library the module belongs to,
+as in [{!modules: /mylib/A}]. This is useful when several libraries in scope
+provide a module of the same name — a virtual library and its implementations,
+for instance — and a plain [{!modules: A}] would be ambiguous.
+
 {3 Reference Scope}
 
 [odoc] uses the same scoping as OCaml when resolving references,
@@ -658,9 +663,40 @@ inline [open] statements do {e not} bring other elements into scope.
 In order for [odoc] to resolve links to other compilation units or [.mld] pages,
 the referenced
 unit or page must be {e compiled} and available to [odoc]. That is, when performing the
-[odoc link] command, the relevant [.odoc] file must be in a directory passed
-via [-I], or in a library passed via [-L]. This
-is normally the responsibility of the {{!page-driver}driver}.
+[odoc link] command, the referenced [.odoc] file must be reachable through one of
+the library ([-L]), package ([-P]) or include ([-I]) arguments. Deciding which
+units to make available is the responsibility of the {{!page-driver}driver}, and
+this is what determines the set of things you can actually reference.
+
+{4:reference_scope What is in scope}
+
+The reference driver computes this scope {e per package}: every library and
+every page in a package shares the same set of visible units. Other drivers
+should aim for equivalent behaviour. For a package [P], the following are in scope.
+
+You may reference the modules of (and the types, values, etc. within):
+
+{ul
+{- every library in [P] itself;}
+{- the {e direct} dependencies of those libraries — the libraries listed in each
+   library's [META] [requires] field. A dependency that provides no modules of
+   its own, such as [num] (which only requires [num.core]) or [threads.posix]
+   (which only requires [threads]), stands for its own [requires];}
+{- the OCaml standard library;}
+{- any library named in the package's {{!section-"config-file"}[odoc-config.sexp]},
+   whether listed there directly or belonging to a package listed there.}}
+
+You may reference the {e pages} of:
+
+{ul
+{- [P] itself;}
+{- every package that provides one of the in-scope libraries above;}
+{- any package named in [odoc-config.sexp].}}
+
+We make no effort to ensure {e transitive} dependencies are in scope for
+references. Should you need to refer to elements in a transitive dependency,
+add it to the explicit dependencies in the META file, or to
+{{!section-"config-file"}[odoc-config.sexp]}.
 
 Two libraries may define modules of the same name, as [eliom.client] and
 [eliom.server] do. A plain [{!Module}] names one of them no more than the
