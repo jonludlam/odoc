@@ -1,46 +1,84 @@
-let init =
-  let initialized = ref false in
-  fun () -> if !initialized then () else Findlib.init ()
+(* Findlib reads a configuration file that ocamlfind installs, and it need not
+   be there. ocaml-docs-ci documents each package in a switch holding only
+   that package's dependency closure, and a closure of dune-only packages
+   contains no ocamlfind, so loading the configuration fails. Load it once,
+   remember whether it was there, and let every query below answer "not known"
+   rather than raise. *)
+let available =
+  let state = ref None in
+  fun () ->
+    match !state with
+    | Some known -> known
+    | None ->
+        let known =
+          try
+            Findlib.init ();
+            true
+          with e ->
+            Logs.debug (fun m ->
+                m "No findlib configuration, so findlib knows no library: %s"
+                  (Printexc.to_string e));
+            false
+        in
+        state := Some known;
+        known
 
-let all () =
-  init ();
-  Fl_package_base.list_packages ()
+let all () = if available () then Fl_package_base.list_packages () else []
 
+(* Where a library's files are. Without findlib, fall back to [lib/<name>]
+   under the switch prefix, which is where opam and dune put a library whose
+   name has no dots. A directory that is not there is never returned, so the
+   caller sees the same "not known" it sees for a library findlib has never
+   heard of, which is routine for an optional dependency named in a META
+   [requires]. *)
 let get_dir lib =
-  try
-    init ();
-    Fl_package_base.query lib |> fun x ->
-    Ok Fpath.(v x.package_dir |> to_dir_path)
-  with e ->
-    (* Routinely a library named in a META [requires] that is not installed,
-       an optional dependency. *)
-    Logs.debug (fun m ->
-        m "No findlib directory for '%s': %s" lib (Printexc.to_string e));
-    Error (`Msg "Error getting directory")
+  let not_found = Error (`Msg "Error getting directory") in
+  if available () then
+    try
+      Fl_package_base.query lib |> fun x ->
+      Ok Fpath.(v x.package_dir |> to_dir_path)
+    with e ->
+      Logs.debug (fun m ->
+          m "No findlib directory for '%s': %s" lib (Printexc.to_string e));
+      not_found
+  else
+    let dir = Fpath.(v (Opam.prefix ()) / "lib" / lib |> to_dir_path) in
+    match Bos.OS.Dir.exists dir with
+    | Ok true -> Ok dir
+    | _ ->
+        Logs.debug (fun m ->
+            m "No directory for library '%s': findlib is not configured and %a \
+               does not exist"
+              lib Fpath.pp dir);
+        not_found
 
 let archives pkg =
-  init ();
-  let package = Fl_package_base.query pkg in
-  let get_1 preds =
-    try
-      [
-        Fl_metascanner.lookup "archive" preds
-          package.Fl_package_base.package_defs;
-      ]
-    with _ -> []
-  in
   match pkg with
   | "stdlib" -> [ "stdlib.cma"; "stdlib.cmxa" ]
-  | _ ->
-      get_1 [ "native" ] @ get_1 [ "byte" ]
-      @ get_1 [ "native"; "ppx_driver" ]
-      @ get_1 [ "byte"; "ppx_driver" ]
-      |> List.filter (fun x -> String.length x > 0)
-      |> List.sort_uniq String.compare
+  | _ when not (available ()) -> []
+  | _ -> (
+      match Fl_package_base.query pkg with
+      | exception e ->
+          Logs.debug (fun m ->
+              m "No findlib archives for '%s': %s" pkg (Printexc.to_string e));
+          []
+      | package ->
+          let get_1 preds =
+            try
+              [
+                Fl_metascanner.lookup "archive" preds
+                  package.Fl_package_base.package_defs;
+              ]
+            with _ -> []
+          in
+          get_1 [ "native" ] @ get_1 [ "byte" ]
+          @ get_1 [ "native"; "ppx_driver" ]
+          @ get_1 [ "byte"; "ppx_driver" ]
+          |> List.filter (fun x -> String.length x > 0)
+          |> List.sort_uniq String.compare)
 
 let sub_libraries top =
-  init ();
-  let packages = Fl_package_base.list_packages () in
+  let packages = all () in
   List.fold_left
     (fun acc lib ->
       let package = String.split_on_char '.' lib |> List.hd in
@@ -51,10 +89,10 @@ let sub_libraries top =
 let rec dep =
   let memo = ref Util.StringMap.empty in
   fun pkg ->
-    init ();
     try Util.StringMap.find pkg !memo
     with Not_found -> (
       try
+        if not (available ()) then failwith "findlib is not configured";
         let deps = Fl_package_base.requires ~preds:[ "ppx_driver" ] pkg in
         let result =
           List.fold_left
@@ -90,8 +128,8 @@ let deps pkgs =
    the dependencies of a library that merely offers a rewriter; those stanzas
    are for programs using the rewriter, not for the library's modules. *)
 let direct_deps pkg =
-  init ();
   try
+    if not (available ()) then failwith "findlib is not configured";
     let package = Fl_package_base.query pkg in
     let requires =
       try Fl_metascanner.lookup "requires" [ "ppx_driver" ] package.package_defs
