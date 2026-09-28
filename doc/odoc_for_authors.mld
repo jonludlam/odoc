@@ -566,7 +566,7 @@ This is useful if there are several identifiers [bar] in module [Foo], e.g., a t
 - [odoc]: [ {!module-Foo.type-bar} ] - each element in the path may be prefixed by its type. This is
 useful if there are ambiguous elements in any part of the path, e.g., in this case perhaps there is a
 module type [Foo].
-- [odoc3]: [ {!/library_name/Module} ] - this is a path to them module [M] in library [library_name].
+- [odoc3]: [ {!/library_name/Module} ] - this is a path to the module [Module] in library [library_name].
 This is useful if the module name is ambiguous, e.g., if there are two modules [M] in different libraries.
 You may need to add the library to the per-package config file.
 - [odoc3]: [ {!/package/path/to/page-foo} ] - this is a path to a page [foo] in the package [package].
@@ -584,7 +584,7 @@ The prefixes supported are:
 - [method]
 - [constructor] (and the equivalent deprecated prefix [const]) both for normal
   constructors and polymorphic constructors defined in a type alias. The
-  backtick [`] in polumorphic constructor is optional.
+  backtick [`] in a polymorphic constructor is optional.
 - [extension]
 - [extension-decl] for refering to the declaration point of an extension constructor
 - [field] (and the equivalent deprecated prefix [recfield])
@@ -656,9 +656,11 @@ type u
 The above example can be seen rendered in the module {!Odoc_examples.Markup.Scope}.
 
 [odoc] allows modules to be 'opened' for the purposes of resolving references.
-By default, the module [Stdlib] is 'opened', allowing references like [{!List.t}]
-to work. This feature is enabled via the command-line flag [--open]. Currently
-inline [open] statements do {e not} bring other elements into scope.
+By default, the module [Stdlib] is 'opened', allowing references like
+[{!List.t}] to work. The list of opened modules is set by the repeatable
+[--open] flag, whose default is [Stdlib]; passing it replaces that default
+rather than adding to it. Currently inline [open] statements do {e not} bring
+other elements into scope.
 
 In order for [odoc] to resolve links to other compilation units or [.mld] pages,
 the referenced
