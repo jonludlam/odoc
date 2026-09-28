@@ -112,7 +112,8 @@ assets.
   same name are indistinguishable from the outside.
 
 - [-I <dir>] does the same without naming a library, and so records nothing.
-  It is what drivers passed before [-L] existed.
+  It is what drivers passed before [-L] existed, and is deprecated for these
+  two commands.
 
 For example, for the [fmt.cli] library the reference driver runs:
 
