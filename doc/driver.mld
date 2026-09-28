@@ -154,14 +154,14 @@ point there.
 {3 Compiling Markdown pages}
 
 {@shell[
-  $ odoc-md <file>.md --output-dir <od> --parent-id <pid>
+  $ odoc-md <file>.md -o <file>.odoc --parent-id <pid>
 ]}
 
 [odoc compile] reads [.mld] and compiled interfaces, not Markdown, so a
-Markdown page goes through the separate [odoc-md] binary. Like
-[odoc compile-asset] below it has no [-o]: the unit goes to
-[<od>/<pid>/<file>.odoc]. Everything after this phase treats it as any other
-page.
+Markdown page goes through the separate [odoc-md] binary. [--parent-id] and
+[-o] mean what they do for [odoc compile], and [--output-dir] may be given
+instead of [-o], with the same meaning. Everything after this phase treats
+the result as any other page.
 
 {3 Compiling assets}
 

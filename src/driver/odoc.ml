@@ -64,13 +64,10 @@ let compile ~output_file ~input_file:file ~libs ~warnings_tag ~parent_id
   in
   ignore @@ Cmd_outputs.submit log desc cmd output_file
 
-let compile_md ~output_dir ~input_file:file ~parent_id =
+let compile_md ~output_file ~input_file:file ~parent_id =
   let open Cmd in
-  let output_file =
-    let _, f = Fpath.split_base file in
-    Some Fpath.(output_dir // Id.to_fpath parent_id // set_ext "odoc" f)
-  in
-  let cmd = !odoc_md % p file % "--output-dir" % p output_dir in
+  let cmd = !odoc_md % p file % "-o" % p output_file in
+  let output_file = Some output_file in
   let cmd =
     match Id.to_string parent_id with "" -> cmd | x -> cmd % "--parent-id" % x
   in
