@@ -38,6 +38,13 @@ hierarchy inside a tree. The driver decides where each tree is rooted in the
 overall hierarchy. A documentation author refers to another tree by its name,
 not by its location.
 
+Concretely, a tree is a name, a root {{!conv}identifier}, and a directory of
+[.odoc] files. The driver passes the two kinds as [-P name:dir] and
+[-L name:dir], the name is what an author writes in [{!/name/...}], and the
+files below the directory are laid out to match the identifiers below the
+root. The reference driver makes one page tree per package and one module
+tree per library; nothing obliges a driver to do the same.
+
 For opam packages the trees have a natural meaning. Each package has a page
 tree named after the package. Each of its libraries has a module tree named
 after the library. Another package can refer to the pages by the package name,
@@ -60,8 +67,14 @@ depends on it, so the phases are separated to break this apparent cycle.
 - The {e indexing} phase gathers [.odocl] files into [.odoc-index] files, from
   which the sidebar and the search index are made.
 
-- The {e generation} phase renders [.odocl] and [.odoc-index] files as HTML,
-  man pages or LaTeX.
+- The {e generation} phase renders [.odocl] files, with the sidebar made in
+  the phase before, as HTML, Markdown, man pages or LaTeX.
+
+Three binaries are involved, and a driver calls all three. [odoc] itself does
+everything above. [odoc-md] turns a Markdown page into an [.odoc] file, since
+[odoc compile] reads only [.mld]. [sherlodoc] builds the search database that
+the generated pages query, and ships the JavaScript that queries it; a driver
+that wants no search need not call it.
 
 {2 The compile phase}
 
@@ -137,6 +150,18 @@ into the unit in the same way; the implementation is usually given the same
 parent id as its interface. [--source-id <sid>] is the
 identifier of the page that will show the rendered source; links to the source
 point there.
+
+{3 Compiling Markdown pages}
+
+{@shell[
+  $ odoc-md <file>.md --output-dir <od> --parent-id <pid>
+]}
+
+[odoc compile] reads [.mld] and compiled interfaces, not Markdown, so a
+Markdown page goes through the separate [odoc-md] binary. Like
+[odoc compile-asset] below it has no [-o]: the unit goes to
+[<od>/<pid>/<file>.odoc]. Everything after this phase treats it as any other
+page.
 
 {3 Compiling assets}
 
@@ -226,6 +251,20 @@ binary index does not use occurrence counts; only the JSON form does, with
 
 This derives the sidebar from an index. With [--json] it writes the JSON form
 used by ocaml.org.
+
+{3 The search database}
+
+{@shell[
+  $ sherlodoc index --format js <file>.odoc-index -o <dir>/sherlodoc_db.js
+  $ sherlodoc js <dir>/sherlodoc.js
+]}
+
+[sherlodoc] is a separate binary. The first command turns the index into the
+database a page queries, the second writes the engine that queries it, which
+every page shares. Both paths are then given to [odoc html-generate] as
+[--search-uri], relative to the HTML directory. [--format marshal] writes the
+database a server searches instead, and [--favoured_prefixes] lists module
+prefixes whose results come first.
 
 {2 The generation phase}
 
@@ -580,8 +619,22 @@ resolve; ocaml.org puts the version in the root identifier.
 
 The module units of a package are the compiled modules of the libraries it
 installed below [lib]. The page units are the [.mld] files below
-[doc/<p>/odoc-pages]. The asset units are the other files below
-[doc/<p>/odoc-pages], and all files below [doc/<p>/odoc-assets].
+[doc/<p>/odoc-pages], and the [.md] files directly below [doc/<p>], which go
+through [odoc-md] rather than [odoc compile]. The asset units are the other
+files below [doc/<p>/odoc-pages], and all files below [doc/<p>/odoc-assets].
+
+The driver adds pages of its own, which a package cannot supply:
+
+- one for the package, unless it ships [doc/<p>/odoc-pages/index.mld], listing
+  its pages and, per library, its modules;
+- one for each library, listing that library's modules;
+- one at [<p>/src], introducing the rendered sources, when any module of the
+  package has an implementation to render.
+
+Each is an [.mld] the driver writes to a scratch directory and compiles like
+any other page. The library pages and the source page carry
+[@toc_status hidden], which keeps them out of the table of contents, and
+[@order_category], which decides where they sit among the package's pages.
 
 {2 Parent ids}
 
