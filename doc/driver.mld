@@ -85,11 +85,17 @@ assets.
   prefix of their parent ids. The identifier is stored inside the [.odoc] file.
 
 - [-o <file>.odoc] is where the file goes. The name must be the input's name
-  with the [.odoc] extension, prefixed by [page-] for an [.mld]. The location
-  is independent of the identifier: later phases find files only through the
-  paths they are given, so the driver may place them as it likes. Without
-  [-o], [odoc] writes the file below [--output-dir] at the path given by
-  [--parent-id].
+  with the [.odoc] extension, prefixed by [page-] for an [.mld]: [odoc] finds
+  a unit by that name, capitalised, and the prefix tells it what kind of unit
+  to expect. Without [-o], [odoc] writes the file below [--output-dir] at the
+  path given by [--parent-id].
+
+  A tree's files may be rooted wherever the driver likes, since later phases
+  are handed the directory. Within a tree they are not free: a path reference
+  such as [{!/pkg/a/b/page-c}] is resolved by looking for [a/b/page-c.odoc]
+  below the directory that [-P pkg:] names, so a unit's path below that
+  directory must match its identifier below the tree's root. A [{!//a/b}]
+  reference is resolved relative to the input file's own directory.
 
 - [-L <name>:<dir>] names a library and the directory of its [.odoc] files.
   The directory is searched for the modules the input depends on, those
@@ -108,13 +114,14 @@ assets.
 - [-I <dir>] does the same without naming a library, and so records nothing.
   It is what drivers passed before [-L] existed.
 
-For example, for the [fmt] package the reference driver runs:
+For example, for the [fmt.cli] library the reference driver runs:
 
 {@shell[
-  $ odoc compile ~/.opam/5.5.0/lib/fmt/fmt.cmti
-      -o _odoc/lib/fmt/fmt.odoc
-      -L fmt:_odoc/lib/fmt/ -L ocaml:_odoc/lib/ocaml/
-      --parent-id fmt/fmt --warnings-tag fmt --enable-missing-root-warning
+  $ odoc compile ~/.opam/5.5.0/lib/fmt/cli/fmt_cli.cmti
+      -o _odoc/lib/fmt/cli/fmt_cli.odoc
+      -L fmt.cli:_odoc/lib/fmt/cli/ -L fmt:_odoc/lib/fmt/
+      -L cmdliner:_odoc/lib/cmdliner/ -L stdlib:_odoc/lib/ocaml/
+      --parent-id fmt/fmt.cli --warnings-tag fmt --enable-missing-root-warning
 ]}
 
 {3 Compiling implementations}
@@ -161,12 +168,16 @@ to it resolve. This command has no [-o]: the unit goes to
 Odoc looks up a module by name in these directories, but not all at once, and
 what it tries first depends on whose name it is resolving.
 
-While it resolves the unit named on the command line, it searches the [-I]
-directories first and the [-L] directories only if that finds nothing. The
-[-I] directories hold the modules the compiler gave that unit, so a name they
-answer means the module it was built against. This holds for every name odoc
-resolves: the modules a signature mentions, the aliases in it, canonical
-paths, and references written in documentation comments.
+A name odoc holds a digest for is matched by that digest, anywhere on the
+search path, and the order below does not arise. That covers most of what a
+signature mentions, since the compiler recorded those modules as imports.
+
+For the rest, the canonical paths and the references written in documentation
+comments, odoc searches in three steps while it resolves the unit named on the
+command line. First the libraries that unit recorded when it was compiled,
+each in the directory its [-L] names. Then the [-I] directories. Only then the
+[-L] directories as a whole. The first two hold what the compiler gave that
+unit, so a name they answer means the module it was built against.
 
 When resolution follows a path or a reference {e into} another unit, it
 carries on among the libraries that unit recorded at compile time, which are
@@ -179,9 +190,10 @@ has no digest to tell same-named candidates apart: odoc takes the first and
 warns. Authors can avoid the ambiguity with a path reference that names the
 tree, [{!/foo/A}] for the module [A] of library [foo].
 
-The directories given to [-P] and [-L] must not be nested or shared. Where the
-layout makes that impossible, several libraries installed in one directory
-for instance, pass [--custom-layout], which disables the check.
+No two directories given to [-P] may be nested or shared, and likewise for
+[-L]; the two sets are checked separately, so a [-P] directory may contain a
+[-L] one. Where even that is impossible, several libraries installed in one
+directory for instance, pass [--custom-layout], which disables the check.
 
 A name that the unit's imports record with a digest is matched by that digest,
 anywhere on the search path. Every other name is looked up among the
@@ -382,10 +394,11 @@ For [fmt], with [cmdliner] not installed as a dependency, the link command of
 
 Which package provides a library comes from opam's record of installed files:
 [stdlib] and [unix] are in [lib/ocaml], installed by [ocaml-compiler]. A
-library that provides no modules, [num] requiring only [num.core] or
-[threads.posix] requiring only [threads], is an alias for the libraries it
-requires, and those stand in for it. A library that is not documented at all,
-here [cmdliner], is left out.
+library stands in this list only if it is being built in this run or its
+[.odoc] directory exists already; otherwise the libraries it requires stand in
+for it. That is what handles an alias, [num] requiring only [num.core] or
+[threads.posix] requiring only [threads], and it is also what drops a library
+nobody has documented, here [cmdliner], which then contributes nothing.
 
 {3 Step 4: compiling}
 
@@ -405,7 +418,7 @@ recursively. Requiring is a relation between libraries, not packages, and no
 library requires itself even indirectly, so this always ends.
 
 The compile command for [fmt_cli.cmti] was shown {{!pipeline}above}. Its [-L]
-arguments name the four libraries of the cone with their directories;
+arguments name the four libraries of the cone with their directories.
 [lib/fmt/fmt.odoc] is already there because [fmt] was compiled first, and
 [lib/ocaml/stdlib.odoc] because [ocaml-compiler] was an earlier package. The
 names go into [fmt_cli.odoc], so a later run resolving something into that
@@ -617,10 +630,11 @@ a transitive dependency, name it in the [META] [requires] field or in
 The dependency cone is a different matter: it must reach everything a unit's
 modules depend on, transitively, because expansions and source links do. The
 driver gives it to [odoc compile] as [-L], naming each library, and to
-[odoc link] as [-I]. Odoc searches it before the scope, so where a name is in
-both, a unit gets the module it was built against; and because the names are
-written into the units, that holds for another run resolving into them as
-well, not only for the unit on the command line. The page the driver writes
+[odoc link] as [-I]. Odoc searches the recorded libraries, and then the [-I]
+directories, before the rest of the scope, so where a name is in both a unit
+gets the module it was built against; and because the names are written into
+the units, that holds for another run resolving into them as well, not only
+for the unit on the command line. The page the driver writes
 for a library is given that library's cone for the same reason.
 
 {2 [odoc-config.sexp]}
@@ -628,7 +642,8 @@ for a library is given that library's cone for the same reason.
 A package [<p>] may install [doc/<p>/odoc-config.sexp], holding
 s-expressions:
 
-- [(packages p1 p2 ...)] adds the page trees [p1], [p2], ... to the scope;
+- [(packages p1 p2 ...)] adds the page trees [p1], [p2], ... to the scope, and
+  the module trees of the libraries those packages provide;
 - [(libraries l1 l2 ...)] adds the module trees [l1], [l2], ... to the scope,
   and the page trees of the packages providing them.
 
@@ -640,10 +655,14 @@ itself, the driver uses the [@order_category <name>] tag to help [odoc] sort
 them. The resulting order is:
 
 - first, pages in the order given by their parent's [@children_order];
-- then, pages ordered by their [@order_category], an undefined category
-  coming before a defined one;
-- within a category, pages ordered by their first title;
-- two pages with the same title, by their file name.
+- then by kind: pages and directories, then modules, then implementations,
+  then everything else;
+- then by [@order_category], compared as a string, a page that sets none
+  compared as the string [default];
+- within a category, by [@short_title] where the page sets one, otherwise by
+  the page's own name, or for a page named [index] by the name of its
+  directory;
+- ties are left in the order the units were given.
 
 [@order_category] may change and is not for authors to use. It is for the
 pages a driver generates.
