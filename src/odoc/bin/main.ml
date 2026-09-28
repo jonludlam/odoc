@@ -463,9 +463,13 @@ module Compile_impl = struct
       ~directory:(Fpath.to_string dir |> Fs.Directory.of_string)
       ~name
 
-  let compile_impl directories output_dir parent_id source_id input
+  let compile_impl directories lib_roots output_dir parent_id source_id input
       warnings_options dst =
     let input = Fs.File.of_string input in
+    (* As for [odoc compile]: a library named with -L is searched like a
+       directory given with -I, and its name is written into the unit. *)
+    let directories = directories @ List.map ~f:snd lib_roots in
+    let libraries = List.map ~f:fst lib_roots in
     let output =
       match dst with
       | Some dst -> Fs.File.of_string dst
@@ -482,7 +486,8 @@ module Compile_impl = struct
       Resolver.create ~important_digests:true ~directories ~open_modules:[]
         ~roots:None
     in
-    Source.compile ~resolver ~source_id ~output ~warnings_options input
+    Source.compile ~resolver ~source_id ~output ~warnings_options ~libraries
+      input
 
   let cmd =
     let input =
@@ -503,11 +508,23 @@ module Compile_impl = struct
         & opt (some string) None
         & info [ "parent-id" ] ~doc ~docv:"/path/to/library")
     in
+    let lib_roots =
+      let doc =
+        "Specifies a library called libname whose $(i,.odoc) files are in \
+         directory DIR. As for $(b,odoc compile), the directory is searched \
+         like one given with -I and the library's name is written into the \
+         unit. Prefer this to -I."
+      in
+      Arg.(
+        value
+        & opt_all convert_named_root []
+        & info ~docs ~docv:"libname:DIR" ~doc [ "L" ])
+    in
 
     Term.(
       const handle_error
-      $ (const compile_impl $ odoc_file_directories $ output_dir $ parent_id
-       $ source_id $ input $ warnings_options $ dst))
+      $ (const compile_impl $ odoc_file_directories $ lib_roots $ output_dir
+       $ parent_id $ source_id $ input $ warnings_options $ dst))
 
   let info ~docs =
     let doc =

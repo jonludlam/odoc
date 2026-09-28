@@ -43,3 +43,11 @@ What each unit recorded.
   ["client","x"]
   $ odoc_print h/pkg/server/content.odoc | jq -c '.libraries'
   ["server","y"]
+
+An implementation records them the same way, so that the source page it
+produces resolves what it names among the libraries it was built against.
+
+  $ ocamlc -bin-annot -no-alias-deps -I x -I client -c client/content.ml
+  $ odoc compile-impl --output-dir h --parent-id pkg/client --source-id pkg/client/content.ml -L client:h/pkg/client -L x:h/pkg/x client/content.cmt
+  $ odoc_print h/pkg/client/impl-content.odoc | jq -c '.libraries'
+  ["client","x"]

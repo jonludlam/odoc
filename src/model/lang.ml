@@ -600,6 +600,9 @@ module rec Implementation : sig
     root : Root.t;
     linked : bool;  (** Whether this unit has been linked. *)
     imports : Compilation_unit.Import.t list;
+    libraries : string list;
+        (** The libraries in scope when this implementation was compiled, as
+            {!Compilation_unit.t.libraries} records them for an interface. *)
     source_info : Source_info.t;
     shape_info :
       (Compat.shape * Paths.Identifier.SourceLocation.t Compat.shape_uid_map)

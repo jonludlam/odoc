@@ -26,8 +26,8 @@
   was compiled against. Two libraries of one package with same-named modules,
   such as eliom.client and eliom.server, no longer resolve to each other's
   modules, in paths, canonical paths or references (@jonludlam, #1450, #1461)
-- `odoc compile`: new `-L libname:DIR`, which searches `DIR` as `-I` does and
-  writes the library's name into the unit. `odoc link` resolving a path or a
+- `odoc compile` and `odoc compile-impl`: new `-L libname:DIR`, which searches
+  `DIR` as `-I` does and writes the library's name into the unit. `odoc link` resolving a path or a
   reference into that unit then continues among the libraries it was compiled
   against, so two libraries built against different modules of the same name
   keep their own. `-I` still works and records nothing (@jonludlam, #1450,

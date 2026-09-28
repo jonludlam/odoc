@@ -120,12 +120,13 @@ For example, for the [fmt] package the reference driver runs:
 {3 Compiling implementations}
 
 {@shell[
-  $ odoc compile-impl --parent-id <pid> --source-id <sid> -o impl-<file>.odoc -I <dir1> <input>.cmt
+  $ odoc compile-impl --parent-id <pid> --source-id <sid> -o impl-<file>.odoc -L <lib1>:<dir1> <input>.cmt
 ]}
 
 The input is a [.cmt] file. The output name is [impl-] followed by the input's
-name. [--parent-id] and [-I] mean the same as above; the implementation is
-usually given the same parent id as its interface. [--source-id <sid>] is the
+name. [--parent-id] and [-L] mean the same as above, the names being written
+into the unit in the same way; the implementation is usually given the same
+parent id as its interface. [--source-id <sid>] is the
 identifier of the page that will show the rendered source; links to the source
 point there.
 

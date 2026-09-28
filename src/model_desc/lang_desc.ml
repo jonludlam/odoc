@@ -836,6 +836,7 @@ and implementation_t =
       F ("id", (fun t -> t.id), Option identifier);
       F ("digest", (fun t -> t.digest), Digest.t);
       F ("root", (fun t -> t.root), root);
+      F ("libraries", (fun t -> t.libraries), List string);
     ]
 
 and asset_t =

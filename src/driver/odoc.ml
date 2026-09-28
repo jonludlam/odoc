@@ -96,16 +96,17 @@ let compile_asset ~output_dir ~name ~parent_id =
   let desc = Printf.sprintf "Compiling %s" name in
   ignore @@ Cmd_outputs.submit (Some (`Compile, name)) desc cmd output_file
 
-let compile_impl ~output_file ~input_file:file ~includes ~parent_id ~source_id =
+let compile_impl ~output_file ~input_file:file ~libs ~parent_id ~source_id =
   let open Cmd in
-  let includes =
-    Fpath.Set.fold
-      (fun path acc -> Cmd.(acc % "-I" % p path))
-      includes Cmd.empty
+  let libs =
+    List.fold_left
+      (fun acc (name, path) ->
+        Cmd.(acc % "-L" % (name ^ ":" ^ Fpath.to_string path)))
+      Cmd.empty libs
   in
   let cmd =
-    !odoc % "compile-impl" % Fpath.to_string file % "-o" % p output_file
-    %% includes % "--enable-missing-root-warning"
+    !odoc % "compile-impl" % Fpath.to_string file % "-o" % p output_file %% libs
+    % "--enable-missing-root-warning"
   in
   let output_file = Some output_file in
   let cmd = cmd % "--parent-id" % Id.to_string parent_id in
