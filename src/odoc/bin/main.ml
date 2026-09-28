@@ -106,6 +106,24 @@ let odoc_file_directories =
     & opt_all (convert_directory ()) []
     & info ~docs ~docv:"DIR" ~doc [ "I" ])
 
+(* The same for the commands that now take -L, which does everything -I does
+   and records the library's name in the unit besides. Marked deprecated in
+   the help text rather than with cmdliner's [~deprecated], which warns on
+   every use: that would have to land together with a conversion of the test
+   suite, which passes -I throughout. *)
+let deprecated_odoc_file_directories =
+  let doc =
+    "Deprecated: use $(b,-L) instead, which searches the directory in the same \
+     way and writes the library's name into the unit, so that a later $(b,odoc \
+     link) resolving into it knows which libraries it was compiled against. \
+     Where to look for required $(i,.odoc) files. Can be present several \
+     times."
+  in
+  Arg.(
+    value
+    & opt_all (convert_directory ()) []
+    & info ~docs ~docv:"DIR" ~doc [ "I" ])
+
 let hidden =
   let doc =
     "Mark the unit as hidden. (Useful for files included in module packs)."
@@ -369,10 +387,10 @@ end = struct
     in
     Term.(
       const handle_error
-      $ (const compile $ hidden $ odoc_file_directories $ compile_lib_roots
-       $ resolve_fwd_refs $ dst $ output_dir $ package_opt $ parent_opt
-       $ parent_id_opt $ open_modules $ children $ input $ warnings_options
-       $ unique_id $ short_title))
+      $ (const compile $ hidden $ deprecated_odoc_file_directories
+       $ compile_lib_roots $ resolve_fwd_refs $ dst $ output_dir $ package_opt
+       $ parent_opt $ parent_id_opt $ open_modules $ children $ input
+       $ warnings_options $ unique_id $ short_title))
 
   let info ~docs =
     let man =
@@ -523,8 +541,8 @@ module Compile_impl = struct
 
     Term.(
       const handle_error
-      $ (const compile_impl $ odoc_file_directories $ lib_roots $ output_dir
-       $ parent_id $ source_id $ input $ warnings_options $ dst))
+      $ (const compile_impl $ deprecated_odoc_file_directories $ lib_roots
+       $ output_dir $ parent_id $ source_id $ input $ warnings_options $ dst))
 
   let info ~docs =
     let doc =
