@@ -33,21 +33,22 @@ let all () = if available () then Fl_package_base.list_packages () else []
    [requires]. *)
 let get_dir lib =
   let not_found = Error (`Msg "Error getting directory") in
-  if available () then
+  if available () then (
     try
       Fl_package_base.query lib |> fun x ->
       Ok Fpath.(v x.package_dir |> to_dir_path)
     with e ->
       Logs.debug (fun m ->
           m "No findlib directory for '%s': %s" lib (Printexc.to_string e));
-      not_found
+      not_found)
   else
     let dir = Fpath.(v (Opam.prefix ()) / "lib" / lib |> to_dir_path) in
     match Bos.OS.Dir.exists dir with
     | Ok true -> Ok dir
     | _ ->
         Logs.debug (fun m ->
-            m "No directory for library '%s': findlib is not configured and %a \
+            m
+              "No directory for library '%s': findlib is not configured and %a \
                does not exist"
               lib Fpath.pp dir);
         not_found
