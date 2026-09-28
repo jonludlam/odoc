@@ -60,7 +60,7 @@ val compile_impl :
     the rendered source page. *)
 
 val compile_md :
-  output_dir:Fpath.t -> input_file:Fpath.t -> parent_id:Id.t -> unit
+  output_file:Fpath.t -> input_file:Fpath.t -> parent_id:Id.t -> unit
 (** [odoc-md] of a Markdown file. The output goes below [output_dir] at the path
     given by [parent_id]. *)
 
