@@ -66,7 +66,7 @@ let read_libraries_from_pkg_defs ~library_name pkg_defs =
   with Not_found -> []
 
 let process_meta_file file =
-  let () = Format.eprintf "process_meta_file: %s\n%!" (Fpath.to_string file) in
+  Logs.debug (fun m -> m "Reading %a" Fpath.pp file);
   let meta_dir = Fpath.parent file in
   let meta =
     OS.File.with_ic file (fun ic () -> Fl_metascanner.parse ic) ()

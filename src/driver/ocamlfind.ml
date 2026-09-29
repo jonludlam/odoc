@@ -23,7 +23,72 @@ let available =
         state := Some known;
         known
 
-let all () = if available () then Fl_package_base.list_packages () else []
+(* What findlib would have answered, reconstructed from what is on disk, for a
+   switch that has no ocamlfind in it. Each installed package still ships the
+   META that says where its libraries are and what they require, and the
+   compiler's own libraries, which have no META of their own, sit below the
+   directory [ocamlc -where] prints. Built once, and only if it is needed. *)
+let by_hand =
+  lazy
+    (let tbl = Hashtbl.create 100 in
+     let add name dir deps =
+       if not (Hashtbl.mem tbl name) then Hashtbl.add tbl name (dir, deps)
+     in
+     let dirs_under dir =
+       match Bos.OS.Dir.contents dir with Ok cs -> cs | Error _ -> []
+     in
+     (match
+        Bos.OS.Cmd.(run_out Bos.Cmd.(v "ocamlc" % "-where") |> to_string)
+      with
+     | Error _ -> ()
+     | Ok where ->
+         let where = Fpath.(v (String.trim where) |> to_dir_path) in
+         add "stdlib" where [];
+         List.iter
+           (fun d ->
+             match Bos.OS.Dir.exists d with
+             | Ok true -> add (Fpath.basename d) (Fpath.to_dir_path d) []
+             | _ -> ())
+           (dirs_under where));
+     List.iter
+       (fun d ->
+         let meta = Fpath.(d / "META") in
+         match Bos.OS.File.exists meta with
+         | Ok true ->
+             let { Library_names.meta_dir; libraries } =
+               Library_names.process_meta_file meta
+             in
+             List.iter
+               (fun (l : Library_names.library) ->
+                 let dir =
+                   match l.dir with
+                   | None | Some "" -> Fpath.to_dir_path meta_dir
+                   | Some sub -> Fpath.(meta_dir // v sub |> to_dir_path)
+                 in
+                 add l.name dir l.deps)
+               libraries
+         | _ -> ())
+       (dirs_under Fpath.(v (Opam.prefix ()) / "lib"));
+     Logs.debug (fun m ->
+         m "findlib is not configured; %d libraries found on disk"
+           (Hashtbl.length tbl));
+     tbl)
+
+(* A library of the compiler distribution has no META, so its sub-libraries,
+   [compiler-libs.common] and [threads.posix] among them, are named after a
+   directory that holds them all. *)
+let by_hand_find name =
+  let tbl = Lazy.force by_hand in
+  match Hashtbl.find_opt tbl name with
+  | Some x -> Some x
+  | None -> (
+      match String.index_opt name '.' with
+      | None -> None
+      | Some i -> Hashtbl.find_opt tbl (String.sub name 0 i))
+
+let all () =
+  if available () then Fl_package_base.list_packages ()
+  else Hashtbl.fold (fun name _ acc -> name :: acc) (Lazy.force by_hand) []
 
 (* Where a library's files are. Without findlib, fall back to [lib/<name>]
    under the switch prefix, which is where opam and dune put a library whose
@@ -42,15 +107,11 @@ let get_dir lib =
           m "No findlib directory for '%s': %s" lib (Printexc.to_string e));
       not_found)
   else
-    let dir = Fpath.(v (Opam.prefix ()) / "lib" / lib |> to_dir_path) in
-    match Bos.OS.Dir.exists dir with
-    | Ok true -> Ok dir
-    | _ ->
+    match by_hand_find lib with
+    | Some (dir, _) -> Ok dir
+    | None ->
         Logs.debug (fun m ->
-            m
-              "No directory for library '%s': findlib is not configured and %a \
-               does not exist"
-              lib Fpath.pp dir);
+            m "No directory for library '%s', and findlib is not configured" lib);
         not_found
 
 let archives pkg =
@@ -129,17 +190,23 @@ let deps pkgs =
    the dependencies of a library that merely offers a rewriter; those stanzas
    are for programs using the rewriter, not for the library's modules. *)
 let direct_deps pkg =
-  try
-    if not (available ()) then failwith "findlib is not configured";
-    let package = Fl_package_base.query pkg in
-    let requires =
-      try Fl_metascanner.lookup "requires" [ "ppx_driver" ] package.package_defs
-      with Not_found -> ""
-    in
-    Ok
-      (Util.StringSet.add "stdlib"
-         (Util.StringSet.of_list (Fl_split.in_words requires)))
-  with e -> Error (`Msg (Printexc.to_string e))
+  if not (available ()) then
+    match by_hand_find pkg with
+    | Some (_, deps) ->
+        Ok (Util.StringSet.add "stdlib" (Util.StringSet.of_list deps))
+    | None -> Error (`Msg "findlib is not configured")
+  else
+    try
+      let package = Fl_package_base.query pkg in
+      let requires =
+        try
+          Fl_metascanner.lookup "requires" [ "ppx_driver" ] package.package_defs
+        with Not_found -> ""
+      in
+      Ok
+        (Util.StringSet.add "stdlib"
+           (Util.StringSet.of_list (Fl_split.in_words requires)))
+    with e -> Error (`Msg (Printexc.to_string e))
 
 module Db = struct
   type t = {
