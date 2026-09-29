@@ -72,13 +72,11 @@ let run package_name blessed actions odoc_dir odocl_dir
   in
   Compile.init_stats [ units ];
   (* The dependencies were compiled by earlier runs (ocaml-docs-ci builds one
-     package per job) and are found through the -I path, so a package's
-     libraries need only be compiled in their own dependency order. *)
+     package per job) and are found through the search path, so only this
+     package's own libraries are compiled, in their own dependency order. *)
   (match actions with
   | LinkAndGen -> ()
-  | CompileOnly | All ->
-      List.iter (Compile.compile_lib units) units.libs;
-      Compile.compile_pages units);
+  | CompileOnly | All -> Build.compile_package units);
   (match actions with
   | CompileOnly -> ()
   | LinkAndGen | All ->
