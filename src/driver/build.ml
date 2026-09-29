@@ -16,8 +16,10 @@
 
    The top-level index, whose scope is every package, is expected last. *)
 
-let all ~html_dir ~remaps ~generate_json ~warnings_tags
-    (pkgs : Odoc_unit.pkg list) =
+(* Compiling a package's libraries, each after the libraries it requires and
+   each at most once. The libraries of every package in the run are known, so
+   that a library pulled in by another package's scope is compiled once. *)
+let compile_libs_of (pkgs : Odoc_unit.pkg list) =
   let libs =
     List.fold_left
       (fun acc (p : Odoc_unit.pkg) ->
@@ -25,14 +27,6 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
           (fun acc (lib : Odoc_unit.lib) ->
             Util.StringMap.add lib.lib_name (p, lib) acc)
           acc p.libs)
-      Util.StringMap.empty pkgs
-  in
-  let by_name =
-    List.fold_left
-      (fun acc (p : Odoc_unit.pkg) ->
-        match p.pkgname with
-        | Some name -> Util.StringMap.add name p acc
-        | None -> acc)
       Util.StringMap.empty pkgs
   in
   let compiled_libs = Hashtbl.create 1000 in
@@ -46,11 +40,29 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
           Logs.debug (fun m -> m "Compiling library %s" name);
           Compile.compile_lib pkg lib)
   in
+  fun (pkg : Odoc_unit.pkg) ->
+    List.iter (fun (lib : Odoc_unit.lib) -> compile_lib lib.lib_name) pkg.libs
+
+let compile_package pkg =
+  compile_libs_of [ pkg ] pkg;
+  Compile.compile_pages pkg
+
+let all ~html_dir ~remaps ~generate_json ~warnings_tags
+    (pkgs : Odoc_unit.pkg list) =
+  let compile_libs = compile_libs_of pkgs in
+  let by_name =
+    List.fold_left
+      (fun acc (p : Odoc_unit.pkg) ->
+        match p.pkgname with
+        | Some name -> Util.StringMap.add name p acc
+        | None -> acc)
+      Util.StringMap.empty pkgs
+  in
   let compiled_pkgs = Hashtbl.create 100 in
   let compile_pkg (pkg : Odoc_unit.pkg) =
     if not (Hashtbl.mem compiled_pkgs pkg.pkgname) then (
       Hashtbl.add compiled_pkgs pkg.pkgname ();
-      List.iter (fun (lib : Odoc_unit.lib) -> compile_lib lib.lib_name) pkg.libs;
+      compile_libs pkg;
       Compile.compile_pages pkg)
   in
   Compile.html_support html_dir;
