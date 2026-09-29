@@ -53,10 +53,12 @@
   about a module resolves the way the module's own page does (@jonludlam,
   #1461)
 - odoc-driver: remove `odoc_driver_monorepo` (@jonludlam, #1461)
-- odoc-driver: tolerate a switch with no findlib configuration, which is what
+- odoc-driver: work in a switch with no findlib configuration, which is what
   ocaml-docs-ci gives a package whose dependency closure has no ocamlfind in
-  it; a library's directory then falls back to `lib/<name>` under the switch
-  prefix (@jonludlam, #1461)
+  it. Where each library lives, and what it requires, is then read from the
+  META files installed under the switch's `lib`, and from the directory
+  `ocamlc -where` prints for the compiler's own libraries, which have no META
+  (@jonludlam, #1461)
 - Document the odoc 3 reference scope and driving model in `driver.mld` and
   `odoc_for_authors.mld` (@jonludlam, #1461)
 
