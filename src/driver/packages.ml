@@ -260,12 +260,64 @@ module Lib = struct
             handle_virtual_lib ~roots ~dir ~lib_name ~all_lib_deps)
     | _ ->
         Logs.debug (fun m -> m "Got %d lines" (List.length results));
+        let of_libraries =
+          List.filter_map
+            (fun (archive_name, modules) ->
+              match
+                Fpath.Map.find Fpath.(dir / archive_name) libname_of_archive
+              with
+              | Some lib_name -> Some (lib_name, archive_name, modules)
+              | None ->
+                  Logs.info (fun m ->
+                      m "No entry for '%a' in libname_of_archive" Fpath.pp
+                        Fpath.(dir / archive_name));
+                  Logs.info (fun m ->
+                      m "Unable to determine library of archive %s: Ignoring."
+                        archive_name);
+                  None)
+            results
+        in
+        (* An archive may bundle another's modules: ocamloptcomp holds all of
+           ocamlmiddleend's. [odoc classify] says so, reporting the module
+           under both, but a module is documented once, so each is given to
+           the largest library that holds it. The bundling archive is the one
+           that ships as a library people can depend on -- findlib declares
+           compiler-libs.optcomp and has no name at all for the middle end --
+           and the smaller archive is a component of it. Without a rule the
+           two libraries write the same file and whichever ran last decides,
+           which lost every page of the loser. *)
+        let owner =
+          List.fold_left
+            (fun acc (lib_name, _, modules) ->
+              let size = List.length modules in
+              List.fold_left
+                (fun acc m ->
+                  match Util.StringMap.find_opt m acc with
+                  | Some (_, best) when best >= size -> acc
+                  | _ -> Util.StringMap.add m (lib_name, size) acc)
+                acc modules)
+            Util.StringMap.empty of_libraries
+        in
         List.filter_map
-          (fun (archive_name, modules) ->
-            match
-              Fpath.Map.find Fpath.(dir / archive_name) libname_of_archive
-            with
-            | Some lib_name ->
+          (fun (lib_name, archive_name, modules) ->
+            let modules =
+              List.filter
+                (fun m ->
+                  match Util.StringMap.find_opt m owner with
+                  | Some (owner, _) -> owner = lib_name
+                  | None -> true)
+                modules
+            in
+            match modules with
+            | [] ->
+                Logs.info (fun m ->
+                    m
+                      "Every module of library %s is also in a larger library \
+                       in the same directory, which is the one that ships; it \
+                       has nothing of its own to document"
+                      lib_name);
+                None
+            | _ ->
                 let modules = Module.vs dir modules in
                 let lib_deps = lib_deps_of all_lib_deps lib_name in
                 Some
@@ -276,16 +328,8 @@ module Lib = struct
                     lib_deps;
                     dir;
                     rel_dir;
-                  }
-            | None ->
-                Logs.info (fun m ->
-                    m "No entry for '%a' in libname_of_archive" Fpath.pp
-                      Fpath.(dir / archive_name));
-                Logs.info (fun m ->
-                    m "Unable to determine library of archive %s: Ignoring."
-                      archive_name);
-                None)
-          results
+                  })
+          of_libraries
 
   let pp ppf t =
     Fmt.pf ppf "archive: %a modules: [@[<hov 2>@,%a@]@,]"
