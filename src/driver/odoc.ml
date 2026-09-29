@@ -79,19 +79,15 @@ let compile_md ~output_file ~input_file:file ~parent_id =
   in
   ()
 
-let compile_asset ~output_dir ~name ~parent_id =
+let compile_asset ~output_file ~name ~parent_id =
   let open Cmd in
-  let output_file =
-    Some
-      Fpath.(output_dir // Id.to_fpath parent_id / ("asset-" ^ name ^ ".odoc"))
-  in
   let cmd =
-    !odoc % "compile-asset" % "--name" % name % "--output-dir" % p output_dir
+    !odoc % "compile-asset" % "--name" % name % "-o" % p output_file
+    % "--parent-id" % Id.to_string parent_id
   in
-
-  let cmd = cmd % "--parent-id" % Id.to_string parent_id in
   let desc = Printf.sprintf "Compiling %s" name in
-  ignore @@ Cmd_outputs.submit (Some (`Compile, name)) desc cmd output_file
+  ignore
+  @@ Cmd_outputs.submit (Some (`Compile, name)) desc cmd (Some output_file)
 
 let compile_impl ~output_file ~input_file:file ~libs ~parent_id ~source_id =
   let open Cmd in

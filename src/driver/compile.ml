@@ -143,9 +143,7 @@ let compile_pages (pkg : Odoc_unit.pkg) =
           ~parent_id:unit.parent_id;
         Atomic.incr Stats.stats.compiled_mlds
     | `Asset ->
-        Odoc.compile_asset
-          ~output_dir:(Odoc_unit.output_root unit)
-          ~parent_id:unit.parent_id
+        Odoc.compile_asset ~output_file:unit.odoc_file ~parent_id:unit.parent_id
           ~name:(Fpath.filename unit.input_file);
         Atomic.incr Stats.stats.compiled_assets
   in
