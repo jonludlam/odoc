@@ -61,12 +61,11 @@ val compile_impl :
 
 val compile_md :
   output_file:Fpath.t -> input_file:Fpath.t -> parent_id:Id.t -> unit
-(** [odoc-md] of a Markdown file. The output goes below [output_dir] at the path
-    given by [parent_id]. *)
+(** [odoc-md] of a Markdown file. [output_file] is where the [.odoc] file goes
+    and [parent_id] decides the page's identifier; the two are independent. *)
 
-val compile_asset : output_dir:Fpath.t -> name:string -> parent_id:Id.t -> unit
-(** [odoc compile-asset]: the unit standing for an asset. The output goes below
-    [output_dir] at the path given by [parent_id]. *)
+val compile_asset : output_file:Fpath.t -> name:string -> parent_id:Id.t -> unit
+(** [odoc compile-asset]: the unit standing for an asset, likewise. *)
 
 (** {1 Linking} *)
 

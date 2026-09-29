@@ -100,14 +100,6 @@ let src_dir pkg = Fpath.(doc_dir pkg / "src")
 let src_lib_dir (pkg : Packages.t) (lib : Packages.libty) =
   Fpath.(src_dir pkg / lib.Packages.lib_name)
 
-let output_root (u : _ t) =
-  let dir = Fpath.parent u.odoc_file in
-  match Odoc.Id.to_string u.parent_id with
-  | "" -> dir
-  | id ->
-      let rec up d = function 0 -> d | n -> up (Fpath.parent d) (n - 1) in
-      up dir (List.length (String.split_on_char '/' id))
-
 type dirs = {
   odoc_dir : Fpath.t;
   odocl_dir : Fpath.t;

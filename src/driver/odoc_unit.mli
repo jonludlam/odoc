@@ -153,10 +153,6 @@ val page_obj_dir : Packages.t -> Fpath.t -> Fpath.t
 (** [page_obj_dir pkg id] is where a page with identifier [id] goes: the
     position of [id] below {!doc_dir}, reproduced below {!pages_dir}. *)
 
-val output_root : _ t -> Fpath.t
-(** The directory to give as [--output-dir] to the odoc commands that have no
-    [-o] option, so that they write the unit's [odoc_file]. *)
-
 (** {1 Directories} *)
 
 type dirs = {

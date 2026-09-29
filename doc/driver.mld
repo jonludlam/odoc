@@ -166,12 +166,11 @@ the result as any other page.
 {3 Compiling assets}
 
 {@shell[
-  $ odoc compile-asset --output-dir <od> --parent-id <pid> --name <file>
+  $ odoc compile-asset -o asset-<file>.odoc --parent-id <pid> --name <file>
 ]}
 
 An asset is copied at generation time, but it needs a unit so that references
-to it resolve. This command has no [-o]: the unit goes to
-[<od>/<pid>/asset-<file>.odoc].
+to it resolve. [-o] and [--output-dir] mean what they do for [odoc compile].
 
 {2 The link phase}
 

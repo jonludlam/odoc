@@ -18,8 +18,8 @@
   (@jonludlam, #1462)
 - `odoc compile-impl`: `-o` now overrides the output path computed from
   `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
-- `odoc-md`: new `-o`, which overrides the path computed from `--parent-id`
-  and `--output-dir`, as `odoc compile`'s does. A driver whose `.odoc` files do
+- `odoc-md` and `odoc compile-asset`: new `-o`, which overrides the path
+  computed from `--parent-id` and `--output-dir`, as `odoc compile`'s does. A driver whose `.odoc` files do
   not sit at their identifier's path, which is every driver since the location
   and the identity were separated, could not say where the page should go
   (@jonludlam, #1461)
