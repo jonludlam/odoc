@@ -87,7 +87,8 @@ let known ~odoc_dir (pkgs : Packages.t list) =
             | Error (`Msg msg) ->
                 Logs.debug (fun m ->
                     m "No META dependencies for library '%s': %s" lib msg);
-                Util.StringSet.empty))
+                (* Whatever else it needs, it was compiled against this. *)
+                Util.StringSet.singleton "stdlib"))
   in
   { odoc_root = odoc_dir; packages; building; lib_dir; lib_pkg; requires }
 
