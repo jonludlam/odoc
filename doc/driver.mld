@@ -338,7 +338,7 @@ requires [cmdliner] and [fmt]; [fmt.tty] requires [unix] and [fmt].
 
 Running [odoc_driver fmt] documents it and the packages it depends on.
 
-{3 Step 1: finding out what is installed}
+{3:installed Step 1: finding out what is installed}
 
 {{!/odoc-driver/Odoc_driver_lib.Packages}[Packages]} asks opam which packages
 [fmt] depends on and which files each package installed, and asks findlib
@@ -354,6 +354,19 @@ if the package has one.
 Two facts fixed here drive everything after: a library's [requires], read
 from its [META] file, and its object directory relative to the switch,
 [lib/fmt/cli] for [fmt.cli].
+
+A driver must not assume findlib can be asked. It is configured by
+[ocamlfind], which is a package like any other, so a switch holding only the
+closure of a package built with dune need not contain it, and ocaml.org
+documents packages in exactly such switches. The same two facts are then read
+from what is on disk: every installed package ships the [META] that names its
+libraries, their directories and their [requires], and reading one needs no
+configuration. The compiler's own libraries ship no [META] of their own, but
+they are below the directory [ocamlc -where] prints, one subdirectory each,
+and a sub-library shares its parent's: [compiler-libs.common] is in
+[compiler-libs], [threads.posix] in [threads]. A library nothing says anything
+about is still compiled against the standard library, and assuming that is
+what lets its modules resolve the signatures they are constrained by.
 
 {3 Step 2: deciding identifiers and locations}
 
@@ -442,13 +455,19 @@ nobody has documented, here [cmdliner], which then contributes nothing.
 {3 Step 4: compiling}
 
 {{!/odoc-driver/Odoc_driver_lib.Build}[Build]} drives the whole run, package
-by package, in the order the packages were found. For each package it compiles
-its libraries with
+by package, in the order the packages were found. Each one goes through
+{{!/odoc-driver/Odoc_driver_lib.Build.compile_package}[Build.compile_package]},
+which compiles its libraries with
 {{!/odoc-driver/Odoc_driver_lib.Compile.compile_lib}[Compile.compile_lib]}
 and its pages with
 {{!/odoc-driver/Odoc_driver_lib.Compile.compile_pages}[Compile.compile_pages]}.
+That function is the whole of the compile phase for one package, and it is
+what {{!ocamlorg}a voodoo job} calls too.
 
-Order matters twice. Within a library, a module is compiled after the modules
+Order matters twice, and it is a requirement rather than an optimisation:
+[odoc compile] computes each module's expansions, so a dependency that has not
+been compiled yet is one whose signature cannot be expanded, and no later
+phase repairs that. Within a library, a module is compiled after the modules
 it depends on, so that their [.odoc] files exist when [odoc] looks for them.
 Between libraries, a library is compiled after the libraries it requires:
 [fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
@@ -561,6 +580,37 @@ these means the libraries it requires. The driver follows the requirement when
 computing the scope and the compile order, so that [sexplib.num], which
 requires [num], gets [-L num.core] and is compiled after it.
 
+{3 Archives that hold other archives}
+
+A module can be in more than one archive, and [odoc classify] says so, because
+it is the truth: the OCaml distribution ships its middle end both as
+[ocamlmiddleend.cma], of 77 modules, and inside [ocamloptcomp.cma], which
+holds those 77 and 49 more. A module is documented once, so the driver gives
+each one to the largest library that holds it. The bundling archive is the one
+that ships as a library: findlib declares [compiler-libs.optcomp] and has no
+name at all for the middle end, so that is also the library a reader can
+depend on. A library left with nothing of its own is not documented, and the
+driver says which.
+
+This only arises where libraries are named after their archives, which is what
+the driver falls back to when a package installs no [META]. Where the [META]
+is there, the archives it does not name are not libraries and the question
+does not come up.
+
+{3 Libraries that were not built}
+
+A [META] names the libraries a package can install, not the ones it did. A
+package built without an optional dependency still declares the sub-library it
+skipped: [fmt] declares [fmt.cli] when [cmdliner] was absent, [logs] declares
+[logs.lwt], [logs.fmt] and the rest. The directory the [META] names is then not
+there, and the driver documents nothing for that library and logs that it
+found nothing. The same happens for a [META] that points outside its own
+package, as [topkg] points at [topkg-care].
+
+This is worth knowing when comparing two runs: a library missing from the
+output may mean the package was built differently, not that the driver
+dropped it.
+
 {3:forward Forward references through [odoc-config.sexp]}
 
 A package's pages may refer to a package built on top of it. [eio]'s
@@ -601,12 +651,17 @@ into them are rewritten to point at their documentation on ocaml.org.
 ocaml.org documents every version of every package. Each is built by a
 separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]:
 a directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
-installed. The dependencies are installed in the job's switch, so findlib and
-opam answer for them as usual, and their [.odoc] files are those earlier jobs
-wrote into the odoc directory, at the locations the mirror layout predicts.
+installed. The dependencies are installed in the job's switch, and their
+[.odoc] files are those earlier jobs wrote into the odoc directory, at the
+locations the mirror layout predicts. The switch holds that package's closure
+and no more, so findlib is often not there to be asked and the facts come from
+the [META] files and the compiler, as {{!installed}step 1} describes.
 {{!/odoc-driver/Odoc_driver_lib.Voodoo}[Voodoo]} reads the prepared package
 into a [Packages.t]; everything after that is the same code as for a switch,
-applied to one package. Identifiers start with [p/<pkg>/<version>], or
+applied to one package. That the two drivers share the compile step is not
+tidiness: a package's own libraries require one another as often as libraries
+of different packages do, and compiling them in whatever order they were
+listed in leaves what the later ones should have expanded unresolved. Identifiers start with [p/<pkg>/<version>], or
 [u/<universe>/<pkg>/<version>] for a version that is not the one ocaml.org
 shows by default.
 
