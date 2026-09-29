@@ -216,6 +216,16 @@ module Lib = struct
           | "" :: segs -> Fpath.v (String.concat "/" segs)
           | _ -> dir)
 
+  (* What a library requires, as its META declared it. A library found
+     without one, which is how the compiler's own libraries are found in a
+     switch with no ocamlfind, declares nothing; it is still compiled against
+     the standard library, and saying so is what lets its modules resolve the
+     signatures they are constrained by. *)
+  let lib_deps_of all_lib_deps lib_name =
+    match Util.StringMap.find_opt lib_name all_lib_deps with
+    | Some deps -> Util.StringSet.add "stdlib" deps
+    | None -> Util.StringSet.singleton "stdlib"
+
   let handle_virtual_lib ~roots ~dir ~lib_name ~all_lib_deps =
     let modules =
       match
@@ -233,10 +243,7 @@ module Lib = struct
           []
     in
     let modules = Module.vs dir modules in
-    let lib_deps =
-      try Util.StringMap.find lib_name all_lib_deps
-      with _ -> Util.StringSet.empty
-    in
+    let lib_deps = lib_deps_of all_lib_deps lib_name in
     let rel_dir = rel_dir ~roots dir in
     [ { lib_name; archive_name = None; modules; lib_deps; dir; rel_dir } ]
 
@@ -260,10 +267,7 @@ module Lib = struct
             with
             | Some lib_name ->
                 let modules = Module.vs dir modules in
-                let lib_deps =
-                  try Util.StringMap.find lib_name all_lib_deps
-                  with _ -> Util.StringSet.empty
-                in
+                let lib_deps = lib_deps_of all_lib_deps lib_name in
                 Some
                   {
                     lib_name;
