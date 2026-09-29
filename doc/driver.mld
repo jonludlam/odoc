@@ -383,6 +383,29 @@ library nothing says anything about is still compiled against the standard
 library, and assuming that is what lets its modules resolve the signatures
 they are constrained by.
 
+All of this is detective work, and it is detective work only because nothing
+installed states the facts outright: which modules a library holds is read
+back out of its archive, and what it requires out of a file [ocamlfind]
+defined. The
+{{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
+proposal} would take most of it away. A library would be a directory holding
+[M.cmi], [M.cmx], [M.cmti] and [M.cmt] for each of its modules beside a single
+archive named [lib]; the modules of a library would then be the ones in its
+directory, and no module could be in two libraries. A library's name would be
+its path below a root of [OCAMLPATH] with the separators written [.], so name
+and directory would determine each other with no file to consult. Its
+dependencies would be recorded in the archive as it is built and read back
+with [ocamlobjinfo], which is the [requires] field of a [META] moved into the
+archive. The proposal names documentation systems among the tools the
+convention is meant to serve.
+
+It remains a proposal: the document was merged into [ocaml/RFCs] in 2020, the
+update to it has been open since 2021, the compiler support exists as a
+partial implementation on a branch, and no switch is laid out that way today.
+What it would leave for a driver to work out is what it does not describe:
+which modules of a library depend on which, and which pages, assets and
+sources belong to a package.
+
 {3 Step 2: deciding identifiers and locations}
 
 {{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} turns each
@@ -610,7 +633,9 @@ driver says which.
 This only arises where libraries are named after their archives, which is what
 the driver falls back to when a package installs no [META]. Where the [META]
 is there, the archives it does not name are not libraries and the question
-does not come up.
+does not come up. Under the
+{{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
+proposal} it could not arise at all: one directory, one library, one archive.
 
 {3 Libraries that were not built}
 
