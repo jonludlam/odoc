@@ -133,15 +133,25 @@ let libname_of_archive v =
 let directories v =
   let { meta_dir; libraries } = v in
   List.fold_left
-    (fun acc x ->
-      match x.dir with
+    (fun acc lib ->
+      match lib.dir with
       | None | Some "" -> Fpath.Set.add meta_dir acc
-      | Some x -> (
-          let dir = Fpath.(meta_dir // v x) in
-          (* NB. topkg installs a META file that points to a ../topkg-care directory
-              that is installed by the topkg-care package. We filter that out here,
-              though I've not thought of a good way to sort out the `topkg-care` package *)
+      | Some subdir -> (
+          let dir = Fpath.(meta_dir // v subdir) in
+          (* A META may name a directory that is not installed. topkg points
+             at a ../topkg-care directory that belongs to another package; and
+             a package built without an optional dependency still declares the
+             sub-library it did not build, as fmt declares fmt.cli when
+             cmdliner was absent. Either way there is nothing to document, but
+             say so: a library silently missing from the output is hard to
+             account for later. *)
           match OS.Dir.exists dir with
           | Ok true -> Fpath.Set.add dir acc
-          | _ -> acc))
+          | _ ->
+              Logs.info (fun m ->
+                  m
+                    "Library %s says its files are in %a, which does not \
+                     exist, so it will not be documented"
+                    lib.name Fpath.pp dir);
+              acc))
     Fpath.Set.empty libraries
