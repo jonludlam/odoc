@@ -10,8 +10,13 @@ driver}, which is kept in step with [odoc]. Other drivers exist, such as
 {{:https://dune.readthedocs.io/en/stable/documentation.html}dune} and
 {{!/odig/page-index}odig}.
 
-This document is for people who write drivers, tools that call [odoc], or
-anyone curious. You do not need it to {e use} [odoc]. It covers:
+This document is for anyone who calls [odoc] themselves: writing a driver
+over a switch full of other people's packages, or arranging for a project to
+document its own libraries. Those are the same job with different sources of
+information. What has to be known before anything can be compiled is the same
+either way, and {{!installed}step 1} sets it out; everything after it is
+identical. You do not need this document to {e use} [odoc] through a driver
+someone else wrote. It covers:
 
 - the model [odoc] uses to organise documentation: {{!units}trees};
 - the four {{!pipeline}phases} and the command line of each;
@@ -340,6 +345,37 @@ Running [odoc_driver fmt] documents it and the packages it depends on.
 
 {3:installed Step 1: finding out what is installed}
 
+Four things have to be known before anything is compiled, and they are the
+same four whether the modules belong to other people's packages or to the
+project in front of you:
+
+- {b What the modules are:} for each one, a compiled interface to read. A
+  [.cmti] is best, since it carries the documentation written in the [.mli];
+  failing that a [.cmt] or a [.cmi].
+
+- {b How the modules are grouped into libraries.} A module is named within a
+  library rather than within the world: two libraries may each hold a module
+  [Content], and which one a reference means is settled by knowing the library
+  the referring module belongs to. The grouping is not presentation, it is
+  what makes the names unambiguous.
+
+- {b What depends on what,} at both levels. A library's dependencies are the
+  libraries whose modules it may name, and they fix the order the libraries
+  are compiled in; a module's dependencies fix the order within a library.
+
+- {b What else belongs to the package:} its name, its [.mld] pages, its
+  Markdown, its assets, its source files, and its [odoc-config.sexp] if it has
+  one.
+
+None of that is specific to opam or to findlib. A project that documents
+itself knows all four already, because its build system had to know them to
+build the code at all, and it is free to state them however it likes — a
+[dune] rule, a list written by hand. The flags described in
+{{!pipeline}the phases above} are the whole of the interface to [odoc]. The
+rest of this step is how the reference driver recovers the same four facts
+for a switch of packages it did not build, which is the awkward case rather
+than the general one.
+
 {{!/odoc-driver/Odoc_driver_lib.Packages}[Packages]} asks opam which packages
 [fmt] depends on and which files each package installed, and asks findlib
 ({{!/odoc-driver/Odoc_driver_lib.Ocamlfind}[Ocamlfind]}) about every library:
@@ -349,24 +385,26 @@ its directory, its archives and its [requires]. From that it builds one
 [odoc classify], and each module analysed with [odoc compile-deps] to get the
 digest of its interface and the modules it depends on. It also holds the
 page [index.mld], the Markdown files, and the contents of [odoc-config.sexp]
-if the package has one.
+if the package has one. Those two [odoc] commands exist for this situation:
+they answer the grouping and the dependency questions from installed files
+alone, when there is nothing better to go on. A driver that is handed the
+answers has no need of them.
 
-Two facts fixed here drive everything after: a library's [requires], read
-from its [META] file, and its object directory relative to the switch,
-[lib/fmt/cli] for [fmt.cli].
-
-A driver must not assume findlib can be asked. It is configured by
+Nor can a driver assume findlib is there to be asked. It is configured by
 [ocamlfind], which is a package like any other, so a switch holding only the
 closure of a package built with dune need not contain it, and ocaml.org
-documents packages in exactly such switches. The same two facts are then read
-from what is on disk: every installed package ships the [META] that names its
-libraries, their directories and their [requires], and reading one needs no
-configuration. The compiler's own libraries ship no [META] of their own, but
-they are below the directory [ocamlc -where] prints, one subdirectory each,
-and a sub-library shares its parent's: [compiler-libs.common] is in
-[compiler-libs], [threads.posix] in [threads]. A library nothing says anything
-about is still compiled against the standard library, and assuming that is
-what lets its modules resolve the signatures they are constrained by.
+documents packages in exactly such switches. The two facts findlib would have
+supplied — a library's [requires], and its object directory relative to the
+switch, [lib/fmt/cli] for [fmt.cli], which is the directory the later steps
+mirror — are then read from what is on disk. Every installed package ships
+the [META] that names its libraries, their directories and their [requires],
+and reading one needs no configuration. The compiler's own libraries ship no
+[META] of their own, but they are below the directory [ocamlc -where] prints,
+one subdirectory each, and a sub-library shares its parent's:
+[compiler-libs.common] is in [compiler-libs], [threads.posix] in [threads]. A
+library nothing says anything about is still compiled against the standard
+library, and assuming that is what lets its modules resolve the signatures
+they are constrained by.
 
 {3 Step 2: deciding identifiers and locations}
 
@@ -661,9 +699,9 @@ into a [Packages.t]; everything after that is the same code as for a switch,
 applied to one package. That the two drivers share the compile step is not
 tidiness: a package's own libraries require one another as often as libraries
 of different packages do, and compiling them in whatever order they were
-listed in leaves what the later ones should have expanded unresolved. Identifiers start with [p/<pkg>/<version>], or
-[u/<universe>/<pkg>/<version>] for a version that is not the one ocaml.org
-shows by default.
+listed in leaves what the later ones should have expanded unresolved.
+Identifiers start with [p/<pkg>/<version>], or [u/<universe>/<pkg>/<version>]
+for a version that is not the one ocaml.org shows by default.
 
 The job scheduler needs the compile and link phases separately, for the same
 forward-reference reason as above: [--actions compile-only] compiles a
