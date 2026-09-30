@@ -24,7 +24,7 @@ weaknesses:
 $ opam install odoc-driver <pkg>
 $ odoc_driver <pkg>
 v}
-  to build the docs. The output will appear in the directory `_html` by default.
+  to build the docs. The output will appear in the directory [_html] by default.
   Full documentation is available in the {{!/odoc-driver/page-index}reference driver package}.
 - {{:https://dune.build/}Dune} is the best way to view docs while
   developing your project. We have a {{!page-dune}page} describing

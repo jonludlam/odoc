@@ -133,6 +133,18 @@ assets.
   It is what drivers passed before [-L] existed, and is deprecated for these
   two commands.
 
+- [--warnings-tag <tag>] tags the warnings that resolving this unit's
+  references produces. A tagged warning is reported at link time only if
+  [odoc link] is given the same tag with [--warnings-tags]. The name of the
+  package makes a good tag, which is what the reference driver uses: it tags
+  every unit with its package and passes only the packages the run was asked
+  to document, so that the warnings of a dependency, whose documentation the
+  user did not ask for and cannot fix, stay out of the output.
+
+- [--enable-missing-root-warning] reports a root that cannot be found. It is
+  off by default because it is a build-system problem rather than an author's
+  — which is to say it is a driver's, so a driver wants it on.
+
 For example, for the [fmt.cli] library the reference driver runs:
 
 {@shell[
@@ -175,7 +187,10 @@ the result as any other page.
 ]}
 
 An asset is copied at generation time, but it needs a unit so that references
-to it resolve. [-o] and [--output-dir] mean what they do for [odoc compile].
+to it resolve: the unit is what makes [{image!logo.png}], and the other
+{{!odoc_for_authors.media}media markup}, find the file and know its URL.
+[--name <file>] is the name an author writes; [-o] and [--output-dir] mean
+what they do for [odoc compile].
 
 {2 The link phase}
 
@@ -193,7 +208,16 @@ to it resolve. [-o] and [--output-dir] mean what they do for [odoc compile].
   [{!/findlib.dynload/Fl_dynload}] resolve against it, and references by
   plain name search its directory.
 
-- [-I <dir>] adds a directory to the search path.
+- [-I <dir>] adds a directory to the search path without naming a tree. Two
+  directories are on the path that were not passed: the directory holding the
+  input [.odoc] file, and the [-P] directory of [--current-package].
+
+- [--current-package <pkg>] names the package the unit belongs to, and a [-P]
+  of that name must be given too. It is the tree a [{!//a/b}] reference is
+  resolved in.
+
+- [--warnings-tags <tag>], repeatable, says whose tagged warnings to report;
+  see [--warnings-tag] above.
 
 Odoc looks up a module by name in these directories, but not all at once, and
 what it tries first depends on whose name it is resolving.
@@ -270,7 +294,10 @@ hierarchy from these units' identifiers. Directories can be given instead with
 [--root <dir>], but each root then gives a hierarchy of its own, which is
 wrong when a package's pages and modules live in different directories. The
 binary index does not use occurrence counts; only the JSON form does, with
-[--json].
+[--json]. Two further flags shape that form: [--simplified-json] cuts it down
+to what a search page needs, and [--wrap-json] wraps it in a JavaScript
+assignment so that a page can load it with a [<script>] tag. The reference
+driver passes both for the index ocaml.org serves, and neither for its own.
 
 {@shell[
   $ odoc sidebar-generate -o <file>.odoc-sidebar <file>.odoc-index
@@ -316,6 +343,17 @@ JSON list of objects with a [url] and an [html] field.
 
 These render a source file, copy an asset to its place, and write the
 stylesheets and scripts every page needs.
+
+Three more options matter to a driver. [--home-breadcrumb <name>] adds a
+breadcrumb of that name leading to the root of the sidebar; the reference
+driver passes [--home-breadcrumb "Package index"] for every page, source and
+asset it generates. [--remap-file <file>] gives the rules that rewrite links
+into packages this run is not rendering, one [<identifier>:<url>] per line.
+[--as-json] writes the page as JSON — the preamble, the content, the
+breadcrumbs and the table of contents as separate fields — for a site that
+puts odoc's output inside its own template, which is what ocaml.org does. It
+is a second [html-generate] call rather than a different one: the driver
+generates the HTML, then generates the JSON beside it.
 
 {1:walkthrough What the reference driver does}
 
@@ -469,7 +507,9 @@ as a single [-I] found their [.cmi] files. And every location is a function of
 a name: a library's from its findlib directory, a package's from its name. A
 run that documents a package on its own can therefore find what earlier runs
 built without any record of it. This is how ocaml.org works, see
-{{!ocamlorg}below}. The odoc directory may even be the switch prefix itself.
+{{!ocamlorg}below}. The odoc directory may even be the switch prefix itself,
+in which case each [.odoc] file lands beside the [.cmti] it was compiled
+from.
 
 {3:scope Step 3: the search path and the scope}
 
@@ -530,6 +570,14 @@ Order matters twice, and it is a requirement rather than an optimisation:
 been compiled yet is one whose signature cannot be expanded, and no later
 phase repairs that. Within a library, a module is compiled after the modules
 it depends on, so that their [.odoc] files exist when [odoc] looks for them.
+The ordering is keyed by interface digest rather than by module name: the
+driver groups the library's interfaces by the digest [odoc compile-deps]
+reported, compiles the group an import names before the module that imports
+it, and takes an import whose digest matches no interface of this library to
+be a module of a library compiled earlier, found through the [-I] path.
+Keying on the digest is what lets a virtual library and its implementations,
+which share one interface, be compiled as one thing; see
+{{!virtual}below}.
 Between libraries, a library is compiled after the libraries it requires:
 [fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
 libraries compiled so far and compiles a library's requirements first,
@@ -589,7 +637,7 @@ driver the same behaviour: their [.odoc] files share
 roots then name the same directory, which is why the driver always passes
 [--custom-layout].
 
-{3 Virtual libraries}
+{3:virtual Virtual libraries}
 
 [checkseum] is a virtual library with two implementations, [checkseum.c] and
 [checkseum.ocaml]. An implementation ships its modules as [.cmt] files only;
@@ -604,12 +652,15 @@ The driver documents each implementation by compiling the virtual library's
 makes the substitution when the virtual library is part of the run. When it
 was built by an earlier run, as on ocaml.org, [Compile.compile_lib] looks for
 a same-named [.cmti] with the right digest along the implementation's [-I]
-path; the driver copies the [.cmti] next to the virtual library's [.odoc] file
-for this purpose.
+path. So that it is there to be found, the driver copies the [.cmti] of every
+library that ships no archive, virtual libraries among them, next to that
+library's [.odoc] files.
 
-The package's landing pages list each library's modules with path references,
-[{!modules: /checkseum.c/Checkseum}], because three modules named [Checkseum]
-are in scope and a plain [{!Checkseum}] would pick one at random.
+The landing page the driver writes for a library always lists its modules
+with path references, [{!modules: /checkseum.c/Checkseum}] rather than
+[{!modules: Checkseum}], for every package and not only this one. Checkseum
+is why: three modules named [Checkseum] are in scope there, and a plain
+[{!Checkseum}] would pick one of them at random.
 
 {3:siblings Libraries that share module names}
 
@@ -714,9 +765,15 @@ into them are rewritten to point at their documentation on ocaml.org.
 ocaml.org documents every version of every package. Each is built by a
 separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]:
 a directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
-installed. The dependencies are installed in the job's switch, and their
-[.odoc] files are those earlier jobs wrote into the odoc directory, at the
-locations the mirror layout predicts. The switch holds that package's closure
+installed. [voodoo] is the name of the part of
+{{:https://github.com/ocurrent/ocaml-docs-ci}ocaml-docs-ci} that does that
+preparing, and the driver is named after it. The [<u>] is a {e universe}: the
+same version of a package can be built more than once, against different
+versions of its dependencies, and each such build is one. The build ocaml.org
+shows by default for a version is the {e blessed} one, which the driver is
+told with [--blessed]. The dependencies are installed in the job's switch,
+and their [.odoc] files are those earlier jobs wrote into the odoc directory,
+at the locations the mirror layout predicts. The switch holds that package's closure
 and no more, so findlib is often not there to be asked and the facts come from
 the [META] files and the compiler, as {{!installed}step 1} describes.
 {{!/odoc-driver/Odoc_driver_lib.Voodoo}[Voodoo]} reads the prepared package
@@ -725,8 +782,8 @@ applied to one package. That the two drivers share the compile step is not
 tidiness: a package's own libraries require one another as often as libraries
 of different packages do, and compiling them in whatever order they were
 listed in leaves what the later ones should have expanded unresolved.
-Identifiers start with [p/<pkg>/<version>], or [u/<universe>/<pkg>/<version>]
-for a version that is not the one ocaml.org shows by default.
+Identifiers start with [p/<pkg>/<version>] for a blessed build and
+[u/<universe>/<pkg>/<version>] for any other.
 
 The job scheduler needs the compile and link phases separately, for the same
 forward-reference reason as above: [--actions compile-only] compiles a
