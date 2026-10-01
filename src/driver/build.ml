@@ -12,8 +12,10 @@
    odoc-config.sexp can put a package built later there: eio's documentation
    points at eio_main, odoc's at odoc-driver. So before a package is linked,
    whatever its scope names is compiled too. This is the split that voodoo
-   mode exposes as [--actions compile-only] and [--actions link-and-gen].
-   {!Plan} resolves the names a scope holds.
+   mode exposes as [--actions compile-only] and [--actions link-and-gen]. A
+   scope holds names, since a name is what goes on the command line; one no
+   package of this run answers belongs to a package an earlier run compiled,
+   or to no package at all.
 
    The top-level index, whose scope is every package, is expected last. *)
 
@@ -37,7 +39,14 @@ let compile_package pkg =
 
 let all ~html_dir ~remaps ~generate_json ~warnings_tags
     (pkgs : Odoc_unit.pkg list) =
-  let plan = Plan.of_packages pkgs in
+  let by_name =
+    List.fold_left
+      (fun acc (p : Odoc_unit.pkg) ->
+        match p.pkgname with
+        | Some name -> Util.StringMap.add name p acc
+        | None -> acc)
+      Util.StringMap.empty pkgs
+  in
   let compile_libs = compile_libs () in
   let compiled_pkgs = Hashtbl.create 100 in
   let compile_pkg (pkg : Odoc_unit.pkg) =
@@ -51,7 +60,10 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
   List.iter
     (fun (pkg : Odoc_unit.pkg) ->
       compile_pkg pkg;
-      List.iter compile_pkg (Plan.scope_packages plan pkg);
+      List.iter
+        (fun (name, _) ->
+          Option.iter compile_pkg (Util.StringMap.find_opt name by_name))
+        pkg.scope.page_roots;
       Logs.debug (fun m -> m "Linking %a" (Fmt.option Fmt.string) pkg.pkgname);
       Compile.link ~warnings_tags pkg;
       Compile.generate ?remap_file ~generate_json html_dir pkg)
