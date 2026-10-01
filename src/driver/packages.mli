@@ -122,8 +122,8 @@ val remap_virtual : t list -> t list
 (** Point the modules of a virtual library's implementations at the virtual
     library's interface.
 
-    An implementation ships its modules as [.cmt] files only; the [.mli] and the
-    documentation written in it belong to the virtual library, which ships the
-    [.cmti]. Both have the same interface digest. For every module whose
+    An implementation ships its modules as [.cmt] files only. The [.mli], and
+    the documentation written in it, belong to the virtual library, which ships
+    the [.cmti]. Both have the same interface digest. For every module whose
     interface is a [.cmt] and whose digest is shared with a [.cmti] elsewhere in
     the given packages, use that [.cmti] instead. *)

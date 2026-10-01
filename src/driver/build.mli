@@ -2,9 +2,9 @@
 
 val compile_package : Odoc_unit.pkg -> unit
 (** Compile one package: its libraries, each after the libraries it requires,
-    and then its pages. This is what {!all} does for each package, and what
-    voodoo mode does on its own, since ocaml-docs-ci gives it one package per
-    job and the dependencies were compiled by earlier jobs. *)
+    and then its pages. This is what {!all} does for each package. Voodoo mode
+    does it on its own, since ocaml-docs-ci gives that mode one package per job,
+    and earlier jobs compiled the dependencies. *)
 
 val all :
   html_dir:Fpath.t ->

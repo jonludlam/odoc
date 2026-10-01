@@ -36,6 +36,6 @@ val render_stats : Eio_unix.Stdenv.base -> generate_json:bool -> int -> unit
     alongside the build. *)
 
 val bench_results : Fpath.t -> unit
-(** Write [driver-benchmarks.json] in the current directory, with timings of the
-    odoc commands of this run and the size of the output below the given HTML
-    directory. *)
+(** Write [driver-benchmarks.json] in the current directory. It holds the
+    timings of this run's odoc commands, and the size of the output below the
+    given HTML directory. *)

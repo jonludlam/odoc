@@ -10,13 +10,13 @@ driver}, which is kept in step with [odoc]. Other drivers exist, such as
 {{:https://dune.readthedocs.io/en/stable/documentation.html}dune} and
 {{!/odig/page-index}odig}.
 
-This document is for anyone who calls [odoc] themselves: writing a driver
-over a switch full of other people's packages, or arranging for a project to
-document its own libraries. Those are the same job with different sources of
-information. What has to be known before anything can be compiled is the same
-either way, and {{!installed}step 1} sets it out; everything after it is
-identical. You do not need this document to {e use} [odoc] through a driver
-someone else wrote. It covers:
+This document is for anyone who calls [odoc] themselves. You may be writing a
+driver over a switch full of other people's packages. You may be arranging for
+a project to document its own libraries. These are the same job with different
+sources of information. Before anything can be compiled, the same facts have
+to be known either way, and {{!installed}step 1} sets them out. Everything
+after that step is identical. You do not need this document to {e use} [odoc]
+through a driver someone else wrote. It covers:
 
 - the model [odoc] uses to organise documentation: {{!units}trees};
 - the four {{!pipeline}phases} and the command line of each;
@@ -44,17 +44,17 @@ overall hierarchy. A documentation author refers to another tree by its name,
 not by its location.
 
 Concretely, a tree is a name, a root {{!conv}identifier}, and a directory of
-[.odoc] files. The driver passes the two kinds as [-P name:dir] and
-[-L name:dir], the name is what an author writes in [{!/name/...}], and the
-files below the directory are laid out to match the identifiers below the
-root. The reference driver makes one page tree per package and one module
-tree per library; nothing obliges a driver to do the same.
+[.odoc] files. The driver passes a page tree as [-P name:dir] and a module
+tree as [-L name:dir]. The name is what an author writes in [{!/name/...}].
+The files below the directory follow the identifiers below the root. The
+reference driver makes one page tree per package and one module tree per
+library. Nothing obliges a driver to do the same.
 
 For opam packages the trees have a natural meaning. Each package has a page
 tree named after the package. Each of its libraries has a module tree named
-after the library. Another package can refer to the pages by the package name,
-and to a module by the library name, wherever the package ends up in the
-hierarchy. The {{!conv}convention} below spells this out.
+after the library. Another package refers to the pages by the package name,
+and to a module by the library name. It does so wherever the package ends up
+in the hierarchy. The {{!conv}convention} below spells this out.
 
 {1:pipeline The pipeline}
 
@@ -78,7 +78,7 @@ depends on it, so the phases are separated to break this apparent cycle.
 Three binaries are involved, and a driver calls all three. [odoc] itself does
 everything above. [odoc-md] turns a Markdown page into an [.odoc] file, since
 [odoc compile] reads only [.mld]. [sherlodoc] builds the search database that
-the generated pages query, and ships the JavaScript that queries it; a driver
+the generated pages query, and ships the JavaScript that queries it. A driver
 that wants no search need not call it.
 
 {2 The compile phase}
@@ -103,47 +103,48 @@ assets.
   prefix of their parent ids. The identifier is stored inside the [.odoc] file.
 
 - [-o <file>.odoc] is where the file goes. The name must be the input's name
-  with the [.odoc] extension, prefixed by [page-] for an [.mld]: [odoc] finds
+  with the [.odoc] extension, prefixed by [page-] for an [.mld]. [odoc] finds
   a unit by that name, capitalised, and the prefix tells it what kind of unit
   to expect. Without [-o], [odoc] writes the file below [--output-dir] at the
   path given by [--parent-id].
 
   A tree's files may be rooted wherever the driver likes, since later phases
-  are handed the directory. Within a tree they are not free: a path reference
-  such as [{!/pkg/a/b/page-c}] is resolved by looking for [a/b/page-c.odoc]
-  below the directory that [-P pkg:] names, so a unit's path below that
-  directory must match its identifier below the tree's root. A [{!//a/b}]
-  reference is resolved relative to the input file's own directory.
+  are handed the directory. Within a tree they are not free. [odoc] resolves
+  a path reference such as [{!/pkg/a/b/page-c}] by looking for
+  [a/b/page-c.odoc] below the directory that [-P pkg:] names. A unit's path
+  below that directory must therefore match its identifier below the tree's
+  root. A [{!//a/b}] reference is resolved relative to the input file's own
+  directory.
 
 - [-L <name>:<dir>] names a library and the directory of its [.odoc] files.
-  The directory is searched for the modules the input depends on, those
-  [odoc compile-deps] lists for it, so each directory the compiler searched
-  for [.cmi] files when it built the input should have a counterpart here.
-  Several files of the same name may be on the search path; [odoc] picks the
-  one whose interface digest matches.
+  [odoc] searches the directory for the modules the input depends on, which
+  are the ones [odoc compile-deps] lists for it. Each directory the compiler
+  searched for [.cmi] files should therefore have a counterpart here. Several
+  files of the same name may be on the search path, and [odoc] picks the one
+  whose interface digest matches.
 
   The names are written into the [.odoc] file. They are the libraries the
-  compiler could see when the unit was built, and [odoc link] uses them later:
-  resolution that follows a path or a reference {e into} this unit carries on
-  among these libraries, so a module named inside it is the one it was built
-  against. Without that, two libraries built against different modules of the
-  same name are indistinguishable from the outside.
+  compiler could see when the unit was built, and [odoc link] uses them later.
+  Resolution that follows a path or a reference {e into} this unit carries on
+  among these libraries. A module named inside the unit is therefore the one
+  the unit was built against. Without the names, two libraries built against
+  different modules of the same name look alike from the outside.
 
 - [-I <dir>] does the same without naming a library, and so records nothing.
   It is what drivers passed before [-L] existed, and is deprecated for these
   two commands.
 
 - [--warnings-tag <tag>] tags the warnings that resolving this unit's
-  references produces. A tagged warning is reported at link time only if
-  [odoc link] is given the same tag with [--warnings-tags]. The name of the
-  package makes a good tag, which is what the reference driver uses: it tags
-  every unit with its package and passes only the packages the run was asked
-  to document, so that the warnings of a dependency, whose documentation the
-  user did not ask for and cannot fix, stay out of the output.
+  references produces. A tagged warning is reported at link time only if [odoc
+  link] is given the same tag with [--warnings-tags]. The name of the package
+  makes a good tag, and that is what the reference driver uses. It tags every
+  unit with its package, and passes only the packages the run was asked to
+  document. The warnings of a dependency then stay out of the output: the user
+  did not ask for that dependency's documentation and cannot fix it.
 
 - [--enable-missing-root-warning] reports a root that cannot be found. It is
-  off by default because it is a build-system problem rather than an author's
-  — which is to say it is a driver's, so a driver wants it on.
+  off by default because it is a build-system problem rather than an author's.
+  A build-system problem is a driver's problem, so a driver wants it on.
 
 For example, for the [fmt.cli] library the reference driver runs:
 
@@ -162,11 +163,10 @@ For example, for the [fmt.cli] library the reference driver runs:
 ]}
 
 The input is a [.cmt] file. The output name is [impl-] followed by the input's
-name. [--parent-id] and [-L] mean the same as above, the names being written
-into the unit in the same way; the implementation is usually given the same
-parent id as its interface. [--source-id <sid>] is the
-identifier of the page that will show the rendered source; links to the source
-point there.
+name. [--parent-id] and [-L] mean the same as above, and the library names are
+written into the unit in the same way. An implementation usually takes the
+same parent id as its interface. [--source-id <sid>] is the identifier of the
+page that will show the rendered source. Links to the source point there.
 
 {3 Compiling Markdown pages}
 
@@ -187,9 +187,9 @@ the result as any other page.
 ]}
 
 An asset is copied at generation time, but it needs a unit so that references
-to it resolve: the unit is what makes [{image!logo.png}], and the other
+to it resolve. The unit is what makes [{image!logo.png}], and the other
 {{!odoc_for_authors.media}media markup}, find the file and know its URL.
-[--name <file>] is the name an author writes; [-o] and [--output-dir] mean
+[--name <file>] is the name an author writes. [-o] and [--output-dir] mean
 what they do for [odoc compile].
 
 {2 The link phase}
@@ -216,38 +216,40 @@ what they do for [odoc compile].
   of that name must be given too. It is the tree a [{!//a/b}] reference is
   resolved in.
 
-- [--warnings-tags <tag>], repeatable, says whose tagged warnings to report;
-  see [--warnings-tag] above.
+- [--warnings-tags <tag>] is repeatable, and says whose tagged warnings to
+  report. See [--warnings-tag] above.
 
-Odoc looks up a module by name in these directories, but not all at once, and
-what it tries first depends on whose name it is resolving.
+Odoc looks up a module by name in these directories, but not all at once.
+What it tries first depends on whose name it is resolving.
 
 A name odoc holds a digest for is matched by that digest, anywhere on the
 search path, and the order below does not arise. That covers most of what a
 signature mentions, since the compiler recorded those modules as imports.
 
-For the rest, the canonical paths and the references written in documentation
-comments, odoc searches in three steps while it resolves the unit named on the
-command line. First the libraries that unit recorded when it was compiled,
-each in the directory its [-L] names. Then the [-I] directories. Only then the
-[-L] directories as a whole. The first two hold what the compiler gave that
-unit, so a name they answer means the module it was built against.
+The rest are the canonical paths and the references written in documentation
+comments. For those, odoc searches in three steps while it resolves the unit
+named on the command line. First the libraries that unit recorded when it was
+compiled, each in the directory its [-L] names. Then the [-I] directories.
+Only then the [-L] directories as a whole. The first two hold what the
+compiler gave that unit, so a name they answer means the module it was built
+against.
 
-When resolution follows a path or a reference {e into} another unit, it
+Resolution may follow a path or a reference {e into} another unit. It then
 carries on among the libraries that unit recorded at compile time, which are
 what its own compiler could see. This is what lets a page name a submodule of
-one library rather than of its sibling, and lets a module list show each
-module's own first paragraph resolved as that module's page resolves it.
+one library rather than of its sibling. It is also what lets a module list
+show each module's first paragraph as that module's own page shows it.
 
-A module of a library that is in neither is found by the wider search, which
-has no digest to tell same-named candidates apart: odoc takes the first and
-warns. Authors can avoid the ambiguity with a path reference that names the
-tree, [{!/foo/A}] for the module [A] of library [foo].
+A module of a library that is in neither is found by the wider search. That
+search has no digest to tell same-named candidates apart, so odoc takes the
+first and warns. Authors can avoid the ambiguity with a path reference that
+names the tree, [{!/foo/A}] for the module [A] of library [foo].
 
 No two directories given to [-P] may be nested or shared, and likewise for
-[-L]; the two sets are checked separately, so a [-P] directory may contain a
-[-L] one. Where even that is impossible, several libraries installed in one
-directory for instance, pass [--custom-layout], which disables the check.
+[-L]. The two sets are checked separately, so a [-P] directory may contain a
+[-L] one. Where even that is impossible, pass [--custom-layout], which
+disables the check. Several libraries installed in one directory are the
+usual reason.
 
 {2 The indexing phase}
 
@@ -267,13 +269,13 @@ directories. The counts are used only by the JSON search index below.
 ]}
 
 [<list>] names a file with one [.odocl] path per line. [odoc] builds one
-hierarchy from these units' identifiers. Directories can be given instead with
-[--root <dir>], but each root then gives a hierarchy of its own, which is
+hierarchy from these units' identifiers. Directories can be given instead
+with [--root <dir>], but each root then gives a hierarchy of its own. That is
 wrong when a package's pages and modules live in different directories. The
-binary index does not use occurrence counts; only the JSON form does, with
-[--json]. Two further flags shape that form: [--simplified-json] cuts it down
-to what a search page needs, and [--wrap-json] wraps it in a JavaScript
-assignment so that a page can load it with a [<script>] tag. The reference
+binary index does not use occurrence counts. Only the JSON form does, which
+[--json] selects. Two further flags shape that form. [--simplified-json] cuts
+it down to what a search page needs. [--wrap-json] wraps it in a JavaScript
+assignment, so that a page can load it with a [<script>] tag. The reference
 driver passes both for the index ocaml.org serves, and neither for its own.
 
 {@shell[
@@ -291,10 +293,10 @@ used by ocaml.org.
 ]}
 
 [sherlodoc] is a separate binary. The first command turns the index into the
-database a page queries, the second writes the engine that queries it, which
+database a page queries. The second writes the engine that queries it, which
 every page shares. Both paths are then given to [odoc html-generate] as
 [--search-uri], relative to the HTML directory. [--format marshal] writes the
-database a server searches instead, and [--favoured_prefixes] lists module
+database a server searches instead. [--favoured_prefixes] lists module
 prefixes whose results come first.
 
 {2 The generation phase}
@@ -305,12 +307,13 @@ prefixes whose results come first.
       --search-uri <path.js> --search-uri <path2.js>
 ]}
 
-The output goes below [<html-dir>] at the path given by the unit's identifier:
-a directory named after a module, a file named after a page. [--sidebar] gives
-the sidebar to show. Each [--search-uri] is a JavaScript file, relative to the
-HTML directory, that the page loads in a web worker to answer search queries.
-The worker receives the query as a string and replies with a string holding a
-JSON list of objects with a [url] and an [html] field.
+The output goes below [<html-dir>] at the path given by the unit's
+identifier. A module becomes a directory, a page becomes a file. [--sidebar]
+gives the sidebar to show. Each [--search-uri] is a JavaScript file, relative
+to the HTML directory, that the page loads in a web worker. The worker
+answers search queries. It receives the query as a string, and replies with a
+string. That string holds a JSON list of objects, each with a [url] and an
+[html] field.
 
 {@shell[
   $ odoc html-generate-source --impl impl-<file>.odocl <source>.ml -o <html-dir>
@@ -322,15 +325,15 @@ These render a source file, copy an asset to its place, and write the
 stylesheets and scripts every page needs.
 
 Three more options matter to a driver. [--home-breadcrumb <name>] adds a
-breadcrumb of that name leading to the root of the sidebar; the reference
+breadcrumb of that name, leading to the root of the sidebar. The reference
 driver passes [--home-breadcrumb "Package index"] for every page, source and
 asset it generates. [--remap-file <file>] gives the rules that rewrite links
 into packages this run is not rendering, one [<identifier>:<url>] per line.
-[--as-json] writes the page as JSON — the preamble, the content, the
-breadcrumbs and the table of contents as separate fields — for a site that
-puts odoc's output inside its own template, which is what ocaml.org does. It
-is a second [html-generate] call rather than a different one: the driver
-generates the HTML, then generates the JSON beside it.
+[--as-json] writes the page as JSON instead of HTML. The preamble, the
+content, the breadcrumbs and the table of contents become separate fields.
+That suits a site which puts odoc's output inside its own template, as
+ocaml.org does. It is a second [html-generate] call rather than a different
+one: the driver generates the HTML, then generates the JSON beside it.
 
 {1:walkthrough What the reference driver does}
 
@@ -360,23 +363,23 @@ Running [odoc_driver fmt] documents it and the packages it depends on.
 
 {3:installed Step 1: finding out what is installed}
 
-Four things have to be known before anything is compiled, and they are the
-same four whether the modules belong to other people's packages or to the
-project in front of you:
+Four things have to be known before anything is compiled. They are the same
+four whether the modules belong to other people's packages or to the project
+in front of you:
 
 - {b What the modules are:} for each one, a compiled interface to read. A
-  [.cmti] is best, since it carries the documentation written in the [.mli];
-  failing that a [.cmt] or a [.cmi].
+  [.cmti] is best, because it carries the documentation written in the
+  [.mli]. A [.cmt] or a [.cmi] will do when there is no [.cmti].
 
 - {b How the modules are grouped into libraries.} A module is named within a
-  library rather than within the world: two libraries may each hold a module
-  [Content], and which one a reference means is settled by knowing the library
-  the referring module belongs to. The grouping is not presentation, it is
+  library rather than within the world. Two libraries may each hold a module
+  [Content]. To know which one a reference means, you must know the library
+  the referring module belongs to. The grouping is not presentation. It is
   what makes the names unambiguous.
 
 - {b What depends on what,} at both levels. A library's dependencies are the
   libraries whose modules it may name, and they fix the order the libraries
-  are compiled in; a module's dependencies fix the order within a library.
+  are compiled in. A module's dependencies fix the order within a library.
 
 - {b What else belongs to the package:} its name, its [.mld] pages, its
   Markdown, its assets, its source files, and its [odoc-config.sexp] if it has
@@ -384,65 +387,65 @@ project in front of you:
 
 None of that is specific to opam or to findlib. A project that documents
 itself knows all four already, because its build system had to know them to
-build the code at all, and it is free to state them however it likes — a
-[dune] rule, a list written by hand. The flags described in
+build the code at all. It may state them however it likes, in a [dune] rule
+or in a list written by hand. The flags described in
 {{!pipeline}the phases above} are the whole of the interface to [odoc]. The
 rest of this step is how the reference driver recovers the same four facts
-for a switch of packages it did not build, which is the awkward case rather
+for a switch of packages it did not build. That is the awkward case rather
 than the general one.
 
 {{!/odoc-driver/Odoc_driver_lib.Packages}[Packages]} asks opam which packages
-[fmt] depends on and which files each package installed, and asks findlib
+[fmt] depends on, and which files each package installed. It asks findlib
 ({{!/odoc-driver/Odoc_driver_lib.Ocamlfind}[Ocamlfind]}) about every library:
 its directory, its archives and its [requires]. From that it builds one
 {{!/odoc-driver/Odoc_driver_lib.Packages.t}[Packages.t]} per package. For
-[fmt] this holds three libraries, each with the modules of its archive found by
-[odoc classify], and each module analysed with [odoc compile-deps] to get the
-digest of its interface and the modules it depends on. It also holds the
+[fmt] this holds three libraries. [odoc classify] finds the modules of each
+library's archive. [odoc compile-deps] then gives each module the digest of
+its interface and the modules it depends on. The [Packages.t] also holds the
 page [index.mld], the Markdown files, and the contents of [odoc-config.sexp]
-if the package has one. Those two [odoc] commands exist for this situation:
-they answer the grouping and the dependency questions from installed files
-alone, when there is nothing better to go on. A driver that is handed the
-answers has no need of them.
+if the package has one. Those two [odoc] commands exist for this situation.
+They answer the grouping and the dependency questions from the installed
+files alone, when there is nothing better to go on. A driver that is handed
+the answers has no need of them.
 
-Nor can a driver assume findlib is there to be asked. It is configured by
-[ocamlfind], which is a package like any other, so a switch holding only the
+Nor can a driver assume findlib is there to be asked. Findlib is configured by
+[ocamlfind], which is a package like any other. A switch holding only the
 closure of a package built with dune need not contain it, and ocaml.org
-documents packages in exactly such switches. The two facts findlib would have
-supplied — a library's [requires], and its object directory relative to the
-switch, [lib/fmt/cli] for [fmt.cli], which is the directory the later steps
-mirror — are then read from what is on disk. Every installed package ships
-the [META] that names its libraries, their directories and their [requires],
-and reading one needs no configuration. The compiler's own libraries ship no
-[META] of their own, but they are below the directory [ocamlc -where] prints,
-one subdirectory each, and a sub-library shares its parent's:
-[compiler-libs.common] is in [compiler-libs], [threads.posix] in [threads]. A
-library nothing says anything about is still compiled against the standard
-library, and assuming that is what lets its modules resolve the signatures
-they are constrained by.
+documents packages in exactly such switches. Findlib would have supplied two
+facts: a library's [requires], and its object directory relative to the
+switch, [lib/fmt/cli] for [fmt.cli]. That directory is the one the later steps
+mirror. Both facts are then read from what is on disk instead. Every installed
+package ships the [META] that names its libraries, their directories and their
+[requires], and reading one needs no configuration. The compiler's own
+libraries ship no [META] of their own. They are below the directory [ocamlc
+-where] prints, one subdirectory each, and a sub-library shares its parent's
+directory: [compiler-libs.common] is in [compiler-libs], [threads.posix] in
+[threads]. A library that nothing says anything about is still compiled
+against the standard library. Assuming that much is what lets its modules
+resolve the signatures they are constrained by.
 
 All of this is detective work, and it is detective work only because nothing
-installed states the facts outright: which modules a library holds is read
-back out of its archive, and what it requires out of a file [ocamlfind]
-defined. The
+installed states the facts outright. The driver reads the modules of a library
+back out of the library's archive. It reads what the library requires out of a
+file that [ocamlfind] defined. The
 {{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
-proposal} would take most of it away. A library would be a directory holding
-[M.cmi], [M.cmx], [M.cmti] and [M.cmt] for each of its modules beside a single
-archive named [lib]; the modules of a library would then be the ones in its
-directory, and no module could be in two libraries. A library's name would be
-its path below a root of [OCAMLPATH] with the separators written [.], so name
-and directory would determine each other with no file to consult. Its
-dependencies would be recorded in the archive as it is built and read back
-with [ocamlobjinfo], which is the [requires] field of a [META] moved into the
-archive. The proposal names documentation systems among the tools the
+proposal} would take most of it away. A library would be a directory. It would
+hold [M.cmi], [M.cmx], [M.cmti] and [M.cmt] for each of its modules, beside a
+single archive named [lib]. The modules of a library would then be the ones in
+its directory, and no module could be in two libraries. A library's name would
+be its path below a root of [OCAMLPATH], with the separators written [.]. Name
+and directory would determine each other, with no file to consult. The
+library's dependencies would be recorded in the archive as it is built, and
+read back with [ocamlobjinfo]. That is the [requires] field of a [META], moved
+into the archive. The proposal names documentation systems among the tools the
 convention is meant to serve.
 
-It remains a proposal: the document was merged into [ocaml/RFCs] in 2020, the
-update to it has been open since 2021, the compiler support exists as a
+It remains a proposal. The document was merged into [ocaml/RFCs] in 2020, and
+the update to it has been open since 2021. The compiler support exists as a
 partial implementation on a branch, and no switch is laid out that way today.
-What it would leave for a driver to work out is what it does not describe:
-which modules of a library depend on which, and which pages, assets and
-sources belong to a package.
+A driver would still have to work out what the proposal does not describe.
+That is which modules of a library depend on which, and which pages, assets
+and sources belong to a package.
 
 {3 Step 2: deciding identifiers and locations}
 
@@ -478,15 +481,15 @@ The same paths hold under the directory for [.odocl] files. See
 {{!/odoc-driver/Odoc_driver_lib.Odoc_unit}[Odoc_unit]} for the functions that
 compute both layouts.
 
-Mirroring the switch has two consequences. Libraries installed in one
-directory share one odoc directory, so a single [-I] finds all of them, exactly
-as a single [-I] found their [.cmi] files. And every location is a function of
-a name: a library's from its findlib directory, a package's from its name. A
-run that documents a package on its own can therefore find what earlier runs
-built without any record of it. This is how ocaml.org works, see
-{{!ocamlorg}below}. The odoc directory may even be the switch prefix itself,
-in which case each [.odoc] file lands beside the [.cmti] it was compiled
-from.
+Mirroring the switch has two consequences. First, libraries installed in one
+directory share one odoc directory. A single [-I] finds all of them, exactly
+as a single [-I] found their [.cmi] files. Second, every location is a
+function of a name. A library's location comes from its findlib directory, a
+package's from its name. A run that documents a package on its own can
+therefore find what earlier runs built, with no record of them. This is how
+ocaml.org works, see {{!ocamlorg}below}. The odoc directory may even be the
+switch prefix itself, in which case each [.odoc] file lands beside the [.cmti]
+it was compiled from.
 
 {3:scope Step 3: the search path and the scope}
 
@@ -494,8 +497,8 @@ For each library, [Odoc_units_of] computes its {e dependency cone}: the
 library itself and, transitively, what it requires, each with the directory of
 its [.odoc] files. This is what the compiler searched when it built the
 library. For [fmt.cli] it is [fmt.cli], [fmt], [cmdliner] and the standard
-library. The cone is given to [odoc compile] with [-L], which both finds the
-files and writes the names into the units, and to [odoc link] with [-I].
+library. The cone is given to [odoc compile] with [-L], which finds the files
+and writes the names into the units. It is given to [odoc link] with [-I].
 
 For each package it computes the {e reference scope}: the [-P] and [-L]
 arguments its units are linked with. Every unit of the package gets the same
@@ -507,8 +510,8 @@ scope. It is not the transitive closure:
   packages named in [odoc-config.sexp].
 
 The page the driver writes for a library is linked with that library's [-I]
-as well, although it is a page and has no modules of its own. It shows a
-synopsis for each module, and needs to reach what those synopses name.
+as well. It is a page and has no modules of its own, but it shows a synopsis
+for each module. It must reach what those synopses name.
 
 For [fmt], with [cmdliner] not installed as a dependency, the link command of
 [Fmt] is:
@@ -522,13 +525,14 @@ For [fmt], with [cmdliner] not installed as a dependency, the link command of
       --current-package fmt --warnings-tags fmt --custom-layout --enable-missing-root-warning
 ]}
 
-Which package provides a library comes from opam's record of installed files:
+Opam's record of installed files says which package provides a library.
 [stdlib] and [unix] are in [lib/ocaml], installed by [ocaml-compiler]. A
-library stands in this list only if it is being built in this run or its
-[.odoc] directory exists already; otherwise the libraries it requires stand in
-for it. That is what handles an alias, [num] requiring only [num.core] or
-[threads.posix] requiring only [threads], and it is also what drops a library
-nobody has documented, here [cmdliner], which then contributes nothing.
+library stands in this list only if it is being built in this run, or its
+[.odoc] directory exists already. Otherwise the libraries it requires stand
+in for it. That is what handles an alias, such as [num] requiring only
+[num.core], or [threads.posix] requiring only [threads]. It is also what
+drops a library nobody has documented, here [cmdliner], which then
+contributes nothing.
 
 {3 Step 4: compiling}
 
@@ -542,23 +546,25 @@ and its pages with
 That function is the whole of the compile phase for one package, and it is
 what {{!ocamlorg}a voodoo job} calls too.
 
-Order matters twice, and it is a requirement rather than an optimisation:
-[odoc compile] computes each module's expansions, so a dependency that has not
+Order matters twice, and it is a requirement rather than an optimisation.
+[odoc compile] computes each module's expansions. A dependency that has not
 been compiled yet is one whose signature cannot be expanded, and no later
-phase repairs that. Within a library, a module is compiled after the modules
-it depends on, so that their [.odoc] files exist when [odoc] looks for them.
-The ordering is keyed by interface digest rather than by module name: the
-driver groups the library's interfaces by the digest [odoc compile-deps]
-reported, compiles the group an import names before the module that imports
-it, and takes an import whose digest matches no interface of this library to
-be a module of a library compiled earlier, found through the [-I] path.
-Keying on the digest is what lets a virtual library and its implementations,
-which share one interface, be compiled as one thing; see
-{{!virtual}below}.
+phase repairs that.
+
+Within a library, a module is compiled after the modules it depends on, so
+that their [.odoc] files exist when [odoc] looks for them. The order is keyed
+by interface digest rather than by module name. The driver groups the
+library's interfaces by the digest [odoc compile-deps] reported, and compiles
+the group an import names before the module that imports it. An import whose
+digest matches no interface of this library belongs to a library compiled
+earlier, and is found through the [-I] path. Keying on the digest is what
+lets a virtual library and its implementations be compiled as one thing,
+since they share one interface. See {{!virtual}below}.
+
 Between libraries, a library is compiled after the libraries it requires:
 [fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
-libraries compiled so far and compiles a library's requirements first,
-recursively. Requiring is a relation between libraries, not packages, and no
+libraries compiled so far, and compiles a library's requirements first,
+recursively. Requiring is a relation between libraries, not packages. No
 library requires itself even indirectly, so this always ends.
 
 The compile command for [fmt_cli.cmti] was shown {{!pipeline}above}. Its [-L]
@@ -571,21 +577,21 @@ module knows the four libraries it may look in.
 {3 Step 5: linking}
 
 {{!/odoc-driver/Odoc_driver_lib.Compile.link}[Compile.link]} links every unit
-of the package with the package's scope, and each library's units with its
-[-I] path as well, its page included. Linking needs the [.odoc] files of
-everything the scope names, so [Build] makes sure each package in the scope
+of the package with the package's scope. The units of a library, its page
+included, also get that library's [-I] path. Linking needs the [.odoc] files
+of everything the scope names, so [Build] makes sure each package in the scope
 has been compiled before it links. For [fmt] that is already so. When it is
 not, see the {{!forward}forward references} below.
 
 {3 Step 6: index, sidebar, search and HTML}
 
 {{!/odoc-driver/Odoc_driver_lib.Compile.generate}[Compile.generate]} finishes
-the package. It writes the list of the package's [.odocl] files and runs
-[odoc compile-index] on it, so that pages and modules, though in different
-directories, form one hierarchy. From the index it makes the sidebar with
-[odoc sidebar-generate] and the search database with [sherlodoc]. Then it
-runs [odoc html-generate] on each unit, and [odoc html-generate-source] on
-each implementation whose source was found. The output:
+the package. It writes the list of the package's [.odocl] files and runs [odoc
+compile-index] on it. Pages and modules then form one hierarchy, although they
+are in different directories. From the index it makes the sidebar with [odoc
+sidebar-generate] and the search database with [sherlodoc]. Then it runs [odoc
+html-generate] on each unit, and [odoc html-generate-source] on each
+implementation whose source was found. The output:
 
 {v
 _html/fmt/index.html                the package page
@@ -607,8 +613,8 @@ documentation of the packages you asked for.
 
 The compiler's libraries [compiler-libs.common], [compiler-libs.optcomp] and
 the others all live in [lib/ocaml/compiler-libs]. A module of one may use a
-module of another without the [META] file saying so; the compiler never
-noticed because one [-I] covered them all. Mirroring the switch gives the
+module of another without the [META] file saying so. The compiler never
+noticed, because one [-I] covered them all. Mirroring the switch gives the
 driver the same behaviour: their [.odoc] files share
 [_odoc/lib/ocaml/compiler-libs], and one [-I] finds all of them. Their [-L]
 roots then name the same directory, which is why the driver always passes
@@ -617,88 +623,90 @@ roots then name the same directory, which is why the driver always passes
 {3:virtual Virtual libraries}
 
 [checkseum] is a virtual library with two implementations, [checkseum.c] and
-[checkseum.ocaml]. An implementation ships its modules as [.cmt] files only;
-the [.mli], and the documentation in it, belong to the virtual library, which
+[checkseum.ocaml]. An implementation ships its modules as [.cmt] files only.
+The [.mli], and the documentation in it, belong to the virtual library, which
 ships the [.cmti]. Both have the same interface digest.
 
 The driver documents each implementation by compiling the virtual library's
-[.cmti] again, under the implementation's own parent id:
-[checkseum.cmti] is compiled three times, under [checkseum/checkseum],
-[checkseum/checkseum.c] and [checkseum/checkseum.ocaml].
+[.cmti] again, under the implementation's own parent id. [checkseum.cmti] is
+compiled three times, under [checkseum/checkseum], [checkseum/checkseum.c]
+and [checkseum/checkseum.ocaml].
 {{!/odoc-driver/Odoc_driver_lib.Packages.remap_virtual}[Packages.remap_virtual]}
-makes the substitution when the virtual library is part of the run. When it
-was built by an earlier run, as on ocaml.org, [Compile.compile_lib] looks for
-a same-named [.cmti] with the right digest along the implementation's [-I]
-path. So that it is there to be found, the driver copies the [.cmti] of every
-library that ships no archive, virtual libraries among them, next to that
-library's [.odoc] files.
+makes the substitution when the virtual library is part of the run. The
+virtual library may instead have been built by an earlier run, as on
+ocaml.org. [Compile.compile_lib] then looks along the implementation's [-I]
+path for a [.cmti] of the same name with the right digest. So that one is
+there to be found, the driver copies the [.cmti] of every library that ships
+no archive next to that library's [.odoc] files. Virtual libraries are among
+those.
 
 The landing page the driver writes for a library always lists its modules
-with path references, [{!modules: /checkseum.c/Checkseum}] rather than
-[{!modules: Checkseum}], for every package and not only this one. Checkseum
-is why: three modules named [Checkseum] are in scope there, and a plain
-[{!Checkseum}] would pick one of them at random.
+with path references. It writes [{!modules: /checkseum.c/Checkseum}] rather
+than [{!modules: Checkseum}], for every package and not only this one.
+Checkseum is the reason: three modules named [Checkseum] are in scope there,
+and a plain [{!Checkseum}] would pick one of them at random.
 
 {3:siblings Libraries that share module names}
 
 A package may ship two libraries that define the same module names on purpose.
 [eliom] is the example: [eliom.client] and [eliom.server] mirror each other,
 and that symmetry is the point of the framework. Nothing in the reference scope
-tells them apart, so a plain [{!Eliom_content}] in a doc comment is ambiguous:
-odoc warns and takes the first it finds. An author who means one of them writes
-a path reference, [{!/eliom.client/Eliom_content}].
+tells them apart, so a plain [{!Eliom_content}] in a doc comment is
+ambiguous. Odoc warns and takes the first it finds. An author who means one
+of them writes a path reference, [{!/eliom.client/Eliom_content}].
 
 A module's own documentation is not affected. Its [-I] holds its library's
-dependency cone and never both siblings, and odoc searches that first, so the
+dependency cone, and never both siblings, and odoc searches that first. The
 types it shows, the modules its signature mentions and the references its
-comments make all stay on the side they were written on.
+comments make therefore all stay on the side they were written on.
 
 Nor is what a page of the package says about those modules, although a page
-has no cone of its own. A reference into one of them, [{!/eliom.client/
-Eliom_content.Html}], and the first paragraph a module list shows beside each
-entry, both resolve among the libraries that module recorded when it was
-compiled. What remains ambiguous is only a name that says nothing about where
-it comes from, the plain [{!Eliom_content}] above.
+has no cone of its own. Two things resolve among the libraries the module
+recorded when it was compiled. One is a reference into the module, such as
+[{!/eliom.client/Eliom_content.Html}]. The other is the first paragraph a
+module list shows beside each entry. What remains ambiguous is only a name
+that says nothing about where it comes from, the plain [{!Eliom_content}]
+above.
 
 {3 Alias libraries}
 
-Some findlib packages provide no modules and exist only to require others:
-[num] requires [num.core], [threads.posix] requires [threads],
+Some findlib packages provide no modules and exist only to require others.
+[num] requires [num.core], [threads.posix] requires [threads], and
 [compiler-libs] requires [compiler-libs.common]. A [META] file naming one of
-these means the libraries it requires. The driver follows the requirement when
-computing the scope and the compile order, so that [sexplib.num], which
-requires [num], gets [-L num.core] and is compiled after it.
+these means the libraries it requires. The driver follows the requirement
+when it computes the scope and the compile order. [sexplib.num] requires
+[num], so it gets [-L num.core] and is compiled after it.
 
 {3 Archives that hold other archives}
 
-A module can be in more than one archive, and [odoc classify] says so, because
-it is the truth: the OCaml distribution ships its middle end both as
-[ocamlmiddleend.cma], of 77 modules, and inside [ocamloptcomp.cma], which
+A module can be in more than one archive, and [odoc classify] says so,
+because it is the truth. The OCaml distribution ships its middle end twice:
+as [ocamlmiddleend.cma], of 77 modules, and inside [ocamloptcomp.cma], which
 holds those 77 and 49 more. A module is documented once, so the driver gives
-each one to the largest library that holds it. The bundling archive is the one
-that ships as a library: findlib declares [compiler-libs.optcomp] and has no
-name at all for the middle end, so that is also the library a reader can
+each one to the largest library that holds it. The bundling archive is also
+the one that ships as a library. Findlib declares [compiler-libs.optcomp] and
+has no name at all for the middle end, so that is the library a reader can
 depend on. A library left with nothing of its own is not documented, and the
 driver says which.
 
-This only arises where libraries are named after their archives, which is what
-the driver falls back to when a package installs no [META]. Where the [META]
-is there, the archives it does not name are not libraries and the question
-does not come up. Under the
+This only arises where libraries are named after their archives, which is
+what the driver falls back to when a package installs no [META]. Where the
+[META] is there, the archives it does not name are not libraries, and the
+question does not come up. Under the
 {{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
 proposal} it could not arise at all: one directory, one library, one archive.
 
 {3 Libraries that were not built}
 
 A [META] names the libraries a package can install, not the ones it did. A
-package built without an optional dependency still declares the sub-library it
-skipped: [fmt] declares [fmt.cli] when [cmdliner] was absent, [logs] declares
-[logs.lwt], [logs.fmt] and the rest. The directory the [META] names is then not
-there, and the driver documents nothing for that library and logs that it
-found nothing. The same happens for a [META] that points outside its own
-package, as [topkg] points at [topkg-care].
+package built without an optional dependency still declares the sub-library
+it skipped. [fmt] declares [fmt.cli] when [cmdliner] was absent, and [logs]
+declares [logs.lwt], [logs.fmt] and the rest. The directory the [META] names
+is then not there. The driver documents nothing for that library, and logs
+that it found nothing. The same happens for a [META] that points outside its
+own package, as [topkg] points at [topkg-care].
 
-This is worth knowing when comparing two runs: a library missing from the
+This is worth knowing when you compare two runs. A library missing from the
 output may mean the package was built differently, not that the driver
 dropped it.
 
@@ -715,7 +723,7 @@ v}
 
 This adds [eio_main]'s pages and libraries to [eio]'s scope. But [eio_main]
 comes later in the build, so its [.odoc] files do not exist when [eio] would
-be linked. [Build] handles this by compiling first and linking later: before
+be linked. [Build] handles this by compiling first and linking later. Before
 it links a package, it compiles every package the scope names. So it compiles
 [eio], then [eio_main], then links [eio], and later links [eio_main] in its
 turn. Compiling never needs the forward reference, since it follows
@@ -726,52 +734,56 @@ split ocaml.org makes between the two phases, see below.
 
 A package with pages but no libraries, or with libraries but no pages, is
 ordinary. The driver writes a landing page for every package that does not
-ship an [index.mld], and one for every library, so every package has an entry
-point. Modules whose names contain [__] are hidden: they are compiled, because
-other modules depend on them, but not linked or rendered.
+ship an [index.mld], and one for every library. Every package therefore has
+an entry point. Modules whose names contain [__] are hidden. They are
+compiled, because other modules depend on them, but not linked or rendered.
 
 {3 Dependencies documented elsewhere}
 
 By default every dependency is documented too, so that links into them work.
-With [--remap], dependencies are compiled, because the selected packages'
-units depend on their [.odoc] files, but not linked or rendered, and links
-into them are rewritten to point at their documentation on ocaml.org.
+With [--remap], dependencies are compiled but not linked or rendered. They
+must still be compiled, because the selected packages' units depend on their
+[.odoc] files. Links into them are rewritten to point at their documentation
+on ocaml.org.
 
 {2:ocamlorg ocaml.org: one package per job}
 
 ocaml.org documents every version of every package. Each is built by a
-separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]:
-a directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
+separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]: a
+directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
 installed. [voodoo] is the name of the part of
 {{:https://github.com/ocurrent/ocaml-docs-ci}ocaml-docs-ci} that does that
-preparing, and the driver is named after it. The [<u>] is a {e universe}: the
+preparing, and the driver is named after it. The [<u>] is a {e universe}. The
 same version of a package can be built more than once, against different
-versions of its dependencies, and each such build is one. The build ocaml.org
-shows by default for a version is the {e blessed} one, which the driver is
-told with [--blessed]. The dependencies are installed in the job's switch,
-and their [.odoc] files are those earlier jobs wrote into the odoc directory,
-at the locations the mirror layout predicts. The switch holds that package's closure
-and no more, so findlib is often not there to be asked and the facts come from
-the [META] files and the compiler, as {{!installed}step 1} describes.
+versions of its dependencies, and each such build is one universe. The build
+ocaml.org shows by default for a version is the {e blessed} one, and the
+driver is told so with [--blessed].
+
+The dependencies are installed in the job's switch. Their [.odoc] files are
+the ones earlier jobs wrote into the odoc directory, at the locations the
+mirror layout predicts. The switch holds that package's closure and no more,
+so findlib is often not there to be asked. The facts then come from the
+[META] files and the compiler, as {{!installed}step 1} describes.
+
 {{!/odoc-driver/Odoc_driver_lib.Voodoo}[Voodoo]} reads the prepared package
-into a [Packages.t]; everything after that is the same code as for a switch,
+into a [Packages.t]. Everything after that is the same code as for a switch,
 applied to one package. That the two drivers share the compile step is not
-tidiness: a package's own libraries require one another as often as libraries
-of different packages do, and compiling them in whatever order they were
-listed in leaves what the later ones should have expanded unresolved.
-Identifiers start with [p/<pkg>/<version>] for a blessed build and
+tidiness. A package's own libraries require one another as often as libraries
+of different packages do. Compiling them in whatever order they were listed
+in leaves unresolved what the later ones should have expanded. Identifiers
+start with [p/<pkg>/<version>] for a blessed build, and
 [u/<universe>/<pkg>/<version>] for any other.
 
 The job scheduler needs the compile and link phases separately, for the same
-forward-reference reason as above: [--actions compile-only] compiles a
-package, [--actions link-and-gen] links and renders it once the packages its
-scope names are compiled. Occurrence counts and the JSON search index that
-uses them are produced at the end of the link job.
+forward-reference reason as above. [--actions compile-only] compiles a
+package. [--actions link-and-gen] links and renders it, once the packages its
+scope names are compiled. Occurrence counts, and the JSON search index that
+uses them, are produced at the end of the link job.
 
 {1:conv Convention for installed packages}
 
 For drivers and installed packages to work together, both follow the
-convention below. The reference driver implements it; other drivers should
+convention below. The reference driver implements it. Other drivers should
 give the same results.
 
 {2 Trees and their roots}
@@ -780,14 +792,14 @@ Each installed package [<p>] defines one page tree, named [<p>], with root
 identifier [<p>]. Each of its libraries [<l>] defines one module tree, named
 [<l>], with root identifier [<p>/<l>].
 
-A package [foo] with libraries [foo] and [foo.bar] thus defines three trees:
-the page tree [foo], and the module trees [foo] rooted at [foo/foo] and
-[foo.bar] rooted at [foo/foo.bar]. Another package refers to them with
-[-P foo:<dir>], [-L foo:<dir>] and [-L foo.bar:<dir>] at link time, where each
-[<dir>] holds the tree's [.odoc] files.
+A package [foo] with libraries [foo] and [foo.bar] thus defines three trees.
+They are the page tree [foo], the module tree [foo] rooted at [foo/foo], and
+the module tree [foo.bar] rooted at [foo/foo.bar]. Another package refers to
+them at link time with [-P foo:<dir>], [-L foo:<dir>] and
+[-L foo.bar:<dir>]. Each [<dir>] holds that tree's [.odoc] files.
 
-The driver may root the trees differently as long as references still
-resolve; ocaml.org puts the version in the root identifier.
+The driver may root the trees differently, as long as references still
+resolve. ocaml.org puts the version in the root identifier.
 
 {2:pkg_units The units of a package}
 
@@ -805,10 +817,10 @@ The driver adds pages of its own, which a package cannot supply:
 - one at [<p>/src], introducing the rendered sources, when any module of the
   package has an implementation to render.
 
-Each is an [.mld] the driver writes to a scratch directory and compiles like
-any other page. The library pages and the source page carry
-[@toc_status hidden], which keeps them out of the table of contents, and
-[@order_category], which decides where they sit among the package's pages.
+Each is an [.mld] that the driver writes to a scratch directory and compiles
+like any other page. The library pages and the source page carry two tags.
+[@toc_status hidden] keeps them out of the table of contents.
+[@order_category] decides where they sit among the package's pages.
 
 {2 Parent ids}
 
@@ -824,23 +836,23 @@ Implementation units have the source id [<p>/src/<l>/<name>.ml].
 {2 The reference scope}
 
 A package's units are linked with the scope described in the
-{{!standard}walkthrough}: [-L] for its own libraries, the libraries they
-require directly, and those named in [odoc-config.sexp]; [-P] for itself, the
-packages providing those libraries, and those named in [odoc-config.sexp].
-The transitive closure is deliberately not included. To refer to something in
-a transitive dependency, name it in the [META] [requires] field or in
-[odoc-config.sexp]. This is the driver side of the
+{{!standard}walkthrough}. [-L] names its own libraries, the libraries they
+require directly, and those named in [odoc-config.sexp]. [-P] names the
+package itself, the packages providing those libraries, and those named in
+[odoc-config.sexp]. The transitive closure is deliberately not included. To
+refer to something in a transitive dependency, name it in the [META]
+[requires] field or in [odoc-config.sexp]. This is the driver side of the
 {{!odoc_for_authors.reference_scope}reference scope} that authors see.
 
-The dependency cone is a different matter: it must reach everything a unit's
+The dependency cone is a different matter. It must reach everything a unit's
 modules depend on, transitively, because expansions and source links do. The
 driver gives it to [odoc compile] as [-L], naming each library, and to
 [odoc link] as [-I]. Odoc searches the recorded libraries, and then the [-I]
-directories, before the rest of the scope, so where a name is in both a unit
-gets the module it was built against; and because the names are written into
-the units, that holds for another run resolving into them as well, not only
-for the unit on the command line. The page the driver writes
-for a library is given that library's cone for the same reason.
+directories, before the rest of the scope. Where a name is in both, a unit
+therefore gets the module it was built against. The library names are written
+into the units. That holds for another run resolving into them as well, and
+not only for the unit on the command line. The page the driver writes for
+a library is given that library's cone for the same reason.
 
 {2 [odoc-config.sexp]}
 
@@ -854,8 +866,8 @@ s-expressions:
 
 {2 Ordering the generated pages}
 
-The convention introduces directories, one per library, whose order in the
-sidebar an author cannot set with [@children_order]. In the pages it writes
+The convention introduces directories, one per library. An author cannot set
+their order in the sidebar with [@children_order]. In the pages it writes
 itself, the driver uses the [@order_category <name>] tag to help [odoc] sort
 them. The resulting order is:
 

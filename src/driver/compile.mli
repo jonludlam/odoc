@@ -16,10 +16,10 @@ val compile_pages : Odoc_unit.pkg -> unit
     libraries. *)
 
 val link : warnings_tags:string list -> Odoc_unit.pkg -> unit
-(** [odoc link] the units of a package with the package's scope, and each
-    library's units, with the page the driver writes for it, with the library's
-    [-I] search path as well. Everything the scope names must have been
-    compiled. Warnings are reported for the packages in [warnings_tags]. *)
+(** [odoc link] the units of a package with the package's scope. The units of a
+    library, and the page the driver writes for it, also get that library's [-I]
+    search path. Everything the scope names must have been compiled. Warnings
+    are reported for the packages in [warnings_tags]. *)
 
 val html_support : Fpath.t -> unit
 (** Write the files every page relies on into the HTML directory. *)

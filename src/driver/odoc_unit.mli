@@ -17,8 +17,8 @@ type +'a t = {
       (** The [.cmti], [.cmt], [.mld], [.md] or asset file. *)
   input_copy : Fpath.t option;
       (** For the interface of a virtual library: a place to copy the [.cmti]
-          to, next to the [.odoc] file, so that a later run documenting an
-          implementation can find it. *)
+          to, next to the [.odoc] file. A later run documenting an
+          implementation can then find it. *)
   odoc_file : Fpath.t;  (** Where [odoc compile] writes. *)
   odocl_file : Fpath.t;  (** Where [odoc link] writes. *)
   enable_warnings : bool;  (** Report odoc's warnings for this unit. *)
@@ -78,15 +78,15 @@ type lib = {
       (** The libraries this one was built against: itself and, transitively,
           what it requires, each with the directory holding its [.odoc] files.
           This is what the compiler could see. The units are compiled with it as
-          [-L], which both finds the files and records the names in them, and
+          [-L], which finds the files and records the names in them. They are
           linked with the directories as [-I]. *)
   units : module_unit list;
   page : mld t option;
       (** The page the driver writes to list the library's modules. [None] when
           the driver writes no pages for this package. It is linked with
-          {!includes}, like the library's modules: what it shows of them is
-          taken from this library, and odoc prefers a module found there to a
-          same-named module of another library. *)
+          {!includes}, like the library's modules. What it shows of them is
+          therefore taken from this library: odoc prefers a module found there
+          to a same-named module of another library. *)
 }
 (** A library and its modules. *)
 
@@ -118,15 +118,15 @@ val all_units : pkg -> any list
 
     Identifiers follow one layout and files on disk another.
 
-    {e Identifiers} put a package's pages under the package's name and a
+    {e Identifiers} put a package's pages under the package's name, and a
     library's modules under [<pkg>/<lib>]. They decide the URLs.
 
     {e Files} mirror the switch. A library's [.odoc] files are written at the
-    path of its object directory, [lib/<findlib dir>], so libraries that share a
-    directory in the switch share one here and the [-I] search path is the
-    compiler's. A package's pages are written below [doc/<pkg>]. Every location
-    is a function of a name, so a run finds what earlier runs built without any
-    record of it. The same paths hold below the odocl directory. *)
+    path of its object directory, [lib/<findlib dir>]. Libraries that share a
+    directory in the switch therefore share one here, and the [-I] search path
+    is the compiler's. A package's pages are written below [doc/<pkg>]. Every
+    location is a function of a name, so a run finds what earlier runs built
+    with no record of them. The same paths hold below the odocl directory. *)
 
 val pkg_dir : Packages.t -> Fpath.t
 (** The identifier of the package's top-level page, and the root of its HTML. *)

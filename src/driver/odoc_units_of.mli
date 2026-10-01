@@ -1,10 +1,10 @@
 (** From what is installed to what to build.
 
-    This module decides, for every package, the units to compile, the identifier
-    and the location of each, the [-I] search path of each library and the
-    reference scope of the package. All of it is derived from names: what opam
-    and findlib say about the switch, and the layout described in {!Odoc_unit}.
-*)
+    This module decides, for every package, the units to compile. It decides the
+    identifier and the location of each unit, the [-I] search path of each
+    library, and the reference scope of the package. All of it is derived from
+    names: what opam and findlib say about the switch, and the layout described
+    in {!Odoc_unit}. *)
 
 (** How the top-level pages are made. *)
 type indices_style =
