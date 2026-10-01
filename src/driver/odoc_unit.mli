@@ -72,8 +72,9 @@ type lib = {
   requires : string list;
       (** The libraries of this build that must be compiled before this one: the
           libraries it requires, restricted to those being built. A required
-          library that provides no modules stands for the libraries it requires
-          in turn. *)
+          library that is not being built stands for the libraries it requires
+          in turn. That covers an alias such as [threads.posix], and a library
+          an earlier run compiled. *)
   includes : (string * Fpath.t) list;
       (** The libraries this one was built against: itself and, transitively,
           what it requires, each with the directory holding its [.odoc] files.

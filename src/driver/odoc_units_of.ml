@@ -100,9 +100,9 @@ let pkg_pages_dir known name = Fpath.(known.odoc_root / "doc" / name)
 type ctx = { known : known; dirs : dirs; remap : bool }
 
 (* Walk [names] and, transitively, the requires of those that do not satisfy
-   [keep], collecting those that do. A library providing no modules of its
-   own -- [num] forwarding to [num.core], [threads.posix] to [threads] -- is
-   thereby stood in for by its requires. *)
+   [keep], collecting those that do. A library the caller does not keep is
+   thereby stood in for by its requires. That is how an alias is followed:
+   [num] forwards to [num.core], [threads.posix] to [threads]. *)
 let close known ~keep names =
   let rec go seen acc = function
     | [] -> acc
