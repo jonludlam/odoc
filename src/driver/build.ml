@@ -13,34 +13,32 @@
    points at eio_main, odoc's at odoc-driver. So before a package is linked,
    whatever its scope names is compiled too. This is the split that voodoo
    mode exposes as [--actions compile-only] and [--actions link-and-gen].
+   {!Plan} resolves the names a scope holds.
 
-   A {!Plan} resolves the names a scope and a library's requires hold. The
-   top-level index, whose scope is every package, is expected last. *)
+   The top-level index, whose scope is every package, is expected last. *)
 
 (* Compiling a package's libraries, each after the libraries it requires and
-   each at most once. The plan holds the libraries of every package in the
-   run, so that a library pulled in by another package's scope is compiled
-   once. *)
-let compile_libs_of plan =
+   each at most once. A library pulled in by another package's scope is
+   compiled once, since the table is shared by the whole run. *)
+let compile_libs () =
   let compiled_libs = Hashtbl.create 1000 in
-  let rec compile_lib (pkg, (lib : Odoc_unit.lib)) =
+  let rec compile_lib (lib : Odoc_unit.lib) =
     if not (Hashtbl.mem compiled_libs lib.lib_name) then (
       Hashtbl.add compiled_libs lib.lib_name ();
-      List.iter compile_lib (Plan.requires plan lib);
+      List.iter compile_lib lib.requires;
       Logs.debug (fun m -> m "Compiling library %s" lib.lib_name);
-      Compile.compile_lib pkg lib)
+      Compile.compile_lib lib)
   in
-  fun (pkg : Odoc_unit.pkg) ->
-    List.iter (fun lib -> compile_lib (pkg, lib)) pkg.libs
+  fun (pkg : Odoc_unit.pkg) -> List.iter compile_lib pkg.libs
 
 let compile_package pkg =
-  compile_libs_of (Plan.of_packages [ pkg ]) pkg;
+  compile_libs () pkg;
   Compile.compile_pages pkg
 
 let all ~html_dir ~remaps ~generate_json ~warnings_tags
     (pkgs : Odoc_unit.pkg list) =
   let plan = Plan.of_packages pkgs in
-  let compile_libs = compile_libs_of plan in
+  let compile_libs = compile_libs () in
   let compiled_pkgs = Hashtbl.create 100 in
   let compile_pkg (pkg : Odoc_unit.pkg) =
     if not (Hashtbl.mem compiled_pkgs pkg.pkgname) then (
@@ -57,4 +55,4 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
       Logs.debug (fun m -> m "Linking %a" (Fmt.option Fmt.string) pkg.pkgname);
       Compile.link ~warnings_tags pkg;
       Compile.generate ?remap_file ~generate_json html_dir pkg)
-    (Plan.packages plan)
+    pkgs

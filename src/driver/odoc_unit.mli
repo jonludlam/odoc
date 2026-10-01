@@ -69,7 +69,11 @@ type scope = {
 
 type lib = {
   lib_name : string;
-  requires : string list;
+  pkgname : string option;
+      (** The package that provides it. It is the tag the library's warnings
+          carry, so that [odoc link] can report them for the packages the run
+          was asked to document and for no others. *)
+  requires : lib list;
       (** The libraries of this build that must be compiled before this one: the
           libraries it requires, restricted to those being built. A required
           library that is not being built stands for the libraries it requires
