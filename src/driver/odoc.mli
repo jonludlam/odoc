@@ -2,8 +2,8 @@
     {!Worker_pool}. See the driver documentation for what each command does. *)
 
 (** Identifiers of units. An identifier is the parent id given to
-    [odoc compile], a path such as [fmt/fmt], and decides how references to the
-    unit resolve and where its HTML goes. *)
+    [odoc compile], a path such as [fmt/fmt]. It decides how references to the
+    unit resolve, and where its HTML goes. *)
 module Id : sig
   type t
 
@@ -44,10 +44,11 @@ val compile :
   ignore_output:bool ->
   unit
 (** [odoc compile] of an interface or a page. [parent_id] decides the unit's
-    identifier. [output_file] is where the [.odoc] file goes; it need not lie
-    below the parent id. [libs] are the libraries the input was built against,
-    each with the directory of its [.odoc] files: they are searched for the
-    modules the input depends on, and their names are written into the unit. *)
+    identifier. [output_file] is where the [.odoc] file goes, and it need not
+    lie below the parent id. [libs] are the libraries the input was built
+    against, each with the directory of its [.odoc] files. Those directories are
+    searched for the modules the input depends on, and the library names are
+    written into the unit. *)
 
 val compile_impl :
   output_file:Fpath.t ->
@@ -81,10 +82,10 @@ val link :
   unit ->
   unit
 (** [odoc link]. [docs] are the page roots ([-P]) and [libs] the library roots
-    ([-L]) the unit may refer to; [includes] the directories ([-I]) holding the
-    [.odoc] files of the modules it depends on. Roots may share a directory, so
-    [--custom-layout] is always passed. Warnings are reported for the packages
-    named in [warnings_tags]. *)
+    ([-L]) the unit may refer to. [includes] are the directories ([-I]) holding
+    the [.odoc] files of the modules it depends on. Roots may share a directory,
+    so [--custom-layout] is always passed. Warnings are reported for the
+    packages named in [warnings_tags]. *)
 
 (** {1 Indexing} *)
 

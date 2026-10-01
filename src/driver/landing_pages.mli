@@ -1,6 +1,6 @@
-(** The pages the driver writes itself: an index for each package that does not
-    ship one, one for each library, one for the sources, and the top-level list
-    of packages. *)
+(** The pages the driver writes itself. They are an index for each package that
+    does not ship one, an index for each library, one page for the sources, and
+    the top-level list of packages. *)
 
 open Odoc_unit
 
