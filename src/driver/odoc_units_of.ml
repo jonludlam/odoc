@@ -313,12 +313,21 @@ let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) ~requires :
    a cycle, but a [META] file is data on disk: a library already under way is
    skipped rather than followed again. *)
 let libs_of ctx (pkgs : Packages.t list) =
+  (* A library name is a findlib name, so one package provides it. Two that
+     claim the same name are a broken switch: keep the first, as findlib
+     does, and say so. *)
   let sources =
     List.fold_left
       (fun acc (pkg : Packages.t) ->
         List.fold_left
           (fun acc (lib : Packages.libty) ->
-            Util.StringMap.add lib.lib_name (pkg, lib) acc)
+            match Util.StringMap.find_opt lib.lib_name acc with
+            | Some ((other : Packages.t), _) ->
+                Logs.warn (fun m ->
+                    m "Library '%s' is provided by both '%s' and '%s'"
+                      lib.lib_name other.name pkg.name);
+                acc
+            | None -> Util.StringMap.add lib.lib_name (pkg, lib) acc)
           acc pkg.libraries)
       Util.StringMap.empty pkgs
   in
