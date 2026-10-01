@@ -14,50 +14,33 @@
    whatever its scope names is compiled too. This is the split that voodoo
    mode exposes as [--actions compile-only] and [--actions link-and-gen].
 
-   The top-level index, whose scope is every package, is expected last. *)
+   A {!Plan} resolves the names a scope and a library's requires hold. The
+   top-level index, whose scope is every package, is expected last. *)
 
 (* Compiling a package's libraries, each after the libraries it requires and
-   each at most once. The libraries of every package in the run are known, so
-   that a library pulled in by another package's scope is compiled once. *)
-let compile_libs_of (pkgs : Odoc_unit.pkg list) =
-  let libs =
-    List.fold_left
-      (fun acc (p : Odoc_unit.pkg) ->
-        List.fold_left
-          (fun acc (lib : Odoc_unit.lib) ->
-            Util.StringMap.add lib.lib_name (p, lib) acc)
-          acc p.libs)
-      Util.StringMap.empty pkgs
-  in
+   each at most once. The plan holds the libraries of every package in the
+   run, so that a library pulled in by another package's scope is compiled
+   once. *)
+let compile_libs_of plan =
   let compiled_libs = Hashtbl.create 1000 in
-  let rec compile_lib name =
-    if not (Hashtbl.mem compiled_libs name) then (
-      Hashtbl.add compiled_libs name ();
-      match Util.StringMap.find_opt name libs with
-      | None -> ()
-      | Some (pkg, lib) ->
-          List.iter compile_lib lib.requires;
-          Logs.debug (fun m -> m "Compiling library %s" name);
-          Compile.compile_lib pkg lib)
+  let rec compile_lib (pkg, (lib : Odoc_unit.lib)) =
+    if not (Hashtbl.mem compiled_libs lib.lib_name) then (
+      Hashtbl.add compiled_libs lib.lib_name ();
+      List.iter compile_lib (Plan.requires plan lib);
+      Logs.debug (fun m -> m "Compiling library %s" lib.lib_name);
+      Compile.compile_lib pkg lib)
   in
   fun (pkg : Odoc_unit.pkg) ->
-    List.iter (fun (lib : Odoc_unit.lib) -> compile_lib lib.lib_name) pkg.libs
+    List.iter (fun lib -> compile_lib (pkg, lib)) pkg.libs
 
 let compile_package pkg =
-  compile_libs_of [ pkg ] pkg;
+  compile_libs_of (Plan.of_packages [ pkg ]) pkg;
   Compile.compile_pages pkg
 
 let all ~html_dir ~remaps ~generate_json ~warnings_tags
     (pkgs : Odoc_unit.pkg list) =
-  let compile_libs = compile_libs_of pkgs in
-  let by_name =
-    List.fold_left
-      (fun acc (p : Odoc_unit.pkg) ->
-        match p.pkgname with
-        | Some name -> Util.StringMap.add name p acc
-        | None -> acc)
-      Util.StringMap.empty pkgs
-  in
+  let plan = Plan.of_packages pkgs in
+  let compile_libs = compile_libs_of plan in
   let compiled_pkgs = Hashtbl.create 100 in
   let compile_pkg (pkg : Odoc_unit.pkg) =
     if not (Hashtbl.mem compiled_pkgs pkg.pkgname) then (
@@ -70,11 +53,8 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
   List.iter
     (fun (pkg : Odoc_unit.pkg) ->
       compile_pkg pkg;
-      List.iter
-        (fun (name, _) ->
-          Option.iter compile_pkg (Util.StringMap.find_opt name by_name))
-        pkg.scope.page_roots;
+      List.iter compile_pkg (Plan.scope_packages plan pkg);
       Logs.debug (fun m -> m "Linking %a" (Fmt.option Fmt.string) pkg.pkgname);
       Compile.link ~warnings_tags pkg;
       Compile.generate ?remap_file ~generate_json html_dir pkg)
-    pkgs
+    (Plan.packages plan)
