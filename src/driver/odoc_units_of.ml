@@ -281,7 +281,8 @@ let of_impl ctx (pkg : Packages.t) lib (impl : Packages.impl) : impl t option =
            ~input_file:impl.mip_path ~enable_warnings:false
            ~to_output:pkg.selected ~stash_input:false)
 
-let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) : Odoc_unit.lib =
+let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) ~requires :
+    Odoc_unit.lib =
   let units =
     List.concat_map
       (fun (m : Packages.modulety) ->
@@ -290,22 +291,62 @@ let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) : Odoc_unit.lib =
         (i :> module_unit) :: (Option.to_list impl :> module_unit list))
       lib.modules
   in
-  (* The libraries of this run to compile first: what this one requires,
-     followed through libraries outside the run (aliases in particular). *)
-  let requires =
-    close ctx.known
-      ~keep:(fun l -> Util.StringSet.mem l ctx.known.building)
-      lib.lib_deps
-    |> Util.StringSet.remove lib.lib_name
-    |> Util.StringSet.elements
-  in
   let includes = named_dirs_of ctx.known (cone ctx.known lib.lib_name) in
   let page =
     if writes_pages ctx pkg then
       Some (Landing_pages.library ~dirs:ctx.dirs ~pkg lib)
     else None
   in
-  { lib_name = lib.lib_name; requires; includes; units; page }
+  {
+    lib_name = lib.lib_name;
+    pkgname = Some pkg.name;
+    requires;
+    includes;
+    units;
+    page;
+  }
+
+(* Every library of the run, each built after the libraries it requires, so
+   that a library holds the libraries themselves rather than their names. The
+   requires of a library outside the run stand in for it, aliases in
+   particular. Requiring is acyclic, since the compiler could not have built
+   a cycle, but a [META] file is data on disk: a library already under way is
+   skipped rather than followed again. *)
+let libs_of ctx (pkgs : Packages.t list) =
+  let sources =
+    List.fold_left
+      (fun acc (pkg : Packages.t) ->
+        List.fold_left
+          (fun acc (lib : Packages.libty) ->
+            Util.StringMap.add lib.lib_name (pkg, lib) acc)
+          acc pkg.libraries)
+      Util.StringMap.empty pkgs
+  in
+  let needs (lib : Packages.libty) =
+    close ctx.known
+      ~keep:(fun l -> Util.StringSet.mem l ctx.known.building)
+      lib.lib_deps
+    |> Util.StringSet.remove lib.lib_name
+    |> Util.StringSet.elements
+  in
+  let rec build ~under_way built name =
+    if Util.StringMap.mem name built || Util.StringSet.mem name under_way then
+      built
+    else
+      match Util.StringMap.find_opt name sources with
+      | None -> built
+      | Some (pkg, lib) ->
+          let under_way = Util.StringSet.add name under_way in
+          let names = needs lib in
+          let built = List.fold_left (build ~under_way) built names in
+          let requires =
+            List.filter_map (fun n -> Util.StringMap.find_opt n built) names
+          in
+          Util.StringMap.add name (of_lib ctx pkg lib ~requires) built
+  in
+  Util.StringMap.fold
+    (fun name _ built -> build ~under_way:Util.StringSet.empty built name)
+    sources Util.StringMap.empty
 
 (* A page of the package's documentation: the parent id follows its path below
    the doc directory, and so does the file. *)
@@ -367,7 +408,7 @@ let landing_pages ctx (pkg : Packages.t) : mld t list =
      else [ Landing_pages.package ~dirs:ctx.dirs ~pkg ])
     @ if has_sources then [ Landing_pages.src ~dirs:ctx.dirs ~pkg ] else []
 
-let of_package ctx (pkg : Packages.t) : Odoc_unit.pkg =
+let of_package ctx libs (pkg : Packages.t) : Odoc_unit.pkg =
   let pages =
     (landing_pages ctx pkg :> page list)
     @ (List.map (of_mld ctx pkg) pkg.mlds :> page list)
@@ -378,7 +419,11 @@ let of_package ctx (pkg : Packages.t) : Odoc_unit.pkg =
     pkgname = Some pkg.name;
     scope = scope_of ctx.known pkg;
     index = Some (index_of ~dirs:ctx.dirs pkg);
-    libs = List.map (of_lib ctx pkg) pkg.libraries;
+    libs =
+      List.filter_map
+        (fun (lib : Packages.libty) ->
+          Util.StringMap.find_opt lib.lib_name libs)
+        pkg.libraries;
     pages;
   }
 
@@ -405,7 +450,8 @@ let toplevel known (pkgs : Packages.t list) (page : mld t) : Odoc_unit.pkg =
 let packages ~dirs ~remap ~indices_style (pkgs : Packages.t list) : pkg list =
   let known = known ~odoc_dir:dirs.odoc_dir pkgs in
   let ctx = { known; dirs; remap } in
-  let built = List.map (of_package ctx) pkgs in
+  let libs = libs_of ctx pkgs in
+  let built = List.map (of_package ctx libs) pkgs in
   match indices_style with
   | Normal { toplevel_content = None } ->
       built

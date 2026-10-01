@@ -56,7 +56,8 @@ type page = [ mld | md | asset ] t
    page the driver writes to list its modules. *)
 type lib = {
   lib_name : string;
-  requires : string list;
+  pkgname : string option;
+  requires : lib list;
   includes : (string * Fpath.t) list;
   units : module_unit list;
   page : mld t option;

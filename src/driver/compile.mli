@@ -4,7 +4,7 @@
 val init_stats : Odoc_unit.pkg list -> unit
 (** Tell the progress display how much there is to do. *)
 
-val compile_lib : Odoc_unit.pkg -> Odoc_unit.lib -> unit
+val compile_lib : Odoc_unit.lib -> unit
 (** Compile the modules of a library, each module after the modules it depends
     on. Interfaces go through [odoc compile] and implementations through
     [odoc compile-impl], all with the library's [-I] search path. All

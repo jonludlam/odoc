@@ -81,7 +81,7 @@ let by_hash (units : [ Odoc_unit.intf | Odoc_unit.impl ] Odoc_unit.t list) =
       | `Impl _ -> acc)
     Util.StringMap.empty units
 
-let compile_lib (pkg : Odoc_unit.pkg) (lib : Odoc_unit.lib) =
+let compile_lib (lib : Odoc_unit.lib) =
   let libs = lib.includes in
   let hashes = by_hash lib.units in
   (* A module is compiled after the modules it imports: [compile_mod] on a
@@ -112,7 +112,7 @@ let compile_lib (pkg : Odoc_unit.pkg) (lib : Odoc_unit.lib) =
       find_virtual_interface ~includes:(Odoc_unit.include_dirs lib) unit
     in
     Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file ~libs
-      ~warnings_tag:pkg.pkgname ~parent_id:unit.parent_id
+      ~warnings_tag:lib.pkgname ~parent_id:unit.parent_id
       ~ignore_output:(not unit.enable_warnings);
     (match unit.input_copy with
     | None -> ()
