@@ -1,26 +1,29 @@
-(** The packages of one build, with the names they use resolved.
+(** The order in which a build does its work.
 
-    A package's {!Odoc_unit.scope} names the packages it may refer to, and a
-    library's {!Odoc_unit.lib.requires} names the libraries it must be compiled
-    after. Both hold names rather than the things themselves, because the
-    relation they describe has cycles: [eio]'s scope names [eio_main], and
-    [eio_main] requires [eio]. A plan resolves those names once, against the
-    packages of this build, so that what follows works with packages and
-    libraries. A name this build has nothing for is dropped: it belongs to a
-    package an earlier run compiled, or to no package at all. *)
+    Compiling a library needs the libraries it requires compiled first, and
+    linking a package needs every package its {!Odoc_unit.scope} names compiled
+    first. Nothing needs a link: [odoc link] reads the output of [odoc compile]
+    and writes somewhere else. Both relations are therefore acyclic, and the
+    whole build is one sequence of steps, worked out once here rather than
+    discovered as it runs.
 
-type t
+    A package's scope and a library's requires hold names. A name this build has
+    nothing for is dropped: it belongs to a package an earlier run compiled, or
+    to no package at all. *)
 
-val of_packages : Odoc_unit.pkg list -> t
-(** The plan for building these packages, in this order. *)
+type step =
+  | Compile_lib of Odoc_unit.pkg * Odoc_unit.lib
+      (** Compile a library, after the libraries it requires. *)
+  | Compile_pages of Odoc_unit.pkg  (** Compile a package's pages. *)
+  | Link of Odoc_unit.pkg
+      (** Link and render a package, after everything its scope names is
+          compiled. *)
 
-val packages : t -> Odoc_unit.pkg list
-(** The packages to build, in the order given. *)
+val of_packages : Odoc_unit.pkg list -> step list
+(** The steps for building these packages, in the order given. Each library is
+    compiled once, and each package's pages once, however many packages name
+    them. *)
 
-val requires : t -> Odoc_unit.lib -> (Odoc_unit.pkg * Odoc_unit.lib) list
-(** The libraries of this build that must be compiled before this one, each with
-    the package that provides it. *)
-
-val scope_packages : t -> Odoc_unit.pkg -> Odoc_unit.pkg list
-(** The packages of this build that the package's scope names. All of them must
-    be compiled before it is linked. *)
+val compile_only : Odoc_unit.pkg -> step list
+(** The compile steps of one package, for voodoo mode: ocaml-docs-ci gives it
+    one package per job, and earlier jobs compiled the dependencies. *)
