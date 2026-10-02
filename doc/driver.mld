@@ -408,6 +408,19 @@ They answer the grouping and the dependency questions from the installed
 files alone, when there is nothing better to go on. A driver that is handed
 the answers has no need of them.
 
+A [Packages.t] is made for the packages of this run, and for no others. A
+run documents one package, or a few, or everything installed. Either way,
+its libraries require libraries that are not in it. The dependencies of a
+voodoo job are the clearest case: earlier jobs compiled them, and their
+[.odoc] files are on disk already. Three facts about such a library are
+still needed. They are the directory of its [.odoc] files, the package that
+provides it, and what it requires in turn.
+{{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} looks them up
+while it builds the units, from findlib and from opam's record of installed
+files, and remembers the answers. So step 1 is not the only place a driver
+learns what is installed. It is the place it learns everything about what it
+is going to build.
+
 Nor can a driver assume findlib is there to be asked. Findlib is configured by
 [ocamlfind], which is a package like any other. A switch holding only the
 closure of a package built with dune need not contain it, and ocaml.org
