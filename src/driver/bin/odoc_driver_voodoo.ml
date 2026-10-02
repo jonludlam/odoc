@@ -65,7 +65,9 @@ let run package_name blessed actions odoc_dir odocl_dir
   let units =
     let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
     match
-      Odoc_units_of.packages ~dirs ~indices_style:Voodoo ~remap:false all
+      Odoc_units_of.packages ~dirs ~indices_style:Voodoo ~remap:false
+        ~selected:(Util.StringSet.singleton package_name)
+        all
     with
     | [ units ] -> units
     | _ -> failwith "Error, expecting a single package in voodoo mode"

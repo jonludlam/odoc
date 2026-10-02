@@ -16,10 +16,14 @@ type indices_style =
 val packages :
   dirs:Odoc_unit.dirs ->
   remap:bool ->
+  selected:Util.StringSet.t ->
   indices_style:indices_style ->
   Packages.t list ->
   Odoc_unit.pkg list
-(** The packages to build, in the order given. With [Normal] indices the last
-    element is the top-level index, which belongs to no package. With [remap],
-    the units of unselected packages are compiled but not rendered, and their
-    links are redirected (see {!Packages.t.remaps}). *)
+(** The packages to build, in the order given. [selected] names the packages the
+    run was asked for, rather than pulled in as dependencies: warnings are
+    reported for those, and only those are rendered. With [Normal] indices the
+    last element is the top-level index, which belongs to no package. With
+    [remap], the units of the packages that are not selected are compiled but
+    not rendered, and links into them are redirected (see {!Packages.remaps}).
+*)

@@ -97,7 +97,16 @@ let pkg_pages_dir known name = Fpath.(known.odoc_root / "doc" / name)
 
 (* What unit construction needs to know: the world of libraries and packages,
    where the output goes, and whether unselected packages are remapped. *)
-type ctx = { known : known; dirs : dirs; remap : bool }
+type ctx = {
+  known : known;
+  dirs : dirs;
+  remap : bool;
+  selected : Util.StringSet.t;
+}
+
+(* The packages the run was asked for, rather than pulled in as
+   dependencies. Their warnings are reported and their pages rendered. *)
+let selected ctx (pkg : Packages.t) = Util.StringSet.mem pkg.name ctx.selected
 
 (* Walk [names] and, transitively, the requires of those that do not satisfy
    [keep], collecting those that do. A library the caller does not keep is
@@ -217,7 +226,7 @@ let scope_of known (pkg : Packages.t) : scope =
   { page_roots; lib_roots }
 
 (* The driver writes no pages of its own for a package it only remaps. *)
-let writes_pages ctx (pkg : Packages.t) = (not ctx.remap) || pkg.selected
+let writes_pages ctx (pkg : Packages.t) = (not ctx.remap) || selected ctx pkg
 
 let index_of ~dirs (pkg : Packages.t) : index =
   {
@@ -263,7 +272,7 @@ let of_intf ctx (pkg : Packages.t) (lib : Packages.libty)
   let name = intf.mif_path |> Fpath.rem_ext |> Fpath.basename in
   make_unit ctx ~name ~kind ~rel_dir:(lib_dir pkg lib)
     ~obj_dir:(lib_obj_dir lib) ~input_file:intf.mif_path
-    ~enable_warnings:pkg.selected ~to_output:pkg.selected
+    ~enable_warnings:(selected ctx pkg) ~to_output:(selected ctx pkg)
     ~stash_input:(lib.archive_name = None)
 
 let of_impl ctx (pkg : Packages.t) lib (impl : Packages.impl) : impl t option =
@@ -279,7 +288,7 @@ let of_impl ctx (pkg : Packages.t) lib (impl : Packages.impl) : impl t option =
            ~kind:(`Impl { src_id; src_path })
            ~rel_dir:(lib_dir pkg lib) ~obj_dir:(lib_obj_dir lib)
            ~input_file:impl.mip_path ~enable_warnings:false
-           ~to_output:pkg.selected ~stash_input:false)
+           ~to_output:(selected ctx pkg) ~stash_input:false)
 
 let of_lib ctx (pkg : Packages.t) (lib : Packages.libty) ~requires :
     Odoc_unit.lib =
@@ -368,16 +377,16 @@ let of_doc ctx (pkg : Packages.t) ~kind ~name ~rel_path ~file ~enable_warnings
 let of_mld ctx (pkg : Packages.t) (mld : Packages.mld) : mld t =
   of_doc ctx pkg ~kind:`Mld
     ~name:("page-" ^ (mld.mld_path |> Fpath.rem_ext |> Fpath.basename))
-    ~rel_path:mld.mld_rel_path ~file:mld.mld_path ~enable_warnings:pkg.selected
-    ~to_output:pkg.selected
+    ~rel_path:mld.mld_rel_path ~file:mld.mld_path
+    ~enable_warnings:(selected ctx pkg) ~to_output:(selected ctx pkg)
 
 let of_md ctx (pkg : Packages.t) (md : Packages.md) : md t option =
   if Fpath.has_ext ".md" md.md_path then
     Some
       (of_doc ctx pkg ~kind:`Md
          ~name:("page-" ^ (md.md_path |> Fpath.rem_ext |> Fpath.basename))
-         ~rel_path:md.md_rel_path ~file:md.md_path ~enable_warnings:pkg.selected
-         ~to_output:pkg.selected)
+         ~rel_path:md.md_rel_path ~file:md.md_path
+         ~enable_warnings:(selected ctx pkg) ~to_output:(selected ctx pkg))
   else (
     Logs.debug (fun m ->
         m "Skipping non-markdown doc file %a" Fpath.pp md.md_path);
@@ -456,15 +465,19 @@ let toplevel known (pkgs : Packages.t list) (page : mld t) : Odoc_unit.pkg =
   in
   { pkgname = None; scope; index = None; libs = []; pages = [ (page :> page) ] }
 
-let packages ~dirs ~remap ~indices_style (pkgs : Packages.t list) : pkg list =
+let packages ~dirs ~remap ~selected ~indices_style (pkgs : Packages.t list) :
+    pkg list =
   let known = known ~odoc_dir:dirs.odoc_dir pkgs in
-  let ctx = { known; dirs; remap } in
+  let ctx = { known; dirs; remap; selected } in
   let libs = libs_of ctx pkgs in
   let built = List.map (of_package ctx libs) pkgs in
   match indices_style with
   | Normal { toplevel_content = None } ->
       built
-      @ [ toplevel known pkgs (Landing_pages.package_list ~dirs ~remap pkgs) ]
+      @ [
+          toplevel known pkgs
+            (Landing_pages.package_list ~dirs ~remap ~selected pkgs);
+        ]
   | Normal { toplevel_content = Some content } ->
       let content ppf = Format.fprintf ppf "%s" content in
       let page =
