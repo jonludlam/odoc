@@ -95,13 +95,27 @@ type t = {
   libraries : libty list;
   mlds : mld list;
   assets : asset list;
-  selected : bool;
-  remaps : (string * string) list;
   other_docs : md list;
   pkg_dir : Fpath.t;
   doc_dir : Fpath.t;
   config : Global_config.t;
 }
+
+(* The documentation of a package this run does not render is on ocaml.org,
+   so a link into it is rewritten to point there. Every library of the
+   package goes to the same page as the package itself. *)
+let remaps t =
+  let local_pkg_path = Fpath.to_string (Fpath.to_dir_path t.pkg_dir) in
+  let pkg_path =
+    Printf.sprintf "https://ocaml.org/p/%s/%s/doc/" t.name t.version
+  in
+  let lib_paths =
+    List.map
+      (fun (lib : libty) ->
+        (Printf.sprintf "%s%s/" local_pkg_path lib.lib_name, pkg_path))
+      t.libraries
+  in
+  (local_pkg_path, pkg_path) :: lib_paths
 
 let pp fmt t =
   Format.fprintf fmt
@@ -111,13 +125,12 @@ let pp fmt t =
      libraries: %a;@,\
      mlds: %a;@,\
      assets: %a;@,\
-     selected: %b;@,\
      other_docs: %a;@,\
      pkg_dir: %a@,\
      }@]"
     t.name t.version (Fmt.Dump.list pp_libty) t.libraries (Fmt.Dump.list pp_mld)
-    t.mlds (Fmt.Dump.list pp_asset) t.assets t.selected (Fmt.Dump.list pp_md)
-    t.other_docs Fpath.pp t.pkg_dir
+    t.mlds (Fmt.Dump.list pp_asset) t.assets (Fmt.Dump.list pp_md) t.other_docs
+    Fpath.pp t.pkg_dir
 
 let maybe_prepend_top top_dir dir =
   match top_dir with None -> dir | Some d -> Fpath.(d // dir)
@@ -422,37 +435,12 @@ let of_packages ~packages_dir packages =
           | Some f -> Global_config.load f
         in
         let mlds, assets, _ = mk_mlds files.docs in
-        let selected = List.mem pkg.name packages in
-        let remaps =
-          if selected then []
-          else
-            let local_pkg_path = Fpath.to_string (Fpath.to_dir_path pkg_dir) in
-            let pkg_path =
-              Printf.sprintf "https://ocaml.org/p/%s/%s/doc/" pkg.name
-                pkg.version
-            in
-            let lib_paths =
-              List.map
-                (fun libty ->
-                  let lib_name = libty.lib_name in
-                  let local_lib_path =
-                    Printf.sprintf "%s%s/" local_pkg_path lib_name
-                  in
-                  let lib_path = pkg_path in
-                  (local_lib_path, lib_path))
-                libraries
-            in
-            (local_pkg_path, pkg_path) :: lib_paths
-        in
-
         {
           name = pkg.name;
           version = pkg.version;
           libraries;
           mlds;
           assets;
-          selected;
-          remaps;
           other_docs = [];
           pkg_dir;
           doc_dir = pkg_dir;

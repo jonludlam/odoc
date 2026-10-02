@@ -94,12 +94,6 @@ type t = {
   libraries : libty list;
   mlds : mld list;
   assets : asset list;
-  selected : bool;
-      (** Named on the command line, rather than pulled in as a dependency.
-          Warnings are reported for selected packages only. *)
-  remaps : (string * string) list;
-      (** For an unselected package when remapping is on: prefixes of local
-          links to replace by links to ocaml.org. *)
   other_docs : md list;
   pkg_dir : Fpath.t;
       (** The root of the package's pages in the HTML output, and the parent id
@@ -110,13 +104,20 @@ type t = {
   config : Global_config.t;  (** Its [odoc-config.sexp]. *)
 }
 
+val remaps : t -> (string * string) list
+(** The prefixes of links into this package, each with the link to its
+    documentation on ocaml.org. A driver that renders only some of the packages
+    gives these to [odoc html-generate] for the rest, so that links into them
+    lead somewhere. *)
+
 val pp : Format.formatter -> t -> unit
 
 val of_packages : packages_dir:Fpath.t option -> string list -> t list
 (** [of_packages ~packages_dir names] finds the named packages and everything
     they depend on in the switch, and analyses all their modules. With no names,
-    every installed package. The named packages are [selected]. [packages_dir]
-    is a prefix for every package's [pkg_dir]. *)
+    every installed package. Which of them the run was asked for is not recorded
+    here: it is a fact about the run, and {!Odoc_units_of.packages} takes it.
+    [packages_dir] is a prefix for every package's [pkg_dir]. *)
 
 val remap_virtual : t list -> t list
 (** Point the modules of a virtual library's implementations at the virtual

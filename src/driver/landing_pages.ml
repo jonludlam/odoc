@@ -90,14 +90,14 @@ let src ~dirs ~pkg =
   make_index ~dirs ~rel_dir ~obj_dir:(page_obj_dir pkg rel_dir) ~content
     ~enable_warnings:true
 
-let package_list ~dirs ~remap all =
+let package_list ~dirs ~remap ~selected all =
   let content all ppf =
     let sorted_packages =
       all |> List.sort (fun n1 n2 -> String.compare n1.name n2.name)
     in
     fpf ppf "{0 List of all packages}@\n";
     let print_pkg pkg =
-      if pkg.selected || not remap then
+      if (not remap) || Util.StringSet.mem pkg.name selected then
         fpf ppf "- {{!/%s/page-index}%s}@\n" pkg.name pkg.name
     in
     List.iter print_pkg sorted_packages

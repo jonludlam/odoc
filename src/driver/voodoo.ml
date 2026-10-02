@@ -182,8 +182,6 @@ let of_voodoo pkg =
       libraries;
       mlds;
       assets;
-      selected = true;
-      remaps = [];
       other_docs;
       pkg_dir;
       doc_dir;

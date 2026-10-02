@@ -52,8 +52,17 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
   let all = Packages.of_packages ~packages_dir:None packages in
   let all = Packages.remap_virtual all in
 
+  let selected = Util.StringSet.of_list packages in
+  (* The packages this run does not render keep their links working by
+     pointing at ocaml.org. *)
   let remaps =
-    if remap then List.concat_map (fun pkg -> pkg.Packages.remaps) all else []
+    if not remap then []
+    else
+      List.concat_map
+        (fun (pkg : Packages.t) ->
+          if Util.StringSet.mem pkg.name selected then []
+          else Packages.remaps pkg)
+        all
   in
 
   Logs.app (fun m -> m "Starting the compilation process...");
@@ -66,7 +75,7 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
           Odoc_units_of.packages ~dirs
             ~indices_style:
               (Odoc_units_of.Normal { toplevel_content = index_mld_content })
-            ~remap all
+            ~remap ~selected all
         in
         Compile.init_stats pkgs;
         Build.all ~html_dir ~remaps ~generate_json ~warnings_tags:packages pkgs;

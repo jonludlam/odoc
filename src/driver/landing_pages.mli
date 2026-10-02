@@ -24,5 +24,10 @@ val package : dirs:dirs -> pkg:Packages.t -> mld t
 val src : dirs:dirs -> pkg:Packages.t -> mld t
 (** The page introducing a package's rendered sources. *)
 
-val package_list : dirs:dirs -> remap:bool -> Packages.t list -> mld t
+val package_list :
+  dirs:dirs ->
+  remap:bool ->
+  selected:Util.StringSet.t ->
+  Packages.t list ->
+  mld t
 (** The top-level page: the list of documented packages. *)
