@@ -1,22 +1,18 @@
 {0 How to Drive [odoc]}
 
-[odoc] is a command-line tool. It turns the compiled modules and the [.mld]
+[odoc] is a command-line tool that turns the compiled modules and the [.mld]
 pages of a project into documentation, one file at a time, through several
-distinct phases. Like a compiler, it needs something to call it in the right
-order with the right arguments. That something is a {e driver}.
+distinct phases. Like a compiler, it needs a {e driver} to call it in the right
+order with the right arguments.
 
 The {{!/odoc-driver/page-index}odoc-driver} package holds the {e reference
 driver}, which is kept in step with [odoc]. Other drivers exist, such as
 {{:https://dune.readthedocs.io/en/stable/documentation.html}dune} and
 {{!/odig/page-index}odig}.
 
-This document is for anyone who calls [odoc] themselves. You may be writing a
-driver over a switch full of other people's packages. You may be arranging for
-a project to document its own libraries. These are the same job with different
-sources of information. Before anything can be compiled, the same facts have
-to be known either way, and {{!installed}step 1} sets them out. Everything
-after that step is identical. You do not need this document to {e use} [odoc]
-through a driver someone else wrote. It covers:
+This document is for anyone who needs to call [odoc] themselves, you do not
+need this document to {e use} [odoc] through a driver someone else wrote.
+It covers:
 
 - the model [odoc] uses to organise documentation: {{!units}trees};
 - the four {{!pipeline}phases} and the command line of each;
@@ -32,8 +28,8 @@ documentation} is a good way to understand the whole process.
 
 {1:units Trees of documentation}
 
-The same documentation must work in several settings: a local switch, a large
-monorepo, or the {{:https://ocaml.org/packages}ocaml.org} hub for all
+The same documentation must work in at least two settings: a local switch, and
+the {{:https://ocaml.org/packages}ocaml.org} hub for all
 packages. In each setting the pages live at different places, and references
 between them must still resolve.
 
@@ -45,16 +41,11 @@ not by its location.
 
 Concretely, a tree is a name, a root {{!conv}identifier}, and a directory of
 [.odoc] files. The driver passes a page tree as [-P name:dir] and a module
-tree as [-L name:dir]. The name is what an author writes in [{!/name/...}].
-The files below the directory follow the identifiers below the root. The
-reference driver makes one page tree per package and one module tree per
-library. Nothing obliges a driver to do the same.
-
-For opam packages the trees have a natural meaning. Each package has a page
-tree named after the package. Each of its libraries has a module tree named
-after the library. Another package refers to the pages by the package name,
-and to a module by the library name. It does so wherever the package ends up
-in the hierarchy. The {{!conv}convention} below spells this out.
+tree as [-L name:dir]. These names may be used in references to disambiguate
+between modules or pages that share a name. The
+reference driver makes one page tree per package, but mirrors the layout of
+opam for the module trees - that is, sometimes a module tree for one library
+may coincide with a module tree for another library.
 
 {1:pipeline The pipeline}
 
@@ -75,7 +66,7 @@ depends on it, so the phases are separated to break this apparent cycle.
 - The {e generation} phase renders [.odocl] files, with the sidebar made in
   the phase before, as HTML, Markdown, man pages or LaTeX.
 
-Three binaries are involved, and a driver calls all three. [odoc] itself does
+Three binaries are involved. [odoc] itself does
 everything above. [odoc-md] turns a Markdown page into an [.odoc] file, since
 [odoc compile] reads only [.mld]. [sherlodoc] builds the search database that
 the generated pages query, and ships the JavaScript that queries it. A driver
@@ -101,6 +92,9 @@ assets.
   gives the unit its {e identifier}, which decides how references to the unit
   resolve and where its HTML goes. Units of one {{!units}tree} share a common
   prefix of their parent ids. The identifier is stored inside the [.odoc] file.
+  The parent id used when creating local docs (e.g. [fmt/fmt.cli] for library
+  [fmt.cli] in package [fmt]) is different from the parent id when creating
+  docs for ocaml.org (e.g. [p/fmt/0.11.0/doc/fmt.cli])
 
 - [-o <file>.odoc] is where the file goes. The name must be the input's name
   with the [.odoc] extension, prefixed by [page-] for an [.mld]. [odoc] finds
@@ -119,32 +113,25 @@ assets.
 - [-L <name>:<dir>] names a library and the directory of its [.odoc] files.
   [odoc] searches the directory for the modules the input depends on, which
   are the ones [odoc compile-deps] lists for it. Each directory the compiler
-  searched for [.cmi] files should therefore have a counterpart here. Several
-  files of the same name may be on the search path, and [odoc] picks the one
-  whose interface digest matches.
+  searched for [.cmi] files should therefore have a counterpart here. 
 
-  The names are written into the [.odoc] file. They are the libraries the
+  The library names given via [-L] are written into the [.odoc] file. They are the libraries the
   compiler could see when the unit was built, and [odoc link] uses them later.
   Resolution that follows a path or a reference {e into} this unit carries on
-  among these libraries. A module named inside the unit is therefore the one
-  the unit was built against. Without the names, two libraries built against
-  different modules of the same name look alike from the outside.
-
-- [-I <dir>] does the same without naming a library, and so records nothing.
+  among these libraries. [-I <dir>] served a similar purpose but without naming a library, and so records nothing.
   It is what drivers passed before [-L] existed, and is deprecated for these
   two commands.
 
-- [--warnings-tag <tag>] tags the warnings that resolving this unit's
-  references produces. A tagged warning is reported at link time only if [odoc
-  link] is given the same tag with [--warnings-tags]. The name of the package
-  makes a good tag, and that is what the reference driver uses. It tags every
-  unit with its package, and passes only the packages the run was asked to
-  document. The warnings of a dependency then stay out of the output: the user
-  did not ask for that dependency's documentation and cannot fix it.
+- [--warnings-tag <tag>] associates the contents of this unit with the tag.
+  This is used when reporting warnings during linking, as it allows the user
+  to distinguish between warnings that are caused by code from dependencies
+  from warnings that are caused by the users code. The reference driver uses
+  the {b package name} as the tag.
 
 - [--enable-missing-root-warning] reports a root that cannot be found. It is
-  off by default because it is a build-system problem rather than an author's.
-  A build-system problem is a driver's problem, so a driver wants it on.
+  off by default because the most-used driver for odoc at time of writing
+  ([dune build @doc]) does not ensure that all roots are available. Any driver
+  following the guidance of this document ought to enable this warning.
 
 For example, for the [fmt.cli] library the reference driver runs:
 
@@ -168,6 +155,23 @@ written into the unit in the same way. An implementation usually takes the
 same parent id as its interface. [--source-id <sid>] is the identifier of the
 page that will show the rendered source. Links to the source point there.
 
+For the implementation of [fmt_cli] the reference driver runs:
+
+{@shell[
+  $ odoc compile-impl ~/.opam/5.5.0/lib/fmt/cli/fmt_cli.cmt
+      -o _odoc/lib/fmt/cli/impl-fmt_cli.odoc
+      -L fmt.cli:_odoc/lib/fmt/cli/ -L fmt:_odoc/lib/fmt/
+      -L cmdliner:_odoc/lib/cmdliner/ -L stdlib:_odoc/lib/ocaml/
+      --parent-id fmt/fmt.cli --source-id fmt/src/fmt.cli/fmt_cli.ml
+      --enable-missing-root-warning
+]}
+
+The input is the [.cmt] beside the [.cmti] of the example above. The [-L]
+arguments and the parent id are the same as the interface's, so the two units
+sit together and resolve names the same way. The source id puts the rendered
+source below the package's sources page. There is no [--warnings-tag], since
+the driver ignores the warnings of an implementation.
+
 {3 Compiling Markdown pages}
 
 {@shell[
@@ -180,6 +184,14 @@ Markdown page goes through the separate [odoc-md] binary. [--parent-id] and
 instead of [-o], with the same meaning. Everything after this phase treats
 the result as any other page.
 
+{@shell[
+  $ odoc-md ~/.opam/5.5.0/doc/fmt/README.md
+      -o _odoc/doc/fmt/page-README.odoc --parent-id fmt
+]}
+
+There is no search path to pass. A Markdown page has no references into
+other units to resolve.
+
 {3 Compiling assets}
 
 {@shell[
@@ -191,6 +203,16 @@ to it resolve. The unit is what makes [{image!logo.png}], and the other
 {{!odoc_for_authors.media}media markup}, find the file and know its URL.
 [--name <file>] is the name an author writes. [-o] and [--output-dir] mean
 what they do for [odoc compile].
+
+{@shell[
+  $ odoc compile-asset --name ocaml_console.png
+      -o _odoc/doc/brr/_assets/asset-ocaml_console.png.odoc
+      --parent-id brr/_assets
+]}
+
+This is what the reference driver runs for the one asset [brr] installs. The
+command does not name the file on disk, only its name and where the unit
+goes. The file itself is read at generation time, by the command below.
 
 {2 The link phase}
 
@@ -222,17 +244,21 @@ what they do for [odoc compile].
 Odoc looks up a module by name in these directories, but not all at once.
 What it tries first depends on whose name it is resolving.
 
-A name odoc holds a digest for is matched by that digest, anywhere on the
-search path, and the order below does not arise. That covers most of what a
-signature mentions, since the compiler recorded those modules as imports.
+A name that the unit's imports record with a digest is matched by that
+digest, anywhere on the search path. The order below does not arise for it.
+That covers most of what a signature mentions, because the compiler recorded
+those modules as imports.
 
-The rest are the canonical paths and the references written in documentation
-comments. For those, odoc searches in three steps while it resolves the unit
-named on the command line. First the libraries that unit recorded when it was
-compiled, each in the directory its [-L] names. Then the [-I] directories.
-Only then the [-L] directories as a whole. The first two hold what the
-compiler gave that unit, so a name they answer means the module it was built
-against.
+The order decides every other name. Those are a canonical path, a reference
+written in a documentation comment, and an import that the compiler left
+without a digest. Odoc searches in three steps. First it searches the
+libraries that the unit on the command line recorded when it was compiled,
+each in the directory its [-L] names. Then it searches the [-I] directories.
+Only then does it search the rest, the [-L] directories included. A page
+records no libraries of its own, so the first step is empty for a page, and
+its search starts at [-I]. The first two steps hold what the compiler gave
+the unit, as long as the driver passes its dependencies as [-I]. A name they
+answer is therefore the module the unit was built against.
 
 Resolution may follow a path or a reference {e into} another unit. It then
 carries on among the libraries that unit recorded at compile time, which are
@@ -240,10 +266,19 @@ what its own compiler could see. This is what lets a page name a submodule of
 one library rather than of its sibling. It is also what lets a module list
 show each module's first paragraph as that module's own page shows it.
 
-A module of a library that is in neither is found by the wider search. That
-search has no digest to tell same-named candidates apart, so odoc takes the
-first and warns. Authors can avoid the ambiguity with a path reference that
-names the tree, [{!/foo/A}] for the module [A] of library [foo].
+A module of a library that is in neither is found by the wider search. No
+step of this search has a digest to tell same-named candidates apart. Where
+a step finds two files of one name, odoc takes the first and warns. Authors
+can avoid the ambiguity with a path reference that names the tree,
+[{!/foo/A}] for the module [A] of library [foo].
+
+This is the link phase. [odoc compile] searches the [-I] and [-L]
+directories as one path, and matches by digest. A name it has no digest for
+is a forward reference, not a search.
+
+{{!scope}Step 3} of the walkthrough shows a link command from a real run. It
+has the [-P], [-L] and [-I] arguments the reference driver computes for one
+package.
 
 No two directories given to [-P] may be nested or shared, and likewise for
 [-L]. The two sets are checked separately, so a [-P] directory may contain a
@@ -308,6 +343,18 @@ driver passes both for the index ocaml.org serves, and neither for its own.
 This derives the sidebar from an index. With [--json] it writes the JSON form
 used by ocaml.org.
 
+The reference driver makes one index and one sidebar per package:
+
+{@shell[
+  $ odoc compile-index -o _index/fmt/index.odoc-index
+      --file-list _index/fmt/index-inputs.txt
+  $ odoc sidebar-generate -o _index/fmt/sidebar.odoc-sidebar
+      _index/fmt/index.odoc-index
+]}
+
+The file list holds the [.odocl] files of the package, its pages and its
+modules together, which is what puts them in one hierarchy.
+
 {3 The search database}
 
 {@shell[
@@ -345,7 +392,32 @@ string. That string holds a JSON list of objects, each with a [url] and an
 ]}
 
 These render a source file, copy an asset to its place, and write the
-stylesheets and scripts every page needs.
+stylesheets and scripts every page needs. For [fmt_cli] and its source, the
+reference driver runs:
+
+{@shell[
+  $ odoc html-generate _odocl/lib/fmt/cli/fmt_cli.odocl
+      --sidebar _index/fmt/sidebar.odoc-sidebar
+      --search-uri fmt/sherlodoc_db.js --search-uri sherlodoc.js
+      -o _html --home-breadcrumb "Package index"
+
+  $ odoc html-generate-source
+      --impl _odocl/lib/fmt/cli/impl-fmt_cli.odocl
+      ~/.opam/5.5.0/lib/fmt/cli/fmt_cli.ml
+      --sidebar _index/fmt/sidebar.odoc-sidebar
+      --search-uri fmt/sherlodoc_db.js --search-uri sherlodoc.js
+      -o _html --home-breadcrumb "Package index"
+
+  $ odoc html-generate-asset
+      --asset-unit _odoc/doc/brr/_assets/asset-ocaml_console.png.odoc
+      ~/.opam/5.5.0/doc/brr/odoc-assets/ocaml_console.png
+      -o _html --home-breadcrumb "Package index"
+]}
+
+The source command takes two inputs: the [impl-] unit, which says where the
+page goes and how to colour it, and the [.ml] file itself. The asset command
+takes its unit and the file to copy. Neither needs a search path, because
+nothing is resolved here.
 
 Three more options matter to a driver. [--home-breadcrumb <name>] adds a
 breadcrumb of that name, leading to the root of the sidebar. The reference
@@ -815,6 +887,50 @@ forward-reference reason as above. [--actions compile-only] compiles a
 package. [--actions link-and-gen] links and renders it, once the packages its
 scope names are compiled. Occurrence counts, and the JSON search index that
 uses them, are produced at the end of the link job.
+
+{2:scheduling What waits for what}
+
+The walkthrough gives the order for one package. A driver needs the rule
+behind that order, because the rule also says what may run at the same time:
+
+- A module waits for the modules it imports. [odoc compile-deps] gives the
+  digest of each import, and the module with that digest is compiled first.
+- A library waits for the libraries it requires. One of its modules may
+  import a module of another library, which must be compiled by then.
+- A page waits only for its own [.mld] file. It is compiled with no search
+  path at all.
+- Linking a unit waits for the compilation of its own package, and of every
+  package its scope names.
+- A package's index waits for the [.odocl] files it lists. The sidebar and
+  the search database wait for the index.
+- Rendering a unit waits for its [.odocl] file and for the sidebar.
+
+Nothing waits for a link. [odoc link] reads what [odoc compile] wrote, and
+writes somewhere else. The graph is therefore acyclic, and a driver may run
+as much of it at once as it has processors.
+
+The reference driver holds this graph as the shape of its own code. It forks
+a fiber for each unit. It keeps a table of promises, so that a module
+already under way is awaited rather than compiled twice. It hands every
+command to a pool of workers, which bounds how many run at once. Nothing in
+it holds the graph as data.
+
+{3 Writing the build instead of running it}
+
+Deciding a command and running it are two steps, so a driver can write the
+commands out instead of running them. [odoc_driver --makefile <file>] writes
+the whole build as rules for [make], and runs none of it. [make -j] then
+schedules what the driver would have scheduled itself, and a second [make]
+rebuilds only what changed.
+
+Make schedules the work, so the rules must state the graph as data. A module
+names the [.odoc] files of the imports it waits for. A stamp file stands for
+each set that a later phase waits for: one per library, and one per package.
+
+Finding out what is installed stays outside the file. [odoc classify],
+[odoc compile-deps], opam and findlib all run while the file is written,
+because they decide what the units are. The file is therefore valid for the
+switch as it was at that moment.
 
 {1:conv Convention for installed packages}
 
