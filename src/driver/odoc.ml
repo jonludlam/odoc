@@ -62,7 +62,7 @@ let compile ~output_file ~input_file:file ~libs ~warnings_tag ~parent_id
   let log =
     if ignore_output then None else Some (`Compile, Fpath.to_string file)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd output_file
+  { Cmd_outputs.log; desc; cmd; output = output_file; ignore_failures = false }
 
 let compile_md ~output_file ~input_file:file ~parent_id =
   let open Cmd in
@@ -72,12 +72,8 @@ let compile_md ~output_file ~input_file:file ~parent_id =
     match Id.to_string parent_id with "" -> cmd | x -> cmd % "--parent-id" % x
   in
   let desc = Printf.sprintf "Compiling Markdown %s" (Fpath.to_string file) in
-  let _lines =
-    Cmd_outputs.submit
-      (Some (`Compile, Fpath.to_string file))
-      desc cmd output_file
-  in
-  ()
+  let log = Some (`Compile, Fpath.to_string file) in
+  { Cmd_outputs.log; desc; cmd; output = output_file; ignore_failures = false }
 
 let compile_asset ~output_file ~name ~parent_id =
   let open Cmd in
@@ -86,8 +82,14 @@ let compile_asset ~output_file ~name ~parent_id =
     % "--parent-id" % Id.to_string parent_id
   in
   let desc = Printf.sprintf "Compiling %s" name in
-  ignore
-  @@ Cmd_outputs.submit (Some (`Compile, name)) desc cmd (Some output_file)
+  let log = Some (`Compile, name) in
+  {
+    Cmd_outputs.log;
+    desc;
+    cmd;
+    output = Some output_file;
+    ignore_failures = false;
+  }
 
 let compile_impl ~output_file ~input_file:file ~libs ~parent_id ~source_id =
   let open Cmd in
@@ -107,10 +109,8 @@ let compile_impl ~output_file ~input_file:file ~libs ~parent_id ~source_id =
   let desc =
     Printf.sprintf "Compiling implementation %s" (Fpath.to_string file)
   in
-  ignore
-  @@ Cmd_outputs.submit
-       (Some (`Compile, Fpath.to_string file))
-       desc cmd output_file
+  let log = Some (`Compile, Fpath.to_string file) in
+  { Cmd_outputs.log; desc; cmd; output = output_file; ignore_failures = false }
 
 let doc_args docs =
   let open Cmd in
@@ -159,7 +159,13 @@ let link ?(ignore_output = false) ~input_file:file ?output_file ~docs ~libs
   let log =
     if ignore_output then None else Some (`Link, Fpath.to_string file)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd (Some output_file)
+  {
+    Cmd_outputs.log;
+    desc;
+    cmd;
+    output = Some output_file;
+    ignore_failures = false;
+  }
 
 (* [file_list] names a file listing the [.odocl] files to index, one per line.
    Passing the files explicitly (rather than [--root] directories) puts them
@@ -188,7 +194,13 @@ let compile_index ?(ignore_output = false) ~output_file ?occurrence_file ~json
   let log =
     if ignore_output then None else Some (`Index, Fpath.to_string output_file)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd (Some output_file)
+  {
+    Cmd_outputs.log;
+    desc;
+    cmd;
+    output = Some output_file;
+    ignore_failures = false;
+  }
 
 let sidebar_generate ?(ignore_output = false) ~output_file ~json input_file () =
   let json = if json then Cmd.v "--json" else Cmd.empty in
@@ -203,7 +215,13 @@ let sidebar_generate ?(ignore_output = false) ~output_file ~json input_file () =
   let log =
     if ignore_output then None else Some (`Generate, Fpath.to_string output_file)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd (Some output_file)
+  {
+    Cmd_outputs.log;
+    desc;
+    cmd;
+    output = Some output_file;
+    ignore_failures = false;
+  }
 
 let html_generate ~output_dir ?sidebar ?(ignore_output = false)
     ?(search_uris = []) ?remap ?(as_json = false) ?home_breadcrumb
@@ -234,7 +252,7 @@ let html_generate ~output_dir ?sidebar ?(ignore_output = false)
   let log =
     if ignore_output then None else Some (`Generate, Fpath.to_string file)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd None
+  { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
 let html_generate_asset ~output_dir ?(ignore_output = false) ?home_breadcrumb
     ~input_file:file ~asset_path () =
@@ -252,7 +270,7 @@ let html_generate_asset ~output_dir ?(ignore_output = false) ?home_breadcrumb
   let log =
     if ignore_output then None else Some (`Generate, Fpath.to_string file)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd None
+  { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
 let html_generate_source ~output_dir ?(ignore_output = false) ~source ?sidebar
     ?(search_uris = []) ?(as_json = false) ?home_breadcrumb ~input_file:file ()
@@ -282,13 +300,13 @@ let html_generate_source ~output_dir ?(ignore_output = false) ~source ?sidebar
   let log =
     if ignore_output then None else Some (`Generate, Fpath.to_string source)
   in
-  ignore @@ Cmd_outputs.submit log desc cmd None
+  { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
 let support_files path =
   let open Cmd in
   let cmd = !odoc % "support-files" % "-o" % Fpath.to_string path in
   let desc = "Generating support files" in
-  Cmd_outputs.submit None desc cmd None
+  { Cmd_outputs.log = None; desc; cmd; output = None; ignore_failures = false }
 
 let count_occurrences ~input ~output =
   let open Cmd in
@@ -297,7 +315,7 @@ let count_occurrences ~input ~output =
   let cmd = !odoc % "count-occurrences" %% input %% output_c in
   let desc = "Counting occurrences" in
   let log = Some (`Count_occurrences, Fpath.to_string output) in
-  ignore @@ Cmd_outputs.submit log desc cmd None
+  { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
 let classify dirs =
   let open Cmd in

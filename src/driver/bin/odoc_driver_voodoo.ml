@@ -100,7 +100,8 @@ let run package_name blessed actions odoc_dir odocl_dir
                  p.libraries)
           all
       in
-      Odoc.count_occurrences ~input:odocl_dirs ~output:occurrence_file;
+      Cmd_outputs.run
+      @@ Odoc.count_occurrences ~input:odocl_dirs ~output:occurrence_file;
       Compile.json_index ~occurrence_file html_dir units);
 
   List.iter

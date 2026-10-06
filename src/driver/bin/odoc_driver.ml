@@ -15,7 +15,7 @@ let check_packages packages =
           exit 1)
 
 let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
-    ~generate_grep ~index_grep ~remap ~index_mld packages
+    ~generate_grep ~index_grep ~remap ~index_mld ~makefile packages
     {
       Common_args.verbose;
       html_dir;
@@ -65,86 +65,110 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
         all
   in
 
-  Logs.app (fun m -> m "Starting the compilation process...");
-
-  let () =
-    Eio.Fiber.both
-      (fun () ->
-        let pkgs =
-          let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
-          Odoc_units_of.packages ~dirs
-            ~indices_style:
-              (Odoc_units_of.Normal { toplevel_content = index_mld_content })
-            ~remap ~selected all
-        in
-        Compile.init_stats pkgs;
-        Build.all ~html_dir ~remaps ~generate_json ~warnings_tags:packages pkgs;
-        List.iter (fun pkg -> Status.file ~html_dir ~pkg ()) all;
-        Stats.stats.finished <- true;
-        ())
-      (fun () -> Stats.render_stats env ~generate_json nb_workers)
+  let units ?(mld_dir = mld_dir) () =
+    let dirs = { Odoc_unit.odoc_dir; odocl_dir; index_dir; mld_dir } in
+    Odoc_units_of.packages ~dirs
+      ~indices_style:
+        (Odoc_units_of.Normal { toplevel_content = index_mld_content })
+      ~remap ~selected all
   in
 
-  Logs.app (fun m ->
-      m "Documentation generation complete. Results are in %a" Fpath.pp html_dir);
+  match makefile with
+  | Some file ->
+      (* Write the build rather than run it. What is installed has been
+         worked out already; only the odoc commands are left.
 
-  let grep_log ty s =
-    let open Astring in
-    let do_ affix =
-      let grep { Cmd_outputs.log_dest; prefix; run } =
-        if log_dest = ty then
-          let l = run.Run.cmd |> String.concat ~sep:" " in
-          if String.is_infix ~affix l then Format.printf "%s: %s\n" prefix l
+         The pages the driver writes itself go to a scratch directory, which
+         it deletes when it exits. Make needs them afterwards, so they go
+         beside the [.odoc] files instead. *)
+      let mld_dir = Fpath.(odoc_dir / ".mld") in
+      let _ = Bos.OS.Dir.create mld_dir in
+      let pkgs = units ~mld_dir () in
+      let stamp_dir = Fpath.(odoc_dir / ".stamps") in
+      Util.with_out_to file (fun oc ->
+          let ppf = Format.formatter_of_out_channel oc in
+          Makefile.emit ppf ~html_dir ~stamp_dir ~warnings_tags:packages pkgs;
+          Format.pp_print_flush ppf ())
+      |> Result.get_ok;
+      Logs.app (fun m -> m "Wrote %a" Fpath.pp file)
+  | None ->
+      Logs.app (fun m -> m "Starting the compilation process...");
+
+      let () =
+        Eio.Fiber.both
+          (fun () ->
+            let pkgs = units () in
+            Compile.init_stats pkgs;
+            Build.all ~html_dir ~remaps ~generate_json ~warnings_tags:packages
+              pkgs;
+            List.iter (fun pkg -> Status.file ~html_dir ~pkg ()) all;
+            Stats.stats.finished <- true;
+            ())
+          (fun () -> Stats.render_stats env ~generate_json nb_workers)
       in
-      List.iter grep !Cmd_outputs.outputs
-    in
-    Option.iter do_ s
-  in
-  (* Grep log compile and compile_src commands *)
-  grep_log `Compile compile_grep;
-  grep_log `Compile_src compile_grep;
-  (* Grep log link commands *)
-  grep_log `Link link_grep;
-  (* Grep log generate commands *)
-  grep_log `Generate generate_grep;
-  (* Grep log index and co commands *)
-  grep_log `Count_occurrences index_grep;
-  grep_log `Count_occurrences index_grep;
-  grep_log `Index index_grep;
 
-  let maybe_write_header =
-    let written = ref false in
-    fun () ->
-      if not !written then (
-        written := true;
-        Logs.app (fun m -> m "Output from commands:"))
-  in
+      Logs.app (fun m ->
+          m "Documentation generation complete. Results are in %a" Fpath.pp
+            html_dir);
 
-  List.iter
-    (fun { Cmd_outputs.log_dest; prefix; run } ->
-      match log_dest with
-      | `Link | `Compile ->
-          [ run.Run.output; run.Run.errors ]
-          |> List.iter @@ fun content ->
-             if String.length content = 0 then ()
-             else (
-               maybe_write_header ();
-               Logs.app (fun m -> m "%s" prefix);
-               Logs.app (fun m ->
-                   m "%s" (String.init (String.length prefix) (fun _ -> '-')));
-               let lines = String.split_on_char '\n' content in
-               List.iter (fun l -> Logs.app (fun m -> m "%s" l)) lines;
-               Logs.app (fun m -> m ""))
-      | _ -> ())
-    !Cmd_outputs.outputs;
+      let grep_log ty s =
+        let open Astring in
+        let do_ affix =
+          let grep { Cmd_outputs.log_dest; prefix; run } =
+            if log_dest = ty then
+              let l = run.Run.cmd |> String.concat ~sep:" " in
+              if String.is_infix ~affix l then Format.printf "%s: %s\n" prefix l
+          in
+          List.iter grep !Cmd_outputs.outputs
+        in
+        Option.iter do_ s
+      in
+      (* Grep log compile and compile_src commands *)
+      grep_log `Compile compile_grep;
+      grep_log `Compile_src compile_grep;
+      (* Grep log link commands *)
+      grep_log `Link link_grep;
+      (* Grep log generate commands *)
+      grep_log `Generate generate_grep;
+      (* Grep log index and co commands *)
+      grep_log `Count_occurrences index_grep;
+      grep_log `Count_occurrences index_grep;
+      grep_log `Index index_grep;
 
-  if stats then Stats.bench_results html_dir
+      let maybe_write_header =
+        let written = ref false in
+        fun () ->
+          if not !written then (
+            written := true;
+            Logs.app (fun m -> m "Output from commands:"))
+      in
+
+      List.iter
+        (fun { Cmd_outputs.log_dest; prefix; run } ->
+          match log_dest with
+          | `Link | `Compile ->
+              [ run.Run.output; run.Run.errors ]
+              |> List.iter @@ fun content ->
+                 if String.length content = 0 then ()
+                 else (
+                   maybe_write_header ();
+                   Logs.app (fun m -> m "%s" prefix);
+                   Logs.app (fun m ->
+                       m "%s"
+                         (String.init (String.length prefix) (fun _ -> '-')));
+                   let lines = String.split_on_char '\n' content in
+                   List.iter (fun l -> Logs.app (fun m -> m "%s" l)) lines;
+                   Logs.app (fun m -> m ""))
+          | _ -> ())
+        !Cmd_outputs.outputs;
+
+      if stats then Stats.bench_results html_dir
 
 let run dirs compile_grep link_grep generate_grep index_grep remap packages
-    index_mld common : unit =
+    index_mld makefile common : unit =
   let fn =
     run_inner ~compile_grep ~link_grep ~generate_grep ~index_grep ~remap
-      ~index_mld packages common
+      ~index_mld ~makefile packages common
   in
   Common_args.with_dirs dirs fn
 
@@ -178,6 +202,18 @@ let index_grep =
     & opt (some string) None
     & info [ "index-grep" ] ~doc ~docs:Manpage.s_none)
 
+let makefile =
+  let doc =
+    "Write the build as a makefile with this name, and run none of it. The \
+     file builds the same documentation as a run of the driver. Give \
+     --odoc-dir and the other directories too: the makefile names them, and \
+     the scratch directories the driver would use are deleted when it exits."
+  in
+  Arg.(
+    value
+    & opt (some Common_args.fpath_arg) None
+    & info [ "makefile" ] ~doc ~docv:"FILE")
+
 let remap =
   let doc = "Remap paths in non-selected packages to ocaml.org" in
   Arg.(value & flag & info [ "remap" ] ~doc ~docs:Manpage.s_common_options)
@@ -198,7 +234,7 @@ let cmd_term =
   let module A = Common_args in
   Term.(
     const run $ A.dirs_term $ compile_grep $ link_grep $ generate_grep
-    $ index_grep $ remap $ packages $ index_mld $ Common_args.term)
+    $ index_grep $ remap $ packages $ index_mld $ makefile $ Common_args.term)
 
 let cmd =
   let doc =
