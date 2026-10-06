@@ -15,15 +15,16 @@ need this document to {e use} [odoc] through a driver someone else wrote.
 It covers:
 
 - the model [odoc] uses to organise documentation: {{!units}trees};
-- the four {{!pipeline}phases} and the command line of each;
-- a {{!walkthrough}walkthrough} of what the reference driver does for one
-  package, then what changes for {{!other}other kinds of packages} and for
+- the {{!pipeline}steps} of a build: what a driver must know before it
+  starts, then compiling, linking, indexing and generating, with the command
+  line of each and what the reference driver does;
+- what changes for {{!other}other kinds of packages} and for
   {{!ocamlorg}ocaml.org};
 - the {{!conv}convention} that drivers and installed packages follow so that
   they work together.
 
-The walkthrough names the modules of the reference driver that carry out each
-step. Reading it next to the {{!/odoc-driver/Odoc_driver_lib}library's own
+Each step names the modules of the reference driver that carry it out.
+Reading them next to the {{!/odoc-driver/Odoc_driver_lib}library's own
 documentation} is a good way to understand the whole process.
 
 {1:units Trees of documentation}
@@ -47,7 +48,7 @@ reference driver makes one page tree per package, but mirrors the layout of
 opam for the module trees - that is, sometimes a module tree for one library
 may coincide with a module tree for another library.
 
-{1:pipeline The pipeline}
+{1:pipeline The steps}
 
 Documentation is generated in four phases. A file may refer to a module that
 depends on it, so the phases are separated to break this apparent cycle.
@@ -72,7 +73,220 @@ everything above. [odoc-md] turns a Markdown page into an [.odoc] file, since
 the generated pages query, and ships the JavaScript that queries it. A driver
 that wants no search need not call it.
 
-{2 The compile phase}
+The reference driver is the
+{{!/odoc-driver/Odoc_driver_lib}[Odoc_driver_lib]} library, with two
+executables on top: [odoc_driver] for a switch, and [odoc_driver_voodoo] for
+ocaml.org. The steps below name the modules that carry out each one, and the
+examples all come from one ordinary package. The [fmt] package installs these
+files in the switch:
+
+{v
+lib/fmt/META
+lib/fmt/fmt.cmi  fmt.cmti  fmt.cmt  fmt.mli  fmt.ml  fmt.cma ...
+lib/fmt/cli/fmt_cli.cmi  fmt_cli.cmti  fmt_cli.cmt  fmt_cli.cma ...
+lib/fmt/tty/fmt_tty.cmi  fmt_tty.cmti  fmt_tty.cmt  fmt_tty.cma ...
+doc/fmt/odoc-pages/index.mld
+doc/fmt/README.md  CHANGES.md  LICENSE.md
+v}
+
+The [META] file defines three libraries. [fmt] requires nothing; [fmt.cli]
+requires [cmdliner] and [fmt]; [fmt.tty] requires [unix] and [fmt].
+
+Running [odoc_driver fmt] documents it and the packages it depends on.
+
+{2:installed Step 0: what a driver needs to know}
+
+Nothing can be compiled until the driver knows what there is to document,
+what each unit will be called, and where the files go. This step is all
+decided before [odoc] is run at all.
+
+{3 What is installed}
+
+Four things have to be known before anything is compiled. They are the same
+four whether the modules belong to other people's packages or to the project
+in front of you:
+
+- {b What the modules are:} for each one, a compiled interface to read. A
+  [.cmti] is best, because it carries the documentation written in the
+  [.mli]. A [.cmt] or a [.cmi] will do when there is no [.cmti].
+
+- {b How the modules are grouped into libraries.} A module is named within a
+  library rather than within the world. Two libraries may each hold a module
+  [Content]. To know which one a reference means, you must know the library
+  the referring module belongs to. The grouping is not presentation. It is
+  what makes the names unambiguous.
+
+- {b What depends on what,} at both levels. A library's dependencies are the
+  libraries whose modules it may name, and they fix the order the libraries
+  are compiled in. A module's dependencies fix the order within a library.
+
+- {b What else belongs to the package:} its name, its [.mld] pages, its
+  Markdown, its assets, its source files, and its [odoc-config.sexp] if it has
+  one.
+
+None of that is specific to opam or to findlib. A project that documents
+itself knows all four already, because its build system had to know them to
+build the code at all. It may state them however it likes, in a [dune] rule
+or in a list written by hand. The flags described in
+{{!pipeline}the phases above} are the whole of the interface to [odoc]. The
+rest of this step is how the reference driver recovers the same four facts
+for a switch of packages it did not build. That is the awkward case rather
+than the general one.
+
+{{!/odoc-driver/Odoc_driver_lib.Packages}[Packages]} asks opam which packages
+[fmt] depends on, and which files each package installed. It asks findlib
+({{!/odoc-driver/Odoc_driver_lib.Ocamlfind}[Ocamlfind]}) about every library:
+its directory, its archives and its [requires]. From that it builds one
+{{!/odoc-driver/Odoc_driver_lib.Packages.t}[Packages.t]} per package. For
+[fmt] this holds three libraries. [odoc classify] finds the modules of each
+library's archive. [odoc compile-deps] then gives each module the digest of
+its interface and the modules it depends on. The [Packages.t] also holds the
+page [index.mld], the Markdown files, and the contents of [odoc-config.sexp]
+if the package has one. Those two [odoc] commands exist for this situation.
+They answer the grouping and the dependency questions from the installed
+files alone, when there is nothing better to go on. A driver that is handed
+the answers has no need of them.
+
+A [Packages.t] is made for the packages of this run, and for no others. A
+run documents one package, or a few, or everything installed. Either way,
+its libraries require libraries that are not in it. The dependencies of a
+voodoo job are the clearest case: earlier jobs compiled them, and their
+[.odoc] files are on disk already. Three facts about such a library are
+still needed. They are the directory of its [.odoc] files, the package that
+provides it, and what it requires in turn.
+{{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} looks them up
+while it builds the units, from findlib and from opam's record of installed
+files, and remembers the answers. So step 1 is not the only place a driver
+learns what is installed. It is the place it learns everything about what it
+is going to build.
+
+Nor can a driver assume findlib is there to be asked. Findlib is configured by
+[ocamlfind], which is a package like any other. A switch holding only the
+closure of a package built with dune need not contain it, and ocaml.org
+documents packages in exactly such switches. Findlib would have supplied two
+facts: a library's [requires], and its object directory relative to the
+switch, [lib/fmt/cli] for [fmt.cli]. That directory is the one the later steps
+mirror. Both facts are then read from what is on disk instead. Every installed
+package ships the [META] that names its libraries, their directories and their
+[requires], and reading one needs no configuration. The compiler's own
+libraries ship no [META] of their own. They are below the directory [ocamlc
+-where] prints, one subdirectory each, and a sub-library shares its parent's
+directory: [compiler-libs.common] is in [compiler-libs], [threads.posix] in
+[threads]. A library that nothing says anything about is still compiled
+against the standard library. Assuming that much is what lets its modules
+resolve the signatures they are constrained by.
+
+All of this is detective work, and it is detective work only because nothing
+installed states the facts outright. The driver reads the modules of a library
+back out of the library's archive. It reads what the library requires out of a
+file that [ocamlfind] defined. The
+{{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
+proposal} would take most of it away. A library would be a directory. It would
+hold [M.cmi], [M.cmx], [M.cmti] and [M.cmt] for each of its modules, beside a
+single archive named [lib]. The modules of a library would then be the ones in
+its directory, and no module could be in two libraries. A library's name would
+be its path below a root of [OCAMLPATH], with the separators written [.]. Name
+and directory would determine each other, with no file to consult. The
+library's dependencies would be recorded in the archive as it is built, and
+read back with [ocamlobjinfo]. That is the [requires] field of a [META], moved
+into the archive. The proposal names documentation systems among the tools the
+convention is meant to serve.
+
+It remains a proposal. The document was merged into [ocaml/RFCs] in 2020, and
+the update to it has been open since 2021. The compiler support exists as a
+partial implementation on a branch, and no switch is laid out that way today.
+A driver would still have to work out what the proposal does not describe.
+That is which modules of a library depend on which, and which pages, assets
+and sources belong to a package.
+
+{3 Identifiers and locations}
+
+{{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} turns each
+[Packages.t] into an {{!/odoc-driver/Odoc_driver_lib.Odoc_unit.pkg}[Odoc_unit.pkg]}:
+the list of units to build, grouped by library, with everything the later
+steps need.
+
+Each unit gets an {e identifier} and a {e location}. They follow different
+layouts, and keeping them apart is the point.
+
+The identifier follows the {{!conv}convention}: the package's pages under the
+package name, a library's modules under [<pkg>/<lib>]. It decides the URLs.
+
+{v
+fmt/page-index          the package's index page, from doc/fmt/odoc-pages/index.mld
+fmt/fmt/Fmt             the module Fmt of library fmt
+fmt/fmt.cli/Fmt_cli     the module Fmt_cli of library fmt.cli
+fmt/fmt/page-index      the library's landing page, written by the driver
+v}
+
+The location mirrors the switch. A library's [.odoc] files are written at the
+path of its object directory, and a package's pages under [doc/<pkg>]:
+
+{v
+_odoc/lib/fmt/fmt.odoc            beside lib/fmt/fmt.cmi in the switch
+_odoc/lib/fmt/cli/fmt_cli.odoc
+_odoc/doc/fmt/page-index.odoc     the package's index page
+_odoc/doc/fmt/fmt/page-index.odoc the landing page of library fmt
+v}
+
+The same paths hold under the directory for [.odocl] files. See
+{{!/odoc-driver/Odoc_driver_lib.Odoc_unit}[Odoc_unit]} for the functions that
+compute both layouts.
+
+Mirroring the switch has two consequences. First, libraries installed in one
+directory share one odoc directory. A single [-I] finds all of them, exactly
+as a single [-I] found their [.cmi] files. Second, every location is a
+function of a name. A library's location comes from its findlib directory, a
+package's from its name. A run that documents a package on its own can
+therefore find what earlier runs built, with no record of them. This is how
+ocaml.org works, see {{!ocamlorg}below}. The odoc directory may even be the
+switch prefix itself, in which case each [.odoc] file lands beside the [.cmti]
+it was compiled from.
+
+{3:scope The cone and the scope}
+
+For each library, [Odoc_units_of] computes its {e dependency cone}: the
+library itself and, transitively, what it requires, each with the directory of
+its [.odoc] files. This is what the compiler searched when it built the
+library. For [fmt.cli] it is [fmt.cli], [fmt], [cmdliner] and the standard
+library. The cone is given to [odoc compile] with [-L], which finds the files
+and writes the names into the units. It is given to [odoc link] with [-I].
+
+For each package it computes the {e reference scope}: the [-P] and [-L]
+arguments its units are linked with. Every unit of the package gets the same
+scope. It is not the transitive closure:
+
+- [-L]: the package's own libraries, the libraries they require directly, and
+  the libraries named in [odoc-config.sexp];
+- [-P]: the package itself, the packages providing those libraries, and the
+  packages named in [odoc-config.sexp].
+
+The page the driver writes for a library is linked with that library's [-I]
+as well. It is a page and has no modules of its own, but it shows a synopsis
+for each module. It must reach what those synopses name.
+
+For [fmt], with [cmdliner] not installed as a dependency, the link command of
+[Fmt] is:
+
+{@shell[
+  $ odoc link _odoc/lib/fmt/fmt.odoc -o _odocl/lib/fmt/fmt.odocl
+      -P fmt:_odoc/doc/fmt -P ocaml-compiler:_odoc/doc/ocaml-compiler
+      -L fmt:_odoc/lib/fmt/ -L fmt.cli:_odoc/lib/fmt/cli/ -L fmt.tty:_odoc/lib/fmt/tty/
+      -L stdlib:_odoc/lib/ocaml/ -L unix:_odoc/lib/ocaml/unix/
+      -I _odoc/lib/fmt/ -I _odoc/lib/ocaml/
+      --current-package fmt --warnings-tags fmt --custom-layout --enable-missing-root-warning
+]}
+
+Opam's record of installed files says which package provides a library.
+[stdlib] and [unix] are in [lib/ocaml], installed by [ocaml-compiler]. A
+library stands in this list only if it is being built in this run, or its
+[.odoc] directory exists already. Otherwise the libraries it requires stand
+in for it. That is what handles an alias, such as [num] requiring only
+[num.core], or [threads.posix] requiring only [threads]. It is also what
+drops a library nobody has documented, here [cmdliner], which then
+contributes nothing.
+
+{2 Step 1: compile}
 
 There is one command per kind of input: [odoc compile] for interfaces and
 pages, [odoc compile-impl] for implementations, [odoc compile-asset] for
@@ -214,7 +428,47 @@ This is what the reference driver runs for the one asset [brr] installs. The
 command does not name the file on disk, only its name and where the unit
 goes. The file itself is read at generation time, by the command below.
 
-{2 The link phase}
+{3 The order}
+
+{{!/odoc-driver/Odoc_driver_lib.Build}[Build]} drives the whole run, package
+by package, in the order the packages were found. Each one goes through
+{{!/odoc-driver/Odoc_driver_lib.Build.compile_package}[Build.compile_package]},
+which compiles its libraries with
+{{!/odoc-driver/Odoc_driver_lib.Compile.compile_lib}[Compile.compile_lib]}
+and its pages with
+{{!/odoc-driver/Odoc_driver_lib.Compile.compile_pages}[Compile.compile_pages]}.
+That function is the whole of the compile phase for one package, and it is
+what {{!ocamlorg}a voodoo job} calls too.
+
+Order matters twice, and it is a requirement rather than an optimisation.
+[odoc compile] computes each module's expansions. A dependency that has not
+been compiled yet is one whose signature cannot be expanded, and no later
+phase repairs that.
+
+Within a library, a module is compiled after the modules it depends on, so
+that their [.odoc] files exist when [odoc] looks for them. The order is keyed
+by interface digest rather than by module name. The driver groups the
+library's interfaces by the digest [odoc compile-deps] reported, and compiles
+the group an import names before the module that imports it. An import whose
+digest matches no interface of this library belongs to a library compiled
+earlier, and is found through the [-I] path. Keying on the digest is what
+lets a virtual library and its implementations be compiled as one thing,
+since they share one interface. See {{!virtual}below}.
+
+Between libraries, a library is compiled after the libraries it requires:
+[fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
+libraries compiled so far, and compiles a library's requirements first,
+recursively. Requiring is a relation between libraries, not packages. No
+library requires itself even indirectly, so this always ends.
+
+The compile command for [fmt_cli.cmti] was shown {{!pipeline}above}. Its [-L]
+arguments name the four libraries of the cone with their directories.
+[lib/fmt/fmt.odoc] is already there because [fmt] was compiled first, and
+[lib/ocaml/stdlib.odoc] because [ocaml-compiler] was an earlier package. The
+names go into [fmt_cli.odoc], so a later run resolving something into that
+module knows the four libraries it may look in.
+
+{2 Step 2: link}
 
 {@shell[
   $ odoc link <file>.odoc -o <file>.odocl
@@ -276,9 +530,8 @@ This is the link phase. [odoc compile] searches the [-I] and [-L]
 directories as one path, and matches by digest. A name it has no digest for
 is a forward reference, not a search.
 
-{{!scope}Step 3} of the walkthrough shows a link command from a real run. It
-has the [-P], [-L] and [-I] arguments the reference driver computes for one
-package.
+{{!scope}Step 0} shows a link command from a real run, with the [-P], [-L]
+and [-I] arguments the reference driver computes for one package.
 
 No two directories given to [-P] may be nested or shared, and likewise for
 [-L]. The two sets are checked separately, so a [-P] directory may contain a
@@ -286,30 +539,14 @@ No two directories given to [-P] may be nested or shared, and likewise for
 disables the check. Several libraries installed in one directory are the
 usual reason.
 
-A name that the unit's imports record with a digest is matched by that digest,
-anywhere on the search path. Every other name is looked up among the
-libraries the unit recorded when it was compiled, each in the directory its
-[-L] names. Those are what the compiler gave the unit.
+{{!/odoc-driver/Odoc_driver_lib.Compile.link}[Compile.link]} links every unit
+of the package with the package's scope. The units of a library, its page
+included, also get that library's [-I] path. Linking needs the [.odoc] files
+of everything the scope names, so [Build] makes sure each package in the scope
+has been compiled before it links. For [fmt] that is already so. When it is
+not, see the {{!forward}forward references} below.
 
-What happens when they do not answer depends on the name. A path is a
-canonical path, an alias, or anything else the compiler wrote. It can only
-mean a module the compiler gave the unit, so it is reported as missing. It is
-not answered by a same-named module of another library. A reference written
-in a documentation comment may name anything in the reference scope, which is
-wider. So a reference is looked up along the whole search path as well. Where
-two libraries there define the same module name, [odoc] takes the first and
-warns.
-
-A page records no libraries, and nor does a module compiled with [-I] alone.
-Such a unit looks its names up along the whole path from the start. An author
-who needs to name a module of a particular library writes a path reference,
-[{!/libname/Module}].
-
-Implementations are looked up along [-I] alone, never [-L]. That is what
-turns an identifier in a rendered source file into a link to the source of
-the module it came from. A driver therefore passes [-I] at link as well.
-
-{2 The indexing phase}
+{2 Step 3: index, sidebar and search}
 
 {3 Counting occurrences}
 
@@ -369,7 +606,14 @@ every page shares. Both paths are then given to [odoc html-generate] as
 database a server searches instead. [--favoured_prefixes] lists module
 prefixes whose results come first.
 
-{2 The generation phase}
+{{!/odoc-driver/Odoc_driver_lib.Compile.generate}[Compile.generate]} does all
+three for a package. It writes the list of the package's [.odocl] files and
+runs [odoc compile-index] on it. Pages and modules then form one hierarchy,
+although they are in different directories. From the index it makes the
+sidebar with [odoc sidebar-generate], and the search database with
+[sherlodoc].
+
+{2 Step 4: generate}
 
 {@shell[
   $ odoc html-generate <file>.odocl -o <html-dir>
@@ -430,276 +674,10 @@ That suits a site which puts odoc's output inside its own template, as
 ocaml.org does. It is a second [html-generate] call rather than a different
 one: the driver generates the HTML, then generates the JSON beside it.
 
-{1:walkthrough What the reference driver does}
-
-This section follows the reference driver through one ordinary package, then
-looks at the cases that need something more. The driver is the
-{{!/odoc-driver/Odoc_driver_lib}[Odoc_driver_lib]} library, with two
-executables on top: [odoc_driver] for a switch, [odoc_driver_voodoo] for
-ocaml.org.
-
-{2:standard A standard package: [fmt]}
-
-The [fmt] package installs these files in the switch:
-
-{v
-lib/fmt/META
-lib/fmt/fmt.cmi  fmt.cmti  fmt.cmt  fmt.mli  fmt.ml  fmt.cma ...
-lib/fmt/cli/fmt_cli.cmi  fmt_cli.cmti  fmt_cli.cmt  fmt_cli.cma ...
-lib/fmt/tty/fmt_tty.cmi  fmt_tty.cmti  fmt_tty.cmt  fmt_tty.cma ...
-doc/fmt/odoc-pages/index.mld
-doc/fmt/README.md  CHANGES.md  LICENSE.md
-v}
-
-The [META] file defines three libraries. [fmt] requires nothing; [fmt.cli]
-requires [cmdliner] and [fmt]; [fmt.tty] requires [unix] and [fmt].
-
-Running [odoc_driver fmt] documents it and the packages it depends on.
-
-{3:installed Step 1: finding out what is installed}
-
-Four things have to be known before anything is compiled. They are the same
-four whether the modules belong to other people's packages or to the project
-in front of you:
-
-- {b What the modules are:} for each one, a compiled interface to read. A
-  [.cmti] is best, because it carries the documentation written in the
-  [.mli]. A [.cmt] or a [.cmi] will do when there is no [.cmti].
-
-- {b How the modules are grouped into libraries.} A module is named within a
-  library rather than within the world. Two libraries may each hold a module
-  [Content]. To know which one a reference means, you must know the library
-  the referring module belongs to. The grouping is not presentation. It is
-  what makes the names unambiguous.
-
-- {b What depends on what,} at both levels. A library's dependencies are the
-  libraries whose modules it may name, and they fix the order the libraries
-  are compiled in. A module's dependencies fix the order within a library.
-
-- {b What else belongs to the package:} its name, its [.mld] pages, its
-  Markdown, its assets, its source files, and its [odoc-config.sexp] if it has
-  one.
-
-None of that is specific to opam or to findlib. A project that documents
-itself knows all four already, because its build system had to know them to
-build the code at all. It may state them however it likes, in a [dune] rule
-or in a list written by hand. The flags described in
-{{!pipeline}the phases above} are the whole of the interface to [odoc]. The
-rest of this step is how the reference driver recovers the same four facts
-for a switch of packages it did not build. That is the awkward case rather
-than the general one.
-
-{{!/odoc-driver/Odoc_driver_lib.Packages}[Packages]} asks opam which packages
-[fmt] depends on, and which files each package installed. It asks findlib
-({{!/odoc-driver/Odoc_driver_lib.Ocamlfind}[Ocamlfind]}) about every library:
-its directory, its archives and its [requires]. From that it builds one
-{{!/odoc-driver/Odoc_driver_lib.Packages.t}[Packages.t]} per package. For
-[fmt] this holds three libraries. [odoc classify] finds the modules of each
-library's archive. [odoc compile-deps] then gives each module the digest of
-its interface and the modules it depends on. The [Packages.t] also holds the
-page [index.mld], the Markdown files, and the contents of [odoc-config.sexp]
-if the package has one. Those two [odoc] commands exist for this situation.
-They answer the grouping and the dependency questions from the installed
-files alone, when there is nothing better to go on. A driver that is handed
-the answers has no need of them.
-
-A [Packages.t] is made for the packages of this run, and for no others. A
-run documents one package, or a few, or everything installed. Either way,
-its libraries require libraries that are not in it. The dependencies of a
-voodoo job are the clearest case: earlier jobs compiled them, and their
-[.odoc] files are on disk already. Three facts about such a library are
-still needed. They are the directory of its [.odoc] files, the package that
-provides it, and what it requires in turn.
-{{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} looks them up
-while it builds the units, from findlib and from opam's record of installed
-files, and remembers the answers. So step 1 is not the only place a driver
-learns what is installed. It is the place it learns everything about what it
-is going to build.
-
-Nor can a driver assume findlib is there to be asked. Findlib is configured by
-[ocamlfind], which is a package like any other. A switch holding only the
-closure of a package built with dune need not contain it, and ocaml.org
-documents packages in exactly such switches. Findlib would have supplied two
-facts: a library's [requires], and its object directory relative to the
-switch, [lib/fmt/cli] for [fmt.cli]. That directory is the one the later steps
-mirror. Both facts are then read from what is on disk instead. Every installed
-package ships the [META] that names its libraries, their directories and their
-[requires], and reading one needs no configuration. The compiler's own
-libraries ship no [META] of their own. They are below the directory [ocamlc
--where] prints, one subdirectory each, and a sub-library shares its parent's
-directory: [compiler-libs.common] is in [compiler-libs], [threads.posix] in
-[threads]. A library that nothing says anything about is still compiled
-against the standard library. Assuming that much is what lets its modules
-resolve the signatures they are constrained by.
-
-All of this is detective work, and it is detective work only because nothing
-installed states the facts outright. The driver reads the modules of a library
-back out of the library's archive. It reads what the library requires out of a
-file that [ocamlfind] defined. The
-{{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
-proposal} would take most of it away. A library would be a directory. It would
-hold [M.cmi], [M.cmx], [M.cmti] and [M.cmt] for each of its modules, beside a
-single archive named [lib]. The modules of a library would then be the ones in
-its directory, and no module could be in two libraries. A library's name would
-be its path below a root of [OCAMLPATH], with the separators written [.]. Name
-and directory would determine each other, with no file to consult. The
-library's dependencies would be recorded in the archive as it is built, and
-read back with [ocamlobjinfo]. That is the [requires] field of a [META], moved
-into the archive. The proposal names documentation systems among the tools the
-convention is meant to serve.
-
-It remains a proposal. The document was merged into [ocaml/RFCs] in 2020, and
-the update to it has been open since 2021. The compiler support exists as a
-partial implementation on a branch, and no switch is laid out that way today.
-A driver would still have to work out what the proposal does not describe.
-That is which modules of a library depend on which, and which pages, assets
-and sources belong to a package.
-
-{3 Step 2: deciding identifiers and locations}
-
-{{!/odoc-driver/Odoc_driver_lib.Odoc_units_of}[Odoc_units_of]} turns each
-[Packages.t] into an {{!/odoc-driver/Odoc_driver_lib.Odoc_unit.pkg}[Odoc_unit.pkg]}:
-the list of units to build, grouped by library, with everything the later
-steps need.
-
-Each unit gets an {e identifier} and a {e location}. They follow different
-layouts, and keeping them apart is the point.
-
-The identifier follows the {{!conv}convention}: the package's pages under the
-package name, a library's modules under [<pkg>/<lib>]. It decides the URLs.
-
-{v
-fmt/page-index          the package's index page, from doc/fmt/odoc-pages/index.mld
-fmt/fmt/Fmt             the module Fmt of library fmt
-fmt/fmt.cli/Fmt_cli     the module Fmt_cli of library fmt.cli
-fmt/fmt/page-index      the library's landing page, written by the driver
-v}
-
-The location mirrors the switch. A library's [.odoc] files are written at the
-path of its object directory, and a package's pages under [doc/<pkg>]:
-
-{v
-_odoc/lib/fmt/fmt.odoc            beside lib/fmt/fmt.cmi in the switch
-_odoc/lib/fmt/cli/fmt_cli.odoc
-_odoc/doc/fmt/page-index.odoc     the package's index page
-_odoc/doc/fmt/fmt/page-index.odoc the landing page of library fmt
-v}
-
-The same paths hold under the directory for [.odocl] files. See
-{{!/odoc-driver/Odoc_driver_lib.Odoc_unit}[Odoc_unit]} for the functions that
-compute both layouts.
-
-Mirroring the switch has two consequences. First, libraries installed in one
-directory share one odoc directory. A single [-I] finds all of them, exactly
-as a single [-I] found their [.cmi] files. Second, every location is a
-function of a name. A library's location comes from its findlib directory, a
-package's from its name. A run that documents a package on its own can
-therefore find what earlier runs built, with no record of them. This is how
-ocaml.org works, see {{!ocamlorg}below}. The odoc directory may even be the
-switch prefix itself, in which case each [.odoc] file lands beside the [.cmti]
-it was compiled from.
-
-{3:scope Step 3: the search path and the scope}
-
-For each library, [Odoc_units_of] computes its {e dependency cone}: the
-library itself and, transitively, what it requires, each with the directory of
-its [.odoc] files. This is what the compiler searched when it built the
-library. For [fmt.cli] it is [fmt.cli], [fmt], [cmdliner] and the standard
-library. The cone is given to [odoc compile] with [-L], which finds the files
-and writes the names into the units. It is given to [odoc link] with [-I].
-
-For each package it computes the {e reference scope}: the [-P] and [-L]
-arguments its units are linked with. Every unit of the package gets the same
-scope. It is not the transitive closure:
-
-- [-L]: the package's own libraries, the libraries they require directly, and
-  the libraries named in [odoc-config.sexp];
-- [-P]: the package itself, the packages providing those libraries, and the
-  packages named in [odoc-config.sexp].
-
-The page the driver writes for a library is linked with that library's [-I]
-as well. It is a page and has no modules of its own, but it shows a synopsis
-for each module. It must reach what those synopses name.
-
-For [fmt], with [cmdliner] not installed as a dependency, the link command of
-[Fmt] is:
-
-{@shell[
-  $ odoc link _odoc/lib/fmt/fmt.odoc -o _odocl/lib/fmt/fmt.odocl
-      -P fmt:_odoc/doc/fmt -P ocaml-compiler:_odoc/doc/ocaml-compiler
-      -L fmt:_odoc/lib/fmt/ -L fmt.cli:_odoc/lib/fmt/cli/ -L fmt.tty:_odoc/lib/fmt/tty/
-      -L stdlib:_odoc/lib/ocaml/ -L unix:_odoc/lib/ocaml/unix/
-      -I _odoc/lib/fmt/ -I _odoc/lib/ocaml/
-      --current-package fmt --warnings-tags fmt --custom-layout --enable-missing-root-warning
-]}
-
-Opam's record of installed files says which package provides a library.
-[stdlib] and [unix] are in [lib/ocaml], installed by [ocaml-compiler]. A
-library stands in this list only if it is being built in this run, or its
-[.odoc] directory exists already. Otherwise the libraries it requires stand
-in for it. That is what handles an alias, such as [num] requiring only
-[num.core], or [threads.posix] requiring only [threads]. It is also what
-drops a library nobody has documented, here [cmdliner], which then
-contributes nothing.
-
-{3 Step 4: compiling}
-
-{{!/odoc-driver/Odoc_driver_lib.Build}[Build]} drives the whole run, package
-by package, in the order the packages were found. Each one goes through
-{{!/odoc-driver/Odoc_driver_lib.Build.compile_package}[Build.compile_package]},
-which compiles its libraries with
-{{!/odoc-driver/Odoc_driver_lib.Compile.compile_lib}[Compile.compile_lib]}
-and its pages with
-{{!/odoc-driver/Odoc_driver_lib.Compile.compile_pages}[Compile.compile_pages]}.
-That function is the whole of the compile phase for one package, and it is
-what {{!ocamlorg}a voodoo job} calls too.
-
-Order matters twice, and it is a requirement rather than an optimisation.
-[odoc compile] computes each module's expansions. A dependency that has not
-been compiled yet is one whose signature cannot be expanded, and no later
-phase repairs that.
-
-Within a library, a module is compiled after the modules it depends on, so
-that their [.odoc] files exist when [odoc] looks for them. The order is keyed
-by interface digest rather than by module name. The driver groups the
-library's interfaces by the digest [odoc compile-deps] reported, and compiles
-the group an import names before the module that imports it. An import whose
-digest matches no interface of this library belongs to a library compiled
-earlier, and is found through the [-I] path. Keying on the digest is what
-lets a virtual library and its implementations be compiled as one thing,
-since they share one interface. See {{!virtual}below}.
-
-Between libraries, a library is compiled after the libraries it requires:
-[fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
-libraries compiled so far, and compiles a library's requirements first,
-recursively. Requiring is a relation between libraries, not packages. No
-library requires itself even indirectly, so this always ends.
-
-The compile command for [fmt_cli.cmti] was shown {{!pipeline}above}. Its [-L]
-arguments name the four libraries of the cone with their directories.
-[lib/fmt/fmt.odoc] is already there because [fmt] was compiled first, and
-[lib/ocaml/stdlib.odoc] because [ocaml-compiler] was an earlier package. The
-names go into [fmt_cli.odoc], so a later run resolving something into that
-module knows the four libraries it may look in.
-
-{3 Step 5: linking}
-
-{{!/odoc-driver/Odoc_driver_lib.Compile.link}[Compile.link]} links every unit
-of the package with the package's scope. The units of a library, its page
-included, also get that library's [-I] path. Linking needs the [.odoc] files
-of everything the scope names, so [Build] makes sure each package in the scope
-has been compiled before it links. For [fmt] that is already so. When it is
-not, see the {{!forward}forward references} below.
-
-{3 Step 6: index, sidebar, search and HTML}
-
-{{!/odoc-driver/Odoc_driver_lib.Compile.generate}[Compile.generate]} finishes
-the package. It writes the list of the package's [.odocl] files and runs [odoc
-compile-index] on it. Pages and modules then form one hierarchy, although they
-are in different directories. From the index it makes the sidebar with [odoc
-sidebar-generate] and the search database with [sherlodoc]. Then it runs [odoc
-html-generate] on each unit, and [odoc html-generate-source] on each
-implementation whose source was found. The output:
+The same {{!/odoc-driver/Odoc_driver_lib.Compile.generate}[Compile.generate]}
+then runs [odoc html-generate] on each unit of the package, and
+[odoc html-generate-source] on each implementation whose source was found.
+For [fmt] the output is:
 
 {v
 _html/fmt/index.html                the package page
@@ -715,182 +693,9 @@ Warnings [odoc] printed while compiling and linking [fmt] are shown at the end
 of the run. Those of dependency packages are not: the driver is for fixing the
 documentation of the packages you asked for.
 
-{2:other Other kinds of packages}
-
-{3 Several libraries in one directory}
-
-The compiler's libraries [compiler-libs.common], [compiler-libs.optcomp] and
-the others all live in [lib/ocaml/compiler-libs]. A module of one may use a
-module of another without the [META] file saying so. The compiler never
-noticed, because one [-I] covered them all. Mirroring the switch gives the
-driver the same behaviour: their [.odoc] files share
-[_odoc/lib/ocaml/compiler-libs], and one [-I] finds all of them. Their [-L]
-roots then name the same directory, which is why the driver always passes
-[--custom-layout].
-
-{3:virtual Virtual libraries}
-
-[checkseum] is a virtual library with two implementations, [checkseum.c] and
-[checkseum.ocaml]. An implementation ships its modules as [.cmt] files only.
-The [.mli], and the documentation in it, belong to the virtual library, which
-ships the [.cmti]. Both have the same interface digest.
-
-The driver documents each implementation by compiling the virtual library's
-[.cmti] again, under the implementation's own parent id. [checkseum.cmti] is
-compiled three times, under [checkseum/checkseum], [checkseum/checkseum.c]
-and [checkseum/checkseum.ocaml].
-{{!/odoc-driver/Odoc_driver_lib.Packages.remap_virtual}[Packages.remap_virtual]}
-makes the substitution when the virtual library is part of the run. The
-virtual library may instead have been built by an earlier run, as on
-ocaml.org. [Compile.compile_lib] then looks along the implementation's [-I]
-path for a [.cmti] of the same name with the right digest. So that one is
-there to be found, the driver copies the [.cmti] of every library that ships
-no archive next to that library's [.odoc] files. Virtual libraries are among
-those.
-
-The landing page the driver writes for a library always lists its modules
-with path references. It writes [{!modules: /checkseum.c/Checkseum}] rather
-than [{!modules: Checkseum}], for every package and not only this one.
-Checkseum is the reason: three modules named [Checkseum] are in scope there,
-and a plain [{!Checkseum}] would pick one of them at random.
-
-{3:siblings Libraries that share module names}
-
-A package may ship two libraries that define the same module names on purpose.
-[eliom] is the example: [eliom.client] and [eliom.server] mirror each other,
-and that symmetry is the point of the framework. Nothing in the reference scope
-tells them apart, so a plain [{!Eliom_content}] in a doc comment is
-ambiguous. Odoc warns and takes the first it finds. An author who means one
-of them writes a path reference, [{!/eliom.client/Eliom_content}].
-
-A module's own documentation is not affected. Its [-I] holds its library's
-dependency cone, and never both siblings, and odoc searches that first. The
-types it shows, the modules its signature mentions and the references its
-comments make therefore all stay on the side they were written on.
-
-Nor is what a page of the package says about those modules, although a page
-has no cone of its own. Two things resolve among the libraries the module
-recorded when it was compiled. One is a reference into the module, such as
-[{!/eliom.client/Eliom_content.Html}]. The other is the first paragraph a
-module list shows beside each entry. What remains ambiguous is only a name
-that says nothing about where it comes from, the plain [{!Eliom_content}]
-above.
-
-{3 Alias libraries}
-
-Some findlib packages provide no modules and exist only to require others.
-[num] requires [num.core], [threads.posix] requires [threads], and
-[compiler-libs] requires [compiler-libs.common]. A [META] file naming one of
-these means the libraries it requires. The driver follows the requirement
-when it computes the scope and the compile order. [sexplib.num] requires
-[num], so it gets [-L num.core] and is compiled after it.
-
-{3 Archives that hold other archives}
-
-A module can be in more than one archive, and [odoc classify] says so,
-because it is the truth. The OCaml distribution ships its middle end twice:
-as [ocamlmiddleend.cma], of 77 modules, and inside [ocamloptcomp.cma], which
-holds those 77 and 49 more. A module is documented once, so the driver gives
-each one to the largest library that holds it. The bundling archive is also
-the one that ships as a library. Findlib declares [compiler-libs.optcomp] and
-has no name at all for the middle end, so that is the library a reader can
-depend on. A library left with nothing of its own is not documented, and the
-driver says which.
-
-This only arises where libraries are named after their archives, which is
-what the driver falls back to when a package installs no [META]. Where the
-[META] is there, the archives it does not name are not libraries, and the
-question does not come up. Under the
-{{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
-proposal} it could not arise at all: one directory, one library, one archive.
-
-{3 Libraries that were not built}
-
-A [META] names the libraries a package can install, not the ones it did. A
-package built without an optional dependency still declares the sub-library
-it skipped. [fmt] declares [fmt.cli] when [cmdliner] was absent, and [logs]
-declares [logs.lwt], [logs.fmt] and the rest. The directory the [META] names
-is then not there. The driver documents nothing for that library, and logs
-that it found nothing. The same happens for a [META] that points outside its
-own package, as [topkg] points at [topkg-care].
-
-This is worth knowing when you compare two runs. A library missing from the
-output may mean the package was built differently, not that the driver
-dropped it.
-
-{3:forward Forward references through [odoc-config.sexp]}
-
-A package's pages may refer to a package built on top of it. [eio]'s
-documentation points at [Eio_main.run], and [eio_main] depends on [eio].
-[eio] declares this in [doc/eio/odoc-config.sexp]:
-
-{v
-(packages eio_main bigstring)
-(libraries unix)
-v}
-
-This adds [eio_main]'s pages and libraries to [eio]'s scope. But [eio_main]
-comes later in the build, so its [.odoc] files do not exist when [eio] would
-be linked. [Build] handles this by compiling first and linking later. Before
-it links a package, it compiles every package the scope names. So it compiles
-[eio], then [eio_main], then links [eio], and later links [eio_main] in its
-turn. Compiling never needs the forward reference, since it follows
-[requires] only, and linking only needs the [.odoc] files. This is the same
-split ocaml.org makes between the two phases, see below.
-
-{3 Packages with no libraries, or no pages}
-
-A package with pages but no libraries, or with libraries but no pages, is
-ordinary. The driver writes a landing page for every package that does not
-ship an [index.mld], and one for every library. Every package therefore has
-an entry point. Modules whose names contain [__] are hidden. They are
-compiled, because other modules depend on them, but not linked or rendered.
-
-{3 Dependencies documented elsewhere}
-
-By default every dependency is documented too, so that links into them work.
-With [--remap], dependencies are compiled but not linked or rendered. They
-must still be compiled, because the selected packages' units depend on their
-[.odoc] files. Links into them are rewritten to point at their documentation
-on ocaml.org.
-
-{2:ocamlorg ocaml.org: one package per job}
-
-ocaml.org documents every version of every package. Each is built by a
-separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]: a
-directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
-installed. [voodoo] is the name of the part of
-{{:https://github.com/ocurrent/ocaml-docs-ci}ocaml-docs-ci} that does that
-preparing, and the driver is named after it. The [<u>] is a {e universe}. The
-same version of a package can be built more than once, against different
-versions of its dependencies, and each such build is one universe. The build
-ocaml.org shows by default for a version is the {e blessed} one, and the
-driver is told so with [--blessed].
-
-The dependencies are installed in the job's switch. Their [.odoc] files are
-the ones earlier jobs wrote into the odoc directory, at the locations the
-mirror layout predicts. The switch holds that package's closure and no more,
-so findlib is often not there to be asked. The facts then come from the
-[META] files and the compiler, as {{!installed}step 1} describes.
-
-{{!/odoc-driver/Odoc_driver_lib.Voodoo}[Voodoo]} reads the prepared package
-into a [Packages.t]. Everything after that is the same code as for a switch,
-applied to one package. That the two drivers share the compile step is not
-tidiness. A package's own libraries require one another as often as libraries
-of different packages do. Compiling them in whatever order they were listed
-in leaves unresolved what the later ones should have expanded. Identifiers
-start with [p/<pkg>/<version>] for a blessed build, and
-[u/<universe>/<pkg>/<version>] for any other.
-
-The job scheduler needs the compile and link phases separately, for the same
-forward-reference reason as above. [--actions compile-only] compiles a
-package. [--actions link-and-gen] links and renders it, once the packages its
-scope names are compiled. Occurrence counts, and the JSON search index that
-uses them, are produced at the end of the link job.
-
 {2:scheduling What waits for what}
 
-The walkthrough gives the order for one package. A driver needs the rule
+The steps above give the order for one package. A driver needs the rule
 behind that order, because the rule also says what may run at the same time:
 
 - A module waits for the modules it imports. [odoc compile-deps] gives the
@@ -931,6 +736,179 @@ Finding out what is installed stays outside the file. [odoc classify],
 [odoc compile-deps], opam and findlib all run while the file is written,
 because they decide what the units are. The file is therefore valid for the
 switch as it was at that moment.
+
+{1:other Other kinds of packages}
+
+{2 Several libraries in one directory}
+
+The compiler's libraries [compiler-libs.common], [compiler-libs.optcomp] and
+the others all live in [lib/ocaml/compiler-libs]. A module of one may use a
+module of another without the [META] file saying so. The compiler never
+noticed, because one [-I] covered them all. Mirroring the switch gives the
+driver the same behaviour: their [.odoc] files share
+[_odoc/lib/ocaml/compiler-libs], and one [-I] finds all of them. Their [-L]
+roots then name the same directory, which is why the driver always passes
+[--custom-layout].
+
+{2:virtual Virtual libraries}
+
+[checkseum] is a virtual library with two implementations, [checkseum.c] and
+[checkseum.ocaml]. An implementation ships its modules as [.cmt] files only.
+The [.mli], and the documentation in it, belong to the virtual library, which
+ships the [.cmti]. Both have the same interface digest.
+
+The driver documents each implementation by compiling the virtual library's
+[.cmti] again, under the implementation's own parent id. [checkseum.cmti] is
+compiled three times, under [checkseum/checkseum], [checkseum/checkseum.c]
+and [checkseum/checkseum.ocaml].
+{{!/odoc-driver/Odoc_driver_lib.Packages.remap_virtual}[Packages.remap_virtual]}
+makes the substitution when the virtual library is part of the run. The
+virtual library may instead have been built by an earlier run, as on
+ocaml.org. [Compile.compile_lib] then looks along the implementation's [-I]
+path for a [.cmti] of the same name with the right digest. So that one is
+there to be found, the driver copies the [.cmti] of every library that ships
+no archive next to that library's [.odoc] files. Virtual libraries are among
+those.
+
+The landing page the driver writes for a library always lists its modules
+with path references. It writes [{!modules: /checkseum.c/Checkseum}] rather
+than [{!modules: Checkseum}], for every package and not only this one.
+Checkseum is the reason: three modules named [Checkseum] are in scope there,
+and a plain [{!Checkseum}] would pick one of them at random.
+
+{2:siblings Libraries that share module names}
+
+A package may ship two libraries that define the same module names on purpose.
+[eliom] is the example: [eliom.client] and [eliom.server] mirror each other,
+and that symmetry is the point of the framework. Nothing in the reference scope
+tells them apart, so a plain [{!Eliom_content}] in a doc comment is
+ambiguous. Odoc warns and takes the first it finds. An author who means one
+of them writes a path reference, [{!/eliom.client/Eliom_content}].
+
+A module's own documentation is not affected. Its [-I] holds its library's
+dependency cone, and never both siblings, and odoc searches that first. The
+types it shows, the modules its signature mentions and the references its
+comments make therefore all stay on the side they were written on.
+
+Nor is what a page of the package says about those modules, although a page
+has no cone of its own. Two things resolve among the libraries the module
+recorded when it was compiled. One is a reference into the module, such as
+[{!/eliom.client/Eliom_content.Html}]. The other is the first paragraph a
+module list shows beside each entry. What remains ambiguous is only a name
+that says nothing about where it comes from, the plain [{!Eliom_content}]
+above.
+
+{2 Alias libraries}
+
+Some findlib packages provide no modules and exist only to require others.
+[num] requires [num.core], [threads.posix] requires [threads], and
+[compiler-libs] requires [compiler-libs.common]. A [META] file naming one of
+these means the libraries it requires. The driver follows the requirement
+when it computes the scope and the compile order. [sexplib.num] requires
+[num], so it gets [-L num.core] and is compiled after it.
+
+{2 Archives that hold other archives}
+
+A module can be in more than one archive, and [odoc classify] says so,
+because it is the truth. The OCaml distribution ships its middle end twice:
+as [ocamlmiddleend.cma], of 77 modules, and inside [ocamloptcomp.cma], which
+holds those 77 and 49 more. A module is documented once, so the driver gives
+each one to the largest library that holds it. The bundling archive is also
+the one that ships as a library. Findlib declares [compiler-libs.optcomp] and
+has no name at all for the middle end, so that is the library a reader can
+depend on. A library left with nothing of its own is not documented, and the
+driver says which.
+
+This only arises where libraries are named after their archives, which is
+what the driver falls back to when a package installs no [META]. Where the
+[META] is there, the archives it does not name are not libraries, and the
+question does not come up. Under the
+{{:https://github.com/ocaml/RFCs/blob/master/rfcs/ocamlib.md}library linking
+proposal} it could not arise at all: one directory, one library, one archive.
+
+{2 Libraries that were not built}
+
+A [META] names the libraries a package can install, not the ones it did. A
+package built without an optional dependency still declares the sub-library
+it skipped. [fmt] declares [fmt.cli] when [cmdliner] was absent, and [logs]
+declares [logs.lwt], [logs.fmt] and the rest. The directory the [META] names
+is then not there. The driver documents nothing for that library, and logs
+that it found nothing. The same happens for a [META] that points outside its
+own package, as [topkg] points at [topkg-care].
+
+This is worth knowing when you compare two runs. A library missing from the
+output may mean the package was built differently, not that the driver
+dropped it.
+
+{2:forward Forward references through [odoc-config.sexp]}
+
+A package's pages may refer to a package built on top of it. [eio]'s
+documentation points at [Eio_main.run], and [eio_main] depends on [eio].
+[eio] declares this in [doc/eio/odoc-config.sexp]:
+
+{v
+(packages eio_main bigstring)
+(libraries unix)
+v}
+
+This adds [eio_main]'s pages and libraries to [eio]'s scope. But [eio_main]
+comes later in the build, so its [.odoc] files do not exist when [eio] would
+be linked. [Build] handles this by compiling first and linking later. Before
+it links a package, it compiles every package the scope names. So it compiles
+[eio], then [eio_main], then links [eio], and later links [eio_main] in its
+turn. Compiling never needs the forward reference, since it follows
+[requires] only, and linking only needs the [.odoc] files. This is the same
+split ocaml.org makes between the two phases, see below.
+
+{2 Packages with no libraries, or no pages}
+
+A package with pages but no libraries, or with libraries but no pages, is
+ordinary. The driver writes a landing page for every package that does not
+ship an [index.mld], and one for every library. Every package therefore has
+an entry point. Modules whose names contain [__] are hidden. They are
+compiled, because other modules depend on them, but not linked or rendered.
+
+{2 Dependencies documented elsewhere}
+
+By default every dependency is documented too, so that links into them work.
+With [--remap], dependencies are compiled but not linked or rendered. They
+must still be compiled, because the selected packages' units depend on their
+[.odoc] files. Links into them are rewritten to point at their documentation
+on ocaml.org.
+
+{1:ocamlorg ocaml.org: one package per job}
+
+ocaml.org documents every version of every package. Each is built by a
+separate job that runs [odoc_driver_voodoo] on the output of [voodoo-prep]: a
+directory [prep/universes/<u>/<pkg>/<version>] holding the files the package
+installed. [voodoo] is the name of the part of
+{{:https://github.com/ocurrent/ocaml-docs-ci}ocaml-docs-ci} that does that
+preparing, and the driver is named after it. The [<u>] is a {e universe}. The
+same version of a package can be built more than once, against different
+versions of its dependencies, and each such build is one universe. The build
+ocaml.org shows by default for a version is the {e blessed} one, and the
+driver is told so with [--blessed].
+
+The dependencies are installed in the job's switch. Their [.odoc] files are
+the ones earlier jobs wrote into the odoc directory, at the locations the
+mirror layout predicts. The switch holds that package's closure and no more,
+so findlib is often not there to be asked. The facts then come from the
+[META] files and the compiler, as {{!installed}step 1} describes.
+
+{{!/odoc-driver/Odoc_driver_lib.Voodoo}[Voodoo]} reads the prepared package
+into a [Packages.t]. Everything after that is the same code as for a switch,
+applied to one package. That the two drivers share the compile step is not
+tidiness. A package's own libraries require one another as often as libraries
+of different packages do. Compiling them in whatever order they were listed
+in leaves unresolved what the later ones should have expanded. Identifiers
+start with [p/<pkg>/<version>] for a blessed build, and
+[u/<universe>/<pkg>/<version>] for any other.
+
+The job scheduler needs the compile and link phases separately, for the same
+forward-reference reason as above. [--actions compile-only] compiles a
+package. [--actions link-and-gen] links and renders it, once the packages its
+scope names are compiled. Occurrence counts, and the JSON search index that
+uses them, are produced at the end of the link job.
 
 {1:conv Convention for installed packages}
 
@@ -987,8 +965,8 @@ Implementation units have the source id [<p>/src/<l>/<name>.ml].
 
 {2 The reference scope}
 
-A package's units are linked with the scope described in the
-{{!standard}walkthrough}. [-L] names its own libraries, the libraries they
+A package's units are linked with the scope described in
+{{!scope}step 0}. [-L] names its own libraries, the libraries they
 require directly, and those named in [odoc-config.sexp]. [-P] names the
 package itself, the packages providing those libraries, and those named in
 [odoc-config.sexp]. The transitive closure is deliberately not included. To
