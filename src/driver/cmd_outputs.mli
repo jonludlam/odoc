@@ -40,3 +40,18 @@ val submit_ignore_failures :
   (log_dest * string) option -> string -> Bos.Cmd.t -> Fpath.t option -> unit
 (** Like {!submit}, but a failing command is reported as an error and otherwise
     ignored. *)
+
+type action = {
+  log : (log_dest * string) option;
+  desc : string;  (** What the command does, for the progress display. *)
+  cmd : Bos.Cmd.t;
+  output : Fpath.t option;
+      (** The file the command writes, if it writes one. *)
+  ignore_failures : bool;
+}
+(** One command the driver has decided to run. Building the command and running
+    it are separate, so that a driver can write the commands into a build file
+    instead of running them. See {!Makefile}. *)
+
+val run : action -> unit
+(** Run the command on a worker, and keep its output if it is logged. *)

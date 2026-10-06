@@ -42,7 +42,7 @@ val compile :
   warnings_tag:string option ->
   parent_id:Id.t ->
   ignore_output:bool ->
-  unit
+  Cmd_outputs.action
 (** [odoc compile] of an interface or a page. [parent_id] decides the unit's
     identifier. [output_file] is where the [.odoc] file goes, and it need not
     lie below the parent id. [libs] are the libraries the input was built
@@ -56,16 +56,20 @@ val compile_impl :
   libs:(string * Fpath.t) list ->
   parent_id:Id.t ->
   source_id:Id.t ->
-  unit
+  Cmd_outputs.action
 (** [odoc compile-impl] of an implementation. [source_id] is the identifier of
     the rendered source page. *)
 
 val compile_md :
-  output_file:Fpath.t -> input_file:Fpath.t -> parent_id:Id.t -> unit
+  output_file:Fpath.t ->
+  input_file:Fpath.t ->
+  parent_id:Id.t ->
+  Cmd_outputs.action
 (** [odoc-md] of a Markdown file. [output_file] is where the [.odoc] file goes
     and [parent_id] decides the page's identifier; the two are independent. *)
 
-val compile_asset : output_file:Fpath.t -> name:string -> parent_id:Id.t -> unit
+val compile_asset :
+  output_file:Fpath.t -> name:string -> parent_id:Id.t -> Cmd_outputs.action
 (** [odoc compile-asset]: the unit standing for an asset, likewise. *)
 
 (** {1 Linking} *)
@@ -80,7 +84,7 @@ val link :
   warnings_tags:string list ->
   ?current_package:string ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [odoc link]. [docs] are the page roots ([-P]) and [libs] the library roots
     ([-L]) the unit may refer to. [includes] are the directories ([-I]) holding
     the [.odoc] files of the modules it depends on. Roots may share a directory,
@@ -98,7 +102,7 @@ val compile_index :
   simplified:bool ->
   wrap:bool ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [odoc compile-index] over the [.odocl] files listed, one per line, in
     [file_list]. Passing the files rather than directories puts them all in one
     hierarchy. [occurrence_file] is only used for JSON output. *)
@@ -109,10 +113,11 @@ val sidebar_generate :
   json:bool ->
   Fpath.t ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [odoc sidebar-generate] from an index. *)
 
-val count_occurrences : input:Fpath.t list -> output:Fpath.t -> unit
+val count_occurrences :
+  input:Fpath.t list -> output:Fpath.t -> Cmd_outputs.action
 (** [odoc count-occurrences]: how often each item is used by the implementations
     found below the input directories. *)
 
@@ -128,7 +133,7 @@ val html_generate :
   ?home_breadcrumb:string ->
   input_file:Fpath.t ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [odoc html-generate] of an interface or a page. [remap] is a file of link
     prefixes to rewrite, for links into packages documented elsewhere. *)
 
@@ -142,7 +147,7 @@ val html_generate_source :
   ?home_breadcrumb:string ->
   input_file:Fpath.t ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [odoc html-generate-source]: the rendered source of an implementation. *)
 
 val html_generate_asset :
@@ -152,8 +157,8 @@ val html_generate_asset :
   input_file:Fpath.t ->
   asset_path:Fpath.t ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [odoc html-generate-asset]: copy an asset to its place in the output. *)
 
-val support_files : Fpath.t -> string list
+val support_files : Fpath.t -> Cmd_outputs.action
 (** [odoc support-files]: the stylesheets and scripts every page needs. *)

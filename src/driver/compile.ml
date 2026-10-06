@@ -111,9 +111,10 @@ let compile_lib (lib : Odoc_unit.lib) =
     let unit =
       find_virtual_interface ~includes:(Odoc_unit.include_dirs lib) unit
     in
-    Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file ~libs
-      ~warnings_tag:lib.pkgname ~parent_id:unit.parent_id
-      ~ignore_output:(not unit.enable_warnings);
+    Cmd_outputs.run
+    @@ Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
+         ~libs ~warnings_tag:lib.pkgname ~parent_id:unit.parent_id
+         ~ignore_output:(not unit.enable_warnings);
     (match unit.input_copy with
     | None -> ()
     | Some p -> Util.cp (Fpath.to_string unit.input_file) (Fpath.to_string p));
@@ -123,9 +124,10 @@ let compile_lib (lib : Odoc_unit.lib) =
     match unit.kind with
     | `Intf { Odoc_unit.hash; _ } -> compile_mod hash
     | `Impl { Odoc_unit.src_id; _ } ->
-        Odoc.compile_impl ~output_file:unit.odoc_file
-          ~input_file:unit.input_file ~libs ~parent_id:unit.parent_id
-          ~source_id:src_id;
+        Cmd_outputs.run
+        @@ Odoc.compile_impl ~output_file:unit.odoc_file
+             ~input_file:unit.input_file ~libs ~parent_id:unit.parent_id
+             ~source_id:src_id;
         Atomic.incr Stats.stats.compiled_impls
   in
   Fiber.List.iter compile lib.units
@@ -134,17 +136,21 @@ let compile_pages (pkg : Odoc_unit.pkg) =
   let compile (unit : _ Odoc_unit.t) =
     match unit.kind with
     | `Mld ->
-        Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
-          ~libs:[] ~warnings_tag:None ~parent_id:unit.parent_id
-          ~ignore_output:(not unit.enable_warnings);
+        Cmd_outputs.run
+        @@ Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
+             ~libs:[] ~warnings_tag:None ~parent_id:unit.parent_id
+             ~ignore_output:(not unit.enable_warnings);
         Atomic.incr Stats.stats.compiled_mlds
     | `Md ->
-        Odoc.compile_md ~output_file:unit.odoc_file ~input_file:unit.input_file
-          ~parent_id:unit.parent_id;
+        Cmd_outputs.run
+        @@ Odoc.compile_md ~output_file:unit.odoc_file
+             ~input_file:unit.input_file ~parent_id:unit.parent_id;
         Atomic.incr Stats.stats.compiled_mlds
     | `Asset ->
-        Odoc.compile_asset ~output_file:unit.odoc_file ~parent_id:unit.parent_id
-          ~name:(Fpath.filename unit.input_file);
+        Cmd_outputs.run
+        @@ Odoc.compile_asset ~output_file:unit.odoc_file
+             ~parent_id:unit.parent_id
+             ~name:(Fpath.filename unit.input_file);
         Atomic.incr Stats.stats.compiled_assets
   in
   let lib_pages =
@@ -162,10 +168,11 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
            their -L roots overlap; --custom-layout tells odoc that is
            intended. *)
         if c.to_output then
-          Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file
-            ~libs:lib_roots ~docs:page_roots ~includes
-            ~ignore_output:(not c.enable_warnings) ~warnings_tags
-            ?current_package:pkg.pkgname ();
+          Cmd_outputs.run
+          @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file
+               ~libs:lib_roots ~docs:page_roots ~includes
+               ~ignore_output:(not c.enable_warnings) ~warnings_tags
+               ?current_package:pkg.pkgname ();
         Atomic.incr
           (match c.kind with
           | `Intf _ -> Stats.stats.linked_units
@@ -216,8 +223,8 @@ let index_file_list (pkg : Odoc_unit.pkg) (index : Odoc_unit.index) =
    runtime. *)
 let html_support html_dir =
   let _ = OS.Dir.create html_dir |> Result.get_ok in
-  Sherlodoc.js Fpath.(html_dir // Sherlodoc.js_file);
-  ignore (Odoc.support_files html_dir)
+  Cmd_outputs.run @@ Sherlodoc.js Fpath.(html_dir // Sherlodoc.js_file);
+  ignore (Cmd_outputs.run @@ Odoc.support_files html_dir)
 
 let with_remaps remaps f =
   match remaps with
@@ -238,18 +245,22 @@ let generate ?remap_file ~generate_json html_dir (pkg : Odoc_unit.pkg) =
     | None -> (None, None)
     | Some ({ index_file; sidebar_file; html_dir = pkg_html } as index) ->
         let file_list = index_file_list pkg index in
-        Odoc.compile_index ~json:false ~output_file:index_file ~file_list
-          ~simplified:false ~wrap:false ();
-        Odoc.sidebar_generate ~output_file:sidebar_file ~json:false index_file
-          ();
-        Odoc.sidebar_generate
-          ~output_file:Fpath.(html_dir // pkg_html / "sidebar.json")
-          ~json:true index_file ();
+        Cmd_outputs.run
+        @@ Odoc.compile_index ~json:false ~output_file:index_file ~file_list
+             ~simplified:false ~wrap:false ();
+        Cmd_outputs.run
+        @@ Odoc.sidebar_generate ~output_file:sidebar_file ~json:false
+             index_file ();
+        Cmd_outputs.run
+        @@ Odoc.sidebar_generate
+             ~output_file:Fpath.(html_dir // pkg_html / "sidebar.json")
+             ~json:true index_file ();
         let db = Sherlodoc.db_js_file pkg_html in
         let _ = OS.Dir.create Fpath.(html_dir // pkg_html) |> Result.get_ok in
-        Sherlodoc.index ~format:`js ~inputs:[ index_file ]
-          ~dst:Fpath.(html_dir // db)
-          ();
+        Cmd_outputs.run
+        @@ Sherlodoc.index ~format:`js ~inputs:[ index_file ]
+             ~dst:Fpath.(html_dir // db)
+             ();
         Atomic.incr Stats.stats.generated_indexes;
         (Some [ db; Sherlodoc.js_file ], Some sidebar_file)
   in
@@ -261,23 +272,28 @@ let generate ?remap_file ~generate_json html_dir (pkg : Odoc_unit.pkg) =
       match l.kind with
       | `Intf { hidden = true; _ } -> ()
       | `Impl { src_path; _ } ->
-          Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
-            ~input_file ~home_breadcrumb ~source:src_path ();
+          Cmd_outputs.run
+          @@ Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
+               ~input_file ~home_breadcrumb ~source:src_path ();
           Atomic.incr Stats.stats.generated_units;
           if generate_json then (
-            Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
-              ~input_file ~source:src_path ~as_json:true ~home_breadcrumb ();
+            Cmd_outputs.run
+            @@ Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
+                 ~input_file ~source:src_path ~as_json:true ~home_breadcrumb ();
             Atomic.incr Stats.stats.generated_units)
       | `Asset ->
-          Odoc.html_generate_asset ~output_dir ~input_file:l.odoc_file
-            ~asset_path:l.input_file ~home_breadcrumb ()
+          Cmd_outputs.run
+          @@ Odoc.html_generate_asset ~output_dir ~input_file:l.odoc_file
+               ~asset_path:l.input_file ~home_breadcrumb ()
       | `Intf _ | `Mld | `Md ->
-          Odoc.html_generate ?search_uris ?sidebar ?remap:remap_file ~output_dir
-            ~input_file ~home_breadcrumb ();
+          Cmd_outputs.run
+          @@ Odoc.html_generate ?search_uris ?sidebar ?remap:remap_file
+               ~output_dir ~input_file ~home_breadcrumb ();
           Atomic.incr Stats.stats.generated_units;
           if generate_json then (
-            Odoc.html_generate ?search_uris ?sidebar ~output_dir ~input_file
-              ~as_json:true ~home_breadcrumb ();
+            Cmd_outputs.run
+            @@ Odoc.html_generate ?search_uris ?sidebar ~output_dir ~input_file
+                 ~as_json:true ~home_breadcrumb ();
             Atomic.incr Stats.stats.generated_units)
   in
   Fiber.List.iter generate (Odoc_unit.all_units pkg)
@@ -289,6 +305,7 @@ let json_index ~occurrence_file html_dir (pkg : Odoc_unit.pkg) =
   | None -> ()
   | Some ({ html_dir = pkg_html; _ } as index) ->
       let file_list = index_file_list pkg index in
-      Odoc.compile_index ~json:true ~occurrence_file
-        ~output_file:Fpath.(html_dir // pkg_html / "index.js")
-        ~simplified:true ~wrap:true ~file_list ()
+      Cmd_outputs.run
+      @@ Odoc.compile_index ~json:true ~occurrence_file
+           ~output_file:Fpath.(html_dir // pkg_html / "index.js")
+           ~simplified:true ~wrap:true ~file_list ()

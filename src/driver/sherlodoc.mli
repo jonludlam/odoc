@@ -8,7 +8,7 @@ val db_js_file : Fpath.t -> Fpath.t
 (** [db_js_file dir] is the search database of a package, in the package's HTML
     directory [dir]. *)
 
-val js : Fpath.t -> unit
+val js : Fpath.t -> Cmd_outputs.action
 (** [js dst] writes the search engine's JavaScript to [dst], an absolute path.
 *)
 
@@ -19,6 +19,6 @@ val index :
   dst:Fpath.t ->
   ?favored_prefixes:string list ->
   unit ->
-  unit
+  Cmd_outputs.action
 (** [index ~format ~inputs ~dst ()] builds a search database at [dst] from the
     given [.odoc-index] files. *)
