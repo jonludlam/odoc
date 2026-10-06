@@ -455,6 +455,32 @@ earlier, and is found through the [-I] path. Keying on the digest is what
 lets a virtual library and its implementations be compiled as one thing,
 since they share one interface. See {{!virtual}below}.
 
+That ordering is short enough to read in full:
+
+{@ocaml file=../src/driver/compile.ml,part=compile-order[
+  let rec compile_mod hash =
+    match Util.StringMap.find_opt hash hashes with
+    | None -> ()
+    | Some units ->
+        Fiber.List.iter
+          (fun (unit : Odoc_unit.intf Odoc_unit.t) ->
+            let key = (hash, Odoc.Id.to_string unit.parent_id) in
+            match Hashtbl.find_opt started key with
+            | Some done_ -> Promise.await done_
+            | None ->
+                let done_, resolve = Promise.create () in
+                Hashtbl.add started key done_;
+                compile_intf unit;
+                Promise.resolve resolve ())
+          units
+  and compile_intf (unit : Odoc_unit.intf Odoc_unit.t) =
+    let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
+    Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
+]}
+
+The table of promises is what keeps a module from being compiled twice when
+two modules import it at once. The second finds the promise and waits.
+
 Between libraries, a library is compiled after the libraries it requires:
 [fmt.cli] after [fmt], [fmt] after [stdlib]. [Build] keeps a table of the
 libraries compiled so far, and compiles a library's requirements first,

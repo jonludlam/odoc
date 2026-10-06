@@ -90,6 +90,7 @@ let compile_lib (lib : Odoc_unit.lib) =
      library's modules belongs to a library compiled earlier and is found
      through the [-I] path. *)
   let started = Hashtbl.create 100 in
+  (* $MDX part-begin=compile-order *)
   let rec compile_mod hash =
     match Util.StringMap.find_opt hash hashes with
     | None -> ()
@@ -108,6 +109,7 @@ let compile_lib (lib : Odoc_unit.lib) =
   and compile_intf (unit : Odoc_unit.intf Odoc_unit.t) =
     let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
     Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
+    (* $MDX part-end *)
     let unit =
       find_virtual_interface ~includes:(Odoc_unit.include_dirs lib) unit
     in
