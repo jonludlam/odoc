@@ -531,14 +531,12 @@ those modules as imports.
 
 The order decides every other name. Those are a canonical path, a reference
 written in a documentation comment, and an import that the compiler left
-without a digest. Odoc searches in three steps. First it searches the
-libraries that the unit on the command line recorded when it was compiled,
-each in the directory its [-L] names. Then it searches the [-I] directories.
-Only then does it search the rest, the [-L] directories included. A page
-records no libraries of its own, so the first step is empty for a page, and
-its search starts at [-I]. The first two steps hold what the compiler gave
-the unit, as long as the driver passes its dependencies as [-I]. A name they
-answer is therefore the module the unit was built against.
+without a digest. Odoc searches in two steps. First it searches the libraries
+that the unit on the command line recorded when it was compiled, each in the
+directory its [-L] names. Those are what the compiler gave the unit, so a
+name they answer is the module it was built against. Only then does it search
+the whole path, the [-I] and the [-L] directories alike. A page records no
+libraries of its own, so for a page the first step is empty.
 
 Resolution may follow a path or a reference {e into} another unit. It then
 carries on among the libraries that unit recorded at compile time, which are
@@ -546,15 +544,20 @@ what its own compiler could see. This is what lets a page name a submodule of
 one library rather than of its sibling. It is also what lets a module list
 show each module's first paragraph as that module's own page shows it.
 
-A module of a library that is in neither is found by the wider search. No
-step of this search has a digest to tell same-named candidates apart. Where
-a step finds two files of one name, odoc takes the first and warns. Authors
+A module of a library the unit does not depend on is found by the wider
+search. Neither step has a digest to tell same-named candidates apart. Where
+one finds two files of a name, odoc takes the first and warns. Authors
 can avoid the ambiguity with a path reference that names the tree,
 [{!/foo/A}] for the module [A] of library [foo].
 
 This is the link phase. [odoc compile] searches the [-I] and [-L]
 directories as one path, and matches by digest. A name it has no digest for
 is a forward reference, not a search.
+
+[-I] still matters at link, for a reason that has nothing to do with names.
+An implementation is looked up along [-I] alone, never [-L]. That is what
+turns an identifier in a rendered source file into a link to the source of
+the module it came from.
 
 {{!scope}Step 0} shows a link command from a real run, with the [-P], [-L]
 and [-I] arguments the reference driver computes for one package.
