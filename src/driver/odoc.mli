@@ -52,7 +52,7 @@ val compile :
 val compile_impl :
   output_file:Fpath.t ->
   input_file:Fpath.t ->
-  includes:Fpath.set ->
+  libs:(string * Fpath.t) list ->
   parent_id:Id.t ->
   source_id:Id.t ->
   unit

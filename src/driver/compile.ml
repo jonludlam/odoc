@@ -83,7 +83,6 @@ let by_hash (units : [ Odoc_unit.intf | Odoc_unit.impl ] Odoc_unit.t list) =
 
 let compile_lib (pkg : Odoc_unit.pkg) (lib : Odoc_unit.lib) =
   let libs = lib.includes in
-  let includes = Fpath.Set.of_list (Odoc_unit.include_dirs lib) in
   let hashes = by_hash lib.units in
   (* A module is compiled after the modules it imports: [compile_mod] on a
      digest compiles the interfaces with that digest, once, awaiting any
@@ -125,7 +124,7 @@ let compile_lib (pkg : Odoc_unit.pkg) (lib : Odoc_unit.lib) =
     | `Intf { Odoc_unit.hash; _ } -> compile_mod hash
     | `Impl { Odoc_unit.src_id; _ } ->
         Odoc.compile_impl ~output_file:unit.odoc_file
-          ~input_file:unit.input_file ~includes ~parent_id:unit.parent_id
+          ~input_file:unit.input_file ~libs ~parent_id:unit.parent_id
           ~source_id:src_id;
         Atomic.incr Stats.stats.compiled_impls
   in
