@@ -52,6 +52,12 @@ compile-asset also takes -o:
   page-renamed.odoc
   unit.odoc
 
+So does odoc-md. The parent id is still used for the identifier:
+
+  $ odoc-md --parent-id pkg -o custom/page-readme.odoc readme.md
+  $ odoc_print custom/page-readme.odoc | jq -c ".name"
+  {"`LeafPage":[{"Some":{"`Page":["None","pkg"]}},"readme"]}
+
 Either -o or --output-dir must be passed with --parent-id:
 
   $ odoc compile --parent-id pkg file.mld
