@@ -13,6 +13,11 @@
 - Fix OxCaml with-bounds for arbitrary types (@art-w, #1466)
 - Display items included via `include functor` as included via the functor
   (@Leonidas-from-XIV, #1452)
+- `{!modules: ...}` lists accept path references, `{!modules: /lib/Module}`,
+  so a page can name the library a module belongs to (@jonludlam, #1461)
+- `odoc compile` and `odoc compile-impl`: new `-L libname:DIR`, which searches
+  `DIR` as `-I` does and records the library's name in the unit. `-I` is
+  deprecated for these two commands (@jonludlam, #1450, #1461)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
@@ -23,6 +28,11 @@
   which makes `.odoc` and `.odocl` files substantially smaller (@jonludlam, #1487)
 
 ### Fixed
+- `odoc link`: a name is looked up first among the libraries its unit recorded
+  at compile time. A path is looked up there alone, and is otherwise reported
+  as missing; a reference falls back to the whole search path. Same-named
+  modules of two libraries, such as eliom.client's and eliom.server's, no
+  longer resolve to each other (@jonludlam, #1450, #1461)
 - Fix optional arguments rendering as `?arg:???` in modules without an mli on
   OCaml 5.5 (@jonludlam, #1489)
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
