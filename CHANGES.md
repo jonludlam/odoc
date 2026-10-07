@@ -26,6 +26,33 @@
   `{!modules: /lib/Module}` (@jonludlam, #1461)
 - `odoc compile` and `odoc compile-impl` take `-L lib:DIR`, recording the
   library in the unit; `-I` is deprecated (@jonludlam, #1450, #1461)
+- odoc-driver: build package by package, in dependency order, the way
+  ocaml.org does; the "partials" that let voodoo mode reconstruct its
+  dependencies' compiled units are gone (@jonludlam, #1461)
+- odoc-driver: lay `.odoc` files out like the compiled objects, so that
+  co-located libraries share a directory and `-I` mirrors the compiler's;
+  this replaces the digest-based recovery of undeclared dependencies
+  (@jonludlam, #1461)
+- odoc-driver: compute the reference scope per package as `driver.mld`
+  describes, `-L` from the direct META requires and `-P` from the packages
+  providing them, and give each library's own page that library's search path
+  (@jonludlam, #1461)
+- odoc-driver: name the libraries when compiling, so that what a page says
+  about a module resolves the way the module's own page does (@jonludlam,
+  #1461)
+- odoc-driver: remove `odoc_driver_monorepo` (@jonludlam, #1461)
+- odoc-driver: work in a switch with no findlib configuration, which is what
+  ocaml-docs-ci gives a package whose dependency closure has no ocamlfind in
+  it. Where each library lives, and what it requires, is then read from the
+  META files installed under the switch's `lib`, and from the directory
+  `ocamlc -where` prints for the compiler's own libraries, which have no META
+  (@jonludlam, #1461)
+- odoc-driver: where two libraries ship the same module, document it under the
+  larger one, which is the one a reader can depend on (@jonludlam, #1461)
+- odoc-driver: new `--makefile FILE`, which writes the whole build as rules
+  for `make` and runs none of it (@jonludlam, #1461)
+- Document the odoc 3 reference scope and driving model in `driver.mld` and
+  `odoc_for_authors.mld` (@jonludlam, #1461)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
