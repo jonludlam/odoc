@@ -148,28 +148,19 @@ let sub_libraries top =
     Util.StringSet.empty packages
 
 (* Returns deep dependencies for the given package *)
-let rec dep =
-  let memo = ref Util.StringMap.empty in
-  fun pkg ->
-    try Util.StringMap.find pkg !memo
-    with Not_found -> (
-      try
-        if not (available ()) then failwith "findlib is not configured";
-        let deps = Fl_package_base.requires ~preds:[ "ppx_driver" ] pkg in
-        let result =
-          List.fold_left
-            (fun acc x ->
-              match dep x with
-              | Ok dep_deps -> Util.StringSet.(union acc (add x dep_deps))
-              | Error _ -> acc)
-            Util.StringSet.empty deps
-        in
-        memo := Util.StringMap.add pkg (Ok result) !memo;
-        Ok result
-      with e ->
-        let result = Error (`Msg (Printexc.to_string e)) in
-        memo := Util.StringMap.add pkg result !memo;
-        result)
+let dep =
+  Util.memo ~key:Fun.id @@ fun dep pkg ->
+  try
+    if not (available ()) then failwith "findlib is not configured";
+    let deps = Fl_package_base.requires ~preds:[ "ppx_driver" ] pkg in
+    Ok
+      (List.fold_left
+         (fun acc x ->
+           match dep x with
+           | Ok dep_deps -> Util.StringSet.(union acc (add x dep_deps))
+           | Error _ -> acc)
+         Util.StringSet.empty deps)
+  with e -> Error (`Msg (Printexc.to_string e))
 
 let deps pkgs =
   let results = List.map dep pkgs in

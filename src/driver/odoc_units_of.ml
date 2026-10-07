@@ -16,15 +16,7 @@ type known = {
   requires : string -> Util.StringSet.t;  (** direct META requires *)
 }
 
-let memo f =
-  let cache = Hashtbl.create 100 in
-  fun x ->
-    match Hashtbl.find_opt cache x with
-    | Some y -> y
-    | None ->
-        let y = f x in
-        Hashtbl.add cache x y;
-        y
+let memo f = Util.memo ~key:Fun.id (fun _ x -> f x)
 
 let known ~odoc_dir (pkgs : Packages.t list) =
   let own =
