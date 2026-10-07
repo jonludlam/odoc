@@ -12,11 +12,16 @@ type lookup_error = [ `Not_found ]
 type resolver = {
   open_units : string list;
   lookup_unit :
-    scope:string list -> path_query -> (lookup_unit_result, lookup_error) result;
+    scope:string list ->
+    exclusive:bool ->
+    path_query ->
+    (lookup_unit_result, lookup_error) result;
       (** Finds the unit a name refers to, whether the name comes from a path, a
           canonical path or a reference. [scope] names the libraries the name
-          may come from, and the search is made among those first; the empty
-          list means no limit. *)
+          may come from, and the empty list means no limit. With [exclusive] the
+          search stops there, which is what a path wants: it can only mean a
+          module the compiler gave the unit. A reference is not exclusive, and
+          falls back to the whole search path. *)
   scope_of_unit : Identifier.RootModule.t -> string list;
       (** The libraries a unit was compiled against, as it recorded them. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
@@ -132,7 +137,11 @@ val lookup_unit_by_path :
 
 val module_of_unit : Lang.Compilation_unit.t -> Component.Module.t
 
-val lookup_root_module : Odoc_model.Names.ModuleName.t -> t -> root option
+val lookup_root_module :
+  ?exclusive:bool -> Odoc_model.Names.ModuleName.t -> t -> root option
+(** Look up a root module by name in the current {!scope}. [exclusive], the
+    default, is for a path: the lookup ends at the scope. A reference passes
+    [~exclusive:false] and falls back to the whole search path. *)
 
 type 'a scope constraint 'a = [< Component.Element.any ]
 (** Target of a lookup *)

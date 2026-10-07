@@ -72,7 +72,8 @@
   shadow3
   to_remove_test
   sibling_libraries
-  library_scope)
+  library_scope
+  path_scope)
  (enabled_if
   (>= %{ocaml_version} 4.14.0)))
 

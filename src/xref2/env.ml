@@ -13,7 +13,10 @@ type lookup_error = [ `Not_found ]
 type resolver = {
   open_units : string list;
   lookup_unit :
-    scope:string list -> path_query -> (lookup_unit_result, lookup_error) result;
+    scope:string list ->
+    exclusive:bool ->
+    path_query ->
+    (lookup_unit_result, lookup_error) result;
   scope_of_unit : Identifier.RootModule.t -> string list;
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
@@ -443,13 +446,14 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
       let ty = Component.Of_Lang.(module_ (empty ()) m) in
       ty
 
-let lookup_root_module name env =
+let lookup_root_module ?(exclusive = true) name env =
   let result =
     match env.resolver with
     | None -> None
     | Some r -> (
         match
-          r.lookup_unit ~scope:env.scope (`Name (ModuleName.to_string name))
+          r.lookup_unit ~scope:env.scope ~exclusive
+            (`Name (ModuleName.to_string name))
         with
         | Ok Forward_reference -> Some Forward
         | Error `Not_found -> None
@@ -485,7 +489,7 @@ let lookup_asset query env =
 let lookup_unit query env =
   match env.resolver with
   | None -> Error `Not_found
-  | Some r -> r.lookup_unit ~scope:env.scope query
+  | Some r -> r.lookup_unit ~scope:env.scope ~exclusive:true query
 
 let lookup_impl name env =
   match env.resolver with None -> None | Some r -> r.lookup_impl name
@@ -566,8 +570,10 @@ let lookup_by_id (scope : 'a scope) id env : 'a option =
       | `Root (_, name) -> scope.root (ModuleName.to_string name) env
       | _ -> None)
 
+(* The root of a reference. An author may name anything in the reference
+   scope, so this lookup is not limited to the libraries the unit records. *)
 let lookup_root_module_fallback name t =
-  match lookup_root_module (ModuleName.make_std name) t with
+  match lookup_root_module ~exclusive:false (ModuleName.make_std name) t with
   | Some (Resolved (_, id, m)) ->
       Some
         (`Module ((id :> Identifier.Path.Module.t), Component.Delayed.put_val m))
@@ -890,7 +896,7 @@ let open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t =
 let open_units resolver env =
   List.fold_left
     (fun env m ->
-      match resolver.lookup_unit ~scope:[] (`Name m) with
+      match resolver.lookup_unit ~scope:[] ~exclusive:false (`Name m) with
       | Ok (Found unit) -> (
           match unit.content with
           | Module sg -> open_signature sg env
@@ -946,7 +952,7 @@ let verify_lookups env lookups =
           | None -> None
           | Some r -> (
               match
-                r.lookup_unit ~scope:env.scope
+                r.lookup_unit ~scope:env.scope ~exclusive:true
                   (`Name (ModuleName.to_string name))
               with
               | Ok Forward_reference -> Some `Forward

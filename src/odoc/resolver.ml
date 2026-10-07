@@ -350,16 +350,22 @@ let lookup_unit_in_scope lib_aps scope target_name =
 (** Look up a unit by name. A name the unit's imports record with a digest is
     matched by that digest along [extended_ap], which holds the [-I] and the
     [-L] directories. Any other name is looked up first among the libraries in
-    [scope], each in the directory its [-L] names, and then along [extended_ap].
-*)
-let lookup_unit_by_name ~important_digests ~imports_map ~scope lib_aps
-    extended_ap target_name =
+    [scope], each in the directory its [-L] names. With [exclusive], which a
+    path is, the search ends there; otherwise it goes on along [extended_ap]. *)
+let lookup_unit_by_name ~important_digests ~imports_map ~scope ~exclusive
+    lib_aps extended_ap target_name =
   let by_name () =
-    (* The libraries the unit being resolved was compiled against answer
-       first, since they are what its author could name. *)
+    (* The libraries the unit was compiled against answer first. A path can
+       only mean a module the compiler gave the unit, so for a path they
+       answer alone: a same-named module of some other library is not an
+       answer, it is a wrong one. A reference may name anything in the
+       reference scope, which is wider, so it falls back to the whole search
+       path. *)
     match lookup_unit_in_scope lib_aps scope target_name with
     | Some _ as m -> m
-    | None -> lookup_unit_by_name extended_ap target_name
+    | None ->
+        if exclusive && scope <> [] then None
+        else lookup_unit_by_name extended_ap target_name
   in
   let of_option f =
     match f with
@@ -494,11 +500,11 @@ let lookup_unit_by_path ~libs ~hierarchy path =
   | Error _ as e -> e
 
 let lookup_unit ~important_digests ~imports_map lib_aps extended_ap ~libs
-    ~hierarchy ~scope = function
+    ~hierarchy ~scope ~exclusive = function
   | `Path p -> lookup_unit_by_path ~libs ~hierarchy p
   | `Name n ->
-      lookup_unit_by_name ~important_digests ~imports_map ~scope lib_aps
-        extended_ap n
+      lookup_unit_by_name ~important_digests ~imports_map ~scope ~exclusive
+        lib_aps extended_ap n
 
 let lookup_page ap ~pages ~hierarchy = function
   | `Path p -> lookup_page_by_path ~pages ~hierarchy p
