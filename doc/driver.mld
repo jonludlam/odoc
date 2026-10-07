@@ -529,14 +529,19 @@ digest, anywhere on the search path. The order below does not arise for it.
 That covers most of what a signature mentions, because the compiler recorded
 those modules as imports.
 
-The order decides every other name. Those are a canonical path, a reference
-written in a documentation comment, and an import that the compiler left
-without a digest. Odoc searches in two steps. First it searches the libraries
-that the unit on the command line recorded when it was compiled, each in the
-directory its [-L] names. Those are what the compiler gave the unit, so a
-name they answer is the module it was built against. Only then does it search
-the whole path, the [-I] and the [-L] directories alike. A page records no
-libraries of its own, so for a page the first step is empty.
+Every other name is looked up first among the libraries the unit recorded
+when it was compiled, each in the directory its [-L] names. Those are what
+the compiler gave the unit. A name they answer is therefore the module the
+unit was built against.
+
+What happens when they do not answer depends on the name. A path is an
+alias, a canonical path or anything else the compiler wrote. It can only mean
+a module the compiler gave the unit, so odoc reports it as missing. It does
+not take a same-named module of another library. A reference written in a
+documentation comment may name anything in the reference scope, which is
+wider. So a reference goes on to search the whole path, the [-I] and the [-L]
+directories alike. A page records no libraries of its own, so a page's
+references search the whole path from the start.
 
 Resolution may follow a path or a reference {e into} another unit. It then
 carries on among the libraries that unit recorded at compile time, which are
@@ -544,9 +549,11 @@ what its own compiler could see. This is what lets a page name a submodule of
 one library rather than of its sibling. It is also what lets a module list
 show each module's first paragraph as that module's own page shows it.
 
-A module of a library the unit does not depend on is found by the wider
-search. Neither step has a digest to tell same-named candidates apart. Where
-one finds two files of a name, odoc takes the first and warns. Authors
+A module of a library the unit does not depend on can therefore be named in
+a reference, and is found by the wider search. That search has no digest to
+tell same-named candidates apart. Where it finds two files of a name, odoc
+takes the first and warns. A path never reaches that search, so the warning
+is always about a reference. Authors
 can avoid the ambiguity with a path reference that names the tree,
 [{!/foo/A}] for the module [A] of library [foo].
 
