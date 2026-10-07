@@ -234,8 +234,8 @@ The same paths hold under the directory for [.odocl] files. See
 compute both layouts.
 
 Mirroring the switch has two consequences. First, libraries installed in one
-directory share one odoc directory. A single [-I] finds all of them, exactly
-as a single [-I] found their [.cmi] files. Second, every location is a
+directory share one odoc directory. The [-L] of any one of them finds all of
+them, exactly as a single [-I] found their [.cmi] files. Second, every location is a
 function of a name. A library's location comes from its findlib directory, a
 package's from its name. A run that documents a package on its own can
 therefore find what earlier runs built, with no record of them. This is how
@@ -250,7 +250,8 @@ library itself and, transitively, what it requires, each with the directory of
 its [.odoc] files. This is what the compiler searched when it built the
 library. For [fmt.cli] it is [fmt.cli], [fmt], [cmdliner] and the standard
 library. The cone is given to [odoc compile] with [-L], which finds the files
-and writes the names into the units. It is given to [odoc link] with [-I].
+and writes the names into the units. It is given to [odoc link] with [-L] too,
+so that odoc finds the libraries the units recorded.
 
 For each package it computes the {e reference scope}: the [-P] and [-L]
 arguments its units are linked with. Every unit of the package gets the same
@@ -261,9 +262,11 @@ scope. It is not the transitive closure:
 - [-P]: the package itself, the packages providing those libraries, and the
   packages named in [odoc-config.sexp].
 
-The page the driver writes for a library is linked with that library's [-I]
-as well. It is a page and has no modules of its own, but it shows a synopsis
-for each module. It must reach what those synopses name.
+The units of a library are linked with the library's cone as well as the
+scope. So is the page the driver writes for the library. It is a page and has
+no modules of its own, but it shows a synopsis for each module. It must reach
+what those synopses name. A path reference such as [{!/lib/M}] can therefore
+name a library of the cone that the scope does not name.
 
 For [fmt], with [cmdliner] not installed as a dependency, the link command of
 [Fmt] is:
@@ -273,7 +276,6 @@ For [fmt], with [cmdliner] not installed as a dependency, the link command of
       -P fmt:_odoc/doc/fmt -P ocaml-compiler:_odoc/doc/ocaml-compiler
       -L fmt:_odoc/lib/fmt/ -L fmt.cli:_odoc/lib/fmt/cli/ -L fmt.tty:_odoc/lib/fmt/tty/
       -L stdlib:_odoc/lib/ocaml/ -L unix:_odoc/lib/ocaml/unix/
-      -I _odoc/lib/fmt/ -I _odoc/lib/ocaml/
       --current-package fmt --warnings-tags fmt --custom-layout --enable-missing-root-warning
 ]}
 
@@ -451,7 +453,7 @@ by interface digest rather than by module name. The driver groups the
 library's interfaces by the digest [odoc compile-deps] reported, and compiles
 the group an import names before the module that imports it. An import whose
 digest matches no interface of this library belongs to a library compiled
-earlier, and is found through the [-I] path. Keying on the digest is what
+earlier, and is found among the [-L] directories of the cone. Keying on the digest is what
 lets a virtual library and its implementations be compiled as one thing,
 since they share one interface. See {{!virtual}below}.
 
@@ -500,7 +502,6 @@ module knows the four libraries it may look in.
   $ odoc link <file>.odoc -o <file>.odocl
       -P <pkg1>:<dir1> -P <pkg2>:<dir2>
       -L <lib1>:<dir3> -L <lib2>:<dir4>
-      -I <dir5> -I <dir6>
 ]}
 
 - [-P <name>:<dir>] names a page tree and the directory of its [.odoc] files.
@@ -510,7 +511,8 @@ module knows the four libraries it may look in.
   [{!/findlib.dynload/Fl_dynload}] resolve against it, and references by
   plain name search its directory.
 
-- [-I <dir>] adds a directory to the search path without naming a tree. Two
+- [-I <dir>] adds a directory to the search path without naming a tree. A
+  driver that names every library with [-L] has no need of it. Two
   directories are on the path that were not passed: the directory holding the
   input [.odoc] file, and the [-P] directory of [--current-package].
 
@@ -539,8 +541,8 @@ alias, a canonical path or anything else the compiler wrote. It can only mean
 a module the compiler gave the unit, so odoc reports it as missing. It does
 not take a same-named module of another library. A reference written in a
 documentation comment may name anything in the reference scope, which is
-wider. So a reference goes on to search the whole path, the [-I] and the [-L]
-directories alike. A page records no libraries of its own, so a page's
+wider. So a reference goes on to search the whole path, every [-L] directory
+and any [-I] directory alike. A page records no libraries of its own, so a page's
 references search the whole path from the start.
 
 Resolution may follow a path or a reference {e into} another unit. It then
@@ -561,13 +563,13 @@ This is the link phase. [odoc compile] searches the [-I] and [-L]
 directories as one path, and matches by digest. A name it has no digest for
 is a forward reference, not a search.
 
-[-I] still matters at link, for a reason that has nothing to do with names.
-An implementation is looked up along [-I] alone, never [-L]. That is what
-turns an identifier in a rendered source file into a link to the source of
-the module it came from.
+An implementation is looked up by name in the same way as a reference: among
+the libraries the unit recorded first, then along the whole path. That is
+what turns an identifier in a rendered source file into a link to the source
+of the module it came from.
 
-{{!scope}Step 0} shows a link command from a real run, with the [-P], [-L]
-and [-I] arguments the reference driver computes for one package.
+{{!scope}Step 0} shows a link command from a real run, with the [-P] and
+[-L] arguments the reference driver computes for one package.
 
 No two directories given to [-P] may be nested or shared, and likewise for
 [-L]. The two sets are checked separately, so a [-P] directory may contain a
@@ -577,7 +579,7 @@ usual reason.
 
 {{!/odoc-driver/Odoc_driver_lib.Compile.link}[Compile.link]} links every unit
 of the package with the package's scope. The units of a library, its page
-included, also get that library's [-I] path. Linking needs the [.odoc] files
+included, also get that library's cone as [-L]. Linking needs the [.odoc] files
 of everything the scope names, so [Build] makes sure each package in the scope
 has been compiled before it links. For [fmt] that is already so. When it is
 not, see the {{!forward}forward references} below.
@@ -782,8 +784,8 @@ the others all live in [lib/ocaml/compiler-libs]. A module of one may use a
 module of another without the [META] file saying so. The compiler never
 noticed, because one [-I] covered them all. Mirroring the switch gives the
 driver the same behaviour: their [.odoc] files share
-[_odoc/lib/ocaml/compiler-libs], and one [-I] finds all of them. Their [-L]
-roots then name the same directory, which is why the driver always passes
+[_odoc/lib/ocaml/compiler-libs], and the [-L] of any one of them finds all
+of them. Their [-L] roots name the same directory, which is why the driver always passes
 [--custom-layout].
 
 {2:virtual Virtual libraries}
@@ -800,8 +802,8 @@ and [checkseum/checkseum.ocaml].
 {{!/odoc-driver/Odoc_driver_lib.Packages.remap_virtual}[Packages.remap_virtual]}
 makes the substitution when the virtual library is part of the run. The
 virtual library may instead have been built by an earlier run, as on
-ocaml.org. [Compile.compile_lib] then looks along the implementation's [-I]
-path for a [.cmti] of the same name with the right digest. So that one is
+ocaml.org. [Compile.compile_lib] then looks in the directories of the
+implementation's cone for a [.cmti] of the same name with the right digest. So that one is
 there to be found, the driver copies the [.cmti] of every library that ships
 no archive next to that library's [.odoc] files. Virtual libraries are among
 those.
@@ -821,8 +823,9 @@ tells them apart, so a plain [{!Eliom_content}] in a doc comment is
 ambiguous. Odoc warns and takes the first it finds. An author who means one
 of them writes a path reference, [{!/eliom.client/Eliom_content}].
 
-A module's own documentation is not affected. Its [-I] holds its library's
-dependency cone, and never both siblings, and odoc searches that first. The
+A module's own documentation is not affected. It recorded its library's
+dependency cone, which never holds both siblings, and odoc searches that
+first. The
 types it shows, the modules its signature mentions and the references its
 comments make therefore all stay on the side they were written on.
 
@@ -1012,10 +1015,10 @@ refer to something in a transitive dependency, name it in the [META]
 
 The dependency cone is a different matter. It must reach everything a unit's
 modules depend on, transitively, because expansions and source links do. The
-driver gives it to [odoc compile] as [-L], naming each library, and to
-[odoc link] as [-I]. Odoc searches the recorded libraries, and then the [-I]
-directories, before the rest of the scope. Where a name is in both, a unit
-therefore gets the module it was built against. The library names are written
+driver gives it to [odoc compile] and to [odoc link] as [-L], naming each
+library. Odoc searches the recorded libraries before the rest of the scope.
+Where a name is in both, a unit therefore gets the module it was built
+against. The library names are written
 into the units. That holds for another run resolving into them as well, and
 not only for the unit on the command line. The page the driver writes for
 a library is given that library's cone for the same reason.
