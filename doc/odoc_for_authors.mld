@@ -658,9 +658,20 @@ inline [open] statements do {e not} bring other elements into scope.
 In order for [odoc] to resolve links to other compilation units or [.mld] pages,
 the referenced
 unit or page must be {e compiled} and available to [odoc]. That is, when performing the
-[odoc link] command, one of the include paths passed via the command-line argument
-[-I] must contain the relevant [.odoc] file. This is normally the responsibility of
-the {{!page-driver}driver}.
+[odoc link] command, the relevant [.odoc] file must be in a directory passed
+via [-I], or in a library passed via [-L]. This
+is normally the responsibility of the {{!page-driver}driver}.
+
+Two libraries may define modules of the same name, as [eliom.client] and
+[eliom.server] do. A plain [{!Module}] written inside one of them resolves to
+that library's module: a unit records the libraries it was compiled against,
+and those are searched first. On a page, which belongs to no library, such a
+name is ambiguous; [odoc] takes one and warns. Write a path reference to say
+which you mean:
+
+{[
+(** {!/eliom.client/Eliom_content} and {!/eliom.server/Eliom_content} *)
+]}
 
 {2:tags Tags}
 
