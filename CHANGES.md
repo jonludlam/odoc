@@ -24,6 +24,10 @@
   (@jonludlam, #1462)
 - `odoc compile-impl`: `-o` now overrides the output path computed from
   `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
+- `odoc compile-asset`: new `-o`, which overrides the path computed from
+  `--parent-id` and `--output-dir`, as `odoc compile`'s does. A driver whose
+  `.odoc` files do not sit at their identifier's path could not say where the
+  asset should go (@jonludlam, #1461)
 - `{!modules: ...}` lists accept path references such as
   `{!modules: /lib/Module}` (@jonludlam, #1503)
 - `odoc compile` and `odoc compile-impl` take `-L lib:dir` to record the
