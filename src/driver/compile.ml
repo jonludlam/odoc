@@ -84,32 +84,7 @@ let by_hash (units : [ Odoc_unit.intf | Odoc_unit.impl ] Odoc_unit.t list) =
 let compile_lib (lib : Odoc_unit.lib) =
   let libs = lib.includes in
   let hashes = by_hash lib.units in
-  (* A module is compiled after the modules it imports: [compile_mod] on a
-     digest compiles the interfaces with that digest, once, awaiting any
-     compilation already under way. An import whose digest is not among this
-     library's modules belongs to a library compiled earlier and is found
-     through the [-I] path. *)
-  let started = Hashtbl.create 100 in
-  (* $MDX part-begin=compile-order *)
-  let rec compile_mod hash =
-    match Util.StringMap.find_opt hash hashes with
-    | None -> ()
-    | Some units ->
-        Fiber.List.iter
-          (fun (unit : Odoc_unit.intf Odoc_unit.t) ->
-            let key = (hash, Odoc.Id.to_string unit.parent_id) in
-            match Hashtbl.find_opt started key with
-            | Some done_ -> Promise.await done_
-            | None ->
-                let done_, resolve = Promise.create () in
-                Hashtbl.add started key done_;
-                compile_intf unit;
-                Promise.resolve resolve ())
-          units
-  and compile_intf (unit : Odoc_unit.intf Odoc_unit.t) =
-    let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
-    Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
-    (* $MDX part-end *)
+  let compile_intf (unit : Odoc_unit.intf Odoc_unit.t) =
     let unit =
       find_virtual_interface ~includes:(Odoc_unit.include_dirs lib) unit
     in
@@ -122,6 +97,24 @@ let compile_lib (lib : Odoc_unit.lib) =
     | Some p -> Util.cp (Fpath.to_string unit.input_file) (Fpath.to_string p));
     Atomic.incr Stats.stats.compiled_units
   in
+  (* A module is compiled after the modules it imports. [compile_mod] on a
+     digest compiles the interfaces with that digest, once. An import whose
+     digest is not among this library's modules belongs to a library compiled
+     earlier, and is found among the [-L] directories. *)
+  (* $MDX part-begin=compile-order *)
+  let compile_mod =
+    Util.memo ~key:Fun.id @@ fun compile_mod hash ->
+    match Util.StringMap.find_opt hash hashes with
+    | None -> ()
+    | Some units ->
+        Fiber.List.iter
+          (fun (unit : Odoc_unit.intf Odoc_unit.t) ->
+            let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
+            Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
+            compile_intf unit)
+          units
+  in
+  (* $MDX part-end *)
   let compile (unit : _ Odoc_unit.t) =
     match unit.kind with
     | `Intf { Odoc_unit.hash; _ } -> compile_mod hash

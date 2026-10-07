@@ -20,3 +20,11 @@ val with_out_to :
 
 val cp : string -> string -> unit
 (** Copy a file. *)
+
+val memo : key:('a -> 'k) -> (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b
+(** [memo ~key f] is [f], run at most once for each [key]. [f] is given the
+    memoised function, so that it can recurse through it. A call made while the
+    first call for its key is still running, from another fiber, waits for that
+    result instead of running [f] again. An exception is the result too, raised
+    to every caller. There must be no cycle: a call that needs its own result
+    waits forever. *)

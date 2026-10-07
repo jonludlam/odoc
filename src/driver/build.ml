@@ -21,15 +21,14 @@
 
 (* Compiling a package's libraries, each after the libraries it requires and
    each at most once. A library pulled in by another package's scope is
-   compiled once, since the table is shared by the whole run. *)
+   compiled once, since the memo is shared by the whole run. *)
 let compile_libs () =
-  let compiled_libs = Hashtbl.create 1000 in
-  let rec compile_lib (lib : Odoc_unit.lib) =
-    if not (Hashtbl.mem compiled_libs lib.lib_name) then (
-      Hashtbl.add compiled_libs lib.lib_name ();
-      List.iter compile_lib lib.requires;
-      Logs.debug (fun m -> m "Compiling library %s" lib.lib_name);
-      Compile.compile_lib lib)
+  let compile_lib =
+    Util.memo ~key:(fun (lib : Odoc_unit.lib) -> lib.lib_name)
+    @@ fun compile_lib lib ->
+    List.iter compile_lib lib.requires;
+    Logs.debug (fun m -> m "Compiling library %s" lib.lib_name);
+    Compile.compile_lib lib
   in
   fun (pkg : Odoc_unit.pkg) -> List.iter compile_lib pkg.libs
 
@@ -48,12 +47,10 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
       Util.StringMap.empty pkgs
   in
   let compile_libs = compile_libs () in
-  let compiled_pkgs = Hashtbl.create 100 in
-  let compile_pkg (pkg : Odoc_unit.pkg) =
-    if not (Hashtbl.mem compiled_pkgs pkg.pkgname) then (
-      Hashtbl.add compiled_pkgs pkg.pkgname ();
-      compile_libs pkg;
-      Compile.compile_pages pkg)
+  let compile_pkg =
+    Util.memo ~key:(fun (pkg : Odoc_unit.pkg) -> pkg.pkgname) @@ fun _ pkg ->
+    compile_libs pkg;
+    Compile.compile_pages pkg
   in
   Compile.html_support html_dir;
   Compile.with_remaps remaps @@ fun remap_file ->
