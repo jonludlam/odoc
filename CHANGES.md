@@ -13,6 +13,15 @@
 - Fix OxCaml with-bounds for arbitrary types (@art-w, #1466)
 - Display items included via `include functor` as included via the functor
   (@Leonidas-from-XIV, #1452)
+- `odoc compile`: `-o` now overrides the output path computed from
+  `--parent-id` and `--output-dir`, which is no longer required in that case
+  (@jonludlam, #1462)
+- `odoc compile-impl`: `-o` now overrides the output path computed from
+  `--parent-id` and `--output-dir`, matching `odoc compile` (@jonludlam, #1462)
+- `odoc-md` and `odoc compile-asset`: new `-o`, which overrides the path
+  computed from `--parent-id` and `--output-dir`, as `odoc compile`'s does. A
+  driver whose `.odoc` files do not sit at their identifier's path could not
+  say where the page or the asset should go (@jonludlam, #1461)
 - `{!modules: ...}` lists accept path references, `{!modules: /lib/Module}`,
   so a page can name the library a module belongs to (@jonludlam, #1461)
 - `odoc compile` and `odoc compile-impl`: new `-L libname:DIR`, which searches
