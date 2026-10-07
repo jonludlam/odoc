@@ -161,8 +161,7 @@ let compile_pages (pkg : Odoc_unit.pkg) =
   Fiber.List.iter compile (pkg.pages @ (lib_pages :> Odoc_unit.page list))
 
 let link ~warnings_tags (pkg : Odoc_unit.pkg) =
-  let link ~scope ~includes (c : Odoc_unit.any) =
-    let { Odoc_unit.page_roots; lib_roots } = scope in
+  let link ~libs (c : Odoc_unit.any) =
     match c.kind with
     | `Intf { hidden = true; _ } -> ()
     | _ ->
@@ -172,7 +171,7 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
         if c.to_output then
           Cmd_outputs.run
           @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file
-               ~libs:lib_roots ~docs:page_roots ~includes
+               ~libs ~docs:pkg.scope.page_roots
                ~ignore_output:(not c.enable_warnings) ~warnings_tags
                ?current_package:pkg.pkgname ();
         Atomic.incr
@@ -182,25 +181,21 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
           | `Mld | `Md | `Asset -> Stats.stats.linked_mlds)
   in
   let jobs =
-    List.map (fun u -> (pkg.scope, [], u)) (pkg.pages :> Odoc_unit.any list)
+    List.map
+      (fun u -> (pkg.scope.lib_roots, u))
+      (pkg.pages :> Odoc_unit.any list)
     @ List.concat_map
         (fun (lib : Odoc_unit.lib) ->
-          (* The page the driver writes for the library shows what the
-             library's modules say, so it is linked with their search path:
-             odoc then prefers this library's modules to the same-named
-             modules of another library in the scope. *)
           let page =
             match lib.page with
             | None -> []
             | Some p -> [ (p :> Odoc_unit.any) ]
           in
-          let includes = Odoc_unit.include_dirs lib in
-          List.map
-            (fun u -> (pkg.scope, includes, u))
-            (page @ (lib.units :> Odoc_unit.any list)))
+          let libs = Odoc_unit.link_libs pkg.scope lib in
+          List.map (fun u -> (libs, u)) (page @ (lib.units :> Odoc_unit.any list)))
         pkg.libs
   in
-  Fiber.List.iter (fun (scope, includes, u) -> link ~scope ~includes u) jobs
+  Fiber.List.iter (fun (libs, u) -> link ~libs u) jobs
 
 (* The index of a package is built from the [.odocl] files of its linked units.
    Listing them explicitly puts the package's pages and modules in one hierarchy

@@ -217,7 +217,7 @@ let link_rules ~stamp_dir ~warnings_tags ~by_name (pkg : pkg) =
              (Util.StringMap.find_opt name by_name))
          pkg.scope.page_roots
   in
-  let link ~includes (u : any) =
+  let link ~libs (u : any) =
     match u.kind with
     | `Intf { hidden = true; _ } -> None
     | _ when not u.to_output -> None
@@ -230,21 +230,20 @@ let link_rules ~stamp_dir ~warnings_tags ~by_name (pkg : pkg) =
               [
                 Action
                   (Odoc.link ~input_file:u.odoc_file ~output_file:u.odocl_file
-                     ~libs:pkg.scope.lib_roots ~docs:pkg.scope.page_roots
-                     ~includes ~ignore_output:(not u.enable_warnings)
+                     ~libs ~docs:pkg.scope.page_roots ~ignore_output:(not u.enable_warnings)
                      ~warnings_tags ?current_package:pkg.pkgname ());
               ];
             stamp = false;
           }
   in
-  List.filter_map (link ~includes:[]) (pkg.pages :> any list)
+  List.filter_map (link ~libs:pkg.scope.lib_roots) (pkg.pages :> any list)
   @ List.concat_map
       (fun (lib : lib) ->
-        let includes = include_dirs lib in
+        let libs = link_libs pkg.scope lib in
         let page =
           match lib.page with None -> [] | Some p -> [ (p :> any) ]
         in
-        List.filter_map (link ~includes) (page @ (lib.units :> any list)))
+        List.filter_map (link ~libs) (page @ (lib.units :> any list)))
       pkg.libs
 
 (* The units a package's index is built from: the same list the driver

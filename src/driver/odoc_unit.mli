@@ -84,14 +84,14 @@ type lib = {
           what it requires, each with the directory holding its [.odoc] files.
           This is what the compiler could see. The units are compiled with it as
           [-L], which finds the files and records the names in them. They are
-          linked with the directories as [-I]. *)
+          linked with it as [-L] too, which is where odoc looks for the names
+          the units recorded. *)
   units : module_unit list;
   page : mld t option;
       (** The page the driver writes to list the library's modules. [None] when
-          the driver writes no pages for this package. It is linked with
-          {!includes}, like the library's modules. What it shows of them is
-          therefore taken from this library: odoc prefers a module found there
-          to a same-named module of another library. *)
+          the driver writes no pages for this package. It names each module
+          with its library, [{!modules: /lib/M}], so it shows this library's
+          modules and not a same-named module of another library. *)
 }
 (** A library and its modules. *)
 
@@ -116,6 +116,10 @@ type pkg = {
 
 val include_dirs : lib -> Fpath.t list
 (** The directories of {!lib.includes}. *)
+
+val link_libs : scope -> lib -> (string * Fpath.t) list
+(** The libraries a unit of [lib] is linked with: the package's reference scope
+    and [lib]'s dependency cone. *)
 
 val all_units : pkg -> any list
 

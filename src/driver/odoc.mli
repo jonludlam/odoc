@@ -80,14 +80,13 @@ val link :
   ?output_file:Fpath.t ->
   docs:(string * Fpath.t) list ->
   libs:(string * Fpath.t) list ->
-  includes:Fpath.t list ->
   warnings_tags:string list ->
   ?current_package:string ->
   unit ->
   Cmd_outputs.action
 (** [odoc link]. [docs] are the page roots ([-P]) and [libs] the library roots
-    ([-L]) the unit may refer to. [includes] are the directories ([-I]) holding
-    the [.odoc] files of the modules it depends on. Roots may share a directory,
+    ([-L]): those the unit may refer to, and those holding the [.odoc] files of
+    the modules it depends on. Roots may share a directory,
     so [--custom-layout] is always passed. Warnings are reported for the
     packages named in [warnings_tags]. *)
 

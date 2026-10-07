@@ -65,6 +65,12 @@ type lib = {
 
 let include_dirs lib = List.map snd lib.includes
 
+let link_libs scope lib =
+  scope.lib_roots
+  @ List.filter
+      (fun (name, _) -> not (List.mem_assoc name scope.lib_roots))
+      lib.includes
+
 (* A package, the unit of building: its libraries, its pages (including the
    generated landing pages), the reference scope they all link with, and the
    index they are gathered in. *)

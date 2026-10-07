@@ -40,6 +40,8 @@
 - odoc-driver: name the libraries when compiling, so that what a page says
   about a module resolves the way the module's own page does (@jonludlam,
   #1461)
+- odoc-driver: link with `-L` alone, giving each library's dependency cone
+  as well as the reference scope, and no longer pass `-I` (@jonludlam, #1461)
 - odoc-driver: remove `odoc_driver_monorepo` (@jonludlam, #1461)
 - odoc-driver: work in a switch with no findlib configuration, which is what
   ocaml-docs-ci gives a package whose dependency closure has no ocamlfind in
