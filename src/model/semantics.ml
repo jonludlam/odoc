@@ -110,7 +110,8 @@ type ast_leaf_inline_element =
   | `Word of string
   | `Code_span of string
   | `Math_span of string
-  | `Raw_markup of string option * string ]
+  | `Raw_markup of string option * string
+  | `Linebreak ]
 
 type sections_allowed = [ `All | `No_titles | `None ]
 
@@ -127,7 +128,9 @@ let leaf_inline_element :
     Comment.leaf_inline_element with_location =
  fun element ->
   match element with
-  | { value = `Word _ | `Code_span _ | `Math_span _; _ } as element -> element
+  | { value = `Word _ | `Code_span _ | `Math_span _ | `Linebreak; _ } as element
+    ->
+      element
   | { value = `Space s; _ } -> Location.same element (`Space s)
   | { value = `Raw_markup (target, s); location } -> (
       match target with
@@ -469,7 +472,7 @@ let generate_heading_label : Comment.inline_element with_location list -> string
     | element :: more ->
         let anchor =
           match (element : Comment.inline_element) with
-          | `Space _ -> anchor ^ "-"
+          | `Space _ | `Linebreak -> anchor ^ "-"
           | `Word w -> anchor ^ hyphenate_word_runs w
           | `Code_span c | `Math_span c ->
               anchor ^ replace_spaces_with_hyphens_and_lowercase c

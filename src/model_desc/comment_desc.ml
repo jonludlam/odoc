@@ -11,6 +11,7 @@ type general_inline_element =
   | `Code_span of string
   | `Math_span of string
   | `Raw_markup of raw_markup_target * string
+  | `Linebreak
   | `Styled of style * general_inline_element with_location list
   | `Reference of Paths.Reference.t * general_link_content
   | `Link of string * general_link_content ]
@@ -77,6 +78,7 @@ let rec inline_element : general_inline_element t =
     | `Code_span x -> C ("`Code_span", x, string)
     | `Math_span x -> C ("`Math_span", x, string)
     | `Raw_markup (x1, x2) -> C ("`Raw_markup", (x1, x2), Pair (string, string))
+    | `Linebreak -> C0 "`Linebreak"
     | `Styled (x1, x2) -> C ("`Styled", (x1, x2), Pair (style, link_content))
     | `Reference (x1, x2) ->
         C ("`Reference", (x1, x2), Pair (reference, link_content))

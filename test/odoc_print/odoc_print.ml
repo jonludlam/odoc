@@ -227,7 +227,7 @@ module Refs = struct
     | `Reference (r, _) -> print_ref c indent r
     | `Styled (_, xs) -> List.iter (inline c indent) xs
     | `Space _ | `Word _ | `Code_span _ | `Math_span _ | `Raw_markup _ | `Link _
-      ->
+    | `Linebreak ->
         ()
 
   and nestable c indent

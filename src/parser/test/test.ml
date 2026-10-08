@@ -60,6 +60,7 @@ module Ast_to_sexp = struct
     | `Raw_markup (target, s) ->
         List [ Atom "raw_markup"; opt str target; Atom s ]
     | `Math_span s -> List [ Atom "math_span"; Atom s ]
+    | `Linebreak -> Atom "linebreak"
     | `Styled (s, es) ->
         List [ style s; List (List.map (at.at (inline_element at)) es) ]
     | `Reference (kind, r, es) ->
@@ -1573,6 +1574,34 @@ let hidden () =
     let followed_by_tag = test "@hidden\n@deprecated"
 
     let with_list = test "@hidden - foo"
+  end in
+  ()
+
+let line_break () =
+  let module Line_break = struct
+    let basic = test "foo{br}bar"
+
+    let with_spaces = test "foo {br} bar"
+
+    let alone = test "{br}"
+
+    let at_start = test "{br}foo"
+
+    let at_end_of_line = test "foo{br}\nbar"
+
+    let in_bold = test "{b foo{br}bar}"
+
+    let in_link = test "{{:http://example.com} foo{br}bar}"
+
+    let in_heading = test "{2 foo{br}bar}"
+
+    let in_table_cell = test "{t\n| foo{br}bar | baz |\n}"
+
+    let longer = test "{brr}"
+
+    let with_space_inside = test "{br }"
+
+    let escaped = test "\\{br\\}"
   end in
   ()
 

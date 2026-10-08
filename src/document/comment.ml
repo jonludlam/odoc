@@ -171,6 +171,7 @@ let leaf_inline_element : Comment.leaf_inline_element -> Inline.one = function
   | `Code_span s -> inline @@ Source (source_of_code s)
   | `Math_span s -> inline @@ Math s
   | `Raw_markup (target, s) -> inline @@ Raw_markup (target, s)
+  | `Linebreak -> inline Linebreak
 
 let rec non_link_inline_element : Comment.non_link_inline_element -> Inline.one
     = function

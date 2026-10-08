@@ -300,6 +300,15 @@
  (action
   (progn
    (with-stdout-to
+    line_break.actual
+    (run %{exe:odoc_parser_test_main.exe} line_break))
+   (diff expected/line_break.expected line_break.actual))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (with-stdout-to
     bad_markup.actual
     (run %{exe:odoc_parser_test_main.exe} bad_markup))
    (diff expected/bad_markup.expected bad_markup.actual))))

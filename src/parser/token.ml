@@ -78,6 +78,7 @@ type t =
   | `Code_span of string
   | `Raw_markup of string option * string
   | `Math_span of string
+  | `Linebreak
   | `Math_block of string
   | `Begin_style of style
   | `Begin_paragraph_style of paragraph_style
@@ -185,6 +186,7 @@ let describe : [< t | `Comment ] -> string = function
   | `Begin_style `Superscript -> "'{^...}' (superscript)"
   | `Begin_style `Subscript -> "'{_...}' (subscript)"
   | `Math_span _ -> "'{m ...}' (math span)"
+  | `Linebreak -> "'{br}' (line break)"
   | `Math_block _ -> "'{math ...}' (math block)"
   | `Simple_reference _ -> "'{!...}' (cross-reference)"
   | `Begin_reference_with_replacement_text _ ->

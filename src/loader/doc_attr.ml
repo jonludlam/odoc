@@ -167,7 +167,7 @@ let rec inline_element_needs_own_location
         (fun e -> inline_element_needs_own_location (Odoc_parser.Loc.value e))
         xs
   | `Space _ | `Word _ | `Code_span _ | `Raw_markup _ | `Link _
-  | `Math_span _ ->
+  | `Math_span _ | `Linebreak ->
       false
 
 let rec nestable_block_element_needs_own_location

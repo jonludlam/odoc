@@ -19,7 +19,8 @@ type leaf_inline_element =
   | `Word of string
   | `Code_span of string
   | `Math_span of string
-  | `Raw_markup of raw_markup_target * string ]
+  | `Raw_markup of raw_markup_target * string
+  | `Linebreak ]
 
 type non_link_inline_element =
   [ leaf_inline_element
@@ -156,6 +157,7 @@ let to_string (l : link_content) =
     | `Word w -> w
     | `Math_span m -> m
     | `Space s -> s
+    | `Linebreak -> " "
     | `Styled (_, is) -> s_of_is is
     | `Raw_markup (_, r) -> r
   and s_of_is is =
