@@ -10,15 +10,6 @@ let with_dir dir pat f =
   | None -> OS.Dir.with_tmp pat f () |> Result.get_ok
   | Some dir -> f dir ()
 
-let lines_of_channel ic =
-  let rec inner acc =
-    try
-      let l = input_line ic in
-      inner (l :: acc)
-    with End_of_file -> List.rev acc
-  in
-  inner []
-
 let lines_of_process cmd =
   match OS.Cmd.(run_out ~err:err_null cmd |> to_lines) with
   | Ok x -> x
