@@ -260,7 +260,8 @@ module Refs = struct
     | `Param (_, bs)
     | `Return bs
     | `See (_, _, bs)
-    | `Before (_, bs) ->
+    | `Before (_, bs)
+    | `Custom (_, bs) ->
         List.iter (nestable c indent) bs
     | `Raise (`Reference (r, _), bs) ->
         print_ref c indent r;

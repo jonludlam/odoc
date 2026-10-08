@@ -202,7 +202,7 @@ let tag_needs_own_location (x : Odoc_parser.Ast.tag) =
   match x with
   | `Deprecated c | `Param (_, c) | `Raise (_, c) | `Return c
   | `See (_, _, c) | `Before (_, c) | `Children_order c | `Toc_status c
-  | `Order_category c | `Short_title c ->
+  | `Order_category c | `Short_title c | `Custom (_, c) ->
       List.exists
         (fun e ->
           nestable_block_element_needs_own_location (Odoc_parser.Loc.value e))

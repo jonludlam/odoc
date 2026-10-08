@@ -42,7 +42,18 @@ type input = {
   warnings : Warning.t list ref;
   lexbuf : Lexing.lexbuf;
   string_buffer : Buffer.t;
+  custom_tags : string -> bool;
 }
+
+let save_position lexbuf =
+  Lexing.(lexbuf.lex_start_pos, lexbuf.lex_curr_pos, lexbuf.lex_start_p,
+          lexbuf.lex_curr_p)
+
+let restore_position lexbuf (start_pos, curr_pos, start_p, curr_p) =
+  lexbuf.Lexing.lex_start_pos <- start_pos;
+  lexbuf.lex_curr_pos <- curr_pos;
+  lexbuf.lex_start_p <- start_p;
+  lexbuf.lex_curr_p <- curr_p
 
 let with_location_adjustments
     k input ?start_offset ?adjust_start_by ?end_offset ?adjust_end_by value =
@@ -585,9 +596,21 @@ and token input = parse
     { warning input Parse_error.truncated_see;
       emit input (`Word "@see") }
 
-  | '@' ['a'-'z' 'A'-'Z']+ as tag
-    { warning input (Parse_error.unknown_tag tag);
-      emit input (`Word tag) }
+  | '@' (['a'-'z' 'A'-'Z']+ as letters)
+    { (* A custom tag's name can go on past the letters, as in
+         [@admonition.note]. If the name is not a custom tag, go back to the
+         end of the letters, which are an unknown tag. *)
+      let start_offset = Lexing.lexeme_start lexbuf in
+      let position = save_position lexbuf in
+      let name = letters ^ custom_tag_name_rest lexbuf in
+      if input.custom_tags name then
+        emit input ~start_offset (`Tag (`Custom name))
+      else begin
+        restore_position lexbuf position;
+        let tag = "@" ^ letters in
+        warning input (Parse_error.unknown_tag tag);
+        emit input (`Word tag)
+      end }
 
   | '@'
     { warning input Parse_error.stray_at;
@@ -605,6 +628,10 @@ and token input = parse
           ~what:(Token.describe `End)
           ~in_what:(Token.describe (`Modules "")));
       emit input (`Modules modules) }
+
+and custom_tag_name_rest = parse
+  | ((['a'-'z' 'A'-'Z' '0'-'9'] | ['.' '_' '-'] ['a'-'z' 'A'-'Z' '0'-'9'])* as rest)
+    { rest }
 
 and code_span buffer nesting_level start_offset input = parse
   | ']'

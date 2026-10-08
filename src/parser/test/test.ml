@@ -237,6 +237,9 @@ module Ast_to_sexp = struct
           ([ Atom "@before"; Atom s ]
           @ List.map (at.at (nestable_block_element at)) es)
     | `Version s -> List [ Atom "@version"; Atom s ]
+    | `Custom (name, es) ->
+        List
+          (Atom ("@" ^ name) :: List.map (at.at (nestable_block_element at)) es)
     | `Canonical p -> List [ Atom "@canonical"; at.at str_at p ]
     | `Inline -> Atom "@inline"
     | `Open -> Atom "@open"
@@ -267,12 +270,15 @@ let parser_output formatter v =
   Sexplib0.Sexp.pp_hum formatter output;
   Format.pp_print_flush formatter ()
 
-let test ?(location = { Loc.line = 1; column = 0 }) str =
+let test ?(location = { Loc.line = 1; column = 0 })
+    ?(custom_tags = fun _ -> false) str =
   let location =
     Expect_test_helper.lexing_position ~line:location.line
       ~column:location.column ()
   in
-  let ast = Odoc_parser.parse_comment ~location ~text:str in
+  let ast =
+    Odoc_parser.parse_comment_with_custom_tags ~custom_tags ~location ~text:str
+  in
   Expect_test_helper.expect ~input:str (fun f -> parser_output f ast)
 
 [@@@ocaml.warning "-32"]
@@ -1666,6 +1672,46 @@ let line_break () =
     let with_space_inside = test "{br }"
 
     let escaped = test "\\{br\\}"
+  end in
+  ()
+
+let custom_tag () =
+  let module Custom_tag = struct
+    let without_custom_tags = test "@note foo"
+
+    let custom_tags = function
+      | "note" | "admonition.note" | "x-ocaml.requires" | "rfc2" -> true
+      | _ -> false
+
+    let test = test ~custom_tags
+
+    let basic = test "@note foo"
+
+    let empty = test "@note"
+
+    let dotted = test "@admonition.note foo"
+
+    let hyphenated = test "@x-ocaml.requires foo bar"
+
+    let digits = test "@rfc2 foo"
+
+    let blank_line_ends = test "@note foo\n\nbar"
+
+    let followed_by_tag = test "@note foo\n@return bar"
+
+    let with_list = test "@note - foo\n- bar"
+
+    let unknown = test "@notes foo"
+
+    let unknown_suffix = test "@admonition.warning foo"
+
+    let trailing_dot = test "@note. foo"
+
+    let builtin = test "@return foo"
+
+    let not_at_start_of_line = test "foo @note bar"
+
+    let in_explicit_list = test "{ul {li @note foo}}"
   end in
   ()
 

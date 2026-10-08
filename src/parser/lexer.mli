@@ -6,6 +6,7 @@ type input = {
   warnings : Warning.t list ref;
   lexbuf : Lexing.lexbuf;
   string_buffer : Buffer.t;
+  custom_tags : string -> bool;
 }
 
 val token : input -> Lexing.lexbuf -> Token.t Loc.with_location

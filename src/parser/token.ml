@@ -29,7 +29,8 @@ type tag_kind =
   | `Inline
   | `Open
   | `Closed
-  | `Hidden ]
+  | `Hidden
+  | `Custom of string ]
 
 type tag = [ `Tag of tag_kind | `Begin_tag of block_tag ]
 
@@ -171,6 +172,7 @@ let print : [< t ] -> string = function
   | `Tag `Closed -> "'@closed'"
   | `Tag `Hidden -> "'@hidden"
   | `Begin_tag t -> Printf.sprintf "'@%s{'" (block_tag_name t)
+  | `Tag (`Custom name) -> "'@" ^ name ^ "'"
   | `Raw_markup (None, _) -> "'{%...%}'"
   | `Raw_markup (Some target, _) -> "'{%" ^ target ^ ":...%}'"
   | `Simple_media (`Reference _, `Image) -> "{image!...}"
@@ -272,6 +274,7 @@ let describe : [< t | `Comment ] -> string = function
   | `Tag `Order_category -> "'@order_category"
   | `Tag `Short_title -> "'@short_title"
   | `Begin_tag t -> Printf.sprintf "'@%s{...}'" (block_tag_name t)
+  | `Tag (`Custom name) -> "'@" ^ name ^ "'"
   | `Comment -> "top-level text"
 
 let describe_element = function

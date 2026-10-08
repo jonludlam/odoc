@@ -309,6 +309,15 @@
  (action
   (progn
    (with-stdout-to
+    custom_tag.actual
+    (run %{exe:odoc_parser_test_main.exe} custom_tag))
+   (diff expected/custom_tag.expected custom_tag.actual))))
+
+(rule
+ (alias runtest)
+ (action
+  (progn
+   (with-stdout-to
     line_break.actual
     (run %{exe:odoc_parser_test_main.exe} line_break))
    (diff expected/line_break.expected line_break.actual))))

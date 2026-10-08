@@ -273,7 +273,8 @@ let comment_tag_needs_resolving (x : Comment.tag) =
   | `Param (_, c)
   | `Return c
   | `See (_, _, c)
-  | `Before (_, c) ->
+  | `Before (_, c)
+  | `Custom (_, c) ->
       List.exists
         (fun e ->
           comment_nestable_block_element_needs_resolving e.Location_.value)
@@ -444,6 +445,10 @@ and comment_tag env warnings_tag parent ~loc:_ (x : Comment.tag) =
   | `Before (version, content) ->
       `Before
         ( version,
+          comment_nestable_block_element_list env warnings_tag parent content )
+  | `Custom (name, content) ->
+      `Custom
+        ( name,
           comment_nestable_block_element_list env warnings_tag parent content )
   | `Author _ | `Since _ | `Alert _ | `Version _ ->
       x (* only contain primitives *)

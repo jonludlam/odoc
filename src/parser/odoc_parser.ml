@@ -100,7 +100,7 @@ let position_of_point : t -> Loc.point -> Lexing.position =
   { Lexing.pos_bol; pos_lnum; pos_cnum; pos_fname }
 
 (* The main entry point for this module *)
-let parse_comment ~location ~text =
+let parse_comment_with_custom_tags ~custom_tags ~location ~text =
   let warnings = ref [] in
   let reversed_newlines = reversed_newlines ~input:text in
   let string_buffer = Buffer.create 256 in
@@ -116,12 +116,15 @@ let parse_comment ~location ~text =
         warnings;
         lexbuf;
         string_buffer;
+        custom_tags;
       }
     in
     Stream.from (fun _token_index -> Some (Lexer.token input lexbuf))
   in
   let ast, warnings = Syntax.parse warnings token_stream in
   { ast; warnings; reversed_newlines; original_pos = location }
+
+let parse_comment = parse_comment_with_custom_tags ~custom_tags:(fun _ -> false)
 
 (* Accessor functions, as [t] is opaque *)
 let warnings t = t.warnings

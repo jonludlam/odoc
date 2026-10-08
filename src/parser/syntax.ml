@@ -649,6 +649,7 @@ let tag_to_words = function
   | `Toc_status -> [ `Word "@toc_status" ]
   | `Order_category -> [ `Word "@order_category" ]
   | `Short_title -> [ `Word "@short_title" ]
+  | `Custom s -> [ `Word ("@" ^ s) ]
 
 (* {3 Block element lists} *)
 
@@ -918,7 +919,17 @@ let rec block_element_list : type block stops_at_which_tokens.
                 consume_block_elements where_in_line (tag :: acc)
             | (`Inline | `Open | `Closed | `Hidden) as tag ->
                 let tag = Loc.at location (`Tag tag) in
-                consume_block_elements `After_text (tag :: acc)))
+                consume_block_elements `After_text (tag :: acc)
+            | `Custom name ->
+                let content, _stream_head, where_in_line =
+                  block_element_list (In_implicitly_ended `Tag)
+                    ~parent_markup:token input
+                in
+                let location =
+                  location :: List.map Loc.location content |> Loc.span
+                in
+                let tag = Loc.at location (`Tag (`Custom (name, content))) in
+                consume_block_elements where_in_line (tag :: acc)))
     | ( { value = #token_that_always_begins_an_inline_element; _ }
       | { value = `Bar; _ } ) as next_token ->
         warn_if_after_text next_token;

@@ -4,7 +4,7 @@ module Location = Location_
 module Ast = Odoc_parser.Ast
 
 type internal_tags_removed =
-  [ `Tag of Ast.ocamldoc_tag
+  [ `Tag of [ Ast.ocamldoc_tag | Ast.custom_tag ]
   | `Heading of Ast.heading
   | `Media of
     Ast.reference_kind * Ast.media_href Ast.with_location * string * Ast.media
@@ -220,6 +220,7 @@ let merge_ast (ast : Ast.t) : Ast.t =
     | `Return content -> `Return (nestables content)
     | `See (kind, s, content) -> `See (kind, s, nestables content)
     | `Before (s, content) -> `Before (s, nestables content)
+    | `Custom (name, content) -> `Custom (name, nestables content)
     | (`Author _ | `Since _ | `Version _ | #Ast.internal_tag) as t -> t
   in
   List.map
@@ -396,12 +397,14 @@ and nestable_block_elements elements = List.map nestable_block_element elements
 let tag :
     location:Location.span ->
     status ->
-    Ast.ocamldoc_tag ->
+    [ Ast.ocamldoc_tag | Ast.custom_tag ] ->
     ( Comment.block_element with_location,
       internal_tags_removed with_location )
     result =
  fun ~location status tag ->
-  if not status.tags_allowed then
+  (* Custom tags are allowed in pages. *)
+  let custom = match tag with `Custom _ -> true | _ -> false in
+  if (not status.tags_allowed) && not custom then
     (* Trigger a warning but do not remove the tag. Avoid turning tags into
        text that would render the same. *)
     Error.raise_warning (tags_not_allowed location);
@@ -425,6 +428,8 @@ let tag :
       ok (`See (kind, target, nestable_block_elements content))
   | `Before (version, content) ->
       ok (`Before (version, nestable_block_elements content))
+  | `Custom (name, content) ->
+      ok (`Custom (name, nestable_block_elements content))
 
 (* When the user does not give a section heading a label (anchor), we generate
    one from the text in the heading. This is the common case. This involves
@@ -632,7 +637,7 @@ let strip_internal_tags ast : internal_tags_removed with_location list * _ =
                 loop ~start tags ast' tl))
     | ({
          value =
-           ( `Tag #Ast.ocamldoc_tag
+           ( `Tag (#Ast.ocamldoc_tag | #Ast.custom_tag)
            | `Heading _ | `Media _
            | #Ast.nestable_block_element );
          _;

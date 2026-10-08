@@ -116,7 +116,14 @@ type ocamldoc_tag =
     {{:https://ocaml.org/releases/4.12/htmlman/ocamldoc.html#ss:ocamldoc-tags}manual})
 *)
 
-type tag = [ ocamldoc_tag | internal_tag ]
+type custom_tag =
+  [ `Custom of string * nestable_block_element with_location list ]
+(** Custom tags, like ocamldoc's [@name], are only parsed as such when they are
+    registered (see [Odoc_parser.parse_comment_with_custom_tags]).
+
+    @since 3.3.0 *)
+
+type tag = [ ocamldoc_tag | internal_tag | custom_tag ]
 (** A tag whose content is delimited by braces, as in [@return{...}], has the
     same representation as one whose content is not. Its location includes the
     braces. *)

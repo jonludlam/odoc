@@ -1,0 +1,151 @@
+--- input ---
+@note foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 9))
+    (paragraph
+     (((f.ml (1 0) (1 5)) (word @note)) ((f.ml (1 5) (1 6)) space)
+      ((f.ml (1 6) (1 9)) (word foo)))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 0-5:\
+   \nUnknown tag '@note'.")))
+--- input ---
+@note foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 9))
+    (@note
+     ((f.ml (1 6) (1 9)) (paragraph (((f.ml (1 6) (1 9)) (word foo)))))))))
+ (warnings ()))
+--- input ---
+@note
+--- output ---
+((output (((f.ml (1 0) (1 5)) (@note)))) (warnings ()))
+--- input ---
+@admonition.note foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 20))
+    (@admonition.note
+     ((f.ml (1 17) (1 20)) (paragraph (((f.ml (1 17) (1 20)) (word foo)))))))))
+ (warnings ()))
+--- input ---
+@x-ocaml.requires foo bar
+--- output ---
+((output
+  (((f.ml (1 0) (1 25))
+    (@x-ocaml.requires
+     ((f.ml (1 18) (1 25))
+      (paragraph
+       (((f.ml (1 18) (1 21)) (word foo)) ((f.ml (1 21) (1 22)) space)
+        ((f.ml (1 22) (1 25)) (word bar)))))))))
+ (warnings ()))
+--- input ---
+@rfc2 foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 9))
+    (@rfc2
+     ((f.ml (1 6) (1 9)) (paragraph (((f.ml (1 6) (1 9)) (word foo)))))))))
+ (warnings ()))
+--- input ---
+@note foo
+
+bar
+--- output ---
+((output
+  (((f.ml (1 0) (1 9))
+    (@note
+     ((f.ml (1 6) (1 9)) (paragraph (((f.ml (1 6) (1 9)) (word foo)))))))
+   ((f.ml (3 0) (3 3)) (paragraph (((f.ml (3 0) (3 3)) (word bar)))))))
+ (warnings ()))
+--- input ---
+@note foo
+@return bar
+--- output ---
+((output
+  (((f.ml (1 0) (1 9))
+    (@note
+     ((f.ml (1 6) (1 9)) (paragraph (((f.ml (1 6) (1 9)) (word foo)))))))
+   ((f.ml (2 0) (2 11))
+    (@return
+     ((f.ml (2 8) (2 11)) (paragraph (((f.ml (2 8) (2 11)) (word bar)))))))))
+ (warnings ()))
+--- input ---
+@note - foo
+- bar
+--- output ---
+((output
+  (((f.ml (1 0) (2 5))
+    (@note
+     ((f.ml (1 6) (2 5))
+      (unordered light
+       ((((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo))))))
+        (((f.ml (2 2) (2 5)) (paragraph (((f.ml (2 2) (2 5)) (word bar)))))))))))))
+ (warnings ()))
+--- input ---
+@notes foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 10))
+    (paragraph
+     (((f.ml (1 0) (1 6)) (word @notes)) ((f.ml (1 6) (1 7)) space)
+      ((f.ml (1 7) (1 10)) (word foo)))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 0-6:\
+   \nUnknown tag '@notes'.")))
+--- input ---
+@admonition.warning foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 23))
+    (paragraph
+     (((f.ml (1 0) (1 11)) (word @admonition))
+      ((f.ml (1 11) (1 19)) (word .warning)) ((f.ml (1 19) (1 20)) space)
+      ((f.ml (1 20) (1 23)) (word foo)))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 0-11:\
+   \nUnknown tag '@admonition'.")))
+--- input ---
+@note. foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 10))
+    (@note
+     ((f.ml (1 5) (1 10))
+      (paragraph
+       (((f.ml (1 5) (1 6)) (word .)) ((f.ml (1 6) (1 7)) space)
+        ((f.ml (1 7) (1 10)) (word foo)))))))))
+ (warnings ()))
+--- input ---
+@return foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 11))
+    (@return
+     ((f.ml (1 8) (1 11)) (paragraph (((f.ml (1 8) (1 11)) (word foo)))))))))
+ (warnings ()))
+--- input ---
+foo @note bar
+--- output ---
+((output
+  (((f.ml (1 0) (1 4))
+    (paragraph (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (1 4)) space))))
+   ((f.ml (1 4) (1 13))
+    (@note
+     ((f.ml (1 10) (1 13)) (paragraph (((f.ml (1 10) (1 13)) (word bar)))))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 4-9:\
+   \n'@note' should begin on its own line.")))
+--- input ---
+{ul {li @note foo}}
+--- output ---
+((output
+  (((f.ml (1 0) (1 19))
+    (unordered heavy
+     ((((f.ml (1 8) (1 13)) (paragraph (((f.ml (1 8) (1 13)) (word @note)))))
+       ((f.ml (1 14) (1 17)) (paragraph (((f.ml (1 14) (1 17)) (word foo)))))))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 8-13:\
+   \n'@note' is not allowed in '{li ...}' (list item).\
+   \nSuggestion: move '@note' outside of any other markup.")))
