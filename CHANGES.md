@@ -26,6 +26,8 @@
 - The bare tags of a code block, such as `server` in `{@ocaml server[...]}`,
   become classes of the block in the HTML, such as `tag-server` (@jonludlam)
 - `{br}` is a line break (@jonludlam)
+- An `odoc.cli` library, and a registry of code-block extensions, so that a
+  program can build an odoc with extensions built in (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

@@ -14,7 +14,8 @@ let prepare ~extra_suffix ~output_dir filename =
   Fs.Directory.mkdir_p directory;
   filename
 
-let document_of_odocl ~syntax input =
+let document_of_odocl ~backend ~syntax input =
+  Extension.for_backend backend @@ fun () ->
   Odoc_file.load input >>= fun unit ->
   match unit.content with
   | Odoc_file.Page_content odoctree ->
@@ -32,7 +33,8 @@ let document_of_odocl ~syntax input =
            "Wrong kind of unit: Expected a page or module unit, got an asset \
             unit. Use the dedicated command for assets.")
 
-let document_of_input ~resolver ~warnings_options ~syntax input =
+let document_of_input ~backend ~resolver ~warnings_options ~syntax input =
+  Extension.for_backend backend @@ fun () ->
   let output = Fs.File.(set_ext ".odocl" input) in
   Odoc_link.from_odoc ~resolver ~warnings_options ~warnings_tags:[] input output
   >>= function
@@ -60,19 +62,30 @@ let render_document renderer ~sidebar ~output:root_dir ~extra_suffix ~extra doc
 let render_odoc ~resolver ~warnings_options ~syntax ~renderer ~output extra file
     =
   let extra_suffix = None in
-  document_of_input ~resolver ~warnings_options ~syntax file >>= fun doc ->
-  render_document renderer ~sidebar:None ~output ~extra_suffix ~extra doc;
-  Ok ()
+  (* Extensions can warn while the document is generated and rendered. *)
+  Error.catch_warnings (fun () ->
+      document_of_input ~backend:renderer.Renderer.name ~resolver
+        ~warnings_options ~syntax file
+      >>= fun doc ->
+      render_document renderer ~sidebar:None ~output ~extra_suffix ~extra doc;
+      Ok ())
+  |> Error.handle_warnings ~warnings_options
+  >>= Fun.id
 
-let generate_odoc ~syntax ~warnings_options:_ ~renderer ~output ~extra_suffix
+let generate_odoc ~syntax ~warnings_options ~renderer ~output ~extra_suffix
     ~sidebar extra file =
   (match sidebar with
   | None -> Ok None
   | Some x -> Odoc_file.load_sidebar x >>= fun sidebar -> Ok (Some sidebar))
   >>= fun sidebar ->
-  document_of_odocl ~syntax file >>= fun doc ->
-  render_document renderer ~output ~sidebar ~extra_suffix ~extra doc;
-  Ok ()
+  (* Extensions can warn while the document is generated and rendered. *)
+  Error.catch_warnings (fun () ->
+      document_of_odocl ~backend:renderer.Renderer.name ~syntax file
+      >>= fun doc ->
+      render_document renderer ~output ~sidebar ~extra_suffix ~extra doc;
+      Ok ())
+  |> Error.handle_warnings ~warnings_options
+  >>= Fun.id
 
 let documents_of_implementation ~warnings_options:_ ~syntax impl source_file =
   match impl.Lang.Implementation.id with
@@ -126,8 +139,9 @@ let targets_odoc ~resolver ~warnings_options ~syntax ~renderer ~output:root_dir
     ~extra odoctree =
   let doc =
     if Fpath.get_ext odoctree = ".odoc" then
-      document_of_input ~resolver ~warnings_options ~syntax odoctree
-    else document_of_odocl ~syntax odoctree
+      document_of_input ~backend:renderer.Renderer.name ~resolver
+        ~warnings_options ~syntax odoctree
+    else document_of_odocl ~backend:renderer.Renderer.name ~syntax odoctree
   in
   doc >>= fun doc ->
   let pages = renderer.Renderer.render extra None doc in

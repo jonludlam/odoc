@@ -233,36 +233,39 @@ let module_references ms =
   let items = List.map module_reference ms in
   block ~attr:[ "modules" ] @@ Description items
 
-let rec nestable_block_element :
+let rec nestable_block_element ~loc :
     Comment.nestable_block_element -> Block.one list =
  fun content ->
   match content with
   | `Paragraph p -> [ paragraph p ]
-  | `Code_block { meta; content = code; output = outputs } ->
+  | `Code_block ({ meta; content; output } as code_block) -> (
       let lang_tag =
         match meta with None -> default_lang_tag | Some m -> m.language
       in
-      let rest =
-        match outputs with
-        | Some xs -> nestable_block_element_list xs
-        | None -> []
-      in
-      (* The bare tags of a code block, such as [server] in
-         [{@ocaml server[...]}], become its classes, prefixed so that they do
-         not clash with odoc's own. *)
-      let attr =
-        match meta with
-        | None -> []
-        | Some m ->
-            List.filter_map
-              (function `Tag t -> Some ("tag-" ^ t) | `Binding _ -> None)
-              m.tags
-      in
-      [
-        block ~attr
-        @@ Source (lang_tag, source_of_code (Odoc_model.Location_.value code));
-      ]
-      @ rest
+      (* A handler renders the code block's output too. *)
+      match
+        Extension.render_code_block ~language:lang_tag ~location:loc code_block
+      with
+      | Some blocks -> blocks
+      | None ->
+          (* The bare tags of a code block, such as [server] in
+             [{@ocaml server[...]}], become its classes, prefixed so that
+             they do not clash with odoc's own. *)
+          let attr =
+            match meta with
+            | None -> []
+            | Some m ->
+                List.filter_map
+                  (function `Tag t -> Some ("tag-" ^ t) | `Binding _ -> None)
+                  m.tags
+          in
+          let rest =
+            match output with
+            | Some xs -> nestable_block_element_list xs
+            | None -> []
+          in
+          let content = Odoc_model.Location_.value content in
+          [ block ~attr @@ Source (lang_tag, source_of_code content) ] @ rest)
   | `Math_block s -> [ block @@ Math s ]
   | `Verbatim s -> [ block @@ Verbatim s ]
   | `Modules ms -> [ module_references ms ]
@@ -348,10 +351,10 @@ and nestable_block_element_list :
     Comment.nestable_block_element Comment.with_location list -> Block.one list
     =
  fun elements ->
-  elements
-  |> List.map Odoc_model.Location_.value
-  |> List.map nestable_block_element
-  |> List.concat
+  List.concat_map
+    (fun elt ->
+      nestable_block_element ~loc:elt.Odoc_model.Location_.location elt.value)
+    elements
 
 let tag : Comment.tag -> Description.one =
  fun t ->
@@ -408,15 +411,15 @@ let tag : Comment.tag -> Description.one =
       item ~tag:"alert"
         [ block (Block.Inline ([ inline @@ Text tag ] @ content)) ]
 
-let attached_block_element : Comment.attached_block_element -> Block.t =
+let attached_block_element ~loc : Comment.attached_block_element -> Block.t =
   function
-  | #Comment.nestable_block_element as e -> nestable_block_element e
+  | #Comment.nestable_block_element as e -> nestable_block_element ~loc e
   | `Tag t -> [ block ~attr:[ "at-tags" ] @@ Description [ tag t ] ]
 
 (* TODO collaesce tags *)
 
-let block_element : Comment.block_element -> Block.t = function
-  | #Comment.attached_block_element as e -> attached_block_element e
+let block_element ~loc : Comment.block_element -> Block.t = function
+  | #Comment.attached_block_element as e -> attached_block_element ~loc e
   | `Heading (_, _, text) ->
       (* We are not supposed to receive Heading in this context.
          TODO: Remove heading in attached documentation in the model *)
@@ -438,9 +441,9 @@ let heading (attrs, `Label (_, label), text) =
   let source_anchor = None in
   Item.Heading { label; level; title; source_anchor }
 
-let item_element : Comment.block_element -> Item.t list = function
+let item_element ~loc : Comment.block_element -> Item.t list = function
   | #Comment.attached_block_element as e ->
-      [ Item.Text (attached_block_element e) ]
+      [ Item.Text (attached_block_element ~loc e) ]
   | `Heading h -> [ heading h ]
 
 (** The documentation of the expansion is used if there is no comment attached
@@ -450,11 +453,13 @@ let synopsis ~decl_doc ~expansion_doc =
   match Comment.synopsis docs with Some p -> [ paragraph p ] | None -> []
 
 let standalone docs =
-  List.concat_map item_element
-  @@ List.map (fun x -> x.Odoc_model.Location_.value) docs
+  List.concat_map
+    (fun x -> item_element ~loc:x.Odoc_model.Location_.location x.value)
+    docs
 
 let to_ir (docs : Comment.elements) =
-  List.concat_map block_element
-  @@ List.map (fun x -> x.Odoc_model.Location_.value) docs
+  List.concat_map
+    (fun x -> block_element ~loc:x.Odoc_model.Location_.location x.value)
+    docs
 
 let has_doc docs = docs <> []

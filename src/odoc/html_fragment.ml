@@ -35,19 +35,23 @@ let from_mld ~xref_base_uri ~resolver ~output ~warnings_options input =
     Odoc_xref2.Link.resolve_page ~filename:input_s env page
     |> Odoc_model.Error.handle_warnings ~warnings_options
     >>= fun resolved ->
-    let page =
-      match Odoc_document.Renderer.document_of_page ~syntax:OCaml resolved with
-      | Page p -> p
-      | Source_page _ -> assert false
-    in
     let config =
       Odoc_html.Config.v ~semantic_uris:false ~indent:false ~flat:false
         ~open_details:false ~as_json:false ~remap:[] ()
     in
-    let html =
-      Odoc_html.Generator.items ~config ~resolve:(Base xref_base_uri)
-        (page.Odoc_document.Types.Page.preamble @ page.items)
-    in
+    (* Extensions can warn while the page is generated. *)
+    Odoc_model.Error.catch_warnings (fun () ->
+        let page =
+          match
+            Odoc_document.Renderer.document_of_page ~syntax:OCaml resolved
+          with
+          | Page p -> p
+          | Source_page _ -> assert false
+        in
+        Odoc_html.Generator.items ~config ~resolve:(Base xref_base_uri)
+          (page.Odoc_document.Types.Page.preamble @ page.items))
+    |> Odoc_model.Error.handle_warnings ~warnings_options
+    >>= fun html ->
     Io_utils.with_formatter_out (Fs.File.to_string output) @@ fun fmt ->
     Format.fprintf fmt "%a@." (Format.pp_print_list (Tyxml.Html.pp_elt ())) html;
     Ok ()

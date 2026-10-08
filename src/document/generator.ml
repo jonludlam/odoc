@@ -1156,7 +1156,9 @@ module Make (Syntax : SYNTAX) = struct
             match b.Location.value with
             | `Heading _ -> Stop_and_keep
             | #Odoc_model.Comment.attached_block_element as doc ->
-                let content = Comment.attached_block_element doc in
+                let content =
+                  Comment.attached_block_element ~loc:b.Location.location doc
+                in
                 Accum content)
       in
       (content, rest)
@@ -1341,12 +1343,14 @@ module Make (Syntax : SYNTAX) = struct
         match t.expansion with
         | None -> (O.documentedSrc @@ O.txt name, None, None)
         | Some csig ->
-            let expansion_doc, items = class_signature csig in
             let url = Url.Path.from_identifier t.id in
-            let page =
-              make_expansion_page ~source_anchor url
-                [ t.doc.elements; expansion_doc ]
-                items
+            let expansion_doc, page =
+              Extension.in_page url @@ fun () ->
+              let expansion_doc, items = class_signature csig in
+              ( expansion_doc,
+                make_expansion_page ~source_anchor url
+                  [ t.doc.elements; expansion_doc ]
+                  items )
             in
             ( O.documentedSrc @@ path url [ inline @@ Text name ],
               Some page,
@@ -1381,11 +1385,13 @@ module Make (Syntax : SYNTAX) = struct
         | None -> (O.documentedSrc @@ O.txt name, None, None)
         | Some csig ->
             let url = Url.Path.from_identifier t.id in
-            let expansion_doc, items = class_signature csig in
-            let page =
-              make_expansion_page ~source_anchor url
-                [ t.doc.elements; expansion_doc ]
-                items
+            let expansion_doc, page =
+              Extension.in_page url @@ fun () ->
+              let expansion_doc, items = class_signature csig in
+              ( expansion_doc,
+                make_expansion_page ~source_anchor url
+                  [ t.doc.elements; expansion_doc ]
+                  items )
             in
             ( O.documentedSrc @@ path url [ inline @@ Text name ],
               Some page,
@@ -1502,7 +1508,11 @@ module Make (Syntax : SYNTAX) = struct
         mty_in_decl (arg.id :> Paths.Identifier.Signature.t) render_ty
       in
       let modname, mod_decl =
-        match expansion_of_module_type_expr arg.expr with
+        let url = Url.Path.from_identifier arg.id in
+        match
+          Extension.in_page url @@ fun () ->
+          expansion_of_module_type_expr arg.expr
+        with
         | None ->
             let modname = O.txt (Paths.Identifier.name arg.id) in
             (modname, O.documentedSrc modtyp)
@@ -1511,6 +1521,7 @@ module Make (Syntax : SYNTAX) = struct
             let modname = path url [ inline @@ Text name ] in
             let type_with_expansion =
               let content =
+                Extension.in_page url @@ fun () ->
                 make_expansion_page ~source_anchor:None url [ expansion_doc ]
                   items
               in
@@ -1636,7 +1647,9 @@ module Make (Syntax : SYNTAX) = struct
     and module_ : Odoc_model.Lang.Module.t -> Item.t =
      fun t ->
       let modname = Paths.Identifier.name t.id in
+      let url = Url.Path.from_identifier t.id in
       let expansion =
+        Extension.in_page url @@ fun () ->
         match t.type_ with
         | Alias (_, Some e) -> Some (simple_expansion e)
         | Alias (_, None) -> None
@@ -1652,9 +1665,9 @@ module Make (Syntax : SYNTAX) = struct
               | ModuleType (Signature _) -> `Inline
               | _ -> `Default
             in
-            let url = Url.Path.from_identifier t.id in
             let link = path url [ inline @@ Text modname ] in
             let page =
+              Extension.in_page url @@ fun () ->
               make_expansion_page ~source_anchor url
                 [ t.doc.elements; expansion_doc ]
                 items
@@ -1704,7 +1717,9 @@ module Make (Syntax : SYNTAX) = struct
 
     and module_type_manifest ~subst ~source_anchor modname id doc manifest
         prefix =
+      let url = Url.Path.from_identifier id in
       let expansion =
+        Extension.in_page url @@ fun () ->
         match manifest with
         | None -> None
         | Some e -> expansion_of_module_type_expr e
@@ -1713,9 +1728,9 @@ module Make (Syntax : SYNTAX) = struct
         match expansion with
         | None -> (O.txt modname, None, None)
         | Some (expansion_doc, items) ->
-            let url = Url.Path.from_identifier id in
             let link = path url [ inline @@ Text modname ] in
             let page =
+              Extension.in_page url @@ fun () ->
               make_expansion_page ~source_anchor url [ doc; expansion_doc ]
                 items
             in
@@ -2077,6 +2092,7 @@ module Make (Syntax : SYNTAX) = struct
 
     let compilation_unit (t : Odoc_model.Lang.Compilation_unit.t) =
       let url = Url.Path.from_identifier t.id in
+      Extension.in_page url @@ fun () ->
       let unit_doc, items =
         match t.content with
         | Module sign -> signature sign
@@ -2093,6 +2109,7 @@ module Make (Syntax : SYNTAX) = struct
         in*)
       (*let title = Odoc_model.Names.PageName.to_string name in*)
       let url = Url.Path.from_identifier t.name in
+      Extension.in_page url @@ fun () ->
       let preamble, items = Sectioning.docs t.content.elements in
       let source_anchor = None in
       Document.Page { Page.preamble; items; url; source_anchor }

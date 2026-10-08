@@ -1,0 +1,15 @@
+; An odoc with a code-block extension built in, to test extensions.
+
+(executable
+ (name odoc_shout)
+ (modules odoc_shout)
+ (libraries odoc.cli odoc.document))
+
+(env
+ (_
+  (binaries
+   (./odoc_shout.exe as odoc_shout))))
+
+(cram
+ (package odoc)
+ (deps %{bin:odoc} %{bin:odoc_shout}))
