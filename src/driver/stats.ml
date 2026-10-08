@@ -73,127 +73,97 @@ let render_stats env nprocs =
           loop ())
   | _ -> ()
 
-let k_longest_commands cmd k =
-  let open Run in
-  filter_commands cmd
-  |> List.sort (fun a b -> Float.compare b.time a.time)
-  |> List.filteri (fun i _ -> i < k)
+(* Benchmark results. *)
 
-let rec compute_min_max_avg min_ max_ total count = function
-  | [] -> (min_, max_, total /. float count, count)
-  | hd :: tl ->
-      compute_min_max_avg (min min_ hd) (max max_ hd) (total +. hd) (count + 1)
-        tl
-
-let compute_min_max_avg = function
+(* The smallest, largest and mean of some values, and how many there are. *)
+let summary = function
   | [] -> None
-  | hd :: tl -> Some (compute_min_max_avg hd hd hd 1 tl)
+  | x :: _ as xs ->
+      let n = List.length xs in
+      Some
+        ( List.fold_left min x xs,
+          List.fold_left max x xs,
+          List.fold_left ( +. ) 0. xs /. float n,
+          n )
 
-let compute_metric_int prefix suffix description values =
-  match compute_min_max_avg values with
-  | None -> []
-  | Some (min, max, avg, count) ->
-      let min = int_of_float min in
-      let max = int_of_float max in
-      let avg = int_of_float avg in
-      [
-        `Assoc
-          [
-            ("name", `String (prefix ^ "-total-" ^ suffix));
-            ("value", `Int count);
-            ("description", `String ("Number of " ^ description));
-          ];
-        `Assoc
-          [
-            ("name", `String (prefix ^ "-size-" ^ suffix));
-            ( "value",
-              `Assoc [ ("min", `Int min); ("max", `Int max); ("avg", `Int avg) ]
-            );
-            ("units", `String "b");
-            ("description", `String ("Size of " ^ description));
-            ("trend", `String "lower-is-better");
-          ];
-      ]
+let metric ?units ?trend ~name ~description value =
+  let opt key = function None -> [] | Some v -> [ (key, `String v) ] in
+  `Assoc
+    ([ ("name", `String name); ("value", value) ]
+    @ opt "units" units
+    @ [ ("description", `String description) ]
+    @ opt "trend" trend)
 
+let range f (min, max, avg) =
+  `Assoc [ ("min", f min); ("max", f max); ("avg", f avg) ]
+
+let lower = "lower-is-better"
+let json_float x = `Float x
+let json_int x = `Int (int_of_float x)
+let times cmds = List.map (fun c -> c.Run.time) cmds
+
+(* How often a command ran, and how long it took. *)
 let compute_metric_cmd cmd =
-  let open Run in
-  let cmds = filter_commands cmd in
-  let times = List.map (fun c -> c.Run.time) cmds in
-  match compute_min_max_avg times with
+  match summary (times (Run.filter_commands cmd)) with
   | None -> []
   | Some (min, max, avg, count) ->
       [
-        `Assoc
-          [
-            ("name", `String ("total-" ^ cmd));
-            ("value", `Int count);
-            ( "description",
-              `String ("Number of time 'odoc " ^ cmd ^ "' has run.") );
-          ];
-        `Assoc
-          [
-            ("name", `String ("time-" ^ cmd));
-            ( "value",
-              `Assoc
-                [
-                  ("min", `Float min); ("max", `Float max); ("avg", `Float avg);
-                ] );
-            ("units", `String "s");
-            ("description", `String ("Time taken by 'odoc " ^ cmd ^ "'"));
-            ("trend", `String "lower-is-better");
-          ];
+        metric ~name:("total-" ^ cmd) (`Int count)
+          ~description:("Number of time 'odoc " ^ cmd ^ "' has run.");
+        metric ~name:("time-" ^ cmd) ~units:"s" ~trend:lower
+          (range json_float (min, max, avg))
+          ~description:("Time taken by 'odoc " ^ cmd ^ "'");
       ]
 
-(** Analyze the size of files produced by a command. *)
+(* How many files a command wrote, and how big they are. *)
+let compute_sizes cmd sizes =
+  let description = "files produced by 'odoc " ^ cmd ^ "'" in
+  match summary sizes with
+  | None -> []
+  | Some (min, max, avg, count) ->
+      [
+        metric ~name:("produced-total-" ^ cmd) (`Int count)
+          ~description:("Number of " ^ description);
+        metric ~name:("produced-size-" ^ cmd) ~units:"b" ~trend:lower
+          (range json_int (min, max, avg))
+          ~description:("Size of " ^ description);
+      ]
+
+let file_size f =
+  match Bos.OS.Path.stat f with
+  | Ok st -> Some (float_of_int st.Unix.st_size)
+  | Error _ -> None
+
+(* The files a command wrote, one per run. *)
 let compute_produced_cmd cmd =
-  let output_file_size c =
-    match c.Run.output_file with
-    | Some f -> (
-        match Bos.OS.Path.stat f with
-        | Ok st -> Some (float st.Unix.st_size)
-        | Error _ -> None)
-    | None -> None
-  in
-  let sizes = List.filter_map output_file_size (Run.filter_commands cmd) in
-  compute_metric_int "produced" cmd
-    ("files produced by 'odoc " ^ cmd ^ "'")
-    sizes
+  Run.filter_commands cmd
+  |> List.filter_map (fun c -> Option.bind c.Run.output_file file_size)
+  |> compute_sizes cmd
 
-(** Analyze the size of files outputed to the given directory. *)
+(* The files below [dir], for a command that writes a tree. *)
 let compute_produced_tree cmd dir =
-  let acc_file_sizes path acc =
-    match Bos.OS.Path.stat path with
-    | Ok st -> float st.Unix.st_size :: acc
-    | Error _ -> acc
-  in
-  Bos.OS.Dir.fold_contents ~dotfiles:true ~elements:`Files acc_file_sizes [] dir
-  |> Result.value ~default:[]
-  |> compute_metric_int "produced" cmd ("files produced by 'odoc " ^ cmd ^ "'")
+  Bos.OS.Dir.fold_contents ~dotfiles:true ~elements:`Files
+    (fun f acc -> Option.to_list (file_size f) @ acc)
+    [] dir
+  |> Result.value ~default:[] |> compute_sizes cmd
 
-(** Analyze the running time of the slowest commands. *)
+(* The [k] slowest runs of a command. *)
 let compute_longest_cmd cmd =
   let k = 5 in
-  let cmds = k_longest_commands cmd k in
-  let times = List.map (fun c -> c.Run.time) cmds in
-  match compute_min_max_avg times with
+  let slowest =
+    times (Run.filter_commands cmd)
+    |> List.sort (fun a b -> Float.compare b a)
+    |> List.filteri (fun i _ -> i < k)
+  in
+  match summary slowest with
   | None -> []
-  | Some (min, max, avg, _count) ->
+  | Some (min, max, avg, _) ->
       [
-        `Assoc
-          [
-            ("name", `String ("longest-" ^ cmd));
-            ( "value",
-              `Assoc
-                [
-                  ("min", `Float min); ("max", `Float max); ("avg", `Float avg);
-                ] );
-            ("units", `String "s");
-            ( "description",
-              `String
-                (Printf.sprintf
-                   "Time taken by the %d longest calls to 'odoc %s'" k cmd) );
-            ("trend", `String "lower-is-better");
-          ];
+        metric ~name:("longest-" ^ cmd) ~units:"s" ~trend:lower
+          (range json_float (min, max, avg))
+          ~description:
+            (Printf.sprintf "Time taken by the %d longest calls to 'odoc %s'" k
+               cmd);
       ]
 
 let all_metrics html_dir =
