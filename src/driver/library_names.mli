@@ -20,6 +20,9 @@ type t = { meta_dir : Fpath.t; libraries : library list }
 val process_meta_file : Fpath.t -> t
 (** Read a [META] file and the libraries it defines. *)
 
+val dir : t -> library -> Fpath.t
+(** The directory holding a library's objects. *)
+
 val libname_of_archive : t -> string Fpath.map
 (** Map from the full path of each archive, without extension, to the name of
     its library. *)

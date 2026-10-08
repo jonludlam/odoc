@@ -50,18 +50,11 @@ let by_hand =
          let meta = Fpath.(d / "META") in
          match Bos.OS.File.exists meta with
          | Ok true ->
-             let { Library_names.meta_dir; libraries } =
-               Library_names.process_meta_file meta
-             in
+             let t = Library_names.process_meta_file meta in
              List.iter
                (fun (l : Library_names.library) ->
-                 let dir =
-                   match l.dir with
-                   | None | Some "" -> Fpath.to_dir_path meta_dir
-                   | Some sub -> Fpath.(meta_dir // v sub |> to_dir_path)
-                 in
-                 add l.name dir l.deps)
-               libraries
+                 add l.name (Fpath.to_dir_path (Library_names.dir t l)) l.deps)
+               t.libraries
          | _ -> ())
        (dirs_under Fpath.(v (Opam.prefix ()) / "lib"));
      Logs.debug (fun m ->

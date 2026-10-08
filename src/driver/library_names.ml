@@ -1,16 +1,7 @@
 open Bos
 
-(** To extract the library names for a given package, without using dune, we
-
-    1. parse the META file of the package with ocamlfind to see which libraries
-    exist and what their archive name (.cma filename) is.
-
-    2. use ocamlobjinfo to get a list of all modules within the archives. EDIT:
-    it seems this step is now skipped.
-
-    This code assumes that the META file lists for every library an archive
-    [archive_name], and that for this cma archive exists a corresponsing
-    [archive_name].ocamlobjinfo file. *)
+(* The libraries a META file defines, read with findlib's parser rather than
+   through a findlib configuration. *)
 
 type library = {
   name : string;
@@ -21,49 +12,45 @@ type library = {
 
 type t = { meta_dir : Fpath.t; libraries : library list }
 
-let read_libraries_from_pkg_defs ~library_name pkg_defs =
-  try
-    let archive_filename =
-      (* Try the plain [byte]/[native] archives first, then the [ppx_driver]
-         variants. ppx derivers such as [ppxlib.traverse] and [ppxlib.metaquot]
-         declare their archive only under the [ppx_driver] predicate; without
-         this they'd be dropped here and later re-discovered by the no-META
-         fallback, which names a library after its [.cma] file (e.g.
-         [ppxlib_traverse] instead of [ppxlib.traverse]). Mirrors
-         [Ocamlfind.archives]. *)
-      let lookup preds =
-        try Some (Fl_metascanner.lookup "archive" preds pkg_defs)
-        with _ -> None
-      in
-      List.find_map lookup
-        [
-          [ "byte" ];
-          [ "native" ];
-          [ "byte"; "ppx_driver" ];
-          [ "native"; "ppx_driver" ];
-        ]
+let library_of_pkg_defs ~library_name pkg_defs =
+  let archive_filename =
+    (* Try the plain [byte]/[native] archives first, then the [ppx_driver]
+       variants. ppx derivers such as [ppxlib.traverse] and [ppxlib.metaquot]
+       declare their archive only under the [ppx_driver] predicate; without
+       this they'd be dropped here and later re-discovered by the no-META
+       fallback, which names a library after its [.cma] file (e.g.
+       [ppxlib_traverse] instead of [ppxlib.traverse]). Mirrors
+       [Ocamlfind.archives]. *)
+    let lookup preds =
+      try Some (Fl_metascanner.lookup "archive" preds pkg_defs) with _ -> None
     in
+    List.find_map lookup
+      [
+        [ "byte" ];
+        [ "native" ];
+        [ "byte"; "ppx_driver" ];
+        [ "native"; "ppx_driver" ];
+      ]
+  in
 
-    let deps =
-      try
-        let deps_str = Fl_metascanner.lookup "requires" [] pkg_defs in
-        (* The deps_str is a string of space-separated package names, e.g. "a b c" *)
-        (* We use Astring to split the string into a list of package names *)
-        Astring.String.fields ~empty:false deps_str
-      with _ -> []
-    in
+  let deps =
+    try
+      let deps_str = Fl_metascanner.lookup "requires" [] pkg_defs in
+      (* Space-separated library names. *)
+      Astring.String.fields ~empty:false deps_str
+    with _ -> []
+  in
 
-    let dir =
-      List.find_opt (fun d -> d.Fl_metascanner.def_var = "directory") pkg_defs
-    in
-    let dir = Option.map (fun d -> d.Fl_metascanner.def_value) dir in
-    let archive_name =
-      Option.bind archive_filename (fun a ->
-          let file_name_len = String.length a in
-          if file_name_len > 0 then Some (Filename.chop_extension a) else None)
-    in
-    [ { name = library_name; archive_name; dir; deps } ]
-  with Not_found -> []
+  let dir =
+    List.find_opt (fun d -> d.Fl_metascanner.def_var = "directory") pkg_defs
+  in
+  let dir = Option.map (fun d -> d.Fl_metascanner.def_value) dir in
+  let archive_name =
+    Option.bind archive_filename (fun a ->
+        let file_name_len = String.length a in
+        if file_name_len > 0 then Some (Filename.chop_extension a) else None)
+  in
+  { name = library_name; archive_name; dir; deps }
 
 let process_meta_file file =
   Logs.debug (fun m -> m "Reading %a" Fpath.pp file);
@@ -76,50 +63,34 @@ let process_meta_file file =
     if Fpath.basename file = "META" then Fpath.parent file |> Fpath.basename
     else Fpath.get_ext file
   in
-  let rec extract_name_and_archive ~prefix
-      ((name, pkg_expr) : string * Fl_metascanner.pkg_expr) =
-    let library_name = prefix ^ "." ^ name in
-    let libraries =
-      read_libraries_from_pkg_defs ~library_name pkg_expr.pkg_defs
-    in
-    let child_libraries =
-      pkg_expr.pkg_children
-      |> List.map (extract_name_and_archive ~prefix:library_name)
-      |> List.flatten
-    in
-    libraries @ child_libraries
-  in
-  let libraries =
-    read_libraries_from_pkg_defs ~library_name:base_library_name meta.pkg_defs
+  (* A library, and the sub-libraries its [package] stanzas define. *)
+  let rec libraries name (pkg_expr : Fl_metascanner.pkg_expr) =
+    library_of_pkg_defs ~library_name:name pkg_expr.pkg_defs
+    :: List.concat_map
+         (fun (sub, e) -> libraries (name ^ "." ^ sub) e)
+         pkg_expr.pkg_children
   in
   let is_not_private (lib : library) =
-    not
-      (String.split_on_char '.' lib.name
-      |> List.exists (fun x -> x = "__private__"))
+    not (List.mem "__private__" (String.split_on_char '.' lib.name))
   in
-  let libraries =
-    libraries
-    @ (meta.pkg_children
-      |> List.map (extract_name_and_archive ~prefix:base_library_name)
-      |> List.flatten)
-    |> List.filter is_not_private
-  in
-  { meta_dir; libraries }
+  {
+    meta_dir;
+    libraries = List.filter is_not_private (libraries base_library_name meta);
+  }
 
-let libname_of_archive v =
-  let { meta_dir; libraries } = v in
+let dir { meta_dir; _ } lib =
+  match lib.dir with
+  | None | Some "" -> meta_dir
+  | Some sub -> Fpath.(meta_dir // v sub)
+
+let libname_of_archive t =
   List.fold_left
     (fun acc (x : library) ->
       match x.archive_name with
       | None -> acc
       | Some archive_name ->
-          let dir =
-            match x.dir with
-            | None -> meta_dir
-            | Some x -> Fpath.(meta_dir // v x)
-          in
           Fpath.Map.update
-            Fpath.(dir / archive_name)
+            Fpath.(dir t x / archive_name)
             (function
               | None -> Some x.name
               | Some y ->
@@ -128,16 +99,15 @@ let libname_of_archive v =
                         archive_name x.name y);
                   Some y)
             acc)
-    Fpath.Map.empty libraries
+    Fpath.Map.empty t.libraries
 
-let directories v =
-  let { meta_dir; libraries } = v in
+let directories t =
   List.fold_left
     (fun acc lib ->
       match lib.dir with
-      | None | Some "" -> Fpath.Set.add meta_dir acc
-      | Some subdir -> (
-          let dir = Fpath.(meta_dir // v subdir) in
+      | None | Some "" -> Fpath.Set.add t.meta_dir acc
+      | Some _ -> (
+          let dir = dir t lib in
           (* A META may name a directory that is not installed. topkg points
              at a ../topkg-care directory that belongs to another package; and
              a package built without an optional dependency still declares the
@@ -154,4 +124,4 @@ let directories v =
                      exist, so it will not be documented"
                     lib.name Fpath.pp dir);
               acc))
-    Fpath.Set.empty libraries
+    Fpath.Set.empty t.libraries
