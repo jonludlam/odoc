@@ -2,8 +2,6 @@
 
 type dep = string * Digest.t
 
-(* type id = Odoc.id *)
-
 type intf = { mif_hash : string; mif_path : Fpath.t; mif_deps : dep list }
 
 let pp_intf fmt (i : intf) =
@@ -203,8 +201,8 @@ module Lib = struct
      directory, so that the directory structure of compiled documentation
      mirrors that of the compiled objects. Libraries installed in a single
      directory (e.g. the [compiler-libs.*] family) therefore share an odoc
-     directory too, and a [-I] pointing at it finds every one of them, just
-     as the compiler's does. *)
+     directory too, and the [-L] of any one of them finds every one of them,
+     just as the compiler's [-I] does. *)
   let rel_dir ~roots dir =
     let dir = Fpath.normalize dir in
     match List.find_map (fun root -> Fpath.rem_prefix root dir) roots with
