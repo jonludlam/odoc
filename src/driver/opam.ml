@@ -145,11 +145,13 @@ let pp_fpaths_of_package fmt l =
         docs (Fmt.option Fpath.pp) odoc_config)
     l
 
-let classify_docs prefix only_package contents =
-  let pkg_match pkg =
-    match only_package with None -> true | Some p -> p = pkg
-  in
+(* Whether files below [doc/<pkg>] or [lib/<pkg>] are wanted: those of every
+   package, or of [only_package]. *)
+let pkg_match only_package pkg =
+  match only_package with None -> true | Some p -> p = pkg
 
+let classify_docs prefix only_package contents =
+  let pkg_match = pkg_match only_package in
   let is_dir f =
     try Sys.is_directory (Fpath.to_string f) with Sys_error _ -> false
   in
@@ -186,10 +188,7 @@ let classify_docs prefix only_package contents =
     [] contents
 
 let classify_libs prefix only_package contents =
-  let pkg_match pkg =
-    match only_package with None -> true | Some p -> p = pkg
-  in
-
+  let pkg_match = pkg_match only_package in
   contents
   |> List.filter (Fpath.has_ext ".cmi")
   |> List.filter_map (fun fpath ->
@@ -205,10 +204,7 @@ let classify_libs prefix only_package contents =
   |> Fpath.Set.of_list
 
 let find_odoc_config prefix only_package contents =
-  let pkg_match pkg =
-    match only_package with None -> true | Some p -> p = pkg
-  in
-
+  let pkg_match = pkg_match only_package in
   let opt =
     List.find_opt
       (fun fpath ->
