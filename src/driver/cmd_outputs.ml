@@ -41,6 +41,9 @@ type action = {
   ignore_failures : bool;
 }
 
+let v ?log ?output ?(ignore_failures = false) ~desc cmd =
+  { log; desc; cmd; output; ignore_failures }
+
 let run { log; desc; cmd; output; ignore_failures } =
   if ignore_failures then submit_ignore_failures log desc cmd output
   else ignore (submit log desc cmd output)

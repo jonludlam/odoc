@@ -26,9 +26,6 @@ let odoc = ref (Cmd.v "odoc")
 
 let odoc_md = ref (Cmd.v "odoc-md")
 
-let action ?log ?output ~desc cmd =
-  { Cmd_outputs.log; desc; cmd; output; ignore_failures = false }
-
 (* [-L name:dir] or [-P name:dir], once for each root. *)
 let roots flag roots =
   List.fold_left
@@ -66,7 +63,7 @@ let compile ~output_file ~input_file:file ~libs ~warnings_tag ~parent_id
   let log =
     if ignore_output then None else Some (`Compile, Fpath.to_string file)
   in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 let compile_md ~output_file ~input_file:file ~parent_id =
   let open Cmd in
@@ -76,7 +73,7 @@ let compile_md ~output_file ~input_file:file ~parent_id =
   in
   let desc = Printf.sprintf "Compiling Markdown %s" (Fpath.to_string file) in
   let log = Some (`Compile, Fpath.to_string file) in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 let compile_asset ~output_file ~name ~parent_id =
   let open Cmd in
@@ -86,7 +83,7 @@ let compile_asset ~output_file ~name ~parent_id =
   in
   let desc = Printf.sprintf "Compiling %s" name in
   let log = Some (`Compile, name) in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 let compile_impl ~output_file ~input_file:file ~libs ~parent_id ~source_id =
   let open Cmd in
@@ -101,7 +98,7 @@ let compile_impl ~output_file ~input_file:file ~libs ~parent_id ~source_id =
     Printf.sprintf "Compiling implementation %s" (Fpath.to_string file)
   in
   let log = Some (`Compile, Fpath.to_string file) in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 let link ~ignore_output ~input_file:file ~output_file ~docs ~libs ~warnings_tags
     ?current_package () =
@@ -125,7 +122,7 @@ let link ~ignore_output ~input_file:file ~output_file ~docs ~libs ~warnings_tags
   let log =
     if ignore_output then None else Some (`Link, Fpath.to_string file)
   in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 (* [file_list] names a file listing the [.odocl] files to index, one per line.
    Passing the files explicitly (rather than [--root] directories) puts them
@@ -152,7 +149,7 @@ let compile_index ~output_file ?occurrence_file ~json ~file_list ~simplified
     Printf.sprintf "Generating index for %s" (Fpath.to_string output_file)
   in
   let log = Some (`Index, Fpath.to_string output_file) in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 let sidebar_generate ~output_file ~json input_file () =
   let json = if json then Cmd.v "--json" else Cmd.empty in
@@ -165,7 +162,7 @@ let sidebar_generate ~output_file ~json input_file () =
     Printf.sprintf "Generating sidebar for %s" (Fpath.to_string output_file)
   in
   let log = Some (`Generate, Fpath.to_string output_file) in
-  action ?log ~output:output_file ~desc cmd
+  Cmd_outputs.v ?log ~output:output_file ~desc cmd
 
 let html_generate ~output_dir ?sidebar ?(search_uris = []) ?remap
     ?(as_json = false) ~home_breadcrumb ~input_file:file () =
@@ -189,7 +186,7 @@ let html_generate ~output_dir ?sidebar ?(search_uris = []) ?remap
   let cmd = if as_json then cmd % "--as-json" else cmd in
   let desc = Printf.sprintf "Generating HTML for %s" (Fpath.to_string file) in
   let log = Some (`Generate, Fpath.to_string file) in
-  action ?log ~desc cmd
+  Cmd_outputs.v ?log ~desc cmd
 
 let html_generate_asset ~output_dir ~home_breadcrumb ~input_file:file
     ~asset_path () =
@@ -201,7 +198,7 @@ let html_generate_asset ~output_dir ~home_breadcrumb ~input_file:file
   in
   let desc = Printf.sprintf "Copying asset %s" (Fpath.to_string file) in
   let log = Some (`Generate, Fpath.to_string file) in
-  action ?log ~desc cmd
+  Cmd_outputs.v ?log ~desc cmd
 
 let html_generate_source ~output_dir ~source ?sidebar ?(search_uris = [])
     ?(as_json = false) ~home_breadcrumb ~input_file:file () =
@@ -224,13 +221,13 @@ let html_generate_source ~output_dir ~source ?sidebar ?(search_uris = [])
 
   let desc = Printf.sprintf "Generating HTML for %s" (Fpath.to_string source) in
   let log = Some (`Generate, Fpath.to_string source) in
-  action ?log ~desc cmd
+  Cmd_outputs.v ?log ~desc cmd
 
 let support_files path =
   let open Cmd in
   let cmd = !odoc % "support-files" % "-o" % Fpath.to_string path in
   let desc = "Generating support files" in
-  action ~desc cmd
+  Cmd_outputs.v ~desc cmd
 
 let count_occurrences ~input ~output =
   let open Cmd in
@@ -239,7 +236,7 @@ let count_occurrences ~input ~output =
   let cmd = !odoc % "count-occurrences" %% input %% output_c in
   let desc = "Counting occurrences" in
   let log = Some (`Count_occurrences, Fpath.to_string output) in
-  action ?log ~desc cmd
+  Cmd_outputs.v ?log ~desc cmd
 
 let classify dirs =
   let open Cmd in

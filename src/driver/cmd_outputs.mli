@@ -47,5 +47,15 @@ type action = {
     it are separate, so that a driver can write the commands into a build file
     instead of running them. See {!Makefile}. *)
 
+val v :
+  ?log:log_dest * string ->
+  ?output:Fpath.t ->
+  ?ignore_failures:bool ->
+  desc:string ->
+  Bos.Cmd.t ->
+  action
+(** An action. By default it is not logged, writes no file, and a failure is
+    fatal. *)
+
 val run : action -> unit
 (** Run the command on a worker, and keep its output if it is logged. *)

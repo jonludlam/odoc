@@ -1,13 +1,8 @@
 open Odoc_unit
 
 let copy ~src ~dst =
-  {
-    Cmd_outputs.log = None;
-    desc = "Copying the interface";
-    cmd = Bos.Cmd.(v "cp" % Fpath.to_string src % Fpath.to_string dst);
-    output = Some dst;
-    ignore_failures = false;
-  }
+  Cmd_outputs.v ~output:dst ~desc:"Copying the interface"
+    Bos.Cmd.(v "cp" % Fpath.to_string src % Fpath.to_string dst)
 
 let compile_module (lib : lib) (u : module_unit) =
   match u.kind with
@@ -53,7 +48,7 @@ let index ~html_dir ~file_list (index : index) =
       Odoc.sidebar_generate
         ~output_file:Fpath.(html_dir // index.html_dir / "sidebar.json")
         ~json:true index.index_file ();
-      Sherlodoc.index ~format:`js ~inputs:[ index.index_file ] ~dst:db ();
+      Sherlodoc.index ~inputs:[ index.index_file ] ~dst:db;
     ] )
 
 let generate ~html_dir ?remap_file ~generate_json (pkg : pkg) (u : any) =

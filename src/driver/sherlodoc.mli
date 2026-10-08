@@ -12,12 +12,6 @@ val js : Fpath.t -> Cmd_outputs.action
 (** [js dst] writes the search engine's JavaScript to [dst], an absolute path.
 *)
 
-val index :
-  format:[ `js | `marshal ] ->
-  inputs:Fpath.t list ->
-  dst:Fpath.t ->
-  ?favored_prefixes:string list ->
-  unit ->
-  Cmd_outputs.action
-(** [index ~format ~inputs ~dst ()] builds a search database at [dst] from the
+val index : inputs:Fpath.t list -> dst:Fpath.t -> Cmd_outputs.action
+(** [index ~inputs ~dst] builds the JavaScript search database [dst] from the
     given [.odoc-index] files. *)
