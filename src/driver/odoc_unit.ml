@@ -90,10 +90,20 @@ type pkg = {
   pages : page list;
 }
 
+let is_hidden (u : any) =
+  match u.kind with `Intf { hidden; _ } -> hidden | _ -> false
+
+let is_output (u : any) = u.to_output && not (is_hidden u)
+
 let lib_units lib =
   (Option.to_list lib.page :> any list) @ (lib.units :> any list)
 
 let all_units pkg = (pkg.pages :> any list) @ List.concat_map lib_units pkg.libs
+
+let index_inputs pkg =
+  all_units pkg
+  |> List.filter_map (fun u -> if is_output u then Some u.odocl_file else None)
+  |> List.sort_uniq Fpath.compare
 
 let link_units pkg =
   List.map (fun u -> (pkg.scope.lib_roots, u)) (pkg.pages :> any list)

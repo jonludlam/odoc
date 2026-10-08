@@ -127,11 +127,21 @@ val link_libs : scope -> lib -> (string * Fpath.t) list
 (** The libraries a unit of [lib] is linked with: the package's reference scope
     and [lib]'s dependency cone. *)
 
+val is_hidden : any -> bool
+(** A hidden interface: compiled, but neither linked nor shown to readers. *)
+
+val is_output : any -> bool
+(** Linked and rendered: {!t.to_output}, and not {!is_hidden}. *)
+
 val lib_units : lib -> any list
 (** The library's page, if there is one, and its units. *)
 
 val all_units : pkg -> any list
 (** The package's pages, and the units of its libraries. *)
+
+val index_inputs : pkg -> Fpath.t list
+(** The [.odocl] files a package's index is built from: those of its units that
+    are output. *)
 
 val link_units : pkg -> ((string * Fpath.t) list * any) list
 (** {!all_units}, each with the libraries it is linked with: the scope for the

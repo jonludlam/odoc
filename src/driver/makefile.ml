@@ -216,39 +216,29 @@ let link_rules ~stamp_dir ~warnings_tags ~by_name (pkg : pkg) =
          pkg.scope.page_roots
   in
   let link ~libs (u : any) =
-    match u.kind with
-    | `Intf { hidden = true; _ } -> None
-    | _ when not u.to_output -> None
-    | _ ->
-        Some
-          {
-            target = u.odocl_file;
-            prereqs = u.odoc_file :: scope_stamps;
-            actions =
-              [
-                Action
-                  (Odoc.link ~input_file:u.odoc_file ~output_file:u.odocl_file
-                     ~libs ~docs:pkg.scope.page_roots
-                     ~ignore_output:(not u.enable_warnings) ~warnings_tags
-                     ?current_package:pkg.pkgname ());
-              ];
-            stamp = false;
-          }
+    if not (is_output u) then None
+    else
+      Some
+        {
+          target = u.odocl_file;
+          prereqs = u.odoc_file :: scope_stamps;
+          actions =
+            [
+              Action
+                (Odoc.link ~input_file:u.odoc_file ~output_file:u.odocl_file
+                   ~libs ~docs:pkg.scope.page_roots
+                   ~ignore_output:(not u.enable_warnings) ~warnings_tags
+                   ?current_package:pkg.pkgname ());
+            ];
+          stamp = false;
+        }
   in
   List.filter_map (fun (libs, u) -> link ~libs u) (link_units pkg)
 
 (* The units a package's index is built from: the same list the driver
    writes, and a rule that writes it. *)
 let index_rules ~html_dir (pkg : pkg) (index : index) =
-  let inputs =
-    all_units pkg
-    |> List.filter_map (fun (u : any) ->
-           match u.kind with
-           | `Intf { hidden = true; _ } -> None
-           | _ when u.to_output -> Some u.odocl_file
-           | _ -> None)
-    |> List.sort_uniq Fpath.compare
-  in
+  let inputs = index_inputs pkg in
   let file_list = Fpath.(parent index.index_file / "index-inputs.txt") in
   (* The list of files to index is written by the recipe, so that it is
      rebuilt with the rest. A shell line, since it redirects. *)
@@ -324,42 +314,39 @@ let generate_rules ~html_dir ~stamp_dir (pkg : pkg) =
           Some [ Sherlodoc.db_js_file index.html_dir; Sherlodoc.js_file ] )
   in
   let rule (u : any) =
-    let actions =
-      match u.kind with
-      | `Intf { hidden = true; _ } -> []
-      | _ when not u.to_output -> []
-      | `Impl { src_path; _ } ->
-          [
-            Action
-              (Odoc.html_generate_source ~output_dir ?sidebar ?search_uris
-                 ~input_file:u.odocl_file ~source:src_path ~home_breadcrumb ());
-          ]
-      | `Asset ->
-          [
-            Action
-              (Odoc.html_generate_asset ~output_dir ~input_file:u.odoc_file
-                 ~asset_path:u.input_file ~home_breadcrumb ());
-          ]
-      | `Intf _ | `Mld | `Md ->
-          [
-            Action
-              (Odoc.html_generate ~output_dir ?sidebar ?search_uris
-                 ~input_file:u.odocl_file ~home_breadcrumb ());
-          ]
-    in
-    match actions with
-    | [] -> None
-    | actions ->
-        let input =
-          match u.kind with `Asset -> u.odoc_file | _ -> u.odocl_file
-        in
-        Some
-          {
-            target = html_stamp ~stamp_dir u;
-            prereqs = input :: Option.to_list sidebar;
-            actions;
-            stamp = true;
-          }
+    if not (is_output u) then None
+    else
+      let actions =
+        match u.kind with
+        | `Impl { src_path; _ } ->
+            [
+              Action
+                (Odoc.html_generate_source ~output_dir ?sidebar ?search_uris
+                   ~input_file:u.odocl_file ~source:src_path ~home_breadcrumb ());
+            ]
+        | `Asset ->
+            [
+              Action
+                (Odoc.html_generate_asset ~output_dir ~input_file:u.odoc_file
+                   ~asset_path:u.input_file ~home_breadcrumb ());
+            ]
+        | `Intf _ | `Mld | `Md ->
+            [
+              Action
+                (Odoc.html_generate ~output_dir ?sidebar ?search_uris
+                   ~input_file:u.odocl_file ~home_breadcrumb ());
+            ]
+      in
+      let input =
+        match u.kind with `Asset -> u.odoc_file | _ -> u.odocl_file
+      in
+      Some
+        {
+          target = html_stamp ~stamp_dir u;
+          prereqs = input :: Option.to_list sidebar;
+          actions;
+          stamp = true;
+        }
   in
   List.filter_map rule (all_units pkg)
 

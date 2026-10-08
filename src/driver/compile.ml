@@ -136,22 +136,20 @@ let compile_pages (pkg : Odoc_unit.pkg) =
 
 let link ~warnings_tags (pkg : Odoc_unit.pkg) =
   let link ~libs (c : Odoc_unit.any) =
-    match c.kind with
-    | `Intf { hidden = true; _ } -> ()
-    | _ ->
-        (* Libraries sharing an object directory share an odoc directory, so
-           their -L roots overlap; --custom-layout tells odoc that is
-           intended. *)
-        if c.to_output then
-          Cmd_outputs.run
-          @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file ~libs
-               ~docs:pkg.scope.page_roots ~ignore_output:(not c.enable_warnings)
-               ~warnings_tags ?current_package:pkg.pkgname ();
-        Atomic.incr
-          (match c.kind with
-          | `Intf _ -> Stats.stats.linked_units
-          | `Impl _ -> Stats.stats.linked_impls
-          | `Mld | `Md | `Asset -> Stats.stats.linked_mlds)
+    if not (Odoc_unit.is_hidden c) then (
+      (* Libraries sharing an object directory share an odoc directory, so
+         their -L roots overlap; --custom-layout tells odoc that is
+         intended. *)
+      if c.to_output then
+        Cmd_outputs.run
+        @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file ~libs
+             ~docs:pkg.scope.page_roots ~ignore_output:(not c.enable_warnings)
+             ~warnings_tags ?current_package:pkg.pkgname ();
+      Atomic.incr
+        (match c.kind with
+        | `Intf _ -> Stats.stats.linked_units
+        | `Impl _ -> Stats.stats.linked_impls
+        | `Mld | `Md | `Asset -> Stats.stats.linked_mlds))
   in
   Fiber.List.iter (fun (libs, u) -> link ~libs u) (Odoc_unit.link_units pkg)
 
@@ -159,15 +157,7 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
    Listing them explicitly puts the package's pages and modules in one hierarchy
    even though they live in different directories. *)
 let index_file_list (pkg : Odoc_unit.pkg) (index : Odoc_unit.index) =
-  let inputs =
-    Odoc_unit.all_units pkg
-    |> List.filter_map (fun (l : Odoc_unit.any) ->
-           match l.kind with
-           | `Intf { hidden = true; _ } -> None
-           | _ when l.to_output -> Some l.odocl_file
-           | _ -> None)
-    |> List.sort_uniq Fpath.compare
-  in
+  let inputs = Odoc_unit.index_inputs pkg in
   let file_list = Fpath.(parent index.index_file / "index-inputs.txt") in
   Util.with_out_to file_list (fun oc ->
       List.iter (fun f -> Printf.fprintf oc "%s\n" (Fpath.to_string f)) inputs)
@@ -222,10 +212,9 @@ let generate ?remap_file ~generate_json html_dir (pkg : Odoc_unit.pkg) =
   let output_dir = Fpath.to_string html_dir in
   let home_breadcrumb = "Package index" in
   let generate (l : Odoc_unit.any) =
-    if l.to_output then
+    if Odoc_unit.is_output l then
       let input_file = l.odocl_file in
       match l.kind with
-      | `Intf { hidden = true; _ } -> ()
       | `Impl { src_path; _ } ->
           Cmd_outputs.run
           @@ Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
