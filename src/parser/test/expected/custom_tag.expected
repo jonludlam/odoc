@@ -175,12 +175,8 @@ bar}
 --- output ---
 ((output
   (((f.ml (1 0) (1 11))
-    (paragraph
-     (((f.ml (1 0) (1 6)) (word @notes))
-      ((f.ml (1 6) (1 11)) (code_span foo)))))))
+    (@notes
+     ((f.ml (1 7) (1 10)) (paragraph (((f.ml (1 7) (1 10)) (word foo)))))))))
  (warnings
-  ( "File \"f.ml\", line 1, characters 0-6:\
-   \nUnknown tag '@notes'."
-    "File \"f.ml\", line 1, characters 6-11:\
-   \n'{foo}': bad markup.\
-   \nSuggestion: did you mean '{!foo}' or '[foo]'?")))
+  ( "File \"f.ml\", line 1, characters 0-7:\
+   \nUnknown tag '@notes'.")))

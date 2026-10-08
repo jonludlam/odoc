@@ -598,15 +598,22 @@ and token input = parse
 
   | '@' (['a'-'z' 'A'-'Z']+ as letters)
     { (* A custom tag's name can go on past the letters, as in
-         [@admonition.note]. If the name is not a custom tag, go back to the
-         end of the letters, which are an unknown tag. *)
+         [@admonition.note]. An unknown tag followed straight away by a brace
+         is also parsed as a delimited custom tag, with a warning, so that its
+         content is kept: it used to be bad markup. Otherwise, if the name is
+         not a custom tag, go back to the end of the letters, which are an
+         unknown tag. *)
       let start_offset = Lexing.lexeme_start lexbuf in
       let position = save_position lexbuf in
       let name = letters ^ custom_tag_name_rest lexbuf in
+      let delimited = opening_brace lexbuf in
       if input.custom_tags name then
-        if opening_brace lexbuf then
-          emit input ~start_offset (`Begin_tag (`Custom name))
+        if delimited then emit input ~start_offset (`Begin_tag (`Custom name))
         else emit input ~start_offset (`Tag (`Custom name))
+      else if delimited then begin
+        warning input ~start_offset (Parse_error.unknown_tag ("@" ^ name));
+        emit input ~start_offset (`Begin_tag (`Custom name))
+      end
       else begin
         restore_position lexbuf position;
         let tag = "@" ^ letters in

@@ -21,9 +21,11 @@ val parse_comment_with_custom_tags :
 (** [parse_comment_with_custom_tags ~custom_tags] is {!parse_comment}, except
     that [@name] is parsed as a custom tag, [`Custom (name, content)], if
     [custom_tags name] is [true]. Otherwise, as with {!parse_comment}, it is an
-    unknown tag. A custom tag's name starts with letters, and can go on with
-    letters, digits, and ['.'], ['_'] or ['-'] between them, as in
-    [@admonition.note]. It cannot be the name of a built-in tag. *)
+    unknown tag, unless a brace follows it straight away, as in [@name{...}]:
+    then, with both functions, it is a custom tag and a warning. A custom tag's
+    name starts with letters, and can go on with letters, digits, and ['.'],
+    ['_'] or ['-'] between them, as in [@admonition.note]. It cannot be the name
+    of a built-in tag. *)
 
 module Ast = Ast
 module Loc = Loc

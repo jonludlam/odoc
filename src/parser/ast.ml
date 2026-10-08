@@ -118,8 +118,8 @@ type ocamldoc_tag =
 
 type custom_tag =
   [ `Custom of string * nestable_block_element with_location list ]
-(** Custom tags, like ocamldoc's [@name], are only parsed as such when they are
-    registered (see [Odoc_parser.parse_comment_with_custom_tags]).
+(** Custom tags, like ocamldoc's [@name], are parsed as such when they are
+    registered, or delimited (see [Odoc_parser.parse_comment_with_custom_tags]).
 
     @since 3.3.0 *)
 

@@ -37,6 +37,9 @@
   (@jonludlam)
 - Custom tags, such as `@admonition.note`, which extensions register and
   render (@jonludlam)
+- An unknown tag followed straight away by a brace, `@name{...}`, is a custom
+  tag, with a warning, rather than an unknown tag followed by text, so that its
+  content is kept together (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

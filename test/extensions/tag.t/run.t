@@ -71,3 +71,27 @@ Custom tags are allowed in pages.
      <div class="shout" id="shout-1"><p>In a page.</p></div>
      <div class="shout" id="shout-2"><p>Over</p><p>two paragraphs.</p></div>
     </header><div class="odoc-content"></div>
+
+An unknown tag followed straight away by a brace is parsed as a custom tag,
+with a warning, and rendered as other tags are.
+
+  $ cat > unknown.mld << EOF
+  > {0 Unknown}
+  > @whisper{Over
+  > 
+  > two paragraphs.}
+  > EOF
+  $ odoc compile --parent-id pkg --output-dir _odoc unknown.mld
+  File "unknown.mld", line 2, characters 0-9:
+  Warning: Unknown tag '@whisper'.
+  $ odoc link _odoc/pkg/page-unknown.odoc
+  $ odoc html-generate --indent -o html _odoc/pkg/page-unknown.odocl
+  $ sed -n '/odoc-preamble/,/<\/header>/p' html/pkg/unknown.html
+    <header class="odoc-preamble">
+     <h1 id="unknown"><a href="#unknown" class="anchor"></a>Unknown</h1>
+     <ul class="at-tags">
+      <li class="whisper"><span class="at-tag">whisper</span> <p>Over</p>
+       <p>two paragraphs.</p>
+      </li>
+     </ul>
+    </header><div class="odoc-content"></div>
