@@ -604,7 +604,9 @@ and token input = parse
       let position = save_position lexbuf in
       let name = letters ^ custom_tag_name_rest lexbuf in
       if input.custom_tags name then
-        emit input ~start_offset (`Tag (`Custom name))
+        if opening_brace lexbuf then
+          emit input ~start_offset (`Begin_tag (`Custom name))
+        else emit input ~start_offset (`Tag (`Custom name))
       else begin
         restore_position lexbuf position;
         let tag = "@" ^ letters in
@@ -632,6 +634,10 @@ and token input = parse
 and custom_tag_name_rest = parse
   | ((['a'-'z' 'A'-'Z' '0'-'9'] | ['.' '_' '-'] ['a'-'z' 'A'-'Z' '0'-'9'])* as rest)
     { rest }
+
+and opening_brace = parse
+  | '{' { true }
+  | "" { false }
 
 and code_span buffer nesting_level start_offset input = parse
   | ']'

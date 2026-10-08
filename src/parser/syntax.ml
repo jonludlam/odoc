@@ -921,13 +921,7 @@ let rec block_element_list : type block stops_at_which_tokens.
                 let tag = Loc.at location (`Tag tag) in
                 consume_block_elements `After_text (tag :: acc)
             | `Custom name ->
-                let content, _stream_head, where_in_line =
-                  block_element_list (In_implicitly_ended `Tag)
-                    ~parent_markup:token input
-                in
-                let location =
-                  location :: List.map Loc.location content |> Loc.span
-                in
+                let content, location, where_in_line = tag_content () in
                 let tag = Loc.at location (`Tag (`Custom (name, content))) in
                 consume_block_elements where_in_line (tag :: acc)))
     | ( { value = #token_that_always_begins_an_inline_element; _ }

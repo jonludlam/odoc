@@ -18,7 +18,8 @@ type block_tag =
   | `Children_order
   | `Toc_status
   | `Order_category
-  | `Short_title ]
+  | `Short_title
+  | `Custom of string ]
 
 type tag_kind =
   [ block_tag
@@ -29,8 +30,7 @@ type tag_kind =
   | `Inline
   | `Open
   | `Closed
-  | `Hidden
-  | `Custom of string ]
+  | `Hidden ]
 
 type tag = [ `Tag of tag_kind | `Begin_tag of block_tag ]
 
@@ -45,6 +45,7 @@ let block_tag_name : block_tag -> string = function
   | `Toc_status -> "toc_status"
   | `Order_category -> "order_category"
   | `Short_title -> "short_title"
+  | `Custom name -> name
 
 type media = [ `Audio | `Video | `Image ]
 type media_href = [ `Reference of string | `Link of string ]

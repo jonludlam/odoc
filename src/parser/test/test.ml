@@ -1712,6 +1712,12 @@ let custom_tag () =
     let not_at_start_of_line = test "foo @note bar"
 
     let in_explicit_list = test "{ul {li @note foo}}"
+
+    let delimited = test "@note{foo\n\nbar}"
+
+    let delimited_dotted = test "@admonition.note{foo\n\nbar}"
+
+    let delimited_unknown = test "@notes{foo}"
   end in
   ()
 

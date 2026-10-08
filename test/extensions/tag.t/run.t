@@ -57,6 +57,10 @@ Custom tags are allowed in pages.
   $ cat > index.mld << EOF
   > {0 Page}
   > @shout In a page.
+  > 
+  > @shout{Over
+  > 
+  > two paragraphs.}
   > EOF
   $ odoc_shout compile --parent-id pkg --output-dir _odoc index.mld
   $ odoc_shout link _odoc/pkg/page-index.odoc
@@ -65,4 +69,5 @@ Custom tags are allowed in pages.
     <header class="odoc-preamble">
      <h1 id="page"><a href="#page" class="anchor"></a>Page</h1>
      <div class="shout" id="shout-1"><p>In a page.</p></div>
+     <div class="shout" id="shout-2"><p>Over</p><p>two paragraphs.</p></div>
     </header><div class="odoc-content"></div>
