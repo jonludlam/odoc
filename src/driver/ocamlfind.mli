@@ -4,9 +4,6 @@
     Findlib is initialised from the switch's [findlib.conf], so these answers
     hold for the switch the driver documents. *)
 
-val all : unit -> string list
-(** Every library findlib knows about. *)
-
 val get_dir : string -> (Fpath.t, [> `Msg of string ]) result
 (** The directory a library's objects are installed in. An error for a library
     that is not installed. *)

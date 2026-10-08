@@ -36,11 +36,6 @@ val submit :
     the run is added to {!outputs}. Raises {!Worker_pool.Worker_failure} if the
     command fails. *)
 
-val submit_ignore_failures :
-  (log_dest * string) option -> string -> Bos.Cmd.t -> Fpath.t option -> unit
-(** Like {!submit}, but a failing command is reported as an error and otherwise
-    ignored. *)
-
 type action = {
   log : (log_dest * string) option;
   desc : string;  (** What the command does, for the progress display. *)
