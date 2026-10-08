@@ -112,10 +112,10 @@ let compile_lib (lib : Odoc_unit.lib) =
           units
   in
   (* $MDX part-end *)
-  let compile (unit : _ Odoc_unit.t) =
+  let compile (unit : Odoc_unit.module_unit) =
     match unit.kind with
-    | `Intf { Odoc_unit.hash; _ } -> compile_mod hash
-    | `Impl { Odoc_unit.src_id; _ } ->
+    | `Intf { hash; _ } -> compile_mod hash
+    | `Impl { src_id; _ } ->
         Cmd_outputs.run
         @@ Odoc.compile_impl ~output_file:unit.odoc_file
              ~input_file:unit.input_file ~libs ~parent_id:unit.parent_id
