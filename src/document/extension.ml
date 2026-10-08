@@ -19,6 +19,10 @@ let for_backend backend f =
    is interrupted by another one's carries on where it was. *)
 let ids : (Url.Path.t option * string, int) Hashtbl.t = Hashtbl.create 8
 
+let requirements : (Url.Path.t, string list) Hashtbl.t = Hashtbl.create 8
+
+let required url = Option.value ~default:[] (Hashtbl.find_opt requirements url)
+
 module Context = struct
   type t = {
     url : Url.Path.t option;
@@ -43,6 +47,14 @@ module Context = struct
     let n = 1 + Option.value ~default:0 (Hashtbl.find_opt ids key) in
     Hashtbl.replace ids key n;
     Printf.sprintf "%s-%d" prefix n
+
+  let require t feature =
+    match t.url with
+    | None -> ()
+    | Some url ->
+        let features = required url in
+        if not (List.mem feature features) then
+          Hashtbl.replace requirements url (features @ [ feature ])
 end
 
 let context location =

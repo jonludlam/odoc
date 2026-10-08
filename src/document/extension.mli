@@ -30,6 +30,12 @@ module Context : sig
   val fresh_id : t -> string -> string
   (** [fresh_id t prefix] is ["prefix-1"], then ["prefix-2"] and so on: an
       identifier that is different each time it is asked for on the page. *)
+
+  val require : t -> string -> unit
+  (** [require t feature] notes that the page needs [feature], for example the
+      script that draws the element, so that the HTML head of the page can ask
+      for it (see [Odoc_html.Extension.Context.requires]). Name features after
+      the extension. *)
 end
 
 type code_block_handler =
@@ -51,6 +57,10 @@ val in_page : Url.Path.t -> (unit -> 'a) -> 'a
 val for_backend : string -> (unit -> 'a) -> 'a
 (** [for_backend backend f] runs [f], which generates documents for [backend].
     Documents are generated for ["html"] otherwise. *)
+
+val required : Url.Path.t -> string list
+(** The features that the handlers required on a page, in the order they were
+    first required. *)
 
 val render_code_block :
   language:string ->

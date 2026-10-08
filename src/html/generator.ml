@@ -680,8 +680,9 @@ module Page = struct
         ~header ~breadcrumbs ~toc ~url ~uses_katex ~source_anchor content
         subpages
     else
+      let extra_head = Extension.head ~config ~url p in
       Html_page.make ~sidebar ~config ~header:(header @ preamble) ~toc
-        ~breadcrumbs ~url ~uses_katex content subpages
+        ~breadcrumbs ~url ~uses_katex ~extra_head content subpages
 
   and source_page ~config ~sidebar sp =
     let { Source_page.url; contents } = sp in

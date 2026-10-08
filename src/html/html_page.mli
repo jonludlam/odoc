@@ -28,12 +28,14 @@ val make :
   sidebar:Html_types.div_content Html.elt list option ->
   toc:Types.toc list ->
   uses_katex:bool ->
+  ?extra_head:Html_types.head_content_fun Html.elt list ->
   Html_types.div_content Html.elt list ->
   Odoc_document.Renderer.page list ->
   Odoc_document.Renderer.page
 (** [make ?theme_uri (body, children)] calls "the page creator" to turn [body]
     into an [[ `Html ] elt]. If [theme_uri] is provided, it will be used to
-    locate the theme files, otherwise the HTML output directory is used. *)
+    locate the theme files, otherwise the HTML output directory is used.
+    [extra_head] is added to the end of the page's [<head>]. *)
 
 val make_src :
   config:Config.t ->
