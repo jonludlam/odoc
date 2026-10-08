@@ -1,7 +1,5 @@
 (* Voodoo *)
 
-let ( >>= ) = Result.bind
-
 type pkg = {
   name : string;
   version : string;
@@ -10,7 +8,8 @@ type pkg = {
   files : Fpath.t list;
 }
 
-let prep_path = ref "prep"
+(* Where voodoo-prep put the packages' files. *)
+let prep = Fpath.v "prep"
 
 let top_dir pkg =
   if pkg.blessed then Fpath.(v "p" / pkg.name / pkg.version)
@@ -34,27 +33,24 @@ let libname_of_archives_of_dir dir =
           else acc)
         Fpath.Map.empty files
 
-let metas_of_pkg pkg =
-  List.filter
-    (fun p ->
-      let filename = Fpath.filename p in
-      filename = "META")
-    pkg.files
-
 let of_voodoo pkg =
-  let metas = metas_of_pkg pkg in
-
   let pkg_path =
-    Fpath.(v "prep" / "universes" / pkg.universe / pkg.name / pkg.version)
+    Fpath.(prep / "universes" / pkg.universe / pkg.name / pkg.version)
+  in
+  let metas =
+    List.filter_map
+      (fun p ->
+        if Fpath.filename p = "META" then
+          Some (Library_names.process_meta_file Fpath.(pkg_path // p))
+        else None)
+      pkg.files
   in
 
   (* a map from libname to the set of dependencies of that library *)
   let (all_lib_deps, cmi_only_libs) :
       Util.StringSet.t Util.StringMap.t * (Fpath.t * string) list =
     List.fold_left
-      (fun (d, c) meta ->
-        let full_meta_path = Fpath.(pkg_path // meta) in
-        let m = Library_names.process_meta_file full_meta_path in
+      (fun (d, c) (m : Library_names.t) ->
         let d' =
           List.fold_left
             (fun acc lib ->
@@ -79,7 +75,7 @@ let of_voodoo pkg =
   in
 
   (* [all_lib_deps] holds the directly-declared META dependencies of each
-     library, as the reference scope wants; the closure needed for -I is taken
+     library, as the reference scope wants; the closure, the cone, is taken
      in [Odoc_units_of]. *)
   let ss_pp fmt ss = Format.fprintf fmt "[%d]" (Util.StringSet.cardinal ss) in
   Logs.debug (fun m ->
@@ -107,26 +103,20 @@ let of_voodoo pkg =
   Logs.debug (fun m ->
       m "Config.packages: %s\n%!" (String.concat ", " config.deps.packages));
   let meta_libraries : Packages.libty list =
-    metas
-    |> List.filter_map (fun meta_file ->
-           let full_meta_path = Fpath.(pkg_path // meta_file) in
-           let m = Library_names.process_meta_file full_meta_path in
-           let libname_of_archive = Library_names.libname_of_archive m in
-           Fpath.Map.iter
-             (fun k v -> Logs.debug (fun m -> m "%a,%s\n%!" Fpath.pp k v))
-             libname_of_archive;
-
-           let directories = Library_names.directories m in
-           Some
-             (List.concat_map
-                (fun directory ->
-                  Logs.debug (fun m ->
-                      m "Processing directory: %a\n%!" Fpath.pp directory);
-                  Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
-                    ~pkg_name:pkg.name ~dir:directory ~all_lib_deps
-                    ~cmi_only_libs)
-                Fpath.(Set.to_list directories)))
-    |> List.flatten
+    List.concat_map
+      (fun m ->
+        let libname_of_archive = Library_names.libname_of_archive m in
+        Fpath.Map.iter
+          (fun k v -> Logs.debug (fun m -> m "%a,%s" Fpath.pp k v))
+          libname_of_archive;
+        List.concat_map
+          (fun directory ->
+            Logs.debug (fun m ->
+                m "Processing directory: %a" Fpath.pp directory);
+            Packages.Lib.v ~roots:[ pkg_path ] ~libname_of_archive
+              ~pkg_name:pkg.name ~dir:directory ~all_lib_deps ~cmi_only_libs)
+          (Fpath.Set.to_list (Library_names.directories m)))
+      metas
   in
 
   (* Check the main package lib directory even if there's no meta file *)
@@ -190,19 +180,9 @@ let of_voodoo pkg =
   in
   result
 
-let pp ppf v =
-  Format.fprintf ppf "n: %s v: %s u: %s [\n" v.name v.version v.universe;
-  List.iter (fun fp -> Format.fprintf ppf "%a\n" Fpath.pp fp) v.files;
-  Format.fprintf ppf "]\n%!"
-
-let () = ignore pp
-
 let find_pkg pkg_name ~blessed =
   let contents =
-    Bos.OS.Dir.fold_contents ~dotfiles:true
-      (fun p acc -> p :: acc)
-      []
-      Fpath.(v !prep_path)
+    Bos.OS.Dir.fold_contents ~dotfiles:true (fun p acc -> p :: acc) [] prep
   in
   match contents with
   | Error _ -> None
