@@ -7,14 +7,8 @@ type package = { name : string; version : string }
 let pp fmt p = Format.fprintf fmt "%s.%s" p.name p.version
 
 let memoize f =
-  let r = ref None in
-  fun () ->
-    match !r with
-    | Some x -> x
-    | None ->
-        let x = f () in
-        r := Some x;
-        x
+  let x = lazy (f ()) in
+  fun () -> Lazy.force x
 
 let get_switch =
   memoize @@ fun () ->
