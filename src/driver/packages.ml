@@ -439,61 +439,43 @@ let of_packages ~packages_dir packages =
   Logs.debug (fun m -> m "Packages: %a" Fmt.Dump.(list pp) packages);
   packages
 
-let remap_virtual_interfaces duplicate_hashes pkgs =
+(* A virtual library's implementations ship [.cmt] files only. Their
+   interface is the virtual library's [.cmti], which has the same digest, so
+   that is the interface they are given. *)
+let remap_virtual all =
+  let cmtis =
+    List.fold_left
+      (fun acc pkg ->
+        List.fold_left
+          (fun acc lib ->
+            List.fold_left
+              (fun acc m ->
+                if Fpath.has_ext "cmti" m.m_intf.mif_path then
+                  Util.StringMap.add_to_list m.m_intf.mif_hash m.m_intf acc
+                else acc)
+              acc lib.modules)
+          acc pkg.libraries)
+      Util.StringMap.empty all
+  in
+  let cmti_of hash =
+    match Util.StringMap.find_opt hash cmtis with
+    | Some [ x ] -> Some x
+    | _ -> None
+  in
+  let remap m =
+    if Fpath.has_ext "cmt" m.m_intf.mif_path then
+      match cmti_of m.m_intf.mif_hash with
+      | Some m_intf -> { m with m_intf }
+      | None -> m
+    else m
+  in
   List.map
     (fun pkg ->
       {
         pkg with
         libraries =
-          pkg.libraries
-          |> List.map (fun lib ->
-                 {
-                   lib with
-                   modules =
-                     lib.modules
-                     |> List.map (fun m ->
-                            let m_intf =
-                              if
-                                Util.StringMap.mem m.m_intf.mif_hash
-                                  duplicate_hashes
-                                && Fpath.has_ext "cmt" m.m_intf.mif_path
-                              then
-                                match
-                                  List.filter
-                                    (fun intf ->
-                                      Fpath.has_ext "cmti" intf.mif_path)
-                                    (Util.StringMap.find m.m_intf.mif_hash
-                                       duplicate_hashes)
-                                with
-                                | [ x ] -> x
-                                | _ -> m.m_intf
-                              else m.m_intf
-                            in
-                            { m with m_intf });
-                 });
+          List.map
+            (fun lib -> { lib with modules = List.map remap lib.modules })
+            pkg.libraries;
       })
-    pkgs
-
-let remap_virtual all =
-  let virtual_check =
-    let hashes =
-      List.fold_left
-        (fun acc pkg ->
-          List.fold_left
-            (fun acc lib ->
-              List.fold_left
-                (fun acc m ->
-                  let hash = m.m_intf.mif_hash in
-                  Util.StringMap.update hash
-                    (function
-                      | None -> Some [ m.m_intf ]
-                      | Some l -> Some (m.m_intf :: l))
-                    acc)
-                acc lib.modules)
-            acc pkg.libraries)
-        Util.StringMap.empty all
-    in
-    Util.StringMap.filter (fun _hash intfs -> List.length intfs > 1) hashes
-  in
-
-  remap_virtual_interfaces virtual_check all
+    all
