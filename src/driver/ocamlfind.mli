@@ -22,18 +22,12 @@ val direct_deps : string -> (Util.StringSet.t, [> `Msg of string ]) result
     a requirement on a library that is not installed is kept. An error for a
     library that is not installed. *)
 
-(** Everything the driver needs to know about a set of libraries and their
-    dependencies, gathered in one pass. *)
+(** Everything the driver needs to know about the libraries findlib knows,
+    gathered in one pass. *)
 module Db : sig
   type t = {
-    all_libs : Util.StringSet.t;
-        (** The given libraries and everything they depend on. *)
     all_lib_deps : Util.StringSet.t Util.StringMap.t;
         (** Each library's direct requirements. *)
-    lib_dirs_and_archives : (string * Fpath.t * Util.StringSet.t) list;
-        (** Each library with its directory and its archives. *)
-    archives_by_dir : Util.StringSet.t Fpath.map;
-        (** The archives found in each directory. *)
     libname_of_archive : string Fpath.map;
         (** The library each archive, given by its full path without extension,
             belongs to. *)
@@ -41,5 +35,5 @@ module Db : sig
         (** Libraries with no archive, with their directory. *)
   }
 
-  val create : Util.StringSet.t -> t
+  val create : unit -> t
 end

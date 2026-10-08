@@ -364,7 +364,7 @@ let of_packages ~packages_dir packages =
   in
 
   let Ocamlfind.Db.{ libname_of_archive; cmi_only_libs; all_lib_deps; _ } =
-    Ocamlfind.Db.create (Ocamlfind.all () |> Util.StringSet.of_list)
+    Ocamlfind.Db.create ()
   in
 
   let opam_map, _opam_rmap = Opam.pkg_to_dir_map () in

@@ -5,23 +5,18 @@
    remember whether it was there, and let every query below answer "not known"
    rather than raise. *)
 let available =
-  let state = ref None in
-  fun () ->
-    match !state with
-    | Some known -> known
-    | None ->
-        let known =
-          try
-            Findlib.init ();
-            true
-          with e ->
-            Logs.debug (fun m ->
-                m "No findlib configuration, so findlib knows no library: %s"
-                  (Printexc.to_string e));
-            false
-        in
-        state := Some known;
-        known
+  let known =
+    lazy
+      (try
+         Findlib.init ();
+         true
+       with e ->
+         Logs.debug (fun m ->
+             m "No findlib configuration, so findlib knows no library: %s"
+               (Printexc.to_string e));
+         false)
+  in
+  fun () -> Lazy.force known
 
 (* What findlib would have answered, reconstructed from what is on disk, for a
    switch that has no ocamlfind in it. Each installed package still ships the
@@ -139,36 +134,6 @@ let archives pkg =
           |> List.filter (fun x -> String.length x > 0)
           |> List.sort_uniq String.compare)
 
-let sub_libraries top =
-  let packages = all () in
-  List.fold_left
-    (fun acc lib ->
-      let package = String.split_on_char '.' lib |> List.hd in
-      if package = top then Util.StringSet.add lib acc else acc)
-    Util.StringSet.empty packages
-
-(* Returns deep dependencies for the given package *)
-let dep =
-  Util.memo ~key:Fun.id @@ fun dep pkg ->
-  try
-    if not (available ()) then failwith "findlib is not configured";
-    let deps = Fl_package_base.requires ~preds:[ "ppx_driver" ] pkg in
-    Ok
-      (List.fold_left
-         (fun acc x ->
-           match dep x with
-           | Ok dep_deps -> Util.StringSet.(union acc (add x dep_deps))
-           | Error _ -> acc)
-         Util.StringSet.empty deps)
-  with e -> Error (`Msg (Printexc.to_string e))
-
-let deps pkgs =
-  let results = List.map dep pkgs in
-  Ok
-    (List.fold_left Util.StringSet.union
-       (Util.StringSet.singleton "stdlib")
-       (List.map (Result.value ~default:Util.StringSet.empty) results))
-
 (* The libraries a library requires directly: its META [requires] field. The
    field is read as written rather than resolved, because
    [Fl_package_base.requires] fails outright when an optional dependency such
@@ -201,36 +166,19 @@ let direct_deps pkg =
 
 module Db = struct
   type t = {
-    all_libs : Util.StringSet.t;
     all_lib_deps : Util.StringSet.t Util.StringMap.t;
-    lib_dirs_and_archives : (string * Fpath.t * Util.StringSet.t) list;
-    archives_by_dir : Util.StringSet.t Fpath.map;
     libname_of_archive : string Fpath.map;
     cmi_only_libs : (Fpath.t * string) list;
   }
 
-  let create libs =
-    let _ = Opam.prefix () in
-    let libs = Util.StringSet.to_seq libs |> List.of_seq in
-
-    (* First, find the complete set of libraries - that is, including all of
-       the dependencies of the libraries supplied on the commandline *)
-    let all_libs_deps =
-      match deps libs with
-      | Error (`Msg msg) ->
-          Logs.err (fun m -> m "Error finding dependencies: %s" msg);
-          Util.StringSet.empty
-      | Ok libs -> Util.StringSet.add "stdlib" libs
+  let create () =
+    let all_libs =
+      Util.StringSet.(elements (add "stdlib" (of_list (all ()))))
     in
-
-    let all_libs_set =
-      Util.StringSet.union all_libs_deps (Util.StringSet.of_list libs)
-    in
-    let all_libs = Util.StringSet.elements all_libs_set in
 
     (* The directly-declared dependencies of each library. We deliberately keep
-       these un-closed: -L/-P are computed from the direct dependencies, and
-       the closure needed for -I is taken later ([Odoc_units_of]). *)
+       these un-closed: the scope is computed from the direct dependencies,
+       and the closure, the cone, is taken later ([Odoc_units_of]). *)
     let all_lib_deps =
       List.fold_right
         (fun lib_name acc ->
@@ -246,8 +194,7 @@ module Db = struct
         all_libs Util.StringMap.empty
     in
 
-    (* We also need to find, for each library, the library directory and
-       the list of archives for that library *)
+    (* For each library, its directory and its archives. *)
     let lib_dirs_and_archives =
       List.filter_map
         (fun lib ->
@@ -256,7 +203,6 @@ module Db = struct
               Logs.err (fun m -> m "No dir for library %s" lib);
               None
           | Ok p ->
-              let archives = archives lib in
               let archives =
                 List.map
                   (fun x ->
@@ -264,29 +210,13 @@ module Db = struct
                     with e ->
                       Logs.err (fun m -> m "Can't chop extension from %s" x);
                       raise e)
-                  archives
+                  (archives lib)
               in
-              let archives = Util.StringSet.(of_list archives) in
-              Some (lib, p, archives))
+              Some (lib, p, Util.StringSet.of_list archives))
         all_libs
     in
 
-    (* An individual directory may contain multiple libraries, each with
-       zero or more archives. We need to know which directories contain
-       which archives *)
-    let archives_by_dir =
-      List.fold_left
-        (fun set (_lib, p, archives) ->
-          Fpath.Map.update p
-            (function
-              | Some set -> Some (Util.StringSet.union set archives)
-              | None -> Some archives)
-            set)
-        Fpath.Map.empty lib_dirs_and_archives
-    in
-
-    (* Compute the mapping between full path of an archive to the
-       name of the libary *)
+    (* The library each archive, given by its full path, belongs to. *)
     let libname_of_archive =
       List.fold_left
         (fun map (lib, dir, archives) ->
@@ -314,22 +244,13 @@ module Db = struct
         Fpath.Map.empty lib_dirs_and_archives
     in
 
-    (* We also need to know about libraries that have no archives at all
-       (these are virtual libraries usually) *)
+    (* Libraries with no archive at all, virtual libraries usually. *)
     let cmi_only_libs =
-      List.fold_left
-        (fun map (lib, dir, archives) ->
-          match Util.StringSet.elements archives with
-          | [] -> (dir, lib) :: map
-          | _ -> map)
-        [] lib_dirs_and_archives
+      List.filter_map
+        (fun (lib, dir, archives) ->
+          if Util.StringSet.is_empty archives then Some (dir, lib) else None)
+        lib_dirs_and_archives
+      |> List.rev
     in
-    {
-      all_libs = all_libs_set;
-      all_lib_deps;
-      lib_dirs_and_archives;
-      archives_by_dir;
-      libname_of_archive;
-      cmi_only_libs;
-    }
+    { all_lib_deps; libname_of_archive; cmi_only_libs }
 end
