@@ -236,15 +236,7 @@ let link_rules ~stamp_dir ~warnings_tags ~by_name (pkg : pkg) =
             stamp = false;
           }
   in
-  List.filter_map (link ~libs:pkg.scope.lib_roots) (pkg.pages :> any list)
-  @ List.concat_map
-      (fun (lib : lib) ->
-        let libs = link_libs pkg.scope lib in
-        let page =
-          match lib.page with None -> [] | Some p -> [ (p :> any) ]
-        in
-        List.filter_map (link ~libs) (page @ (lib.units :> any list)))
-      pkg.libs
+  List.filter_map (fun (libs, u) -> link ~libs u) (link_units pkg)
 
 (* The units a package's index is built from: the same list the driver
    writes, and a rule that writes it. *)

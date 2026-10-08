@@ -90,10 +90,17 @@ type pkg = {
   pages : page list;
 }
 
-let all_units pkg =
-  (pkg.pages :> any list)
+let lib_units lib =
+  (Option.to_list lib.page :> any list) @ (lib.units :> any list)
+
+let all_units pkg = (pkg.pages :> any list) @ List.concat_map lib_units pkg.libs
+
+let link_units pkg =
+  List.map (fun u -> (pkg.scope.lib_roots, u)) (pkg.pages :> any list)
   @ List.concat_map
-      (fun l -> (Option.to_list l.page :> any list) @ (l.units :> any list))
+      (fun lib ->
+        let libs = link_libs pkg.scope lib in
+        List.map (fun u -> (libs, u)) (lib_units lib))
       pkg.libs
 
 let pkg_dir : Packages.t -> Fpath.t = fun pkg -> pkg.pkg_dir

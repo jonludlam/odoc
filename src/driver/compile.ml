@@ -170,22 +170,7 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
           | `Impl _ -> Stats.stats.linked_impls
           | `Mld | `Md | `Asset -> Stats.stats.linked_mlds)
   in
-  let jobs =
-    List.map
-      (fun u -> (pkg.scope.lib_roots, u))
-      (pkg.pages :> Odoc_unit.any list)
-    @ List.concat_map
-        (fun (lib : Odoc_unit.lib) ->
-          let page =
-            match lib.page with
-            | None -> []
-            | Some p -> [ (p :> Odoc_unit.any) ]
-          in
-          let libs = Odoc_unit.link_libs pkg.scope lib in
-          List.map (fun u -> (libs, u)) (page @ (lib.units :> Odoc_unit.any list)))
-        pkg.libs
-  in
-  Fiber.List.iter (fun (libs, u) -> link ~libs u) jobs
+  Fiber.List.iter (fun (libs, u) -> link ~libs u) (Odoc_unit.link_units pkg)
 
 (* The index of a package is built from the [.odocl] files of its linked units.
    Listing them explicitly puts the package's pages and modules in one hierarchy

@@ -127,7 +127,15 @@ val link_libs : scope -> lib -> (string * Fpath.t) list
 (** The libraries a unit of [lib] is linked with: the package's reference scope
     and [lib]'s dependency cone. *)
 
+val lib_units : lib -> any list
+(** The library's page, if there is one, and its units. *)
+
 val all_units : pkg -> any list
+(** The package's pages, and the units of its libraries. *)
+
+val link_units : pkg -> ((string * Fpath.t) list * any) list
+(** {!all_units}, each with the libraries it is linked with: the scope for the
+    package's pages, and {!link_libs} for the units of a library. *)
 
 (** {1 Where things go}
 
