@@ -130,8 +130,8 @@ let default_meta_elements ~config ~url =
       ();
   ]
 
-let page_creator ~config ~url ~uses_katex ~global_toc header breadcrumbs
-    local_toc content =
+let page_creator ~config ~url ~uses_katex ~extra_head ~global_toc header
+    breadcrumbs local_toc content =
   let theme_uri = Config.theme_uri config in
   let support_uri = Config.support_uri config in
   let search_uris = Config.search_uris config in
@@ -220,7 +220,7 @@ let search_urls = %s;
       in
       default_meta_elements ~config ~url @ highlightjs_meta @ katex_meta
     in
-    let meta_elements = meta_elements @ search_scripts in
+    let meta_elements = meta_elements @ search_scripts @ extra_head in
     Html.head (Html.title (Html.txt title_string)) meta_elements
   in
   let search_bar =
@@ -247,12 +247,12 @@ let search_urls = %s;
   in
   content
 
-let make ~config ~url ~header ~breadcrumbs ~sidebar ~toc ~uses_katex content
-    children =
+let make ~config ~url ~header ~breadcrumbs ~sidebar ~toc ~uses_katex
+    ?(extra_head = []) content children =
   let filename = Link.Path.as_filename ~config url in
   let content =
-    page_creator ~config ~url ~uses_katex ~global_toc:sidebar header breadcrumbs
-      toc content
+    page_creator ~config ~url ~uses_katex ~extra_head ~global_toc:sidebar header
+      breadcrumbs toc content
   in
   { Odoc_document.Renderer.filename; content; children; path = url }
 

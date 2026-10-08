@@ -18,6 +18,8 @@ language with the extension, and the others as usual.
      <pre class="language-shout"><code>ALREADY SHOUTING</code></pre>
      <pre class="language-ocaml"><code>let x = 1</code></pre>
     </header><div class="odoc-content"></div>
+  $ grep -o '<style>.*</style>' html/pkg/index.html
+  <style>.shout { font-weight: bold }</style>
 
 The standard odoc does not know the extension, and renders every code block as
 code.
@@ -31,3 +33,16 @@ code.
      <pre class="language-shout"><code>ALREADY SHOUTING</code></pre>
      <pre class="language-ocaml"><code>let x = 1</code></pre>
     </header><div class="odoc-content"></div>
+
+The extension adds its style sheet only to the pages that have a shout.
+
+  $ cat > other.mld << EOF
+  > {0 No shouting}
+  > {@shout[NOT SHOUTING]}
+  > EOF
+  $ odoc_shout compile --parent-id pkg --output-dir _odoc other.mld
+  $ odoc_shout link _odoc/pkg/page-other.odoc
+  $ odoc_shout html-generate --indent -o html _odoc/pkg/page-other.odocl
+  $ grep -c '<style>' html/pkg/other.html
+  0
+  [1]

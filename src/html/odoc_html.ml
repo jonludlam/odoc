@@ -1,5 +1,6 @@
 module Types = Types
 module Config = Config
+module Extension = Extension
 
 module Html_fragment_json = Html_fragment_json
 (** @canonical Odoc_html.Html_fragment_json *)

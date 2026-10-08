@@ -15,8 +15,9 @@
   (@Leonidas-from-XIV, #1452)
 - Point to exact character when parsing the reference syntax fails
   (@Leonidas-from-XIV, #1494)
-- An `odoc.cli` library, and a registry of code-block extensions, so that a
-  program can build an odoc with extensions built in (@jonludlam)
+- An `odoc.cli` library, and registries of extensions that render code blocks
+  and add to the head of HTML pages, so that a program can build an odoc with
+  extensions built in (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

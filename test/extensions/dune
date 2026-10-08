@@ -3,7 +3,7 @@
 (executable
  (name odoc_shout)
  (modules odoc_shout)
- (libraries odoc.cli odoc.document))
+ (libraries odoc.cli odoc.document odoc.html tyxml))
 
 (env
  (_
