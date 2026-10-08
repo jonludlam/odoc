@@ -128,12 +128,9 @@ let lib_args libs =
       v "-L" % s %% acc)
     Cmd.empty libs
 
-let link ?(ignore_output = false) ~input_file:file ?output_file ~docs ~libs
-    ~warnings_tags ?current_package () =
+let link ~ignore_output ~input_file:file ~output_file ~docs ~libs ~warnings_tags
+    ?current_package () =
   let open Cmd in
-  let output_file =
-    match output_file with Some f -> f | None -> Fpath.set_ext "odocl" file
-  in
   let docs = doc_args docs in
   let libs = lib_args libs in
   let current_package =
@@ -144,9 +141,6 @@ let link ?(ignore_output = false) ~input_file:file ?output_file ~docs ~libs
   let cmd =
     !odoc % "link" % p file % "-o" % p output_file %% docs %% libs
     %% current_package % "--enable-missing-root-warning"
-  in
-  let cmd =
-    if Fpath.to_string file = "stdlib.odoc" then cmd % "--open=\"\"" else cmd
   in
   let cmd =
     List.fold_left (fun acc k -> acc % "--warnings-tags" % k) cmd warnings_tags
@@ -167,8 +161,8 @@ let link ?(ignore_output = false) ~input_file:file ?output_file ~docs ~libs
 (* [file_list] names a file listing the [.odocl] files to index, one per line.
    Passing the files explicitly (rather than [--root] directories) puts them
    all in one hierarchy, whatever their layout on disk. *)
-let compile_index ?(ignore_output = false) ~output_file ?occurrence_file ~json
-    ~file_list ~simplified ~wrap () =
+let compile_index ~output_file ?occurrence_file ~json ~file_list ~simplified
+    ~wrap () =
   let inputs = Cmd.(v "--file-list" % p file_list) in
   let json = if json then Cmd.v "--json" else Cmd.empty in
   let simplified =
@@ -188,9 +182,7 @@ let compile_index ?(ignore_output = false) ~output_file ?occurrence_file ~json
   let desc =
     Printf.sprintf "Generating index for %s" (Fpath.to_string output_file)
   in
-  let log =
-    if ignore_output then None else Some (`Index, Fpath.to_string output_file)
-  in
+  let log = Some (`Index, Fpath.to_string output_file) in
   {
     Cmd_outputs.log;
     desc;
@@ -199,7 +191,7 @@ let compile_index ?(ignore_output = false) ~output_file ?occurrence_file ~json
     ignore_failures = false;
   }
 
-let sidebar_generate ?(ignore_output = false) ~output_file ~json input_file () =
+let sidebar_generate ~output_file ~json input_file () =
   let json = if json then Cmd.v "--json" else Cmd.empty in
   let cmd =
     Cmd.(
@@ -209,9 +201,7 @@ let sidebar_generate ?(ignore_output = false) ~output_file ~json input_file () =
   let desc =
     Printf.sprintf "Generating sidebar for %s" (Fpath.to_string output_file)
   in
-  let log =
-    if ignore_output then None else Some (`Generate, Fpath.to_string output_file)
-  in
+  let log = Some (`Generate, Fpath.to_string output_file) in
   {
     Cmd_outputs.log;
     desc;
@@ -220,18 +210,13 @@ let sidebar_generate ?(ignore_output = false) ~output_file ~json input_file () =
     ignore_failures = false;
   }
 
-let html_generate ~output_dir ?sidebar ?(ignore_output = false)
-    ?(search_uris = []) ?remap ?(as_json = false) ?home_breadcrumb
-    ~input_file:file () =
+let html_generate ~output_dir ?sidebar ?(search_uris = []) ?remap
+    ?(as_json = false) ~home_breadcrumb ~input_file:file () =
   let open Cmd in
   let index =
     match sidebar with None -> empty | Some idx -> v "--sidebar" % p idx
   in
-  let home_breadcrumb =
-    match home_breadcrumb with
-    | None -> empty
-    | Some name -> v "--home-breadcrumb" % name
-  in
+  let home_breadcrumb = v "--home-breadcrumb" % home_breadcrumb in
   let search_uris =
     List.fold_left
       (fun acc filename -> acc % "--search-uri" % p filename)
@@ -246,42 +231,29 @@ let html_generate ~output_dir ?sidebar ?(ignore_output = false)
   in
   let cmd = if as_json then cmd % "--as-json" else cmd in
   let desc = Printf.sprintf "Generating HTML for %s" (Fpath.to_string file) in
-  let log =
-    if ignore_output then None else Some (`Generate, Fpath.to_string file)
-  in
+  let log = Some (`Generate, Fpath.to_string file) in
   { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
-let html_generate_asset ~output_dir ?(ignore_output = false) ?home_breadcrumb
-    ~input_file:file ~asset_path () =
+let html_generate_asset ~output_dir ~home_breadcrumb ~input_file:file
+    ~asset_path () =
   let open Cmd in
-  let home_breadcrumb =
-    match home_breadcrumb with
-    | None -> empty
-    | Some name -> v "--home-breadcrumb" % name
-  in
+  let home_breadcrumb = v "--home-breadcrumb" % home_breadcrumb in
   let cmd =
     !odoc % "html-generate-asset" % "-o" % output_dir % "--asset-unit" % p file
     % p asset_path %% home_breadcrumb
   in
   let desc = Printf.sprintf "Copying asset %s" (Fpath.to_string file) in
-  let log =
-    if ignore_output then None else Some (`Generate, Fpath.to_string file)
-  in
+  let log = Some (`Generate, Fpath.to_string file) in
   { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
-let html_generate_source ~output_dir ?(ignore_output = false) ~source ?sidebar
-    ?(search_uris = []) ?(as_json = false) ?home_breadcrumb ~input_file:file ()
-    =
+let html_generate_source ~output_dir ~source ?sidebar ?(search_uris = [])
+    ?(as_json = false) ~home_breadcrumb ~input_file:file () =
   let open Cmd in
   let file = v "--impl" % p file in
   let sidebar =
     match sidebar with None -> empty | Some idx -> v "--sidebar" % p idx
   in
-  let home_breadcrumb =
-    match home_breadcrumb with
-    | None -> empty
-    | Some name -> v "--home-breadcrumb" % name
-  in
+  let home_breadcrumb = v "--home-breadcrumb" % home_breadcrumb in
   let search_uris =
     List.fold_left
       (fun acc filename -> acc % "--search-uri" % p filename)
@@ -294,9 +266,7 @@ let html_generate_source ~output_dir ?(ignore_output = false) ~source ?sidebar
   let cmd = if as_json then cmd % "--as-json" else cmd in
 
   let desc = Printf.sprintf "Generating HTML for %s" (Fpath.to_string source) in
-  let log =
-    if ignore_output then None else Some (`Generate, Fpath.to_string source)
-  in
+  let log = Some (`Generate, Fpath.to_string source) in
   { Cmd_outputs.log; desc; cmd; output = None; ignore_failures = false }
 
 let support_files path =

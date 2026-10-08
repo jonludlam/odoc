@@ -14,7 +14,7 @@ let db_marshal_file = Fpath.v "sherlodoc_db.marshal"
 (* Global static sherlodoc support file for javascript search *)
 let js_file = Fpath.v "sherlodoc.js"
 
-let index ?(ignore_output = false) ~format ~inputs ~dst ?favored_prefixes () =
+let index ~format ~inputs ~dst ?favored_prefixes () =
   let desc = Printf.sprintf "Sherlodoc indexing at %s" (Fpath.to_string dst) in
   let format =
     Cmd.(v "--format" % match format with `marshal -> "marshal" | `js -> "js")
@@ -30,9 +30,7 @@ let index ?(ignore_output = false) ~format ~inputs ~dst ?favored_prefixes () =
     Cmd.(
       sherlodoc % "index" %% format %% favored_prefixes %% inputs % "-o" % p dst)
   in
-  let log =
-    if ignore_output then None else Some (`Sherlodoc, Fpath.to_string dst)
-  in
+  let log = Some (`Sherlodoc, Fpath.to_string dst) in
   { Cmd_outputs.log; desc; cmd; output = Some dst; ignore_failures = true }
 
 let js dst =

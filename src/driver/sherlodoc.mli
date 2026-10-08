@@ -13,7 +13,6 @@ val js : Fpath.t -> Cmd_outputs.action
 *)
 
 val index :
-  ?ignore_output:bool ->
   format:[ `js | `marshal ] ->
   inputs:Fpath.t list ->
   dst:Fpath.t ->

@@ -75,9 +75,9 @@ val compile_asset :
 (** {1 Linking} *)
 
 val link :
-  ?ignore_output:bool ->
+  ignore_output:bool ->
   input_file:Fpath.t ->
-  ?output_file:Fpath.t ->
+  output_file:Fpath.t ->
   docs:(string * Fpath.t) list ->
   libs:(string * Fpath.t) list ->
   warnings_tags:string list ->
@@ -93,7 +93,6 @@ val link :
 (** {1 Indexing} *)
 
 val compile_index :
-  ?ignore_output:bool ->
   output_file:Fpath.t ->
   ?occurrence_file:Fpath.t ->
   json:bool ->
@@ -107,12 +106,7 @@ val compile_index :
     hierarchy. [occurrence_file] is only used for JSON output. *)
 
 val sidebar_generate :
-  ?ignore_output:bool ->
-  output_file:Fpath.t ->
-  json:bool ->
-  Fpath.t ->
-  unit ->
-  Cmd_outputs.action
+  output_file:Fpath.t -> json:bool -> Fpath.t -> unit -> Cmd_outputs.action
 (** [odoc sidebar-generate] from an index. *)
 
 val count_occurrences :
@@ -125,11 +119,10 @@ val count_occurrences :
 val html_generate :
   output_dir:string ->
   ?sidebar:Fpath.t ->
-  ?ignore_output:bool ->
   ?search_uris:Fpath.t list ->
   ?remap:Fpath.t ->
   ?as_json:bool ->
-  ?home_breadcrumb:string ->
+  home_breadcrumb:string ->
   input_file:Fpath.t ->
   unit ->
   Cmd_outputs.action
@@ -138,12 +131,11 @@ val html_generate :
 
 val html_generate_source :
   output_dir:string ->
-  ?ignore_output:bool ->
   source:Fpath.t ->
   ?sidebar:Fpath.t ->
   ?search_uris:Fpath.t list ->
   ?as_json:bool ->
-  ?home_breadcrumb:string ->
+  home_breadcrumb:string ->
   input_file:Fpath.t ->
   unit ->
   Cmd_outputs.action
@@ -151,8 +143,7 @@ val html_generate_source :
 
 val html_generate_asset :
   output_dir:string ->
-  ?ignore_output:bool ->
-  ?home_breadcrumb:string ->
+  home_breadcrumb:string ->
   input_file:Fpath.t ->
   asset_path:Fpath.t ->
   unit ->
