@@ -17,6 +17,10 @@ type t = {
 
 val term : t Cmdliner.Term.t
 
+val setup : t -> unit
+(** Act on the options: which odoc to run, how much to log, and how many workers
+    to show. *)
+
 type dirs = {
   odoc_dir : Fpath.t option;  (** [.odoc] files. *)
   odocl_dir : Fpath.t option;  (** [.odocl] files. *)

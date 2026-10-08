@@ -41,18 +41,12 @@ let generate_status ~html_dir pkg =
   Status.file ~html_dir ~pkg ~redirections ()
 
 let run package_name blessed actions odoc_dir odocl_dir
-    { Common_args.verbose; html_dir; nb_workers; odoc_bin; odoc_md_bin; _ } =
-  Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
-  Option.iter
-    (fun odoc_md_bin -> Odoc.odoc_md := Bos.Cmd.v odoc_md_bin)
-    odoc_md_bin;
+    ({ Common_args.html_dir; nb_workers; _ } as common) =
+  Common_args.setup common;
   let index_dir = Fpath.v "_index" in
   let mld_dir = Fpath.v "_mld" in
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
-  if verbose then Logs.set_level (Some Logs.Debug);
-  Logs.set_reporter (Logs_fmt.reporter ());
-  Stats.init_nprocs nb_workers;
   let () = Worker_pool.start_workers env sw nb_workers in
   let odocl_dir = Option.value odocl_dir ~default:odoc_dir in
 

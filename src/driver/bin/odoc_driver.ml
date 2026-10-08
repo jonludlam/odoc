@@ -16,25 +16,10 @@ let check_packages packages =
 
 let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
     ~generate_grep ~index_grep ~remap ~index_mld ~makefile packages
-    {
-      Common_args.verbose;
-      html_dir;
-      stats;
-      nb_workers;
-      odoc_bin;
-      odoc_md_bin;
-      generate_json;
-      _;
-    } () =
-  Option.iter (fun odoc_bin -> Odoc.odoc := Bos.Cmd.v odoc_bin) odoc_bin;
-  Option.iter
-    (fun odoc_md_bin -> Odoc.odoc_md := Bos.Cmd.v odoc_md_bin)
-    odoc_md_bin;
-
-  if verbose then Logs.set_level (Some Logs.Debug);
-  Logs.set_reporter (Logs_fmt.reporter ());
+    ({ Common_args.html_dir; stats; nb_workers; generate_json; _ } as common) ()
+    =
+  Common_args.setup common;
   check_packages packages;
-  Stats.init_nprocs nb_workers;
 
   let index_mld_content =
     Option.bind index_mld (fun fpath ->
