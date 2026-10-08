@@ -160,10 +160,9 @@ let link ~warnings_tags (pkg : Odoc_unit.pkg) =
            intended. *)
         if c.to_output then
           Cmd_outputs.run
-          @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file
-               ~libs ~docs:pkg.scope.page_roots
-               ~ignore_output:(not c.enable_warnings) ~warnings_tags
-               ?current_package:pkg.pkgname ();
+          @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file ~libs
+               ~docs:pkg.scope.page_roots ~ignore_output:(not c.enable_warnings)
+               ~warnings_tags ?current_package:pkg.pkgname ();
         Atomic.incr
           (match c.kind with
           | `Intf _ -> Stats.stats.linked_units

@@ -95,9 +95,9 @@ type lib = {
   units : module_unit list;
   page : mld t option;
       (** The page the driver writes to list the library's modules. [None] when
-          the driver writes no pages for this package. It names each module
-          with its library, [{!modules: /lib/M}], so it shows this library's
-          modules and not a same-named module of another library. *)
+          the driver writes no pages for this package. It names each module with
+          its library, [{!modules: /lib/M}], so it shows this library's modules
+          and not a same-named module of another library. *)
 }
 (** A library and its modules. *)
 

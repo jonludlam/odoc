@@ -230,8 +230,9 @@ let link_rules ~stamp_dir ~warnings_tags ~by_name (pkg : pkg) =
               [
                 Action
                   (Odoc.link ~input_file:u.odoc_file ~output_file:u.odocl_file
-                     ~libs ~docs:pkg.scope.page_roots ~ignore_output:(not u.enable_warnings)
-                     ~warnings_tags ?current_package:pkg.pkgname ());
+                     ~libs ~docs:pkg.scope.page_roots
+                     ~ignore_output:(not u.enable_warnings) ~warnings_tags
+                     ?current_package:pkg.pkgname ());
               ];
             stamp = false;
           }

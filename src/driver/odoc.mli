@@ -86,9 +86,9 @@ val link :
   Cmd_outputs.action
 (** [odoc link]. [docs] are the page roots ([-P]) and [libs] the library roots
     ([-L]): those the unit may refer to, and those holding the [.odoc] files of
-    the modules it depends on. Roots may share a directory,
-    so [--custom-layout] is always passed. Warnings are reported for the
-    packages named in [warnings_tags]. *)
+    the modules it depends on. Roots may share a directory, so [--custom-layout]
+    is always passed. Warnings are reported for the packages named in
+    [warnings_tags]. *)
 
 (** {1 Indexing} *)
 
