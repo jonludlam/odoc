@@ -105,6 +105,20 @@ let index_inputs pkg =
   |> List.filter_map (fun u -> if is_output u then Some u.odocl_file else None)
   |> List.sort_uniq Fpath.compare
 
+let scope_pkgs pkgs =
+  let by_name =
+    List.fold_left
+      (fun acc p ->
+        match p.pkgname with
+        | Some name -> Util.StringMap.add name p acc
+        | None -> acc)
+      Util.StringMap.empty pkgs
+  in
+  fun pkg ->
+    List.filter_map
+      (fun (name, _) -> Util.StringMap.find_opt name by_name)
+      pkg.scope.page_roots
+
 let link_units pkg =
   List.map (fun u -> (pkg.scope.lib_roots, u)) (pkg.pages :> any list)
   @ List.concat_map

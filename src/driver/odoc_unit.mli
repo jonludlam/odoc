@@ -143,6 +143,11 @@ val index_inputs : pkg -> Fpath.t list
 (** The [.odocl] files a package's index is built from: those of its units that
     are output. *)
 
+val scope_pkgs : pkg list -> pkg -> pkg list
+(** [scope_pkgs pkgs pkg] are the packages among [pkgs] that [pkg]'s scope
+    names. They must be compiled before [pkg] is linked. A name no package of
+    [pkgs] answers belongs to a package an earlier run compiled. *)
+
 val link_units : pkg -> ((string * Fpath.t) list * any) list
 (** {!all_units}, each with the libraries it is linked with: the scope for the
     package's pages, and {!link_libs} for the units of a library. *)

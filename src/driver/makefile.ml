@@ -206,15 +206,8 @@ let compile_rules ~stamp_dir (pkg : pkg) =
 
 (* Linking waits for the package itself and for every package its scope
    names, since a reference may lead into any of them. *)
-let link_rules ~stamp_dir ~warnings_tags ~by_name (pkg : pkg) =
-  let scope_stamps =
-    pkg_stamp ~stamp_dir pkg
-    :: List.filter_map
-         (fun (name, _) ->
-           Option.map (pkg_stamp ~stamp_dir)
-             (Util.StringMap.find_opt name by_name))
-         pkg.scope.page_roots
-  in
+let link_rules ~stamp_dir ~warnings_tags ~scope_pkgs (pkg : pkg) =
+  let scope_stamps = List.map (pkg_stamp ~stamp_dir) (pkg :: scope_pkgs pkg) in
   let link ~libs (u : any) =
     if not (is_output u) then None
     else
@@ -351,14 +344,7 @@ let generate_rules ~html_dir ~stamp_dir (pkg : pkg) =
   List.filter_map rule (all_units pkg)
 
 let emit ppf ~html_dir ~stamp_dir ~warnings_tags pkgs =
-  let by_name =
-    List.fold_left
-      (fun acc (p : pkg) ->
-        match p.pkgname with
-        | Some name -> Util.StringMap.add name p acc
-        | None -> acc)
-      Util.StringMap.empty pkgs
-  in
+  let scope_pkgs = scope_pkgs pkgs in
   let support =
     {
       target = Fpath.(stamp_dir / "support-files");
@@ -379,7 +365,7 @@ let emit ppf ~html_dir ~stamp_dir ~warnings_tags pkgs =
     List.concat_map
       (fun pkg ->
         compile_rules ~stamp_dir pkg
-        @ link_rules ~stamp_dir ~warnings_tags ~by_name pkg
+        @ link_rules ~stamp_dir ~warnings_tags ~scope_pkgs pkg
         @ (match pkg.index with
           | None -> []
           | Some index -> index_rules ~html_dir pkg index)

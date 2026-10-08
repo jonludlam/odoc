@@ -38,14 +38,7 @@ let compile_package pkg =
 
 let all ~html_dir ~remaps ~generate_json ~warnings_tags
     (pkgs : Odoc_unit.pkg list) =
-  let by_name =
-    List.fold_left
-      (fun acc (p : Odoc_unit.pkg) ->
-        match p.pkgname with
-        | Some name -> Util.StringMap.add name p acc
-        | None -> acc)
-      Util.StringMap.empty pkgs
-  in
+  let scope_pkgs = Odoc_unit.scope_pkgs pkgs in
   let compile_libs = compile_libs () in
   let compile_pkg =
     Util.memo ~key:(fun (pkg : Odoc_unit.pkg) -> pkg.pkgname) @@ fun _ pkg ->
@@ -57,10 +50,7 @@ let all ~html_dir ~remaps ~generate_json ~warnings_tags
   List.iter
     (fun (pkg : Odoc_unit.pkg) ->
       compile_pkg pkg;
-      List.iter
-        (fun (name, _) ->
-          Option.iter compile_pkg (Util.StringMap.find_opt name by_name))
-        pkg.scope.page_roots;
+      List.iter compile_pkg (scope_pkgs pkg);
       Logs.debug (fun m -> m "Linking %a" (Fmt.option Fmt.string) pkg.pkgname);
       Compile.link ~warnings_tags pkg;
       Compile.generate ?remap_file ~generate_json html_dir pkg)
