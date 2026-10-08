@@ -1,6 +1,5 @@
 type log_dest =
   [ `Compile
-  | `Compile_src
   | `Link
   | `Count_occurrences
   | `Generate

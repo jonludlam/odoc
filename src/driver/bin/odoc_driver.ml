@@ -124,15 +124,13 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
         in
         Option.iter do_ s
       in
-      (* Grep log compile and compile_src commands *)
+      (* Grep log compile commands *)
       grep_log `Compile compile_grep;
-      grep_log `Compile_src compile_grep;
       (* Grep log link commands *)
       grep_log `Link link_grep;
       (* Grep log generate commands *)
       grep_log `Generate generate_grep;
       (* Grep log index and co commands *)
-      grep_log `Count_occurrences index_grep;
       grep_log `Count_occurrences index_grep;
       grep_log `Index index_grep;
 
