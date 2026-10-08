@@ -17,20 +17,13 @@ type src_info = { src_path : Fpath.t }
 let pp_src_info fmt i =
   Format.fprintf fmt "@[<hov>{@,src_path: %a@,}@]" Fpath.pp i.src_path
 
-type impl = {
-  mip_path : Fpath.t;
-  mip_src_info : src_info option;
-  mip_deps : dep list;
-}
+type impl = { mip_path : Fpath.t; mip_src_info : src_info option }
 
 let pp_impl fmt i =
-  Format.fprintf fmt
-    "@[<hov>{@,mip_path: %a;@,mip_src_info: %a;@,mip_deps: %a@,}@]" Fpath.pp
+  Format.fprintf fmt "@[<hov>{@,mip_path: %a;@,mip_src_info: %a@,}@]" Fpath.pp
     i.mip_path
     (Fmt.Dump.option pp_src_info)
     i.mip_src_info
-    (Fmt.Dump.list (Fmt.Dump.pair Fmt.string Fmt.string))
-    i.mip_deps
 
 type modulety = {
   m_name : string;
@@ -181,12 +174,7 @@ module Module = struct
                   m "Found source file %a for %s" Fpath.pp src_path m_name);
               Some { src_path }
         in
-        let mip_deps =
-          match Odoc.compile_deps mip_path with
-          | Ok { digest = _; deps } -> deps
-          | Error _ -> failwith "bad deps"
-        in
-        { mip_src_info; mip_path; mip_deps }
+        { mip_src_info; mip_path }
       in
       let state = (exists "cmt", exists "cmti") in
 

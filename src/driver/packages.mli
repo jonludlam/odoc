@@ -24,7 +24,6 @@ type src_info = { src_path : Fpath.t }
 type impl = {
   mip_path : Fpath.t;
   mip_src_info : src_info option;  (** Its source file, when found. *)
-  mip_deps : dep list;
 }
 (** The implementation of a module: its [.cmt] file. *)
 
