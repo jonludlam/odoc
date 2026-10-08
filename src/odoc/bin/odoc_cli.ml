@@ -1771,7 +1771,7 @@ let main_page_sections =
     section_deprecated;
   ]
 
-let () =
+let main () =
   Printexc.record_backtrace true;
   let cmd_make (term, info) = Cmd.v info term in
   let subcommands =

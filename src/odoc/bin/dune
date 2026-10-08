@@ -1,9 +1,16 @@
-(executable
- (name main)
- (package odoc)
- (public_name odoc)
+(library
+ (name odoc_cli)
+ (public_name odoc.cli)
+ (modules odoc_cli)
  (libraries cmdliner odoc_model odoc_odoc)
  (instrumentation
   (backend landmarks --auto))
  (instrumentation
   (backend bisect_ppx)))
+
+(executable
+ (name odoc_main)
+ (package odoc)
+ (public_name odoc)
+ (modules odoc_main)
+ (libraries odoc_cli))
