@@ -4,36 +4,20 @@ open Bos
 open Eio.Std
 
 let init_stats (pkgs : Odoc_unit.pkg list) =
-  let units = List.concat_map Odoc_unit.all_units pkgs in
-  let total, total_impl, non_hidden, mlds, assets =
-    List.fold_left
-      (fun (total, total_impl, non_hidden, mlds, assets) (unit : Odoc_unit.any)
-         ->
-        let total = match unit.kind with `Intf _ -> total + 1 | _ -> total in
-        let total_impl =
-          match unit.kind with `Impl _ -> total_impl + 1 | _ -> total_impl
-        in
-        let assets =
-          match unit.kind with `Asset -> assets + 1 | _ -> assets
-        in
-        let non_hidden =
-          match unit.kind with
-          | `Intf { hidden = false; _ } -> non_hidden + 1
-          | _ -> non_hidden
-        in
-        let mlds = match unit.kind with `Mld | `Md -> mlds + 1 | _ -> mlds in
-        (total, total_impl, non_hidden, mlds, assets))
-      (0, 0, 0, 0, 0) units
+  let open Stats in
+  let count (unit : Odoc_unit.any) =
+    match unit.kind with
+    | `Intf { hidden; _ } ->
+        Atomic.incr stats.total_units;
+        if not hidden then Atomic.incr stats.non_hidden_units
+    | `Impl _ -> Atomic.incr stats.total_impls
+    | `Mld | `Md -> Atomic.incr stats.total_mlds
+    | `Asset -> Atomic.incr stats.total_assets
   in
-  let indexes =
-    List.length (List.filter (fun (p : Odoc_unit.pkg) -> p.index <> None) pkgs)
-  in
-  Atomic.set Stats.stats.total_units total;
-  Atomic.set Stats.stats.total_impls total_impl;
-  Atomic.set Stats.stats.non_hidden_units non_hidden;
-  Atomic.set Stats.stats.total_mlds mlds;
-  Atomic.set Stats.stats.total_assets assets;
-  Atomic.set Stats.stats.total_indexes indexes
+  List.iter (fun pkg -> List.iter count (Odoc_unit.all_units pkg)) pkgs;
+  Atomic.set stats.total_indexes
+    (List.length
+       (List.filter (fun (p : Odoc_unit.pkg) -> p.index <> None) pkgs))
 
 (* An implementation of a virtual library ships its modules as [.cmt] files
    only: the interface, and the documentation written in it, belong to the
