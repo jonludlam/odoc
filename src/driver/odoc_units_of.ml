@@ -132,15 +132,8 @@ let cone known lib =
   in
   go Util.StringSet.empty [ lib ]
 
-let dirs_of known libs =
-  Util.StringSet.fold
-    (fun l acc ->
-      match known.lib_dir l with Some d -> Fpath.Set.add d acc | None -> acc)
-    libs Fpath.Set.empty
-  |> Fpath.Set.elements
-
-(* The same, keeping each library's name: [odoc compile] is given these with
-   [-L] and writes the names into the units, so that a later [odoc link]
+(* Each library with the directory of its [.odoc] files, for [-L]. [odoc
+   compile] writes the names into the units, so that a later [odoc link]
    resolving into a unit knows which libraries it could see. *)
 let named_dirs_of known libs =
   Util.StringSet.fold
@@ -199,14 +192,7 @@ let scope_of known (pkg : Packages.t) : scope =
       libs
       (Util.StringSet.add pkg.name (Util.StringSet.of_list cfg_pkgs))
   in
-  let lib_roots =
-    Util.StringSet.fold
-      (fun lib acc ->
-        match known.lib_dir lib with
-        | Some dir -> (lib, dir) :: acc
-        | None -> acc)
-      libs []
-  in
+  let lib_roots = named_dirs_of known libs in
   let page_roots =
     Util.StringSet.fold
       (fun p acc ->
@@ -446,13 +432,7 @@ let toplevel known (pkgs : Packages.t list) (page : mld t) : Odoc_unit.pkg =
         List.map
           (fun (p : Packages.t) -> (p.name, pkg_pages_dir known p.name))
           pkgs;
-      lib_roots =
-        Util.StringSet.fold
-          (fun lib acc ->
-            match known.lib_dir lib with
-            | Some d -> (lib, d) :: acc
-            | None -> acc)
-          known.building [];
+      lib_roots = named_dirs_of known known.building;
     }
   in
   { pkgname = None; scope; index = None; libs = []; pages = [ (page :> page) ] }
