@@ -36,8 +36,6 @@ let with_out_to filename f =
     ()
   |> Result.join
 
-let cp src dst = assert (lines_of_process Cmd.(v "cp" % src % dst) = [])
-
 let memo ~key f =
   let started = Hashtbl.create 100 in
   let rec g x =

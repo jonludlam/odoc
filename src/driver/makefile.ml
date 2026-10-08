@@ -41,6 +41,15 @@ let pp_rule ppf { target; prereqs; actions; stamp } =
   if stamp then Format.fprintf ppf "\t@@touch $@@@\n";
   Format.fprintf ppf "@\n"
 
+(* A rule for a command that writes one file. *)
+let action_rule ~prereqs (a : Cmd_outputs.action) =
+  {
+    target = Option.get a.output;
+    prereqs;
+    actions = [ Action a ];
+    stamp = false;
+  }
+
 (* The stamp that stands for a set of files. *)
 let lib_stamp ~stamp_dir (lib : lib) = Fpath.(stamp_dir / "lib" / lib.lib_name)
 
@@ -66,6 +75,15 @@ let intf_odocs (lib : lib) =
       match u.kind with `Intf _ -> Some u.odoc_file | `Impl _ -> None)
     lib.units
 
+(* A page, which needs no search path. *)
+let page_rule (p : page) =
+  {
+    target = p.odoc_file;
+    prereqs = [ p.input_file ];
+    actions = [ Action (Commands.compile_page p) ];
+    stamp = false;
+  }
+
 (* Compiling the modules of a library. A module waits for the modules of this
    library whose digest it imports, and for the libraries this one requires.
    An import of another library's module is covered by that library's stamp. *)
@@ -73,9 +91,9 @@ let lib_rules ~stamp_dir (lib : lib) =
   let by_hash = intfs_by_hash lib in
   let required = List.map (lib_stamp ~stamp_dir) lib.requires in
   let unit_rule (u : module_unit) =
-    match u.kind with
-    | `Intf { hidden = _; hash = _; deps } ->
-        let imported =
+    let prereqs =
+      match u.kind with
+      | `Intf { deps; _ } ->
           List.filter_map
             (fun (_, digest) ->
               Option.map
@@ -83,73 +101,22 @@ let lib_rules ~stamp_dir (lib : lib) =
                 (Util.StringMap.find_opt digest by_hash))
             deps
           |> List.filter (fun f -> not (Fpath.equal f u.odoc_file))
-        in
-        let copy =
-          match u.input_copy with
-          | None -> []
-          | Some dst ->
-              [
-                Action
-                  {
-                    Cmd_outputs.log = None;
-                    desc = "Copying the interface";
-                    cmd =
-                      Bos.Cmd.(
-                        v "cp"
-                        % Fpath.to_string u.input_file
-                        % Fpath.to_string dst);
-                    output = Some dst;
-                    ignore_failures = false;
-                  };
-              ]
-        in
-        Some
-          {
-            target = u.odoc_file;
-            prereqs = (u.input_file :: imported) @ required;
-            actions =
-              Action
-                (Odoc.compile ~output_file:u.odoc_file ~input_file:u.input_file
-                   ~libs:lib.includes ~warnings_tag:lib.pkgname
-                   ~parent_id:u.parent_id ~ignore_output:(not u.enable_warnings))
-              :: copy;
-            stamp = false;
-          }
-    | `Impl { src_id; _ } ->
-        (* An implementation is compiled against the same libraries as the
-           interfaces, so it waits for all of them rather than for a digest
-           it does not record. *)
-        Some
-          {
-            target = u.odoc_file;
-            prereqs = (u.input_file :: intf_odocs lib) @ required;
-            actions =
-              [
-                Action
-                  (Odoc.compile_impl ~output_file:u.odoc_file
-                     ~input_file:u.input_file ~libs:lib.includes
-                     ~parent_id:u.parent_id ~source_id:src_id);
-              ];
-            stamp = false;
-          }
+      | `Impl _ ->
+          (* An implementation is compiled against the same libraries as the
+             interfaces, so it waits for all of them rather than for a digest
+             it does not record. *)
+          intf_odocs lib
+    in
+    {
+      target = u.odoc_file;
+      prereqs = (u.input_file :: prereqs) @ required;
+      actions = List.map (fun a -> Action a) (Commands.compile_module lib u);
+      stamp = false;
+    }
   in
-  let units = List.filter_map unit_rule lib.units in
+  let units = List.map unit_rule lib.units in
   let page_rules =
-    List.map
-      (fun (p : mld t) ->
-        {
-          target = p.odoc_file;
-          prereqs = [ p.input_file ];
-          actions =
-            [
-              Action
-                (Odoc.compile ~output_file:p.odoc_file ~input_file:p.input_file
-                   ~libs:[] ~warnings_tag:None ~parent_id:p.parent_id
-                   ~ignore_output:(not p.enable_warnings));
-            ];
-          stamp = false;
-        })
-      (Option.to_list lib.page)
+    List.map (fun p -> page_rule (p :> page)) (Option.to_list lib.page)
   in
   let stamp =
     {
@@ -162,32 +129,6 @@ let lib_rules ~stamp_dir (lib : lib) =
     }
   in
   units @ page_rules @ [ stamp ]
-
-(* The pages of a package, which need no search path. *)
-let page_rule (p : page) =
-  let actions =
-    match p.kind with
-    | `Mld ->
-        [
-          Action
-            (Odoc.compile ~output_file:p.odoc_file ~input_file:p.input_file
-               ~libs:[] ~warnings_tag:None ~parent_id:p.parent_id
-               ~ignore_output:(not p.enable_warnings));
-        ]
-    | `Md ->
-        [
-          Action
-            (Odoc.compile_md ~output_file:p.odoc_file ~input_file:p.input_file
-               ~parent_id:p.parent_id);
-        ]
-    | `Asset ->
-        [
-          Action
-            (Odoc.compile_asset ~output_file:p.odoc_file ~parent_id:p.parent_id
-               ~name:(Fpath.filename p.input_file));
-        ]
-  in
-  { target = p.odoc_file; prereqs = [ p.input_file ]; actions; stamp = false }
 
 let compile_rules ~stamp_dir (pkg : pkg) =
   let libs = List.concat_map (lib_rules ~stamp_dir) pkg.libs in
@@ -215,14 +156,7 @@ let link_rules ~stamp_dir ~warnings_tags ~scope_pkgs (pkg : pkg) =
         {
           target = u.odocl_file;
           prereqs = u.odoc_file :: scope_stamps;
-          actions =
-            [
-              Action
-                (Odoc.link ~input_file:u.odoc_file ~output_file:u.odocl_file
-                   ~libs ~docs:pkg.scope.page_roots
-                   ~ignore_output:(not u.enable_warnings) ~warnings_tags
-                   ?current_package:pkg.pkgname ());
-            ];
+          actions = [ Action (Commands.link ~warnings_tags ~libs pkg u) ];
           stamp = false;
         }
   in
@@ -242,109 +176,52 @@ let index_rules ~html_dir (pkg : pkg) (index : index) =
             (List.map (fun f -> Filename.quote (Fpath.to_string f)) inputs))
          (Filename.quote (Fpath.to_string file_list)))
   in
-  let json_sidebar = Fpath.(html_dir // index.html_dir / "sidebar.json") in
-  let db = Fpath.(html_dir // Sherlodoc.db_js_file index.html_dir) in
-  [
-    {
-      target = file_list;
-      prereqs = inputs;
-      actions = [ write_list ];
-      stamp = false;
-    };
-    {
-      target = index.index_file;
-      prereqs = file_list :: inputs;
-      actions =
-        [
-          Action
-            (Odoc.compile_index ~json:false ~output_file:index.index_file
-               ~file_list ~simplified:false ~wrap:false ());
-        ];
-      stamp = false;
-    };
-    {
-      target = index.sidebar_file;
-      prereqs = [ index.index_file ];
-      actions =
-        [
-          Action
-            (Odoc.sidebar_generate ~output_file:index.sidebar_file ~json:false
-               index.index_file ());
-        ];
-      stamp = false;
-    };
-    {
-      target = json_sidebar;
-      prereqs = [ index.index_file ];
-      actions =
-        [
-          Action
-            (Odoc.sidebar_generate ~output_file:json_sidebar ~json:true
-               index.index_file ());
-        ];
-      stamp = false;
-    };
-    {
-      target = db;
-      prereqs = [ index.index_file ];
-      actions =
-        [
-          Action
-            (Sherlodoc.index ~format:`js ~inputs:[ index.index_file ] ~dst:db ());
-        ];
-      stamp = false;
-    };
-  ]
+  let compile_index, from_index = Commands.index ~html_dir ~file_list index in
+  {
+    target = file_list;
+    prereqs = inputs;
+    actions = [ write_list ];
+    stamp = false;
+  }
+  :: action_rule ~prereqs:(file_list :: inputs) compile_index
+  :: List.map (action_rule ~prereqs:[ index.index_file ]) from_index
 
-let generate_rules ~html_dir ~stamp_dir (pkg : pkg) =
-  let output_dir = Fpath.to_string html_dir in
-  let home_breadcrumb = "Package index" in
-  let sidebar, search_uris =
-    match pkg.index with
-    | None -> (None, None)
-    | Some index ->
-        ( Some index.sidebar_file,
-          Some [ Sherlodoc.db_js_file index.html_dir; Sherlodoc.js_file ] )
+let generate_rules ~html_dir ~stamp_dir ?remap_file ~generate_json (pkg : pkg) =
+  let sidebar =
+    Option.map (fun (index : index) -> index.sidebar_file) pkg.index
   in
   let rule (u : any) =
-    if not (is_output u) then None
-    else
-      let actions =
-        match u.kind with
-        | `Impl { src_path; _ } ->
-            [
-              Action
-                (Odoc.html_generate_source ~output_dir ?sidebar ?search_uris
-                   ~input_file:u.odocl_file ~source:src_path ~home_breadcrumb ());
-            ]
-        | `Asset ->
-            [
-              Action
-                (Odoc.html_generate_asset ~output_dir ~input_file:u.odoc_file
-                   ~asset_path:u.input_file ~home_breadcrumb ());
-            ]
-        | `Intf _ | `Mld | `Md ->
-            [
-              Action
-                (Odoc.html_generate ~output_dir ?sidebar ?search_uris
-                   ~input_file:u.odocl_file ~home_breadcrumb ());
-            ]
-      in
-      let input =
-        match u.kind with `Asset -> u.odoc_file | _ -> u.odocl_file
-      in
-      Some
-        {
-          target = html_stamp ~stamp_dir u;
-          prereqs = input :: Option.to_list sidebar;
-          actions;
-          stamp = true;
-        }
+    match Commands.generate ~html_dir ?remap_file ~generate_json pkg u with
+    | [] -> None
+    | actions ->
+        let input =
+          match u.kind with `Asset -> u.odoc_file | _ -> u.odocl_file
+        in
+        Some
+          {
+            target = html_stamp ~stamp_dir u;
+            prereqs =
+              (input :: Option.to_list sidebar) @ Option.to_list remap_file;
+            actions = List.map (fun a -> Action a) actions;
+            stamp = true;
+          }
   in
   List.filter_map rule (all_units pkg)
 
-let emit ppf ~html_dir ~stamp_dir ~warnings_tags pkgs =
+let emit ppf ~html_dir ~stamp_dir ~remaps ~generate_json ~warnings_tags pkgs =
   let scope_pkgs = scope_pkgs pkgs in
+  (* The remap file outlives the driver, which a temporary file would not, so
+     it goes beside the stamps. *)
+  let remap_file =
+    match remaps with
+    | [] -> None
+    | remaps ->
+        let file = Fpath.(stamp_dir / "remap.txt") in
+        Util.with_out_to file (fun oc ->
+            List.iter (fun (a, b) -> Printf.fprintf oc "%s:%s\n" a b) remaps)
+        |> Result.get_ok;
+        Some file
+  in
   let support =
     {
       target = Fpath.(stamp_dir / "support-files");
@@ -369,7 +246,7 @@ let emit ppf ~html_dir ~stamp_dir ~warnings_tags pkgs =
         @ (match pkg.index with
           | None -> []
           | Some index -> index_rules ~html_dir pkg index)
-        @ generate_rules ~html_dir ~stamp_dir pkg)
+        @ generate_rules ~html_dir ~stamp_dir ?remap_file ~generate_json pkg)
       pkgs
     @ [ support; sherlodoc_js ]
   in

@@ -18,9 +18,6 @@ val with_out_to :
 (** [with_out_to file f] creates the directory of [file] if needed, opens [file]
     for writing and calls [f] with the channel. *)
 
-val cp : string -> string -> unit
-(** Copy a file. *)
-
 val memo : key:('a -> 'k) -> (('a -> 'b) -> 'a -> 'b) -> 'a -> 'b
 (** [memo ~key f] is [f], run at most once for each [key]. [f] is given the
     memoised function, so that it can recurse through it. A call made while the

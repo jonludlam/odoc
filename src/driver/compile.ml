@@ -64,19 +64,13 @@ let by_hash (units : [ Odoc_unit.intf | Odoc_unit.impl ] Odoc_unit.t list) =
     Util.StringMap.empty units
 
 let compile_lib (lib : Odoc_unit.lib) =
-  let libs = lib.includes in
   let hashes = by_hash lib.units in
   let compile_intf (unit : Odoc_unit.intf Odoc_unit.t) =
     let unit =
       find_virtual_interface ~includes:(Odoc_unit.include_dirs lib) unit
     in
-    Cmd_outputs.run
-    @@ Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
-         ~libs ~warnings_tag:lib.pkgname ~parent_id:unit.parent_id
-         ~ignore_output:(not unit.enable_warnings);
-    (match unit.input_copy with
-    | None -> ()
-    | Some p -> Util.cp (Fpath.to_string unit.input_file) (Fpath.to_string p));
+    List.iter Cmd_outputs.run
+      (Commands.compile_module lib (unit :> Odoc_unit.module_unit));
     Atomic.incr Stats.stats.compiled_units
   in
   (* A module is compiled after the modules it imports. [compile_mod] on a
@@ -99,35 +93,19 @@ let compile_lib (lib : Odoc_unit.lib) =
   let compile (unit : Odoc_unit.module_unit) =
     match unit.kind with
     | `Intf { hash; _ } -> compile_mod hash
-    | `Impl { src_id; _ } ->
-        Cmd_outputs.run
-        @@ Odoc.compile_impl ~output_file:unit.odoc_file
-             ~input_file:unit.input_file ~libs ~parent_id:unit.parent_id
-             ~source_id:src_id;
+    | `Impl _ ->
+        List.iter Cmd_outputs.run (Commands.compile_module lib unit);
         Atomic.incr Stats.stats.compiled_impls
   in
   Fiber.List.iter compile lib.units
 
 let compile_pages (pkg : Odoc_unit.pkg) =
-  let compile (unit : _ Odoc_unit.t) =
-    match unit.kind with
-    | `Mld ->
-        Cmd_outputs.run
-        @@ Odoc.compile ~output_file:unit.odoc_file ~input_file:unit.input_file
-             ~libs:[] ~warnings_tag:None ~parent_id:unit.parent_id
-             ~ignore_output:(not unit.enable_warnings);
-        Atomic.incr Stats.stats.compiled_mlds
-    | `Md ->
-        Cmd_outputs.run
-        @@ Odoc.compile_md ~output_file:unit.odoc_file
-             ~input_file:unit.input_file ~parent_id:unit.parent_id;
-        Atomic.incr Stats.stats.compiled_mlds
-    | `Asset ->
-        Cmd_outputs.run
-        @@ Odoc.compile_asset ~output_file:unit.odoc_file
-             ~parent_id:unit.parent_id
-             ~name:(Fpath.filename unit.input_file);
-        Atomic.incr Stats.stats.compiled_assets
+  let compile (unit : Odoc_unit.page) =
+    Cmd_outputs.run (Commands.compile_page unit);
+    Atomic.incr
+      (match unit.kind with
+      | `Mld | `Md -> Stats.stats.compiled_mlds
+      | `Asset -> Stats.stats.compiled_assets)
   in
   let lib_pages =
     List.filter_map (fun (l : Odoc_unit.lib) -> l.page) pkg.libs
@@ -137,14 +115,8 @@ let compile_pages (pkg : Odoc_unit.pkg) =
 let link ~warnings_tags (pkg : Odoc_unit.pkg) =
   let link ~libs (c : Odoc_unit.any) =
     if not (Odoc_unit.is_hidden c) then (
-      (* Libraries sharing an object directory share an odoc directory, so
-         their -L roots overlap; --custom-layout tells odoc that is
-         intended. *)
       if c.to_output then
-        Cmd_outputs.run
-        @@ Odoc.link ~input_file:c.odoc_file ~output_file:c.odocl_file ~libs
-             ~docs:pkg.scope.page_roots ~ignore_output:(not c.enable_warnings)
-             ~warnings_tags ?current_package:pkg.pkgname ();
+        Cmd_outputs.run (Commands.link ~warnings_tags ~libs pkg c);
       Atomic.incr
         (match c.kind with
         | `Intf _ -> Stats.stats.linked_units
@@ -185,60 +157,27 @@ let with_remaps remaps f =
 let generate ?remap_file ~generate_json html_dir (pkg : Odoc_unit.pkg) =
   (* The package's index, sidebar and search database, which its pages then
      point at. *)
-  let search_uris, sidebar =
-    match pkg.index with
-    | None -> (None, None)
-    | Some ({ index_file; sidebar_file; html_dir = pkg_html } as index) ->
-        let file_list = index_file_list pkg index in
-        Cmd_outputs.run
-        @@ Odoc.compile_index ~json:false ~output_file:index_file ~file_list
-             ~simplified:false ~wrap:false ();
-        Cmd_outputs.run
-        @@ Odoc.sidebar_generate ~output_file:sidebar_file ~json:false
-             index_file ();
-        Cmd_outputs.run
-        @@ Odoc.sidebar_generate
-             ~output_file:Fpath.(html_dir // pkg_html / "sidebar.json")
-             ~json:true index_file ();
-        let db = Sherlodoc.db_js_file pkg_html in
-        let _ = OS.Dir.create Fpath.(html_dir // pkg_html) |> Result.get_ok in
-        Cmd_outputs.run
-        @@ Sherlodoc.index ~format:`js ~inputs:[ index_file ]
-             ~dst:Fpath.(html_dir // db)
-             ();
-        Atomic.incr Stats.stats.generated_indexes;
-        (Some [ db; Sherlodoc.js_file ], Some sidebar_file)
-  in
-  let output_dir = Fpath.to_string html_dir in
-  let home_breadcrumb = "Package index" in
-  let generate (l : Odoc_unit.any) =
-    if Odoc_unit.is_output l then
-      let input_file = l.odocl_file in
-      match l.kind with
-      | `Impl { src_path; _ } ->
-          Cmd_outputs.run
-          @@ Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
-               ~input_file ~home_breadcrumb ~source:src_path ();
-          Atomic.incr Stats.stats.generated_units;
-          if generate_json then (
-            Cmd_outputs.run
-            @@ Odoc.html_generate_source ?search_uris ?sidebar ~output_dir
-                 ~input_file ~source:src_path ~as_json:true ~home_breadcrumb ();
-            Atomic.incr Stats.stats.generated_units)
-      | `Asset ->
-          Cmd_outputs.run
-          @@ Odoc.html_generate_asset ~output_dir ~input_file:l.odoc_file
-               ~asset_path:l.input_file ~home_breadcrumb ()
-      | `Intf _ | `Mld | `Md ->
-          Cmd_outputs.run
-          @@ Odoc.html_generate ?search_uris ?sidebar ?remap:remap_file
-               ~output_dir ~input_file ~home_breadcrumb ();
-          Atomic.incr Stats.stats.generated_units;
-          if generate_json then (
-            Cmd_outputs.run
-            @@ Odoc.html_generate ?search_uris ?sidebar ~output_dir ~input_file
-                 ~as_json:true ~home_breadcrumb ();
-            Atomic.incr Stats.stats.generated_units)
+  (match pkg.index with
+  | None -> ()
+  | Some index ->
+      let file_list = index_file_list pkg index in
+      let _ =
+        OS.Dir.create Fpath.(html_dir // index.html_dir) |> Result.get_ok
+      in
+      let compile_index, from_index =
+        Commands.index ~html_dir ~file_list index
+      in
+      Cmd_outputs.run compile_index;
+      List.iter Cmd_outputs.run from_index;
+      Atomic.incr Stats.stats.generated_indexes);
+  let generate (u : Odoc_unit.any) =
+    List.iter
+      (fun action ->
+        Cmd_outputs.run action;
+        match u.kind with
+        | `Asset -> ()
+        | _ -> Atomic.incr Stats.stats.generated_units)
+      (Commands.generate ~html_dir ?remap_file ~generate_json pkg u)
   in
   Fiber.List.iter generate (Odoc_unit.all_units pkg)
 

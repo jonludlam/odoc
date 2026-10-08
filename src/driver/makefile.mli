@@ -14,6 +14,8 @@ val emit :
   Format.formatter ->
   html_dir:Fpath.t ->
   stamp_dir:Fpath.t ->
+  remaps:(string * string) list ->
+  generate_json:bool ->
   warnings_tags:string list ->
   Odoc_unit.pkg list ->
   unit
@@ -26,6 +28,9 @@ val emit :
     one per package, which depends on its libraries and its pages. Linking a
     unit waits for the stamp of its own package and of every package its scope
     names, which is what the driver waits for.
+
+    [remaps], when there are any, are written to [remap.txt] below [stamp_dir],
+    since the rules read them after the driver has exited.
 
     The rules cover every odoc command the driver would run. They do not cover
     the [status.json] file it writes for each package, which is its own output

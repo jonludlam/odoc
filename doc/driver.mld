@@ -747,8 +747,8 @@ writes somewhere else. The graph is therefore acyclic, and a driver may run
 as much of it at once as it has processors.
 
 The reference driver holds this graph as the shape of its own code. It forks
-a fiber for each unit. It keeps a table of promises, so that a module
-already under way is awaited rather than compiled twice. It hands every
+a fiber for each unit. Each module is compiled through [Util.memo], so that
+a module already under way is awaited rather than compiled twice. It hands every
 command to a pool of workers, which bounds how many run at once. Nothing in
 it holds the graph as data.
 
@@ -758,7 +758,10 @@ Deciding a command and running it are two steps, so a driver can write the
 commands out instead of running them. [odoc_driver --makefile <file>] writes
 the whole build as rules for [make], and runs none of it. [make -j] then
 schedules what the driver would have scheduled itself, and a second [make]
-rebuilds only what changed.
+rebuilds only what changed. The commands in the rules and the commands the
+driver runs both come from
+{{!/odoc-driver/Odoc_driver_lib.Commands}[Commands]}, so the two build the
+same output.
 
 Make schedules the work, so the rules must state the graph as data. A module
 names the [.odoc] files of the imports it waits for. A stamp file stands for

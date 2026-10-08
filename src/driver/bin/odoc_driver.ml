@@ -87,7 +87,8 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
       let stamp_dir = Fpath.(odoc_dir / ".stamps") in
       Util.with_out_to file (fun oc ->
           let ppf = Format.formatter_of_out_channel oc in
-          Makefile.emit ppf ~html_dir ~stamp_dir ~warnings_tags:packages pkgs;
+          Makefile.emit ppf ~html_dir ~stamp_dir ~remaps ~generate_json
+            ~warnings_tags:packages pkgs;
           Format.pp_print_flush ppf ())
       |> Result.get_ok;
       Logs.app (fun m -> m "Wrote %a" Fpath.pp file)
