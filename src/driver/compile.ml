@@ -42,11 +42,11 @@ let init_stats (pkgs : Odoc_unit.pkg list) =
    already substituted the [.cmti]; when it was built earlier (voodoo mode),
    the copy stashed next to its [.odoc] file ([input_copy]) is on the
    implementation's dependency cone, so look for a same-named [.cmti] with the
-   right digest along the library's [-I] path. *)
+   right digest among the directories of the library's cone. *)
 let find_virtual_interface ~includes (unit : Odoc_unit.intf Odoc_unit.t) =
   if not (Fpath.has_ext "cmt" unit.input_file) then unit
   else
-    let (`Intf { Odoc_unit.hash; _ }) = unit.kind in
+    let hash = Odoc_unit.hash unit in
     let name = Fpath.(unit.input_file |> rem_ext |> basename) in
     let candidate dir =
       let cmti = Fpath.(dir / (name ^ ".cmti")) in
@@ -72,11 +72,9 @@ let by_hash (units : [ Odoc_unit.intf | Odoc_unit.impl ] Odoc_unit.t list) =
     (fun acc (u : _ Odoc_unit.t) ->
       match u.kind with
       | `Intf _ as kind ->
-          let (`Intf { Odoc_unit.hash; _ }) = kind in
-          Util.StringMap.update hash
-            (function
-              | None -> Some [ { u with kind } ]
-              | Some x -> Some ({ u with kind } :: x))
+          let u = { u with kind } in
+          Util.StringMap.update (Odoc_unit.hash u)
+            (function None -> Some [ u ] | Some x -> Some (u :: x))
             acc
       | `Impl _ -> acc)
     Util.StringMap.empty units
@@ -109,8 +107,7 @@ let compile_lib (lib : Odoc_unit.lib) =
     | Some units ->
         Fiber.List.iter
           (fun (unit : Odoc_unit.intf Odoc_unit.t) ->
-            let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
-            Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
+            Fiber.List.iter compile_mod (Odoc_unit.deps unit);
             compile_intf unit)
           units
   in

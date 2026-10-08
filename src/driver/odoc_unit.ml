@@ -36,6 +36,14 @@ type intf_extra = {
 
 and intf = [ `Intf of intf_extra ]
 
+let hash (u : intf t) =
+  let (`Intf { hash; _ }) = u.kind in
+  hash
+
+let deps (u : intf t) =
+  let (`Intf { deps; _ }) = u.kind in
+  List.map snd deps
+
 type impl_extra = { src_id : Odoc.Id.t; src_path : Fpath.t }
 type impl = [ `Impl of impl_extra ]
 

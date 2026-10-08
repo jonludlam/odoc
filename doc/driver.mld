@@ -467,8 +467,7 @@ That ordering is short enough to read in full:
     | Some units ->
         Fiber.List.iter
           (fun (unit : Odoc_unit.intf Odoc_unit.t) ->
-            let (`Intf { Odoc_unit.deps; _ }) = unit.kind in
-            Fiber.List.iter (fun (_, hash) -> compile_mod hash) deps;
+            Fiber.List.iter compile_mod (Odoc_unit.deps unit);
             compile_intf unit)
           units
   in

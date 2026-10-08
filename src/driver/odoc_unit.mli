@@ -37,6 +37,12 @@ type intf_extra = {
 
 and intf = [ `Intf of intf_extra ]
 
+val hash : intf t -> string
+(** The digest of an interface. *)
+
+val deps : intf t -> Digest.t list
+(** The digests of the interfaces an interface depends on. *)
+
 type impl_extra = {
   src_id : Odoc.Id.t;  (** The identifier of the rendered source page. *)
   src_path : Fpath.t;  (** The source file. *)
