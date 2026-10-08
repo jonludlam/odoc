@@ -69,7 +69,7 @@ let intf_odocs (lib : lib) =
 (* Compiling the modules of a library. A module waits for the modules of this
    library whose digest it imports, and for the libraries this one requires.
    An import of another library's module is covered by that library's stamp. *)
-let lib_rules ~stamp_dir (pkg : pkg) (lib : lib) =
+let lib_rules ~stamp_dir (lib : lib) =
   let by_hash = intfs_by_hash lib in
   let required = List.map (lib_stamp ~stamp_dir) lib.requires in
   let unit_rule (u : module_unit) =
@@ -134,7 +134,6 @@ let lib_rules ~stamp_dir (pkg : pkg) (lib : lib) =
           }
   in
   let units = List.filter_map unit_rule lib.units in
-  let page = Option.to_list (Option.map (fun (p : mld t) -> p) lib.page) in
   let page_rules =
     List.map
       (fun (p : mld t) ->
@@ -150,7 +149,7 @@ let lib_rules ~stamp_dir (pkg : pkg) (lib : lib) =
             ];
           stamp = false;
         })
-      page
+      (Option.to_list lib.page)
   in
   let stamp =
     {
@@ -162,7 +161,6 @@ let lib_rules ~stamp_dir (pkg : pkg) (lib : lib) =
       stamp = true;
     }
   in
-  ignore pkg;
   units @ page_rules @ [ stamp ]
 
 (* The pages of a package, which need no search path. *)
@@ -192,7 +190,7 @@ let page_rule (p : page) =
   { target = p.odoc_file; prereqs = [ p.input_file ]; actions; stamp = false }
 
 let compile_rules ~stamp_dir (pkg : pkg) =
-  let libs = List.concat_map (lib_rules ~stamp_dir pkg) pkg.libs in
+  let libs = List.concat_map (lib_rules ~stamp_dir) pkg.libs in
   let pages = List.map page_rule pkg.pages in
   let stamp =
     {
