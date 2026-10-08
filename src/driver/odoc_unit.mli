@@ -153,10 +153,11 @@ val link_units : pkg -> ((string * Fpath.t) list * any) list
 
     {e Files} mirror the switch. A library's [.odoc] files are written at the
     path of its object directory, [lib/<findlib dir>]. Libraries that share a
-    directory in the switch therefore share one here, and the [-I] search path
-    is the compiler's. A package's pages are written below [doc/<pkg>]. Every
-    location is a function of a name, so a run finds what earlier runs built
-    with no record of them. The same paths hold below the odocl directory. *)
+    directory in the switch therefore share one here, just as one [-I] reached
+    them all for the compiler. A package's pages are written below [doc/<pkg>].
+    Every location is a function of a name, so a run finds what earlier runs
+    built with no record of them. The same paths hold below the odocl directory.
+*)
 
 val pkg_dir : Packages.t -> Fpath.t
 (** The identifier of the package's top-level page, and the root of its HTML. *)

@@ -1,7 +1,7 @@
 (** From what is installed to what to build.
 
     This module decides, for every package, the units to compile. It decides the
-    identifier and the location of each unit, the [-I] search path of each
+    identifier and the location of each unit, the dependency cone of each
     library, and the reference scope of the package. All of it is derived from
     names: what opam and findlib say about the switch, and the layout described
     in {!Odoc_unit}. *)

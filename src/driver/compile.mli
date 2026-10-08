@@ -7,9 +7,9 @@ val init_stats : Odoc_unit.pkg list -> unit
 val compile_lib : Odoc_unit.lib -> unit
 (** Compile the modules of a library, each module after the modules it depends
     on. Interfaces go through [odoc compile] and implementations through
-    [odoc compile-impl], all with the library's [-I] search path. All
+    [odoc compile-impl], all with the library's dependency cone as [-L]. All
     dependencies in other libraries must have been compiled already; odoc finds
-    them through the search path. *)
+    them in the cone. *)
 
 val compile_pages : Odoc_unit.pkg -> unit
 (** Compile the pages and assets of a package, and the page of each of its
@@ -17,9 +17,9 @@ val compile_pages : Odoc_unit.pkg -> unit
 
 val link : warnings_tags:string list -> Odoc_unit.pkg -> unit
 (** [odoc link] the units of a package with the package's scope. The units of a
-    library, and the page the driver writes for it, also get that library's [-I]
-    search path. Everything the scope names must have been compiled. Warnings
-    are reported for the packages in [warnings_tags]. *)
+    library, and the page the driver writes for it, also get that library's
+    dependency cone. Everything the scope names must have been compiled.
+    Warnings are reported for the packages in [warnings_tags]. *)
 
 val html_support : Fpath.t -> unit
 (** Write the files every page relies on into the HTML directory. *)

@@ -59,9 +59,9 @@ type module_unit = [ intf | impl ] t
 type page = [ mld | md | asset ] t
 
 (* A library: its modules and their implementations, the libraries of this
-   build that must be compiled before it, the [-I] search path its units are
-   compiled and linked with (the directories of its dependency cone), and the
-   page the driver writes to list its modules. *)
+   build that must be compiled before it, its dependency cone, which its units
+   are compiled and linked with as [-L], and the page the driver writes to list
+   its modules. *)
 type lib = {
   lib_name : string;
   pkgname : string option;
