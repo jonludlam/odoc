@@ -1,39 +1,41 @@
 (** Progress display and statistics.
 
-    The counters are updated by the build steps ({!Compile}) and by the
-    {!Worker_pool}, and read by the progress display. *)
+    The build steps ({!Compile}) and the {!Worker_pool} report their progress
+    here, and the progress display reads it. *)
 
-type stats = {
-  mutable total_units : int Atomic.t;
-  mutable total_impls : int Atomic.t;
-  mutable total_mlds : int Atomic.t;
-  mutable total_assets : int Atomic.t;
-  mutable total_indexes : int Atomic.t;
-  mutable non_hidden_units : int Atomic.t;
-  mutable compiled_units : int Atomic.t;
-  mutable compiled_impls : int Atomic.t;
-  mutable compiled_mlds : int Atomic.t;
-  mutable compiled_assets : int Atomic.t;
-  mutable linked_units : int Atomic.t;
-  mutable linked_impls : int Atomic.t;
-  mutable linked_mlds : int Atomic.t;
-  mutable generated_indexes : int Atomic.t;
-  mutable generated_units : int Atomic.t;
-  mutable processes : int Atomic.t;  (** Commands running now. *)
-  mutable process_activity : string Atomic.t Array.t;
-      (** What each worker is doing now. *)
-  mutable finished : bool;  (** Set by the driver when the build is complete. *)
-}
+(** {1 Progress} *)
 
-val stats : stats
-(** The counters of this run. *)
+type phase =
+  | Compile  (** [odoc compile], of any kind of unit. *)
+  | Link
+  | Index  (** A package's index, sidebar and search database. *)
+  | Generate  (** The output of one unit, HTML and JSON alike. *)
+
+val expect : phase -> int -> unit
+(** [expect phase n]: [n] more units will pass through [phase]. *)
+
+val did : phase -> unit
+(** One unit has passed through the phase. *)
+
+(** {1 Workers} *)
 
 val init_nprocs : int -> unit
 (** Size the per-worker activity table. Call before starting the workers. *)
 
-val render_stats : Eio_unix.Stdenv.base -> generate_json:bool -> int -> unit
-(** Show progress bars until {!stats}[.finished] is set. Meant to run in a fiber
-    alongside the build. *)
+val worker_busy : int -> string -> unit
+(** [worker_busy id description]: worker [id] has started a command. *)
+
+val worker_idle : int -> unit
+(** Worker [id] has finished its command, however it ended. *)
+
+(** {1 Display} *)
+
+val finish : unit -> unit
+(** The build is complete. The display stops after its next update. *)
+
+val render_stats : Eio_unix.Stdenv.base -> int -> unit
+(** Show a progress bar for each phase and for the running commands, until
+    {!finish} is called. Meant to run in a fiber alongside the build. *)
 
 val bench_results : Fpath.t -> unit
 (** Write [driver-benchmarks.json] in the current directory. It holds the

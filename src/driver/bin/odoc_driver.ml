@@ -103,9 +103,9 @@ let run_inner ~odoc_dir ~odocl_dir ~index_dir ~mld_dir ~compile_grep ~link_grep
             Build.all ~html_dir ~remaps ~generate_json ~warnings_tags:packages
               pkgs;
             List.iter (fun pkg -> Status.file ~html_dir ~pkg ()) all;
-            Stats.stats.finished <- true;
+            Stats.finish ();
             ())
-          (fun () -> Stats.render_stats env ~generate_json nb_workers)
+          (fun () -> Stats.render_stats env nb_workers)
       in
 
       Logs.app (fun m ->

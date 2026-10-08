@@ -4,18 +4,12 @@ open Bos
 open Eio.Std
 
 let init_stats (pkgs : Odoc_unit.pkg list) =
-  let open Stats in
-  let count (unit : Odoc_unit.any) =
-    match unit.kind with
-    | `Intf { hidden; _ } ->
-        Atomic.incr stats.total_units;
-        if not hidden then Atomic.incr stats.non_hidden_units
-    | `Impl _ -> Atomic.incr stats.total_impls
-    | `Mld | `Md -> Atomic.incr stats.total_mlds
-    | `Asset -> Atomic.incr stats.total_assets
-  in
-  List.iter (fun pkg -> List.iter count (Odoc_unit.all_units pkg)) pkgs;
-  Atomic.set stats.total_indexes
+  let units = List.concat_map Odoc_unit.all_units pkgs in
+  let output = List.length (List.filter Odoc_unit.is_output units) in
+  Stats.expect Compile (List.length units);
+  Stats.expect Link output;
+  Stats.expect Generate output;
+  Stats.expect Index
     (List.length
        (List.filter (fun (p : Odoc_unit.pkg) -> p.index <> None) pkgs))
 
@@ -71,7 +65,7 @@ let compile_lib (lib : Odoc_unit.lib) =
     in
     List.iter Cmd_outputs.run
       (Commands.compile_module lib (unit :> Odoc_unit.module_unit));
-    Atomic.incr Stats.stats.compiled_units
+    Stats.did Compile
   in
   (* A module is compiled after the modules it imports. [compile_mod] on a
      digest compiles the interfaces with that digest, once. An import whose
@@ -95,17 +89,14 @@ let compile_lib (lib : Odoc_unit.lib) =
     | `Intf { hash; _ } -> compile_mod hash
     | `Impl _ ->
         List.iter Cmd_outputs.run (Commands.compile_module lib unit);
-        Atomic.incr Stats.stats.compiled_impls
+        Stats.did Compile
   in
   Fiber.List.iter compile lib.units
 
 let compile_pages (pkg : Odoc_unit.pkg) =
   let compile (unit : Odoc_unit.page) =
     Cmd_outputs.run (Commands.compile_page unit);
-    Atomic.incr
-      (match unit.kind with
-      | `Mld | `Md -> Stats.stats.compiled_mlds
-      | `Asset -> Stats.stats.compiled_assets)
+    Stats.did Compile
   in
   let lib_pages =
     List.filter_map (fun (l : Odoc_unit.lib) -> l.page) pkg.libs
@@ -113,15 +104,10 @@ let compile_pages (pkg : Odoc_unit.pkg) =
   Fiber.List.iter compile (pkg.pages @ (lib_pages :> Odoc_unit.page list))
 
 let link ~warnings_tags (pkg : Odoc_unit.pkg) =
-  let link ~libs (c : Odoc_unit.any) =
-    if not (Odoc_unit.is_hidden c) then (
-      if c.to_output then
-        Cmd_outputs.run (Commands.link ~warnings_tags ~libs pkg c);
-      Atomic.incr
-        (match c.kind with
-        | `Intf _ -> Stats.stats.linked_units
-        | `Impl _ -> Stats.stats.linked_impls
-        | `Mld | `Md | `Asset -> Stats.stats.linked_mlds))
+  let link ~libs (u : Odoc_unit.any) =
+    if Odoc_unit.is_output u then (
+      Cmd_outputs.run (Commands.link ~warnings_tags ~libs pkg u);
+      Stats.did Link)
   in
   Fiber.List.iter (fun (libs, u) -> link ~libs u) (Odoc_unit.link_units pkg)
 
@@ -169,15 +155,13 @@ let generate ?remap_file ~generate_json html_dir (pkg : Odoc_unit.pkg) =
       in
       Cmd_outputs.run compile_index;
       List.iter Cmd_outputs.run from_index;
-      Atomic.incr Stats.stats.generated_indexes);
+      Stats.did Index);
   let generate (u : Odoc_unit.any) =
-    List.iter
-      (fun action ->
-        Cmd_outputs.run action;
-        match u.kind with
-        | `Asset -> ()
-        | _ -> Atomic.incr Stats.stats.generated_units)
-      (Commands.generate ~html_dir ?remap_file ~generate_json pkg u)
+    match Commands.generate ~html_dir ?remap_file ~generate_json pkg u with
+    | [] -> ()
+    | actions ->
+        List.iter Cmd_outputs.run actions;
+        Stats.did Generate
   in
   Fiber.List.iter generate (Odoc_unit.all_units pkg)
 

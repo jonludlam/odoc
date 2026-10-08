@@ -1,166 +1,77 @@
-(* Stats *)
+(* Progress, as the build steps report it, for the progress display. *)
 
-(** Returns the [k] commands that took the most time for a given subcommand. *)
+type phase = Compile | Link | Index | Generate
 
-type stats = {
-  mutable total_units : int Atomic.t;
-  mutable total_impls : int Atomic.t;
-  mutable total_mlds : int Atomic.t;
-  mutable total_assets : int Atomic.t;
-  mutable total_indexes : int Atomic.t;
-  mutable non_hidden_units : int Atomic.t;
-  mutable compiled_units : int Atomic.t;
-  mutable compiled_impls : int Atomic.t;
-  mutable compiled_mlds : int Atomic.t;
-  mutable compiled_assets : int Atomic.t;
-  mutable linked_units : int Atomic.t;
-  mutable linked_impls : int Atomic.t;
-  mutable linked_mlds : int Atomic.t;
-  mutable generated_indexes : int Atomic.t;
-  mutable generated_units : int Atomic.t;
-  mutable processes : int Atomic.t;
-  mutable process_activity : string Atomic.t Array.t;
-  mutable finished : bool;
-}
+let phases = [ Compile; Link; Index; Generate ]
 
-let stats =
-  {
-    total_units = Atomic.make 0;
-    total_impls = Atomic.make 0;
-    total_mlds = Atomic.make 0;
-    total_assets = Atomic.make 0;
-    total_indexes = Atomic.make 0;
-    non_hidden_units = Atomic.make 0;
-    compiled_units = Atomic.make 0;
-    compiled_impls = Atomic.make 0;
-    compiled_mlds = Atomic.make 0;
-    compiled_assets = Atomic.make 0;
-    linked_units = Atomic.make 0;
-    linked_impls = Atomic.make 0;
-    linked_mlds = Atomic.make 0;
-    generated_units = Atomic.make 0;
-    generated_indexes = Atomic.make 0;
-    processes = Atomic.make 0;
-    process_activity = [||];
-    finished = false;
-  }
+let label = function
+  | Compile -> "Compiling"
+  | Link -> "Linking"
+  | Index -> "Indexing"
+  | Generate -> "Generating"
 
-let render_stats env ~generate_json nprocs =
-  let if_app f =
-    match Logs.level () with Some (App | Warning) | None -> f () | _ -> ()
-  in
-  (* Avoids overkill indentation  *)
-  if_app @@ fun () ->
-  let open Progress in
-  let clock = Eio.Stdenv.clock env in
-  let total = Atomic.get stats.total_units in
-  let total_impls = Atomic.get stats.total_impls in
-  let total_mlds = Atomic.get stats.total_mlds in
-  let total_assets = Atomic.get stats.total_assets in
-  let total_indexes = Atomic.get stats.total_indexes in
-  let bar message total =
-    let open Progress.Line in
-    list [ lpad 16 (const message); bar total; rpad 10 (count_to total) ]
-  in
-  let procs total =
-    let open Progress.Line in
-    list [ lpad 16 (const "Processes"); bar total; rpad 10 (count_to total) ]
-  in
-  let description =
-    let open Progress.Line in
-    string
-  in
-  let descriptions = Multi.lines (List.init nprocs (fun _ -> description)) in
+let index = function Compile -> 0 | Link -> 1 | Index -> 2 | Generate -> 3
+let totals = Array.init (List.length phases) (fun _ -> Atomic.make 0)
+let dones = Array.init (List.length phases) (fun _ -> Atomic.make 0)
+let expect phase n = ignore (Atomic.fetch_and_add totals.(index phase) n)
+let did phase = Atomic.incr dones.(index phase)
 
-  let non_hidden = Atomic.get stats.non_hidden_units in
+(* What each worker is running. *)
+let running = Atomic.make 0
+let activity = ref [||]
+let init_nprocs n = activity := Array.init n (fun _ -> Atomic.make "idle")
 
-  let dline x y = Multi.line (bar x y) in
-  let config = Progress.Config.v ~persistent:false () in
-  let total_generate =
-    let units = total_impls + non_hidden + total_mlds in
-    if generate_json then 2 * units else units
-  in
-  with_reporters ~config
-    Multi.(
-      dline "Compiling" total
-      ++ dline "Compiling impls" total_impls
-      ++ dline "Compiling pages" total_mlds
-      ++ dline "Compiling assets" total_assets
-      ++ dline "Linking" non_hidden
-      ++ dline "Linking impls" total_impls
-      ++ dline "Linking mlds" total_mlds
-      ++ dline "Indexes" total_indexes
-      ++ dline "HTML" total_generate
-      ++ line (procs nprocs)
-      ++ descriptions)
-    (fun comp
-         compimpl
-         compmld
-         compassets
-         link
-         linkimpl
-         linkmld
-         indexes
-         html
-         procs
-         descr
-       ->
-      let rec inner (a, b, c, j, d, e, f, i, g, h) =
-        Eio.Time.sleep clock 0.1;
-        let a' = Atomic.get stats.compiled_units in
-        let b' = Atomic.get stats.compiled_impls in
-        let c' = Atomic.get stats.compiled_mlds in
-        let j' = Atomic.get stats.compiled_assets in
-        let d' = Atomic.get stats.linked_units in
-        let e' = Atomic.get stats.linked_impls in
-        let f' = Atomic.get stats.linked_mlds in
-        let i' = Atomic.get stats.generated_indexes in
-        let g' = Atomic.get stats.generated_units in
-        let h' = Atomic.get stats.processes in
-        List.iteri
-          (fun i descr -> descr (Atomic.get stats.process_activity.(i)))
-          descr;
-        comp (a' - a);
-        compimpl (b' - b);
-        compmld (c' - c);
-        compassets (j' - j);
-        link (d' - d);
-        linkimpl (e' - e);
-        linkmld (f' - f);
-        indexes (i' - i);
-        html (g' - g);
-        procs (h' - h);
-        if not stats.finished then inner (a', b', c', j', d', e', f', i', g', h')
+let worker_busy id description =
+  Atomic.incr running;
+  Atomic.set !activity.(id) description
+
+let worker_idle id =
+  Atomic.decr running;
+  Atomic.set !activity.(id) "idle"
+
+let finished = Atomic.make false
+let finish () = Atomic.set finished true
+
+let render_stats env nprocs =
+  match Logs.level () with
+  | Some (App | Warning) | None ->
+      let open Progress in
+      let clock = Eio.Stdenv.clock env in
+      let bar label total =
+        Line.(
+          list [ lpad 16 (const label); bar total; rpad 10 (count_to total) ])
       in
-      inner (0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
-
-let init_nprocs nprocs =
-  stats.process_activity <- Array.init nprocs (fun _ -> Atomic.make "idle")
-
-let pp_stats fmt stats =
-  Fmt.pf fmt
-    "Total units: %d\n\
-     Total impls: %d\n\
-     Total mlds: %d\n\
-     Non-hidden units: %d\n\
-     Compiled units: %d\n\
-     Compiled impls: %d\n\
-     Compiled mlds: %d\n\
-     Linked units: %d\n\
-     Linked impls: %d\n\
-     Linked mlds: %d\n\
-     Generated units: %d\n"
-    (Atomic.get stats.total_units)
-    (Atomic.get stats.total_impls)
-    (Atomic.get stats.total_mlds)
-    (Atomic.get stats.non_hidden_units)
-    (Atomic.get stats.compiled_units)
-    (Atomic.get stats.compiled_impls)
-    (Atomic.get stats.compiled_mlds)
-    (Atomic.get stats.linked_units)
-    (Atomic.get stats.linked_impls)
-    (Atomic.get stats.linked_mlds)
-    (Atomic.get stats.generated_units)
+      let phase_bars =
+        List.map (fun p -> bar (label p) (Atomic.get totals.(index p))) phases
+      in
+      let config = Config.v ~persistent:false () in
+      with_reporters ~config
+        Multi.(
+          lines phase_bars
+          ++ line (bar "Processes" nprocs)
+          ++ lines (List.init nprocs (fun _ -> Line.string)))
+        (fun phase_reporters processes activities ->
+          (* A bar is told how far it has moved, so remember where each one
+             is. *)
+          let shown = Array.map (fun _ -> 0) dones and shown_running = ref 0 in
+          let rec loop () =
+            Eio.Time.sleep clock 0.1;
+            List.iteri
+              (fun i report ->
+                let n = Atomic.get dones.(i) in
+                report (n - shown.(i));
+                shown.(i) <- n)
+              phase_reporters;
+            let n = Atomic.get running in
+            processes (n - !shown_running);
+            shown_running := n;
+            List.iteri
+              (fun i report -> report (Atomic.get !activity.(i)))
+              activities;
+            if not (Atomic.get finished) then loop ()
+          in
+          loop ())
+  | _ -> ()
 
 let k_longest_commands cmd k =
   let open Run in
