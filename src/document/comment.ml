@@ -237,20 +237,28 @@ let rec nestable_block_element :
  fun content ->
   match content with
   | `Paragraph p -> [ paragraph p ]
-  | `Code_block { meta; content = code; output = outputs } ->
+  | `Code_block ({ meta; content; output } as code_block) ->
       let lang_tag =
         match meta with None -> default_lang_tag | Some m -> m.language
       in
       let rest =
-        match outputs with
+        match output with
         | Some xs -> nestable_block_element_list xs
         | None -> []
       in
-      [
-        block
-        @@ Source (lang_tag, source_of_code (Odoc_model.Location_.value code));
-      ]
-      @ rest
+      let rendered =
+        match Extension.find_code_block lang_tag with
+        | Some handler -> handler code_block
+        | None -> None
+      in
+      let code =
+        match rendered with
+        | Some blocks -> blocks
+        | None ->
+            let content = Odoc_model.Location_.value content in
+            [ block @@ Source (lang_tag, source_of_code content) ]
+      in
+      code @ rest
   | `Math_block s -> [ block @@ Math s ]
   | `Verbatim s -> [ block @@ Verbatim s ]
   | `Modules ms -> [ module_references ms ]
