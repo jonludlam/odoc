@@ -2,12 +2,20 @@ type t = {
   name : string;
   code_blocks : (string * Odoc_document.Extension.code_block_handler) list;
   raw_markup : (string * Odoc_document.Extension.raw_markup_handler) list;
+  tags : (string * Odoc_document.Extension.tag_handler) list;
   head : Odoc_html.Extension.head option;
   support_files : (string * string) list;
 }
 
 let v ~name =
-  { name; code_blocks = []; raw_markup = []; head = None; support_files = [] }
+  {
+    name;
+    code_blocks = [];
+    raw_markup = [];
+    tags = [];
+    head = None;
+    support_files = [];
+  }
 
 (* The first two extensions that claim the same key, if any. *)
 let clash ~what ~key extensions keys =
@@ -49,6 +57,10 @@ let register extensions =
         ~is_reserved:(fun t -> List.mem t [ "html"; "latex"; "man" ])
         extensions
         (fun e -> e.raw_markup);
+      reserved ~what:"handle the tags" ~key:fst
+        ~is_reserved:(fun p -> not (Odoc_model.Custom_tags.is_valid_prefix p))
+        extensions
+        (fun e -> e.tags);
       reserved ~what:"replace odoc's support file" ~key:fst
         ~is_reserved:(fun p -> List.mem p Odoc_html_support_files.file_list)
         extensions
@@ -58,6 +70,7 @@ let register extensions =
         ~key:(fun (t, _) -> String.lowercase_ascii t)
         extensions
         (fun e -> e.raw_markup);
+      clash ~what:"the tags" ~key:fst extensions (fun e -> e.tags);
       clash ~what:"the support file" ~key:fst extensions (fun e ->
           e.support_files);
     ]
@@ -75,6 +88,9 @@ let register extensions =
             (fun (target, h) ->
               Odoc_document.Extension.register_raw_markup ~target h)
             e.raw_markup;
+          List.iter
+            (fun (prefix, h) -> Odoc_document.Extension.register_tag ~prefix h)
+            e.tags;
           Option.iter Odoc_html.Extension.register_head e.head;
           List.iter
             (fun (path, content) ->

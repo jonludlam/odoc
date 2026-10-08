@@ -7,6 +7,20 @@ let extensions =
   match Sys.getenv_opt "ODOC_CLASH" with
   | Some "raw-markup" ->
       [ { (extension "one") with raw_markup = [ ("HTML", fun _ _ -> None) ] } ]
+  | Some "builtin-tag" ->
+      [
+        {
+          (extension "one") with
+          tags = [ ("see-also", fun _ ~name:_ _ -> None) ];
+        };
+      ]
+  | Some "dotted-tag" ->
+      [
+        {
+          (extension "one") with
+          tags = [ ("admonition.note", fun _ ~name:_ _ -> None) ];
+        };
+      ]
   | Some "support-file" ->
       [ { (extension "one") with support_files = [ ("odoc.css", "") ] } ]
   | _ ->

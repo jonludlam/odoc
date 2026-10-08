@@ -35,6 +35,8 @@
 - The JSON output of `html-generate --as-json` has an `extra_head` field, the
   elements that extensions add to the head of the page, when there are some
   (@jonludlam)
+- Custom tags, such as `@admonition.note`, which extensions register and
+  render (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

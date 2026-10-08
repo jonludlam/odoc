@@ -198,6 +198,10 @@ let rec nestable_block_element_needs_own_location
         grid
   | `Code_block _ | `Verbatim _ | `Math_block _ -> false
 
+let parse_comment =
+  Odoc_parser.parse_comment_with_custom_tags
+    ~custom_tags:Odoc_model.Custom_tags.is_custom
+
 let tag_needs_own_location (x : Odoc_parser.Ast.tag) =
   match x with
   | `Deprecated c | `Param (_, c) | `Raise (_, c) | `Return c
@@ -235,7 +239,7 @@ let attached ~warnings_tag internal_tags parent attrs =
               | Some cached -> cached
               | None ->
                   let parsed =
-                    Odoc_parser.parse_comment ~location:(pad_loc loc) ~text:str
+                    parse_comment ~location:(pad_loc loc) ~text:str
                   in
                   let ast =
                     Semantics.merge_ast (Error.raise_parser_warnings parsed)
@@ -351,7 +355,7 @@ let extract_top_comment internal_tags ~warnings_tag ~classify parent items =
         match classify hd with
         | `Text (text, loc) ->
             let ast_docs =
-              Odoc_parser.parse_comment ~location:(pad_loc loc) ~text
+              parse_comment ~location:(pad_loc loc) ~text
               |> Error.raise_parser_warnings
             in
             let items, alerts = extract_tail_alerts [] tl in

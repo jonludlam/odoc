@@ -88,3 +88,20 @@ let render_raw_markup ~target ~location content =
   with
   | Some handler -> handler (context location) content
   | None -> None
+
+type tag_handler =
+  Context.t ->
+  name:string ->
+  Odoc_model.Comment.nestable_block_element Location_.with_location list ->
+  Types.Block.t option
+
+let tag_handlers : (string, tag_handler) Hashtbl.t = Hashtbl.create 8
+
+let register_tag ~prefix handler =
+  Odoc_model.Custom_tags.register prefix;
+  Hashtbl.replace tag_handlers prefix handler
+
+let render_tag ~name ~location content =
+  match Hashtbl.find_opt tag_handlers (Odoc_model.Custom_tags.prefix name) with
+  | Some handler -> handler (context location) ~name content
+  | None -> None

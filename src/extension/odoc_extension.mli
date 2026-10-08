@@ -26,6 +26,9 @@ type t = {
   raw_markup : (string * Odoc_document.Extension.raw_markup_handler) list;
       (** Handlers for the raw markup of a target: [("wodoc", handler)] for
           [{%wodoc:...%}]. *)
+  tags : (string * Odoc_document.Extension.tag_handler) list;
+      (** Handlers for custom tags, by prefix: [("admonition", handler)] for
+          [@admonition] and [@admonition.note]. *)
   head : Odoc_html.Extension.head option;
       (** What to add to the [<head>] of an HTML page. *)
   support_files : (string * string) list;
@@ -37,6 +40,8 @@ val v : name:string -> t
 
 val register : t list -> (unit, string) result
 (** [register extensions] makes odoc use [extensions]. It is an error for two of
-    them to handle the same language, target or support file, and for one to
-    handle the raw markup of a target that odoc renders itself, [html], [latex]
-    or [man], or to replace one of odoc's own support files. *)
+    them to handle the same language, target, tag or support file, and for one
+    to handle the raw markup of a target that odoc renders itself, [html],
+    [latex] or [man], to replace one of odoc's own support files, or to handle
+    tags with a prefix that cannot be a custom tag's (see
+    [Odoc_model.Custom_tags.is_valid_prefix]). *)

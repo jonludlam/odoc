@@ -61,3 +61,24 @@ submodule, not the page of the module.
   $ grep -c 'shout.css' html/pkg/N/index.html html/pkg/N/N/index.html
   html/pkg/N/index.html:0
   html/pkg/N/N/index.html:1
+
+The ids it asks for are numbered by page.
+
+  $ cat > m.mli << EOF
+  > (** @shout Top. *)
+  > 
+  > module N : sig
+  >   (** @shout First. *)
+  > 
+  >   val x : int
+  >   (** @shout Second. *)
+  > end
+  > EOF
+  $ ocamlc -c -bin-annot m.mli
+  $ odoc_shout compile --parent-id pkg --output-dir _odoc m.cmti
+  $ odoc_shout link _odoc/pkg/m.odoc
+  $ odoc_shout html-generate -o html _odoc/pkg/m.odocl
+  $ grep -o 'id="shout-[0-9]*"' html/pkg/M/index.html html/pkg/M/N/index.html | sort
+  html/pkg/M/N/index.html:id="shout-1"
+  html/pkg/M/N/index.html:id="shout-2"
+  html/pkg/M/index.html:id="shout-1"

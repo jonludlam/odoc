@@ -734,7 +734,9 @@ let parse_comment ~internal_tags ~tags_allowed ~containing_definition ~location
     ~text =
   Error.catch_warnings (fun () ->
       let ast =
-        Odoc_parser.parse_comment ~location ~text |> Error.raise_parser_warnings
+        Odoc_parser.parse_comment_with_custom_tags
+          ~custom_tags:Custom_tags.is_custom ~location ~text
+        |> Error.raise_parser_warnings
       in
       ast_to_comment ~internal_tags ~tags_allowed
         ~parent_of_sections:containing_definition ast []

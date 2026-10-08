@@ -424,6 +424,10 @@ let tag ~loc : Comment.tag -> Description.one =
 let attached_block_element ~loc : Comment.attached_block_element -> Block.t =
   function
   | #Comment.nestable_block_element as e -> nestable_block_element ~loc e
+  | `Tag (`Custom (name, content) as t) -> (
+      match Extension.render_tag ~name ~location:loc content with
+      | Some blocks -> blocks
+      | None -> [ block ~attr:[ "at-tags" ] @@ Description [ tag ~loc t ] ])
   | `Tag t -> [ block ~attr:[ "at-tags" ] @@ Description [ tag ~loc t ] ]
 
 (* TODO collaesce tags *)

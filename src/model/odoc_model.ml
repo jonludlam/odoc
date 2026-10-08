@@ -9,3 +9,4 @@ module Compat = Compat
 module Semantics = Semantics
 module Reference = Reference
 module Frontmatter = Frontmatter
+module Custom_tags = Custom_tags

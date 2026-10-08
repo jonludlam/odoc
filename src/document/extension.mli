@@ -58,6 +58,20 @@ val register_raw_markup : target:string -> raw_markup_handler -> unit
     the target. Targets are compared ignoring case. A later registration for the
     same target replaces an earlier one. *)
 
+type tag_handler =
+  Context.t ->
+  name:string ->
+  Odoc_model.Comment.nestable_block_element Odoc_model.Location_.with_location
+  list ->
+  Types.Block.t option
+(** A tag handler is given the name of the tag, such as ["admonition.note"], and
+    its content. It returns [None] to leave the tag to the default rendering. *)
+
+val register_tag : prefix:string -> tag_handler -> unit
+(** [register_tag ~prefix handler] makes [@prefix] and [@prefix.variant] custom
+    tags (see [Odoc_model.Custom_tags]), and makes [handler] render them. A
+    later registration for the same prefix replaces an earlier one. *)
+
 (** {1 Used by odoc's renderer} *)
 
 val in_page : Url.Path.t -> (unit -> 'a) -> 'a
@@ -88,3 +102,13 @@ val render_raw_markup :
 (** [render_raw_markup ~target ~location content] is what the handler for
     [target] renders [content] to, or [None] if there is no handler or it leaves
     the raw markup to the default rendering. *)
+
+val render_tag :
+  name:string ->
+  location:Odoc_model.Location_.span ->
+  Odoc_model.Comment.nestable_block_element Odoc_model.Location_.with_location
+  list ->
+  Types.Block.t option
+(** [render_tag ~name ~location content] is what the handler for the prefix of
+    the tag [name] renders [content] to, or [None] if there is no handler or it
+    leaves the tag to the default rendering. *)
