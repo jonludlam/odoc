@@ -165,30 +165,35 @@ let collapse_whitespace s =
     s;
   Buffer.contents b
 
-let leaf_inline_element : Comment.leaf_inline_element -> Inline.one = function
+let leaf_inline_element ~loc : Comment.leaf_inline_element -> Inline.one =
+  function
   | `Space s -> inline @@ Text (collapse_whitespace s)
   | `Word s -> inline @@ Text (collapse_whitespace s)
   | `Code_span s -> inline @@ Source (source_of_code s)
   | `Math_span s -> inline @@ Math s
-  | `Raw_markup (target, s) -> inline @@ Raw_markup (target, s)
   | `Linebreak -> inline Linebreak
+  | `Raw_markup (target, s) -> (
+      match Extension.render_raw_markup ~target ~location:loc s with
+      | Some i -> i
+      | None -> inline @@ Raw_markup (target, s))
 
-let rec non_link_inline_element : Comment.non_link_inline_element -> Inline.one
-    = function
-  | #Comment.leaf_inline_element as e -> leaf_inline_element e
+let rec non_link_inline_element ~loc :
+    Comment.non_link_inline_element -> Inline.one = function
+  | #Comment.leaf_inline_element as e -> leaf_inline_element ~loc e
   | `Styled (style, content) ->
       inline @@ Styled (style, non_link_inline_element_list content)
 
 and non_link_inline_element_list : _ -> Inline.t =
  fun elements ->
   List.map
-    (fun elt -> non_link_inline_element elt.Odoc_model.Location_.value)
+    (fun elt ->
+      non_link_inline_element ~loc:elt.Odoc_model.Location_.location elt.value)
     elements
 
 let link_content = non_link_inline_element_list
 
-let rec inline_element : Comment.inline_element -> Inline.t = function
-  | #Comment.leaf_inline_element as e -> [ leaf_inline_element e ]
+let rec inline_element ~loc : Comment.inline_element -> Inline.t = function
+  | #Comment.leaf_inline_element as e -> [ leaf_inline_element ~loc e ]
   | `Styled (style, content) ->
       [ inline @@ Styled (style, inline_element_list content) ]
   | `Reference (path, content) ->
@@ -213,7 +218,8 @@ let rec inline_element : Comment.inline_element -> Inline.t = function
 and inline_element_list elements =
   List.concat
   @@ List.map
-       (fun elt -> inline_element elt.Odoc_model.Location_.value)
+       (fun elt ->
+         inline_element ~loc:elt.Odoc_model.Location_.location elt.value)
        elements
 
 let module_references ms =
@@ -343,8 +349,10 @@ let rec nestable_block_element ~loc :
       [ block i ]
 
 and paragraph : Comment.paragraph -> Block.one = function
-  | [ { value = `Raw_markup (target, s); _ } ] ->
-      block @@ Block.Raw_markup (target, s)
+  | [ { value = `Raw_markup (target, s); location } ] -> (
+      match Extension.render_raw_markup ~target ~location s with
+      | Some i -> block @@ Block.Inline [ i ]
+      | None -> block @@ Block.Raw_markup (target, s))
   | p -> block @@ Block.Paragraph (inline_element_list p)
 
 and nestable_block_element_list :
@@ -356,7 +364,7 @@ and nestable_block_element_list :
       nestable_block_element ~loc:elt.Odoc_model.Location_.location elt.value)
     elements
 
-let tag : Comment.tag -> Description.one =
+let tag ~loc : Comment.tag -> Description.one =
  fun t ->
   let sp = inline (Text " ") in
   let item ?value ~tag definition =
@@ -380,7 +388,7 @@ let tag : Comment.tag -> Description.one =
       let value = mk_value (Inline.Text name) in
       item ~tag:"parameter" ~value (nestable_block_element_list content)
   | `Raise (kind, content) ->
-      let value = inline_element (kind :> Comment.inline_element) in
+      let value = inline_element ~loc (kind :> Comment.inline_element) in
       item ~tag:"raises" ~value (nestable_block_element_list content)
   | `Return content -> item ~tag:"returns" (nestable_block_element_list content)
   | `See (kind, target, content) ->
@@ -414,7 +422,7 @@ let tag : Comment.tag -> Description.one =
 let attached_block_element ~loc : Comment.attached_block_element -> Block.t =
   function
   | #Comment.nestable_block_element as e -> nestable_block_element ~loc e
-  | `Tag t -> [ block ~attr:[ "at-tags" ] @@ Description [ tag t ] ]
+  | `Tag t -> [ block ~attr:[ "at-tags" ] @@ Description [ tag ~loc t ] ]
 
 (* TODO collaesce tags *)
 

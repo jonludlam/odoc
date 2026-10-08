@@ -49,6 +49,17 @@ val register_code_block : language:string -> code_block_handler -> unit
     blocks that have no language. A later registration for the same language
     replaces an earlier one. *)
 
+type raw_markup_handler = Context.t -> string -> Types.Inline.one option
+(** A raw markup handler is given the content of [{%target:...%}], and returns
+    what to render in its place, or [None] to leave it to the default rendering.
+*)
+
+val register_raw_markup : target:string -> raw_markup_handler -> unit
+(** [register_raw_markup ~target handler] makes [handler] render the raw markup
+    for [target], which is otherwise dropped by the backends that do not know
+    the target. Targets are compared ignoring case. A later registration for the
+    same target replaces an earlier one. *)
+
 (** {1 Used by odoc's renderer} *)
 
 val in_page : Url.Path.t -> (unit -> 'a) -> 'a
@@ -70,3 +81,12 @@ val render_code_block :
 (** [render_code_block ~language ~location code_block] is what the handler for
     [language] renders [code_block] to, or [None] if there is no handler or it
     leaves the code block to the default rendering. *)
+
+val render_raw_markup :
+  target:string ->
+  location:Odoc_model.Location_.span ->
+  string ->
+  Types.Inline.one option
+(** [render_raw_markup ~target ~location content] is what the handler for
+    [target] renders [content] to, or [None] if there is no handler or it leaves
+    the raw markup to the default rendering. *)

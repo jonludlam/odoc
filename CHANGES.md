@@ -29,6 +29,8 @@
 - An `odoc.cli` library, and registries of extensions that render code blocks
   and add to the head of HTML pages, so that a program can build an odoc with
   extensions built in (@jonludlam)
+- Extensions can render the raw markup for a target, `{%target:...%}`, which
+  odoc otherwise drops (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

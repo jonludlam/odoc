@@ -1,8 +1,8 @@
 (* Renders [{@shout[...]}] code blocks as a paragraph in capitals, ending with
    the [end=...] tag if there is one, and with the backend if the [backend] tag
    is there. Leaves the ones already in capitals to the default rendering.
-   Warns about the ones with no letters. The pages with a shout get a style
-   sheet. *)
+   Warns about the ones with no letters. Renders [{%shout:...%}] in capitals,
+   except when it already is. The pages with a shout get a style sheet. *)
 
 open Odoc_document
 module Context = Extension.Context
@@ -33,6 +33,18 @@ let shout ctx ({ meta; content; _ } : Odoc_model.Comment.code_block) =
     in
     Some [ { Types.Block.attr = [ "shout" ]; desc = Paragraph [ text ] } ]
 
+let shout_raw ctx content =
+  if String.uppercase_ascii content = content then None
+  else (
+    Context.require ctx "shout";
+    Some
+      {
+        Types.Inline.attr = [];
+        desc =
+          Raw_markup
+            ("html", "<strong>" ^ String.uppercase_ascii content ^ "</strong>");
+      })
+
 let head ctx =
   if Odoc_html.Extension.Context.requires ctx "shout" then
     [ Tyxml.Html.style [ Tyxml.Html.txt ".shout { font-weight: bold }" ] ]
@@ -40,5 +52,6 @@ let head ctx =
 
 let () =
   Extension.register_code_block ~language:"shout" shout;
+  Extension.register_raw_markup ~target:"shout" shout_raw;
   Odoc_html.Extension.register_head head;
   Odoc_cli.main ()

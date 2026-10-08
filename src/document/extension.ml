@@ -73,3 +73,18 @@ let render_code_block ~language ~location code_block =
   match Hashtbl.find_opt code_block_handlers language with
   | Some handler -> handler (context location) code_block
   | None -> None
+
+type raw_markup_handler = Context.t -> string -> Types.Inline.one option
+
+let raw_markup_handlers : (string, raw_markup_handler) Hashtbl.t =
+  Hashtbl.create 8
+
+let register_raw_markup ~target handler =
+  Hashtbl.replace raw_markup_handlers (String.lowercase_ascii target) handler
+
+let render_raw_markup ~target ~location content =
+  match
+    Hashtbl.find_opt raw_markup_handlers (String.lowercase_ascii target)
+  with
+  | Some handler -> handler (context location) content
+  | None -> None
