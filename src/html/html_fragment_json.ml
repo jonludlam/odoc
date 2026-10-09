@@ -42,27 +42,33 @@ let json_of_sidebar config sidebar =
   | Some sidebar -> `String (json_of_html config sidebar)
 
 let make ~config ~preamble ~url ~breadcrumbs ~toc ~uses_katex ~source_anchor
-    ~header content children =
+    ~header ?(extra_head = []) content children =
   let filename = Link.Path.as_filename ~config url in
   let filename = Fpath.add_ext ".json" filename in
   let json_to_string json = Json.to_string json in
   let source_anchor =
     match source_anchor with Some url -> `String url | None -> `Null
   in
+  let extra_head =
+    match extra_head with
+    | [] -> []
+    | _ -> [ ("extra_head", `String (json_of_html config extra_head)) ]
+  in
   let content ppf =
     Format.pp_print_string ppf
       (json_to_string
          (`Object
-            [
-              ("header", `String (json_of_html config header));
-              ("type", `String "documentation");
-              ("uses_katex", `Bool uses_katex);
-              ("breadcrumbs", json_of_breadcrumbs config breadcrumbs);
-              ("toc", json_of_toc toc);
-              ("source_anchor", source_anchor);
-              ("preamble", `String (json_of_html config preamble));
-              ("content", `String (json_of_html config content));
-            ]))
+            ([
+               ("header", `String (json_of_html config header));
+               ("type", `String "documentation");
+               ("uses_katex", `Bool uses_katex);
+               ("breadcrumbs", json_of_breadcrumbs config breadcrumbs);
+               ("toc", json_of_toc toc);
+               ("source_anchor", source_anchor);
+               ("preamble", `String (json_of_html config preamble));
+               ("content", `String (json_of_html config content));
+             ]
+            @ extra_head)))
   in
   { Odoc_document.Renderer.filename; content; children; path = url }
 

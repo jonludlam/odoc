@@ -677,8 +677,9 @@ module Page = struct
       in
       Html_fragment_json.make ~config
         ~preamble:(preamble :> any Html.elt list)
-        ~header ~breadcrumbs ~toc ~url ~uses_katex ~source_anchor content
-        subpages
+        ~header ~breadcrumbs ~toc ~url ~uses_katex ~source_anchor
+        ~extra_head:(Extension.head ~config ~url p)
+        content subpages
     else
       let extra_head = Extension.head ~config ~url p in
       Html_page.make ~sidebar ~config ~header:(header @ preamble) ~toc

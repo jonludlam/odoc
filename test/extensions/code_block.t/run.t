@@ -63,3 +63,13 @@ not write.
   $ odoc support-files -o stock-support
   $ test -e stock-support/shout || echo 'no shout support files'
   no shout support files
+
+The JSON output has the extension's head elements, for the pages that have
+some.
+
+  $ odoc_shout html-generate --as-json -o json _odoc/pkg/page-index.odocl
+  $ odoc_shout html-generate --as-json -o json _odoc/pkg/page-other.odocl
+  $ jq -r .extra_head json/pkg/index.html.json
+  <link rel="stylesheet" href="../shout/shout.css"/>
+  $ jq 'has("extra_head")' json/pkg/other.html.json
+  false
