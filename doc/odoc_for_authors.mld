@@ -303,6 +303,7 @@ the simple typesetting markup:
 - [{e <text>}] emphasis
 - [{^ <text>}] superscript
 - [{_ <text>}] subscript
+- [{br}] line break, for example in a table cell
  
 {3:lists Lists}
 Unordered lists:

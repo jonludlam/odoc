@@ -11,6 +11,7 @@ type general_inline_element =
   | `Code_span of string
   | `Math_span of string
   | `Raw_markup of raw_markup_target * string
+  | `Linebreak
   | `Styled of style * general_inline_element with_location list
   | `Reference of Paths.Reference.t * general_link_content
   | `Link of string * general_link_content ]
@@ -19,10 +20,7 @@ and general_link_content = general_inline_element with_location list
 
 type general_block_element =
   [ `Paragraph of general_link_content
-  | `Code_block of
-    string option
-    * string with_location
-    * general_block_element with_location list option
+  | `Code_block of Comment.code_block
   | `Math_block of string
   | `Verbatim of string
   | `Modules of Comment.module_reference list
@@ -77,6 +75,7 @@ let rec inline_element : general_inline_element t =
     | `Code_span x -> C ("`Code_span", x, string)
     | `Math_span x -> C ("`Math_span", x, string)
     | `Raw_markup (x1, x2) -> C ("`Raw_markup", (x1, x2), Pair (string, string))
+    | `Linebreak -> C0 "`Linebreak"
     | `Styled (x1, x2) -> C ("`Styled", (x1, x2), Pair (style, link_content))
     | `Reference (x1, x2) ->
         C ("`Reference", (x1, x2), Pair (reference, link_content))
@@ -118,6 +117,19 @@ let media_href =
     | `Reference r -> C ("`Reference", r, reference)
     | `Link l -> C ("`Link", l, string))
 
+let code_block_meta : Comment.code_block_meta t =
+  let tag =
+    Variant
+      (function
+      | `Tag t -> C ("`Tag", t, string)
+      | `Binding (k, v) -> C ("`Binding", (k, v), Pair (string, string)))
+  in
+  Record
+    [
+      F ("language", (fun m -> m.Comment.language), string);
+      F ("tags", (fun m -> m.Comment.tags), List tag);
+    ]
+
 let rec block_element : general_block_element t =
   let list_kind =
     Variant
@@ -126,8 +138,11 @@ let rec block_element : general_block_element t =
   Variant
     (function
     | `Paragraph x -> C ("`Paragraph", x, link_content)
-    | `Code_block (x1, x2, _) ->
-        C ("`Code_block", (x1, ignore_loc x2), Pair (Option string, string))
+    | `Code_block { Comment.meta; content; output = _ } ->
+        C
+          ( "`Code_block",
+            (meta, ignore_loc content),
+            Pair (Option code_block_meta, string) )
     | `Math_block x -> C ("`Math_block", x, string)
     | `Verbatim x -> C ("`Verbatim", x, string)
     | `Modules x -> C ("`Modules", x, List module_reference)

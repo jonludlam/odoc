@@ -23,6 +23,9 @@
   braces, as in `@return{...}`. A brace straight after a tag name used to be
   the start of the tag's content, so `@return{!foo} bar` now means something
   else (@jonludlam, #1517)
+- The bare tags of a code block, such as `server` in `{@ocaml server[...]}`,
+  become classes of the block in the HTML, such as `tag-server` (@jonludlam)
+- `{br}` is a line break (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)

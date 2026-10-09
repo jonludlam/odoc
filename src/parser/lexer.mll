@@ -330,6 +330,9 @@ and token input = parse
   | '+'
     { emit input `Plus }
 
+  | "{br}"
+    { emit input `Linebreak }
+
   | "{b"
     { emit input (`Begin_style `Bold) }
 

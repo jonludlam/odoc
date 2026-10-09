@@ -110,7 +110,8 @@ type ast_leaf_inline_element =
   | `Word of string
   | `Code_span of string
   | `Math_span of string
-  | `Raw_markup of string option * string ]
+  | `Raw_markup of string option * string
+  | `Linebreak ]
 
 type sections_allowed = [ `All | `No_titles | `None ]
 
@@ -127,7 +128,9 @@ let leaf_inline_element :
     Comment.leaf_inline_element with_location =
  fun element ->
   match element with
-  | { value = `Word _ | `Code_span _ | `Math_span _; _ } as element -> element
+  | { value = `Word _ | `Code_span _ | `Math_span _ | `Linebreak; _ } as element
+    ->
+      element
   | { value = `Space s; _ } -> Location.same element (`Space s)
   | { value = `Raw_markup (target, s); location } -> (
       match target with
@@ -309,12 +312,17 @@ let rec nestable_block_element :
       Location.at location (`Paragraph (inline_elements content))
   | { value = `Code_block { meta; delimiter = _; content; output }; location }
     ->
-      let lang_tag =
+      let meta =
         match meta with
-        | Some { language = { Location.value; _ }; _ } -> Some value
+        | Some { language; tags } ->
+            let tag : Ast.code_block_tag -> Comment.code_block_tag = function
+              | `Tag t -> `Tag t.value
+              | `Binding (k, v) -> `Binding (k.value, v.value)
+            in
+            Some { Comment.language = language.value; tags = List.map tag tags }
         | None -> None
       in
-      let outputs =
+      let output =
         match output with
         | None -> None
         | Some l -> Some (List.map nestable_block_element l)
@@ -325,7 +333,7 @@ let rec nestable_block_element :
       let warnings = List.map Error.t_of_parser_t warnings in
       List.iter (Error.raise_warning ~non_fatal:true) warnings;
       let content = Location.at content.location trimmed_content in
-      Location.at location (`Code_block (lang_tag, content, outputs))
+      Location.at location (`Code_block { Comment.meta; content; output })
   | { value = `Math_block s; location } -> Location.at location (`Math_block s)
   | { value = `Verbatim v; location } ->
       let v, warnings = Odoc_parser.codeblock_content location v in
@@ -469,7 +477,7 @@ let generate_heading_label : Comment.inline_element with_location list -> string
     | element :: more ->
         let anchor =
           match (element : Comment.inline_element) with
-          | `Space _ -> anchor ^ "-"
+          | `Space _ | `Linebreak -> anchor ^ "-"
           | `Word w -> anchor ^ hyphenate_word_runs w
           | `Code_span c | `Math_span c ->
               anchor ^ replace_spaces_with_hyphens_and_lowercase c

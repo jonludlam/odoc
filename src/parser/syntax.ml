@@ -165,7 +165,8 @@ type token_that_always_begins_an_inline_element =
   | `Begin_reference_with_replacement_text of string
   | `Simple_link of string
   | `Begin_link_with_replacement_text of string
-  | `Math_span of string ]
+  | `Math_span of string
+  | `Linebreak ]
 
 (** When a backslash is followed by space, remove both the backslash and the
     space. *)
@@ -240,7 +241,7 @@ let rec inline_element :
   | `Bar ->
       junk input;
       Loc.at location (`Word "|")
-  | (`Code_span _ | `Math_span _ | `Raw_markup _) as token ->
+  | (`Code_span _ | `Math_span _ | `Raw_markup _ | `Linebreak) as token ->
       junk input;
       Loc.at location token
   | `Begin_style s as parent_markup ->

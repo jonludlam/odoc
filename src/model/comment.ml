@@ -19,7 +19,8 @@ type leaf_inline_element =
   | `Word of string
   | `Code_span of string
   | `Math_span of string
-  | `Raw_markup of raw_markup_target * string ]
+  | `Raw_markup of raw_markup_target * string
+  | `Linebreak ]
 
 type non_link_inline_element =
   [ leaf_inline_element
@@ -60,12 +61,15 @@ type media_href = [ `Link of string | `Reference of Reference.Asset.t ]
 
 type media_element = [ `Media of media_href * media * string ]
 
+(* The metadata of a code block: the language of [{@ocaml env=f1 [...]}] is
+   ["ocaml"], and its tags are [env=f1]. *)
+type code_block_tag = [ `Tag of string | `Binding of string * string ]
+
+type code_block_meta = { language : string; tags : code_block_tag list }
+
 type nestable_block_element =
   [ `Paragraph of paragraph
-  | `Code_block of
-    string option
-    * string with_location
-    * nestable_block_element with_location list option
+  | `Code_block of code_block
   | `Math_block of string
   | `Verbatim of string
   | `Modules of module_reference list
@@ -73,6 +77,13 @@ type nestable_block_element =
   | `List of
     [ `Unordered | `Ordered ] * nestable_block_element with_location list list
   | media_element ]
+
+and code_block = {
+  meta : code_block_meta option;
+  content : string with_location;
+      (** The code, with its indentation removed. *)
+  output : nestable_block_element with_location list option;
+}
 
 type tag =
   [ `Author of string
@@ -156,6 +167,7 @@ let to_string (l : link_content) =
     | `Word w -> w
     | `Math_span m -> m
     | `Space s -> s
+    | `Linebreak -> " "
     | `Styled (_, is) -> s_of_is is
     | `Raw_markup (_, r) -> r
   and s_of_is is =

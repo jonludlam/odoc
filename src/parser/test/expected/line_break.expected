@@ -1,0 +1,118 @@
+--- input ---
+foo{br}bar
+--- output ---
+((output
+  (((f.ml (1 0) (1 10))
+    (paragraph
+     (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (1 7)) linebreak)
+      ((f.ml (1 7) (1 10)) (word bar)))))))
+ (warnings ()))
+--- input ---
+foo {br} bar
+--- output ---
+((output
+  (((f.ml (1 0) (1 12))
+    (paragraph
+     (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (1 4)) space)
+      ((f.ml (1 4) (1 8)) linebreak) ((f.ml (1 8) (1 9)) space)
+      ((f.ml (1 9) (1 12)) (word bar)))))))
+ (warnings ()))
+--- input ---
+{br}
+--- output ---
+((output (((f.ml (1 0) (1 4)) (paragraph (((f.ml (1 0) (1 4)) linebreak))))))
+ (warnings ()))
+--- input ---
+{br}foo
+--- output ---
+((output
+  (((f.ml (1 0) (1 7))
+    (paragraph
+     (((f.ml (1 0) (1 4)) linebreak) ((f.ml (1 4) (1 7)) (word foo)))))))
+ (warnings ()))
+--- input ---
+foo{br}
+bar
+--- output ---
+((output
+  (((f.ml (1 0) (2 3))
+    (paragraph
+     (((f.ml (1 0) (1 3)) (word foo)) ((f.ml (1 3) (1 7)) linebreak)
+      ((f.ml (1 7) (2 0)) space) ((f.ml (2 0) (2 3)) (word bar)))))))
+ (warnings ()))
+--- input ---
+{b foo{br}bar}
+--- output ---
+((output
+  (((f.ml (1 0) (1 14))
+    (paragraph
+     (((f.ml (1 0) (1 14))
+       (bold
+        (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (1 10)) linebreak)
+         ((f.ml (1 10) (1 13)) (word bar))))))))))
+ (warnings ()))
+--- input ---
+{{:http://example.com} foo{br}bar}
+--- output ---
+((output
+  (((f.ml (1 0) (1 34))
+    (paragraph
+     (((f.ml (1 0) (1 34))
+       (http://example.com
+        (((f.ml (1 23) (1 26)) (word foo)) ((f.ml (1 26) (1 30)) linebreak)
+         ((f.ml (1 30) (1 33)) (word bar))))))))))
+ (warnings ()))
+--- input ---
+{2 foo{br}bar}
+--- output ---
+((output
+  (((f.ml (1 0) (1 14))
+    (2 (label ())
+     (((f.ml (1 3) (1 6)) (word foo)) ((f.ml (1 6) (1 10)) linebreak)
+      ((f.ml (1 10) (1 13)) (word bar)))))))
+ (warnings ()))
+--- input ---
+{t
+| foo{br}bar | baz |
+}
+--- output ---
+((output
+  (((f.ml (1 0) (3 1))
+    (table (syntax light)
+     (grid
+      ((row
+        ((data
+          (((f.ml (2 2) (2 12))
+            (paragraph
+             (((f.ml (2 2) (2 5)) (word foo)) ((f.ml (2 5) (2 9)) linebreak)
+              ((f.ml (2 9) (2 12)) (word bar)))))))
+         (data
+          (((f.ml (2 15) (2 18))
+            (paragraph (((f.ml (2 15) (2 18)) (word baz)))))))))))
+     (align "no alignment")))))
+ (warnings ()))
+--- input ---
+{brr}
+--- output ---
+((output
+  (((f.ml (1 0) (1 5))
+    (paragraph
+     (((f.ml (1 0) (1 5)) (bold (((f.ml (1 2) (1 4)) (word rr))))))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 0-2:\
+   \n'{b' should be followed by space, a tab, or a new line.")))
+--- input ---
+{br }
+--- output ---
+((output
+  (((f.ml (1 0) (1 5))
+    (paragraph (((f.ml (1 0) (1 5)) (bold (((f.ml (1 2) (1 3)) (word r))))))))))
+ (warnings
+  ( "File \"f.ml\", line 1, characters 0-2:\
+   \n'{b' should be followed by space, a tab, or a new line.")))
+--- input ---
+\{br\}
+--- output ---
+((output
+  (((f.ml (1 0) (1 6)) (paragraph (((f.ml (1 0) (1 6)) (word {br})))))))
+ (warnings ()))
