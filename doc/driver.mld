@@ -505,8 +505,8 @@ module knows the four libraries it may look in.
   [{!/findlib.dynload/Fl_dynload}] resolve against it, and references by
   plain name search its directory.
 
-- [-I <dir>] adds a directory to the search path without naming a tree. A
-  driver that names every library with [-L] has no need of it. Two
+- [-I <dir>] adds a directory to the search path without naming a tree. It is
+  deprecated: a driver that names every library with [-L] has no need of it. Two
   directories are on the path that were not passed: the directory holding the
   input [.odoc] file, and the [-P] directory of [--current-package].
 
@@ -517,50 +517,45 @@ module knows the four libraries it may look in.
 - [--warnings-tags <tag>] is repeatable, and says whose tagged warnings to
   report. See [--warnings-tag] above.
 
-Odoc looks up a module by name in these directories, but not all at once.
-What it tries first depends on whose name it is resolving.
+Odoc looks a module up in one of two places, depending on the kind of name,
+and never in one and then the other.
 
 A name that the unit's imports record with a digest is matched by that
-digest, anywhere on the search path. The order below does not arise for it.
-That covers most of what a signature mentions, because the compiler recorded
-those modules as imports.
+digest, anywhere on the search path. That covers most of what a signature
+mentions, because the compiler recorded those modules as imports.
 
-Every other name is looked up first among the libraries the unit recorded
-when it was compiled, each in the directory its [-L] names. Those are what
-the compiler gave the unit. A name they answer is therefore the module the
-unit was built against.
+A path is an alias or anything else the compiler wrote, so it can only mean a
+module the compiler gave the unit. A canonical path is written by hand, in a
+[@canonical] tag, and the compiler does not check it, but odoc treats it as
+it treats an alias: it must name a module within the libraries the unit was
+compiled against. A path is therefore looked up among the libraries the unit
+recorded when it was compiled, each in the directory its [-L] names, and
+nowhere else. If they do not have it, odoc reports it as missing rather than
+take a same-named module of another library. The
+implementation behind a rendered source file is looked up the same way, since
+the compiler named it too. That is what turns an identifier in a rendered
+source file into a link to the source of the module it came from.
 
-What happens when they do not answer depends on the name. A path is an
-alias, a canonical path or anything else the compiler wrote. It can only mean
-a module the compiler gave the unit, so odoc reports it as missing. It does
-not take a same-named module of another library. A reference written in a
-documentation comment may name anything in the reference scope, which is
-wider. So a reference goes on to search the whole path, every [-L] directory
-and any [-I] directory alike. A page records no libraries of its own, so a page's
-references search the whole path from the start.
+A reference written in a documentation comment may name anything in the
+reference scope, which is wider. So a reference is looked up along the whole
+path, every [-L] directory and any [-I] directory alike. A page records no
+libraries of its own, so a page's paths are looked up along the whole path
+too.
 
-Resolution may follow a path or a reference {e into} another unit. It then
-carries on among the libraries that unit recorded at compile time, which are
-what its own compiler could see. This is what lets a page name a submodule of
-one library rather than of its sibling. It is also what lets a module list
-show each module's first paragraph as that module's own page shows it.
+Resolution may follow a path or a reference {e into} another unit. Paths in
+that unit are then looked up among the libraries it recorded at compile time,
+which are what its own compiler could see. This is what lets a page name a
+submodule of one library rather than of its sibling.
 
-A module of a library the unit does not depend on can therefore be named in
-a reference, and is found by the wider search. That search has no digest to
-tell same-named candidates apart. Where it finds two files of a name, odoc
-takes the first and warns. A path never reaches that search, so the warning
-is always about a reference. Authors
-can avoid the ambiguity with a path reference that names the tree,
-[{!/foo/A}] for the module [A] of library [foo].
+Either way, the places searched are searched together, in no order. Where
+two of them have a module of the name, odoc warns that the lookup is
+ambiguous and takes one. Authors can avoid the ambiguity with a path
+reference that names the tree, [{!/foo/A}] for the module [A] of library
+[foo].
 
 This is the link phase. [odoc compile] searches the [-I] and [-L]
 directories as one path, and matches by digest. A name it has no digest for
 is a forward reference, not a search.
-
-An implementation is looked up by name in the same way as a reference: among
-the libraries the unit recorded first, then along the whole path. That is
-what turns an identifier in a rendered source file into a link to the source
-of the module it came from.
 
 {{!scope}Step 0} shows a link command from a real run, with the [-P] and
 [-L] arguments the reference driver computes for one package.
@@ -805,6 +800,11 @@ there to be found, the driver copies the [.cmti] of every library that ships
 no archive next to that library's [.odoc] files. Virtual libraries are among
 those.
 
+The interface of a virtual library has no implementation among the libraries
+it recorded: its implementations are other libraries, and there may be several.
+A source link follows the rules of a path, so the virtual library's pages have
+no link to the source.
+
 The landing page the driver writes for a library always lists its modules
 with path references. It writes [{!modules: /checkseum.c/Checkseum}] rather
 than [{!modules: Checkseum}], for every package and not only this one.
@@ -817,22 +817,23 @@ A package may ship two libraries that define the same module names on purpose.
 [eliom] is the example: [eliom.client] and [eliom.server] mirror each other,
 and that symmetry is the point of the framework. Nothing in the reference scope
 tells them apart, so a plain [{!Eliom_content}] in a doc comment is
-ambiguous. Odoc warns and takes the first it finds. An author who means one
-of them writes a path reference, [{!/eliom.client/Eliom_content}].
+ambiguous, even in a doc comment of one of the two libraries. Odoc warns and
+takes one. An author who means one of them writes a path reference,
+[{!/eliom.client/Eliom_content}].
 
-A module's own documentation is not affected. It recorded its library's
-dependency cone, which never holds both siblings, and odoc searches that
-first. The
-types it shows, the modules its signature mentions and the references its
-comments make therefore all stay on the side they were written on.
+The paths in a module's own documentation are not affected. The module
+recorded its library's dependency cone, which never holds both siblings, and
+a path is looked up there alone. The types it shows and the modules its
+signature mentions therefore stay on the side they were written on.
 
-Nor is what a page of the package says about those modules, although a page
-has no cone of its own. Two things resolve among the libraries the module
-recorded when it was compiled. One is a reference into the module, such as
-[{!/eliom.client/Eliom_content.Html}]. The other is the first paragraph a
-module list shows beside each entry. What remains ambiguous is only a name
-that says nothing about where it comes from, the plain [{!Eliom_content}]
-above.
+Nor is what a page of the package says about those modules, when it names
+the library. A reference into a module, such as
+[{!/eliom.client/Eliom_content.Html}], finds the root in the library it names,
+and the paths inside it among the libraries that module recorded. What is
+ambiguous is a reference that says nothing about where it comes from, the
+plain [{!Eliom_content}] above, wherever it is written. That includes the
+first paragraph a module list copies beside each entry: the paragraph's
+references are references like any other.
 
 {2 Alias libraries}
 
