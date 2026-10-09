@@ -107,15 +107,15 @@ let odoc_file_directories =
     & info ~docs ~docv:"DIR" ~doc [ "I" ])
 
 (* The same, for the commands that also take -L, which does everything -I
-   does and records the library's name in the unit besides. Marked deprecated in
-   the help text rather than with cmdliner's [~deprecated], which warns on
-   every use: that would have to land together with a conversion of the test
-   suite, which passes -I throughout. *)
+   does and names the library besides. Marked deprecated in the help text
+   rather than with cmdliner's [~deprecated], which warns on every use: that
+   would have to land together with a conversion of the test suite, which
+   passes -I throughout. *)
 let deprecated_odoc_file_directories =
   let doc =
     "Where to look for required $(i,.odoc) files. Can be present several \
      times. Deprecated: use $(b,-L) instead, which searches the directory in \
-     the same way and also writes the library's name into the unit."
+     the same way and also names the library."
   in
   Arg.(
     value
@@ -867,9 +867,9 @@ end = struct
     in
     Term.(
       const handle_error
-      $ (const link $ odoc_file_directories $ page_roots $ lib_roots $ input
-       $ dst $ current_package $ warnings_options $ open_modules $ custom_layout
-       $ warnings_tags))
+      $ (const link $ deprecated_odoc_file_directories $ page_roots $ lib_roots
+       $ input $ dst $ current_package $ warnings_options $ open_modules
+       $ custom_layout $ warnings_tags))
 
   let info ~docs =
     let man =
