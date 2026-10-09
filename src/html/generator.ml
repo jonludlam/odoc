@@ -409,6 +409,18 @@ and items ~config ~resolve l : item Html.elt list =
         in
         let content = flow_to_item @@ block ~config ~resolve text in
         (continue_with [@tailcall]) rest content
+    | Heading h :: rest when Config.sections config && h.level > 0 ->
+        (* A heading makes a section, with what follows it up to the next
+           heading of the same or a higher level. The page title is not
+           wrapped: it is rendered apart from the rest of the page. *)
+        let content, _, rest =
+          Doctree.Take.until rest ~classify:(function
+            | Item.Heading h' when h'.level <= h.level -> Stop_and_keep
+            | x -> Accum [ x ])
+        in
+        let section = heading ~config ~resolve h :: items content in
+        (continue_with [@tailcall]) rest
+          [ Html.section (section :> Html_types.section_content Html.elt list) ]
     | Heading h :: rest ->
         (continue_with [@tailcall]) rest [ heading ~config ~resolve h ]
     | Include

@@ -12,6 +12,7 @@ type t = {
   flat : bool;
   open_details : bool;
   as_json : bool;
+  sections : bool;
   home_breadcrumb : string option;
 }
 
@@ -19,8 +20,8 @@ let ensure_trailing_slash s =
   if Astring.String.is_suffix ~affix:"/" s then s else s ^ "/"
 
 let v ?(search_result = false) ?theme_uri ?support_uri ?(search_uris = [])
-    ~semantic_uris ~indent ~flat ~open_details ~as_json ~remap ?home_breadcrumb
-    () =
+    ~semantic_uris ~indent ~flat ~open_details ~as_json ?(sections = false)
+    ~remap ?home_breadcrumb () =
   let remap =
     List.map
       (fun (prefix, replacement) ->
@@ -36,6 +37,7 @@ let v ?(search_result = false) ?theme_uri ?support_uri ?(search_uris = [])
     support_uri;
     search_uris;
     as_json;
+    sections;
     search_result;
     remap;
     home_breadcrumb;
@@ -58,6 +60,8 @@ let flat config = config.flat
 let open_details config = config.open_details
 
 let as_json config = config.as_json
+
+let sections config = config.sections
 
 let search_result config = config.search_result
 

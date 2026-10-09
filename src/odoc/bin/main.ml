@@ -1273,6 +1273,13 @@ module Odoc_html_args = struct
     in
     Arg.(value & flag & info ~doc [ "as-json" ])
 
+  let sections =
+    let doc =
+      "Wrap each heading, and what follows it up to the next heading of the \
+       same or a higher level, in a <section> element."
+    in
+    Arg.(value & flag & info ~docs ~doc [ "sections" ])
+
   let remap =
     let convert_remap =
       let parse inp =
@@ -1291,7 +1298,7 @@ module Odoc_html_args = struct
 
   let extra_args =
     let config semantic_uris closed_details indent theme_uri support_uri
-        search_uris flat as_json remap remap_file home_breadcrumb =
+        search_uris flat as_json sections remap remap_file home_breadcrumb =
       let open_details = not closed_details in
       let remap =
         match remap_file with
@@ -1306,14 +1313,15 @@ module Odoc_html_args = struct
       in
       let html_config =
         Odoc_html.Config.v ~theme_uri ~support_uri ~search_uris ~semantic_uris
-          ~indent ~flat ~open_details ~as_json ~remap ?home_breadcrumb ()
+          ~indent ~flat ~open_details ~as_json ~sections ~remap ?home_breadcrumb
+          ()
       in
       { Html_page.html_config }
     in
     Term.(
       const config $ semantic_uris $ closed_details $ indent $ theme_uri
-      $ support_uri $ search_uri $ flat $ as_json $ remap $ remap_file
-      $ home_breadcrumb)
+      $ support_uri $ search_uri $ flat $ as_json $ sections $ remap
+      $ remap_file $ home_breadcrumb)
 end
 
 module Odoc_html = Make_renderer (Odoc_html_args)

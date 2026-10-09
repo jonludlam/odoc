@@ -12,12 +12,14 @@ val v :
   flat:bool ->
   open_details:bool ->
   as_json:bool ->
+  ?sections:bool ->
   remap:(string * string) list ->
   ?home_breadcrumb:string ->
   unit ->
   t
 (** [search_result] indicates whether this is a summary for a search result. In
-    that case, the links will be printed as regular text. *)
+    that case, the links will be printed as regular text. [sections], false by
+    default, wraps each heading and what follows it in a [<section>]. *)
 
 val theme_uri : t -> Types.uri
 
@@ -34,6 +36,8 @@ val flat : t -> bool
 val open_details : t -> bool
 
 val as_json : t -> bool
+
+val sections : t -> bool
 
 val search_result : t -> bool
 

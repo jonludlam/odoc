@@ -19,6 +19,9 @@
 - Allow to break link into multiple lines (@Tim-ats-d, #1439)
 - Support for atomic annotation (@ElectreAAS, #1496)
 - Support for OxCaml parameterized libraries (@art-w, #1464)
+- With `--sections`, a heading and what follows it in the HTML, up to the next
+  heading of the same or a higher level, are wrapped in a `<section>`
+  (@jonludlam)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
