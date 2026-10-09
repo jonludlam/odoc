@@ -143,33 +143,44 @@ module Accessible_paths : sig
   val create : directories:Fs.Directory.t list -> t
 
   val find : t -> string -> Fs.File.t list
-end = struct
-  type t = (string, Fpath.t (* list *)) Hashtbl.t
 
-  let create ~directories =
-    let unit_cache = Hashtbl.create 42 in
-    List.iter
-      (fun directory ->
-        try
-          let files = Sys.readdir (Fs.Directory.to_string directory) in
-          Array.iter
-            (fun file ->
-              let file = Fpath.v file in
-              if Fpath.has_ext "odoc" file then
-                Hashtbl.add unit_cache
-                  (Astring.String.Ascii.capitalize
-                     (file |> Fpath.rem_ext |> Fpath.basename))
-                  (Fs.File.append directory file))
-            files
-        with Sys_error _ ->
-          (* TODO: Raise a warning if a directory given as -I cannot be opened *)
-          ())
-      directories;
-    unit_cache
+  val restrict : t -> Fs.Directory.t list -> t
+  (** The part of a search path that lies in the given directories, without
+      reading them again. *)
+end = struct
+  (* One table per directory, last directory first: a name is found in all of
+     them, the later directories' files first. *)
+  type t = (Fs.Directory.t * (string, Fpath.t) Hashtbl.t) list
+
+  let read directory =
+    let table = Hashtbl.create 42 in
+    (try
+       let files = Sys.readdir (Fs.Directory.to_string directory) in
+       Array.iter
+         (fun file ->
+           let file = Fpath.v file in
+           if Fpath.has_ext "odoc" file then
+             Hashtbl.add table
+               (Astring.String.Ascii.capitalize
+                  (file |> Fpath.rem_ext |> Fpath.basename))
+               (Fs.File.append directory file))
+         files
+     with Sys_error _ ->
+       (* TODO: Raise a warning if a directory given as -I cannot be opened *)
+       ());
+    (directory, table)
+
+  let create ~directories = List.rev_map read directories
 
   let find t name =
     let name = Astring.String.Ascii.capitalize name in
-    Hashtbl.find_all t name
+    List.concat_map (fun (_, table) -> Hashtbl.find_all table name) t
+
+  let restrict t directories =
+    List.filter
+      (fun (d, _) ->
+        List.exists (fun d' -> Fs.Directory.compare d d' = 0) directories)
+      t
 end
 
 module Hierarchy : sig
@@ -574,7 +585,7 @@ let create ~important_digests ~directories ~open_modules ~roots =
             List.filter_map (fun lib -> List.assoc_opt lib lib_roots) scope
             |> List.sort_uniq Fs.Directory.compare
           in
-          let ap = Accessible_paths.create ~directories in
+          let ap = Accessible_paths.restrict ap directories in
           Hashtbl.add cache scope ap;
           ap
   in
