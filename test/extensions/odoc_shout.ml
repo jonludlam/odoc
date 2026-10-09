@@ -46,11 +46,15 @@ let shout_raw ctx content =
       })
 
 let head ctx =
-  if Odoc_html.Extension.Context.requires ctx "shout" then
-    [ Tyxml.Html.style [ Tyxml.Html.txt ".shout { font-weight: bold }" ] ]
+  let module Context = Odoc_html.Extension.Context in
+  if Context.requires ctx "shout" then
+    let href = Context.support_file_uri ctx "shout/shout.css" in
+    [ Tyxml.Html.link ~rel:[ `Stylesheet ] ~href () ]
   else []
 
 let () =
+  Odoc_html.Extension.register_support_file ~path:"shout/shout.css"
+    ".shout { font-weight: bold }\n";
   Extension.register_code_block ~language:"shout" shout;
   Extension.register_raw_markup ~target:"shout" shout_raw;
   Odoc_html.Extension.register_head head;

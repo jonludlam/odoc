@@ -18,6 +18,15 @@ module Html = Tyxml.Html
 
 (** Supported languages for printing code parts. *)
 
+val file_uri :
+  config:Config.t ->
+  url:Odoc_document.Url.Path.t ->
+  Types.uri ->
+  string ->
+  string
+(** [file_uri ~config ~url base file] is the URI of [file] in the directory
+    [base] (the theme or support directory), from the page [url]. *)
+
 (** {1 Page creator} *)
 
 val make :

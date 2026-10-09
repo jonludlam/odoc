@@ -20,7 +20,11 @@ let iter_files f ?(without_theme = false) output_directory =
       match Odoc_html_support_files.read f with
       | Some content when should_include ~without_theme f -> file f content
       | _ -> ())
-    files
+    files;
+  (* The files that extensions need, whether or not the theme is wanted. *)
+  List.iter
+    (fun (path, content) -> file path content)
+    (Odoc_html.Extension.support_files ())
 
 let write =
   iter_files (fun name content ->

@@ -21,8 +21,8 @@ output of a code block too: this one leaves it out.
      <pre class="language-ocaml"><code>let x = 1</code></pre>
      <p class="shout">WITH OUTPUT</p>
     </header><div class="odoc-content"></div>
-  $ grep -o '<style>.*</style>' html/pkg/index.html
-  <style>.shout { font-weight: bold }</style>
+  $ grep -o '<link[^>]*shout.css"/>' html/pkg/index.html
+  <link rel="stylesheet" href="../shout/shout.css"/>
 
 The standard odoc does not know the extension, and renders every code block as
 code.
@@ -48,6 +48,18 @@ The extension adds its style sheet only to the pages that have a shout.
   $ odoc_shout compile --parent-id pkg --output-dir _odoc other.mld
   $ odoc_shout link _odoc/pkg/page-other.odoc
   $ odoc_shout html-generate --indent -o html _odoc/pkg/page-other.odocl
-  $ grep -c '<style>' html/pkg/other.html
+  $ grep -c 'shout.css' html/pkg/other.html
   0
   [1]
+
+The extension's style sheet is a support file, which the standard odoc does
+not write.
+
+  $ odoc_shout support-files -o support
+  $ cat support/shout/shout.css
+  .shout { font-weight: bold }
+  $ odoc_shout support-files-targets -o support | grep shout
+  support/shout/shout.css
+  $ odoc support-files -o stock-support
+  $ test -e stock-support/shout || echo 'no shout support files'
+  no shout support files

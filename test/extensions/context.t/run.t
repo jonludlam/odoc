@@ -58,6 +58,6 @@ submodule, not the page of the module.
   $ odoc_shout compile --parent-id pkg --output-dir _odoc n.cmti
   $ odoc_shout link _odoc/pkg/n.odoc
   $ odoc_shout html-generate -o html _odoc/pkg/n.odocl
-  $ grep -c '<style>' html/pkg/N/index.html html/pkg/N/N/index.html
+  $ grep -c 'shout.css' html/pkg/N/index.html html/pkg/N/N/index.html
   html/pkg/N/index.html:0
   html/pkg/N/N/index.html:1

@@ -1,5 +1,6 @@
-(** Copies odoc's support files (default theme and JS files) to a specified
-    location. *)
+(** Copies odoc's support files (default theme and JS files), and the ones that
+    extensions registered with [Odoc_html.Extension.register_support_file], to a
+    specified location. *)
 
 val write : ?without_theme:bool -> Fs.Directory.t -> unit
 (** [write ?without_theme output_dir] copies the support files to the
