@@ -30,6 +30,8 @@
 - `odoc link` resolves paths among the libraries a unit was compiled against,
   so same-named modules of sibling libraries, such as eliom's, are no longer
   mixed up; an ambiguous reference warns (@jonludlam, #1450, #1461)
+- Source links into other libraries no longer need `-I`, which is now
+  deprecated for `odoc link` too (@jonludlam, #1461)
 - Fix optional arguments rendering as `?arg:???` in modules without an mli on
   OCaml 5.5 (@jonludlam, #1489)
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)

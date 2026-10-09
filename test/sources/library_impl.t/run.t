@@ -15,4 +15,4 @@ The libraries are given with [-L] alone. A search that ignores the libraries
   $ odoc link h/b/impl-b.odoc -L other:h/other -L b:h/b -L lib:h/lib
   $ odoc html-generate-source --impl h/b/impl-b.odocl -o html b/b.ml
   $ grep -o 'href="[^"#]*/a.ml.html[^"]*"' html/b/b.ml.html
-  [1]
+  href="../lib/a.ml.html#val-f"

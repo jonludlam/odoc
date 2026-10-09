@@ -159,8 +159,8 @@ A [compile-impl] command is pretty similar:
 - [--output-dir <od>] has the same meaning as for [odoc compile].
 
 - [--parent-id <pid>] also has the same meaning as for [odoc compile]. However,
-  the name of the output file is [impl-<input-file>.odoc]. Implementations need
-  to be available through the [-I] search path, so it is very likely that one
+  the name of the output file is [impl-<input-file>.odoc]. Implementations are
+  found in the same directories as interfaces, so it is very likely that one
   wants the implementation and interface [.odoc] files to share the same parent
   id.
 
@@ -234,7 +234,8 @@ A generic link command is:
 
 - [-I <dir>] adds [<dir>] to the search path. The search path is used to resolve
   references that do not use the "named tree" mechanism, such as [{!Module}] and
-  [{!page-pagename}].
+  [{!page-pagename}]. It is deprecated: [-L] adds its directory to the search
+  path as well.
 
 A name that the unit's imports record with a digest is matched by that digest,
 anywhere on the search path. Every other name is looked up in one of two
@@ -247,7 +248,10 @@ it treats an alias: it must name a module within the libraries the unit was
 compiled against. A path is therefore looked up among the libraries the unit
 recorded when it was compiled, each in the directory its [-L] names, and
 nowhere else. If they do not have it, it is reported as missing rather than
-answered by a same-named module of another library.
+answered by a same-named module of another library. An
+implementation behind a rendered source file is looked up the same way, since
+the compiler named it too. That is what turns an identifier in a rendered
+source file into a link to the source of the module it came from.
 
 A reference written in a documentation comment may name anything in the
 reference scope, which is wider than what the compiler saw. So a reference is
@@ -260,10 +264,6 @@ library writes a path reference, [{!/libname/Module}].
 
 A page records no libraries, and nor does a module compiled with [-I] alone.
 Such a unit looks its paths up along the whole search path too.
-
-Implementations are looked up along [-I] alone, never [-L]. That is what
-turns an identifier in a rendered source file into a link to the source of
-the module it came from. A driver therefore passes [-I] at link as well.
 
 {2 The indexing phase}
 
