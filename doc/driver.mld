@@ -93,7 +93,7 @@ assets.
 Let's have a look at a generic invocation of [odoc] during the compile phase:
 
 {@shell[
-  $ odoc compile --output-dir <od> --parent-id <pid> -I <dir1> -I <dir2> <input-file>.<ext>
+  $ odoc compile --output-dir <od> --parent-id <pid> -L <lib1>:<dir1> -L <lib2>:<dir2> <input-file>.<ext>
 ]}
 
 - [<input-file>.<ext>] is the input file, either a [.cm{i;t;ti}] file or an [.mld]
@@ -112,11 +112,21 @@ Let's have a look at a generic invocation of [odoc] during the compile phase:
   for pages. Documentation artifacts that will be in the same {{!units}unit of
   documentation} need to hare a common root in their parent id.
 
-- [-I <dir>] corresponds to the search path for other [.odoc] files. Multiple
-  directory can be added to the search path, so every required [.odoc] file is
-  in the search path. The required [.odoc] files are the one generated from a
-  [.cm{i;t;ti}] file listed when calling [odoc compile-deps] on the input
-  file.
+- [-L <libname>:<dir>] names a library and adds [<dir>] to the search path for
+  other [.odoc] files. Several libraries can be given, so that every required
+  [.odoc] file is on the path. The required files are those generated from the
+  [.cm{i;t;ti}] files that [odoc compile-deps] lists for the input.
+
+  The library names are written into the [.odoc] file. They are the libraries
+  the compiler could see when the unit was built, and [odoc link] uses them
+  later: resolution that follows a path or a reference {e into} this unit
+  carries on among these libraries. Without them, two libraries built against
+  different modules of the same name cannot be told apart from the outside.
+
+- [-I <dir>] adds [<dir>] to the search path without naming a library, and so
+  records nothing. It is deprecated for [odoc compile] and
+  [odoc compile-impl]. A unit compiled with [-I] alone records no libraries,
+  so nothing limits how the names in it resolve.
 
 A concrete example for such command would be:
 
@@ -124,15 +134,15 @@ A concrete example for such command would be:
   $ odoc compile
        ~/.opam/5.2.0/lib/ppxlib/ppxlib__Extension.cmti
        --output-dir _odoc/
-       -I _odoc/ocaml-base-compiler/compiler-libs.common
-       -I _odoc/ocaml-base-compiler/stdlib
-       -I _odoc/ocaml-compiler-libs/ocaml-compiler-libs.common
-       -I _odoc/ppxlib/ppxlib
-       -I _odoc/ppxlib/ppxlib.ast
-       -I _odoc/ppxlib/ppxlib.astlib
-       -I _odoc/ppxlib/ppxlib.stdppx
-       -I _odoc/ppxlib/ppxlib.traverse_builtins
-       -I _odoc/sexplib0/sexplib0
+       -L compiler-libs.common:_odoc/ocaml-base-compiler/compiler-libs.common
+       -L stdlib:_odoc/ocaml-base-compiler/stdlib
+       -L ocaml-compiler-libs.common:_odoc/ocaml-compiler-libs/ocaml-compiler-libs.common
+       -L ppxlib:_odoc/ppxlib/ppxlib
+       -L ppxlib.ast:_odoc/ppxlib/ppxlib.ast
+       -L ppxlib.astlib:_odoc/ppxlib/ppxlib.astlib
+       -L ppxlib.stdppx:_odoc/ppxlib/ppxlib.stdppx
+       -L ppxlib.traverse_builtins:_odoc/ppxlib/ppxlib.traverse_builtins
+       -L sexplib0:_odoc/sexplib0/sexplib0
        --parent-id ppxlib/ppxlib
 ]}
 
@@ -141,7 +151,7 @@ A concrete example for such command would be:
 A [compile-impl] command is pretty similar:
 
 {@shell[
-  $ odoc compile-impl --output-dir <od> --source-id <sid> --parent-id <pid> -I <dir1> -I <dir2> <input-file>.<ext>
+  $ odoc compile-impl --output-dir <od> --source-id <sid> --parent-id <pid> -L <lib1>:<dir1> -L <lib2>:<dir2> <input-file>.<ext>
 ]}
 
 - [<input-file>.cmt] is the input file, it has to be a [.cmt] file.
@@ -154,7 +164,8 @@ A [compile-impl] command is pretty similar:
   wants the implementation and interface [.odoc] files to share the same parent
   id.
 
-- [-I <dir>] also corresponds to the search path for other [.odoc] files.
+- [-L <libname>:<dir>] and [-I <dir>] mean what they do for [odoc compile].
+  The library names are written into the unit in the same way.
 
 - [source-id <sid>] is a new argument specific to [compile-impl]. This corresponds to the location of the rendering of the source, which is required to generate links to it.
 
@@ -164,14 +175,14 @@ A concrete example for such command would be:
   $ odoc compile-impl
         ~/.opam/5.2.0/lib/ppxlib/ppxlib__Spellcheck.cmt
         --output-dir _odoc/
-        -I _odoc/ocaml-base-compiler/compiler-libs.common
-        -I _odoc/ocaml-base-compiler/stdlib
-        -I _odoc/ocaml-compiler-libs/ocaml-compiler-libs.common
-        -I _odoc/ppxlib/ppxlib
-        -I _odoc/ppxlib/ppxlib.ast
-        -I _odoc/ppxlib/ppxlib.astlib
-        -I _odoc/ppxlib/ppxlib.stdppx
-        -I _odoc/sexplib0/sexplib0
+        -L compiler-libs.common:_odoc/ocaml-base-compiler/compiler-libs.common
+        -L stdlib:_odoc/ocaml-base-compiler/stdlib
+        -L ocaml-compiler-libs.common:_odoc/ocaml-compiler-libs/ocaml-compiler-libs.common
+        -L ppxlib:_odoc/ppxlib/ppxlib
+        -L ppxlib.ast:_odoc/ppxlib/ppxlib.ast
+        -L ppxlib.astlib:_odoc/ppxlib/ppxlib.astlib
+        -L ppxlib.stdppx:_odoc/ppxlib/ppxlib.stdppx
+        -L sexplib0:_odoc/sexplib0/sexplib0
         --enable-missing-root-warning
         --parent-id ppxlib/ppxlib
         --source-id ppxlib/src/ppxlib/spellcheck.ml
@@ -224,6 +235,35 @@ A generic link command is:
 - [-I <dir>] adds [<dir>] to the search path. The search path is used to resolve
   references that do not use the "named tree" mechanism, such as [{!Module}] and
   [{!page-pagename}].
+
+A name that the unit's imports record with a digest is matched by that digest,
+anywhere on the search path. Every other name is looked up in one of two
+places, and never in one and then the other.
+
+A path is an alias or anything else the compiler wrote, so it can only mean a
+module the compiler gave the unit. A canonical path is written by hand, in a
+[@canonical] tag, and the compiler does not check it, but odoc treats it as
+it treats an alias: it must name a module within the libraries the unit was
+compiled against. A path is therefore looked up among the libraries the unit
+recorded when it was compiled, each in the directory its [-L] names, and
+nowhere else. If they do not have it, it is reported as missing rather than
+answered by a same-named module of another library.
+
+A reference written in a documentation comment may name anything in the
+reference scope, which is wider than what the compiler saw. So a reference is
+looked up along the whole search path, the recorded libraries included.
+
+Either way, the places searched are searched together, in no order. Where
+two of them have a module of the name, [odoc] warns that the lookup is
+ambiguous and takes one. An author who needs to name a module of a particular
+library writes a path reference, [{!/libname/Module}].
+
+A page records no libraries, and nor does a module compiled with [-I] alone.
+Such a unit looks its paths up along the whole search path too.
+
+Implementations are looked up along [-I] alone, never [-L]. That is what
+turns an identifier in a rendered source file into a link to the source of
+the module it came from. A driver therefore passes [-I] at link as well.
 
 {2 The indexing phase}
 

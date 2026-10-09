@@ -11,7 +11,23 @@ type lookup_error = [ `Not_found ]
 
 type resolver = {
   open_units : string list;
-  lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
+  lookup_unit :
+    scope:string list ->
+    scoped:bool ->
+    path_query ->
+    (lookup_unit_result, lookup_error) result;
+      (** Finds the unit a name refers to, whether the name comes from a path, a
+          canonical path or a reference. [scope] names the libraries the unit
+          the name is in recorded. A [scoped] lookup, which is what a path
+          wants, looks among those alone: a path can only mean a module the
+          compiler gave the unit. Any other lookup, a reference's, looks along
+          the whole search path. So does a scoped lookup when [scope] is empty.
+          Where several units match, the lookup warns. *)
+  lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
+      (** Finds the unit an identifier names, wherever it is on the search path.
+          There is nothing to choose between, so no ambiguity. *)
+  scope_of_unit : Identifier.RootModule.t -> string list;
+      (** The libraries a unit was compiled against, as it recorded them. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -42,6 +58,18 @@ val is_linking : t -> bool
 val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t
+
+val scope : t -> string list
+(** The libraries names may currently be resolved among. *)
+
+val with_scope : string list -> t -> t
+(** [with_scope libs env] resolves names among [libs] from now on. Resolution
+    that has reached a unit continues in that unit's libraries, since those are
+    what the compiler could see when the unit was built. The empty list is no
+    limit. *)
+
+val scope_of_unit : Identifier.RootModule.t -> t -> string list
+(** The libraries the given unit recorded at compile time. *)
 
 val has_resolver : t -> bool
 
@@ -113,7 +141,11 @@ val lookup_unit_by_path :
 
 val module_of_unit : Lang.Compilation_unit.t -> Component.Module.t
 
-val lookup_root_module : Odoc_model.Names.ModuleName.t -> t -> root option
+val lookup_root_module :
+  ?scoped:bool -> Odoc_model.Names.ModuleName.t -> t -> root option
+(** Look up a root module by name. [scoped], the default, is for a path: the
+    lookup is among the libraries of the current {!scope}. A reference passes
+    [~scoped:false] and looks along the whole search path. *)
 
 type 'a scope constraint 'a = [< Component.Element.any ]
 (** Target of a lookup *)

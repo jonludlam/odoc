@@ -37,10 +37,18 @@ type expansion =
     called on all of the dependent modules), an unresolved path will be returned
     with no component. *)
 
+type scope = string list option
+(** The libraries of the unit a lookup ended in, when that is not the unit it
+    started in. What is found there is resolved among them. *)
+
+val in_scope : Env.t -> scope -> Env.t
+
 val lookup_module :
   Env.t ->
   Cpath.Resolved.module_ ->
-  (Component.Module.t Component.Delayed.t, simple_module_lookup_error) result
+  ( Component.Module.t Component.Delayed.t * scope,
+    simple_module_lookup_error )
+  result
 (** [lookup_module ~mark_substituted env p] takes a resolved module cpath [p]
     and an environment and returns a representation of the module. *)
 
@@ -71,7 +79,7 @@ val lookup_class_type :
 val resolve_module :
   Env.t ->
   Cpath.module_ ->
-  ( Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t,
+  ( Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t * scope,
     simple_module_lookup_error )
   result
 (** [resolve_module ~mark_substituted ~add_canonical env p] takes an unresolved
@@ -168,6 +176,14 @@ val reresolve_class_type :
 (** The following functions are exposed for use in the {!module:Ref_tools}
     module only, allowing that module to reuse the machinery in this module for
     the resolution of {{!module:Odoc_model.Paths.Reference}References} *)
+
+val enter_unit : Env.t -> Cpath.Resolved.module_ -> Env.t
+(** [enter_unit env p] is [env] with the scope of the unit looking [p] up ends
+    in. What is written inside a unit was written against the libraries that
+    unit was compiled with, so resolution carries on among those. *)
+
+val enter_unit_parent : Env.t -> Cpath.Resolved.parent -> Env.t
+(** {!enter_unit} for a parent. *)
 
 val reresolve_parent : Env.t -> Cpath.Resolved.parent -> Cpath.Resolved.parent
 

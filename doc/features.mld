@@ -511,7 +511,10 @@ mechanism. This example is demonstrated {{!Odoc_examples.Resolution.HiddenAlias}
 
 When encountering a module, module type, or a type that has been marked with a
 [@canonical] tag, [odoc] first has to check that the specified canonical path
-actually resolves. If this is the case, in a similar way to the alias above, the
+actually resolves. It is looked up as an alias is, among the libraries the
+marked item was compiled against, so it must name a module within them: a
+canonical path into a library that depends on this one does not resolve. If
+this is the case, in a similar way to the alias above, the
 path's target will be rewritten to point to the canonical path.
 However, in contrast to the alias behaviour, the path's {e text} will
 also be rewritten, so it will be as if the canonical path had been written instead

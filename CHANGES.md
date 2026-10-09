@@ -15,6 +15,8 @@
   (@Leonidas-from-XIV, #1452)
 - `{!modules: ...}` lists accept path references such as
   `{!modules: /lib/Module}` (@jonludlam, #1461)
+- `odoc compile` and `odoc compile-impl` take `-L lib:DIR`, recording the
+  library in the unit; `-I` is deprecated (@jonludlam, #1450, #1461)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
@@ -25,6 +27,9 @@
   which makes `.odoc` and `.odocl` files substantially smaller (@jonludlam, #1487)
 
 ### Fixed
+- `odoc link` resolves paths among the libraries a unit was compiled against,
+  so same-named modules of sibling libraries, such as eliom's, are no longer
+  mixed up; an ambiguous reference warns (@jonludlam, #1450, #1461)
 - Fix optional arguments rendering as `?arg:???` in modules without an mli on
   OCaml 5.5 (@jonludlam, #1489)
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
