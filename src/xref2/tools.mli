@@ -37,10 +37,16 @@ type expansion =
     called on all of the dependent modules), an unresolved path will be returned
     with no component. *)
 
+type scope = Env.Library_scope.t option
+(** The libraries of the unit a lookup ended in, when that is not the unit it
+    started in. What is found there is resolved among them. *)
+
 val lookup_module :
   Env.t ->
   Cpath.Resolved.module_ ->
-  (Component.Module.t Component.Delayed.t, simple_module_lookup_error) result
+  ( Component.Module.t Component.Delayed.t * scope,
+    simple_module_lookup_error )
+  result
 (** [lookup_module ~mark_substituted env p] takes a resolved module cpath [p]
     and an environment and returns a representation of the module. *)
 
@@ -71,7 +77,7 @@ val lookup_class_type :
 val resolve_module :
   Env.t ->
   Cpath.module_ ->
-  ( Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t,
+  ( Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t * scope,
     simple_module_lookup_error )
   result
 (** [resolve_module ~mark_substituted ~add_canonical env p] takes an unresolved

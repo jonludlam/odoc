@@ -10,10 +10,18 @@ type path_query = [ `Path of Reference.Hierarchy.t | `Name of string ]
 
 type lookup_error = [ `Not_found ]
 
+module Library_scope = struct
+  type t = Scoped of string list | Any
+
+  let any = Any
+  let of_libraries = function [] -> Any | libs -> Scoped libs
+end
+
 type resolver = {
   open_units : string list;
   lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
   lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
+  scope_of_unit : Identifier.RootModule.t -> string list;
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -167,6 +175,10 @@ type t = {
     Component.Element.label amb_err Identifier.Maps.Label.t;
       [@warning "-unused-field"]
   resolver : resolver option;
+  scope : Library_scope.t;
+      (* The libraries a name may be resolved among, by name. It is the
+         [libraries] of the unit whose contents are being resolved, which is
+         what the compiler could see when that unit was built. *)
   recorder : recorder option;
   warnings_tags : string list;
   fragmentroot : (int * Component.Signature.t) option;
@@ -181,6 +193,13 @@ let set_warnings_tags env tags = { env with warnings_tags = tags }
 let is_linking env = env.linking
 
 let set_resolver t resolver = { t with resolver = Some resolver }
+
+let with_scope scope t = { t with scope }
+
+let scope_of_unit id t =
+  match t.resolver with
+  | None -> Library_scope.Any
+  | Some r -> Library_scope.of_libraries (r.scope_of_unit id)
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
 
@@ -211,6 +230,7 @@ let empty =
     elts = ElementsByName.empty;
     ids = ElementsById.empty;
     resolver = None;
+    scope = Library_scope.Any;
     recorder = None;
     ambiguous_labels = Identifier.Maps.Label.empty;
     ambiguous_unboxed_labels = Identifier.Maps.Label.empty;
