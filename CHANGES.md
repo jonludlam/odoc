@@ -32,6 +32,9 @@
 ### Fixed
 - `odoc compile` resolves an import only to a unit with the digest the import
   records (@jonludlam, #1502)
+- `odoc link` looks up a unit that an identifier names as that unit, not by
+  its name, which could find a same-named unit of another library
+  (@jonludlam, #1495)
 - Fix optional arguments rendering as `?arg:???` in modules without an mli on
   OCaml 5.5 (@jonludlam, #1489)
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)
