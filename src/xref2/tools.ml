@@ -904,6 +904,17 @@ and lookup_class_type :
   in
   res
 
+(* The unit a resolved path leads into, as looking the path up finds it. *)
+and enter_unit env parent =
+  match lookup_module env parent with
+  | Ok (_, scope) -> in_scope env scope
+  | Error _ -> env
+
+and enter_unit_parent env (parent : Cpath.Resolved.parent) =
+  match parent with
+  | `Module m -> enter_unit env m
+  | `ModuleType _ | `FragmentRoot -> env
+
 and resolve_and_lookup_parent :
     Env.t ->
     Cpath.module_ ->

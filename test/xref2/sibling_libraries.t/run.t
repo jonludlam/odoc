@@ -56,36 +56,12 @@ each library, one by plain name, and a submodule of each.
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
   $ refs() { odoc_print $1 | jq -c '[.. | objects | select(has("`Reference")) | .["`Reference"][0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique | join(" ")]'; }
 Where each reference on the page points, in the order they are written. The
 first two name a root module one library at a time, and a path reference says
@@ -102,7 +78,7 @@ client's libraries. The sixth and seventh are in the module list's
 paragraphs, below.
 
   $ refs h/pkg/page-all.odocl
-  ["client/Content","server/Content","server/Content","client/Content server/Content server/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html"]
+  ["client/Content","server/Content","server/Content","client/Content client/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html"]
   $ modules() { odoc_print $1 | jq -c 'def libs: [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique; [.. | objects | select(has("`Modules")) | .["`Modules"][] | {shown: (.[0] | libs), says: (.[1] | libs)}]'; }
 A module list shows, beside each module it names, that module's own first
 paragraph. The paragraph is resolved as the page is linked, not as the module

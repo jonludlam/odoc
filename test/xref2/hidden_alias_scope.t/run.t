@@ -18,8 +18,5 @@ A page refers to [Outer.M.N]. Following [M] leads into [l2]'s
 
   $ odoc compile --output-dir h --parent-id pkg p.mld
   $ odoc link -P pkg:h/pkg -L a2:h/pkg/a2 -L o:h/pkg/o -L l2:h/pkg/l2 -L l1:h/pkg/l1 h/pkg/page-p.odoc
-  File "A":
-  Ambiguous lookup. Possible files: A
-  A
   $ refs h/pkg/page-p.odocl
   ["l1/Outer l2/Inner__Hidden o/A"]

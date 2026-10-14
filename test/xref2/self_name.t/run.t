@@ -23,4 +23,4 @@ the canonical path among the server's, and neither should be ambiguous.
 
   $ odoc link -L client:h/pkg/client -L server:h/pkg/server h/pkg/client/content.odoc
   $ refs h/pkg/client/content.odocl
-  ["client/Content client/Content__Html server/Content"]
+  ["server/Content server/Content__Html"]

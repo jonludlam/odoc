@@ -19,4 +19,4 @@ should reach [x]'s [Inner], and neither lookup should be ambiguous.
   Ambiguous lookup. Possible files: Inner
   Inner
   $ refs h/pkg/page-p.odocl
-  ["x/X y/Inner","x/X y/Inner"]
+  ["x/X y/Inner","x/Inner x/X"]
