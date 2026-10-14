@@ -22,11 +22,5 @@ the client's alias [Html] should be looked up among the client's libraries and
 the canonical path among the server's, and neither should be ambiguous.
 
   $ odoc link -L client:h/pkg/client -L server:h/pkg/server h/pkg/client/content.odoc
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
   $ refs h/pkg/client/content.odocl
-  ["server/Content server/Content__Html"]
+  ["client/Content client/Content__Html server/Content"]

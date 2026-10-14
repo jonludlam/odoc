@@ -690,6 +690,9 @@ let build_link_env_for_unit t m =
   let imports_map = build_imports_map m.imports in
   let resolver = build ~imports_map ?hierarchy_roots:t.libs t in
   Env.env_of_unit m ~linking:true resolver
+  |> Env.with_scope
+       (Env.Library_scope.of_libraries
+          m.Odoc_model.Lang.Compilation_unit.libraries)
 
 let build_link_env_for_impl t i =
   let imports_map =
@@ -697,6 +700,9 @@ let build_link_env_for_impl t i =
   in
   let resolver = build ~imports_map t in
   Env.env_of_impl i resolver
+  |> Env.with_scope
+       (Env.Library_scope.of_libraries
+          i.Odoc_model.Lang.Implementation.libraries)
 
 let build_env_for_page t p =
   add_unit_to_cache (Odoc_file.Page_content p);

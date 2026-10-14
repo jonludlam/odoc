@@ -20,6 +20,8 @@
 - Support for atomic annotation (@ElectreAAS, #1496)
 - `{!modules: ...}` lists accept path references such as
   `{!modules: /lib/Module}` (@jonludlam, #1503)
+- `odoc compile` and `odoc compile-impl` take `-L lib:DIR`, recording the
+  library in the unit; `-I` is deprecated (@jonludlam, #1450, #1461)
 
 ### Performance
 - Memoize doc-comment parsing and skip doc rebuilding during link when nothing needs resolution (@jonludlam, #1480)
@@ -37,6 +39,9 @@
   (@jonludlam, #1495)
 - The unit being compiled or linked no longer hides the other units of its
   name, which a name written in another library may mean (@jonludlam, #1495)
+- `odoc link` resolves paths among the libraries a unit was compiled against,
+  so same-named modules of sibling libraries, such as eliom's, are no longer
+  mixed up; an ambiguous reference warns (@jonludlam, #1450, #1461)
 - Fix optional arguments rendering as `?arg:???` in modules without an mli on
   OCaml 5.5 (@jonludlam, #1489)
 - Remove requirement for ppx_expect in tests (@jonludlam, #1445)

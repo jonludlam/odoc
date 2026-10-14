@@ -43,8 +43,11 @@ Linked without [x], and with [z] in its place, the alias should not resolve.
 saw, so odoc should say it is missing rather than take the one it can reach.
 
   $ odoc link h/y/b.odoc -o h/y/b.odocl -L y:h/y -L z:h/z -L w:h/w --custom-layout --enable-missing-root-warning
+  File "h/y/b.odoc":
+  Warning: Couldn't find the following modules:
+    A
   $ alias_target h/y/b.odocl
-  [{"`Resolved":{"`Identifier":{"`Root":[{"Some":{"`Page":["None","z"]}},"A"]}}}]
+  [{"`Root":"A"}]
 
 The libraries [B] records are searched together, in no order. Here [B] is
 compiled again, recording [z] as well as [x]: the compiler only saw [x]'s [A],

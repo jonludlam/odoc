@@ -28,24 +28,6 @@ Both libraries are in the reference scope of every unit, with [-L]. The
   >     odoc link -I h/pkg/$lib $L h/pkg/$lib/$m.odoc
   >   done
   > done
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content__Html":
-  Ambiguous lookup. Possible files: Content__Html
-  Content__Html
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
-  File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
 
 Which library the root modules named in each unit come from. Each unit should
 stay on its own side: the alias [Html], the canonical path written on
@@ -58,9 +40,9 @@ itself, so it should not be ambiguous either.
 
   $ roots() { odoc_print $1 | jq -c '[.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
   $ roots h/pkg/client/content.odocl
-  ["client/Content","server/Content","server/Content__Html"]
+  ["client/Content","client/Content__Html"]
   $ roots h/pkg/client/wrap.odocl
-  ["client/Wrap","server/Content"]
+  ["client/Content","client/Wrap"]
   $ roots h/pkg/server/content.odocl
   ["server/Content","server/Content__Html"]
   $ roots h/pkg/server/wrap.odocl
