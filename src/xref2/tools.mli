@@ -41,6 +41,8 @@ type scope = Env.Library_scope.t option
 (** The libraries of the unit a lookup ended in, when that is not the unit it
     started in. What is found there is resolved among them. *)
 
+val in_scope : Env.t -> scope -> Env.t
+
 val lookup_module :
   Env.t ->
   Cpath.Resolved.module_ ->

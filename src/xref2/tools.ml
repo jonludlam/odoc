@@ -215,6 +215,10 @@ open Errors.Tools_error
    started in. Whatever is found there is resolved among them. *)
 type scope = Env.Library_scope.t option
 
+let in_scope env : scope -> Env.t = function
+  | None -> env
+  | Some s -> Env.with_scope s env
+
 (* A module reached by its identifier is in the unit at the root of that
    identifier: what is inside it is resolved among that unit's libraries. *)
 let scope_of_root env (id : Odoc_model.Paths.Identifier.Signature.t) : scope =
@@ -574,7 +578,8 @@ and lookup_module_gpath :
   | `Module (parent, name) ->
       lookup_parent_gpath env parent
       |> map_error (fun e -> (e :> simple_module_lookup_error))
-      >>= fun (sg, sub, scope) -> find_module_in_sg env scope sg sub name
+      >>= fun (sg, sub, scope) ->
+      find_module_in_sg (in_scope env scope) scope sg sub name
   | `Alias (p, _) -> lookup_module_gpath env p
   | `Subst (_, p) -> lookup_module_gpath env p
   | `Hidden p -> lookup_module_gpath env p
@@ -614,7 +619,8 @@ and lookup_module :
     | `Module (parent, name) ->
         lookup_parent env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
-        >>= fun (sg, sub, scope) -> find_module_in_sg env scope sg sub name
+        >>= fun (sg, sub, scope) ->
+        find_module_in_sg (in_scope env scope) scope sg sub name
     | `Alias (_, cs, _) -> (
         match resolve_module env cs with
         | Ok (_, r, scope) -> Ok (r, scope)
@@ -689,7 +695,7 @@ and lookup_parent :
         lookup_module env p |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun (m, scope) ->
         let m = Component.Delayed.get m in
-        expansion_of_module env m
+        expansion_of_module (in_scope env scope) m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
         >>= fun sg -> Ok (sg, prefix_substitution parent sg, scope)
@@ -719,7 +725,7 @@ and lookup_parent_gpath :
   |> map_error (fun e -> `Parent (`Parent_module e))
   >>= fun (m, scope) ->
   let m = Component.Delayed.get m in
-  expansion_of_module env m
+  expansion_of_module (in_scope env scope) m
   |> map_error (fun e -> `Parent (`Parent_sig e))
   >>= assert_not_functor
   >>= fun sg -> Ok (sg, prefix_substitution (`Module (`Gpath parent)) sg, scope)
@@ -922,12 +928,12 @@ and resolve_module : Env.t -> Cpath.module_ -> resolve_module_result =
         resolve_and_lookup_parent env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (parent, parent_sig, sub, scope) ->
-        handle_module_lookup env scope id parent parent_sig sub
+        handle_module_lookup (in_scope env scope) scope id parent parent_sig sub
     | `Module (parent, id) ->
         lookup_parent env parent
         |> map_error (fun e -> (e :> simple_module_lookup_error))
         >>= fun (parent_sig, sub, scope) ->
-        handle_module_lookup env scope id parent parent_sig sub
+        handle_module_lookup (in_scope env scope) scope id parent parent_sig sub
     | `Apply (m1, m2) -> (
         let func = resolve_module env m1 in
         let arg = resolve_module env m2 in
@@ -949,7 +955,10 @@ and resolve_module : Env.t -> Cpath.module_ -> resolve_module_result =
           if hidden then `Hidden (`Gpath (`Identifier i))
           else `Gpath (`Identifier i)
         in
-        Ok (process_module_path env (Component.Delayed.get m) rp, m, scope)
+        Ok
+          ( process_module_path (in_scope env scope) (Component.Delayed.get m) rp,
+            m,
+            scope )
     | `Local (p, _) -> Error (`Local (env, p))
     | `Resolved r -> lookup_module env r >>= fun (m, scope) -> Ok (r, m, scope)
     | `Substituted s ->
@@ -965,7 +974,7 @@ and resolve_module : Env.t -> Cpath.module_ -> resolve_module_result =
               `Gpath
                 (`Identifier (p :> Odoc_model.Paths.Identifier.Path.Module.t))
             in
-            let p = process_module_path env m p in
+            let p = process_module_path (in_scope env scope) m p in
             Ok (p, Component.Delayed.put_val m, scope)
         | Some Env.Forward ->
             Error (`Parent (`Parent_sig `UnresolvedForwardPath))
@@ -980,15 +989,15 @@ and resolve_module_type :
   | `DotMT (parent, id) ->
       resolve_and_lookup_parent env parent
       |> map_error (fun e -> (e :> simple_module_type_lookup_error))
-      >>= fun (parent, parent_sig, sub, _) ->
+      >>= fun (parent, parent_sig, sub, scope) ->
       of_option ~error:`Find_failure
-        (handle_module_type_lookup env id parent parent_sig sub)
+        (handle_module_type_lookup (in_scope env scope) id parent parent_sig sub)
       >>= fun (p', mt) -> Ok (p', mt)
   | `ModuleType (parent, id) ->
       lookup_parent env parent
       |> map_error (fun e -> (e :> simple_module_type_lookup_error))
-      >>= fun (parent_sig, sub, _) ->
-      handle_module_type_lookup env id parent parent_sig sub
+      >>= fun (parent_sig, sub, scope) ->
+      handle_module_type_lookup (in_scope env scope) id parent parent_sig sub
       |> of_option ~error:`Find_failure
   | `Identifier (i, _) ->
       of_option ~error:(`Lookup_failureMT i)
@@ -1011,8 +1020,9 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
     | `DotT (parent, id) ->
         resolve_and_lookup_parent env parent
         |> map_error (fun e -> (e :> simple_type_lookup_error))
-        >>= fun (parent, parent_sig, sub, _) ->
-        handle_type_lookup env id parent parent_sig >>= fun (p', t') ->
+        >>= fun (parent, parent_sig, sub, scope) ->
+        handle_type_lookup (in_scope env scope) id parent parent_sig
+        >>= fun (p', t') ->
         let t =
           match t' with
           | `CoreType _ as c -> c
@@ -1049,8 +1059,9 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
     | `ClassType (parent, id) ->
         lookup_parent env parent
         |> map_error (fun e -> (e :> simple_type_lookup_error))
-        >>= fun (parent_sg, sub, _) ->
-        handle_type_lookup env id parent parent_sg >>= fun (p', t') ->
+        >>= fun (parent_sg, sub, scope) ->
+        handle_type_lookup (in_scope env scope) id parent parent_sg
+        >>= fun (p', t') ->
         let t =
           match t' with
           | `CoreType _ as c -> c
@@ -1082,9 +1093,9 @@ and resolve_value : Env.t -> Cpath.value -> resolve_value_result =
     | `DotV (parent, id) ->
         resolve_module env parent
         |> map_error (fun e -> `Parent (`Parent_module e))
-        >>= fun (p, m, _) ->
+        >>= fun (p, m, scope) ->
         let m = Component.Delayed.get m in
-        expansion_of_module_cached env p m
+        expansion_of_module_cached (in_scope env scope) p m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
         >>= fun sg ->
@@ -1532,14 +1543,14 @@ and module_type_expr_of_module_decl :
   match decl with
   | Component.Module.Alias (`Resolved r, _) ->
       lookup_module env r |> map_error (fun e -> `Parent (`Parent_module e))
-      >>= fun (m, _) ->
+      >>= fun (m, scope) ->
       let m = Component.Delayed.get m in
-      module_type_expr_of_module_decl env m.type_
+      module_type_expr_of_module_decl (in_scope env scope) m.type_
   | Component.Module.Alias (path, _) -> (
       match resolve_module env path with
-      | Ok (_, m, _) ->
+      | Ok (_, m, scope) ->
           let m = Component.Delayed.get m in
-          module_type_expr_of_module env m
+          module_type_expr_of_module (in_scope env scope) m
       | Error e -> Error (`UnresolvedPath (`Module (path, e))))
   | Component.Module.ModuleType expr -> Ok expr
 
@@ -1557,7 +1568,8 @@ and expansion_of_module_path :
     (expansion, expansion_of_module_error) result =
  fun env ~strengthen path ->
   match resolve_module env path with
-  | Ok (p', m, _) -> (
+  | Ok (p', m, scope) -> (
+      let env = in_scope env scope in
       let m = Component.Delayed.get m in
       (* p' is the path to the aliased module *)
       let strengthen =
@@ -2321,7 +2333,8 @@ and class_signature_of_class_type :
  fun env c -> class_signature_of_class_type_expr env c.expr
 
 let resolve_module_path env p =
-  resolve_module env p >>= fun (p, m, _) ->
+  resolve_module env p >>= fun (p, m, scope) ->
+  let env = in_scope env scope in
   match p with
   | `Gpath (`Identifier (`Root _)) | `Hidden (`Gpath (`Identifier (`Root _))) ->
       Ok p

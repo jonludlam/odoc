@@ -71,6 +71,9 @@ each library, one by plain name, and a submodule of each.
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
+  File "Content__Html":
+  Ambiguous lookup. Possible files: Content__Html
+  Content__Html
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
@@ -80,6 +83,9 @@ each library, one by plain name, and a submodule of each.
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
+  File "Content__Html":
+  Ambiguous lookup. Possible files: Content__Html
+  Content__Html
   $ refs() { odoc_print $1 | jq -c '[.. | objects | select(has("`Reference")) | .["`Reference"][0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique | join(" ")]'; }
 Where each reference on the page points, in the order they are written. The
 first two name a root module one library at a time, and a path reference says
