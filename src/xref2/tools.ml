@@ -698,7 +698,8 @@ and lookup_parent :
         expansion_of_module (in_scope env scope) m
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
-        >>= fun sg -> Ok (sg, prefix_substitution parent sg, scope)
+        >>= fun sg ->
+        Ok (sg, prefix_substitution parent sg, alias_target_scope env scope m)
     | `ModuleType p ->
         lookup_module_type env p
         |> map_error (fun e -> `Parent (`Parent_module_type e))
@@ -732,7 +733,23 @@ and lookup_parent_gpath :
   expansion_of_module (in_scope env scope) m
   |> map_error (fun e -> `Parent (`Parent_sig e))
   >>= assert_not_functor
-  >>= fun sg -> Ok (sg, prefix_substitution (`Module (`Gpath parent)) sg, scope)
+  >>= fun sg ->
+  Ok
+    ( sg,
+      prefix_substitution (`Module (`Gpath parent)) sg,
+      alias_target_scope env scope m )
+
+(* The scope of the signature a module expands to. An alias expands to the
+   signature of the module it names, which may be in another unit. *)
+and alias_target_scope env scope (m : Component.Module.t) : scope =
+  match m.type_ with
+  | Alias (p, _) -> (
+      match resolve_module (in_scope env scope) p with
+      | Ok (_, m', scope') ->
+          let scope = if scope' = None then scope else scope' in
+          alias_target_scope env scope (Component.Delayed.get m')
+      | Error _ -> scope)
+  | ModuleType _ -> scope
 
 and lookup_type_gpath :
     Env.t ->
@@ -914,9 +931,16 @@ and enter_unit env parent =
   | Ok (_, scope) -> in_scope env scope
   | Error _ -> env
 
+(* The unit the members of a parent were written in. For a module that is an
+   alias, it is the unit of the module the alias names, whose signature the
+   alias expands to; the alias itself is expanded in its own unit. *)
 and enter_unit_parent env (parent : Cpath.Resolved.parent) =
   match parent with
-  | `Module m -> enter_unit env m
+  | `Module m -> (
+      match lookup_module env m with
+      | Ok (md, scope) ->
+          in_scope env (alias_target_scope env scope (Component.Delayed.get md))
+      | Error _ -> env)
   | `ModuleType mt -> in_scope env (signature_scope_of_module_type env mt)
   | `FragmentRoot -> env
 
