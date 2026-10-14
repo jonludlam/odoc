@@ -18,8 +18,5 @@ A page refers to [H] through [Y.S]. It should reach [ix]'s [Inner], not
 
   $ odoc compile --output-dir h --parent-id pkg p.mld
   $ odoc link -P pkg:h/pkg -L ix:h/pkg/ix -L iy:h/pkg/iy -L x:h/pkg/x -L y:h/pkg/y h/pkg/page-p.odoc
-  File "Inner":
-  Ambiguous lookup. Possible files: Inner
-  Inner
   $ refs h/pkg/page-p.odocl
-  ["iy/Inner x/X y/Y"]
+  ["ix/Inner x/X y/Y"]

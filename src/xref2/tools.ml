@@ -703,10 +703,14 @@ and lookup_parent :
         lookup_module_type env p
         |> map_error (fun e -> `Parent (`Parent_module_type e))
         >>= fun mt ->
-        expansion_of_module_type env mt
+        expansion_of_module_type (in_scope env (scope_of_module_type env p)) mt
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
-        >>= fun sg -> Ok (sg, prefix_substitution parent sg, None)
+        >>= fun sg ->
+        Ok
+          ( sg,
+            prefix_substitution parent sg,
+            signature_scope_of_module_type env p )
     | `FragmentRoot ->
         Env.lookup_fragment_root env
         |> of_option ~error:(`Parent `Fragment_root)
@@ -913,7 +917,68 @@ and enter_unit env parent =
 and enter_unit_parent env (parent : Cpath.Resolved.parent) =
   match parent with
   | `Module m -> enter_unit env m
-  | `ModuleType _ | `FragmentRoot -> env
+  | `ModuleType mt -> in_scope env (signature_scope_of_module_type env mt)
+  | `FragmentRoot -> env
+
+(* The libraries of the unit a module type is declared in. Its declaration, such
+   as [module type S = X.S], was written against them. *)
+and scope_of_module_type env (p : Cpath.Resolved.module_type) : scope =
+  match p with
+  | `Local _ -> None
+  | `Gpath p -> scope_of_module_type_gpath env p
+  | `ModuleType (parent, _) -> (
+      match lookup_parent env parent with
+      | Ok (_, _, scope) -> scope
+      | Error _ -> None)
+  | `Substituted p
+  | `CanonicalModuleType (p, _)
+  | `SubstT (_, p)
+  | `AliasModuleType (_, p)
+  | `OpaqueModuleType p ->
+      scope_of_module_type env p
+
+and scope_of_module_type_gpath env
+    (p : Odoc_model.Paths.Path.Resolved.ModuleType.t) : scope =
+  match p with
+  | `Identifier i ->
+      scope_of_root env (i :> Odoc_model.Paths.Identifier.Signature.t)
+  | `ModuleType (parent, _) -> (
+      match lookup_parent_gpath env parent with
+      | Ok (_, _, scope) -> scope
+      | Error _ -> None)
+  | `SubstitutedMT p
+  | `CanonicalModuleType (p, _)
+  | `SubstT (_, p)
+  | `AliasModuleType (_, p)
+  | `OpaqueModuleType p ->
+      scope_of_module_type_gpath env p
+
+(* The libraries of the unit a module type's signature was written in, which
+   its members were written against. For [module type S = X.S], that is the
+   unit of [X.S], not the unit declaring [S]. *)
+and signature_scope_of_module_type env (p : Cpath.Resolved.module_type) : scope
+    =
+  match p with
+  | `AliasModuleType (target, _) -> signature_scope_of_module_type env target
+  | `Gpath p -> signature_scope_of_module_type_gpath env p
+  | `Substituted p
+  | `CanonicalModuleType (p, _)
+  | `SubstT (_, p)
+  | `OpaqueModuleType p ->
+      signature_scope_of_module_type env p
+  | `Local _ | `ModuleType _ -> scope_of_module_type env p
+
+and signature_scope_of_module_type_gpath env
+    (p : Odoc_model.Paths.Path.Resolved.ModuleType.t) : scope =
+  match p with
+  | `AliasModuleType (target, _) ->
+      signature_scope_of_module_type_gpath env target
+  | `SubstitutedMT p
+  | `CanonicalModuleType (p, _)
+  | `SubstT (_, p)
+  | `OpaqueModuleType p ->
+      signature_scope_of_module_type_gpath env p
+  | `Identifier _ | `ModuleType _ -> scope_of_module_type_gpath env p
 
 and resolve_and_lookup_parent :
     Env.t ->
