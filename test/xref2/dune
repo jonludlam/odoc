@@ -73,7 +73,12 @@
   to_remove_test
   sibling_libraries
   self_name
-  alias_scope)
+  library_scope
+  path_scope
+  alias_scope
+  module_type_scope
+  module_type_alias_scope
+  hidden_alias_scope)
  (enabled_if
   (>= %{ocaml_version} 4.14.0)))
 
