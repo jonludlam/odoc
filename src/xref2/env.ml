@@ -19,7 +19,10 @@ end
 
 type resolver = {
   open_units : string list;
-  lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
+  lookup_unit_by_name :
+    scope:Library_scope.t -> string -> (lookup_unit_result, lookup_error) result;
+  lookup_unit_by_path :
+    Reference.Hierarchy.t -> (Lang.Compilation_unit.t, lookup_error) result;
   lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
   scope_of_unit : Identifier.RootModule.t -> string list;
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
@@ -194,7 +197,8 @@ let is_linking env = env.linking
 
 let set_resolver t resolver = { t with resolver = Some resolver }
 
-let with_scope scope t = { t with scope }
+let with_scope scope t =
+  if scope = t.scope then t else { t with scope; id = unique_id () }
 
 let scope_of_unit id t =
   match t.resolver with
@@ -448,12 +452,12 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
       let ty = Component.Of_Lang.(module_ (empty ()) m) in
       ty
 
-let lookup_root_module name env =
+let lookup_root_module_in scope name env =
   let result =
     match env.resolver with
     | None -> None
     | Some r -> (
-        match r.lookup_unit (`Name (ModuleName.to_string name)) with
+        match r.lookup_unit_by_name ~scope (ModuleName.to_string name) with
         | Ok Forward_reference -> Some Forward
         | Error `Not_found -> None
         | Ok (Found u) ->
@@ -475,6 +479,8 @@ let lookup_root_module name env =
   | None, _ -> ());
   result
 
+let lookup_root_module name env = lookup_root_module_in env.scope name env
+
 let lookup_page query env =
   match env.resolver with
   | None -> Error `Not_found
@@ -484,11 +490,6 @@ let lookup_asset query env =
   match env.resolver with
   | None -> Error `Not_found
   | Some r -> r.lookup_asset query
-
-let lookup_unit query env =
-  match env.resolver with
-  | None -> Error `Not_found
-  | Some r -> r.lookup_unit query
 
 let lookup_impl name env =
   match env.resolver with None -> None | Some r -> r.lookup_impl name
@@ -500,12 +501,14 @@ let lookup_asset_by_name p env = lookup_asset (`Name p) env
 let lookup_asset_by_path p env = lookup_asset (`Path p) env
 
 let lookup_unit_by_path p env =
-  match lookup_unit (`Path p) env with
-  | Ok (Found u) ->
-      let m = Component.Delayed.put_val (module_of_unit u) in
-      Ok (`Module ((u.id :> Identifier.Path.Module.t), m))
-  | Ok Forward_reference -> Error `Not_found (* TODO: Remove this case *)
-  | Error _ as e -> e
+  match env.resolver with
+  | None -> Error `Not_found
+  | Some r -> (
+      match r.lookup_unit_by_path p with
+      | Ok u ->
+          let m = Component.Delayed.put_val (module_of_unit u) in
+          Ok (`Module ((u.id :> Identifier.Path.Module.t), m))
+      | Error _ as e -> e)
 
 type 'a scope = {
   filter : Component.Element.any -> ([< Component.Element.any ] as 'a) option;
@@ -584,8 +587,12 @@ let lookup_by_id (scope : 'a scope) id env : 'a option =
                   scope.filter x))
       | _ -> None)
 
+(* The root of a reference. An author may name anything in the reference
+   scope, so this lookup is not limited to the libraries the unit records. *)
 let lookup_root_module_fallback name t =
-  match lookup_root_module (ModuleName.make_std name) t with
+  match
+    lookup_root_module_in Library_scope.Any (ModuleName.make_std name) t
+  with
   | Some (Resolved (_, id, m)) ->
       Some
         (`Module ((id :> Identifier.Path.Module.t), Component.Delayed.put_val m))
@@ -908,7 +915,7 @@ let open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t =
 let open_units resolver env =
   List.fold_left
     (fun env m ->
-      match resolver.lookup_unit (`Name m) with
+      match resolver.lookup_unit_by_name ~scope:Library_scope.Any m with
       | Ok (Found unit) -> (
           match unit.content with
           | Module sg -> open_signature sg env
@@ -920,7 +927,9 @@ let inherit_resolver env =
   match env.resolver with
   | Some r ->
       let e = set_resolver empty r in
-      open_units r e
+      (* Keep the scope: the documentation being resolved in the fresh
+         environment belongs to the unit the scope names. *)
+      { (open_units r e) with scope = env.scope }
   | None -> empty
 
 let env_of_unit t ~linking resolver =
@@ -961,7 +970,10 @@ let verify_lookups env lookups =
           match env.resolver with
           | None -> None
           | Some r -> (
-              match r.lookup_unit (`Name (ModuleName.to_string name)) with
+              match
+                r.lookup_unit_by_name ~scope:env.scope
+                  (ModuleName.to_string name)
+              with
               | Ok Forward_reference -> Some `Forward
               | Ok (Found u) -> Some (`Resolved u.root.digest)
               | Error `Not_found -> None)
