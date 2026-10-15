@@ -975,12 +975,21 @@ end
 
 module Fragment = struct
   module Resolved = struct
-    type t = Paths_types.Resolved_fragment.any
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.any
 
-    type root = Paths_types.Resolved_fragment.root
+    type t = (na, na, na, canon) gen
+
+    type ('lmod, 'lmodty, 'pty, 'canon) root_gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.root
+
+    type root = (na, na, na, canon) root_gen
 
     module Signature = struct
-      type t = Paths_types.Resolved_fragment.signature
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.signature
+
+      type t = (na, na, na, canon) gen
 
       let rec sgidentifier : t -> Identifier.Signature.t option = function
         | `Root (`ModuleType i) ->
@@ -999,18 +1008,30 @@ module Fragment = struct
     end
 
     module Module = struct
-      type t = Paths_types.Resolved_fragment.module_
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.module_
+
+      type t = (na, na, na, canon) gen
     end
 
     module ModuleType = struct
-      type t = Paths_types.Resolved_fragment.module_type
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.module_type
+
+      type t = (na, na, na, canon) gen
     end
 
     module Type = struct
-      type t = Paths_types.Resolved_fragment.type_
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.type_
+
+      type t = (na, na, na, canon) gen
     end
 
-    type leaf = Paths_types.Resolved_fragment.leaf
+    type ('lmod, 'lmodty, 'pty, 'canon) leaf_gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.leaf
+
+    type leaf = (na, na, na, canon) leaf_gen
 
     let rec identifier : t -> Identifier.t option = function
       | `Root (`ModuleType _r) -> assert false
@@ -1053,27 +1074,106 @@ module Fragment = struct
       | `ClassType (m, _) ->
           is_hidden (m :> t)
       | `OpaqueModule m -> is_hidden (m :> t)
+
+    type ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map = {
+      module_ :
+        ('l1, 'lt1, 'p1, 'c1) Path.Resolved.Module.gen ->
+        ('l2, 'lt2, 'p2, 'c2) Path.Resolved.Module.gen;
+      module_type :
+        ('l1, 'lt1, 'p1, 'c1) Path.Resolved.ModuleType.gen ->
+        ('l2, 'lt2, 'p2, 'c2) Path.Resolved.ModuleType.gen;
+    }
+
+    (* Each path is mapped before the fragment that follows it. *)
+    let rec map_signature :
+        ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
+        ('l1, 'lt1, 'p1, 'c1) Signature.gen ->
+        ('l2, 'lt2, 'p2, 'c2) Signature.gen =
+     fun f x ->
+      match x with
+      | `Root (`ModuleType p) -> `Root (`ModuleType (f.module_type p))
+      | `Root (`Module p) -> `Root (`Module (f.module_ p))
+      | (`OpaqueModule _ | `Subst _ | `Alias _ | `Module _) as x ->
+          (map_module f x :> ('l2, 'lt2, 'p2, 'c2) Signature.gen)
+
+    and map_module :
+        ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
+        ('l1, 'lt1, 'p1, 'c1) Module.gen ->
+        ('l2, 'lt2, 'p2, 'c2) Module.gen =
+     fun f x ->
+      match x with
+      | `Subst (p, m) ->
+          let p = f.module_type p in
+          `Subst (p, map_module f m)
+      | `Alias (p, m) ->
+          let p = f.module_ p in
+          `Alias (p, map_module f m)
+      | `Module (sg, n) -> `Module (map_signature f sg, n)
+      | `OpaqueModule m -> `OpaqueModule (map_module f m)
+
+    let map_module_type f : _ ModuleType.gen -> _ ModuleType.gen = function
+      | `Module_type (sg, n) -> `Module_type (map_signature f sg, n)
+
+    let map_type f : _ Type.gen -> _ Type.gen = function
+      | `Type (sg, n) -> `Type (map_signature f sg, n)
+      | `Class (sg, n) -> `Class (map_signature f sg, n)
+      | `ClassType (sg, n) -> `ClassType (map_signature f sg, n)
   end
 
-  type t = Paths_types.Fragment.any
+  type ('lmod, 'lmodty, 'pty, 'canon) gen =
+    ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.any
+
+  type t = (na, na, na, canon) gen
 
   module Signature = struct
-    type t = Paths_types.Fragment.signature
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.signature
+
+    type t = (na, na, na, canon) gen
   end
 
   module Module = struct
-    type t = Paths_types.Fragment.module_
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.module_
+
+    type t = (na, na, na, canon) gen
   end
 
   module ModuleType = struct
-    type t = Paths_types.Fragment.module_type
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.module_type
+
+    type t = (na, na, na, canon) gen
   end
 
   module Type = struct
-    type t = Paths_types.Fragment.type_
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.type_
+
+    type t = (na, na, na, canon) gen
   end
 
-  type leaf = Paths_types.Fragment.leaf
+  type ('lmod, 'lmodty, 'pty, 'canon) leaf_gen =
+    ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.leaf
+
+  type leaf = (na, na, na, canon) leaf_gen
+
+  let rec map_signature f : _ Signature.gen -> _ Signature.gen = function
+    | `Resolved r -> `Resolved (Resolved.map_signature f r)
+    | `Dot (sg, n) -> `Dot (map_signature f sg, n)
+    | `Root -> `Root
+
+  let map_module f : _ Module.gen -> _ Module.gen = function
+    | `Resolved r -> `Resolved (Resolved.map_module f r)
+    | `Dot (sg, n) -> `Dot (map_signature f sg, n)
+
+  let map_module_type f : _ ModuleType.gen -> _ ModuleType.gen = function
+    | `Resolved r -> `Resolved (Resolved.map_module_type f r)
+    | `Dot (sg, n) -> `Dot (map_signature f sg, n)
+
+  let map_type f : _ Type.gen -> _ Type.gen = function
+    | `Resolved r -> `Resolved (Resolved.map_type f r)
+    | `Dot (sg, n) -> `Dot (map_signature f sg, n)
 end
 
 module Reference = struct

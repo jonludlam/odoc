@@ -451,78 +451,102 @@ type canon =
 (** The canonical targets of model paths: model paths. *)
 
 module rec Fragment : sig
-  type signature =
-    [ `Resolved of Resolved_fragment.signature
-    | `Dot of signature * string
+  type ('lmod, 'lmodty, 'pty, 'canon) signature =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_fragment.signature
+    | `Dot of ('lmod, 'lmodty, 'pty, 'canon) signature * string
     | `Root ]
   (** @canonical Odoc_model.Paths.Fragment.Signature.t *)
 
-  type module_ =
-    [ `Resolved of Resolved_fragment.module_ | `Dot of signature * string ]
+  type ('lmod, 'lmodty, 'pty, 'canon) module_ =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_fragment.module_
+    | `Dot of ('lmod, 'lmodty, 'pty, 'canon) signature * string ]
   (** @canonical Odoc_model.Paths.Fragment.Module.t *)
 
-  type module_type =
-    [ `Resolved of Resolved_fragment.module_type | `Dot of signature * string ]
+  type ('lmod, 'lmodty, 'pty, 'canon) module_type =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_fragment.module_type
+    | `Dot of ('lmod, 'lmodty, 'pty, 'canon) signature * string ]
   (** @canonical Odoc_model.Paths.Fragment.ModuleType.t *)
 
-  type type_ =
-    [ `Resolved of Resolved_fragment.type_ | `Dot of signature * string ]
+  type ('lmod, 'lmodty, 'pty, 'canon) type_ =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_fragment.type_
+    | `Dot of ('lmod, 'lmodty, 'pty, 'canon) signature * string ]
   (** @canonical Odoc_model.Paths.Fragment.Type.t *)
 
-  type leaf =
-    [ `Resolved of Resolved_fragment.leaf | `Dot of signature * string ]
+  type ('lmod, 'lmodty, 'pty, 'canon) leaf =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_fragment.leaf
+    | `Dot of ('lmod, 'lmodty, 'pty, 'canon) signature * string ]
   (** @canonical Odoc_model.Paths.Fragment.leaf *)
 
-  type any =
-    [ `Resolved of Resolved_fragment.any | `Dot of signature * string | `Root ]
+  type ('lmod, 'lmodty, 'pty, 'canon) any =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_fragment.any
+    | `Dot of ('lmod, 'lmodty, 'pty, 'canon) signature * string
+    | `Root ]
   (** @canonical Odoc_model.Paths.Fragment.t *)
 end =
   Fragment
 
 and Resolved_fragment : sig
-  type root =
-    [ `ModuleType of (na, na, na, canon) Resolved_path.module_type
-    | `Module of (na, na, na, canon) Resolved_path.module_ ]
+  type ('lmod, 'lmodty, 'pty, 'canon) root =
+    [ `ModuleType of ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_type
+    | `Module of ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_ ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.root *)
 
-  type signature =
-    [ `Root of root
-    | `Subst of (na, na, na, canon) Resolved_path.module_type * module_
-    | `Alias of (na, na, na, canon) Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t
-    | `OpaqueModule of module_ ]
+  type ('lmod, 'lmodty, 'pty, 'canon) signature =
+    [ `Root of ('lmod, 'lmodty, 'pty, 'canon) root
+    | `Subst of
+      ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_type
+      * ('lmod, 'lmodty, 'pty, 'canon) module_
+    | `Alias of
+      ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_
+      * ('lmod, 'lmodty, 'pty, 'canon) module_
+    | `Module of ('lmod, 'lmodty, 'pty, 'canon) signature * ModuleName.t
+    | `OpaqueModule of ('lmod, 'lmodty, 'pty, 'canon) module_ ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.Signature.t *)
 
-  and module_ =
-    [ `Subst of (na, na, na, canon) Resolved_path.module_type * module_
-    | `Alias of (na, na, na, canon) Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t
-    | `OpaqueModule of module_ ]
+  and ('lmod, 'lmodty, 'pty, 'canon) module_ =
+    [ `Subst of
+      ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_type
+      * ('lmod, 'lmodty, 'pty, 'canon) module_
+    | `Alias of
+      ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_
+      * ('lmod, 'lmodty, 'pty, 'canon) module_
+    | `Module of ('lmod, 'lmodty, 'pty, 'canon) signature * ModuleName.t
+    | `OpaqueModule of ('lmod, 'lmodty, 'pty, 'canon) module_ ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.Module.t *)
 
-  type type_ =
-    [ `Type of signature * TypeName.t
-    | `Class of signature * TypeName.t
-    | `ClassType of signature * TypeName.t ]
+  type ('lmod, 'lmodty, 'pty, 'canon) type_ =
+    [ `Type of ('lmod, 'lmodty, 'pty, 'canon) signature * TypeName.t
+    | `Class of ('lmod, 'lmodty, 'pty, 'canon) signature * TypeName.t
+    | `ClassType of ('lmod, 'lmodty, 'pty, 'canon) signature * TypeName.t ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.Type.t *)
 
-  and module_type = [ `Module_type of signature * ModuleTypeName.t ]
+  and ('lmod, 'lmodty, 'pty, 'canon) module_type =
+    [ `Module_type of
+      ('lmod, 'lmodty, 'pty, 'canon) signature * ModuleTypeName.t ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.ModuleType.t *)
 
-  type leaf = [ module_ | module_type | type_ ]
+  type ('lmod, 'lmodty, 'pty, 'canon) leaf =
+    [ ('lmod, 'lmodty, 'pty, 'canon) module_
+    | ('lmod, 'lmodty, 'pty, 'canon) module_type
+    | ('lmod, 'lmodty, 'pty, 'canon) type_ ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.leaf *)
 
   (* Absence of `Root here might make coersions annoying *)
-  type any =
-    [ `Root of root
-    | `Subst of (na, na, na, canon) Resolved_path.module_type * module_
-    | `Alias of (na, na, na, canon) Resolved_path.module_ * module_
-    | `Module of signature * ModuleName.t
-    | `Module_type of signature * ModuleTypeName.t
-    | `Type of signature * TypeName.t
-    | `Class of signature * TypeName.t
-    | `ClassType of signature * TypeName.t
-    | `OpaqueModule of module_ ]
+  type ('lmod, 'lmodty, 'pty, 'canon) any =
+    [ `Root of ('lmod, 'lmodty, 'pty, 'canon) root
+    | `Subst of
+      ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_type
+      * ('lmod, 'lmodty, 'pty, 'canon) module_
+    | `Alias of
+      ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.module_
+      * ('lmod, 'lmodty, 'pty, 'canon) module_
+    | `Module of ('lmod, 'lmodty, 'pty, 'canon) signature * ModuleName.t
+    | `Module_type of
+      ('lmod, 'lmodty, 'pty, 'canon) signature * ModuleTypeName.t
+    | `Type of ('lmod, 'lmodty, 'pty, 'canon) signature * TypeName.t
+    | `Class of ('lmod, 'lmodty, 'pty, 'canon) signature * TypeName.t
+    | `ClassType of ('lmod, 'lmodty, 'pty, 'canon) signature * TypeName.t
+    | `OpaqueModule of ('lmod, 'lmodty, 'pty, 'canon) module_ ]
   (** @canonical Odoc_model.Paths.Fragment.Resolved.t *)
 end =
   Resolved_fragment

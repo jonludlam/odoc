@@ -1863,8 +1863,8 @@ and fixup_module_cfrag (f : Cfrag.resolved_module) : Cfrag.resolved_module =
 and fixup_module_type_cfrag (f : Cfrag.resolved_module_type) :
     Cfrag.resolved_module_type =
   match f with
-  | `ModuleType (parent, name) ->
-      `ModuleType (fixup_signature_cfrag parent, name)
+  | `Module_type (parent, name) ->
+      `Module_type (fixup_signature_cfrag parent, name)
 
 and fixup_signature_cfrag (f : Cfrag.resolved_signature) =
   match f with
@@ -1992,7 +1992,7 @@ and resolve_module_type_fragment :
            (ModuleTypeName.make_std name))
       >>= fun mt' ->
       let mtname = ModuleTypeName.make_std name in
-      let f' = `ModuleType (pfrag, mtname) in
+      let f' = `Module_type (pfrag, mtname) in
       let m' = Component.Delayed.get mt' in
       let f'' =
         match expansion_of_module_type env m' with
@@ -2017,41 +2017,27 @@ and resolve_type_fragment :
       let result = fixup_type_cfrag (`Type (pfrag, TypeName.make_std name)) in
       Some result
 
-let rec reresolve_signature_fragment :
-    Env.t -> Cfrag.resolved_signature -> Cfrag.resolved_signature =
- fun env m ->
-  match m with
-  | `Root (`ModuleType p) -> `Root (`ModuleType (reresolve_module_type env p))
-  | `Root (`Module p) -> `Root (`Module (reresolve_module env p))
-  | (`OpaqueModule _ | `Subst _ | `Alias _ | `Module _) as x ->
-      (reresolve_module_fragment env x :> Cfrag.resolved_signature)
+let fragment_paths env =
+  {
+    Odoc_model.Paths.Fragment.Resolved.module_ = reresolve_module env;
+    module_type = reresolve_module_type env;
+  }
 
-and reresolve_module_fragment :
-    Env.t -> Cfrag.resolved_module -> Cfrag.resolved_module =
- fun env m ->
-  match m with
-  | `Subst (p, f) ->
-      let p' = reresolve_module_type env p in
-      `Subst (p', reresolve_module_fragment env f)
-  | `Alias (p, f) ->
-      let p' = reresolve_module env p in
-      `Alias (p', reresolve_module_fragment env f)
-  | `OpaqueModule m -> `OpaqueModule (reresolve_module_fragment env m)
-  | `Module (sg, m) -> `Module (reresolve_signature_fragment env sg, m)
+let reresolve_signature_fragment env (m : Cfrag.resolved_signature) :
+    Cfrag.resolved_signature =
+  Odoc_model.Paths.Fragment.Resolved.map_signature (fragment_paths env) m
 
-and reresolve_type_fragment :
-    Env.t -> Cfrag.resolved_type -> Cfrag.resolved_type =
- fun env m ->
-  match m with
-  | `Type (p, n) -> `Type (reresolve_signature_fragment env p, n)
-  | `ClassType (p, n) -> `ClassType (reresolve_signature_fragment env p, n)
-  | `Class (p, n) -> `Class (reresolve_signature_fragment env p, n)
+let reresolve_module_fragment env (m : Cfrag.resolved_module) :
+    Cfrag.resolved_module =
+  Odoc_model.Paths.Fragment.Resolved.map_module (fragment_paths env) m
 
-and reresolve_module_type_fragment :
-    Env.t -> Cfrag.resolved_module_type -> Cfrag.resolved_module_type =
- fun env m ->
-  match m with
-  | `ModuleType (p, n) -> `ModuleType (reresolve_signature_fragment env p, n)
+let reresolve_type_fragment env (m : Cfrag.resolved_type) : Cfrag.resolved_type
+    =
+  Odoc_model.Paths.Fragment.Resolved.map_type (fragment_paths env) m
+
+let reresolve_module_type_fragment env (m : Cfrag.resolved_module_type) :
+    Cfrag.resolved_module_type =
+  Odoc_model.Paths.Fragment.Resolved.map_module_type (fragment_paths env) m
 
 let rec class_signature_of_class :
     Env.t -> Component.Class.t -> Component.ClassSignature.t option =
