@@ -23,6 +23,8 @@ let rm : P.Resolved.Module.t = `Identifier m
 
 let rh : P.Resolved.Module.t = `Identifier h
 
+let pm : P.Resolved.parent = `Module rm
+
 let case name model cpath =
   Printf.printf "%-34s model=%-5b cpath=%-5b%s\n" name model cpath
     (if model = cpath then "" else "  DIFFERENT")
@@ -71,22 +73,22 @@ let class_type name (p : P.ClassType.t) =
 let () =
   print_endline "Resolved paths:";
   resolved_module "Alias (hidden, visible unresolved)"
-    (`Alias (rh, `Identifier (m, false)));
+    (`Alias (rh, `Identifier (m, false), None));
   resolved_module "Apply (hidden, visible)" (`Apply (rh, rm));
   resolved_module "Apply (visible, hidden)" (`Apply (rm, rh));
   resolved_module_type "ModuleType (visible, hidden name)"
-    (`ModuleType (rm, ModuleTypeName.hidden_of_string "S_h"));
+    (`ModuleType (pm, ModuleTypeName.hidden_of_string "S_h"));
   resolved_module_type "AliasModuleType (hidden, visible)"
     (`AliasModuleType (`Identifier s_h, `Identifier s));
   resolved_module_type "OpaqueModuleType (hidden)"
     (`OpaqueModuleType (`Identifier s_h));
   resolved_type "Class (visible, hidden name)"
-    (`Class (rm, TypeName.hidden_of_string "c_h"));
+    (`Class (pm, TypeName.hidden_of_string "c_h"));
   resolved_type "Identifier (hidden class)" (`Identifier c_h);
   resolved_module ~weak:true "Subst, weak canonical test"
     (`Subst
        ( `ModuleType
-           ( `Canonical (rh, `Root (ModuleName.make_std "C")),
+           ( `Module (`Canonical (rh, `Root (ModuleName.make_std "C"))),
              ModuleTypeName.make_std "T" ),
          rm ));
   print_endline "Unresolved paths:";

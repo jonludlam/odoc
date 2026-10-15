@@ -84,6 +84,8 @@ let rec shape_of_module_path env : _ -> Shape.t option =
         shape_of_id env (id :> Odoc_model.Paths.Identifier.NonSrc.t)
     | `Substituted m ->
         shape_of_module_path env m
+    | `LocalMod (`Na _, _) -> .
+    | `Module (`Na _, _, _) -> .
 
 let rec shape_of_kind_path env kind :
     Odoc_model.Paths.Path.t -> Shape.t option =
@@ -108,6 +110,15 @@ let rec shape_of_kind_path env kind :
     | `Dot _
     | `Root _
     | `Apply _ -> None
+    | `LocalMod (`Na _, _) -> .
+    | `LocalModTy (`Na _, _) -> .
+    | `LocalTy (`Na _, _) -> .
+    | `Module (`Na _, _, _) -> .
+    | `ModuleType (`Na _, _, _) -> .
+    | `Type (`Na _, _, _) -> .
+    | `Class (`Na _, _, _) -> .
+    | `ClassType (`Na _, _, _) -> .
+    | `Value (`Na _, _, _) -> .
     
 module MkId = Identifier.Mk
 

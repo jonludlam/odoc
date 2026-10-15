@@ -105,7 +105,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `Apply (x, y) ->
       should_reresolve (x :> t) || should_reresolve (y :> Paths.Path.Resolved.t)
   | `SubstT (x, y) -> should_reresolve (x :> t) || should_reresolve (y :> t)
-  | `Alias (y, x) ->
+  | `Alias (y, x, _) ->
       should_resolve (x :> Paths.Path.t) || should_reresolve (y :> t)
   | `AliasModuleType (x, y) ->
       should_reresolve (x :> t) || should_reresolve (y :> t)
@@ -115,7 +115,7 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `ClassType (p, _)
   | `ModuleType (p, _)
   | `Module (p, _) ->
-      should_reresolve (p :> t)
+      should_reresolve (Paths.Path.Resolved.parent_module p :> t)
   | `Unbox x -> should_reresolve (x :> t)
   | `OpaqueModule m -> should_reresolve (m :> t)
   | `OpaqueModuleType m -> should_reresolve (m :> t)
@@ -123,6 +123,9 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `SubstitutedMT m -> should_reresolve (m :> t)
   | `SubstitutedT m -> should_reresolve (m :> t)
   | `SubstitutedCT m -> should_reresolve (m :> t)
+  | `LocalMod (`Na _) -> .
+  | `LocalModTy (`Na _) -> .
+  | `LocalTy (`Na _) -> .
 
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true
