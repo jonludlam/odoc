@@ -98,7 +98,7 @@ let add_class :
     type_ =
       TypeMap.add
         (id :> Ident.type_)
-        (`Prefixed ((p :> Cpath.type_), (rp :> Cpath.Resolved.type_)))
+        (`Prefixed (Cpath.type_of_class_type p, (rp :> Cpath.Resolved.type_)))
         t.type_;
     class_type =
       TypeMap.add (id :> Ident.type_) (`Prefixed (p, rp)) t.class_type;
@@ -112,7 +112,7 @@ let add_class_type :
     type_ =
       TypeMap.add
         (id :> Ident.type_)
-        (`Prefixed ((p :> Cpath.type_), (rp :> Cpath.Resolved.type_)))
+        (`Prefixed (Cpath.type_of_class_type p, (rp :> Cpath.Resolved.type_)))
         t.type_;
     class_type =
       TypeMap.add (id :> Ident.type_) (`Prefixed (p, rp)) t.class_type;
@@ -216,17 +216,18 @@ let rec resolved_module_path :
     t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun s p ->
   match p with
-  | `Local id -> (
+  | `LocalMod (`LModule _ as id) -> (
       if List.mem id s.path_invalidating_modules then raise Invalidated;
       match
         try Some (ModuleMap.find (id :> Ident.module_) s.module_)
         with _ -> None
       with
-      | Some (`Renamed x) -> `Local x
+      | Some (`Renamed x) -> `LocalMod (x :> Cpath.lmod)
       | Some (`Prefixed (_p, rp)) -> rp
       | Some `Substituted -> `Substituted p
       | None -> p)
-  | `Gpath _ -> p
+  | `LocalMod (`Na _) -> .
+  | `Identifier _ -> p
   | `Apply (p1, p2) ->
       `Apply (resolved_module_path s p1, resolved_module_path s p2)
   | `Substituted p -> `Substituted (resolved_module_path s p)
@@ -258,14 +259,14 @@ let rec resolved_module_path :
 
 and resolved_parent_path s = function
   | `Module m -> `Module (resolved_module_path s m)
-  | `ModuleType m ->
+  | `ModuleType (m, pty) ->
       let p =
         match resolved_module_type_path s m with
         | Replaced _ -> assert false
         | Not_replaced p1 -> p1
       in
-      `ModuleType p
-  | `FragmentRoot as x -> x
+      `ModuleType (p, pty)
+  | `FragmentRoot _ as x -> x
 
 and module_path : t -> Cpath.module_ -> Cpath.module_ =
  fun s p ->
@@ -276,17 +277,18 @@ and module_path : t -> Cpath.module_ -> Cpath.module_ =
         let path' = Cpath.unresolve_resolved_module_path p' in
         module_path s path')
   | `Dot (p', str) -> `Dot (module_path s p', str)
-  | `Module (p', str) -> `Module (resolved_parent_path s p', str)
+  | `Module (pty, p', str) -> `Module (pty, resolved_parent_path s p', str)
   | `Apply (p1, p2) -> `Apply (module_path s p1, module_path s p2)
-  | `Local (id, b) -> (
+  | `LocalMod ((`LModule _ as id), b) -> (
       match
         try Some (ModuleMap.find (id :> Ident.module_) s.module_)
         with _ -> None
       with
       | Some (`Prefixed (p, _rp)) -> p
-      | Some (`Renamed x) -> `Local (x, b)
+      | Some (`Renamed x) -> `LocalMod ((x :> Cpath.lmod), b)
       | Some `Substituted -> `Substituted p
-      | None -> `Local (id, b))
+      | None -> `LocalMod (id, b))
+  | `LocalMod (`Na _, _) -> .
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (module_path s p)
   | `Root _ -> p
@@ -297,17 +299,18 @@ and resolved_module_type_path :
     (Cpath.Resolved.module_type, ModuleType.expr) or_replaced =
  fun s p ->
   match p with
-  | `Local id -> (
+  | `LocalModTy (`LModuleType _ as id) -> (
       if ModuleTypeMap.mem id s.module_type_replacement then
         Replaced (ModuleTypeMap.find id s.module_type_replacement)
       else
         match ModuleTypeMap.find id s.module_type with
         | `Prefixed (_p, rp) -> Not_replaced rp
-        | `Renamed x -> Not_replaced (`Local x)
-        | exception Not_found -> Not_replaced (`Local id))
-  | `Gpath _ -> Not_replaced p
-  | `Substituted p ->
-      resolved_module_type_path s p |> map_replaced (fun p -> `Substituted p)
+        | `Renamed x -> Not_replaced (`LocalModTy (x :> Cpath.lmodty))
+        | exception Not_found -> Not_replaced (`LocalModTy id))
+  | `LocalModTy (`Na _) -> .
+  | `Identifier _ -> Not_replaced p
+  | `SubstitutedMT p ->
+      resolved_module_type_path s p |> map_replaced (fun p -> `SubstitutedMT p)
   | `ModuleType (p, n) ->
       Not_replaced (`ModuleType (resolved_parent_path s p, n))
   | `CanonicalModuleType (mt1, mt2) -> (
@@ -342,9 +345,9 @@ and module_type_path :
       with Invalidated ->
         let path' = Cpath.unresolve_resolved_module_type_path r in
         module_type_path s path')
-  | `Substituted p ->
-      module_type_path s p |> map_replaced (fun r -> `Substituted r)
-  | `Local (id, b) ->
+  | `SubstitutedMT p ->
+      module_type_path s p |> map_replaced (fun r -> `SubstitutedMT r)
+  | `LocalModTy ((`LModuleType _ as id), b) ->
       if ModuleTypeMap.mem id s.module_type_replacement then
         Replaced (ModuleTypeMap.find id s.module_type_replacement)
       else
@@ -353,14 +356,15 @@ and module_type_path :
             try Some (ModuleTypeMap.find id s.module_type) with _ -> None
           with
           | Some (`Prefixed (p, _rp)) -> p
-          | Some (`Renamed x) -> `Local (x, b)
-          | None -> `Local (id, b)
+          | Some (`Renamed x) -> `LocalModTy ((x :> Cpath.lmodty), b)
+          | None -> `LocalModTy (id, b)
         in
         Not_replaced r
+  | `LocalModTy (`Na _, _) -> .
   | `Identifier _ -> Not_replaced p
   | `DotMT (p, n) -> Not_replaced (`DotMT (module_path s p, n))
-  | `ModuleType (p', str) ->
-      Not_replaced (`ModuleType (resolved_parent_path s p', str))
+  | `ModuleType (pty, p', str) ->
+      Not_replaced (`ModuleType (pty, resolved_parent_path s p', str))
 
 and resolved_type_path :
     t ->
@@ -369,22 +373,26 @@ and resolved_type_path :
  fun s p ->
   match p with
   | `CoreType _ as c -> Not_replaced c
-  | `Local id -> (
+  | `LocalTy (`LType _ as id) -> (
       if TypeMap.mem id s.type_replacement then
         Replaced (TypeMap.find id s.type_replacement)
       else
         match try Some (TypeMap.find id s.type_) with Not_found -> None with
         | Some (`Prefixed (_p, rp)) -> Not_replaced rp
-        | Some (`Renamed x) -> Not_replaced (`Local x)
-        | None -> Not_replaced (`Local id))
+        | Some (`Renamed x) -> Not_replaced (`LocalTy (x :> Cpath.lty))
+        | None -> Not_replaced (`LocalTy id))
+  | `LocalTy (`Na _) -> .
   | `CanonicalType (t1, t2) -> (
       match resolved_type_path s t1 with
       | Not_replaced t1' -> Not_replaced (`CanonicalType (t1', t2))
       | x -> x)
   | `Unbox t -> resolved_type_path s t |> map_replaced (fun p -> `Unbox p)
-  | `Gpath _ -> Not_replaced p
-  | `Substituted p ->
-      resolved_type_path s p |> map_replaced (fun p -> `Substituted p)
+  | `Identifier _ -> Not_replaced p
+  | `SubstitutedT p ->
+      resolved_type_path s p |> map_replaced (fun p -> `SubstitutedT p)
+  | `SubstitutedCT p ->
+      resolved_type_path s (p :> Cpath.Resolved.type_)
+      |> map_replaced (fun p -> `SubstitutedT p)
   | `Type (p, n) -> Not_replaced (`Type (resolved_parent_path s p, n))
   | `ClassType (p, n) -> Not_replaced (`ClassType (resolved_parent_path s p, n))
   | `Class (p, n) -> Not_replaced (`Class (resolved_parent_path s p, n))
@@ -397,33 +405,37 @@ and type_path : t -> Cpath.type_ -> Cpath.type_ type_or_replaced =
       with Invalidated ->
         let path' = Cpath.unresolve_resolved_type_path r in
         type_path s path')
-  | `Substituted p -> type_path s p |> map_replaced (fun r -> `Substituted r)
+  | `SubstitutedT p -> type_path s p |> map_replaced (fun r -> `SubstitutedT r)
   | `Unbox p -> type_path s p |> map_replaced (fun r -> `Unbox r)
-  | `Local (id, b) -> (
+  | `LocalTy ((`LType _ as id), b) -> (
       if TypeMap.mem id s.type_replacement then
         Replaced (TypeMap.find id s.type_replacement)
       else
         match try Some (TypeMap.find id s.type_) with Not_found -> None with
         | Some (`Prefixed (p, _rp)) -> Not_replaced p
-        | Some (`Renamed x) -> Not_replaced (`Local (x, b))
-        | None -> Not_replaced (`Local (id, b)))
+        | Some (`Renamed x) -> Not_replaced (`LocalTy ((x :> Cpath.lty), b))
+        | None -> Not_replaced (`LocalTy (id, b)))
+  | `LocalTy (`Na _, _) -> .
   | `Identifier _ -> Not_replaced p
   | `DotT (p, n) -> Not_replaced (`DotT (module_path s p, n))
-  | `Type (p, n) -> Not_replaced (`Type (resolved_parent_path s p, n))
-  | `Class (p, n) -> Not_replaced (`Class (resolved_parent_path s p, n))
-  | `ClassType (p, n) -> Not_replaced (`ClassType (resolved_parent_path s p, n))
+  | `Type (pty, p, n) -> Not_replaced (`Type (pty, resolved_parent_path s p, n))
+  | `Class (pty, p, n) ->
+      Not_replaced (`Class (pty, resolved_parent_path s p, n))
+  | `ClassType (pty, p, n) ->
+      Not_replaced (`ClassType (pty, resolved_parent_path s p, n))
 
 and resolved_class_type_path :
     t -> Cpath.Resolved.class_type -> Cpath.Resolved.class_type =
  fun s p ->
   match p with
-  | `Local id -> (
+  | `LocalTy (`LType _ as id) -> (
       match try Some (TypeMap.find id s.class_type) with _ -> None with
       | Some (`Prefixed (_p, rp)) -> rp
-      | Some (`Renamed x) -> `Local x
-      | None -> `Local id)
-  | `Gpath _ -> p
-  | `Substituted p -> `Substituted (resolved_class_type_path s p)
+      | Some (`Renamed x) -> `LocalTy (x :> Cpath.lty)
+      | None -> `LocalTy id)
+  | `LocalTy (`Na _) -> .
+  | `Identifier _ -> p
+  | `SubstitutedCT p -> `SubstitutedCT (resolved_class_type_path s p)
   | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
   | `Class (p, n) -> `Class (resolved_parent_path s p, n)
 
@@ -435,16 +447,17 @@ and class_type_path : t -> Cpath.class_type -> Cpath.class_type =
       with Invalidated ->
         let path' = Cpath.unresolve_resolved_class_type_path r in
         class_type_path s path')
-  | `Local (id, b) -> (
+  | `LocalTy ((`LType _ as id), b) -> (
       match try Some (TypeMap.find id s.class_type) with _ -> None with
       | Some (`Prefixed (p, _rp)) -> p
-      | Some (`Renamed x) -> `Local (x, b)
-      | None -> `Local (id, b))
+      | Some (`Renamed x) -> `LocalTy ((x :> Cpath.lty), b)
+      | None -> `LocalTy (id, b))
+  | `LocalTy (`Na _, _) -> .
   | `Identifier _ -> p
-  | `Substituted p -> `Substituted (class_type_path s p)
+  | `SubstitutedCT p -> `SubstitutedCT (class_type_path s p)
   | `DotT (p, n) -> `DotT (module_path s p, n)
-  | `Class (p, n) -> `Class (resolved_parent_path s p, n)
-  | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
+  | `Class (pty, p, n) -> `Class (pty, resolved_parent_path s p, n)
+  | `ClassType (pty, p, n) -> `ClassType (pty, resolved_parent_path s p, n)
 
 let rec resolved_signature_fragment :
     t -> Cfrag.resolved_signature -> Cfrag.resolved_signature =
