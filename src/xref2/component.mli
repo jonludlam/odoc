@@ -709,6 +709,10 @@ module Of_Lang : sig
 
   val empty : unit -> map
 
+  val of_unit : string list -> map
+  (** [of_unit libraries] is {!empty} for reading a unit that recorded
+      [libraries]: the root names it contains are resolved among them. *)
+
   val identifier :
     ('a -> 'b -> 'c) -> 'b -> 'a -> [> `Identifier of 'a | `Local of 'c ]
 

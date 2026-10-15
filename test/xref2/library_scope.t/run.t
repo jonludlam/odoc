@@ -35,11 +35,8 @@ for the client and [y]'s for the server.
   $ odoc compile --output-dir h --parent-id pkg/server -L server:h/pkg/server -L y:h/pkg/y server/content.cmti
   $ odoc compile --output-dir h --parent-id pkg all.mld
   $ odoc link -P pkg:h/pkg -L client:h/pkg/client -L server:h/pkg/server -L x:h/pkg/x -L y:h/pkg/y h/pkg/page-all.odoc
-  File "A":
-  Ambiguous lookup. Possible files: A
-  A
   $ refs h/pkg/page-all.odocl
-  ["client/Content y/A","server/Content y/A"]
+  ["client/Content x/A","server/Content y/A"]
 
 What each unit recorded.
 

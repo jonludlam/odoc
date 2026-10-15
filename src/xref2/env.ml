@@ -44,7 +44,10 @@ let unique_id =
 type lookup_type =
   | Module of Paths.Identifier.Path.Module.t
   | ModuleType of Paths.Identifier.Path.ModuleType.t
-  | RootModule of ModuleName.t * [ `Forward | `Resolved of Digest.t ] option
+  | RootModule of
+      ModuleName.t
+      * Library_scope.t
+      * [ `Forward | `Resolved of Digest.t ] option
   | ModuleByName of string * Paths.Identifier.Path.Module.t
   | FragmentRoot of int
 
@@ -64,7 +67,7 @@ let pp_lookup_type fmt =
       Format.fprintf fmt "ModuleType %a"
         (Component.Fmt.model_identifier c)
         (r :> Identifier.t)
-  | RootModule (n, res) ->
+  | RootModule (n, _, res) ->
       Format.fprintf fmt "RootModule %a %a" ModuleName.fmt n fmtrm res
   | ModuleByName (n, r) ->
       Format.fprintf fmt "ModuleByName %s, %a" n
@@ -427,7 +430,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty ()) m) in
+      let ty = Component.Of_Lang.(module_ (of_unit unit.libraries) m) in
       ty
   | Pack _p ->
       let m =
@@ -449,7 +452,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty ()) m) in
+      let ty = Component.Of_Lang.(module_ (of_unit unit.libraries) m) in
       ty
 
 let lookup_root_module_in scope name env =
@@ -468,14 +471,14 @@ let lookup_root_module_in scope name env =
   (match (env.recorder, result) with
   | Some r, Some Forward ->
       r.lookups <-
-        LookupTypeSet.add (RootModule (name, Some `Forward)) r.lookups
+        LookupTypeSet.add (RootModule (name, scope, Some `Forward)) r.lookups
   | Some r, Some (Resolved (root, _, _)) ->
       r.lookups <-
         LookupTypeSet.add
-          (RootModule (name, Some (`Resolved root.digest)))
+          (RootModule (name, scope, Some (`Resolved root.digest)))
           r.lookups
   | Some r, None ->
-      r.lookups <- LookupTypeSet.add (RootModule (name, None)) r.lookups
+      r.lookups <- LookupTypeSet.add (RootModule (name, scope, None)) r.lookups
   | None, _ -> ());
   result
 
@@ -965,14 +968,13 @@ let verify_lookups env lookups =
           | None -> false
         in
         true <> actually_found
-    | RootModule (name, res) -> (
+    | RootModule (name, scope, res) -> (
         let actual_result =
           match env.resolver with
           | None -> None
           | Some r -> (
               match
-                r.lookup_unit_by_name ~scope:env.scope
-                  (ModuleName.to_string name)
+                r.lookup_unit_by_name ~scope (ModuleName.to_string name)
               with
               | Ok Forward_reference -> Some `Forward
               | Ok (Found u) -> Some (`Resolved u.root.digest)

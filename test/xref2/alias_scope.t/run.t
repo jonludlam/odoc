@@ -21,9 +21,6 @@ follows [M] into [X], and should resolve what it finds there among the
 libraries [X] recorded, not those of [z], which hold two modules [Inner].
 
   $ odoc link h/z/z.odoc -L z:h/z -L x:h/x -L y:h/y
-  File "Inner":
-  Ambiguous lookup. Possible files: Inner
-  Inner
   $ roots() { odoc_print $1 | jq -c '[.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
   $ roots h/z/z.odocl
-  ["x/X","y/Inner","z/Z"]
+  ["x/Inner","x/X","z/Z"]

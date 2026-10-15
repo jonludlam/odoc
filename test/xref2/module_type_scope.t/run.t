@@ -15,8 +15,5 @@ should reach [x]'s [Inner], and neither lookup should be ambiguous.
 
   $ odoc compile --output-dir h --parent-id pkg p.mld
   $ odoc link -P pkg:h/pkg -L x:h/pkg/x -L y:h/pkg/y h/pkg/page-p.odoc
-  File "Inner":
-  Ambiguous lookup. Possible files: Inner
-  Inner
   $ refs h/pkg/page-p.odocl
-  ["x/X y/Inner","x/X y/Inner"]
+  ["x/Inner x/X","x/Inner x/X"]

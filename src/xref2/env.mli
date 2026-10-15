@@ -55,6 +55,7 @@ type lookup_type =
   | ModuleType of Identifier.ModuleType.t
   | RootModule of
       Odoc_model.Names.ModuleName.t
+      * Library_scope.t
       * [ `Forward | `Resolved of Digest.t ] option
   | ModuleByName of string * Identifier.Path.Module.t
   | FragmentRoot of int
@@ -159,6 +160,11 @@ val lookup_unit_by_path :
     library, so the library scope does not apply. *)
 
 val module_of_unit : Lang.Compilation_unit.t -> Component.Module.t
+
+val lookup_root_module_in :
+  Library_scope.t -> Odoc_model.Names.ModuleName.t -> t -> root option
+(** For a path whose root name records where it was read from: looks up the root
+    module by name in that unit's libraries. *)
 
 val lookup_root_module : Odoc_model.Names.ModuleName.t -> t -> root option
 (** For a path: looks up its root module by name, in the current library scope
