@@ -70,6 +70,7 @@ let () =
   print_endline "Resolved paths:";
   resolved_module "Alias (hidden, visible unresolved)"
     (`Alias (rh, `Identifier (m, false), None));
+  resolved_module "Apply (hidden, visible)" (`Apply (rh, rm));
   resolved_module "Apply (visible, hidden)" (`Apply (rm, rh));
   resolved_module_type "ModuleType (visible, hidden name)"
     (`ModuleType (pm, ModuleTypeName.hidden_of_string "S_h"));
@@ -91,6 +92,8 @@ let () =
   module_ "Root (hidden name)" (`Root (ModuleName.make_std "H__x"));
   module_ "Dot (visible, hidden name)"
     (`Dot (`Identifier (m, false), ModuleName.make_std "H__x"));
+  module_ "Apply (hidden, visible)"
+    (`Apply (`Identifier (h, false), `Identifier (m, false)));
   module_ "Apply (visible, hidden)"
     (`Apply (`Identifier (m, false), `Identifier (h, false)));
   module_type "DotMT (visible, hidden name)"

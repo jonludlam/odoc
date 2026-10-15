@@ -638,7 +638,7 @@ module Path = struct
       | `Hidden _ -> true
       | `Subst (p1, p2) -> inner (p1 :> ra) || inner (p2 :> ra)
       | `Module (p, _) -> inner (parent_module p :> ra)
-      | `Apply (p, _) -> inner (p :> ra)
+      | `Apply (p1, p2) -> inner (p1 :> ra) || inner (p2 :> ra)
       | `ModuleType (_, m) when Names.ModuleTypeName.is_hidden m -> true
       | `ModuleType (p, _) -> inner (parent_module p :> ra)
       | `Type (_, t) when Names.TypeName.is_hidden t -> true
