@@ -122,7 +122,7 @@ let is_class_type_substituted : class_type -> bool = function
 let rec is_module_hidden : module_ -> bool = function
   | `Resolved r -> is_resolved_module_hidden ~weak_canonical_test:false r
   | `Substituted p | `Dot (p, _) | `Apply (p, _) -> is_module_hidden p
-  | `Identifier (_, b) -> b
+  | `Identifier (id, b) -> b || Identifier.is_hidden id
   | `LocalMod (_, b) -> b
   | `Root _ -> false
   | `Module (_, p, _) -> is_resolved_parent_hidden ~weak_canonical_test:false p
@@ -224,7 +224,7 @@ and is_resolved_class_type_hidden :
 
 and is_class_type_hidden : class_type -> bool = function
   | `Resolved r -> is_resolved_class_type_hidden r
-  | `Identifier (_, b) -> b
+  | `Identifier (id, b) -> b || Identifier.is_hidden id
   | `LocalTy (_, b) -> b
   | `SubstitutedCT p -> is_class_type_hidden p
   | `DotT (p, _) -> is_module_hidden p
