@@ -248,7 +248,7 @@ let rec kind_of_module_cpath = function
   | _ -> None
 
 let rec kind_of_module_type_cpath = function
-  | `Substituted p' -> kind_of_module_type_cpath p'
+  | `SubstitutedMT p' -> kind_of_module_type_cpath p'
   | `DotMT (p', _) -> kind_of_module_cpath p'
   | _ -> None
 

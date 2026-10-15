@@ -70,7 +70,7 @@ module Path = struct
   let rec module_ map (p : Cpath.module_) : Odoc_model.Paths.Path.Module.t =
     match p with
     | `Substituted x -> `Substituted (module_ map x)
-    | `Local (id, b) ->
+    | `LocalMod ((`LModule _ as id), b) ->
         let m =
           try lookup_module map id
           with Not_found ->
@@ -84,57 +84,65 @@ module Path = struct
           | _ -> false
         in
         `Identifier (m, hidden)
+    | `LocalMod (`Na _, _) -> .
     | `Identifier (i, b) -> `Identifier (i, b)
     | `Resolved x -> `Resolved (resolved_module map x)
     | `Root x -> `Root x
     | `Dot (p, s) -> `Dot (module_ map p, s)
     | `Apply (m1, m2) -> `Apply (module_ map m1, module_ map m2)
-    | `Module (`Module p, n) -> `Dot (`Resolved (resolved_module map p), n)
-    | `Module (_, _) -> failwith "Probably shouldn't happen"
+    | `Module (_, `Module p, n) -> `Dot (`Resolved (resolved_module map p), n)
+    | `Module (_, _, _) -> failwith "Probably shouldn't happen"
 
   and module_type map (p : Cpath.module_type) :
       Odoc_model.Paths.Path.ModuleType.t =
     match p with
-    | `Substituted x -> `SubstitutedMT (module_type map x)
+    | `SubstitutedMT x -> `SubstitutedMT (module_type map x)
     | `Identifier ((#Odoc_model.Paths.Identifier.ModuleType.t as y), b) ->
         `Identifier (y, b)
-    | `Local (id, b) ->
+    | `LocalModTy ((`LModuleType _ as id), b) ->
         `Identifier
           ( (try Component.ModuleTypeMap.find id map.module_type
              with Not_found ->
                failwith (Format.asprintf "Not_found: %a" Ident.fmt id)),
             b )
+    | `LocalModTy (`Na _, _) -> .
     | `Resolved x -> `Resolved (resolved_module_type map x)
     | `DotMT (p, n) -> `DotMT (module_ map p, n)
-    | `ModuleType (`Module p, n) -> `DotMT (`Resolved (resolved_module map p), n)
-    | `ModuleType (_, _) -> failwith "Probably shouldn't happen"
+    | `ModuleType (_, `Module p, n) ->
+        `DotMT (`Resolved (resolved_module map p), n)
+    | `ModuleType (_, _, _) -> failwith "Probably shouldn't happen"
 
   and type_ map (p : Cpath.type_) : Odoc_model.Paths.Path.Type.t =
     match p with
-    | `Substituted x -> `SubstitutedT (type_ map x)
+    | `SubstitutedT x -> `SubstitutedT (type_ map x)
     | `Identifier ((#Odoc_model.Paths.Identifier.Path.Type.t as y), b) ->
         `Identifier (y, b)
     | `Unbox x -> `Unbox (type_ map x)
-    | `Local (id, b) -> `Identifier (Component.TypeMap.find id map.path_type, b)
+    | `LocalTy ((`LType _ as id), b) ->
+        `Identifier (Component.TypeMap.find id map.path_type, b)
+    | `LocalTy (`Na _, _) -> .
     | `Resolved x -> `Resolved (resolved_type map x)
     | `DotT (p, n) -> `DotT (module_ map p, n)
-    | `Type (`Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
-    | `Class (`Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
-    | `ClassType (`Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `Type (_, `Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `Class (_, `Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `ClassType (_, `Module p, n) ->
+        `DotT (`Resolved (resolved_module map p), n)
     | `Type _ | `Class _ | `ClassType _ -> failwith "Probably shouldn't happen"
 
   and class_type map (p : Cpath.class_type) : Odoc_model.Paths.Path.ClassType.t
       =
     match p with
-    | `Substituted x -> `SubstitutedCT (class_type map x)
+    | `SubstitutedCT x -> `SubstitutedCT (class_type map x)
     | `Identifier ((#Odoc_model.Paths.Identifier.Path.ClassType.t as y), b) ->
         `Identifier (y, b)
-    | `Local (id, b) ->
+    | `LocalTy ((`LType _ as id), b) ->
         `Identifier (Component.TypeMap.find id map.path_class_type, b)
+    | `LocalTy (`Na _, _) -> .
     | `Resolved x -> `Resolved (resolved_class_type map x)
     | `DotT (p, n) -> `DotT (module_ map p, n)
-    | `Class (`Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
-    | `ClassType (`Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `Class (_, `Module p, n) -> `DotT (`Resolved (resolved_module map p), n)
+    | `ClassType (_, `Module p, n) ->
+        `DotT (`Resolved (resolved_module map p), n)
     | `Class _ | `ClassType _ -> failwith "Probably shouldn't happen"
 
   and resolved_module map (p : Cpath.Resolved.module_) :
@@ -144,18 +152,19 @@ module Path = struct
   and resolved_module_inner map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     match p with
-    | `Local id ->
+    | `LocalMod (`LModule _ as id) ->
         `Identifier
           (try lookup_module map id
            with Not_found ->
              failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
+    | `LocalMod (`Na _) -> .
     | `Substituted x -> `Substituted (resolved_module map x)
-    | `Identifier _ as y -> y
+    | `Identifier y -> `Identifier y
     | `Subst (mty, m) ->
         `Subst (resolved_module_type map mty, resolved_module map m)
     | `Hidden h -> `Hidden (resolved_module map h)
     | `Module (p, n) -> `Module (`Module (resolved_parent map p), n)
-    | `Canonical (r, m) -> `Canonical (resolved_module map r, m)
+    | `Canonical (r, m) -> `Canonical (resolved_module map r, module_ map m)
     | `Apply (m1, m2) -> `Apply (resolved_module map m1, resolved_module map m2)
     | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2, None)
     | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
@@ -164,59 +173,68 @@ module Path = struct
     match p with
     | `Module m -> resolved_module map m
     | `ModuleType _ -> failwith "Invalid"
-    | `FragmentRoot -> (
+    | `FragmentRoot _ -> (
         match map.fragment_root with
-        | Some r -> resolved_parent map (r :> Cpath.Resolved.parent)
+        | Some (`Module m) -> resolved_parent map (`Module m)
+        | Some (`ModuleType mt) -> resolved_parent map (`ModuleType (mt, `U))
         | None -> failwith "Invalid")
 
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =
     match p with
-    | `Identifier _ as y -> y
-    | `Local id ->
+    | `Identifier y -> `Identifier y
+    | `LocalModTy (`LModuleType _ as id) ->
         `Identifier
           (try Component.ModuleTypeMap.find id map.module_type
            with Not_found ->
              failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
+    | `LocalModTy (`Na _) -> .
     | `ModuleType (p, name) ->
         `ModuleType (`Module (resolved_parent map p), name)
-    | `Substituted s -> `SubstitutedMT (resolved_module_type map s)
+    | `SubstitutedMT s -> `SubstitutedMT (resolved_module_type map s)
     | `SubstT (p1, p2) ->
         `SubstT (resolved_module_type map p1, resolved_module_type map p2)
     | `AliasModuleType (p1, p2) ->
         `AliasModuleType
           (resolved_module_type map p1, resolved_module_type map p2)
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type map p1, p2)
+        `CanonicalModuleType (resolved_module_type map p1, module_type map p2)
     | `OpaqueModuleType m -> `OpaqueModuleType (resolved_module_type map m)
 
   and resolved_type map (p : Cpath.Resolved.type_) :
       Odoc_model.Paths.Path.Resolved.Type.t =
     match p with
     | `CoreType _ as c -> c
-    | `Identifier _ as y -> y
-    | `Local id -> `Identifier (Component.TypeMap.find id map.path_type)
-    | `CanonicalType (t1, t2) -> `CanonicalType (resolved_type map t1, t2)
+    | `Identifier y -> `Identifier y
+    | `LocalTy (`LType _ as id) ->
+        `Identifier (Component.TypeMap.find id map.path_type)
+    | `LocalTy (`Na _) -> .
+    | `CanonicalType (t1, t2) ->
+        `CanonicalType (resolved_type map t1, type_ map t2)
     | `Type (p, name) -> `Type (`Module (resolved_parent map p), name)
     | `Class (p, name) -> `Class (`Module (resolved_parent map p), name)
     | `ClassType (p, name) -> `ClassType (`Module (resolved_parent map p), name)
-    | `Substituted s -> `SubstitutedT (resolved_type map s)
+    | `SubstitutedT s -> `SubstitutedT (resolved_type map s)
+    | `SubstitutedCT s ->
+        `SubstitutedT (resolved_type map (s :> Cpath.Resolved.type_))
     | `Unbox t -> `Unbox (resolved_type map t)
 
   and resolved_value map (p : Cpath.Resolved.value) :
       Odoc_model.Paths.Path.Resolved.Value.t =
     match p with
     | `Value (p, name) -> `Value (`Module (resolved_parent map p), name)
-    | `Identifier _ as y -> y
+    | `Identifier y -> `Identifier y
 
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
       Odoc_model.Paths.Path.Resolved.ClassType.t =
     match p with
-    | `Identifier _ as y -> y
-    | `Local id -> `Identifier (Component.TypeMap.find id map.path_class_type)
+    | `Identifier y -> `Identifier y
+    | `LocalTy (`LType _ as id) ->
+        `Identifier (Component.TypeMap.find id map.path_class_type)
+    | `LocalTy (`Na _) -> .
     | `Class (p, name) -> `Class (`Module (resolved_parent map p), name)
     | `ClassType (p, name) -> `ClassType (`Module (resolved_parent map p), name)
-    | `Substituted s -> `SubstitutedCT (resolved_class_type map s)
+    | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)
 
   let rec module_fragment :
       maps -> Cfrag.module_ -> Odoc_model.Paths.Fragment.Module.t =
