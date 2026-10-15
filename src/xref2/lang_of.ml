@@ -164,7 +164,7 @@ module Path = struct
         `Subst (resolved_module_type map mty, resolved_module map m)
     | `Hidden h -> `Hidden (resolved_module map h)
     | `Module (p, n) -> `Module (`Module (resolved_parent map p), n)
-    | `Canonical (r, m) -> `Canonical (resolved_module map r, module_ map m)
+    | `Canonical (r, m) -> `Canonical (resolved_module map r, m)
     | `Apply (m1, m2) -> `Apply (resolved_module map m1, resolved_module map m2)
     | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2, None)
     | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
@@ -198,7 +198,7 @@ module Path = struct
         `AliasModuleType
           (resolved_module_type map p1, resolved_module_type map p2)
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type map p1, module_type map p2)
+        `CanonicalModuleType (resolved_module_type map p1, p2)
     | `OpaqueModuleType m -> `OpaqueModuleType (resolved_module_type map m)
 
   and resolved_type map (p : Cpath.Resolved.type_) :
@@ -209,8 +209,7 @@ module Path = struct
     | `LocalTy (`LType _ as id) ->
         `Identifier (Component.TypeMap.find id map.path_type)
     | `LocalTy (`Na _) -> .
-    | `CanonicalType (t1, t2) ->
-        `CanonicalType (resolved_type map t1, type_ map t2)
+    | `CanonicalType (t1, t2) -> `CanonicalType (resolved_type map t1, t2)
     | `Type (p, name) -> `Type (`Module (resolved_parent map p), name)
     | `Class (p, name) -> `Class (`Module (resolved_parent map p), name)
     | `ClassType (p, name) -> `ClassType (`Module (resolved_parent map p), name)

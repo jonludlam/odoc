@@ -1262,7 +1262,7 @@ module Fmt = struct
           p2
     | `Hidden p1 -> wrap c "hidden" resolved_module_path ppf p1
     | `Canonical (p1, p2) ->
-        wrap2 c "canonical" resolved_module_path module_path ppf p1 p2
+        wrap2 c "canonical" resolved_module_path model_path ppf p1 (p2 :> path)
     | `OpaqueModule m -> wrap c "opaquemodule" resolved_module_path ppf m
 
   and module_path : config -> Format.formatter -> Cpath.module_ -> unit =
@@ -1292,8 +1292,8 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
           (ModuleTypeName.to_string m)
     | `CanonicalModuleType (m1, m2) ->
-        wrap2 c "canonicalt" resolved_module_type_path module_type_path ppf m1
-          m2
+        wrap2 c "canonicalt" resolved_module_type_path model_path ppf m1
+          (m2 :> path)
     | `OpaqueModuleType m ->
         wrap c "opaquemoduletype" resolved_module_type_path ppf m
     | `AliasModuleType (mt1, mt2) ->
@@ -1329,7 +1329,8 @@ module Fmt = struct
     | `SubstitutedCT x -> wrap c "substituted" resolved_class_type_path ppf x
     | `Unbox x -> wrap c "unbox" resolved_type_path ppf x
     | `CanonicalType (t1, t2) ->
-        wrap2 c "canonicaltype" resolved_type_path type_path ppf t1 t2
+        wrap2 c "canonicaltype" resolved_type_path model_path ppf t1
+          (t2 :> path)
     | `Class (p, t) ->
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
           (TypeName.to_string t)
@@ -2044,7 +2045,7 @@ module Of_Lang = struct
     | `Alias (p1, p2, _) -> `Alias (recurse p1, module_path ident_map p2, None)
     | `Subst (p1, p2) ->
         `Subst (resolved_module_type_path ident_map p1, recurse p2)
-    | `Canonical (p1, p2) -> `Canonical (recurse p1, (p2 :> Cpath.module_))
+    | `Canonical (p1, p2) -> `Canonical (recurse p1, p2)
     | `Hidden p1 -> `Hidden (recurse p1)
     | `OpaqueModule m -> `OpaqueModule (recurse m)
     | `Substituted m -> `Substituted (recurse m)
@@ -2067,8 +2068,7 @@ module Of_Lang = struct
                  (Paths.Path.Resolved.parent_module p)),
             name )
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType
-          (resolved_module_type_path ident_map p1, (p2 :> Cpath.module_type))
+        `CanonicalModuleType (resolved_module_type_path ident_map p1, p2)
     | `OpaqueModuleType m ->
         `OpaqueModuleType (resolved_module_type_path ident_map m)
     | `AliasModuleType (m1, m2) ->
@@ -2092,7 +2092,7 @@ module Of_Lang = struct
         | `Local l -> `LocalTy (l :> Cpath.lty)
         | `Identifier _ -> `Identifier i)
     | `CanonicalType (p1, p2) ->
-        `CanonicalType (resolved_type_path ident_map p1, (p2 :> Cpath.type_))
+        `CanonicalType (resolved_type_path ident_map p1, p2)
     | `Type (p, name) ->
         `Type
           ( `Module
