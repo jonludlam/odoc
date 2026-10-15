@@ -502,7 +502,7 @@ and resolved_module_type_fragment :
     t -> Cfrag.resolved_module_type -> Cfrag.resolved_module_type =
  fun t r ->
   match r with
-  | `ModuleType (s, n) -> `ModuleType (resolved_signature_fragment t s, n)
+  | `Module_type (s, n) -> `Module_type (resolved_signature_fragment t s, n)
 
 and resolved_type_fragment : t -> Cfrag.resolved_type -> Cfrag.resolved_type =
  fun t r ->

@@ -232,74 +232,42 @@ module Path = struct
     | `ClassType (p, name) -> `ClassType (`Module (resolved_parent map p), name)
     | `SubstitutedCT s -> `SubstitutedCT (resolved_class_type map s)
 
-  let rec module_fragment :
-      maps -> Cfrag.module_ -> Odoc_model.Paths.Fragment.Module.t =
-   fun map f ->
-    match f with
-    | `Resolved r -> `Resolved (resolved_module_fragment map r)
-    | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
+  let fragment_paths map =
+    {
+      Odoc_model.Paths.Fragment.Resolved.module_ = resolved_module map;
+      module_type = resolved_module_type map;
+    }
 
-  and signature_fragment :
-      maps -> Cfrag.signature -> Odoc_model.Paths.Fragment.Signature.t =
-   fun map f ->
-    match f with
-    | `Resolved r -> `Resolved (resolved_signature_fragment map r)
-    | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
-    | `Root -> `Root
+  let module_fragment map (f : Cfrag.module_) :
+      Odoc_model.Paths.Fragment.Module.t =
+    Odoc_model.Paths.Fragment.map_module (fragment_paths map) f
 
-  and type_fragment : maps -> Cfrag.type_ -> Odoc_model.Paths.Fragment.Type.t =
-   fun map f ->
-    match f with
-    | `Resolved r -> `Resolved (resolved_type_fragment map r)
-    | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
+  let signature_fragment map (f : Cfrag.signature) :
+      Odoc_model.Paths.Fragment.Signature.t =
+    Odoc_model.Paths.Fragment.map_signature (fragment_paths map) f
 
-  and resolved_module_fragment :
-      maps ->
-      Cfrag.resolved_module ->
-      Odoc_model.Paths.Fragment.Resolved.Module.t =
-   fun map f ->
-    match f with
-    | `Subst (p, f) ->
-        `Subst (resolved_module_type map p, resolved_module_fragment map f)
-    | `Alias (p, f) ->
-        `Alias (resolved_module map p, resolved_module_fragment map f)
-    | `Module (p, n) -> `Module (resolved_signature_fragment map p, n)
-    | `OpaqueModule m -> `OpaqueModule (resolved_module_fragment map m)
+  let type_fragment map (f : Cfrag.type_) : Odoc_model.Paths.Fragment.Type.t =
+    Odoc_model.Paths.Fragment.map_type (fragment_paths map) f
 
-  and resolved_signature_fragment :
-      maps ->
-      Cfrag.resolved_signature ->
+  let module_type_fragment map (f : Cfrag.module_type) :
+      Odoc_model.Paths.Fragment.ModuleType.t =
+    Odoc_model.Paths.Fragment.map_module_type (fragment_paths map) f
+
+  let resolved_signature_fragment map (f : Cfrag.resolved_signature) :
       Odoc_model.Paths.Fragment.Resolved.Signature.t =
-   fun map f ->
-    match f with
-    | `Root (`ModuleType p) -> `Root (`ModuleType (resolved_module_type map p))
-    | `Root (`Module p) -> `Root (`Module (resolved_module map p))
-    | (`OpaqueModule _ | `Subst _ | `Alias _ | `Module _) as x ->
-        (resolved_module_fragment map x
-          :> Odoc_model.Paths.Fragment.Resolved.Signature.t)
+    Odoc_model.Paths.Fragment.Resolved.map_signature (fragment_paths map) f
 
-  and resolved_type_fragment :
-      maps -> Cfrag.resolved_type -> Odoc_model.Paths.Fragment.Resolved.Type.t =
-   fun map f ->
-    match f with
-    | `Type (p, n) -> `Type (resolved_signature_fragment map p, n)
-    | `ClassType (p, n) -> `ClassType (resolved_signature_fragment map p, n)
-    | `Class (p, n) -> `Class (resolved_signature_fragment map p, n)
+  let resolved_module_fragment map (f : Cfrag.resolved_module) :
+      Odoc_model.Paths.Fragment.Resolved.Module.t =
+    Odoc_model.Paths.Fragment.Resolved.map_module (fragment_paths map) f
 
-  let rec module_type_fragment :
-      maps -> Cfrag.module_type -> Odoc_model.Paths.Fragment.ModuleType.t =
-   fun map f ->
-    match f with
-    | `Resolved r -> `Resolved (resolved_module_type_fragment map r)
-    | `Dot (sg, p) -> `Dot (signature_fragment map sg, p)
-
-  and resolved_module_type_fragment :
-      maps ->
-      Cfrag.resolved_module_type ->
+  let resolved_module_type_fragment map (f : Cfrag.resolved_module_type) :
       Odoc_model.Paths.Fragment.Resolved.ModuleType.t =
-   fun map f ->
-    match f with
-    | `ModuleType (p, n) -> `Module_type (resolved_signature_fragment map p, n)
+    Odoc_model.Paths.Fragment.Resolved.map_module_type (fragment_paths map) f
+
+  let resolved_type_fragment map (f : Cfrag.resolved_type) :
+      Odoc_model.Paths.Fragment.Resolved.Type.t =
+    Odoc_model.Paths.Fragment.Resolved.map_type (fragment_paths map) f
 end
 
 module ExtractIDs = struct

@@ -481,51 +481,140 @@ end
 module Fragment : sig
   module Resolved : sig
     module Signature : sig
-      type t = Paths_types.Resolved_fragment.signature
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.signature
+
+      type t = (na, na, na, canon) gen
     end
 
     module Module : sig
-      type t = Paths_types.Resolved_fragment.module_
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.module_
+
+      type t = (na, na, na, canon) gen
     end
 
     module ModuleType : sig
-      type t = Paths_types.Resolved_fragment.module_type
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.module_type
+
+      type t = (na, na, na, canon) gen
     end
 
     module Type : sig
-      type t = Paths_types.Resolved_fragment.type_
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.type_
+
+      type t = (na, na, na, canon) gen
     end
 
-    type leaf = Paths_types.Resolved_fragment.leaf
+    type ('lmod, 'lmodty, 'pty, 'canon) leaf_gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.leaf
 
-    type root = Paths_types.Resolved_fragment.root
+    type leaf = (na, na, na, canon) leaf_gen
 
-    type t = Paths_types.Resolved_fragment.any
+    type ('lmod, 'lmodty, 'pty, 'canon) root_gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.root
+
+    type root = (na, na, na, canon) root_gen
+
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.any
+
+    type t = (na, na, na, canon) gen
 
     val identifier : t -> Identifier.t option
 
     val is_hidden : t -> bool
+
+    type ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map = {
+      module_ :
+        ('l1, 'lt1, 'p1, 'c1) Path.Resolved.Module.gen ->
+        ('l2, 'lt2, 'p2, 'c2) Path.Resolved.Module.gen;
+      module_type :
+        ('l1, 'lt1, 'p1, 'c1) Path.Resolved.ModuleType.gen ->
+        ('l2, 'lt2, 'p2, 'c2) Path.Resolved.ModuleType.gen;
+    }
+    (** How to map the paths in a fragment. *)
+
+    val map_signature :
+      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
+      ('l1, 'lt1, 'p1, 'c1) Signature.gen ->
+      ('l2, 'lt2, 'p2, 'c2) Signature.gen
+
+    val map_module :
+      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
+      ('l1, 'lt1, 'p1, 'c1) Module.gen ->
+      ('l2, 'lt2, 'p2, 'c2) Module.gen
+
+    val map_module_type :
+      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
+      ('l1, 'lt1, 'p1, 'c1) ModuleType.gen ->
+      ('l2, 'lt2, 'p2, 'c2) ModuleType.gen
+
+    val map_type :
+      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
+      ('l1, 'lt1, 'p1, 'c1) Type.gen ->
+      ('l2, 'lt2, 'p2, 'c2) Type.gen
   end
 
   module Signature : sig
-    type t = Paths_types.Fragment.signature
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.signature
+
+    type t = (na, na, na, canon) gen
   end
 
   module Module : sig
-    type t = Paths_types.Fragment.module_
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.module_
+
+    type t = (na, na, na, canon) gen
   end
 
   module ModuleType : sig
-    type t = Paths_types.Fragment.module_type
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.module_type
+
+    type t = (na, na, na, canon) gen
   end
 
   module Type : sig
-    type t = Paths_types.Fragment.type_
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.type_
+
+    type t = (na, na, na, canon) gen
   end
 
-  type leaf = Paths_types.Fragment.leaf
+  type ('lmod, 'lmodty, 'pty, 'canon) leaf_gen =
+    ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.leaf
 
-  type t = Paths_types.Fragment.any
+  type leaf = (na, na, na, canon) leaf_gen
+
+  type ('lmod, 'lmodty, 'pty, 'canon) gen =
+    ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.any
+
+  type t = (na, na, na, canon) gen
+
+  val map_signature :
+    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
+    ('l1, 'lt1, 'p1, 'c1) Signature.gen ->
+    ('l2, 'lt2, 'p2, 'c2) Signature.gen
+
+  val map_module :
+    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
+    ('l1, 'lt1, 'p1, 'c1) Module.gen ->
+    ('l2, 'lt2, 'p2, 'c2) Module.gen
+
+  val map_module_type :
+    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
+    ('l1, 'lt1, 'p1, 'c1) ModuleType.gen ->
+    ('l2, 'lt2, 'p2, 'c2) ModuleType.gen
+
+  val map_type :
+    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
+    ('l1, 'lt1, 'p1, 'c1) Type.gen ->
+    ('l2, 'lt2, 'p2, 'c2) Type.gen
 end
 
 (** References present in documentation comments ([{!Foo.Bar}]) *)

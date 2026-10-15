@@ -671,12 +671,6 @@ module Fmt : sig
   val model_identifier :
     config -> Format.formatter -> Odoc_model.Paths.Identifier.t -> unit
 
-  val model_fragment :
-    config -> Format.formatter -> Odoc_model.Paths.Fragment.t -> unit
-
-  val model_resolved_fragment :
-    config -> Format.formatter -> Odoc_model.Paths.Fragment.Resolved.t -> unit
-
   val resolved_root_fragment : config -> Format.formatter -> Cfrag.root -> unit
 
   val resolved_signature_fragment :
