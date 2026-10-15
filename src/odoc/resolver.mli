@@ -56,7 +56,9 @@ val build_compile_env_for_unit :
 (** Initialize the environment for compiling the given module. *)
 
 val build_link_env_for_unit : t -> Lang.Compilation_unit.t -> Odoc_xref2.Env.t
-(** Initialize the environment for linking the given module. *)
+(** Initialize the environment for linking the given module. The environment is
+    scoped by the libraries the unit recorded at compile time: a path with no
+    digest is looked up among those alone. *)
 
 val build_env_for_page : t -> Lang.Page.t -> Odoc_xref2.Env.t
 (** Initialize the environment for the given page. *)
@@ -65,12 +67,13 @@ val build_compile_env_for_impl : t -> Lang.Implementation.t -> Odoc_xref2.Env.t
 (** Initialize the environment for the given implementation. *)
 
 val build_link_env_for_impl : t -> Lang.Implementation.t -> Odoc_xref2.Env.t
-(** Initialize the environment for the given implementation. *)
+(** Initialize the environment for the given implementation, scoped by the
+    libraries it recorded, as {!build_link_env_for_unit} is. *)
 
 val build_env_for_reference : t -> Odoc_xref2.Env.t
 (** Initialize the environment for a reference. *)
 
-val resolve_import : t -> string -> Root.t option
+val resolve_import : t -> string -> Digest.t -> Root.t option
 (** Similar to {!Odoc_xref2.Env.lookup_root_module} but save work by loading
-    only the root. Only used when resolving imports, which are needed for the
-    [link-deps] command. *)
+    only the root. Only a unit with the given digest matches. Only used when
+    resolving imports, which are needed for the [link-deps] command. *)

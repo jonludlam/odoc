@@ -9,12 +9,44 @@ type path_query = [ `Path of Reference.Hierarchy.t | `Name of string ]
 
 type lookup_error = [ `Not_found ]
 
+module Library_scope : sig
+  type t = private
+    | Scoped of string list
+        (** Among these libraries alone. The list is never empty. *)
+    | Any  (** Anywhere on the search path. *)
+
+  val any : t
+
+  val of_libraries : string list -> t
+  (** [of_libraries libs] is [Scoped libs], or [Any] when [libs] is empty: a
+      unit that recorded no libraries is not limited. *)
+end
+
 type resolver = {
   open_units : string list;
-  lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
+  lookup_unit_by_name :
+    scope:Library_scope.t -> string -> (lookup_unit_result, lookup_error) result;
+      (** Finds the unit a name refers to, whether the name comes from a path, a
+          canonical path or a reference. A path wants [Scoped] with the
+          libraries the unit the name is in recorded: a path can only mean a
+          module the compiler gave the unit. A reference wants [Any], the whole
+          search path. Where several units match, the lookup warns. *)
+  lookup_unit_by_path :
+    Reference.Hierarchy.t -> (Lang.Compilation_unit.t, lookup_error) result;
+      (** Finds the unit a path reference names, such as [{!/libname/Module}].
+          The reference says which library, so there is no scope. *)
+  lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
+      (** Finds the unit an identifier names, wherever it is on the search path.
+          There is nothing to choose between, so no ambiguity. *)
+  scope_of_unit : Identifier.RootModule.t -> string list;
+      (** The libraries a unit was compiled against, as it recorded them. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
+      (** Finds an implementation by name, among the libraries of the unit being
+          linked. The names come from shapes, which only name units in the
+          compiler's dependency closure of that unit: its recorded libraries
+          hold them all, and a closure has one unit of each name. *)
   shape_reducer : Shape_reducer.t;
 }
 
@@ -42,6 +74,23 @@ val is_linking : t -> bool
 val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t
+
+val with_scope : Library_scope.t -> t -> t
+(** [with_scope scope env] resolves names in [scope] from now on. Resolution
+    that has reached a unit continues in that unit's libraries, since those are
+    what the compiler could see when the unit was built.
+
+    The scope limits one kind of lookup only: the root module of a path, looked
+    up by name ({!lookup_root_module}). A path is written by the compiler, or in
+    a [@canonical] tag, so it can only mean a module the unit could see. The
+    scope does not limit the root of a reference ({!lookup_by_name}), which an
+    author may write for anything on the search path, nor a lookup by identifier
+    ({!lookup_by_id}), which names its unit. A reference that goes into a unit
+    and meets a path there, such as an alias, resolves that path in the unit's
+    scope. *)
+
+val scope_of_unit : Identifier.RootModule.t -> t -> Library_scope.t
+(** The libraries the given unit recorded at compile time. *)
 
 val has_resolver : t -> bool
 
@@ -110,10 +159,15 @@ val lookup_impl : string -> t -> Lang.Implementation.t option
 
 val lookup_unit_by_path :
   Reference.Hierarchy.t -> t -> (Component.Element.module_, lookup_error) result
+(** For a path reference, such as [{!/libname/Module}]. The author names the
+    library, so the library scope does not apply. *)
 
 val module_of_unit : Lang.Compilation_unit.t -> Component.Module.t
 
 val lookup_root_module : Odoc_model.Names.ModuleName.t -> t -> root option
+(** For a path: looks up its root module by name, in the current library scope
+    (see {!with_scope}). A reference's root is looked up by {!lookup_by_name}
+    instead. *)
 
 type 'a scope constraint 'a = [< Component.Element.any ]
 (** Target of a lookup *)
@@ -122,12 +176,16 @@ type 'a maybe_ambiguous =
   ('a, [ `Ambiguous of 'a * 'a list | `Not_found ]) result
 
 val lookup_by_name : 'a scope -> string -> t -> 'a maybe_ambiguous
-(** Lookup an element in Env depending on the given [scope]. Return
-    [Error (`Ambiguous _)] when two or more elements match the given scope and
-    name. *)
+(** For a reference: looks up an element in Env depending on the given [scope].
+    Returns [Error (`Ambiguous _)] when two or more elements match the given
+    scope and name. When nothing in Env has the name, {!s_module},
+    {!s_signature} and {!s_any} look for a root module of that name along the
+    whole search path, whatever the {!Library_scope.t}. *)
 
 val lookup_by_id : 'a scope -> [< Identifier.t ] -> t -> 'a option
-(** Like [lookup_by_name] but use an identifier as key. *)
+(** Like [lookup_by_name] but uses an identifier as key, for paths and
+    references alike. A root identifier names its unit, which is looked up as
+    itself, so the {!Library_scope.t} does not apply. *)
 
 val s_any : Component.Element.any scope
 
