@@ -111,6 +111,15 @@ module Make (Syntax : SYNTAX) = struct
       | `SubstitutedT m -> from_path (m :> Path.t)
       | `SubstitutedCT m -> from_path (m :> Path.t)
       | `Unbox t -> from_path (t :> Path.t)
+      | `LocalMod (`Na _, _) -> .
+      | `LocalModTy (`Na _, _) -> .
+      | `LocalTy (`Na _, _) -> .
+      | `Module (`Na _, _, _) -> .
+      | `ModuleType (`Na _, _, _) -> .
+      | `Type (`Na _, _, _) -> .
+      | `Class (`Na _, _, _) -> .
+      | `ClassType (`Na _, _, _) -> .
+      | `Value (`Na _, _, _) -> .
       | `Root root -> unresolved [ inline @@ Text (ModuleName.to_string root) ]
       | `Dot (prefix, suffix) ->
           let link = from_path (prefix :> Path.t) in

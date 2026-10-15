@@ -326,10 +326,17 @@ module Identifier : sig
 end
 
 (** Normal OCaml paths (i.e. the ones present in types) *)
+type na = Paths_types.na
+(** The type of the locals and typed parents of the paths of the model, which
+    have none. *)
+
 module rec Path : sig
   module Resolved : sig
     module Module : sig
-      type t = Paths_types.Resolved_path.module_
+      type ('lmod, 'lmodty, 'pty) gen =
+        ('lmod, 'lmodty, 'pty) Paths_types.Resolved_path.module_
+
+      type t = (na, na, na) gen
 
       val is_hidden : t -> weak_canonical_test:bool -> bool
 
@@ -345,7 +352,10 @@ module rec Path : sig
     end
 
     module ModuleType : sig
-      type t = Paths_types.Resolved_path.module_type
+      type ('lmod, 'lmodty, 'pty) gen =
+        ('lmod, 'lmodty, 'pty) Paths_types.Resolved_path.module_type
+
+      type t = (na, na, na) gen
 
       (* val is_hidden : t -> weak_canonical_test:bool -> bool *)
 
@@ -353,7 +363,10 @@ module rec Path : sig
     end
 
     module Type : sig
-      type t = Paths_types.Resolved_path.type_
+      type ('lmod, 'lmodty, 'pty, 'lty) gen =
+        ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Resolved_path.type_
+
+      type t = (na, na, na, na) gen
 
       (* val of_ident : Identifier.Path.Type.t -> t *)
 
@@ -363,18 +376,35 @@ module rec Path : sig
     end
 
     module Value : sig
-      type t = Paths_types.Resolved_path.value
+      type ('lmod, 'lmodty, 'pty, 'lval) gen =
+        ('lmod, 'lmodty, 'pty, 'lval) Paths_types.Resolved_path.value
+
+      type t = (na, na, na, na) gen
     end
 
     module ClassType : sig
-      type t = Paths_types.Resolved_path.class_type
+      type ('lmod, 'lmodty, 'pty, 'lty) gen =
+        ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Resolved_path.class_type
+
+      type t = (na, na, na, na) gen
 
       (* val of_ident : Identifier.Path.ClassType.t -> t *)
 
       (* val is_hidden : t -> bool *)
     end
 
-    type t = Paths_types.Resolved_path.any
+    type ('lmod, 'lmodty, 'pty, 'lty, 'lval) gen =
+      ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Resolved_path.any
+
+    type t = (na, na, na, na, na) gen
+
+    type ('lmod, 'lmodty, 'pty) parent_gen =
+      ('lmod, 'lmodty, 'pty) Paths_types.Resolved_path.parent
+
+    type parent = (na, na, na) parent_gen
+
+    val parent_module : parent -> Module.t
+    (** The parent of a resolved path of the model, which is a module. *)
 
     val identifier : t -> Identifier.t option
     (** If the path points to a core type, no identifier can be generated *)
@@ -383,28 +413,46 @@ module rec Path : sig
   end
 
   module Module : sig
-    type t = Paths_types.Path.module_
+    type ('lmod, 'lmodty, 'pty) gen =
+      ('lmod, 'lmodty, 'pty) Paths_types.Path.module_
+
+    type t = (na, na, na) gen
 
     (* val root : t -> string option *)
   end
 
   module ModuleType : sig
-    type t = Paths_types.Path.module_type
+    type ('lmod, 'lmodty, 'pty) gen =
+      ('lmod, 'lmodty, 'pty) Paths_types.Path.module_type
+
+    type t = (na, na, na) gen
   end
 
   module Type : sig
-    type t = Paths_types.Path.type_
+    type ('lmod, 'lmodty, 'pty, 'lty) gen =
+      ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Path.type_
+
+    type t = (na, na, na, na) gen
   end
 
   module Value : sig
-    type t = Paths_types.Path.value
+    type ('lmod, 'lmodty, 'pty, 'lval) gen =
+      ('lmod, 'lmodty, 'pty, 'lval) Paths_types.Path.value
+
+    type t = (na, na, na, na) gen
   end
 
   module ClassType : sig
-    type t = Paths_types.Path.class_type
+    type ('lmod, 'lmodty, 'pty, 'lty) gen =
+      ('lmod, 'lmodty, 'pty, 'lty) Paths_types.Path.class_type
+
+    type t = (na, na, na, na) gen
   end
 
-  type t = Paths_types.Path.any
+  type ('lmod, 'lmodty, 'pty, 'lty, 'lval) gen =
+    ('lmod, 'lmodty, 'pty, 'lty, 'lval) Paths_types.Path.any
+
+  type t = (na, na, na, na, na) gen
 
   val is_hidden : t -> bool
 end

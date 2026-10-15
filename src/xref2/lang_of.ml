@@ -154,10 +154,10 @@ module Path = struct
     | `Subst (mty, m) ->
         `Subst (resolved_module_type map mty, resolved_module map m)
     | `Hidden h -> `Hidden (resolved_module map h)
-    | `Module (p, n) -> `Module (resolved_parent map p, n)
+    | `Module (p, n) -> `Module (`Module (resolved_parent map p), n)
     | `Canonical (r, m) -> `Canonical (resolved_module map r, m)
     | `Apply (m1, m2) -> `Apply (resolved_module map m1, resolved_module map m2)
-    | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2)
+    | `Alias (m1, m2, _) -> `Alias (resolved_module map m1, module_ map m2, None)
     | `OpaqueModule m -> `OpaqueModule (resolved_module map m)
 
   and resolved_parent map (p : Cpath.Resolved.parent) =
@@ -178,7 +178,8 @@ module Path = struct
           (try Component.ModuleTypeMap.find id map.module_type
            with Not_found ->
              failwith (Format.asprintf "Not_found: %a" Ident.fmt id))
-    | `ModuleType (p, name) -> `ModuleType (resolved_parent map p, name)
+    | `ModuleType (p, name) ->
+        `ModuleType (`Module (resolved_parent map p), name)
     | `Substituted s -> `SubstitutedMT (resolved_module_type map s)
     | `SubstT (p1, p2) ->
         `SubstT (resolved_module_type map p1, resolved_module_type map p2)
@@ -196,16 +197,16 @@ module Path = struct
     | `Identifier _ as y -> y
     | `Local id -> `Identifier (Component.TypeMap.find id map.path_type)
     | `CanonicalType (t1, t2) -> `CanonicalType (resolved_type map t1, t2)
-    | `Type (p, name) -> `Type (resolved_parent map p, name)
-    | `Class (p, name) -> `Class (resolved_parent map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
+    | `Type (p, name) -> `Type (`Module (resolved_parent map p), name)
+    | `Class (p, name) -> `Class (`Module (resolved_parent map p), name)
+    | `ClassType (p, name) -> `ClassType (`Module (resolved_parent map p), name)
     | `Substituted s -> `SubstitutedT (resolved_type map s)
     | `Unbox t -> `Unbox (resolved_type map t)
 
   and resolved_value map (p : Cpath.Resolved.value) :
       Odoc_model.Paths.Path.Resolved.Value.t =
     match p with
-    | `Value (p, name) -> `Value (resolved_parent map p, name)
+    | `Value (p, name) -> `Value (`Module (resolved_parent map p), name)
     | `Identifier _ as y -> y
 
   and resolved_class_type map (p : Cpath.Resolved.class_type) :
@@ -213,8 +214,8 @@ module Path = struct
     match p with
     | `Identifier _ as y -> y
     | `Local id -> `Identifier (Component.TypeMap.find id map.path_class_type)
-    | `Class (p, name) -> `Class (resolved_parent map p, name)
-    | `ClassType (p, name) -> `ClassType (resolved_parent map p, name)
+    | `Class (p, name) -> `Class (`Module (resolved_parent map p), name)
+    | `ClassType (p, name) -> `ClassType (`Module (resolved_parent map p), name)
     | `Substituted s -> `SubstitutedCT (resolved_class_type map s)
 
   let rec module_fragment :

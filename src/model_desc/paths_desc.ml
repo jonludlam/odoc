@@ -234,7 +234,16 @@ module General_paths = struct
       | `SubstitutedMT m -> C ("`SubstitutedMT", (m :> p), path)
       | `SubstitutedT m -> C ("`SubstitutedT", (m :> p), path)
       | `SubstitutedCT m -> C ("`SubstitutedCT", (m :> p), path)
-      | `Unbox x -> C ("`Unbox", (x :> p), path))
+      | `Unbox x -> C ("`Unbox", (x :> p), path)
+      | `LocalMod (`Na _, _) -> .
+      | `LocalModTy (`Na _, _) -> .
+      | `LocalTy (`Na _, _) -> .
+      | `Module (`Na _, _, _) -> .
+      | `ModuleType (`Na _, _, _) -> .
+      | `Type (`Na _, _, _) -> .
+      | `Class (`Na _, _, _) -> .
+      | `ClassType (`Na _, _, _) -> .
+      | `Value (`Na _, _, _) -> .)
 
   and resolved_path : rp t =
     Variant
@@ -248,7 +257,10 @@ module General_paths = struct
               Pair (resolved_path, resolved_path) )
       | `Hidden x -> C ("`Hidden", (x :> rp), resolved_path)
       | `Module (x1, x2) ->
-          C ("`Module", ((x1 :> rp), x2), Pair (resolved_path, Names.modulename))
+          C
+            ( "`Module",
+              ((Paths.Path.Resolved.parent_module x1 :> rp), x2),
+              Pair (resolved_path, Names.modulename) )
       | `Canonical (x1, x2) ->
           C ("`Canonical", ((x1 :> rp), (x2 :> p)), Pair (resolved_path, path))
       | `Apply (x1, x2) ->
@@ -256,7 +268,7 @@ module General_paths = struct
             ( "`Apply",
               ((x1 :> rp), (x2 :> rp)),
               Pair (resolved_path, resolved_path) )
-      | `Alias (dest, src) ->
+      | `Alias (dest, src, _) ->
           C ("`Alias", ((dest :> rp), (src :> p)), Pair (resolved_path, path))
       | `AliasModuleType (x1, x2) ->
           C
@@ -267,7 +279,7 @@ module General_paths = struct
       | `ModuleType (x1, x2) ->
           C
             ( "`ModuleType",
-              ((x1 :> rp), x2),
+              ((Paths.Path.Resolved.parent_module x1 :> rp), x2),
               Pair (resolved_path, Names.moduletypename) )
       | `SubstT (x1, x2) ->
           C
@@ -286,21 +298,33 @@ module General_paths = struct
               Pair (resolved_path, path) )
       | `OpaqueModuleType x -> C ("`OpaqueModuleType", (x :> rp), resolved_path)
       | `Type (x1, x2) ->
-          C ("`Type", ((x1 :> rp), x2), Pair (resolved_path, Names.typename))
+          C
+            ( "`Type",
+              ((Paths.Path.Resolved.parent_module x1 :> rp), x2),
+              Pair (resolved_path, Names.typename) )
       | `Value (x1, x2) ->
-          C ("`Value", ((x1 :> rp), x2), Pair (resolved_path, Names.valuename))
+          C
+            ( "`Value",
+              ((Paths.Path.Resolved.parent_module x1 :> rp), x2),
+              Pair (resolved_path, Names.valuename) )
       | `Class (x1, x2) ->
-          C ("`Class", ((x1 :> rp), x2), Pair (resolved_path, Names.classname))
+          C
+            ( "`Class",
+              ((Paths.Path.Resolved.parent_module x1 :> rp), x2),
+              Pair (resolved_path, Names.classname) )
       | `ClassType (x1, x2) ->
           C
             ( "`ClassType",
-              ((x1 :> rp), x2),
+              ((Paths.Path.Resolved.parent_module x1 :> rp), x2),
               Pair (resolved_path, Names.classtypename) )
       | `Substituted c -> C ("`Substituted", (c :> rp), resolved_path)
       | `SubstitutedMT c -> C ("`SubstitutedMT", (c :> rp), resolved_path)
       | `SubstitutedT c -> C ("`SubstitutedT", (c :> rp), resolved_path)
       | `SubstitutedCT c -> C ("`SubstitutedCT", (c :> rp), resolved_path)
-      | `Unbox c -> C ("`Unbox", (c :> rp), resolved_path))
+      | `Unbox c -> C ("`Unbox", (c :> rp), resolved_path)
+      | `LocalMod (`Na _) -> .
+      | `LocalModTy (`Na _) -> .
+      | `LocalTy (`Na _) -> .)
 
   and hierarchy_reference : Paths.Reference.Hierarchy.t t =
     let tag_page_path =
