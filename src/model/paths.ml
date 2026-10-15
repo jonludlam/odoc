@@ -646,6 +646,8 @@ module Path = struct
       | `Type (p, _) -> inner (parent_module p :> ra)
       | `Value (_, t) when Names.ValueName.is_hidden t -> true
       | `Value (p, _) -> inner (parent_module p :> ra)
+      | (`Class (_, t) | `ClassType (_, t)) when Names.TypeName.is_hidden t ->
+          true
       | `Class (p, _) -> inner (parent_module p :> ra)
       | `ClassType (p, _) -> inner (parent_module p :> ra)
       | `Alias (dest, `Resolved src, _) ->
