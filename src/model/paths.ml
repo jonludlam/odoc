@@ -605,7 +605,7 @@ type na = Paths_types.na
 type canon = Paths_types.canon
 
 module Path = struct
-  type t = (na, na, na, na, na, canon) Paths_types.Path.any
+  type t = (na, na, na, na, canon) Paths_types.Path.any
 
   (* The parent of a resolved path of the model, which is always a module. *)
   let parent_module :
@@ -615,11 +615,11 @@ module Path = struct
     | `ModuleType (_, `Na _) -> .
     | `FragmentRoot (`Na _) -> .
 
-  type ra = (na, na, na, na, na, canon) Paths_types.Resolved_path.any
+  type ra = (na, na, na, na, canon) Paths_types.Resolved_path.any
 
   let rec is_resolved_hidden :
       weak_canonical_test:bool ->
-      (na, na, na, na, na, canon) Paths_types.Resolved_path.any ->
+      (na, na, na, na, canon) Paths_types.Resolved_path.any ->
       bool =
    fun ~weak_canonical_test x ->
     let open Paths_types.Resolved_path in
@@ -655,7 +655,7 @@ module Path = struct
       | `Alias (dest, src, _) ->
           inner (dest :> ra)
           && is_path_hidden
-               (src :> (na, na, na, na, na, canon) Paths_types.Path.any)
+               (src :> (na, na, na, na, canon) Paths_types.Path.any)
       | `AliasModuleType (p1, p2) -> inner (p1 :> ra) && inner (p2 :> ra)
       | `SubstT (p1, p2) -> inner (p1 :> ra) || inner (p2 :> ra)
       | `Substituted m -> inner (m :> ra)
@@ -672,8 +672,7 @@ module Path = struct
     in
     inner x
 
-  and is_path_hidden : (na, na, na, na, na, canon) Paths_types.Path.any -> bool
-      =
+  and is_path_hidden : (na, na, na, na, canon) Paths_types.Path.any -> bool =
     let open Paths_types.Path in
     function
     | `Resolved r -> is_resolved_hidden ~weak_canonical_test:false r
@@ -700,15 +699,15 @@ module Path = struct
     | `Apply (p1, p2) -> is_path_hidden (p1 :> t) || is_path_hidden (p2 :> t)
 
   module Resolved = struct
-    type t = (na, na, na, na, na, canon) Paths_types.Resolved_path.any
+    type t = (na, na, na, na, canon) Paths_types.Resolved_path.any
 
     type ('lmod, 'lmodty, 'pty, 'canon) parent_gen =
       ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.parent
 
     type parent = (na, na, na, canon) parent_gen
 
-    type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) Paths_types.Resolved_path.any
+    type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Resolved_path.any
 
     let rec parent_module_type_identifier :
         (na, na, na, canon) Paths_types.Resolved_path.module_type ->
@@ -761,7 +760,7 @@ module Path = struct
 
       let is_hidden m =
         is_resolved_hidden
-          (m : t :> (na, na, na, na, na, canon) Paths_types.Resolved_path.any)
+          (m : t :> (na, na, na, na, canon) Paths_types.Resolved_path.any)
 
       (* [Identifier.equal]/[Identifier.hash] are polymorphic; the same policy
          works for resolved-path spines. *)
@@ -794,10 +793,10 @@ module Path = struct
     end
 
     module Value = struct
-      type ('lmod, 'lmodty, 'pty, 'lval, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'lval, 'canon) Paths_types.Resolved_path.value
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.value
 
-      type t = (na, na, na, na, canon) gen
+      type t = (na, na, na, canon) gen
     end
 
     module ClassType = struct
@@ -885,10 +884,10 @@ module Path = struct
   end
 
   module Value = struct
-    type ('lmod, 'lmodty, 'pty, 'lval, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lval, 'canon) Paths_types.Path.value
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Path.value
 
-    type t = (na, na, na, na, canon) gen
+    type t = (na, na, na, canon) gen
   end
 
   module ClassType = struct
@@ -898,8 +897,8 @@ module Path = struct
     type t = (na, na, na, na, canon) gen
   end
 
-  type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) gen =
-    ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) Paths_types.Path.any
+  type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
+    ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Path.any
 
   let is_hidden = is_path_hidden
 end

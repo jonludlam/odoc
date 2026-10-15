@@ -380,10 +380,10 @@ module rec Path : sig
     end
 
     module Value : sig
-      type ('lmod, 'lmodty, 'pty, 'lval, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'lval, 'canon) Paths_types.Resolved_path.value
+      type ('lmod, 'lmodty, 'pty, 'canon) gen =
+        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.value
 
-      type t = (na, na, na, na, canon) gen
+      type t = (na, na, na, canon) gen
     end
 
     module ClassType : sig
@@ -402,10 +402,10 @@ module rec Path : sig
       (* val is_hidden : t -> bool *)
     end
 
-    type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) Paths_types.Resolved_path.any
+    type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Resolved_path.any
 
-    type t = (na, na, na, na, na, canon) gen
+    type t = (na, na, na, na, canon) gen
 
     type ('lmod, 'lmodty, 'pty, 'canon) parent_gen =
       ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.parent
@@ -445,10 +445,10 @@ module rec Path : sig
   end
 
   module Value : sig
-    type ('lmod, 'lmodty, 'pty, 'lval, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lval, 'canon) Paths_types.Path.value
+    type ('lmod, 'lmodty, 'pty, 'canon) gen =
+      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Path.value
 
-    type t = (na, na, na, na, canon) gen
+    type t = (na, na, na, canon) gen
   end
 
   module ClassType : sig
@@ -458,10 +458,10 @@ module rec Path : sig
     type t = (na, na, na, na, canon) gen
   end
 
-  type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) gen =
-    ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) Paths_types.Path.any
+  type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
+    ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Path.any
 
-  type t = (na, na, na, na, na, canon) gen
+  type t = (na, na, na, na, canon) gen
 
   val is_hidden : t -> bool
 end
