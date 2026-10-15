@@ -1,5 +1,5 @@
 ; Compares the model's hidden checks with the component path ones on the same
-; paths. Each model path is converted to a component path with Of_Lang.
+; paths. A model path is also a component path.
 
 (test
  (name hidden_paths)

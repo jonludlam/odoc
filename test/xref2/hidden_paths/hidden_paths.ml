@@ -1,11 +1,10 @@
-(* Each case gives the model's answer, and the component path's answer for the
-   same path converted with [Of_Lang]. *)
+(* Each case gives the model's answer and the component path's answer for the
+   same path. *)
 
 open Odoc_model
 open Odoc_model.Names
 module Id = Paths.Identifier
 module P = Paths.Path
-open Odoc_xref2.Component
 
 let root = Id.Mk.root (None, ModuleName.make_std "R")
 
@@ -33,42 +32,39 @@ let resolved_module ?(weak = false) name (p : P.Resolved.Module.t) =
   case name
     (P.Resolved.Module.is_hidden ~weak_canonical_test:weak p)
     (Odoc_xref2.Cpath.is_resolved_module_hidden ~weak_canonical_test:weak
-       (Of_Lang.resolved_module_path (Of_Lang.empty ()) p))
+       (p :> Odoc_xref2.Cpath.Resolved.module_))
 
 let resolved_module_type name (p : P.Resolved.ModuleType.t) =
   case name
     (P.Resolved.is_hidden (p :> P.Resolved.t))
     (Odoc_xref2.Cpath.is_resolved_module_type_hidden
-       (Of_Lang.resolved_module_type_path (Of_Lang.empty ()) p))
+       (p :> Odoc_xref2.Cpath.Resolved.module_type))
 
 let resolved_type name (p : P.Resolved.Type.t) =
   case name
     (P.Resolved.is_hidden (p :> P.Resolved.t))
     (Odoc_xref2.Cpath.is_resolved_type_hidden
-       (Of_Lang.resolved_type_path (Of_Lang.empty ()) p))
+       (p :> Odoc_xref2.Cpath.Resolved.type_))
 
 let module_ name (p : P.Module.t) =
   case name
     (P.is_hidden (p :> P.t))
-    (Odoc_xref2.Cpath.is_module_hidden
-       (Of_Lang.module_path (Of_Lang.empty ()) p))
+    (Odoc_xref2.Cpath.is_module_hidden (p :> Odoc_xref2.Cpath.module_))
 
 let module_type name (p : P.ModuleType.t) =
   case name
     (P.is_hidden (p :> P.t))
-    (Odoc_xref2.Cpath.is_module_type_hidden
-       (Of_Lang.module_type_path (Of_Lang.empty ()) p))
+    (Odoc_xref2.Cpath.is_module_type_hidden (p :> Odoc_xref2.Cpath.module_type))
 
 let type_ name (p : P.Type.t) =
   case name
     (P.is_hidden (p :> P.t))
-    (Odoc_xref2.Cpath.is_type_hidden (Of_Lang.type_path (Of_Lang.empty ()) p))
+    (Odoc_xref2.Cpath.is_type_hidden (p :> Odoc_xref2.Cpath.type_))
 
 let class_type name (p : P.ClassType.t) =
   case name
     (P.is_hidden (p :> P.t))
-    (Odoc_xref2.Cpath.is_class_type_hidden
-       (Of_Lang.class_type_path (Of_Lang.empty ()) p))
+    (Odoc_xref2.Cpath.is_class_type_hidden (p :> Odoc_xref2.Cpath.class_type))
 
 let () =
   print_endline "Resolved paths:";
