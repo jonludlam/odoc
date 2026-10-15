@@ -1545,64 +1545,6 @@ module Fmt = struct
     | `LocalModTy (`Na _) -> .
     | `LocalTy (`Na _) -> .
 
-  and model_fragment c ppf (f : Odoc_model.Paths.Fragment.t) =
-    match f with
-    | `Resolved rf -> model_resolved_fragment c ppf rf
-    | `Dot (sg, d) ->
-        Format.fprintf ppf "*%a.%s" (model_fragment c)
-          (sg :> Odoc_model.Paths.Fragment.t)
-          d
-    | `Root -> ()
-
-  and model_resolved_fragment c ppf (f : Odoc_model.Paths.Fragment.Resolved.t) =
-    let open Odoc_model.Paths.Fragment.Resolved in
-    match f with
-    | `Root (`ModuleType p) ->
-        Format.fprintf ppf "root(%a)" (model_resolved_path c) (p :> rpath)
-    | `Root (`Module p) ->
-        Format.fprintf ppf "root(%a)" (model_resolved_path c) (p :> rpath)
-    | `Module (`Root _, m) when c.short_paths ->
-        Format.fprintf ppf "%s" (ModuleName.to_string m)
-    | `Module (sg, m) ->
-        Format.fprintf ppf "%a.%s"
-          (model_resolved_fragment c)
-          (sg :> t)
-          (ModuleName.to_string m)
-    | `Module_type (`Root _, m) when c.short_paths ->
-        Format.fprintf ppf "%s" (ModuleTypeName.to_string m)
-    | `Module_type (sg, mty) ->
-        Format.fprintf ppf "%a.%s"
-          (model_resolved_fragment c)
-          (sg :> t)
-          (ModuleTypeName.to_string mty)
-    | `Type (`Root _, t) when c.short_paths ->
-        Format.fprintf ppf "%s" (TypeName.to_string t)
-    | `Type (sg, t) ->
-        Format.fprintf ppf "%a.%s"
-          (model_resolved_fragment c)
-          (sg :> t)
-          (TypeName.to_string t)
-    | `Subst (path, m) ->
-        Format.fprintf ppf "(%a subst -> %a)" (model_resolved_path c)
-          (path :> rpath)
-          (model_resolved_fragment c)
-          (m :> t)
-    | `Alias (_, _) -> Format.fprintf ppf "UNIMPLEMENTED subst alias!?"
-    | `Class (sg, cls) ->
-        Format.fprintf ppf "%a.%s"
-          (model_resolved_fragment c)
-          (sg :> t)
-          (TypeName.to_string cls)
-    | `ClassType (sg, cls) ->
-        Format.fprintf ppf "%a.%s"
-          (model_resolved_fragment c)
-          (sg :> t)
-          (TypeName.to_string cls)
-    | `OpaqueModule m ->
-        Format.fprintf ppf "opaquemodule(%a)"
-          (model_resolved_fragment c)
-          (m :> Odoc_model.Paths.Fragment.Resolved.t)
-
   and resolved_root_fragment c ppf (f : Cfrag.root) =
     match f with
     | `ModuleType p ->
@@ -1633,9 +1575,9 @@ module Fmt = struct
 
   and resolved_module_type_fragment c ppf (f : Cfrag.resolved_module_type) =
     match f with
-    | `ModuleType (`Root _, n) when c.short_paths ->
+    | `Module_type (`Root _, n) when c.short_paths ->
         Format.fprintf ppf "%s" (ModuleTypeName.to_string n)
-    | `ModuleType (p, n) ->
+    | `Module_type (p, n) ->
         Format.fprintf ppf "%a.%s"
           (resolved_signature_fragment c)
           p
@@ -2307,16 +2249,23 @@ module Of_Lang = struct
     | `ClassType (`Na _, _, _) -> .
     | `LocalTy (`Na _, _) -> .
 
+  (* A model fragment is also a component fragment. As for paths, these
+     return their input when no path in it changes. *)
   let rec resolved_signature_fragment :
       map ->
       Odoc_model.Paths.Fragment.Resolved.Signature.t ->
       Cfrag.resolved_signature =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.resolved_signature) in
     match ty with
     | `Root (`ModuleType path) ->
-        `Root (`ModuleType (resolved_module_type_path ident_map path))
+        let path' = resolved_module_type_path ident_map path in
+        if path' == (path :> Cpath.Resolved.module_type) then same
+        else `Root (`ModuleType path')
     | `Root (`Module path) ->
-        `Root (`Module (resolved_module_path ident_map path))
+        let path' = resolved_module_path ident_map path in
+        if path' == (path :> Cpath.Resolved.module_) then same
+        else `Root (`Module path')
     | (`Alias _ | `Subst _ | `Module _ | `OpaqueModule _) as x ->
         (resolved_module_fragment ident_map x :> Cfrag.resolved_signature)
 
@@ -2324,63 +2273,98 @@ module Of_Lang = struct
       _ -> Odoc_model.Paths.Fragment.Resolved.Module.t -> Cfrag.resolved_module
       =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.resolved_module) in
+    let unchanged (m : Odoc_model.Paths.Fragment.Resolved.Module.t) m' =
+      m' == (m :> Cfrag.resolved_module)
+    in
     match ty with
     | `Subst (p, m) ->
-        `Subst
-          ( resolved_module_type_path ident_map p,
-            resolved_module_fragment ident_map m )
+        let p' = resolved_module_type_path ident_map p in
+        let m' = resolved_module_fragment ident_map m in
+        if p' == (p :> Cpath.Resolved.module_type) && unchanged m m' then same
+        else `Subst (p', m')
     | `Alias (p, m) ->
-        `Alias
-          ( resolved_module_path ident_map p,
-            resolved_module_fragment ident_map m )
-    | `Module (p, m) -> `Module (resolved_signature_fragment ident_map p, m)
-    | `OpaqueModule m -> `OpaqueModule (resolved_module_fragment ident_map m)
+        let p' = resolved_module_path ident_map p in
+        let m' = resolved_module_fragment ident_map m in
+        if p' == (p :> Cpath.Resolved.module_) && unchanged m m' then same
+        else `Alias (p', m')
+    | `Module (p, n) ->
+        let p' = resolved_signature_fragment ident_map p in
+        if p' == (p :> Cfrag.resolved_signature) then same else `Module (p', n)
+    | `OpaqueModule m ->
+        let m' = resolved_module_fragment ident_map m in
+        if unchanged m m' then same else `OpaqueModule m'
 
-  and resolved_module_type_fragment :
+  let resolved_module_type_fragment :
       _ ->
       Odoc_model.Paths.Fragment.Resolved.ModuleType.t ->
       Cfrag.resolved_module_type =
    fun ident_map ty ->
     match ty with
-    | `Module_type (p, m) ->
-        `ModuleType (resolved_signature_fragment ident_map p, m)
+    | `Module_type (p, n) ->
+        let p' = resolved_signature_fragment ident_map p in
+        if p' == (p :> Cfrag.resolved_signature) then
+          (ty :> Cfrag.resolved_module_type)
+        else `Module_type (p', n)
 
-  and resolved_type_fragment :
+  let resolved_type_fragment :
       _ -> Odoc_model.Paths.Fragment.Resolved.Type.t -> Cfrag.resolved_type =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.resolved_type) in
+    let parent p mk =
+      let p' = resolved_signature_fragment ident_map p in
+      if p' == (p :> Cfrag.resolved_signature) then same else mk p'
+    in
     match ty with
-    | `Type (p, n) -> `Type (resolved_signature_fragment ident_map p, n)
-    | `Class (p, n) -> `Class (resolved_signature_fragment ident_map p, n)
-    | `ClassType (p, n) ->
-        `ClassType (resolved_signature_fragment ident_map p, n)
+    | `Type (p, n) -> parent p (fun p -> `Type (p, n))
+    | `Class (p, n) -> parent p (fun p -> `Class (p, n))
+    | `ClassType (p, n) -> parent p (fun p -> `ClassType (p, n))
 
   let rec signature_fragment :
       _ -> Odoc_model.Paths.Fragment.Signature.t -> Cfrag.signature =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.signature) in
     match ty with
-    | `Resolved r -> `Resolved (resolved_signature_fragment ident_map r)
-    | `Dot (p, n) -> `Dot (signature_fragment ident_map p, n)
-    | `Root -> `Root
+    | `Resolved r ->
+        let r' = resolved_signature_fragment ident_map r in
+        if r' == (r :> Cfrag.resolved_signature) then same else `Resolved r'
+    | `Dot (p, n) ->
+        let p' = signature_fragment ident_map p in
+        if p' == (p :> Cfrag.signature) then same else `Dot (p', n)
+    | `Root -> same
+
+  let dot_fragment ident_map same p n =
+    let p' = signature_fragment ident_map p in
+    if p' == (p :> Cfrag.signature) then same else `Dot (p', n)
 
   let module_fragment : _ -> Odoc_model.Paths.Fragment.Module.t -> Cfrag.module_
       =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.module_) in
     match ty with
-    | `Resolved r -> `Resolved (resolved_module_fragment ident_map r)
-    | `Dot (p, n) -> `Dot (signature_fragment ident_map p, n)
+    | `Resolved r ->
+        let r' = resolved_module_fragment ident_map r in
+        if r' == (r :> Cfrag.resolved_module) then same else `Resolved r'
+    | `Dot (p, n) -> dot_fragment ident_map same p n
 
   let module_type_fragment :
       _ -> Odoc_model.Paths.Fragment.ModuleType.t -> Cfrag.module_type =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.module_type) in
     match ty with
-    | `Resolved r -> `Resolved (resolved_module_type_fragment ident_map r)
-    | `Dot (p, n) -> `Dot (signature_fragment ident_map p, n)
+    | `Resolved r ->
+        let r' = resolved_module_type_fragment ident_map r in
+        if r' == (r :> Cfrag.resolved_module_type) then same else `Resolved r'
+    | `Dot (p, n) -> dot_fragment ident_map same p n
 
   let type_fragment : _ -> Odoc_model.Paths.Fragment.Type.t -> Cfrag.type_ =
    fun ident_map ty ->
+    let same = (ty :> Cfrag.type_) in
     match ty with
-    | `Resolved r -> `Resolved (resolved_type_fragment ident_map r)
-    | `Dot (p, n) -> `Dot (signature_fragment ident_map p, n)
+    | `Resolved r ->
+        let r' = resolved_type_fragment ident_map r in
+        if r' == (r :> Cfrag.resolved_type) then same else `Resolved r'
+    | `Dot (p, n) -> dot_fragment ident_map same p n
 
   let rec type_decl ident_map ty =
     let open Odoc_model.Lang.TypeDecl in

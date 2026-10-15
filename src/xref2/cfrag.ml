@@ -1,42 +1,56 @@
 (*open Odoc_model.Paths*)
 open Odoc_model.Names
 
+(* Component fragments are model fragments whose paths are component paths. *)
+
+open Odoc_model.Paths.Fragment
+
 type root =
-  [ `ModuleType of Cpath.Resolved.module_type
-  | `Module of Cpath.Resolved.module_ ]
+  ( Cpath.lmod,
+    Cpath.lmodty,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  Resolved.root_gen
 
 type resolved_signature =
-  [ `Root of root
-  | `Subst of Cpath.Resolved.module_type * resolved_module
-  | `Alias of Cpath.Resolved.module_ * resolved_module
-  | `Module of resolved_signature * ModuleName.t
-  | `OpaqueModule of resolved_module ]
+  ( Cpath.lmod,
+    Cpath.lmodty,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  Resolved.Signature.gen
 
-and resolved_module =
-  [ `Subst of Cpath.Resolved.module_type * resolved_module
-  | `Alias of Cpath.Resolved.module_ * resolved_module
-  | `Module of resolved_signature * ModuleName.t
-  | `OpaqueModule of resolved_module ]
+type resolved_module =
+  ( Cpath.lmod,
+    Cpath.lmodty,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  Resolved.Module.gen
 
-and resolved_module_type =
-  [ `ModuleType of resolved_signature * ModuleTypeName.t ]
+type resolved_module_type =
+  ( Cpath.lmod,
+    Cpath.lmodty,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  Resolved.ModuleType.gen
 
-and resolved_type =
-  [ `Type of resolved_signature * TypeName.t
-  | `Class of resolved_signature * TypeName.t
-  | `ClassType of resolved_signature * TypeName.t ]
-
-(* and signature = [ `Resolved of resolved_signature ] *)
+type resolved_type =
+  ( Cpath.lmod,
+    Cpath.lmodty,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  Resolved.Type.gen
 
 type signature =
-  [ `Resolved of resolved_signature | `Dot of signature * string | `Root ]
+  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) Signature.gen
 
-and module_ = [ `Resolved of resolved_module | `Dot of signature * string ]
+type module_ =
+  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) Module.gen
 
-and module_type =
-  [ `Resolved of resolved_module_type | `Dot of signature * string ]
+type module_type =
+  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) ModuleType.gen
 
-and type_ = [ `Resolved of resolved_type | `Dot of signature * string ]
+type type_ =
+  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) Type.gen
 
 type resolved_base_name =
   | RBase of root
@@ -90,11 +104,11 @@ let module_split : module_ -> string * module_ option = function
 
 let resolved_module_type_split :
     resolved_module_type -> string * resolved_module_type option = function
-  | `ModuleType (m, name) -> (
+  | `Module_type (m, name) -> (
       match resolved_signature_split_parent m with
       | RBase _ -> (ModuleTypeName.to_string name, None)
       | RBranch (base, m) ->
-          (ModuleName.to_string base, Some (`ModuleType (m, name))))
+          (ModuleName.to_string base, Some (`Module_type (m, name))))
 
 let module_type_split : module_type -> string * module_type option = function
   | `Resolved r ->
@@ -152,5 +166,5 @@ and unresolve_type : resolved_type -> type_ = function
       `Dot (unresolve_signature parent, TypeName.to_string name)
 
 and unresolve_module_type : resolved_module_type -> module_type = function
-  | `ModuleType (parent, name) ->
+  | `Module_type (parent, name) ->
       `Dot (unresolve_signature parent, ModuleTypeName.to_string name)
