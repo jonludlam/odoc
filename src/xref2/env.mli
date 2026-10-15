@@ -9,12 +9,27 @@ type path_query = [ `Path of Reference.Hierarchy.t | `Name of string ]
 
 type lookup_error = [ `Not_found ]
 
+module Library_scope : sig
+  type t = private
+    | Scoped of string list
+        (** Among these libraries alone. The list is never empty. *)
+    | Any  (** Anywhere on the search path. *)
+
+  val any : t
+
+  val of_libraries : string list -> t
+  (** [of_libraries libs] is [Scoped libs], or [Any] when [libs] is empty: a
+      unit that recorded no libraries is not limited. *)
+end
+
 type resolver = {
   open_units : string list;
   lookup_unit : path_query -> (lookup_unit_result, lookup_error) result;
   lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
       (** Finds the unit an identifier names, wherever it is on the search path.
           There is nothing to choose between, so no ambiguity. *)
+  scope_of_unit : Identifier.RootModule.t -> string list;
+      (** The libraries a unit was compiled against, as it recorded them. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -45,6 +60,14 @@ val is_linking : t -> bool
 val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t
+
+val with_scope : Library_scope.t -> t -> t
+(** [with_scope scope env] resolves names in [scope] from now on. Resolution
+    that has reached a unit continues in that unit's libraries, since those are
+    what the compiler could see when the unit was built. *)
+
+val scope_of_unit : Identifier.RootModule.t -> t -> Library_scope.t
+(** The libraries the given unit recorded at compile time. *)
 
 val has_resolver : t -> bool
 
