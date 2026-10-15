@@ -617,86 +617,154 @@ module Path = struct
 
   type ra = (na, na, na, na, canon) Paths_types.Resolved_path.any
 
-  let rec is_resolved_hidden :
-      weak_canonical_test:bool ->
-      (na, na, na, na, canon) Paths_types.Resolved_path.any ->
-      bool =
-   fun ~weak_canonical_test x ->
-    let open Paths_types.Resolved_path in
-    let rec inner : ra -> bool = function
-      | `Identifier (`ModuleType (_, m)) when Names.ModuleTypeName.is_hidden m
-        ->
-          true
-      | `Identifier (`Type (_, t)) when Names.TypeName.is_hidden t -> true
-      | `Identifier (`Module (_, m)) when Names.ModuleName.is_hidden m -> true
-      | `Identifier id -> Identifier.is_hidden id
-      | `LocalMod (`Na _) -> .
-      | `LocalModTy (`Na _) -> .
-      | `LocalTy (`Na _) -> .
-      | `Canonical (_, `Resolved _) -> false
-      | `Canonical (x, _) -> (not weak_canonical_test) && inner (x :> ra)
-      | `Hidden _ -> true
-      | `Subst (p1, p2) -> inner (p1 :> ra) || inner (p2 :> ra)
-      | `Module (p, _) -> inner (parent_module p :> ra)
-      | `Apply (p1, p2) -> inner (p1 :> ra) || inner (p2 :> ra)
-      | `ModuleType (_, m) when Names.ModuleTypeName.is_hidden m -> true
-      | `ModuleType (p, _) -> inner (parent_module p :> ra)
-      | `Type (_, t) when Names.TypeName.is_hidden t -> true
-      | `CoreType t -> Names.TypeName.is_hidden t
-      | `Type (p, _) -> inner (parent_module p :> ra)
-      | `Value (_, t) when Names.ValueName.is_hidden t -> true
-      | `Value (p, _) -> inner (parent_module p :> ra)
-      | (`Class (_, t) | `ClassType (_, t)) when Names.TypeName.is_hidden t ->
-          true
-      | `Class (p, _) -> inner (parent_module p :> ra)
-      | `ClassType (p, _) -> inner (parent_module p :> ra)
-      | `Alias (dest, `Resolved src, _) ->
-          inner (dest :> ra) && inner (src :> ra)
-      | `Alias (dest, src, _) ->
-          inner (dest :> ra)
-          && is_path_hidden
-               (src :> (na, na, na, na, canon) Paths_types.Path.any)
-      | `AliasModuleType (p1, p2) -> inner (p1 :> ra) && inner (p2 :> ra)
-      | `SubstT (p1, p2) -> inner (p1 :> ra) || inner (p2 :> ra)
-      | `Substituted m -> inner (m :> ra)
-      | `SubstitutedMT m -> inner (m :> ra)
-      | `SubstitutedT m -> inner (m :> ra)
-      | `SubstitutedCT m -> inner (m :> ra)
-      | `CanonicalModuleType (_, `Resolved _) -> false
-      | `CanonicalModuleType (x, _) -> inner (x :> ra)
-      | `CanonicalType (_, `Resolved _) -> false
-      | `CanonicalType (x, _) -> inner (x :> ra)
-      | `OpaqueModule m -> inner (m :> ra)
-      | `OpaqueModuleType mt -> inner (mt :> ra)
-      | `Unbox mt -> inner (mt :> ra)
-    in
-    inner x
+  (* Paths with any local identifiers and model canonical targets. *)
+  type ('lmod, 'lmodty, 'pty, 'lty) gra =
+    ('lmod, 'lmodty, 'pty, 'lty, canon) Paths_types.Resolved_path.any
 
-  and is_path_hidden : (na, na, na, na, canon) Paths_types.Path.any -> bool =
-    let open Paths_types.Path in
+  type ('lmod, 'lmodty, 'pty, 'lty) gpa =
+    ('lmod, 'lmodty, 'pty, 'lty, canon) Paths_types.Path.any
+
+  (* Explicit coercions, as simple ones are not general enough here. *)
+  let gpa_of_module (p : ('lmod, 'lmodty, 'pty, canon) Paths_types.Path.module_)
+      =
+    (p
+      : ('lmod, 'lmodty, 'pty, canon) Paths_types.Path.module_
+      :> ('lmod, 'lmodty, 'pty, 'lty) gpa)
+
+  let gpa_of_module_type
+      (p : ('lmod, 'lmodty, 'pty, canon) Paths_types.Path.module_type) =
+    (p
+      : ('lmod, 'lmodty, 'pty, canon) Paths_types.Path.module_type
+      :> ('lmod, 'lmodty, 'pty, 'lty) gpa)
+
+  let gpa_of_type
+      (p : ('lmod, 'lmodty, 'pty, 'lty, canon) Paths_types.Path.type_) =
+    (p
+      : ('lmod, 'lmodty, 'pty, 'lty, canon) Paths_types.Path.type_
+      :> ('lmod, 'lmodty, 'pty, 'lty) gpa)
+
+  let gpa_of_class_type
+      (p : ('lmod, 'lmodty, 'pty, 'lty, canon) Paths_types.Path.class_type) =
+    (p
+      : ('lmod, 'lmodty, 'pty, 'lty, canon) Paths_types.Path.class_type
+      :> ('lmod, 'lmodty, 'pty, 'lty) gpa)
+
+  (* The hidden checks take paths with any local identifiers, so xref2 uses
+     them too. A resolved local is never hidden, and an unresolved one carries
+     its own flag. A typed parent is hidden when its module or module type
+     is. *)
+  let rec is_resolved_hidden_gen :
+      'lmod 'lmodty 'pty 'lty.
+      weak_canonical_test:bool -> ('lmod, 'lmodty, 'pty, 'lty) gra -> bool =
+   fun ~weak_canonical_test x ->
+    let inner (x : ('lmod, 'lmodty, 'pty, 'lty) gra) =
+      is_resolved_hidden_gen ~weak_canonical_test x
+    in
+    let parent p = is_parent_hidden_gen ~weak_canonical_test p in
+    match x with
+    | `Identifier (`ModuleType (_, m)) when Names.ModuleTypeName.is_hidden m ->
+        true
+    | `Identifier (`Type (_, t)) when Names.TypeName.is_hidden t -> true
+    | `Identifier (`Module (_, m)) when Names.ModuleName.is_hidden m -> true
+    | `Identifier id -> Identifier.is_hidden id
+    | `LocalMod _ | `LocalModTy _ | `LocalTy _ -> false
+    | `Canonical (_, `Resolved _) -> false
+    | `Canonical (x, _) ->
+        (not weak_canonical_test)
+        && inner (x :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `Hidden _ -> true
+    | `Subst (p1, p2) ->
+        inner (p1 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+        || inner (p2 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `Module (p, _) -> parent p
+    | `Apply (p1, p2) ->
+        inner (p1 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+        || inner (p2 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `ModuleType (_, m) when Names.ModuleTypeName.is_hidden m -> true
+    | `ModuleType (p, _) -> parent p
+    | `Type (_, t) when Names.TypeName.is_hidden t -> true
+    | `CoreType t -> Names.TypeName.is_hidden t
+    | `Type (p, _) -> parent p
+    | `Value (_, t) when Names.ValueName.is_hidden t -> true
+    | `Value (p, _) -> parent p
+    | (`Class (_, t) | `ClassType (_, t)) when Names.TypeName.is_hidden t ->
+        true
+    | `Class (p, _) | `ClassType (p, _) -> parent p
+    | `Alias (dest, `Resolved src, _) ->
+        inner (dest :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+        && inner (src :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `Alias (dest, src, _) ->
+        inner (dest :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+        && is_path_hidden_gen (gpa_of_module src)
+    | `AliasModuleType (p1, p2) ->
+        inner (p1 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+        && inner (p2 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `SubstT (p1, p2) ->
+        inner (p1 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+        || inner (p2 :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `Substituted m -> inner (m :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `SubstitutedMT m -> inner (m :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `SubstitutedT m -> inner (m :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `SubstitutedCT m -> inner (m :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `CanonicalModuleType (_, `Resolved _) -> false
+    | `CanonicalModuleType (x, _) ->
+        inner (x :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `CanonicalType (_, `Resolved _) -> false
+    | `CanonicalType (x, _) -> inner (x :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `OpaqueModule m -> inner (m :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `OpaqueModuleType mt -> inner (mt :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `Unbox mt -> inner (mt :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+
+  and is_parent_hidden_gen :
+      'lmod 'lmodty 'pty.
+      weak_canonical_test:bool ->
+      ('lmod, 'lmodty, 'pty, canon) Paths_types.Resolved_path.parent ->
+      bool =
+   fun ~weak_canonical_test -> function
+    | `Module m ->
+        is_resolved_hidden_gen ~weak_canonical_test
+          (m :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `ModuleType (mt, _) ->
+        is_resolved_hidden_gen ~weak_canonical_test
+          (mt :> ('lmod, 'lmodty, 'pty, 'lty) gra)
+    | `FragmentRoot _ -> false
+
+  and is_path_hidden_gen :
+      'lmod 'lmodty 'pty 'lty. ('lmod, 'lmodty, 'pty, 'lty) gpa -> bool =
     function
-    | `Resolved r -> is_resolved_hidden ~weak_canonical_test:false r
+    | `Resolved r -> is_resolved_hidden_gen ~weak_canonical_test:false r
     | `Identifier (id, hidden) -> hidden || Identifier.is_hidden id
-    | `LocalMod (`Na _, _) -> .
-    | `LocalModTy (`Na _, _) -> .
-    | `LocalTy (`Na _, _) -> .
-    | `Module (`Na _, _, _) -> .
-    | `ModuleType (`Na _, _, _) -> .
-    | `Type (`Na _, _, _) -> .
-    | `Class (`Na _, _, _) -> .
-    | `ClassType (`Na _, _, _) -> .
-    | `Value (`Na _, _, _) -> .
-    | `Substituted r -> is_path_hidden (r :> t)
-    | `SubstitutedMT r -> is_path_hidden (r :> t)
-    | `SubstitutedT r -> is_path_hidden (r :> t)
-    | `SubstitutedCT r -> is_path_hidden (r :> t)
-    | `Unbox r -> is_path_hidden (r :> t)
+    | `LocalMod (_, hidden) | `LocalModTy (_, hidden) | `LocalTy (_, hidden) ->
+        hidden
+    | `Module (_, p, _)
+    | `ModuleType (_, p, _)
+    | `Type (_, p, _)
+    | `Class (_, p, _)
+    | `ClassType (_, p, _)
+    | `Value (_, p, _) ->
+        is_parent_hidden_gen ~weak_canonical_test:false p
+    | `Substituted r -> is_path_hidden_gen (gpa_of_module r)
+    | `SubstitutedMT r -> is_path_hidden_gen (gpa_of_module_type r)
+    | `SubstitutedT r -> is_path_hidden_gen (gpa_of_type r)
+    | `SubstitutedCT r -> is_path_hidden_gen (gpa_of_class_type r)
+    | `Unbox r -> is_path_hidden_gen (gpa_of_type r)
     | `Root s -> ModuleName.is_hidden s
-    | `Dot (p, n) -> ModuleName.is_hidden n || is_path_hidden (p :> t)
-    | `DotMT (p, n) -> ModuleTypeName.is_hidden n || is_path_hidden (p :> t)
-    | `DotT (p, n) -> TypeName.is_hidden n || is_path_hidden (p :> t)
-    | `DotV (p, n) -> ValueName.is_hidden n || is_path_hidden (p :> t)
-    | `Apply (p1, p2) -> is_path_hidden (p1 :> t) || is_path_hidden (p2 :> t)
+    | `Dot (p, n) ->
+        ModuleName.is_hidden n || is_path_hidden_gen (gpa_of_module p)
+    | `DotMT (p, n) ->
+        ModuleTypeName.is_hidden n || is_path_hidden_gen (gpa_of_module p)
+    | `DotT (p, n) ->
+        TypeName.is_hidden n || is_path_hidden_gen (gpa_of_module p)
+    | `DotV (p, n) ->
+        ValueName.is_hidden n || is_path_hidden_gen (gpa_of_module p)
+    | `Apply (p1, p2) ->
+        is_path_hidden_gen (gpa_of_module p1)
+        || is_path_hidden_gen (gpa_of_module p2)
+
+  let is_resolved_hidden ~weak_canonical_test (x : ra) =
+    is_resolved_hidden_gen ~weak_canonical_test x
+
+  let is_path_hidden (x : t) = is_path_hidden_gen x
 
   module Resolved = struct
     type t = (na, na, na, na, canon) Paths_types.Resolved_path.any
@@ -901,6 +969,8 @@ module Path = struct
     ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Path.any
 
   let is_hidden = is_path_hidden
+
+  let is_hidden_gen = is_path_hidden_gen
 end
 
 module Fragment = struct

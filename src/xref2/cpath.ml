@@ -26,6 +26,8 @@ module Resolved = struct
   type value = (lmod, lmodty, pty, canon) Path.Resolved.Value.gen
 
   type class_type = (lmod, lmodty, pty, lty, canon) Path.Resolved.ClassType.gen
+
+  type any = (lmod, lmodty, pty, lty, canon) Path.Resolved.gen
 end
 
 module Cpath = struct
@@ -38,6 +40,8 @@ module Cpath = struct
   type value = (lmod, lmodty, pty, canon) Path.Value.gen
 
   type class_type = (lmod, lmodty, pty, lty, canon) Path.ClassType.gen
+
+  type any = (lmod, lmodty, pty, lty, canon) Path.gen
 end
 
 include Cpath
@@ -119,119 +123,31 @@ let is_class_type_substituted : class_type -> bool = function
   | `DotT (a, _) -> is_module_substituted a
   | `Class (_, a, _) | `ClassType (_, a, _) -> is_resolved_parent_substituted a
 
-let rec is_module_hidden : module_ -> bool = function
-  | `Resolved r -> is_resolved_module_hidden ~weak_canonical_test:false r
-  | `Dot (p, n) -> ModuleName.is_hidden n || is_module_hidden p
-  | `Apply (p1, p2) -> is_module_hidden p1 || is_module_hidden p2
-  | `Substituted p -> is_module_hidden p
-  | `Identifier (id, b) -> b || Identifier.is_hidden id
-  | `LocalMod (_, b) -> b
-  | `Root n -> ModuleName.is_hidden n
-  | `Module (_, p, _) -> is_resolved_parent_hidden ~weak_canonical_test:false p
+(* The hidden checks are those of the model, which take paths with any local
+   identifiers. *)
 
-and is_resolved_module_hidden :
-    weak_canonical_test:bool -> Resolved.module_ -> bool =
- fun ~weak_canonical_test ->
-  let rec inner = function
-    | `LocalMod _ -> false
-    | `Identifier _ as p ->
-        Odoc_model.Paths.Path.Resolved.Module.is_hidden ~weak_canonical_test p
-    | `Hidden _ -> true
-    | `Canonical (_, `Resolved _) -> false
-    | `Canonical (p, _) -> (not weak_canonical_test) && inner p
-    | `Substituted p -> inner p
-    | `Module (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
-    | `Subst (p1, p2) ->
-        is_resolved_module_type_hidden ~weak_canonical_test p1 || inner p2
-    | `Alias (p1, `Resolved p2, _) -> inner p1 && inner p2
-    | `Alias (p1, p2, _) -> inner p1 && is_module_hidden p2
-    | `Apply (p1, p2) -> inner p1 || inner p2
-    | `OpaqueModule m -> inner m
-  in
-  inner
+let is_resolved_module_hidden ~weak_canonical_test (p : Resolved.module_) =
+  Path.is_resolved_hidden_gen ~weak_canonical_test (p :> Resolved.any)
 
-and is_resolved_parent_hidden :
-    weak_canonical_test:bool -> Resolved.parent -> bool =
- fun ~weak_canonical_test -> function
-  | `Module m -> is_resolved_module_hidden ~weak_canonical_test m
-  | `ModuleType (m, _) -> is_resolved_module_type_hidden ~weak_canonical_test m
-  | `FragmentRoot _ -> false
+let is_resolved_module_type_hidden ?(weak_canonical_test = false)
+    (p : Resolved.module_type) =
+  Path.is_resolved_hidden_gen ~weak_canonical_test (p :> Resolved.any)
 
-and is_module_type_hidden : module_type -> bool = function
-  | `Resolved r -> is_resolved_module_type_hidden r
-  | `Identifier (`ModuleType (_, t), b) -> b || ModuleTypeName.is_hidden t
-  | `LocalModTy (_, b) -> b
-  | `SubstitutedMT p -> is_module_type_hidden p
-  | `DotMT (p, n) -> ModuleTypeName.is_hidden n || is_module_hidden p
-  | `ModuleType (_, p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
+let is_resolved_type_hidden ?(weak_canonical_test = false) (p : Resolved.type_)
+    =
+  Path.is_resolved_hidden_gen ~weak_canonical_test (p :> Resolved.any)
 
-and is_resolved_module_type_hidden :
-    ?weak_canonical_test:bool -> Resolved.module_type -> bool =
- fun ?(weak_canonical_test = false) p ->
-  let inner = is_resolved_module_type_hidden ~weak_canonical_test in
-  match p with
-  | `LocalModTy _ -> false
-  | `Identifier _ as p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `SubstitutedMT p -> inner p
-  | `ModuleType (_, n) when ModuleTypeName.is_hidden n -> true
-  | `ModuleType (p, _) -> is_resolved_parent_hidden ~weak_canonical_test p
-  | `SubstT (p1, p2) -> inner p1 || inner p2
-  | `AliasModuleType (p1, p2) -> inner p1 && inner p2
-  | `CanonicalModuleType (_, `Resolved _) -> false
-  | `CanonicalModuleType (p, _) -> inner p
-  | `OpaqueModuleType m -> inner m
+let is_resolved_class_type_hidden ?(weak_canonical_test = false)
+    (p : Resolved.class_type) =
+  Path.is_resolved_hidden_gen ~weak_canonical_test (p :> Resolved.any)
 
-and is_type_hidden : type_ -> bool = function
-  | `Resolved r -> is_resolved_type_hidden r
-  | `Identifier (`Type (_, t), b) -> b || TypeName.is_hidden t
-  | `Identifier (`ClassType (_, t), b) -> b || TypeName.is_hidden t
-  | `Identifier (`Class (_, t), b) -> b || TypeName.is_hidden t
-  | `LocalTy (_, b) -> b
-  | `SubstitutedT p -> is_type_hidden (p :> type_)
-  | `DotT (p, n) -> TypeName.is_hidden n || is_module_hidden p
-  | `Unbox p -> is_type_hidden p
-  | `Type (_, p, _) | `Class (_, p, _) | `ClassType (_, p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
+let is_module_hidden (p : module_) = Path.is_hidden_gen (p :> any)
 
-and is_resolved_type_hidden :
-    ?weak_canonical_test:bool -> Resolved.type_ -> bool =
- fun ?(weak_canonical_test = false) p ->
-  match p with
-  | `CoreType n -> TypeName.is_hidden n
-  | `LocalTy _ -> false
-  | `Identifier _ as p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `SubstitutedT p -> is_resolved_type_hidden ~weak_canonical_test p
-  | `SubstitutedCT p -> is_resolved_class_type_hidden ~weak_canonical_test p
-  | `CanonicalType (_, `Resolved _) -> false
-  | `CanonicalType (p, _) -> is_resolved_type_hidden ~weak_canonical_test p
-  | `Unbox p -> is_resolved_type_hidden ~weak_canonical_test p
-  (* A shadowed or otherwise hidden name makes the path hidden even when its
-     parent is visible - as in [Odoc_model.Paths.Path.Resolved.is_hidden]. *)
-  | (`Type (_, n) | `Class (_, n) | `ClassType (_, n)) when TypeName.is_hidden n
-    ->
-      true
-  | `Type (p, _) | `Class (p, _) | `ClassType (p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test p
+let is_module_type_hidden (p : module_type) = Path.is_hidden_gen (p :> any)
 
-and is_resolved_class_type_hidden :
-    ?weak_canonical_test:bool -> Resolved.class_type -> bool =
- fun ?(weak_canonical_test = false) p ->
-  match p with
-  | `LocalTy _ -> false
-  | `Identifier _ as p -> Odoc_model.Paths.Path.Resolved.(is_hidden (p :> t))
-  | `SubstitutedCT p -> is_resolved_class_type_hidden ~weak_canonical_test p
-  | `Class (p, _) | `ClassType (p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test p
+let is_type_hidden (p : type_) = Path.is_hidden_gen (p :> any)
 
-and is_class_type_hidden : class_type -> bool = function
-  | `Resolved r -> is_resolved_class_type_hidden r
-  | `Identifier (id, b) -> b || Identifier.is_hidden id
-  | `LocalTy (_, b) -> b
-  | `SubstitutedCT p -> is_class_type_hidden p
-  | `DotT (p, n) -> TypeName.is_hidden n || is_module_hidden p
-  | `Class (_, p, _) | `ClassType (_, p, _) ->
-      is_resolved_parent_hidden ~weak_canonical_test:false p
+let is_class_type_hidden (p : class_type) = Path.is_hidden_gen (p :> any)
 
 (* A class path used as a type path. *)
 let rec type_of_class_type : class_type -> type_ = function
