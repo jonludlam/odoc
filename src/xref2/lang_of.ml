@@ -86,7 +86,7 @@ module Path = struct
         `Identifier (m, hidden)
     | `Identifier (i, b) -> `Identifier (i, b)
     | `Resolved x -> `Resolved (resolved_module map x)
-    | `Root x -> `Root x
+    | `Root (x, _) -> `Root x
     | `Dot (p, s) -> `Dot (module_ map p, s)
     | `Apply (m1, m2) -> `Apply (module_ map m1, module_ map m2)
     | `Module (`Module p, n) -> `Dot (`Resolved (resolved_module map p), n)

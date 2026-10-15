@@ -1276,7 +1276,7 @@ module Fmt = struct
         wrap2 c "identifier" model_identifier bool ppf (id :> id) b
     | `Local (id, b) -> wrap2 c "local" ident_fmt bool ppf id b
     | `Substituted p -> wrap c "substituted" module_path ppf p
-    | `Root r -> wrap c "unresolvedroot" str ppf (ModuleName.to_string r)
+    | `Root (r, _) -> wrap c "unresolvedroot" str ppf (ModuleName.to_string r)
 
   and resolved_module_type_path :
       config -> Format.formatter -> Cpath.Resolved.module_type -> unit =
@@ -1917,6 +1917,9 @@ module Of_Lang = struct
     path_class_types : Ident.type_ Paths.Identifier.Maps.Path.ClassType.t;
     classes : Ident.type_ Paths.Identifier.Maps.Class.t;
     class_types : Ident.type_ Paths.Identifier.Maps.ClassType.t;
+    origin : string list option;
+        (** The libraries of the unit being read, which its root names are
+            resolved among. *)
   }
 
   let empty () =
@@ -1930,7 +1933,10 @@ module Of_Lang = struct
       path_class_types = Path.ClassType.empty;
       classes = Class.empty;
       class_types = ClassType.empty;
+      origin = None;
     }
+
+  let of_unit libraries = { (empty ()) with origin = Some libraries }
 
   let map_of_idents ids map =
     let open Paths.Identifier in
@@ -1996,6 +2002,7 @@ module Of_Lang = struct
       class_types;
       path_types;
       path_class_types;
+      origin = map.origin;
     }
 
   let option conv ident_map x =
@@ -2118,7 +2125,7 @@ module Of_Lang = struct
     | `Dot (path', x) -> `Dot (module_path ident_map path', x)
     | `Apply (p1, p2) ->
         `Apply (module_path ident_map p1, module_path ident_map p2)
-    | `Root str -> `Root str
+    | `Root str -> `Root (str, ident_map.origin)
 
   and module_type_path :
       _ -> Odoc_model.Paths.Path.ModuleType.t -> Cpath.module_type =
