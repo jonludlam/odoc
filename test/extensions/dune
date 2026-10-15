@@ -3,13 +3,21 @@
 (executable
  (name odoc_shout)
  (modules odoc_shout)
- (libraries odoc.cli odoc.document odoc.html tyxml))
+ (libraries odoc.cli odoc.document odoc.extension odoc.html tyxml))
+
+; An odoc with two extensions that handle the same code blocks.
+
+(executable
+ (name odoc_clash)
+ (modules odoc_clash)
+ (libraries odoc.cli odoc.extension))
 
 (env
  (_
   (binaries
-   (./odoc_shout.exe as odoc_shout))))
+   (./odoc_shout.exe as odoc_shout)
+   (./odoc_clash.exe as odoc_clash))))
 
 (cram
  (package odoc)
- (deps %{bin:odoc} %{bin:odoc_shout}))
+ (deps %{bin:odoc} %{bin:odoc_shout} %{bin:odoc_clash}))

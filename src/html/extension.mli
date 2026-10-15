@@ -1,7 +1,6 @@
-(** Extensions to the HTML output.
-
-    A program that links odoc as a library can register extensions here and then
-    run odoc with [Odoc_cli.main]. *)
+(** Extensions to the HTML output: the head elements and support files that an
+    extension, [Odoc_extension.t], gives, and the registries that
+    [Odoc_extension.register] puts them in. *)
 
 (** The page whose head is being made. *)
 module Context : sig

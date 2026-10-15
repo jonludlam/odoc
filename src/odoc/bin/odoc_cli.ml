@@ -1771,8 +1771,13 @@ let main_page_sections =
     section_deprecated;
   ]
 
-let main () =
+let main ?(extensions = []) () =
   Printexc.record_backtrace true;
+  (match Odoc_extension.register extensions with
+  | Ok () -> ()
+  | Error msg ->
+      prerr_endline msg;
+      exit 2);
   let cmd_make (term, info) = Cmd.v info term in
   let subcommands =
     List.map ~f:cmd_make

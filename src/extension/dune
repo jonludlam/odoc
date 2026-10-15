@@ -1,0 +1,4 @@
+(library
+ (name odoc_extension)
+ (public_name odoc.extension)
+ (libraries odoc_model odoc_document odoc_html odoc_html_support_files))

@@ -26,9 +26,10 @@
 - The bare tags of a code block, such as `server` in `{@ocaml server[...]}`,
   become classes of the block in the HTML, such as `tag-server` (@jonludlam)
 - `{br}` is a line break (@jonludlam)
-- An `odoc.cli` library, and registries of extensions that render code blocks,
-  add to the head of HTML pages and add support files, so that a program can
-  build an odoc with extensions built in (@jonludlam)
+- An `odoc.cli` library, which runs odoc with extensions (`odoc.extension`)
+  that render code blocks, add to the head of HTML pages and add support
+  files, so that a program can build an odoc with extensions built in
+  (@jonludlam)
 - Extensions can render the raw markup for a target, `{%target:...%}`, which
   odoc otherwise drops (@jonludlam)
 - The JSON output of `html-generate --as-json` has an `extra_head` field, the

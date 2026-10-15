@@ -1,8 +1,6 @@
-(** Extensions to the way comments are rendered.
-
-    A program that links odoc as a library can register extensions here and then
-    run odoc with [Odoc_cli.main]. The extensions apply to every page that
-    program renders. *)
+(** Extensions to the way comments are rendered: the handlers that an extension,
+    [Odoc_extension.t], gives, and the registries that [Odoc_extension.register]
+    puts them in. *)
 
 (** What a handler knows about the element it renders, and what it can do
     besides returning the rendering. *)

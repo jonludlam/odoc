@@ -52,10 +52,13 @@ let head ctx =
     [ Tyxml.Html.link ~rel:[ `Stylesheet ] ~href () ]
   else []
 
-let () =
-  Odoc_html.Extension.register_support_file ~path:"shout/shout.css"
-    ".shout { font-weight: bold }\n";
-  Extension.register_code_block ~language:"shout" shout;
-  Extension.register_raw_markup ~target:"shout" shout_raw;
-  Odoc_html.Extension.register_head head;
-  Odoc_cli.main ()
+let extension =
+  {
+    (Odoc_extension.v ~name:"shout") with
+    code_blocks = [ ("shout", shout) ];
+    raw_markup = [ ("shout", shout_raw) ];
+    head = Some head;
+    support_files = [ ("shout/shout.css", ".shout { font-weight: bold }\n") ];
+  }
+
+let () = Odoc_cli.main ~extensions:[ extension ] ()
