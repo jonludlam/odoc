@@ -3,7 +3,8 @@ open Odoc_model.Names
 
 (* Component paths are model paths that can also hold local identifiers. The
    [na] cases let a model path be used as a component path. [`U] marks the
-   typed parents that only component paths use. *)
+   typed parents that only component paths use. Canonical targets are model
+   paths ([canon]), so they cannot hold local identifiers. *)
 
 type lmod = [ Ident.module_ | na ]
 
@@ -14,29 +15,29 @@ type lty = [ Ident.type_ | na ]
 type pty = [ `U | na ]
 
 module Resolved = struct
-  type parent = (lmod, lmodty, pty) Path.Resolved.parent_gen
+  type parent = (lmod, lmodty, pty, canon) Path.Resolved.parent_gen
 
-  type module_ = (lmod, lmodty, pty) Path.Resolved.Module.gen
+  type module_ = (lmod, lmodty, pty, canon) Path.Resolved.Module.gen
 
-  type module_type = (lmod, lmodty, pty) Path.Resolved.ModuleType.gen
+  type module_type = (lmod, lmodty, pty, canon) Path.Resolved.ModuleType.gen
 
-  type type_ = (lmod, lmodty, pty, lty) Path.Resolved.Type.gen
+  type type_ = (lmod, lmodty, pty, lty, canon) Path.Resolved.Type.gen
 
-  type value = (lmod, lmodty, pty, na) Path.Resolved.Value.gen
+  type value = (lmod, lmodty, pty, na, canon) Path.Resolved.Value.gen
 
-  type class_type = (lmod, lmodty, pty, lty) Path.Resolved.ClassType.gen
+  type class_type = (lmod, lmodty, pty, lty, canon) Path.Resolved.ClassType.gen
 end
 
 module Cpath = struct
-  type module_ = (lmod, lmodty, pty) Path.Module.gen
+  type module_ = (lmod, lmodty, pty, canon) Path.Module.gen
 
-  type module_type = (lmod, lmodty, pty) Path.ModuleType.gen
+  type module_type = (lmod, lmodty, pty, canon) Path.ModuleType.gen
 
-  type type_ = (lmod, lmodty, pty, lty) Path.Type.gen
+  type type_ = (lmod, lmodty, pty, lty, canon) Path.Type.gen
 
-  type value = (lmod, lmodty, pty, na) Path.Value.gen
+  type value = (lmod, lmodty, pty, na, canon) Path.Value.gen
 
-  type class_type = (lmod, lmodty, pty, lty) Path.ClassType.gen
+  type class_type = (lmod, lmodty, pty, lty, canon) Path.ClassType.gen
 end
 
 include Cpath

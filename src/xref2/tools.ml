@@ -317,9 +317,9 @@ module LookupAndResolveMemo = MakeMemo (struct
 end)
 
 module HandleCanonicalModuleMemo = MakeMemo (struct
-  type t = Cpath.module_
+  type t = Odoc_model.Paths.Path.Module.t
 
-  type result = Cpath.module_
+  type result = Odoc_model.Paths.Path.Module.t
 
   let equal x3 y3 = x3 = y3
 
@@ -409,7 +409,7 @@ and add_canonical_path :
   | `Canonical _ -> p
   | _ -> (
       match m.Component.Module.canonical with
-      | Some cp -> `Canonical (p, (cp :> Cpath.module_))
+      | Some cp -> `Canonical (p, cp)
       | None -> p)
 
 and add_canonical_path_mt :
@@ -421,7 +421,7 @@ and add_canonical_path_mt :
   | `CanonicalModuleType _ -> p
   | _ -> (
       match m.canonical with
-      | Some cp -> `CanonicalModuleType (p, (cp :> Cpath.module_type))
+      | Some cp -> `CanonicalModuleType (p, cp)
       | None -> p)
 
 and get_substituted_module_type :
@@ -906,8 +906,7 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
   in
   result >>= fun (p, t) ->
   match t with
-  | `FType (_, { canonical = Some c; _ }) ->
-      Ok (`CanonicalType (p, (c :> Cpath.type_)), t)
+  | `FType (_, { canonical = Some c; _ }) -> Ok (`CanonicalType (p, c), t)
   | _ -> result
 
 and resolve_value : Env.t -> Cpath.value -> resolve_value_result =
@@ -999,7 +998,9 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
       Ok (p', t)
 
 and strip_canonical :
-    c:Cpath.module_ -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
+    c:Odoc_model.Paths.Path.Module.t ->
+    Cpath.Resolved.module_ ->
+    Cpath.Resolved.module_ =
  fun ~c path ->
   match path with
   | `Canonical (x, y) when y = c -> strip_canonical ~c x
@@ -1037,17 +1038,16 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       let p' = reresolve_module env p in
       `Hidden p'
   | `Canonical (p, `Resolved p2) ->
-      let p2' = reresolve_module env p2 in
+      let p2' = reresolve_module env (p2 :> Cpath.Resolved.module_) in
       let p2' = Lang_of.(Path.resolved_module (empty ()) p2') in
-      `Canonical
-        (reresolve_module env p, `Resolved (p2' :> Cpath.Resolved.module_))
+      `Canonical (reresolve_module env p, `Resolved p2')
   | `Canonical (p, p2) -> (
       match handle_canonical_module env p2 with
       | `Resolved _ as r -> `Canonical (p, r)
       | r -> `Canonical (reresolve_module env p, r))
   | `OpaqueModule m -> `OpaqueModule (reresolve_module env m)
 
-and handle_canonical_module_real env p2 =
+and handle_canonical_module_real env (p2 : Odoc_model.Paths.Path.Module.t) =
   (* Canonical paths are always fully qualified, but this isn't
      necessarily good for rendering, as the full path would
      always be written out whenever a canonical module path is
@@ -1105,7 +1105,9 @@ and handle_canonical_module_real env p2 =
       :> Odoc_model.Paths.Path.Resolved.t)
   in
 
-  match canonical_helper env resolve lang_of c_mod_poss p2 with
+  match
+    canonical_helper env resolve lang_of c_mod_poss (p2 :> Cpath.module_)
+  with
   | None -> p2
   | Some (rp, m) ->
       let m = Component.Delayed.get m in
@@ -1137,7 +1139,7 @@ and handle_canonical_module_real env p2 =
                    If not, check for an alias chain with us as canonical in it... *)
                 let rec check m =
                   match m.Component.Module.canonical with
-                  | Some p when (p :> Cpath.module_) = p2 -> true
+                  | Some p when p = p2 -> true
                   | _ -> (
                       (* An unrelated canonical tag - Dune tags every alias with
                          [Lib.M], even ones [lib.ml] doesn't re-export - mustn't
@@ -1167,12 +1169,12 @@ and handle_canonical_module_real env p2 =
       let cpath = if expanded then rp else process_module_path env m rp in
 
       (* Format.eprintf "result: %a\n%!" Component.Fmt.resolved_module_path cpath; *)
-      (Lang_of.(Path.module_ (empty ()) (`Resolved cpath)) :> Cpath.module_)
+      Lang_of.(Path.module_ (empty ()) (`Resolved cpath))
 
 and handle_canonical_module env p2 =
   HandleCanonicalModuleMemo.memoize handle_canonical_module_real env p2
 
-and handle_canonical_module_type env p2 =
+and handle_canonical_module_type env (p2 : Odoc_model.Paths.Path.ModuleType.t) =
   let rec strip : Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
     function
     | `AliasModuleType (_, p) -> strip p
@@ -1189,14 +1191,13 @@ and handle_canonical_module_type env p2 =
     (Lang_of.(Path.resolved_module_type (empty ()) cpath)
       :> Odoc_model.Paths.Path.Resolved.t)
   in
-  match canonical_helper env resolve lang_of c_modty_poss p2 with
+  match
+    canonical_helper env resolve lang_of c_modty_poss (p2 :> Cpath.module_type)
+  with
   | None -> p2
-  | Some (rp, _) ->
-      `Resolved
-        (Lang_of.(Path.resolved_module_type (empty ()) rp)
-          :> Cpath.Resolved.module_type)
+  | Some (rp, _) -> `Resolved Lang_of.(Path.resolved_module_type (empty ()) rp)
 
-and handle_canonical_type env p2 =
+and handle_canonical_type env (p2 : Odoc_model.Paths.Path.Type.t) =
   let lang_of cpath =
     (Lang_of.(Path.resolved_type (empty ()) cpath)
       :> Odoc_model.Paths.Path.Resolved.t)
@@ -1215,11 +1216,9 @@ and handle_canonical_type env p2 =
         Ok (r, y)
     | Error y -> Error y
   in
-  match canonical_helper env resolve lang_of c_ty_poss p2 with
+  match canonical_helper env resolve lang_of c_ty_poss (p2 :> Cpath.type_) with
   | None -> p2
-  | Some (rp, _) ->
-      `Resolved
-        (Lang_of.(Path.resolved_type (empty ()) rp) :> Cpath.Resolved.type_)
+  | Some (rp, _) -> `Resolved Lang_of.(Path.resolved_type (empty ()) rp)
 
 and reresolve_module_type :
     Env.t -> Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
