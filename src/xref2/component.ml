@@ -2030,25 +2030,50 @@ module Of_Lang = struct
         Maps.FunctorParameter.find id ident_map.functor_parameters
     | _ -> raise Not_found
 
+  (* A model path is also a component path. These functions return their input
+     unchanged, without a copy, when no identifier in it maps to a local. *)
+
   let rec resolved_module_path :
       _ -> Odoc_model.Paths.Path.Resolved.Module.t -> Cpath.Resolved.module_ =
    fun ident_map p ->
     let recurse = resolved_module_path ident_map in
+    let same = (p :> Cpath.Resolved.module_) in
+    let unchanged (x : Paths.Path.Resolved.Module.t) x' =
+      x' == (x :> Cpath.Resolved.module_)
+    in
     match p with
     | `Identifier i -> (
         match identifier find_any_module ident_map i with
         | `Local l -> `LocalMod (l :> Cpath.lmod)
-        | `Identifier _ -> `Identifier i)
-    | `Module (p, name) ->
-        `Module (`Module (recurse (Paths.Path.Resolved.parent_module p)), name)
-    | `Apply (p1, p2) -> `Apply (recurse p1, recurse p2)
-    | `Alias (p1, p2, _) -> `Alias (recurse p1, module_path ident_map p2, None)
+        | `Identifier _ -> same)
+    | `Module (parent, name) ->
+        let m = Paths.Path.Resolved.parent_module parent in
+        let m' = recurse m in
+        if unchanged m m' then same else `Module (`Module m', name)
+    | `Apply (p1, p2) ->
+        let p1' = recurse p1 and p2' = recurse p2 in
+        if unchanged p1 p1' && unchanged p2 p2' then same else `Apply (p1', p2')
+    | `Alias (p1, p2, _) ->
+        let p1' = recurse p1 and p2' = module_path ident_map p2 in
+        if unchanged p1 p1' && p2' == (p2 :> Cpath.module_) then same
+        else `Alias (p1', p2', None)
     | `Subst (p1, p2) ->
-        `Subst (resolved_module_type_path ident_map p1, recurse p2)
-    | `Canonical (p1, p2) -> `Canonical (recurse p1, p2)
-    | `Hidden p1 -> `Hidden (recurse p1)
-    | `OpaqueModule m -> `OpaqueModule (recurse m)
-    | `Substituted m -> `Substituted (recurse m)
+        let p1' = resolved_module_type_path ident_map p1 and p2' = recurse p2 in
+        if p1' == (p1 :> Cpath.Resolved.module_type) && unchanged p2 p2' then
+          same
+        else `Subst (p1', p2')
+    | `Canonical (p1, p2) ->
+        let p1' = recurse p1 in
+        if unchanged p1 p1' then same else `Canonical (p1', p2)
+    | `Hidden p1 ->
+        let p1' = recurse p1 in
+        if unchanged p1 p1' then same else `Hidden p1'
+    | `OpaqueModule m ->
+        let m' = recurse m in
+        if unchanged m m' then same else `OpaqueModule m'
+    | `Substituted m ->
+        let m' = recurse m in
+        if unchanged m m' then same else `Substituted m'
     | `LocalMod (`Na _) -> .
 
   and resolved_module_type_path :
@@ -2056,148 +2081,190 @@ module Of_Lang = struct
       Odoc_model.Paths.Path.Resolved.ModuleType.t ->
       Cpath.Resolved.module_type =
    fun ident_map p ->
+    let recurse = resolved_module_type_path ident_map in
+    let same = (p :> Cpath.Resolved.module_type) in
+    let unchanged (x : Paths.Path.Resolved.ModuleType.t) x' =
+      x' == (x :> Cpath.Resolved.module_type)
+    in
     match p with
     | `Identifier i -> (
         match identifier Maps.ModuleType.find ident_map.module_types i with
         | `Local l -> `LocalModTy (l :> Cpath.lmodty)
-        | `Identifier _ -> `Identifier i)
-    | `ModuleType (p, name) ->
-        `ModuleType
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
+        | `Identifier _ -> same)
+    | `ModuleType (parent, name) ->
+        let m = Paths.Path.Resolved.parent_module parent in
+        let m' = resolved_module_path ident_map m in
+        if m' == (m :> Cpath.Resolved.module_) then same
+        else `ModuleType (`Module m', name)
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type_path ident_map p1, p2)
+        let p1' = recurse p1 in
+        if unchanged p1 p1' then same else `CanonicalModuleType (p1', p2)
     | `OpaqueModuleType m ->
-        `OpaqueModuleType (resolved_module_type_path ident_map m)
+        let m' = recurse m in
+        if unchanged m m' then same else `OpaqueModuleType m'
     | `AliasModuleType (m1, m2) ->
-        `AliasModuleType
-          ( resolved_module_type_path ident_map m1,
-            resolved_module_type_path ident_map m2 )
+        let m1' = recurse m1 and m2' = recurse m2 in
+        if unchanged m1 m1' && unchanged m2 m2' then same
+        else `AliasModuleType (m1', m2')
     | `SubstT (p1, p2) ->
-        `SubstT
-          ( resolved_module_type_path ident_map p1,
-            resolved_module_type_path ident_map p2 )
-    | `SubstitutedMT m -> `SubstitutedMT (resolved_module_type_path ident_map m)
+        let p1' = recurse p1 and p2' = recurse p2 in
+        if unchanged p1 p1' && unchanged p2 p2' then same else `SubstT (p1', p2')
+    | `SubstitutedMT m ->
+        let m' = recurse m in
+        if unchanged m m' then same else `SubstitutedMT m'
     | `LocalModTy (`Na _) -> .
+
+  (* [None] when the parent does not change. *)
+  and resolved_parent_path ident_map parent : Cpath.Resolved.parent option =
+    let m = Paths.Path.Resolved.parent_module parent in
+    let m' = resolved_module_path ident_map m in
+    if m' == (m :> Cpath.Resolved.module_) then None else Some (`Module m')
 
   and resolved_type_path :
       _ -> Odoc_model.Paths.Path.Resolved.Type.t -> Cpath.Resolved.type_ =
    fun ident_map p ->
+    let recurse = resolved_type_path ident_map in
+    let same = (p :> Cpath.Resolved.type_) in
+    let unchanged (x : Paths.Path.Resolved.Type.t) x' =
+      x' == (x :> Cpath.Resolved.type_)
+    in
     match p with
-    | `CoreType _ as c -> c
+    | `CoreType _ -> same
     | `Identifier i -> (
         match identifier Maps.Path.Type.find ident_map.path_types i with
         | `Local l -> `LocalTy (l :> Cpath.lty)
-        | `Identifier _ -> `Identifier i)
+        | `Identifier _ -> same)
     | `CanonicalType (p1, p2) ->
-        `CanonicalType (resolved_type_path ident_map p1, p2)
-    | `Type (p, name) ->
-        `Type
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
-    | `Class (p, name) ->
-        `Class
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
-    | `ClassType (p, name) ->
-        `ClassType
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
-    | `SubstitutedT m -> `SubstitutedT (resolved_type_path ident_map m)
+        let p1' = recurse p1 in
+        if unchanged p1 p1' then same else `CanonicalType (p1', p2)
+    | `Type (parent, name) -> (
+        match resolved_parent_path ident_map parent with
+        | None -> same
+        | Some p -> `Type (p, name))
+    | `Class (parent, name) -> (
+        match resolved_parent_path ident_map parent with
+        | None -> same
+        | Some p -> `Class (p, name))
+    | `ClassType (parent, name) -> (
+        match resolved_parent_path ident_map parent with
+        | None -> same
+        | Some p -> `ClassType (p, name))
+    | `SubstitutedT m ->
+        let m' = recurse m in
+        if unchanged m m' then same else `SubstitutedT m'
     | `SubstitutedCT m ->
         `SubstitutedT
           (resolved_class_type_path ident_map m :> Cpath.Resolved.type_)
-    | `Unbox m -> `Unbox (resolved_type_path ident_map m)
+    | `Unbox m ->
+        let m' = recurse m in
+        if unchanged m m' then same else `Unbox m'
     | `LocalTy (`Na _) -> .
 
   and resolved_value_path :
       _ -> Odoc_model.Paths.Path.Resolved.Value.t -> Cpath.Resolved.value =
    fun ident_map p ->
+    let same = (p :> Cpath.Resolved.value) in
     match p with
-    | `Value (p, name) ->
-        `Value
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
-    | `Identifier i -> `Identifier i
+    | `Value (parent, name) -> (
+        match resolved_parent_path ident_map parent with
+        | None -> same
+        | Some p -> `Value (p, name))
+    | `Identifier _ -> same
 
   and resolved_class_type_path :
       _ ->
       Odoc_model.Paths.Path.Resolved.ClassType.t ->
       Cpath.Resolved.class_type =
    fun ident_map p ->
+    let same = (p :> Cpath.Resolved.class_type) in
     match p with
     | `Identifier i -> (
         match
           identifier Maps.Path.ClassType.find ident_map.path_class_types i
         with
         | `Local l -> `LocalTy (l :> Cpath.lty)
-        | `Identifier _ -> `Identifier i)
-    | `Class (p, name) ->
-        `Class
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
-    | `ClassType (p, name) ->
-        `ClassType
-          ( `Module
-              (resolved_module_path ident_map
-                 (Paths.Path.Resolved.parent_module p)),
-            name )
-    | `SubstitutedCT c -> `SubstitutedCT (resolved_class_type_path ident_map c)
+        | `Identifier _ -> same)
+    | `Class (parent, name) -> (
+        match resolved_parent_path ident_map parent with
+        | None -> same
+        | Some p -> `Class (p, name))
+    | `ClassType (parent, name) -> (
+        match resolved_parent_path ident_map parent with
+        | None -> same
+        | Some p -> `ClassType (p, name))
+    | `SubstitutedCT c ->
+        let c' = resolved_class_type_path ident_map c in
+        if c' == (c :> Cpath.Resolved.class_type) then same
+        else `SubstitutedCT c'
     | `LocalTy (`Na _) -> .
 
   and module_path : _ -> Odoc_model.Paths.Path.Module.t -> Cpath.module_ =
    fun ident_map p ->
+    let recurse = module_path ident_map in
+    let same = (p :> Cpath.module_) in
+    let unchanged (x : Paths.Path.Module.t) x' = x' == (x :> Cpath.module_) in
     match p with
-    | `Resolved r -> `Resolved (resolved_module_path ident_map r)
-    | `Substituted m -> `Substituted (module_path ident_map m)
+    | `Resolved r ->
+        let r' = resolved_module_path ident_map r in
+        if r' == (r :> Cpath.Resolved.module_) then same else `Resolved r'
+    | `Substituted m ->
+        let m' = recurse m in
+        if unchanged m m' then same else `Substituted m'
     | `Identifier (i, b) -> (
         match identifier find_any_module ident_map i with
-        | `Identifier i -> `Identifier (i, b)
+        | `Identifier _ -> same
         | `Local i -> `LocalMod ((i :> Cpath.lmod), b))
-    | `Dot (path', x) -> `Dot (module_path ident_map path', x)
+    | `Dot (p', x) ->
+        let p'' = recurse p' in
+        if unchanged p' p'' then same else `Dot (p'', x)
     | `Apply (p1, p2) ->
-        `Apply (module_path ident_map p1, module_path ident_map p2)
-    | `Root str -> `Root str
+        let p1' = recurse p1 and p2' = recurse p2 in
+        if unchanged p1 p1' && unchanged p2 p2' then same else `Apply (p1', p2')
+    | `Root _ -> same
     | `LocalMod (`Na _, _) -> .
     | `Module (`Na _, _, _) -> .
 
   and module_type_path :
       _ -> Odoc_model.Paths.Path.ModuleType.t -> Cpath.module_type =
    fun ident_map p ->
+    let same = (p :> Cpath.module_type) in
     match p with
-    | `Resolved r -> `Resolved (resolved_module_type_path ident_map r)
-    | `SubstitutedMT m -> `SubstitutedMT (module_type_path ident_map m)
+    | `Resolved r ->
+        let r' = resolved_module_type_path ident_map r in
+        if r' == (r :> Cpath.Resolved.module_type) then same else `Resolved r'
+    | `SubstitutedMT m ->
+        let m' = module_type_path ident_map m in
+        if m' == (m :> Cpath.module_type) then same else `SubstitutedMT m'
     | `Identifier (i, b) -> (
         match identifier Maps.ModuleType.find ident_map.module_types i with
-        | `Identifier i -> `Identifier (i, b)
+        | `Identifier _ -> same
         | `Local i -> `LocalModTy ((i :> Cpath.lmodty), b))
-    | `DotMT (path', x) -> `DotMT (module_path ident_map path', x)
+    | `DotMT (p', x) ->
+        let p'' = module_path ident_map p' in
+        if p'' == (p' :> Cpath.module_) then same else `DotMT (p'', x)
     | `LocalModTy (`Na _, _) -> .
     | `ModuleType (`Na _, _, _) -> .
 
   and type_path : _ -> Odoc_model.Paths.Path.Type.t -> Cpath.type_ =
    fun ident_map p ->
+    let same = (p :> Cpath.type_) in
     match p with
-    | `Resolved r -> `Resolved (resolved_type_path ident_map r)
-    | `SubstitutedT t -> `SubstitutedT (type_path ident_map t)
+    | `Resolved r ->
+        let r' = resolved_type_path ident_map r in
+        if r' == (r :> Cpath.Resolved.type_) then same else `Resolved r'
+    | `SubstitutedT t ->
+        let t' = type_path ident_map t in
+        if t' == (t :> Cpath.type_) then same else `SubstitutedT t'
     | `Identifier (i, b) -> (
         match identifier Maps.Path.Type.find ident_map.path_types i with
-        | `Identifier i -> `Identifier (i, b)
+        | `Identifier _ -> same
         | `Local i -> `LocalTy ((i :> Cpath.lty), b))
-    | `DotT (path', x) -> `DotT (module_path ident_map path', x)
-    | `Unbox t -> `Unbox (type_path ident_map t)
+    | `DotT (p', x) ->
+        let p'' = module_path ident_map p' in
+        if p'' == (p' :> Cpath.module_) then same else `DotT (p'', x)
+    | `Unbox t ->
+        let t' = type_path ident_map t in
+        if t' == (t :> Cpath.type_) then same else `Unbox t'
     | `Class (`Na _, _, _) -> .
     | `ClassType (`Na _, _, _) -> .
     | `LocalTy (`Na _, _) -> .
@@ -2205,25 +2272,37 @@ module Of_Lang = struct
 
   and value_path : _ -> Odoc_model.Paths.Path.Value.t -> Cpath.value =
    fun ident_map p ->
+    let same = (p :> Cpath.value) in
     match p with
-    | `Resolved r -> `Resolved (resolved_value_path ident_map r)
-    | `DotV (path', x) -> `DotV (module_path ident_map path', x)
-    | `Identifier (i, b) -> `Identifier (i, b)
+    | `Resolved r ->
+        let r' = resolved_value_path ident_map r in
+        if r' == (r :> Cpath.Resolved.value) then same else `Resolved r'
+    | `DotV (p', x) ->
+        let p'' = module_path ident_map p' in
+        if p'' == (p' :> Cpath.module_) then same else `DotV (p'', x)
+    | `Identifier _ -> same
     | `Value (`Na _, _, _) -> .
 
   and class_type_path :
       _ -> Odoc_model.Paths.Path.ClassType.t -> Cpath.class_type =
    fun ident_map p ->
+    let same = (p :> Cpath.class_type) in
     match p with
-    | `Resolved r -> `Resolved (resolved_class_type_path ident_map r)
-    | `SubstitutedCT c -> `SubstitutedCT (class_type_path ident_map c)
+    | `Resolved r ->
+        let r' = resolved_class_type_path ident_map r in
+        if r' == (r :> Cpath.Resolved.class_type) then same else `Resolved r'
+    | `SubstitutedCT c ->
+        let c' = class_type_path ident_map c in
+        if c' == (c :> Cpath.class_type) then same else `SubstitutedCT c'
     | `Identifier (i, b) -> (
         match
           identifier Maps.Path.ClassType.find ident_map.path_class_types i
         with
-        | `Identifier i -> `Identifier (i, b)
+        | `Identifier _ -> same
         | `Local i -> `LocalTy ((i :> Cpath.lty), b))
-    | `DotT (path', x) -> `DotT (module_path ident_map path', x)
+    | `DotT (p', x) ->
+        let p'' = module_path ident_map p' in
+        if p'' == (p' :> Cpath.module_) then same else `DotT (p'', x)
     | `Class (`Na _, _, _) -> .
     | `ClassType (`Na _, _, _) -> .
     | `LocalTy (`Na _, _) -> .
