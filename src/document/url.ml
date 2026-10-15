@@ -12,17 +12,21 @@ let render_path : Path.t -> string =
     | `OpaqueModuleType p -> render_resolved (p :> t)
     | `Subst (_, p) -> render_resolved (p :> t)
     | `SubstT (_, p) -> render_resolved (p :> t)
-    | `Alias (dest, `Resolved src) ->
+    | `LocalMod (`Na _) -> .
+    | `LocalModTy (`Na _) -> .
+    | `LocalTy (`Na _) -> .
+    | `Alias (dest, `Resolved src, _) ->
         if Path.Resolved.(is_hidden (src :> t)) then render_resolved (dest :> t)
         else render_resolved (src :> t)
-    | `Alias (dest, src) ->
+    | `Alias (dest, src, _) ->
         if Path.is_hidden (src :> Path.t) then render_resolved (dest :> t)
         else render_path (src :> Path.t)
     | `AliasModuleType (p1, p2) ->
         if Path.Resolved.(is_hidden (p2 :> t)) then render_resolved (p1 :> t)
         else render_resolved (p2 :> t)
     | `Hidden p -> render_resolved (p :> t)
-    | `Module (p, s) -> render_resolved (p :> t) ^ "." ^ ModuleName.to_string s
+    | `Module (p, s) ->
+        render_resolved (parent_module p :> t) ^ "." ^ ModuleName.to_string s
     | `Canonical (_, `Resolved p) -> render_resolved (p :> t)
     | `Canonical (p, _) -> render_resolved (p :> t)
     | `CanonicalModuleType (_, `Resolved p) -> render_resolved (p :> t)
@@ -39,11 +43,16 @@ let render_path : Path.t -> string =
         ^ render_resolved (p :> Path.Resolved.t)
         ^ ")"
     | `ModuleType (p, s) ->
-        render_resolved (p :> t) ^ "." ^ ModuleTypeName.to_string s
-    | `Type (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
-    | `Value (p, s) -> render_resolved (p :> t) ^ "." ^ ValueName.to_string s
-    | `Class (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
-    | `ClassType (p, s) -> render_resolved (p :> t) ^ "." ^ TypeName.to_string s
+        render_resolved (parent_module p :> t)
+        ^ "." ^ ModuleTypeName.to_string s
+    | `Type (p, s) ->
+        render_resolved (parent_module p :> t) ^ "." ^ TypeName.to_string s
+    | `Value (p, s) ->
+        render_resolved (parent_module p :> t) ^ "." ^ ValueName.to_string s
+    | `Class (p, s) ->
+        render_resolved (parent_module p :> t) ^ "." ^ TypeName.to_string s
+    | `ClassType (p, s) ->
+        render_resolved (parent_module p :> t) ^ "." ^ TypeName.to_string s
     | `Unbox p -> render_resolved (p :> t) ^ "#"
   and dot p s = render_path (p : Path.Module.t :> Path.t) ^ "." ^ s
   and render_path : Path.t -> string =
@@ -63,6 +72,15 @@ let render_path : Path.t -> string =
     | `SubstitutedT m -> render_path (m :> Path.t)
     | `SubstitutedCT m -> render_path (m :> Path.t)
     | `Unbox t -> render_path (t :> Path.t)
+    | `LocalMod (`Na _, _) -> .
+    | `LocalModTy (`Na _, _) -> .
+    | `LocalTy (`Na _, _) -> .
+    | `Module (`Na _, _, _) -> .
+    | `ModuleType (`Na _, _, _) -> .
+    | `Type (`Na _, _, _) -> .
+    | `Class (`Na _, _, _) -> .
+    | `ClassType (`Na _, _, _) -> .
+    | `Value (`Na _, _, _) -> .
   in
 
   render_path

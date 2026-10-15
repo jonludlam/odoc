@@ -37,5 +37,9 @@ let rec show_type_name_verbose h : Path.Type.t -> _ = function
         (Odoc_model.Names.TypeName.to_string x)
   | `SubstitutedT x -> show_type_name_verbose h x
   | `Unbox x -> Format.fprintf h "%a#" show_type_name_verbose x
+  | `LocalTy (`Na _, _) -> .
+  | `Type (`Na _, _, _) -> .
+  | `Class (`Na _, _, _) -> .
+  | `ClassType (`Na _, _, _) -> .
 
 let to_string t = Format.asprintf "%a" show_type_name_verbose t

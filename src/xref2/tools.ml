@@ -567,12 +567,13 @@ and lookup_module_gpath :
       lookup_parent_gpath env parent
       |> map_error (fun e -> (e :> simple_module_lookup_error))
       >>= fun (sg, sub) -> find_in_sg sg sub
-  | `Alias (p, _) -> lookup_module_gpath env p
+  | `Alias (p, _, _) -> lookup_module_gpath env p
   | `Subst (_, p) -> lookup_module_gpath env p
   | `Hidden p -> lookup_module_gpath env p
   | `Canonical (p, _) -> lookup_module_gpath env p
   | `OpaqueModule m -> lookup_module_gpath env m
   | `Substituted m -> lookup_module_gpath env m
+  | `LocalMod (`Na _) -> .
 
 and lookup_module :
     Env.t ->
@@ -638,6 +639,7 @@ and lookup_module_type_gpath :
   | `AliasModuleType (_, mt) -> lookup_module_type_gpath env mt
   | `OpaqueModuleType m -> lookup_module_type_gpath env m
   | `SubstitutedMT m -> lookup_module_type_gpath env m
+  | `LocalModTy (`Na _) -> .
 
 and lookup_module_type :
     Env.t ->
@@ -698,11 +700,12 @@ and lookup_parent :
 
 and lookup_parent_gpath :
     Env.t ->
-    Odoc_model.Paths.Path.Resolved.Module.t ->
+    Odoc_model.Paths.Path.Resolved.parent ->
     ( Component.Signature.t * Component.Substitution.t,
       [ `Parent of parent_lookup_error ] )
     result =
  fun env parent ->
+  let parent = Odoc_model.Paths.Path.Resolved.parent_module parent in
   lookup_module_gpath env parent
   |> map_error (fun e -> `Parent (`Parent_module e))
   >>= fun m ->
@@ -754,6 +757,7 @@ and lookup_type_gpath :
     | `SubstitutedT t -> lookup_type_gpath env t
     | `SubstitutedCT t ->
         lookup_type_gpath env (t :> Odoc_model.Paths.Path.Resolved.Type.t)
+    | `LocalTy (`Na _) -> .
   in
   res
 
@@ -809,6 +813,7 @@ and lookup_class_type_gpath :
     | `Class (p, id) -> do_type p id
     | `ClassType (p, id) -> do_type p id
     | `SubstitutedCT c -> lookup_class_type_gpath env c
+    | `LocalTy (`Na _) -> .
   in
   res
 
@@ -1151,8 +1156,10 @@ and reresolve_module_gpath :
       `Apply
         ( reresolve_module_gpath env functor_path,
           reresolve_module_gpath env argument_path )
-  | `Module (parent, name) -> `Module (reresolve_module_gpath env parent, name)
-  | `Alias (p1, p2) ->
+  | `Module (parent, name) ->
+      let parent = Odoc_model.Paths.Path.Resolved.parent_module parent in
+      `Module (`Module (reresolve_module_gpath env parent), name)
+  | `Alias (p1, p2, _) ->
       let dest' = reresolve_module_gpath env p1 in
       if
         Odoc_model.Paths.Path.Resolved.Module.is_hidden
@@ -1163,8 +1170,8 @@ and reresolve_module_gpath :
         | Ok (`Alias (_, _, Some p3), _) ->
             let p = reresolve_module env p3 in
             Lang_of.(Path.resolved_module (empty ()) p)
-        | _ -> `Alias (dest', p2)
-      else `Alias (dest', p2)
+        | _ -> `Alias (dest', p2, None)
+      else `Alias (dest', p2, None)
   | `Subst (p1, p2) ->
       `Subst (reresolve_module_type_gpath env p1, reresolve_module_gpath env p2)
   | `Hidden p ->
@@ -1177,6 +1184,7 @@ and reresolve_module_gpath :
       `Canonical (reresolve_module_gpath env p, handle_canonical_module env p2)
   | `OpaqueModule m -> `OpaqueModule (reresolve_module_gpath env m)
   | `Substituted m -> `Substituted (reresolve_module_gpath env m)
+  | `LocalMod (`Na _) -> .
 
 and strip_canonical :
     c:Odoc_model.Paths.Path.Module.t ->
@@ -1202,12 +1210,13 @@ and strip_canonical_gpath :
   match path with
   | `Canonical (x, y) when y = c -> strip_canonical_gpath ~c x
   | `Canonical (x, y) -> `Canonical (strip_canonical_gpath ~c x, y)
-  | `Alias (x, y) -> `Alias (strip_canonical_gpath ~c x, y)
+  | `Alias (x, y, z) -> `Alias (strip_canonical_gpath ~c x, y, z)
   | `Subst (x, y) -> `Subst (x, strip_canonical_gpath ~c y)
   | `Hidden x -> `Hidden (strip_canonical_gpath ~c x)
   | `OpaqueModule x -> `OpaqueModule (strip_canonical_gpath ~c x)
   | `Apply _ | `Module _ | `Identifier _ -> path
   | `Substituted x -> `Substituted (strip_canonical_gpath ~c x)
+  | `LocalMod (`Na _) -> .
 
 and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
     =
@@ -1426,7 +1435,8 @@ and reresolve_module_type_gpath :
   match path with
   | `Identifier _ -> path
   | `ModuleType (parent, name) ->
-      `ModuleType (reresolve_module_gpath env parent, name)
+      let parent = Odoc_model.Paths.Path.Resolved.parent_module parent in
+      `ModuleType (`Module (reresolve_module_gpath env parent), name)
   | `CanonicalModuleType (p1, (`Resolved _ as p2)) ->
       `CanonicalModuleType (reresolve_module_type_gpath env p1, p2)
   | `CanonicalModuleType (p1, p2) ->
@@ -1440,6 +1450,7 @@ and reresolve_module_type_gpath :
         (reresolve_module_type_gpath env p1, reresolve_module_type_gpath env p2)
   | `OpaqueModuleType m -> `OpaqueModuleType (reresolve_module_type_gpath env m)
   | `SubstitutedMT m -> `SubstitutedMT (reresolve_module_type_gpath env m)
+  | `LocalModTy (`Na _) -> .
 
 and reresolve_module_type :
     Env.t -> Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
