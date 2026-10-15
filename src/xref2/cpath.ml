@@ -23,7 +23,7 @@ module Resolved = struct
 
   type type_ = (lmod, lmodty, pty, lty, canon) Path.Resolved.Type.gen
 
-  type value = (lmod, lmodty, pty, na, canon) Path.Resolved.Value.gen
+  type value = (lmod, lmodty, pty, canon) Path.Resolved.Value.gen
 
   type class_type = (lmod, lmodty, pty, lty, canon) Path.Resolved.ClassType.gen
 end
@@ -35,7 +35,7 @@ module Cpath = struct
 
   type type_ = (lmod, lmodty, pty, lty, canon) Path.Type.gen
 
-  type value = (lmod, lmodty, pty, na, canon) Path.Value.gen
+  type value = (lmod, lmodty, pty, canon) Path.Value.gen
 
   type class_type = (lmod, lmodty, pty, lty, canon) Path.ClassType.gen
 end

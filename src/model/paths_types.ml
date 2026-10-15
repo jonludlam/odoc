@@ -213,8 +213,8 @@ type na_ty = |
 
 type na = [ `Na of na_ty ]
 
-(* Paths are generic in the identifiers of local items, ['lmod], ['lmodty],
-   ['lty] and ['lval], and in ['pty], which paths with a typed parent carry.
+(* Paths are generic in the identifiers of local items, ['lmod], ['lmodty]
+   and ['lty], and in ['pty], which paths with a typed parent carry.
    The paths of the model instantiate them all with [na], so have none; the
    paths xref2 works on instantiate them with its own types. *)
 module rec Path : sig
@@ -262,8 +262,8 @@ module rec Path : sig
     constraint 'canon = < m : 'cm ; mt : 'cmt ; t : 'ct >
   (** @canonical Odoc_model.Paths.Path.Type.gen *)
 
-  type ('lmod, 'lmodty, 'pty, 'lval, 'canon) value =
-    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lval, 'canon) Resolved_path.value
+  type ('lmod, 'lmodty, 'pty, 'canon) value =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'canon) Resolved_path.value
     | `Identifier of Identifier.path_value * bool
     | `DotV of ('lmod, 'lmodty, 'pty, 'canon) module_ * ValueName.t
     | `Value of
@@ -286,8 +286,8 @@ module rec Path : sig
     constraint 'canon = < m : 'cm ; mt : 'cmt ; t : 'ct >
   (** @canonical Odoc_model.Paths.Path.ClassType.gen *)
 
-  type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) any =
-    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) Resolved_path.any
+  type ('lmod, 'lmodty, 'pty, 'lty, 'canon) any =
+    [ `Resolved of ('lmod, 'lmodty, 'pty, 'lty, 'canon) Resolved_path.any
     | `SubstitutedT of ('lmod, 'lmodty, 'pty, 'lty, 'canon) type_
     | `SubstitutedMT of ('lmod, 'lmodty, 'pty, 'canon) module_type
     | `Substituted of ('lmod, 'lmodty, 'pty, 'canon) module_
@@ -371,7 +371,7 @@ and Resolved_path : sig
     constraint 'canon = < m : 'cm ; mt : 'cmt ; t : 'ct >
   (** @canonical Odoc_model.Paths.Path.Resolved.ModuleType.gen *)
 
-  type ('lmod, 'lmodty, 'pty, 'lval, 'canon) value =
+  type ('lmod, 'lmodty, 'pty, 'canon) value =
     [ `Identifier of Identifier.path_value
     | `Value of ('lmod, 'lmodty, 'pty, 'canon) parent * ValueName.t ]
     constraint 'canon = < m : 'cm ; mt : 'cmt ; t : 'ct >
@@ -400,7 +400,7 @@ and Resolved_path : sig
     constraint 'canon = < m : 'cm ; mt : 'cmt ; t : 'ct >
   (** @canonical Odoc_model.Paths.Path.Resolved.Type.gen *)
 
-  type ('lmod, 'lmodty, 'pty, 'lty, 'lval, 'canon) any =
+  type ('lmod, 'lmodty, 'pty, 'lty, 'canon) any =
     [ `Identifier of Identifier.any
     | `LocalMod of 'lmod
     | `LocalModTy of 'lmodty
