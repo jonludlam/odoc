@@ -464,6 +464,17 @@ module rec Path : sig
   type t = (na, na, na, na, canon) gen
 
   val is_hidden : t -> bool
+
+  val is_resolved_hidden_gen :
+    weak_canonical_test:bool ->
+    ('lmod, 'lmodty, 'pty, 'lty, canon) Resolved.gen ->
+    bool
+  (** The hidden check of resolved paths, for paths with any local identifiers.
+      A resolved local is not hidden. *)
+
+  val is_hidden_gen : ('lmod, 'lmodty, 'pty, 'lty, canon) gen -> bool
+  (** The hidden check of paths, for paths with any local identifiers. An
+      unresolved local is hidden when its flag says so. *)
 end
 
 (** OCaml path fragments for specifying module substitutions *)
