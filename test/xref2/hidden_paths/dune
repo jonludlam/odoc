@@ -1,0 +1,7 @@
+; Compares the model's hidden checks with the component path ones on the same
+; paths. A model path is also a component path.
+
+(test
+ (name hidden_paths)
+ (package odoc)
+ (libraries odoc_model odoc_xref2))
