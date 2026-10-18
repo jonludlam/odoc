@@ -325,8 +325,7 @@ end =
 and Resolved_path : sig
   type ('p, 'pty, 'canon) parent =
     [ `Module of ('p, 'pty, 'canon) module_
-    | `ModuleType of ('p, 'pty, 'canon) module_type * 'pty
-    | `FragmentRoot of 'pty ]
+    | `ModuleType of ('p, 'pty, 'canon) module_type * 'pty ]
     constraint 'canon = < m : 'cm ; mt : 'cmt ; t : 'ct >
 
   and ('p, 'pty, 'canon) module_ =

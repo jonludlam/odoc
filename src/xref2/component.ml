@@ -1370,7 +1370,6 @@ module Fmt = struct
     | `ModuleType (m, _) ->
         if c.short_paths then resolved_module_type_path c ppf m
         else Format.fprintf ppf ">>%a<<" (resolved_module_type_path c) m
-    | `FragmentRoot _ -> Format.fprintf ppf "FragmentRoot"
 
   and type_path : config -> Format.formatter -> Cpath.type_ -> unit =
    fun c ppf p ->

@@ -635,7 +635,6 @@ module Path = struct
       (global_parent, na, canon) Paths_types.Resolved_path.module_ = function
     | `Module m -> m
     | `ModuleType (_, `Na _) -> .
-    | `FragmentRoot (`Na _) -> .
 
   type ra = (global_parent, na, canon) Paths_types.Resolved_path.any
 
@@ -728,7 +727,6 @@ module Path = struct
     | `ModuleType (mt, _) ->
         is_resolved_hidden_gen ~weak_canonical_test
           (mt :> (local_parent, 'pty) gra)
-    | `FragmentRoot _ -> false
 
   and is_path_hidden_gen : 'pty. (local_parent, 'pty) gpa -> bool = function
     | `Resolved r -> is_resolved_hidden_gen ~weak_canonical_test:false r

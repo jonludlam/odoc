@@ -634,6 +634,10 @@ and lookup_parent :
  fun env' parent' ->
   let lookup env parent =
     match parent with
+    | p when Cpath.is_fragment_root p ->
+        Env.lookup_fragment_root env
+        |> of_option ~error:(`Parent `Fragment_root)
+        >>= fun (_, sg) -> Ok (sg, prefix_substitution parent sg)
     | `Module p ->
         lookup_module env p |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun m ->
@@ -650,10 +654,6 @@ and lookup_parent :
         |> map_error (fun e -> `Parent (`Parent_sig e))
         >>= assert_not_functor
         >>= fun sg -> Ok (sg, prefix_substitution parent sg)
-    | `FragmentRoot _ ->
-        Env.lookup_fragment_root env
-        |> of_option ~error:(`Parent `Fragment_root)
-        >>= fun (_, sg) -> Ok (sg, prefix_substitution parent sg)
   in
   LookupParentMemo.memoize lookup env' parent'
 
@@ -1292,7 +1292,6 @@ and reresolve_parent : Env.t -> Cpath.Resolved.parent -> Cpath.Resolved.parent =
   match path with
   | `Module m -> `Module (reresolve_module env m)
   | `ModuleType (mty, x) -> `ModuleType (reresolve_module_type env mty, x)
-  | `FragmentRoot _ -> path
 
 (* *)
 and module_type_expr_of_module_decl :
@@ -1854,10 +1853,10 @@ and find_external_parent_path :
  fun p ->
   let open Odoc_utils.OptionMonad in
   match p with
+  | p when Cpath.is_fragment_root p -> None
   | `Module m -> find_external_module_path m >>= fun m -> Some (`Module m)
   | `ModuleType (m, x) ->
       find_external_module_type_path m >>= fun m -> Some (`ModuleType (m, x))
-  | `FragmentRoot _ -> None
 
 and fixup_module_cfrag (f : Cfrag.resolved_module) : Cfrag.resolved_module =
   match f with
@@ -1925,8 +1924,8 @@ and resolve_signature_fragment :
  fun env (p, sg) frag ->
   match frag with
   | `Root ->
-      let sg = prefix_signature (`FragmentRoot `U, sg) in
-      Some (`Root p, `FragmentRoot `U, sg)
+      let sg = prefix_signature (Cpath.fragment_root, sg) in
+      Some (`Root p, Cpath.fragment_root, sg)
   | `Resolved _r -> None
   | `Dot (parent, name) ->
       let open Odoc_utils.OptionMonad in
@@ -1946,7 +1945,7 @@ and resolve_signature_fragment :
             (`Alias (p', `Resolved new_path, None), `Alias (p', new_frag))
         | Some (`SubstMT p') -> (`Subst (p', new_path), `Subst (p', new_frag))
       in
-      (* Don't use the cached one - `FragmentRoot` is not unique *)
+      (* Don't use the cached one - the fragment root is not unique *)
       of_result
         Odoc_utils.ResultMonad.(
           expansion_of_module env m' >>= assert_not_functor)

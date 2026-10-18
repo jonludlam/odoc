@@ -54,6 +54,11 @@ let class_of_type : type_ -> [ `Class of [ `Local of int ] * TypeName.t ] =
   function
   | `Type (l, n) -> `Class (l, n)
 
+(* The root of the signature that a [with] constraint changes. It is a fixed
+   local, as fresh locals start from 0. *)
+let fragment_root : module_ =
+  `Module (`Local (-1), ModuleName.make_std "FragmentRoot")
+
 let fresh_int () =
   let n = !counter in
   incr counter;

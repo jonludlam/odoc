@@ -151,6 +151,11 @@ module Path = struct
   and resolved_module_inner map (p : Cpath.Resolved.module_) :
       Odoc_model.Paths.Path.Resolved.Module.t =
     match p with
+    | `Identifier _ when Cpath.is_fragment_root (`Module p) -> (
+        (* A module type root fails as a module type parent did before. *)
+        match map.fragment_root with
+        | Some (`Module m) -> resolved_module map m
+        | Some (`ModuleType _) | None -> failwith "Invalid")
     | `Identifier id -> (
         match Cpath.Id.module_ id with
         | Global g -> `Identifier g
@@ -173,11 +178,6 @@ module Path = struct
     match p with
     | `Module m -> resolved_module map m
     | `ModuleType _ -> failwith "Invalid"
-    | `FragmentRoot _ -> (
-        match map.fragment_root with
-        | Some (`Module m) -> resolved_parent map (`Module m)
-        | Some (`ModuleType mt) -> resolved_parent map (`ModuleType (mt, `U))
-        | None -> failwith "Invalid")
 
   and resolved_module_type map (p : Cpath.Resolved.module_type) :
       Odoc_model.Paths.Path.Resolved.ModuleType.t =

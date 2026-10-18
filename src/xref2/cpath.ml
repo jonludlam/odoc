@@ -85,6 +85,17 @@ end
 
 include Cpath
 
+(* The parent that stands for the root of the signature a [with] constraint
+   changes, while its fragments are resolved. *)
+let fragment_root : Resolved.parent =
+  `Module (`Identifier (Ident.fragment_root :> Id.module_))
+
+let is_fragment_root : Resolved.parent -> bool = function
+  | `Module (`Identifier (`Module (`Local i, _))) ->
+      let (`Module (`Local j, _)) = Ident.fragment_root in
+      i = j
+  | _ -> false
+
 let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
   | `Substituted _ -> true
   | `Identifier _ -> false
@@ -97,7 +108,6 @@ let rec is_resolved_module_substituted : Resolved.module_ -> bool = function
 and is_resolved_parent_substituted = function
   | `Module m -> is_resolved_module_substituted m
   | `ModuleType (m, _) -> is_resolved_module_type_substituted m
-  | `FragmentRoot _ -> false
 
 and is_resolved_module_type_substituted : Resolved.module_type -> bool =
   function
@@ -265,8 +275,9 @@ and unresolve_resolved_module_type_path : Resolved.module_type -> module_type =
   | `OpaqueModuleType m -> unresolve_resolved_module_type_path m
 
 and unresolve_resolved_parent_path : Resolved.parent -> module_ = function
+  | p when is_fragment_root p -> assert false
   | `Module m -> unresolve_resolved_module_path m
-  | `FragmentRoot _ | `ModuleType _ -> assert false
+  | `ModuleType _ -> assert false
 
 and unresolve_resolved_type_path : Resolved.type_ -> type_ = function
   | (`Identifier _ | `CoreType _) as p -> `Resolved p

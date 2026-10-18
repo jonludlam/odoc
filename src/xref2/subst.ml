@@ -263,7 +263,6 @@ and resolved_parent_path s = function
         | Not_replaced p1 -> p1
       in
       `ModuleType (p, pty)
-  | `FragmentRoot _ as x -> x
 
 and module_path : t -> Cpath.module_ -> Cpath.module_ =
  fun s p ->
