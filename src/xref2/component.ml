@@ -1245,12 +1245,15 @@ module Fmt = struct
       config -> Format.formatter -> Cpath.Resolved.module_ -> unit =
    fun c ppf p ->
     match p with
-    | `LocalMod ident -> local_fmt c ppf ident
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" (resolved_module_path c) p1
           (resolved_module_path c) p2
-    | `Identifier _ as p ->
-        Format.fprintf ppf "%a" (model_resolved_path c) (p :> rpath)
+    | `Identifier id -> (
+        match Cpath.Id.module_ id with
+        | Local l -> local_fmt c ppf l
+        | Global g ->
+            Format.fprintf ppf "%a" (model_resolved_path c)
+              (`Identifier g :> rpath))
     | `Substituted p -> wrap c "substituted" resolved_module_path ppf p
     | `Module (p, m) ->
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
@@ -1275,9 +1278,11 @@ module Fmt = struct
         Format.fprintf ppf "%a.%a" (resolved_parent_path c) p ModuleName.fmt n
     | `Apply (p1, p2) ->
         Format.fprintf ppf "%a(%a)" (module_path c) p1 (module_path c) p2
-    | `Identifier (id, b) ->
-        wrap2 c "identifier" model_identifier bool ppf (id :> id) b
-    | `LocalMod (id, b) -> wrap2 c "local" local_fmt bool ppf id b
+    | `Identifier (id, b) -> (
+        match Cpath.Id.module_ id with
+        | Local l -> wrap2 c "local" local_fmt bool ppf l b
+        | Global g -> wrap2 c "identifier" model_identifier bool ppf (g :> id) b
+        )
     | `Substituted p -> wrap c "substituted" module_path ppf p
     | `Root r -> wrap c "unresolvedroot" str ppf (ModuleName.to_string r)
 
@@ -1285,8 +1290,10 @@ module Fmt = struct
       config -> Format.formatter -> Cpath.Resolved.module_type -> unit =
    fun c ppf p ->
     match p with
-    | `LocalModTy id -> local_fmt c ppf id
-    | `Identifier _ as p -> model_resolved_path c ppf (p :> rpath)
+    | `Identifier id -> (
+        match Cpath.Id.module_type id with
+        | Local l -> local_fmt c ppf l
+        | Global g -> model_resolved_path c ppf (`Identifier g :> rpath))
     | `SubstitutedMT x -> wrap c "substituted" resolved_module_type_path ppf x
     | `ModuleType (p, m) ->
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
@@ -1308,9 +1315,11 @@ module Fmt = struct
    fun c ppf m ->
     match m with
     | `Resolved p -> wrap c "r" resolved_module_type_path ppf p
-    | `Identifier (id, b) ->
-        wrap2 c "identifier" model_identifier bool ppf (id :> id) b
-    | `LocalModTy (id, b) -> wrap2 c "local" local_fmt bool ppf id b
+    | `Identifier (id, b) -> (
+        match Cpath.Id.module_type id with
+        | Local l -> wrap2 c "local" local_fmt bool ppf l b
+        | Global g -> wrap2 c "identifier" model_identifier bool ppf (g :> id) b
+        )
     | `SubstitutedMT s -> wrap c "substituted" module_type_path ppf s
     | `DotMT (m, s) ->
         Format.fprintf ppf "%a.%a" (module_path c) m ModuleTypeName.fmt s
@@ -1323,8 +1332,10 @@ module Fmt = struct
    fun c ppf p ->
     match p with
     | `CoreType n -> Format.fprintf ppf "%s" (TypeName.to_string n)
-    | `LocalTy id -> local_fmt c ppf id
-    | `Identifier _ as p -> model_resolved_path c ppf (p :> rpath)
+    | `Identifier id -> (
+        match Cpath.Id.type_ id with
+        | Local l -> local_fmt c ppf l
+        | Global g -> model_resolved_path c ppf (`Identifier g :> rpath))
     | `SubstitutedT x -> wrap c "substituted" resolved_type_path ppf x
     | `SubstitutedCT x -> wrap c "substituted" resolved_class_type_path ppf x
     | `Unbox x -> wrap c "unbox" resolved_type_path ppf x
@@ -1365,9 +1376,11 @@ module Fmt = struct
    fun c ppf p ->
     match p with
     | `Resolved r -> wrap c "resolved" resolved_type_path ppf r
-    | `Identifier (id, b) ->
-        wrap2 c "identifier" model_identifier bool ppf (id :> id) b
-    | `LocalTy (id, b) -> wrap2 c "local" local_fmt bool ppf id b
+    | `Identifier (id, b) -> (
+        match Cpath.Id.type_ id with
+        | Local l -> wrap2 c "local" local_fmt bool ppf l b
+        | Global g -> wrap2 c "identifier" model_identifier bool ppf (g :> id) b
+        )
     | `SubstitutedT s -> wrap c "substituted" type_path ppf s
     | `DotT (m, s) ->
         Format.fprintf ppf "%a.%a" (module_path c) m TypeName.fmt s
@@ -1398,10 +1411,12 @@ module Fmt = struct
       config -> Format.formatter -> Cpath.Resolved.class_type -> unit =
    fun c ppf p ->
     match p with
-    | `LocalTy (`LType _ as id) -> Format.fprintf ppf "%a" Ident.fmt id
-    | `LocalTy (`Na _) -> .
-    | `Identifier _ as p ->
-        Format.fprintf ppf "%a" (model_resolved_path c) (p :> rpath)
+    | `Identifier id -> (
+        match Cpath.Id.class_type id with
+        | Local l -> Format.fprintf ppf "%a" Ident.fmt l
+        | Global g ->
+            Format.fprintf ppf "%a" (model_resolved_path c)
+              (`Identifier g :> rpath))
     | `SubstitutedCT s -> wrap c "substituted" resolved_class_type_path ppf s
     | `Class (p, t) ->
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
@@ -1414,9 +1429,11 @@ module Fmt = struct
    fun c ppf p ->
     match p with
     | `Resolved r -> Format.fprintf ppf "%a" (resolved_class_type_path c) r
-    | `Identifier (id, b) ->
-        wrap2 c "identifier" model_identifier bool ppf (id :> id) b
-    | `LocalTy (id, b) -> wrap2 c "local" local_fmt bool ppf id b
+    | `Identifier (id, b) -> (
+        match Cpath.Id.class_type id with
+        | Local l -> wrap2 c "local" local_fmt bool ppf l b
+        | Global g -> wrap2 c "identifier" model_identifier bool ppf (g :> id) b
+        )
     | `SubstitutedCT s -> wrap c "substituted" class_type_path ppf s
     | `DotT (m, s) ->
         Format.fprintf ppf "%a.%a" (module_path c) m TypeName.fmt s
@@ -1458,9 +1475,6 @@ module Fmt = struct
     | `SubstitutedCT m ->
         wrap c "substitutedct" model_path ppf (m :> Odoc_model.Paths.Path.t)
     | `Unbox t -> wrap c "unbox" model_path ppf (t :> Odoc_model.Paths.Path.t)
-    | `LocalMod (`Na _, _) -> .
-    | `LocalModTy (`Na _, _) -> .
-    | `LocalTy (`Na _, _) -> .
     | `Module (`Na _, _, _) -> .
     | `ModuleType (`Na _, _, _) -> .
     | `Type (`Na _, _, _) -> .
@@ -1541,9 +1555,6 @@ module Fmt = struct
     | `SubstitutedCT m ->
         wrap c "substitutedct" model_resolved_path ppf (m :> t)
     | `Unbox t -> wrap c "unbox" model_resolved_path ppf (t :> t)
-    | `LocalMod (`Na _) -> .
-    | `LocalModTy (`Na _) -> .
-    | `LocalTy (`Na _) -> .
 
   and resolved_root_fragment c ppf (f : Cfrag.root) =
     match f with
@@ -1986,7 +1997,7 @@ module Of_Lang = struct
     match p with
     | `Identifier i -> (
         match identifier find_any_module ident_map i with
-        | `Local l -> `LocalMod (l :> Cpath.lmod)
+        | `Local l -> `Identifier (l :> Cpath.Id.module_)
         | `Identifier _ -> same)
     | `Module (parent, name) ->
         let m = Paths.Path.Resolved.parent_module parent in
@@ -2016,7 +2027,6 @@ module Of_Lang = struct
     | `Substituted m ->
         let m' = recurse m in
         if unchanged m m' then same else `Substituted m'
-    | `LocalMod (`Na _) -> .
 
   and resolved_module_type_path :
       _ ->
@@ -2031,7 +2041,7 @@ module Of_Lang = struct
     match p with
     | `Identifier i -> (
         match identifier Maps.ModuleType.find ident_map.module_types i with
-        | `Local l -> `LocalModTy (l :> Cpath.lmodty)
+        | `Local l -> `Identifier (l :> Cpath.Id.module_type)
         | `Identifier _ -> same)
     | `ModuleType (parent, name) ->
         let m = Paths.Path.Resolved.parent_module parent in
@@ -2054,7 +2064,6 @@ module Of_Lang = struct
     | `SubstitutedMT m ->
         let m' = recurse m in
         if unchanged m m' then same else `SubstitutedMT m'
-    | `LocalModTy (`Na _) -> .
 
   (* [None] when the parent does not change. *)
   and resolved_parent_path ident_map parent : Cpath.Resolved.parent option =
@@ -2074,7 +2083,7 @@ module Of_Lang = struct
     | `CoreType _ -> same
     | `Identifier i -> (
         match identifier Maps.Path.Type.find ident_map.path_types i with
-        | `Local l -> `LocalTy (l :> Cpath.lty)
+        | `Local l -> `Identifier (l :> Cpath.Id.type_)
         | `Identifier _ -> same)
     | `CanonicalType (p1, p2) ->
         let p1' = recurse p1 in
@@ -2100,7 +2109,6 @@ module Of_Lang = struct
     | `Unbox m ->
         let m' = recurse m in
         if unchanged m m' then same else `Unbox m'
-    | `LocalTy (`Na _) -> .
 
   and resolved_value_path :
       _ -> Odoc_model.Paths.Path.Resolved.Value.t -> Cpath.Resolved.value =
@@ -2124,7 +2132,7 @@ module Of_Lang = struct
         match
           identifier Maps.Path.ClassType.find ident_map.path_class_types i
         with
-        | `Local l -> `LocalTy (l :> Cpath.lty)
+        | `Local l -> `Identifier (Ident.class_of_type l :> Cpath.Id.class_type)
         | `Identifier _ -> same)
     | `Class (parent, name) -> (
         match resolved_parent_path ident_map parent with
@@ -2138,7 +2146,6 @@ module Of_Lang = struct
         let c' = resolved_class_type_path ident_map c in
         if c' == (c :> Cpath.Resolved.class_type) then same
         else `SubstitutedCT c'
-    | `LocalTy (`Na _) -> .
 
   and module_path : _ -> Odoc_model.Paths.Path.Module.t -> Cpath.module_ =
    fun ident_map p ->
@@ -2155,7 +2162,7 @@ module Of_Lang = struct
     | `Identifier (i, b) -> (
         match identifier find_any_module ident_map i with
         | `Identifier _ -> same
-        | `Local i -> `LocalMod ((i :> Cpath.lmod), b))
+        | `Local i -> `Identifier ((i :> Cpath.Id.module_), b))
     | `Dot (p', x) ->
         let p'' = recurse p' in
         if unchanged p' p'' then same else `Dot (p'', x)
@@ -2163,7 +2170,6 @@ module Of_Lang = struct
         let p1' = recurse p1 and p2' = recurse p2 in
         if unchanged p1 p1' && unchanged p2 p2' then same else `Apply (p1', p2')
     | `Root _ -> same
-    | `LocalMod (`Na _, _) -> .
     | `Module (`Na _, _, _) -> .
 
   and module_type_path :
@@ -2180,11 +2186,10 @@ module Of_Lang = struct
     | `Identifier (i, b) -> (
         match identifier Maps.ModuleType.find ident_map.module_types i with
         | `Identifier _ -> same
-        | `Local i -> `LocalModTy ((i :> Cpath.lmodty), b))
+        | `Local i -> `Identifier ((i :> Cpath.Id.module_type), b))
     | `DotMT (p', x) ->
         let p'' = module_path ident_map p' in
         if p'' == (p' :> Cpath.module_) then same else `DotMT (p'', x)
-    | `LocalModTy (`Na _, _) -> .
     | `ModuleType (`Na _, _, _) -> .
 
   and type_path : _ -> Odoc_model.Paths.Path.Type.t -> Cpath.type_ =
@@ -2200,7 +2205,7 @@ module Of_Lang = struct
     | `Identifier (i, b) -> (
         match identifier Maps.Path.Type.find ident_map.path_types i with
         | `Identifier _ -> same
-        | `Local i -> `LocalTy ((i :> Cpath.lty), b))
+        | `Local i -> `Identifier ((i :> Cpath.Id.type_), b))
     | `DotT (p', x) ->
         let p'' = module_path ident_map p' in
         if p'' == (p' :> Cpath.module_) then same else `DotT (p'', x)
@@ -2209,7 +2214,6 @@ module Of_Lang = struct
         if t' == (t :> Cpath.type_) then same else `Unbox t'
     | `Class (`Na _, _, _) -> .
     | `ClassType (`Na _, _, _) -> .
-    | `LocalTy (`Na _, _) -> .
     | `Type (`Na _, _, _) -> .
 
   and value_path : _ -> Odoc_model.Paths.Path.Value.t -> Cpath.value =
@@ -2241,13 +2245,13 @@ module Of_Lang = struct
           identifier Maps.Path.ClassType.find ident_map.path_class_types i
         with
         | `Identifier _ -> same
-        | `Local i -> `LocalTy ((i :> Cpath.lty), b))
+        | `Local i ->
+            `Identifier ((Ident.class_of_type i :> Cpath.Id.class_type), b))
     | `DotT (p', x) ->
         let p'' = module_path ident_map p' in
         if p'' == (p' :> Cpath.module_) then same else `DotT (p'', x)
     | `Class (`Na _, _, _) -> .
     | `ClassType (`Na _, _, _) -> .
-    | `LocalTy (`Na _, _) -> .
 
   (* A model fragment is also a component fragment. As for paths, these
      return their input when no path in it changes. *)

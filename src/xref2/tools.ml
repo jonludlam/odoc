@@ -24,7 +24,7 @@ let c_mod_poss env p =
         match Env.lookup_by_name Env.s_module (ModuleName.to_string n) env with
         | Ok (`Module (id, m)) ->
             let m = Component.Delayed.get m in
-            `Identifier (id, m.hidden) :: rest
+            `Identifier ((id :> Cpath.Id.module_), m.hidden) :: rest
         | Error _ -> rest)
     | p -> [ p ]
   in
@@ -38,7 +38,8 @@ let c_modty_poss env p =
       match
         Env.lookup_by_name Env.s_module_type (ModuleTypeName.to_string n) env
       with
-      | Ok (`ModuleType (id, _)) -> `Identifier (id, false) :: rest
+      | Ok (`ModuleType (id, _)) ->
+          `Identifier ((id :> Cpath.Id.module_type), false) :: rest
       | Error _ -> rest)
   | p -> [ p ]
 
@@ -49,8 +50,7 @@ let c_ty_poss env p =
       let rest = List.map (fun p -> `DotT (p, n)) (c_mod_poss env p) in
       match Env.lookup_by_name Env.s_datatype (TypeName.to_string n) env with
       | Ok (`Type (id, _)) ->
-          `Identifier ((id :> Odoc_model.Paths.Identifier.Path.Type.t), false)
-          :: rest
+          `Identifier ((id :> Cpath.Id.type_), false) :: rest
       | Error _ -> rest)
   | p -> [ p ]
 
@@ -354,10 +354,13 @@ let simplify_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
   let open Odoc_model.Paths.Identifier in
   match m with
   | `Module (`Module (`Identifier p), name) -> (
-      let ident = (Mk.module_ ((p :> Signature.t), name) : Path.Module.t) in
-      match Env.(lookup_by_id s_module (ident :> Signature.t) env) with
-      | Some _ -> `Identifier ident
-      | None -> m)
+      match Cpath.Id.module_ p with
+      | Local _ -> m
+      | Global p -> (
+          let ident = (Mk.module_ ((p :> Signature.t), name) : Path.Module.t) in
+          match Env.(lookup_by_id s_module (ident :> Signature.t) env) with
+          | Some _ -> `Identifier (ident :> Cpath.Id.module_)
+          | None -> m))
   | _ -> m
 
 let simplify_module_type :
@@ -366,12 +369,15 @@ let simplify_module_type :
   let open Odoc_model.Paths.Identifier in
   match m with
   | `ModuleType (`Module (`Identifier p), name) -> (
-      let ident =
-        (Mk.module_type ((p :> Signature.t), name) : Path.ModuleType.t)
-      in
-      match Env.(lookup_by_id s_module_type (ident :> Signature.t) env) with
-      | Some _ -> `Identifier ident
-      | None -> m)
+      match Cpath.Id.module_ p with
+      | Local _ -> m
+      | Global p -> (
+          let ident =
+            (Mk.module_type ((p :> Signature.t), name) : Path.ModuleType.t)
+          in
+          match Env.(lookup_by_id s_module_type (ident :> Signature.t) env) with
+          | Some _ -> `Identifier (ident :> Cpath.Id.module_type)
+          | None -> m))
   | _ -> m
 
 let simplify_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
@@ -379,10 +385,13 @@ let simplify_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
   let open Odoc_model.Paths.Identifier in
   match m with
   | `Type (`Module (`Identifier p), name) -> (
-      let ident = (Mk.type_ ((p :> Signature.t), name) : Path.Type.t) in
-      match Env.(lookup_by_id s_datatype (ident :> Path.Type.t) env) with
-      | Some _ -> `Identifier ident
-      | None -> m)
+      match Cpath.Id.module_ p with
+      | Local _ -> m
+      | Global p -> (
+          let ident = (Mk.type_ ((p :> Signature.t), name) : Path.Type.t) in
+          match Env.(lookup_by_id s_datatype (ident :> Path.Type.t) env) with
+          | Some _ -> `Identifier (ident :> Cpath.Id.type_)
+          | None -> m))
   | _ -> m
 
 let rec handle_apply env func_path arg_path m =
@@ -549,11 +558,13 @@ and lookup_module :
  fun env' path' ->
   let lookup env (path : ExpansionOfModuleMemo.M.key) =
     match path with
-    | `LocalMod (`LModule _ as lpath) -> Error (`Local (env, lpath))
-    | `LocalMod (`Na _) -> .
-    | `Identifier i ->
-        of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
-        >>= fun (`Module (_, m)) -> Ok m
+    | `Identifier i -> (
+        match Cpath.Id.module_ i with
+        | Local lpath -> Error (`Local (env, lpath))
+        | Global i ->
+            of_option ~error:(`Lookup_failure i)
+              (Env.(lookup_by_id s_module) i env)
+            >>= fun (`Module (_, m)) -> Ok m)
     | `Substituted x -> lookup_module env x
     | `Apply (functor_path, argument_path) ->
         lookup_module env functor_path >>= fun functor_module ->
@@ -591,12 +602,13 @@ and lookup_module_type :
  fun env path ->
   let lookup env =
     match path with
-    | `LocalModTy (`LModuleType _ as l) -> Error (`LocalMT (env, l))
-    | `LocalModTy (`Na _) -> .
-    | `Identifier i ->
-        of_option ~error:(`Lookup_failureMT i)
-          (Env.(lookup_by_id s_module_type) i env)
-        >>= fun (`ModuleType (_, mt)) -> Ok mt
+    | `Identifier i -> (
+        match Cpath.Id.module_type i with
+        | Local l -> Error (`LocalMT (env, l))
+        | Global i ->
+            of_option ~error:(`Lookup_failureMT i)
+              (Env.(lookup_by_id s_module_type) i env)
+            >>= fun (`ModuleType (_, mt)) -> Ok mt)
     | `SubstitutedMT s | `CanonicalModuleType (s, _) | `SubstT (_, s) ->
         lookup_module_type env s
     | `ModuleType (parent, name) ->
@@ -668,20 +680,22 @@ and lookup_type :
   let res =
     match p with
     | `CoreType _ as c -> Ok c
-    | `LocalTy (`LType _ as id) -> Error (`LocalType (env, id))
-    | `LocalTy (`Na _) -> .
-    | `Identifier (`Type _ as i) ->
-        of_option ~error:(`Lookup_failureT i)
-          (Env.(lookup_by_id s_datatype) i env)
-        >>= fun (`Type (`Type (_, name), t)) -> Ok (`FType (name, t))
-    | `Identifier (`Class _ as i) ->
-        of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_class) i env)
-        >>= fun (`Class (`Class (_, name), t)) -> Ok (`FClass (name, t))
-    | `Identifier (`ClassType _ as i) ->
-        of_option ~error:(`Lookup_failureT i)
-          (Env.(lookup_by_id s_class_type) i env)
-        >>= fun (`ClassType (`ClassType (_, name), t)) ->
-        Ok (`FClassType (name, t))
+    | `Identifier i -> (
+        match Cpath.Id.type_ i with
+        | Local id -> Error (`LocalType (env, id))
+        | Global (`Type _ as i) ->
+            of_option ~error:(`Lookup_failureT i)
+              (Env.(lookup_by_id s_datatype) i env)
+            >>= fun (`Type (`Type (_, name), t)) -> Ok (`FType (name, t))
+        | Global (`Class _ as i) ->
+            of_option ~error:(`Lookup_failureT i)
+              (Env.(lookup_by_id s_class) i env)
+            >>= fun (`Class (`Class (_, name), t)) -> Ok (`FClass (name, t))
+        | Global (`ClassType _ as i) ->
+            of_option ~error:(`Lookup_failureT i)
+              (Env.(lookup_by_id s_class_type) i env)
+            >>= fun (`ClassType (`ClassType (_, name), t)) ->
+            Ok (`FClassType (name, t)))
     | `CanonicalType (t1, _) -> lookup_type env t1
     | `SubstitutedT s -> lookup_type env s
     | `SubstitutedCT s -> lookup_type env (s :> Cpath.Resolved.type_)
@@ -726,16 +740,18 @@ and lookup_class_type :
   in
   let res =
     match p with
-    | `LocalTy (`LType _ as id) -> Error (`LocalType (env, (id :> Ident.type_)))
-    | `LocalTy (`Na _) -> .
-    | `Identifier (`Class _ as i) ->
-        of_option ~error:(`Lookup_failureT i) (Env.(lookup_by_id s_class) i env)
-        >>= fun (`Class (`Class (_, name), t)) -> Ok (`FClass (name, t))
-    | `Identifier (`ClassType _ as i) ->
-        of_option ~error:(`Lookup_failureT i)
-          (Env.(lookup_by_id s_class_type) i env)
-        >>= fun (`ClassType (`ClassType (_, name), t)) ->
-        Ok (`FClassType (name, t))
+    | `Identifier i -> (
+        match Cpath.Id.class_type i with
+        | Local id -> Error (`LocalType (env, id))
+        | Global (`Class _ as i) ->
+            of_option ~error:(`Lookup_failureT i)
+              (Env.(lookup_by_id s_class) i env)
+            >>= fun (`Class (`Class (_, name), t)) -> Ok (`FClass (name, t))
+        | Global (`ClassType _ as i) ->
+            of_option ~error:(`Lookup_failureT i)
+              (Env.(lookup_by_id s_class_type) i env)
+            >>= fun (`ClassType (`ClassType (_, name), t)) ->
+            Ok (`FClassType (name, t)))
     | `SubstitutedCT s -> lookup_class_type env s
     | `Class (p, id) -> do_type p id
     | `ClassType (p, id) -> do_type p id
@@ -780,13 +796,17 @@ and resolve_module : Env.t -> Cpath.module_ -> resolve_module_result =
             | Error e -> Error (`Parent (`Parent_expr e)))
         | Error e, _ -> Error e
         | _, Error e -> Error e)
-    | `Identifier (i, hidden) ->
-        of_option ~error:(`Lookup_failure i) (Env.(lookup_by_id s_module) i env)
-        >>= fun (`Module (_, m)) ->
-        let rp = if hidden then `Hidden (`Identifier i) else `Identifier i in
-        Ok (process_module_path env (Component.Delayed.get m) rp, m)
-    | `LocalMod ((`LModule _ as p), _) -> Error (`Local (env, p))
-    | `LocalMod (`Na _, _) -> .
+    | `Identifier (id, hidden) -> (
+        match Cpath.Id.module_ id with
+        | Local p -> Error (`Local (env, p))
+        | Global i ->
+            of_option ~error:(`Lookup_failure i)
+              (Env.(lookup_by_id s_module) i env)
+            >>= fun (`Module (_, m)) ->
+            let rp =
+              if hidden then `Hidden (`Identifier id) else `Identifier id
+            in
+            Ok (process_module_path env (Component.Delayed.get m) rp, m))
     | `Resolved r -> lookup_module env r >>= fun m -> Ok (r, m)
     | `Substituted s ->
         resolve_module env s |> map_error (fun e -> `Parent (`Parent_module e))
@@ -794,9 +814,7 @@ and resolve_module : Env.t -> Cpath.module_ -> resolve_module_result =
     | `Root r -> (
         match Env.lookup_root_module r env with
         | Some (Env.Resolved (_, p, m)) ->
-            let p =
-              `Identifier (p :> Odoc_model.Paths.Identifier.Path.Module.t)
-            in
+            let p = `Identifier (p :> Cpath.Id.module_) in
             let p = process_module_path env m p in
             Ok (p, Component.Delayed.put_val m)
         | Some Env.Forward ->
@@ -822,15 +840,16 @@ and resolve_module_type :
       >>= fun (parent_sig, sub) ->
       handle_module_type_lookup env id parent parent_sig sub
       |> of_option ~error:`Find_failure
-  | `Identifier (i, _) ->
-      of_option ~error:(`Lookup_failureMT i)
-        (Env.(lookup_by_id s_module_type) i env)
-      >>= fun (`ModuleType (_, mt)) ->
-      let p = `Identifier i in
-      let p' = process_module_type env mt p in
-      Ok (p', mt)
-  | `LocalModTy ((`LModuleType _ as l), _) -> Error (`LocalMT (env, l))
-  | `LocalModTy (`Na _, _) -> .
+  | `Identifier (id, _) -> (
+      match Cpath.Id.module_type id with
+      | Local l -> Error (`LocalMT (env, l))
+      | Global i ->
+          of_option ~error:(`Lookup_failureMT i)
+            (Env.(lookup_by_id s_module_type) i env)
+          >>= fun (`ModuleType (_, mt)) ->
+          let p = `Identifier id in
+          let p' = process_module_type env mt p in
+          Ok (p', mt))
   | `Resolved r -> lookup_module_type env r >>= fun m -> Ok (r, m)
   | `SubstitutedMT s ->
       resolve_module_type env s
@@ -898,8 +917,6 @@ and resolve_type : Env.t -> Cpath.type_ -> resolve_type_result =
         let i' = `Identifier i in
         lookup_type env i' >>= fun t -> Ok (i', t)
     | `Resolved r -> lookup_type env r >>= fun t -> Ok (r, t)
-    | `LocalTy ((`LType _ as l), _) -> Error (`LocalType (env, l))
-    | `LocalTy (`Na _, _) -> .
     | `SubstitutedT s ->
         resolve_type env s >>= fun (p, m) -> Ok (`SubstitutedT p, m)
     | `Unbox s -> resolve_type env s >>= fun (p, m) -> Ok (`Unbox p, m)
@@ -966,9 +983,6 @@ and resolve_class_type : Env.t -> Cpath.class_type -> resolve_class_type_result
       let id = i' in
       lookup_class_type env id >>= fun t -> Ok (id, t)
   | `Resolved r -> lookup_class_type env r >>= fun t -> Ok (r, t)
-  | `LocalTy ((`LType _ as l), _) ->
-      Error (`LocalType (env, (l :> Ident.type_)))
-  | `LocalTy (`Na _, _) -> .
   | `SubstitutedCT s ->
       resolve_class_type env s >>= fun (p, m) -> Ok (`SubstitutedCT p, m)
   | `Class (_, parent, id) ->
@@ -1010,13 +1024,13 @@ and strip_canonical :
   | `Hidden x -> `Hidden (strip_canonical ~c x)
   | `OpaqueModule x -> `OpaqueModule (strip_canonical ~c x)
   | `Substituted x -> `Substituted (strip_canonical ~c x)
-  | `Identifier _ | `LocalMod _ | `Apply _ | `Module _ -> path
+  | `Identifier _ | `Apply _ | `Module _ -> path
 
 and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
     =
  fun env path ->
   match path with
-  | `LocalMod _ | `Identifier _ -> path
+  | `Identifier _ -> path
   | `Substituted x -> `Substituted (reresolve_module env x)
   | `Apply (functor_path, argument_path) ->
       `Apply
@@ -1224,7 +1238,7 @@ and reresolve_module_type :
     Env.t -> Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
  fun env path ->
   match path with
-  | `LocalModTy _ | `Identifier _ -> path
+  | `Identifier _ -> path
   | `SubstitutedMT x -> `SubstitutedMT (reresolve_module_type env x)
   | `ModuleType (parent, name) -> `ModuleType (reresolve_parent env parent, name)
   | `CanonicalModuleType (p1, (`Resolved _ as p2')) ->
@@ -1243,7 +1257,7 @@ and reresolve_type : Env.t -> Cpath.Resolved.type_ -> Cpath.Resolved.type_ =
  fun env path ->
   let result =
     match path with
-    | `Identifier _ | `LocalTy _ | `CoreType _ -> path
+    | `Identifier _ | `CoreType _ -> path
     | `SubstitutedT s -> `SubstitutedT (reresolve_type env s)
     | `SubstitutedCT s -> `SubstitutedCT (reresolve_class_type env s)
     | `Unbox t -> `Unbox (reresolve_type env t)
@@ -1266,7 +1280,7 @@ and reresolve_class_type :
  fun env path ->
   let result =
     match path with
-    | `Identifier _ | `LocalTy _ -> path
+    | `Identifier _ -> path
     | `SubstitutedCT s -> `SubstitutedCT (reresolve_class_type env s)
     | `Class (p, n) -> `Class (reresolve_parent env p, n)
     | `ClassType (p, n) -> `ClassType (reresolve_parent env p, n)
@@ -1798,7 +1812,6 @@ and find_external_module_path :
       find_external_module_path y >>= fun y -> Some (`Subst (x, y))
   | `Module (p, n) ->
       find_external_parent_path p >>= fun p -> Some (`Module (p, n))
-  | `LocalMod x -> Some (`LocalMod x)
   | `Substituted x ->
       find_external_module_path x >>= fun x -> Some (`Substituted x)
   | `Canonical (x, y) ->
@@ -1819,7 +1832,6 @@ and find_external_module_type_path :
   match p with
   | `ModuleType (p, name) ->
       find_external_parent_path p >>= fun p -> Some (`ModuleType (p, name))
-  | `LocalModTy _ -> Some p
   | `SubstT (x, y) ->
       find_external_module_type_path x >>= fun x ->
       find_external_module_type_path y >>= fun y -> Some (`SubstT (x, y))

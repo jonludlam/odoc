@@ -6,51 +6,52 @@ open Odoc_model.Names
 open Odoc_model.Paths.Fragment
 
 type root =
-  ( Cpath.lmod,
-    Cpath.lmodty,
+  ( Odoc_model.Paths.local_parent,
     Cpath.pty,
     Odoc_model.Paths.canon )
   Resolved.root_gen
 
 type resolved_signature =
-  ( Cpath.lmod,
-    Cpath.lmodty,
+  ( Odoc_model.Paths.local_parent,
     Cpath.pty,
     Odoc_model.Paths.canon )
   Resolved.Signature.gen
 
 type resolved_module =
-  ( Cpath.lmod,
-    Cpath.lmodty,
+  ( Odoc_model.Paths.local_parent,
     Cpath.pty,
     Odoc_model.Paths.canon )
   Resolved.Module.gen
 
 type resolved_module_type =
-  ( Cpath.lmod,
-    Cpath.lmodty,
+  ( Odoc_model.Paths.local_parent,
     Cpath.pty,
     Odoc_model.Paths.canon )
   Resolved.ModuleType.gen
 
 type resolved_type =
-  ( Cpath.lmod,
-    Cpath.lmodty,
+  ( Odoc_model.Paths.local_parent,
     Cpath.pty,
     Odoc_model.Paths.canon )
   Resolved.Type.gen
 
 type signature =
-  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) Signature.gen
+  ( Odoc_model.Paths.local_parent,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  Signature.gen
 
 type module_ =
-  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) Module.gen
+  (Odoc_model.Paths.local_parent, Cpath.pty, Odoc_model.Paths.canon) Module.gen
 
 type module_type =
-  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) ModuleType.gen
+  ( Odoc_model.Paths.local_parent,
+    Cpath.pty,
+    Odoc_model.Paths.canon )
+  ModuleType.gen
 
 type type_ =
-  (Cpath.lmod, Cpath.lmodty, Cpath.pty, Odoc_model.Paths.canon) Type.gen
+  (Odoc_model.Paths.local_parent, Cpath.pty, Odoc_model.Paths.canon) Type.gen
 
 type resolved_base_name =
   | RBase of root

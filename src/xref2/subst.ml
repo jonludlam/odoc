@@ -216,17 +216,14 @@ let rec resolved_module_path :
     t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_ =
  fun s p ->
   match p with
-  | `LocalMod (`LModule _ as id) -> (
+  | `Identifier (`Module (`Local i, n)) -> (
+      let id : Ident.module_ = `Module (`Local i, n) in
       if List.mem id s.path_invalidating_modules then raise Invalidated;
-      match
-        try Some (ModuleMap.find (id :> Ident.module_) s.module_)
-        with _ -> None
-      with
-      | Some (`Renamed x) -> `LocalMod (x :> Cpath.lmod)
+      match try Some (ModuleMap.find id s.module_) with _ -> None with
+      | Some (`Renamed x) -> `Identifier (x :> Cpath.Id.module_)
       | Some (`Prefixed (_p, rp)) -> rp
       | Some `Substituted -> `Substituted p
       | None -> p)
-  | `LocalMod (`Na _) -> .
   | `Identifier _ -> p
   | `Apply (p1, p2) ->
       `Apply (resolved_module_path s p1, resolved_module_path s p2)
@@ -279,16 +276,13 @@ and module_path : t -> Cpath.module_ -> Cpath.module_ =
   | `Dot (p', str) -> `Dot (module_path s p', str)
   | `Module (pty, p', str) -> `Module (pty, resolved_parent_path s p', str)
   | `Apply (p1, p2) -> `Apply (module_path s p1, module_path s p2)
-  | `LocalMod ((`LModule _ as id), b) -> (
-      match
-        try Some (ModuleMap.find (id :> Ident.module_) s.module_)
-        with _ -> None
-      with
+  | `Identifier (`Module (`Local i, n), b) -> (
+      let id : Ident.module_ = `Module (`Local i, n) in
+      match try Some (ModuleMap.find id s.module_) with _ -> None with
       | Some (`Prefixed (p, _rp)) -> p
-      | Some (`Renamed x) -> `LocalMod ((x :> Cpath.lmod), b)
+      | Some (`Renamed x) -> `Identifier ((x :> Cpath.Id.module_), b)
       | Some `Substituted -> `Substituted p
-      | None -> `LocalMod (id, b))
-  | `LocalMod (`Na _, _) -> .
+      | None -> p)
   | `Identifier _ -> p
   | `Substituted p -> `Substituted (module_path s p)
   | `Root _ -> p
@@ -299,15 +293,15 @@ and resolved_module_type_path :
     (Cpath.Resolved.module_type, ModuleType.expr) or_replaced =
  fun s p ->
   match p with
-  | `LocalModTy (`LModuleType _ as id) -> (
+  | `Identifier (`ModuleType (`Local i, n)) -> (
+      let id : Ident.module_type = `ModuleType (`Local i, n) in
       if ModuleTypeMap.mem id s.module_type_replacement then
         Replaced (ModuleTypeMap.find id s.module_type_replacement)
       else
         match ModuleTypeMap.find id s.module_type with
         | `Prefixed (_p, rp) -> Not_replaced rp
-        | `Renamed x -> Not_replaced (`LocalModTy (x :> Cpath.lmodty))
-        | exception Not_found -> Not_replaced (`LocalModTy id))
-  | `LocalModTy (`Na _) -> .
+        | `Renamed x -> Not_replaced (`Identifier (x :> Cpath.Id.module_type))
+        | exception Not_found -> Not_replaced p)
   | `Identifier _ -> Not_replaced p
   | `SubstitutedMT p ->
       resolved_module_type_path s p |> map_replaced (fun p -> `SubstitutedMT p)
@@ -347,7 +341,8 @@ and module_type_path :
         module_type_path s path')
   | `SubstitutedMT p ->
       module_type_path s p |> map_replaced (fun r -> `SubstitutedMT r)
-  | `LocalModTy ((`LModuleType _ as id), b) ->
+  | `Identifier (`ModuleType (`Local i, n), b) ->
+      let id : Ident.module_type = `ModuleType (`Local i, n) in
       if ModuleTypeMap.mem id s.module_type_replacement then
         Replaced (ModuleTypeMap.find id s.module_type_replacement)
       else
@@ -356,11 +351,10 @@ and module_type_path :
             try Some (ModuleTypeMap.find id s.module_type) with _ -> None
           with
           | Some (`Prefixed (p, _rp)) -> p
-          | Some (`Renamed x) -> `LocalModTy ((x :> Cpath.lmodty), b)
-          | None -> `LocalModTy (id, b)
+          | Some (`Renamed x) -> `Identifier ((x :> Cpath.Id.module_type), b)
+          | None -> p
         in
         Not_replaced r
-  | `LocalModTy (`Na _, _) -> .
   | `Identifier _ -> Not_replaced p
   | `DotMT (p, n) -> Not_replaced (`DotMT (module_path s p, n))
   | `ModuleType (pty, p', str) ->
@@ -373,15 +367,17 @@ and resolved_type_path :
  fun s p ->
   match p with
   | `CoreType _ as c -> Not_replaced c
-  | `LocalTy (`LType _ as id) -> (
+  | `Identifier
+      (`Type (`Local i, n) | `Class (`Local i, n) | `ClassType (`Local i, n))
+    -> (
+      let id : Ident.type_ = `Type (`Local i, n) in
       if TypeMap.mem id s.type_replacement then
         Replaced (TypeMap.find id s.type_replacement)
       else
         match try Some (TypeMap.find id s.type_) with Not_found -> None with
         | Some (`Prefixed (_p, rp)) -> Not_replaced rp
-        | Some (`Renamed x) -> Not_replaced (`LocalTy (x :> Cpath.lty))
-        | None -> Not_replaced (`LocalTy id))
-  | `LocalTy (`Na _) -> .
+        | Some (`Renamed x) -> Not_replaced (`Identifier (x :> Cpath.Id.type_))
+        | None -> Not_replaced p)
   | `CanonicalType (t1, t2) -> (
       match resolved_type_path s t1 with
       | Not_replaced t1' -> Not_replaced (`CanonicalType (t1', t2))
@@ -407,15 +403,18 @@ and type_path : t -> Cpath.type_ -> Cpath.type_ type_or_replaced =
         type_path s path')
   | `SubstitutedT p -> type_path s p |> map_replaced (fun r -> `SubstitutedT r)
   | `Unbox p -> type_path s p |> map_replaced (fun r -> `Unbox r)
-  | `LocalTy ((`LType _ as id), b) -> (
+  | `Identifier
+      ( (`Type (`Local i, n) | `Class (`Local i, n) | `ClassType (`Local i, n)),
+        b ) -> (
+      let id : Ident.type_ = `Type (`Local i, n) in
       if TypeMap.mem id s.type_replacement then
         Replaced (TypeMap.find id s.type_replacement)
       else
         match try Some (TypeMap.find id s.type_) with Not_found -> None with
         | Some (`Prefixed (p, _rp)) -> Not_replaced p
-        | Some (`Renamed x) -> Not_replaced (`LocalTy ((x :> Cpath.lty), b))
-        | None -> Not_replaced (`LocalTy (id, b)))
-  | `LocalTy (`Na _, _) -> .
+        | Some (`Renamed x) ->
+            Not_replaced (`Identifier ((x :> Cpath.Id.type_), b))
+        | None -> Not_replaced p)
   | `Identifier _ -> Not_replaced p
   | `DotT (p, n) -> Not_replaced (`DotT (module_path s p, n))
   | `Type (pty, p, n) -> Not_replaced (`Type (pty, resolved_parent_path s p, n))
@@ -428,12 +427,13 @@ and resolved_class_type_path :
     t -> Cpath.Resolved.class_type -> Cpath.Resolved.class_type =
  fun s p ->
   match p with
-  | `LocalTy (`LType _ as id) -> (
+  | `Identifier (`Class (`Local i, n) | `ClassType (`Local i, n)) -> (
+      let id : Ident.type_ = `Type (`Local i, n) in
       match try Some (TypeMap.find id s.class_type) with _ -> None with
       | Some (`Prefixed (_p, rp)) -> rp
-      | Some (`Renamed x) -> `LocalTy (x :> Cpath.lty)
-      | None -> `LocalTy id)
-  | `LocalTy (`Na _) -> .
+      | Some (`Renamed x) ->
+          `Identifier (Ident.class_of_type x :> Cpath.Id.class_type)
+      | None -> p)
   | `Identifier _ -> p
   | `SubstitutedCT p -> `SubstitutedCT (resolved_class_type_path s p)
   | `ClassType (p, n) -> `ClassType (resolved_parent_path s p, n)
@@ -447,12 +447,13 @@ and class_type_path : t -> Cpath.class_type -> Cpath.class_type =
       with Invalidated ->
         let path' = Cpath.unresolve_resolved_class_type_path r in
         class_type_path s path')
-  | `LocalTy ((`LType _ as id), b) -> (
+  | `Identifier ((`Class (`Local i, n) | `ClassType (`Local i, n)), b) -> (
+      let id : Ident.type_ = `Type (`Local i, n) in
       match try Some (TypeMap.find id s.class_type) with _ -> None with
       | Some (`Prefixed (p, _rp)) -> p
-      | Some (`Renamed x) -> `LocalTy ((x :> Cpath.lty), b)
-      | None -> `LocalTy (id, b))
-  | `LocalTy (`Na _, _) -> .
+      | Some (`Renamed x) ->
+          `Identifier ((Ident.class_of_type x :> Cpath.Id.class_type), b)
+      | None -> p)
   | `Identifier _ -> p
   | `SubstitutedCT p -> `SubstitutedCT (class_type_path s p)
   | `DotT (p, n) -> `DotT (module_path s p, n)
@@ -910,7 +911,7 @@ and rename_bound_idents s sg =
   let new_module_id id =
     try
       match ModuleMap.find (id :> Ident.module_) s.module_ with
-      | `Renamed (`LModule _ as x) -> x
+      | `Renamed x -> x
       | `Prefixed (_, _) ->
           (* This is unusual but can happen when we have TypeOf expressions. It means
              we're already prefixing this module path, hence we can essentially rename
@@ -929,21 +930,21 @@ and rename_bound_idents s sg =
   let new_type_id id =
     try
       match TypeMap.find (id :> Ident.type_) s.type_ with
-      | `Renamed (`LType _ as x) -> x
+      | `Renamed x -> x
       | `Prefixed (_, _) -> Ident.Rename.type_ id
     with Not_found -> Ident.Rename.type_ id
   in
   let new_class_id id =
     try
       match TypeMap.find (id :> Ident.type_) s.class_type with
-      | `Renamed (`LType _ as x) -> x
+      | `Renamed x -> x
       | `Prefixed (_, _) -> Ident.Rename.type_ id
     with Not_found -> Ident.Rename.type_ id
   in
   let new_class_type_id id =
     try
       match TypeMap.find (id :> Ident.type_) s.class_type with
-      | `Renamed (`LType _ as x) -> x
+      | `Renamed x -> x
       | `Prefixed (_, _) -> Ident.Rename.type_ id
     with Not_found -> Ident.Rename.type_ id
   in

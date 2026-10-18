@@ -4,11 +4,14 @@ open Odoc_model.Paths
 (* For simplicity keep a global counter *)
 let counter = ref 0
 
-type module_ = [ `LModule of ModuleName.t * int ]
+(* Local modules, module types and types are identifiers with a [`Local n]
+   parent, so a path can hold them as identifiers. *)
 
-type module_type = [ `LModuleType of ModuleTypeName.t * int ]
+type module_ = [ `Module of [ `Local of int ] * ModuleName.t ]
 
-type type_ = [ `LType of TypeName.t * int ]
+type module_type = [ `ModuleType of [ `Local of int ] * ModuleTypeName.t ]
+
+type type_ = [ `Type of [ `Local of int ] * TypeName.t ]
 
 type constructor = [ `LConstructor of ConstructorName.t * int ]
 
@@ -45,23 +48,29 @@ type any =
   | label
   | page ]
 
+(* A local class in a class path. Idents do not tell classes from types, but
+   class paths hold only class identifiers. *)
+let class_of_type : type_ -> [ `Class of [ `Local of int ] * TypeName.t ] =
+  function
+  | `Type (l, n) -> `Class (l, n)
+
 let fresh_int () =
   let n = !counter in
   incr counter;
   n
 
 let int_of_any : any -> int = function
-  | `LModule (_, i)
+  | `Module (`Local i, _)
   | `LException (_, i)
   | `LConstructor (_, i)
   | `LMethod (_, i)
-  | `LType (_, i)
+  | `Type (`Local i, _)
   | `LValue (_, i)
   | `LInstanceVariable (_, i)
   | `LField (_, i)
   | `LUnboxedField (_, i)
   | `LLabel (_, i)
-  | `LModuleType (_, i)
+  | `ModuleType (`Local i, _)
   | `LPage (_, i)
   | `LExtension (_, i) ->
       i
@@ -72,23 +81,23 @@ module Of_Identifier = struct
   let type_ : Type.t -> type_ =
    fun t ->
     let i = fresh_int () in
-    match t with `Type (_, n) -> `LType (n, i)
+    match t with `Type (_, n) -> `Type (`Local i, n)
 
   let module_ : Module.t -> module_ = function
     | `Module (_, n) | `Root (_, n) ->
         let i = fresh_int () in
-        `LModule (n, i)
+        `Module (`Local i, n)
     | `Parameter (_, n) ->
         let i = fresh_int () in
-        `LModule (n, i)
+        `Module (`Local i, n)
 
   let functor_parameter : FunctorParameter.t -> module_ =
-   fun (`Parameter (_, n)) -> `LModule (n, fresh_int ())
+   fun (`Parameter (_, n)) -> `Module (`Local (fresh_int ()), n)
 
   let module_type : ModuleType.t -> module_type =
    fun m ->
     let i = fresh_int () in
-    match m with `ModuleType (_, n) -> `LModuleType (n, i)
+    match m with `ModuleType (_, n) -> `ModuleType (`Local i, n)
 
   let extension : Extension.t -> extension =
    fun e -> match e with `Extension (_, n) -> `LExtension (n, fresh_int ())
@@ -100,10 +109,10 @@ module Of_Identifier = struct
    fun v -> match v with `Value (_, n) -> `LValue (n, fresh_int ())
 
   let class_ : Class.t -> type_ =
-   fun c -> match c with `Class (_, n) -> `LType (n, fresh_int ())
+   fun c -> match c with `Class (_, n) -> `Type (`Local (fresh_int ()), n)
 
   let class_type : ClassType.t -> type_ =
-   fun c -> match c with `ClassType (_, n) -> `LType (n, fresh_int ())
+   fun c -> match c with `ClassType (_, n) -> `Type (`Local (fresh_int ()), n)
 
   let method_ : Method.t -> method_ =
    fun c -> match c with `Method (_, n) -> `LMethod (n, fresh_int ())
@@ -118,25 +127,26 @@ module Of_Identifier = struct
 end
 
 module Name = struct
-  let typed_module : module_ -> ModuleName.t = function `LModule (n, _) -> n
+  let typed_module : module_ -> ModuleName.t = function
+    | `Module (`Local _, n) -> n
   let module_ m = ModuleName.to_string (typed_module m)
 
   let unsafe_module m = ModuleName.to_string_unsafe (typed_module m)
 
-  let typed_type : type_ -> TypeName.t = function `LType (n, _) -> n
+  let typed_type : type_ -> TypeName.t = function `Type (`Local _, n) -> n
   let type_ t = TypeName.to_string (typed_type t)
 
   let unsafe_type : type_ -> string = function
-    | `LType (n, _) -> TypeName.to_string_unsafe n
+    | `Type (`Local _, n) -> TypeName.to_string_unsafe n
 
   let module_type : module_type -> string = function
-    | `LModuleType (n, _) -> ModuleTypeName.to_string n
+    | `ModuleType (`Local _, n) -> ModuleTypeName.to_string n
 
   let unsafe_module_type : module_type -> string = function
-    | `LModuleType (n, _) -> ModuleTypeName.to_string_unsafe n
+    | `ModuleType (`Local _, n) -> ModuleTypeName.to_string_unsafe n
 
   let typed_module_type : module_type -> ModuleTypeName.t = function
-    | `LModuleType (n, _) -> n
+    | `ModuleType (`Local _, n) -> n
 
   let exception_ : exception_ -> string = function
     | `LException (n, _) -> ExceptionName.to_string n
@@ -169,13 +179,13 @@ end
 
 module Rename = struct
   let module_ : module_ -> module_ = function
-    | `LModule (n, _) -> `LModule (n, fresh_int ())
+    | `Module (`Local _, n) -> `Module (`Local (fresh_int ()), n)
 
   let module_type : module_type -> module_type = function
-    | `LModuleType (n, _) -> `LModuleType (n, fresh_int ())
+    | `ModuleType (`Local _, n) -> `ModuleType (`Local (fresh_int ()), n)
 
   let type_ : type_ -> type_ = function
-    | `LType (n, _) -> `LType (n, fresh_int ())
+    | `Type (`Local _, n) -> `Type (`Local (fresh_int ()), n)
 
   let exception_ : exception_ -> exception_ = function
     | `LException (n, _) -> `LException (n, fresh_int ())
@@ -192,9 +202,9 @@ let reset () = counter := 0
 
 let fmt_aux (id : any) : string * int =
   match id with
-  | `LModule (n, i) -> (ModuleName.to_string n, i)
-  | `LModuleType (n, i) -> (ModuleTypeName.to_string n, i)
-  | `LType (n, i) -> (TypeName.to_string n, i)
+  | `Module (`Local i, n) -> (ModuleName.to_string n, i)
+  | `ModuleType (`Local i, n) -> (ModuleTypeName.to_string n, i)
+  | `Type (`Local i, n) -> (TypeName.to_string n, i)
   | `LConstructor (n, i) -> (ConstructorName.to_string n, i)
   | `LField (n, i) -> (FieldName.to_string n, i)
   | `LUnboxedField (n, i) -> (UnboxedFieldName.to_string n, i)

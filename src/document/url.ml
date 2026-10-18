@@ -12,9 +12,6 @@ let render_path : Path.t -> string =
     | `OpaqueModuleType p -> render_resolved (p :> t)
     | `Subst (_, p) -> render_resolved (p :> t)
     | `SubstT (_, p) -> render_resolved (p :> t)
-    | `LocalMod (`Na _) -> .
-    | `LocalModTy (`Na _) -> .
-    | `LocalTy (`Na _) -> .
     | `Alias (dest, `Resolved src, _) ->
         if Path.Resolved.(is_hidden (src :> t)) then render_resolved (dest :> t)
         else render_resolved (src :> t)
@@ -72,9 +69,6 @@ let render_path : Path.t -> string =
     | `SubstitutedT m -> render_path (m :> Path.t)
     | `SubstitutedCT m -> render_path (m :> Path.t)
     | `Unbox t -> render_path (t :> Path.t)
-    | `LocalMod (`Na _, _) -> .
-    | `LocalModTy (`Na _, _) -> .
-    | `LocalTy (`Na _, _) -> .
     | `Module (`Na _, _, _) -> .
     | `ModuleType (`Na _, _, _) -> .
     | `Type (`Na _, _, _) -> .

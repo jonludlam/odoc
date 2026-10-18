@@ -177,6 +177,14 @@ module Identifier : sig
 
   val is_hidden : [< t ] -> bool
 
+  val is_local : Paths_types.local_parent Id.path_any_gen -> bool
+  (** Whether an identifier that a path holds is a local one: its parent is
+      [`Local n]. *)
+
+  val path_is_hidden : 'p Id.path_any_gen -> bool
+  (** Whether an identifier that a path holds has a hidden name. It does not
+      look at a local's parent. *)
+
   val compare : t -> t -> int
 
   val equal : ([< t ] as 'a) -> 'a -> bool
@@ -327,8 +335,14 @@ end
 
 (** Normal OCaml paths (i.e. the ones present in types) *)
 type na = Paths_types.na
-(** The type of the locals and typed parents of the paths of the model, which
-    have none. *)
+(** The type of the typed parents of the paths of the model, which have none. *)
+
+type global_parent = Paths_types.global_parent
+(** The parent of the identifiers in model paths. *)
+
+type local_parent = Paths_types.local_parent
+(** The parent of the identifiers in xref2 paths. An identifier with a
+    [`Local n] parent is a local identifier, numbered [n]. *)
 
 type canon = Paths_types.canon
 (** The canonical targets of model paths, which are model paths. A path type's
@@ -337,10 +351,10 @@ type canon = Paths_types.canon
 module rec Path : sig
   module Resolved : sig
     module Module : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.module_
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_path.module_
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
 
       val is_hidden : t -> weak_canonical_test:bool -> bool
 
@@ -356,10 +370,10 @@ module rec Path : sig
     end
 
     module ModuleType : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.module_type
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_path.module_type
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
 
       (* val is_hidden : t -> weak_canonical_test:bool -> bool *)
 
@@ -367,10 +381,10 @@ module rec Path : sig
     end
 
     module Type : sig
-      type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Resolved_path.type_
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_path.type_
 
-      type t = (na, na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
 
       (* val of_ident : Identifier.Path.Type.t -> t *)
 
@@ -380,37 +394,32 @@ module rec Path : sig
     end
 
     module Value : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.value
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_path.value
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
     end
 
     module ClassType : sig
-      type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
-        ( 'lmod,
-          'lmodty,
-          'pty,
-          'lty,
-          'canon )
-        Paths_types.Resolved_path.class_type
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_path.class_type
 
-      type t = (na, na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
 
       (* val of_ident : Identifier.Path.ClassType.t -> t *)
 
       (* val is_hidden : t -> bool *)
     end
 
-    type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Resolved_path.any
+    type ('p, 'pty, 'canon) gen =
+      ('p, 'pty, 'canon) Paths_types.Resolved_path.any
 
-    type t = (na, na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
 
-    type ('lmod, 'lmodty, 'pty, 'canon) parent_gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_path.parent
+    type ('p, 'pty, 'canon) parent_gen =
+      ('p, 'pty, 'canon) Paths_types.Resolved_path.parent
 
-    type parent = (na, na, na, canon) parent_gen
+    type parent = (global_parent, na, canon) parent_gen
 
     val parent_module : parent -> Module.t
     (** The parent of a resolved path of the model, which is a module. *)
@@ -422,58 +431,51 @@ module rec Path : sig
   end
 
   module Module : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Path.module_
+    type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Path.module_
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
 
     (* val root : t -> string option *)
   end
 
   module ModuleType : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Path.module_type
+    type ('p, 'pty, 'canon) gen =
+      ('p, 'pty, 'canon) Paths_types.Path.module_type
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
   module Type : sig
-    type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Path.type_
+    type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Path.type_
 
-    type t = (na, na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
   module Value : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Path.value
+    type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Path.value
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
   module ClassType : sig
-    type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Path.class_type
+    type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Path.class_type
 
-    type t = (na, na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
-  type ('lmod, 'lmodty, 'pty, 'lty, 'canon) gen =
-    ('lmod, 'lmodty, 'pty, 'lty, 'canon) Paths_types.Path.any
+  type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Path.any
 
-  type t = (na, na, na, na, canon) gen
+  type t = (global_parent, na, canon) gen
 
   val is_hidden : t -> bool
 
   val is_resolved_hidden_gen :
-    weak_canonical_test:bool ->
-    ('lmod, 'lmodty, 'pty, 'lty, canon) Resolved.gen ->
-    bool
-  (** The hidden check of resolved paths, for paths with any local identifiers.
-      A resolved local is not hidden. *)
+    weak_canonical_test:bool -> (local_parent, 'pty, canon) Resolved.gen -> bool
+  (** The hidden check of resolved paths, for paths that can hold local
+      identifiers. A resolved local is not hidden. *)
 
-  val is_hidden_gen : ('lmod, 'lmodty, 'pty, 'lty, canon) gen -> bool
-  (** The hidden check of paths, for paths with any local identifiers. An
+  val is_hidden_gen : (local_parent, 'pty, canon) gen -> bool
+  (** The hidden check of paths, for paths that can hold local identifiers. An
       unresolved local is hidden when its flag says so. *)
 end
 
@@ -481,140 +483,138 @@ end
 module Fragment : sig
   module Resolved : sig
     module Signature : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.signature
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_fragment.signature
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
     end
 
     module Module : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.module_
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_fragment.module_
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
     end
 
     module ModuleType : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.module_type
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_fragment.module_type
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
     end
 
     module Type : sig
-      type ('lmod, 'lmodty, 'pty, 'canon) gen =
-        ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.type_
+      type ('p, 'pty, 'canon) gen =
+        ('p, 'pty, 'canon) Paths_types.Resolved_fragment.type_
 
-      type t = (na, na, na, canon) gen
+      type t = (global_parent, na, canon) gen
     end
 
-    type ('lmod, 'lmodty, 'pty, 'canon) leaf_gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.leaf
+    type ('p, 'pty, 'canon) leaf_gen =
+      ('p, 'pty, 'canon) Paths_types.Resolved_fragment.leaf
 
-    type leaf = (na, na, na, canon) leaf_gen
+    type leaf = (global_parent, na, canon) leaf_gen
 
-    type ('lmod, 'lmodty, 'pty, 'canon) root_gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.root
+    type ('p, 'pty, 'canon) root_gen =
+      ('p, 'pty, 'canon) Paths_types.Resolved_fragment.root
 
-    type root = (na, na, na, canon) root_gen
+    type root = (global_parent, na, canon) root_gen
 
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Resolved_fragment.any
+    type ('p, 'pty, 'canon) gen =
+      ('p, 'pty, 'canon) Paths_types.Resolved_fragment.any
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
 
     val identifier : t -> Identifier.t option
 
     val is_hidden : t -> bool
 
-    type ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map = {
+    type ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) path_map = {
       module_ :
-        ('l1, 'lt1, 'p1, 'c1) Path.Resolved.Module.gen ->
-        ('l2, 'lt2, 'p2, 'c2) Path.Resolved.Module.gen;
+        ('q1, 'p1, 'c1) Path.Resolved.Module.gen ->
+        ('q2, 'p2, 'c2) Path.Resolved.Module.gen;
       module_type :
-        ('l1, 'lt1, 'p1, 'c1) Path.Resolved.ModuleType.gen ->
-        ('l2, 'lt2, 'p2, 'c2) Path.Resolved.ModuleType.gen;
+        ('q1, 'p1, 'c1) Path.Resolved.ModuleType.gen ->
+        ('q2, 'p2, 'c2) Path.Resolved.ModuleType.gen;
     }
     (** How to map the paths in a fragment. *)
 
     val map_signature :
-      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
-      ('l1, 'lt1, 'p1, 'c1) Signature.gen ->
-      ('l2, 'lt2, 'p2, 'c2) Signature.gen
+      ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) path_map ->
+      ('q1, 'p1, 'c1) Signature.gen ->
+      ('q2, 'p2, 'c2) Signature.gen
 
     val map_module :
-      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
-      ('l1, 'lt1, 'p1, 'c1) Module.gen ->
-      ('l2, 'lt2, 'p2, 'c2) Module.gen
+      ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) path_map ->
+      ('q1, 'p1, 'c1) Module.gen ->
+      ('q2, 'p2, 'c2) Module.gen
 
     val map_module_type :
-      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
-      ('l1, 'lt1, 'p1, 'c1) ModuleType.gen ->
-      ('l2, 'lt2, 'p2, 'c2) ModuleType.gen
+      ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) path_map ->
+      ('q1, 'p1, 'c1) ModuleType.gen ->
+      ('q2, 'p2, 'c2) ModuleType.gen
 
     val map_type :
-      ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) path_map ->
-      ('l1, 'lt1, 'p1, 'c1) Type.gen ->
-      ('l2, 'lt2, 'p2, 'c2) Type.gen
+      ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) path_map ->
+      ('q1, 'p1, 'c1) Type.gen ->
+      ('q2, 'p2, 'c2) Type.gen
   end
 
   module Signature : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.signature
+    type ('p, 'pty, 'canon) gen =
+      ('p, 'pty, 'canon) Paths_types.Fragment.signature
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
   module Module : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.module_
+    type ('p, 'pty, 'canon) gen =
+      ('p, 'pty, 'canon) Paths_types.Fragment.module_
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
   module ModuleType : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.module_type
+    type ('p, 'pty, 'canon) gen =
+      ('p, 'pty, 'canon) Paths_types.Fragment.module_type
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
   module Type : sig
-    type ('lmod, 'lmodty, 'pty, 'canon) gen =
-      ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.type_
+    type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Fragment.type_
 
-    type t = (na, na, na, canon) gen
+    type t = (global_parent, na, canon) gen
   end
 
-  type ('lmod, 'lmodty, 'pty, 'canon) leaf_gen =
-    ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.leaf
+  type ('p, 'pty, 'canon) leaf_gen =
+    ('p, 'pty, 'canon) Paths_types.Fragment.leaf
 
-  type leaf = (na, na, na, canon) leaf_gen
+  type leaf = (global_parent, na, canon) leaf_gen
 
-  type ('lmod, 'lmodty, 'pty, 'canon) gen =
-    ('lmod, 'lmodty, 'pty, 'canon) Paths_types.Fragment.any
+  type ('p, 'pty, 'canon) gen = ('p, 'pty, 'canon) Paths_types.Fragment.any
 
-  type t = (na, na, na, canon) gen
+  type t = (global_parent, na, canon) gen
 
   val map_signature :
-    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
-    ('l1, 'lt1, 'p1, 'c1) Signature.gen ->
-    ('l2, 'lt2, 'p2, 'c2) Signature.gen
+    ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) Resolved.path_map ->
+    ('q1, 'p1, 'c1) Signature.gen ->
+    ('q2, 'p2, 'c2) Signature.gen
 
   val map_module :
-    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
-    ('l1, 'lt1, 'p1, 'c1) Module.gen ->
-    ('l2, 'lt2, 'p2, 'c2) Module.gen
+    ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) Resolved.path_map ->
+    ('q1, 'p1, 'c1) Module.gen ->
+    ('q2, 'p2, 'c2) Module.gen
 
   val map_module_type :
-    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
-    ('l1, 'lt1, 'p1, 'c1) ModuleType.gen ->
-    ('l2, 'lt2, 'p2, 'c2) ModuleType.gen
+    ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) Resolved.path_map ->
+    ('q1, 'p1, 'c1) ModuleType.gen ->
+    ('q2, 'p2, 'c2) ModuleType.gen
 
   val map_type :
-    ('l1, 'lt1, 'p1, 'c1, 'l2, 'lt2, 'p2, 'c2) Resolved.path_map ->
-    ('l1, 'lt1, 'p1, 'c1) Type.gen ->
-    ('l2, 'lt2, 'p2, 'c2) Type.gen
+    ('q1, 'p1, 'c1, 'q2, 'p2, 'c2) Resolved.path_map ->
+    ('q1, 'p1, 'c1) Type.gen ->
+    ('q2, 'p2, 'c2) Type.gen
 end
 
 (** References present in documentation comments ([{!Foo.Bar}]) *)

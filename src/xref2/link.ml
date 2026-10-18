@@ -123,9 +123,6 @@ let rec should_reresolve : Paths.Path.Resolved.t -> bool =
   | `SubstitutedMT m -> should_reresolve (m :> t)
   | `SubstitutedT m -> should_reresolve (m :> t)
   | `SubstitutedCT m -> should_reresolve (m :> t)
-  | `LocalMod (`Na _) -> .
-  | `LocalModTy (`Na _) -> .
-  | `LocalTy (`Na _) -> .
 
 and should_resolve : Paths.Path.t -> bool =
  fun p -> match p with `Resolved p -> should_reresolve p | _ -> true

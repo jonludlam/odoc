@@ -569,7 +569,6 @@ module LangUtils = struct
             | `SubstitutedCT _
             | `Unbox _
             | `Canonical _ -> Format.fprintf ppf "unimplemented resolved_path"
-            | `LocalMod (`Na _) | `LocalModTy (`Na _) | `LocalTy (`Na _) -> .
 
         and path : Format.formatter -> Odoc_model.Paths.Path.t -> unit =
             fun ppf (p : Odoc_model.Paths.Path.t) ->
@@ -583,7 +582,6 @@ module LangUtils = struct
             | `DotV (parent,s) -> Format.fprintf ppf "%a.%a" path (parent :> Odoc_model.Paths.Path.t) ValueName.fmt s
             | `Apply (func,arg) -> Format.fprintf ppf "%a(%a)" path (func :> Odoc_model.Paths.Path.t) path (arg :> Odoc_model.Paths.Path.t)
             | `SubstitutedT _|`SubstitutedMT _|`Substituted _|`SubstitutedCT _|`Unbox _  -> Format.fprintf ppf "Unimplemented path"
-            | `LocalMod (`Na _, _) | `LocalModTy (`Na _, _) | `LocalTy (`Na _, _) -> .
             | `Module (`Na _, _, _) | `ModuleType (`Na _, _, _) | `Type (`Na _, _, _) -> .
             | `Class (`Na _, _, _) | `ClassType (`Na _, _, _) | `Value (`Na _, _, _) -> .
 

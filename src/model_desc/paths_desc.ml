@@ -235,9 +235,6 @@ module General_paths = struct
       | `SubstitutedT m -> C ("`SubstitutedT", (m :> p), path)
       | `SubstitutedCT m -> C ("`SubstitutedCT", (m :> p), path)
       | `Unbox x -> C ("`Unbox", (x :> p), path)
-      | `LocalMod (`Na _, _) -> .
-      | `LocalModTy (`Na _, _) -> .
-      | `LocalTy (`Na _, _) -> .
       | `Module (`Na _, _, _) -> .
       | `ModuleType (`Na _, _, _) -> .
       | `Type (`Na _, _, _) -> .
@@ -248,7 +245,7 @@ module General_paths = struct
   and resolved_path : rp t =
     Variant
       (function
-      | `Identifier x -> C ("`Identifier", x, identifier)
+      | `Identifier x -> C ("`Identifier", (x :> id_t), identifier)
       | `CoreType n -> C ("`CoreType", n, Names.typename)
       | `Subst (x1, x2) ->
           C
@@ -321,10 +318,7 @@ module General_paths = struct
       | `SubstitutedMT c -> C ("`SubstitutedMT", (c :> rp), resolved_path)
       | `SubstitutedT c -> C ("`SubstitutedT", (c :> rp), resolved_path)
       | `SubstitutedCT c -> C ("`SubstitutedCT", (c :> rp), resolved_path)
-      | `Unbox c -> C ("`Unbox", (c :> rp), resolved_path)
-      | `LocalMod (`Na _) -> .
-      | `LocalModTy (`Na _) -> .
-      | `LocalTy (`Na _) -> .)
+      | `Unbox c -> C ("`Unbox", (c :> rp), resolved_path))
 
   and hierarchy_reference : Paths.Reference.Hierarchy.t t =
     let tag_page_path =
