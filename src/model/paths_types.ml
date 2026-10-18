@@ -65,10 +65,16 @@ module Identifier = struct
   type root_module = [ `Root of container_page option * ModuleName.t ]
   (** @canonical Odoc_model.Paths.Identifier.RootModule.t *)
 
-  type module_ =
+  (* The identifiers that a path can hold as a local take the type of their
+     parent as a parameter. Only the outermost parent is generic: its own
+     parent is always a [signature]. The model uses [signature]. *)
+
+  type 'p module_gen =
     [ root_module
-    | `Module of signature * ModuleName.t
-    | `Parameter of signature * ModuleName.t ]
+    | `Module of 'p * ModuleName.t
+    | `Parameter of 'p * ModuleName.t ]
+
+  type module_ = signature module_gen
   (** @canonical Odoc_model.Paths.Identifier.Module.t *)
 
   type functor_parameter = [ `Parameter of signature * ModuleName.t ]
@@ -77,7 +83,9 @@ module Identifier = struct
   type functor_result = [ `Result of signature ]
   (** @canonical Odoc_model.Paths.Identifier.FunctorResult.t *)
 
-  type module_type = [ `ModuleType of signature * ModuleTypeName.t ]
+  type 'p module_type_gen = [ `ModuleType of 'p * ModuleTypeName.t ]
+
+  type module_type = signature module_type_gen
   (** @canonical Odoc_model.Paths.Identifier.ModuleType.t *)
 
   type type_ = [ `Type of signature * TypeName.t ]
@@ -152,22 +160,33 @@ module Identifier = struct
   type any = [ non_src | source_page | source_location | asset_file ]
   (** @canonical Odoc_model.Paths.Identifier.t *)
 
-  type path_module = [ module_ | functor_parameter | functor_result ]
+  type 'p path_module_gen = [ 'p module_gen | functor_result ]
+
+  type path_module = signature path_module_gen
   (** @canonical Odoc_model.Paths.Identifier.Path.Module.t *)
 
-  type path_module_type = module_type
+  type 'p path_module_type_gen = 'p module_type_gen
+
+  type path_module_type = signature path_module_type_gen
   (** @canonical Odoc_model.Paths.Identifier.Path.ModuleType.t *)
 
-  type path_type = [ type_ | class_ | class_type ]
+  type 'p path_class_type_gen =
+    [ `Class of 'p * TypeName.t | `ClassType of 'p * TypeName.t ]
+
+  type 'p path_type_gen = [ `Type of 'p * TypeName.t | 'p path_class_type_gen ]
+
+  type path_type = signature path_type_gen
   (** @canonical Odoc_model.Paths.Identifier.Path.Type.t *)
 
   type path_value = value
 
-  type path_class_type = [ class_ | class_type ]
+  type path_class_type = signature path_class_type_gen
   (** @canonical Odoc_model.Paths.Identifier.Path.ClassType.t *)
 
-  type path_any =
-    [ path_module | module_type | path_type | path_class_type | value ]
+  type 'p path_any_gen =
+    [ 'p path_module_gen | 'p path_module_type_gen | 'p path_type_gen | value ]
+
+  type path_any = signature path_any_gen
   (** @canonical Odoc_model.Paths.Identifier.Path.t *)
 
   type fragment_module = path_module
