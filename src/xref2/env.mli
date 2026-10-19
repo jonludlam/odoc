@@ -27,8 +27,6 @@ type resolver = {
   lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
       (** Finds the unit an identifier names, wherever it is on the search path.
           There is nothing to choose between, so no ambiguity. *)
-  scope_of_unit : Identifier.RootModule.t -> string list;
-      (** The libraries a unit was compiled against, as it recorded them. *)
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -80,9 +78,6 @@ val scope : t -> Library_scope.t
     ({!lookup_by_id}), which names its unit. A reference that goes into a unit
     and meets a path there, such as an alias, resolves that path in the unit's
     scope. *)
-
-val scope_of_unit : Identifier.RootModule.t -> t -> Library_scope.t
-(** The libraries the given unit recorded at compile time. *)
 
 val has_resolver : t -> bool
 

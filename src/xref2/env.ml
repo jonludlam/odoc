@@ -19,7 +19,6 @@ type resolver = {
   lookup_unit_by_path :
     Reference.Hierarchy.t -> (Lang.Compilation_unit.t, lookup_error) result;
   lookup_unit_by_id : Identifier.RootModule.t -> Lang.Compilation_unit.t option;
-  scope_of_unit : Identifier.RootModule.t -> string list;
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
@@ -196,11 +195,6 @@ let is_linking env = env.linking
 let set_resolver t resolver = { t with resolver = Some resolver }
 
 let scope t = t.scope
-
-let scope_of_unit id t =
-  match t.resolver with
-  | None -> Library_scope.any
-  | Some r -> Library_scope.of_libraries (r.scope_of_unit id)
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
 

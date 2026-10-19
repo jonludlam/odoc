@@ -65,7 +65,7 @@ module rec Module : sig
     source_loc : Odoc_model.Paths.Identifier.SourceLocation.t option;
     doc : CComment.docs;
     type_ : decl;
-    canonical : Odoc_model.Paths.Path.Module.t option;
+    canonical : Cpath.module_ option;
     hidden : bool;
   }
 end
@@ -233,7 +233,7 @@ and ModuleType : sig
   type t = {
     source_loc : Odoc_model.Paths.Identifier.SourceLocation.t option;
     doc : CComment.docs;
-    canonical : Odoc_model.Paths.Path.ModuleType.t option;
+    canonical : Cpath.module_type option;
     expr : expr option;
   }
 end
@@ -294,7 +294,7 @@ and TypeDecl : sig
   type t = {
     source_loc : Odoc_model.Paths.Identifier.SourceLocation.t option;
     doc : CComment.docs;
-    canonical : Odoc_model.Paths.Path.Type.t option;
+    canonical : Cpath.type_ option;
     equation : Equation.t;
     representation : Representation.t option;
   }

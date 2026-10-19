@@ -67,7 +67,7 @@ module rec Module : sig
     source_loc : Odoc_model.Paths.Identifier.SourceLocation.t option;
     doc : CComment.docs;
     type_ : decl;
-    canonical : Odoc_model.Paths.Path.Module.t option;
+    canonical : Cpath.module_ option;
     hidden : bool;
   }
 end =
@@ -242,7 +242,7 @@ and ModuleType : sig
   type t = {
     source_loc : Odoc_model.Paths.Identifier.SourceLocation.t option;
     doc : CComment.docs;
-    canonical : Odoc_model.Paths.Path.ModuleType.t option;
+    canonical : Cpath.module_type option;
     expr : expr option;
   }
 end =
@@ -304,7 +304,7 @@ and TypeDecl : sig
   type t = {
     source_loc : Odoc_model.Paths.Identifier.SourceLocation.t option;
     doc : CComment.docs;
-    canonical : Odoc_model.Paths.Path.Type.t option;
+    canonical : Cpath.type_ option;
     equation : Equation.t;
     representation : Representation.t option;
   }
@@ -952,11 +952,10 @@ module Fmt = struct
   and module_ c ppf m =
     let fmt_canonical ppf popt =
       if c.show_canonical then
-        Format.fprintf ppf "@ (canonical=%a)" (option c model_path) popt
+        Format.fprintf ppf "@ (canonical=%a)" (option c module_path) popt
       else ()
     in
-    Format.fprintf ppf "%a%a" (module_decl c) m.type_ fmt_canonical
-      (m.canonical :> path option)
+    Format.fprintf ppf "%a%a" (module_decl c) m.type_ fmt_canonical m.canonical
 
   and simple_expansion c is_include ppf (m : ModuleType.simple_expansion) =
     if c.show_expansions || (is_include && c.show_include_expansions) then
@@ -1259,7 +1258,7 @@ module Fmt = struct
           p2
     | `Hidden p1 -> wrap c "hidden" resolved_module_path ppf p1
     | `Canonical (p1, p2) ->
-        wrap2 c "canonical" resolved_module_path model_path ppf p1 (p2 :> path)
+        wrap2 c "canonical" resolved_module_path module_path ppf p1 p2
     | `OpaqueModule m -> wrap c "opaquemodule" resolved_module_path ppf m
 
   and module_path : config -> Format.formatter -> Cpath.module_ -> unit =
@@ -1289,8 +1288,8 @@ module Fmt = struct
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
           (ModuleTypeName.to_string m)
     | `CanonicalModuleType (m1, m2) ->
-        wrap2 c "canonicalt" resolved_module_type_path model_path ppf m1
-          (m2 :> path)
+        wrap2 c "canonicalt" resolved_module_type_path module_type_path ppf m1
+          m2
     | `OpaqueModuleType m ->
         wrap c "opaquemoduletype" resolved_module_type_path ppf m
     | `AliasModuleType (mt1, mt2) ->
@@ -1325,8 +1324,7 @@ module Fmt = struct
     | `Substituted x -> wrap c "substituted" resolved_type_path ppf x
     | `Unbox x -> wrap c "unbox" resolved_type_path ppf x
     | `CanonicalType (t1, t2) ->
-        wrap2 c "canonicaltype" resolved_type_path model_path ppf t1
-          (t2 :> path)
+        wrap2 c "canonicaltype" resolved_type_path type_path ppf t1 t2
     | `Class (p, t) ->
         Format.fprintf ppf "%a.%s" (resolved_parent_path c) p
           (TypeName.to_string t)
@@ -2033,7 +2031,8 @@ module Of_Lang = struct
     | `Alias (p1, p2) -> `Alias (recurse p1, module_path ident_map p2, None)
     | `Subst (p1, p2) ->
         `Subst (resolved_module_type_path ident_map p1, recurse p2)
-    | `Canonical (p1, p2) -> `Canonical (recurse p1, p2)
+    | `Canonical (p1, p2) ->
+        `Canonical (recurse p1, canonical_module_path ident_map p2)
     | `Hidden p1 -> `Hidden (recurse p1)
     | `OpaqueModule m -> `OpaqueModule (recurse m)
     | `Substituted m -> `Substituted (recurse m)
@@ -2051,7 +2050,9 @@ module Of_Lang = struct
     | `ModuleType (p, name) ->
         `ModuleType (`Module (resolved_module_path ident_map p), name)
     | `CanonicalModuleType (p1, p2) ->
-        `CanonicalModuleType (resolved_module_type_path ident_map p1, p2)
+        `CanonicalModuleType
+          ( resolved_module_type_path ident_map p1,
+            canonical_module_type_path ident_map p2 )
     | `OpaqueModuleType m ->
         `OpaqueModuleType (resolved_module_type_path ident_map m)
     | `AliasModuleType (m1, m2) ->
@@ -2074,7 +2075,8 @@ module Of_Lang = struct
         | `Local l -> `Local l
         | `Identifier _ -> `Identifier i)
     | `CanonicalType (p1, p2) ->
-        `CanonicalType (resolved_type_path ident_map p1, p2)
+        `CanonicalType
+          (resolved_type_path ident_map p1, canonical_type_path ident_map p2)
     | `Type (p, name) -> `Type (`Module (resolved_module_path ident_map p), name)
     | `Class (p, name) ->
         `Class (`Module (resolved_module_path ident_map p), name)
@@ -2149,6 +2151,16 @@ module Of_Lang = struct
         | `Local i -> `Local (i, b))
     | `DotT (path', x) -> `DotT (module_path ident_map path', x)
     | `Unbox t -> `Unbox (type_path ident_map t)
+
+  (* A canonical path is written from a root, so none of its names is local.
+     Converting it with no local idents keeps it free of them, and its roots
+     get the origin of the unit it was read from. *)
+  and canonical_module_path ident_map p = module_path (empty ident_map.origin) p
+
+  and canonical_module_type_path ident_map p =
+    module_type_path (empty ident_map.origin) p
+
+  and canonical_type_path ident_map p = type_path (empty ident_map.origin) p
 
   and value_path : _ -> Odoc_model.Paths.Path.Value.t -> Cpath.value =
    fun ident_map p ->
@@ -2251,7 +2263,7 @@ module Of_Lang = struct
     {
       TypeDecl.source_loc = ty.source_loc;
       doc = docs ident_map ty.doc;
-      canonical = ty.canonical;
+      canonical = Opt.map (canonical_type_path ident_map) ty.canonical;
       equation = type_equation ident_map ty.equation;
       representation =
         Opt.map (type_decl_representation ident_map) ty.representation;
@@ -2457,7 +2469,11 @@ module Of_Lang = struct
 
   and module_ ident_map m =
     let type_ = module_decl ident_map m.Odoc_model.Lang.Module.type_ in
-    let canonical = m.Odoc_model.Lang.Module.canonical in
+    let canonical =
+      Opt.map
+        (canonical_module_path ident_map)
+        m.Odoc_model.Lang.Module.canonical
+    in
     {
       Module.source_loc = m.source_loc;
       doc = docs ident_map m.doc;
@@ -2640,7 +2656,7 @@ module Of_Lang = struct
     {
       ModuleType.source_loc = m.source_loc;
       doc = docs ident_map m.doc;
-      canonical = m.canonical;
+      canonical = Opt.map (canonical_module_type_path ident_map) m.canonical;
       expr;
     }
 

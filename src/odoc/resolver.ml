@@ -234,31 +234,12 @@ let unit_name
 
 let unit_cache = Hashtbl.create 42
 
-(* The libraries each unit recorded at compile time, by identifier, filled as
-   units are loaded. Resolution that reaches a unit continues in these. *)
-let unit_libraries = Odoc_model.Paths.Identifier.Hashtbl.RootModule.create 42
-
-let remember_libraries (u : Odoc_file.content) =
-  match u with
-  | Odoc_file.Unit_content m ->
-      Odoc_model.Paths.Identifier.Hashtbl.RootModule.replace unit_libraries m.id
-        m.libraries
-  | Page_content _ | Impl_content _ | Asset_content _ -> ()
-
-let scope_of_unit id =
-  try Odoc_model.Paths.Identifier.Hashtbl.RootModule.find unit_libraries id
-  with Not_found -> []
-
 let load_unit_from_file path =
-  let r =
-    try Hashtbl.find unit_cache path
-    with Not_found ->
-      let r = Odoc_file.load path >>= fun u -> Ok u.content in
-      Hashtbl.add unit_cache path r;
-      r
-  in
-  (match r with Ok u -> remember_libraries u | Error _ -> ());
-  r
+  try Hashtbl.find unit_cache path
+  with Not_found ->
+    let r = Odoc_file.load path >>= fun u -> Ok u.content in
+    Hashtbl.add unit_cache path r;
+    r
 
 let self = ref None
 
@@ -449,7 +430,6 @@ let lookup_impl ~scope ap target_name =
 (** Add the current unit to the cache. No need to load other units with the same
     name. *)
 let add_unit_to_cache u =
-  remember_libraries u;
   let target_name =
     (match u with
     | Odoc_file.Page_content _ -> "page-"
@@ -623,7 +603,6 @@ let build_compile_env_for_unit
       lookup_unit_by_name;
       lookup_unit_by_path;
       lookup_unit_by_id = lookup_unit_by_id ap;
-      scope_of_unit;
       lookup_page;
       lookup_impl;
       lookup_asset;
@@ -661,7 +640,6 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
     lookup_unit_by_name;
     lookup_unit_by_path;
     lookup_unit_by_id = lookup_unit_by_id ap;
-    scope_of_unit;
     lookup_page;
     lookup_impl;
     lookup_asset;

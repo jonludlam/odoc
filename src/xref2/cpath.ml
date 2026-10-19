@@ -12,7 +12,7 @@ module rec Resolved : sig
     | `Subst of module_type * module_
     | `Hidden of module_
     | `Module of parent * ModuleName.t
-    | `Canonical of module_ * Path.Module.t
+    | `Canonical of module_ * Cpath.module_
     | `Apply of module_ * module_
     | `Alias of module_ * Cpath.module_ * module_ option
     | `OpaqueModule of module_ ]
@@ -24,14 +24,14 @@ module rec Resolved : sig
     | `ModuleType of parent * ModuleTypeName.t
     | `SubstT of module_type * module_type
     | `AliasModuleType of module_type * module_type
-    | `CanonicalModuleType of module_type * Path.ModuleType.t
+    | `CanonicalModuleType of module_type * Cpath.module_type
     | `OpaqueModuleType of module_type ]
 
   and type_ =
     [ `Local of Ident.type_
     | `Identifier of Identifier.Path.Type.t
     | `Substituted of type_
-    | `CanonicalType of type_ * Path.Type.t
+    | `CanonicalType of type_ * Cpath.type_
     | `CoreType of TypeName.t
     | `Type of parent * TypeName.t
     | `Class of parent * TypeName.t

@@ -26,7 +26,7 @@ should be resolved among the libraries [a] recorded, not those of [b].
 
   $ odoc link h/b/early.odoc -L b:h/b -L a:h/a -L w:h/w -L y:h/y
   $ canonical h/b/early.odocl
-  ["y/Lib"]
+  ["w/Lib"]
 
 In [Late], the canonical path is part of [Late]'s own content, like any name
 compile copies from another unit, so it is resolved among [b]'s libraries.
