@@ -78,7 +78,8 @@
   alias_scope
   module_type_scope
   module_type_alias_scope
-  hidden_alias_scope)
+  hidden_alias_scope
+  canonical_scope)
  (enabled_if
   (>= %{ocaml_version} 4.14.0)))
 
