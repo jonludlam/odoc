@@ -1917,12 +1917,11 @@ module Of_Lang = struct
     path_class_types : Ident.type_ Paths.Identifier.Maps.Path.ClassType.t;
     classes : Ident.type_ Paths.Identifier.Maps.Class.t;
     class_types : Ident.type_ Paths.Identifier.Maps.ClassType.t;
-    origin : string list option;
-        (** The libraries of the unit being read, which its root names are
-            resolved among. *)
+    origin : Library_scope.t;
+        (** Where the root names of what is read are resolved. *)
   }
 
-  let empty () =
+  let empty origin =
     let open Paths.Identifier.Maps in
     {
       modules = Module.empty;
@@ -1933,10 +1932,10 @@ module Of_Lang = struct
       path_class_types = Path.ClassType.empty;
       classes = Class.empty;
       class_types = ClassType.empty;
-      origin = None;
+      origin;
     }
 
-  let of_unit libraries = { (empty ()) with origin = Some libraries }
+  let of_unit libraries = empty (Library_scope.of_libraries libraries)
 
   let map_of_idents ids map =
     let open Paths.Identifier in
@@ -2551,7 +2550,9 @@ module Of_Lang = struct
           | StructInclude p -> StructInclude (module_path ident_map p)
         in
         (* see comment in module_type_expr below *)
-        let t_original_path = module_path (empty ()) t_original_path in
+        let t_original_path =
+          module_path (empty ident_map.origin) t_original_path
+        in
         TypeOf (t_desc, t_original_path)
     | Strengthen (e, p, a) ->
         let e = u_module_type_expr ident_map e in
@@ -2612,10 +2613,13 @@ module Of_Lang = struct
         in
         let t_expansion = option simple_expansion ident_map t_expansion in
         (* Nb, we _never_ want to relativize this path, because this should always be
-           the _original_ path. That's why we're passing in (empty()) rather than
-           ident_map. We don't leave it as a Lang path because we'll occasionally
-           _create_ a `TypeOf` expression as part of fragmap *)
-        let t_original_path = module_path (empty ()) t_original_path in
+           the _original_ path. That's why we're passing in an empty map rather
+           than ident_map. We don't leave it as a Lang path because we'll
+           occasionally _create_ a `TypeOf` expression as part of fragmap.
+           Its root names still come from the unit being read. *)
+        let t_original_path =
+          module_path (empty ident_map.origin) t_original_path
+        in
         ModuleType.(TypeOf { t_desc; t_original_path; t_expansion })
     | Lang.ModuleType.Strengthen s ->
         let s' =

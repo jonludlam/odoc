@@ -176,37 +176,49 @@ let print_short c elt =
   let open Component.Fmt in
   match elt with
   | Element.Module m ->
-      let m' = Component.Of_Lang.(module_ (empty ()) m) in
+      let m' =
+        Component.Of_Lang.(module_ (empty Odoc_xref2.Library_scope.any) m)
+      in
       Format.fprintf Format.std_formatter "@[<v 2>module %a %a@]"
         (model_identifier c)
         (m.id :> Odoc_model.Paths.Identifier.t)
         (module_ c) m'
   | Element.ModuleType m ->
-      let m' = Component.Of_Lang.(module_type (empty ()) m) in
+      let m' =
+        Component.Of_Lang.(module_type (empty Odoc_xref2.Library_scope.any) m)
+      in
       Format.fprintf Format.std_formatter "@[<v 2>module type %a %a@]"
         (model_identifier c)
         (m.id :> Odoc_model.Paths.Identifier.t)
         (module_type c) m'
   | Element.Type t ->
-      let t' = Component.Of_Lang.(type_decl (empty ()) t) in
+      let t' =
+        Component.Of_Lang.(type_decl (empty Odoc_xref2.Library_scope.any) t)
+      in
       Format.fprintf Format.std_formatter "@[<v 2>type %a %a@]"
         (model_identifier c)
         (t.id :> Odoc_model.Paths.Identifier.t)
         (type_decl c) t'
   | Element.Value v ->
-      let v' = Component.Of_Lang.(value (empty ()) v) in
+      let v' =
+        Component.Of_Lang.(value (empty Odoc_xref2.Library_scope.any) v)
+      in
       Format.fprintf Format.std_formatter "@[<v 2>val %a %a@]"
         (model_identifier c)
         (v.id :> Odoc_model.Paths.Identifier.t)
         (value c) v'
   | Element.ClassType ct ->
-      let ct' = Component.Of_Lang.(class_type (empty ()) ct) in
+      let ct' =
+        Component.Of_Lang.(class_type (empty Odoc_xref2.Library_scope.any) ct)
+      in
       Format.fprintf Format.std_formatter "@[<v 2>val %a %a@]"
         (model_identifier c)
         (ct.id :> Odoc_model.Paths.Identifier.t)
         (class_type c) ct'
   | Element.Class cls ->
-      let cls' = Component.Of_Lang.(class_ (empty ()) cls) in
+      let cls' =
+        Component.Of_Lang.(class_ (empty Odoc_xref2.Library_scope.any) cls)
+      in
       Format.fprintf Format.std_formatter "@[<v 2>val %a %a@]"
         (model_identifier c)
         (cls.id :> Odoc_model.Paths.Identifier.t)
@@ -235,7 +247,10 @@ let run inp short long_paths show_canonical show_expansions
   | Unit_content u -> (
       match (short, ref, u.content) with
       | true, None, Module sg ->
-          let sg' = Odoc_xref2.Component.Of_Lang.(signature (empty ()) sg) in
+          let sg' =
+            Odoc_xref2.Component.Of_Lang.(
+              signature (empty Odoc_xref2.Library_scope.any) sg)
+          in
           Format.printf "%a\n%!" Odoc_xref2.Component.Fmt.(signature c) sg';
           Ok ()
       | _, Some r, Module sg -> (

@@ -9,18 +9,7 @@ type path_query = [ `Path of Reference.Hierarchy.t | `Name of string ]
 
 type lookup_error = [ `Not_found ]
 
-module Library_scope : sig
-  type t = private
-    | Scoped of string list
-        (** Among these libraries alone. The list is never empty. *)
-    | Any  (** Anywhere on the search path. *)
-
-  val any : t
-
-  val of_libraries : string list -> t
-  (** [of_libraries libs] is [Scoped libs], or [Any] when [libs] is empty: a
-      unit that recorded no libraries is not limited. *)
-end
+module Library_scope = Library_scope
 
 type resolver = {
   open_units : string list;
@@ -76,10 +65,12 @@ val with_recorded_lookups : t -> (t -> 'a) -> LookupTypeSet.t * 'a
 
 val set_resolver : t -> resolver -> t
 
-val with_scope : Library_scope.t -> t -> t
-(** [with_scope scope env] resolves names in [scope] from now on. Resolution
-    that has reached a unit continues in that unit's libraries, since those are
-    what the compiler could see when the unit was built.
+val scope : t -> Library_scope.t
+(** The scope the env was created with ({!env_of_unit}, {!env_of_impl}): the
+    libraries the unit being compiled or linked recorded. The root names read
+    from that unit are resolved in it. Resolution that has reached another unit
+    continues in that unit's libraries, since those are what the compiler could
+    see when the unit was built.
 
     The scope limits one kind of lookup only: the root module of a path, looked
     up by name ({!lookup_root_module}). A path is written by the compiler, or in
@@ -172,7 +163,7 @@ val lookup_root_module_in :
 
 val lookup_root_module : Odoc_model.Names.ModuleName.t -> t -> root option
 (** For a path: looks up its root module by name, in the current library scope
-    (see {!with_scope}). A reference's root is looked up by {!lookup_by_name}
+    (see {!scope}). A reference's root is looked up by {!lookup_by_name}
     instead. *)
 
 type 'a scope constraint 'a = [< Component.Element.any ]
@@ -247,14 +238,22 @@ val open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t
 val open_page : Lang.Page.t -> t -> t
 (** Add a page content to the env. *)
 
-val env_of_unit : Lang.Compilation_unit.t -> linking:bool -> resolver -> t
-(** Create a new env with a module initially opened. *)
+val env_of_unit :
+  Lang.Compilation_unit.t ->
+  linking:bool ->
+  scope:Library_scope.t ->
+  resolver ->
+  t
+(** Create a new env with a module initially opened. [scope] is set before the
+    units given with [--open] are opened, so that their root names are resolved
+    in it. *)
 
 val env_of_page : Lang.Page.t -> resolver -> t
 (** Create a new env for a page. *)
 
-val env_of_impl : Lang.Implementation.t -> resolver -> t
-(** Create a new env for an implementation. *)
+val env_of_impl :
+  Lang.Implementation.t -> scope:Library_scope.t -> resolver -> t
+(** Create a new env for an implementation. [scope] is as for {!env_of_unit}. *)
 
 val env_for_reference : resolver -> t
 (** Create a new env for a reference. *)

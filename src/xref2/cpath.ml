@@ -56,9 +56,9 @@ and Cpath : sig
     | `Substituted of module_
     | `Local of Ident.module_ * bool
     | `Identifier of Identifier.Path.Module.t * bool
-    | `Root of ModuleName.t * string list option
-      (** The libraries of the unit the name was read from, if known: the name
-          is resolved among them, wherever the path has travelled. *)
+    | `Root of ModuleName.t * Library_scope.t
+      (** Where the name is resolved, wherever the path has travelled: among the
+          libraries of the unit it was read from. *)
     | `Dot of module_ * ModuleName.t
     | `Module of Resolved.parent * ModuleName.t (* Like dot, but typed *)
     | `Apply of module_ * module_ ]

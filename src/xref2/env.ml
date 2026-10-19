@@ -10,12 +10,7 @@ type path_query = [ `Path of Reference.Hierarchy.t | `Name of string ]
 
 type lookup_error = [ `Not_found ]
 
-module Library_scope = struct
-  type t = Scoped of string list | Any
-
-  let any = Any
-  let of_libraries = function [] -> Any | libs -> Scoped libs
-end
+module Library_scope = Library_scope
 
 type resolver = {
   open_units : string list;
@@ -200,12 +195,11 @@ let is_linking env = env.linking
 
 let set_resolver t resolver = { t with resolver = Some resolver }
 
-let with_scope scope t =
-  if scope = t.scope then t else { t with scope; id = unique_id () }
+let scope t = t.scope
 
 let scope_of_unit id t =
   match t.resolver with
-  | None -> Library_scope.Any
+  | None -> Library_scope.any
   | Some r -> Library_scope.of_libraries (r.scope_of_unit id)
 
 let has_resolver t = match t.resolver with None -> false | _ -> true
@@ -237,7 +231,7 @@ let empty =
     elts = ElementsByName.empty;
     ids = ElementsById.empty;
     resolver = None;
-    scope = Library_scope.Any;
+    scope = Library_scope.any;
     recorder = None;
     ambiguous_labels = Identifier.Maps.Label.empty;
     ambiguous_unboxed_labels = Identifier.Maps.Label.empty;
@@ -594,7 +588,7 @@ let lookup_by_id (scope : 'a scope) id env : 'a option =
    scope, so this lookup is not limited to the libraries the unit records. *)
 let lookup_root_module_fallback name t =
   match
-    lookup_root_module_in Library_scope.Any (ModuleName.make_std name) t
+    lookup_root_module_in Library_scope.any (ModuleName.make_std name) t
   with
   | Some (Resolved (_, id, m)) ->
       Some
@@ -733,7 +727,7 @@ let add_functor_parameter : Lang.FunctorParameter.t -> t -> t =
       let id = (n.id :> Paths.Identifier.Path.Module.t) in
       let m =
         let open Component.Of_Lang in
-        mk_functor_parameter (module_type_expr (empty ()) n.expr)
+        mk_functor_parameter (module_type_expr (empty t.scope) n.expr)
       in
       add_module id
         (Component.Delayed.put_val m)
@@ -748,7 +742,7 @@ let add_module_arg : Lang.TypeExpr.Module.t -> t -> t =
       Lang.ModuleType.Path { p_path = p.package.path; p_expansion = None }
     in
     let open Component.Of_Lang in
-    mk_functor_parameter (module_type_expr (empty ()) expr)
+    mk_functor_parameter (module_type_expr (empty t.scope) expr)
   in
   add_module id
     (Component.Delayed.put_val m)
@@ -810,7 +804,7 @@ let open_class_signature : Lang.ClassSignature.t -> t -> t =
       (fun env orig ->
         match orig with
         | Lang.ClassSignature.Method m ->
-            let ty = method_ (empty ()) m in
+            let ty = method_ (empty env.scope) m in
             add_method m.Lang.Method.id ty env
         | _ -> env)
       env s.items
@@ -820,7 +814,7 @@ let rec open_signature : Lang.Signature.t -> t -> t =
   let open Of_Lang in
   let module L = Lang in
   fun s e ->
-    let ident_map = empty () in
+    let ident_map = empty e.scope in
     List.fold_left
       (fun env orig ->
         match ((orig : L.Signature.item), env.linking) with
@@ -880,7 +874,7 @@ let open_type_substitution : Odoc_model.Lang.TypeDecl.t -> t -> t =
  fun t env ->
   let open Component in
   let open Of_Lang in
-  let ty = type_decl (empty ()) t in
+  let ty = type_decl (empty env.scope) t in
   add_type t.Lang.TypeDecl.id ty env
 
 let open_module_substitution : Odoc_model.Lang.ModuleSubstitution.t -> t -> t =
@@ -888,13 +882,13 @@ let open_module_substitution : Odoc_model.Lang.ModuleSubstitution.t -> t -> t =
   let open Component in
   let open Of_Lang in
   let _id = Ident.Of_Identifier.module_ m.id in
-  let doc = docs (empty ()) m.doc in
+  let doc = docs (empty env.scope) m.doc in
   let ty =
     Component.Delayed.put (fun () ->
         Of_Lang.(
           module_of_module_substitution
             (*                  { empty with modules = [ (m.id, id) ] } *)
-            (empty ())
+            (empty env.scope)
             m))
   in
   add_module (m.id :> Identifier.Path.Module.t) ty doc env
@@ -904,7 +898,7 @@ let open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t =
   let open Component in
   let open Of_Lang in
   let ty =
-    module_type (empty ())
+    module_type (empty env.scope)
       {
         id = t.id;
         source_loc = None;
@@ -918,7 +912,7 @@ let open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t =
 let open_units resolver env =
   List.fold_left
     (fun env m ->
-      match resolver.lookup_unit_by_name ~scope:Library_scope.Any m with
+      match resolver.lookup_unit_by_name ~scope:Library_scope.any m with
       | Ok (Found unit) -> (
           match unit.content with
           | Module sg -> open_signature sg env
@@ -929,18 +923,18 @@ let open_units resolver env =
 let inherit_resolver env =
   match env.resolver with
   | Some r ->
-      let e = set_resolver empty r in
       (* Keep the scope: the documentation being resolved in the fresh
          environment belongs to the unit the scope names. *)
-      { (open_units r e) with scope = env.scope }
+      let e = { (set_resolver empty r) with scope = env.scope } in
+      open_units r e
   | None -> empty
 
-let env_of_unit t ~linking resolver =
+let env_of_unit t ~linking ~scope resolver =
   let open Lang.Compilation_unit in
   let initial_env =
     let m = module_of_unit t in
     let dm = Component.Delayed.put (fun () -> m) in
-    let env = { empty with linking } in
+    let env = { empty with linking; scope } in
     env |> add_module (t.id :> Identifier.Path.Module.t) dm m.doc
   in
   set_resolver initial_env resolver |> open_units resolver
@@ -951,8 +945,8 @@ let env_of_page page resolver =
   let initial_env = open_page page empty in
   set_resolver initial_env resolver |> open_units resolver
 
-let env_of_impl _impl resolver =
-  set_resolver empty resolver |> open_units resolver
+let env_of_impl _impl ~scope resolver =
+  set_resolver { empty with scope } resolver |> open_units resolver
 
 let env_for_reference resolver =
   set_resolver empty resolver |> open_units resolver

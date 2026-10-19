@@ -31,42 +31,49 @@ let resolved_module ?(weak = false) name (p : P.Resolved.Module.t) =
   case name
     (P.Resolved.Module.is_hidden ~weak_canonical_test:weak p)
     (Odoc_xref2.Cpath.is_resolved_module_hidden ~weak_canonical_test:weak
-       (Of_Lang.resolved_module_path (Of_Lang.empty ()) p))
+       (Of_Lang.resolved_module_path
+          (Of_Lang.empty Odoc_xref2.Library_scope.any)
+          p))
 
 let resolved_module_type name (p : P.Resolved.ModuleType.t) =
   case name
     (P.Resolved.is_hidden (p :> P.Resolved.t))
     (Odoc_xref2.Cpath.is_resolved_module_type_hidden
-       (Of_Lang.resolved_module_type_path (Of_Lang.empty ()) p))
+       (Of_Lang.resolved_module_type_path
+          (Of_Lang.empty Odoc_xref2.Library_scope.any)
+          p))
 
 let resolved_type name (p : P.Resolved.Type.t) =
   case name
     (P.Resolved.is_hidden (p :> P.Resolved.t))
     (Odoc_xref2.Cpath.is_resolved_type_hidden
-       (Of_Lang.resolved_type_path (Of_Lang.empty ()) p))
+       (Of_Lang.resolved_type_path
+          (Of_Lang.empty Odoc_xref2.Library_scope.any)
+          p))
 
 let module_ name (p : P.Module.t) =
   case name
     (P.is_hidden (p :> P.t))
     (Odoc_xref2.Cpath.is_module_hidden
-       (Of_Lang.module_path (Of_Lang.empty ()) p))
+       (Of_Lang.module_path (Of_Lang.empty Odoc_xref2.Library_scope.any) p))
 
 let module_type name (p : P.ModuleType.t) =
   case name
     (P.is_hidden (p :> P.t))
     (Odoc_xref2.Cpath.is_module_type_hidden
-       (Of_Lang.module_type_path (Of_Lang.empty ()) p))
+       (Of_Lang.module_type_path (Of_Lang.empty Odoc_xref2.Library_scope.any) p))
 
 let type_ name (p : P.Type.t) =
   case name
     (P.is_hidden (p :> P.t))
-    (Odoc_xref2.Cpath.is_type_hidden (Of_Lang.type_path (Of_Lang.empty ()) p))
+    (Odoc_xref2.Cpath.is_type_hidden
+       (Of_Lang.type_path (Of_Lang.empty Odoc_xref2.Library_scope.any) p))
 
 let class_type name (p : P.ClassType.t) =
   case name
     (P.is_hidden (p :> P.t))
     (Odoc_xref2.Cpath.is_class_type_hidden
-       (Of_Lang.class_type_path (Of_Lang.empty ()) p))
+       (Of_Lang.class_type_path (Of_Lang.empty Odoc_xref2.Library_scope.any) p))
 
 let () =
   print_endline "Resolved paths:";

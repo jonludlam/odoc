@@ -630,7 +630,7 @@ let build_compile_env_for_unit
       shape_reducer;
     }
   in
-  Env.env_of_unit m ~linking:false resolver
+  Env.env_of_unit m ~linking:false ~scope:Env.Library_scope.any resolver
 
 (** [important_digests] and [imports_map] only apply to modules. *)
 let build ?(imports_map = StringMap.empty) ?hierarchy_roots
@@ -673,7 +673,7 @@ let build_compile_env_for_impl t i =
     build_imports_map i.Odoc_model.Lang.Implementation.imports
   in
   let resolver = build ~imports_map t in
-  Env.env_of_impl i resolver
+  Env.env_of_impl i ~scope:Env.Library_scope.any resolver
 
 let build_link_env_for_unit t m =
   add_unit_to_cache (Odoc_file.Unit_content m);
@@ -682,7 +682,7 @@ let build_link_env_for_unit t m =
     Env.Library_scope.of_libraries m.Odoc_model.Lang.Compilation_unit.libraries
   in
   let resolver = build ~imports_map ?hierarchy_roots:t.libs ~scope t in
-  Env.env_of_unit m ~linking:true resolver |> Env.with_scope scope
+  Env.env_of_unit m ~linking:true ~scope resolver
 
 let build_link_env_for_impl t i =
   let imports_map =
@@ -692,7 +692,7 @@ let build_link_env_for_impl t i =
     Env.Library_scope.of_libraries i.Odoc_model.Lang.Implementation.libraries
   in
   let resolver = build ~imports_map ~scope t in
-  Env.env_of_impl i resolver |> Env.with_scope scope
+  Env.env_of_impl i ~scope resolver
 
 let build_env_for_page t p =
   add_unit_to_cache (Odoc_file.Page_content p);
