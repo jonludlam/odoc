@@ -712,8 +712,9 @@ examples below. They are:
 - [@since string] - declares from which version the element has been available
 - [@version string] - declares the version of the element itself
 - [@canonical string] - declares the path to this element's canonical instance.
-It can be applied to modules, module types, and types. See the {{!page-features.canonical}
-Language Features} page for more details
+It can be applied to modules, module types, and types. A prefix such as
+[/library_name/] names the library of its root, as in a path reference. See the
+{{!page-features.canonical} Language Features} page for more details
 
 The tag's content is read from the rest of the line. It is also uninterpreted,
 i.e., there shouldn't be any [odoc] markup.
