@@ -18,9 +18,14 @@ library it means.
 
 The reference reaches the server's [Content__Html], whose canonical path
 [Content.Html] means the server's [Content]. Each unit records its library, so
-the client's alias [Html] should be looked up among the client's libraries and
-the canonical path among the server's, and neither should be ambiguous.
+the client's alias [Html] is looked up among the client's libraries and is not
+ambiguous. The root of the canonical path is looked up in every library, like
+the root of a reference, so it is ambiguous, as in the current release. A
+prefix, as in [@canonical /server/Content.Html], would name the library.
 
   $ odoc link -L client:h/pkg/client -L server:h/pkg/server h/pkg/client/content.odoc
+  File "Content":
+  Ambiguous lookup. Possible files: Content
+  Content
   $ refs h/pkg/client/content.odocl
   ["server/Content server/Content__Html"]

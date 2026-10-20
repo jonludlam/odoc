@@ -2153,14 +2153,16 @@ module Of_Lang = struct
     | `Unbox t -> `Unbox (type_path ident_map t)
 
   (* A canonical path is written from a root, so none of its names is local.
-     Converting it with no local idents keeps it free of them, and its roots
-     get the origin of the unit it was read from. *)
-  and canonical_module_path ident_map p = module_path (empty ident_map.origin) p
+     Converting it with no local idents keeps it free of them. Like the root of
+     a reference, its root may be in any library: it names the place users
+     find an item, which is often in a library that depends on the unit. *)
+  and canonical_module_path _ident_map p =
+    module_path (empty Library_scope.any) p
 
-  and canonical_module_type_path ident_map p =
-    module_type_path (empty ident_map.origin) p
+  and canonical_module_type_path _ident_map p =
+    module_type_path (empty Library_scope.any) p
 
-  and canonical_type_path ident_map p = type_path (empty ident_map.origin) p
+  and canonical_type_path _ident_map p = type_path (empty Library_scope.any) p
 
   and value_path : _ -> Odoc_model.Paths.Path.Value.t -> Cpath.value =
    fun ident_map p ->

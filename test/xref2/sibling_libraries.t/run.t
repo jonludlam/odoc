@@ -28,19 +28,32 @@ Both libraries are in the reference scope of every unit, with [-L]. The
   >     odoc link -I h/pkg/$lib $L h/pkg/$lib/$m.odoc
   >   done
   > done
+  File "Content":
+  Ambiguous lookup. Possible files: Content
+  Content
+  File "Content":
+  Ambiguous lookup. Possible files: Content
+  Content
 
-Which library the root modules named in each unit come from. Each unit should
-stay on its own side: the alias [Html], the canonical path written on
-[Content__Html] and the alias [C] all mean a module of the unit's own library,
-and no lookup should be ambiguous. None of these names is among the imports of the
-unit that mentions it, so no digest tells the two libraries apart. What does
-is the libraries each unit recorded when it was compiled, which are its own.
-The reference [{!Content.Html}] in [Content]'s documentation names the unit
-itself, so it should not be ambiguous either.
+Which library the root modules named in each unit come from. The alias [Html]
+and the alias [C] mean a module of the unit's own library, so these lookups
+are not ambiguous. None of these names is among the imports of the unit that
+mentions it, so no digest tells the two libraries apart. What does is the
+libraries each unit recorded when it was compiled, which are its own. The
+reference [{!Content.Html}] in [Content]'s documentation names the unit
+itself, so it is not ambiguous either.
+
+The canonical path [Content.Html] written on [Content__Html] is different.
+Like the root of a reference, the root of a canonical path is looked up in
+every library, so [Content] is ambiguous: odoc says so above, and the client's
+canonical path can resolve to the server's [Content]. The current release
+does the same. A canonical path can name its library with a prefix, as in
+[@canonical /client/Content.Html], which dune can generate for a wrapped
+library.
 
   $ roots() { odoc_print $1 | jq -c '[.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
   $ roots h/pkg/client/content.odocl
-  ["client/Content","client/Content__Html"]
+  ["client/Content","client/Content__Html","server/Content"]
   $ roots h/pkg/client/wrap.odocl
   ["client/Content","client/Wrap"]
   $ roots h/pkg/server/content.odocl
@@ -62,6 +75,15 @@ each library, one by plain name, and a submodule of each.
   File "Content":
   Ambiguous lookup. Possible files: Content
   Content
+  File "Content":
+  Ambiguous lookup. Possible files: Content
+  Content
+  File "Content":
+  Ambiguous lookup. Possible files: Content
+  Content
+  File "Content":
+  Ambiguous lookup. Possible files: Content
+  Content
   $ refs() { odoc_print $1 | jq -c '[.. | objects | select(has("`Reference")) | .["`Reference"][0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique | join(" ")]'; }
 Where each reference on the page points, in the order they are written. The
 first two name a root module one library at a time, and a path reference says
@@ -74,11 +96,13 @@ root and no more, since [Content.Html] is an alias and [Content__Html] is
 looked up once the root is found. A page records no libraries, so what
 should settle it is the libraries each unit recorded when it was compiled:
 resolution that has reached the client's [Content] should carry on among the
-client's libraries. The sixth and seventh are in the module list's
-paragraphs, below.
+client's libraries. The fourth also names the server's [Content], through the
+canonical path on the client's [Content__Html], whose root is looked up in
+every library. The sixth and seventh are in the module list's paragraphs,
+below.
 
   $ refs h/pkg/page-all.odocl
-  ["client/Content","server/Content","server/Content","client/Content client/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html"]
+  ["client/Content","server/Content","server/Content","client/Content client/Content__Html server/Content","server/Content server/Content__Html","server/Content server/Content__Html","server/Content server/Content__Html"]
   $ modules() { odoc_print $1 | jq -c 'def libs: [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique; [.. | objects | select(has("`Modules")) | .["`Modules"][] | {shown: (.[0] | libs), says: (.[1] | libs)}]'; }
 A module list shows, beside each module it names, that module's own first
 paragraph. The paragraph is resolved as the page is linked, not as the module

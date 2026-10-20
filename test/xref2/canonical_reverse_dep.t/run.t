@@ -16,6 +16,6 @@ hidden, and link removes the equation of [User.t].
 
   $ odoc link h/core/user.odoc -L core:h/core -L pub:h/pub
   $ canonical h/core/user.odocl
-  []
+  ["pub/Pub"]
   $ odoc_print h/core/user.odocl | jq -c '.content.Module.items[0].Type[1].equation.manifest | if . == "None" then "no equation" else "equation" end'
-  "no equation"
+  "equation"

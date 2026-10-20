@@ -20,17 +20,24 @@ path, into [Late].
   $ odoc compile --output-dir h --parent-id b -L b:h/b -L a:h/a -L y:h/y b/late.cmti
   $ canonical() { odoc_print $1 | jq -c '[.. | objects | .["`Canonical"]? | select(. != null) | .[1] | .. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
 
-The canonical path [Lib.X] was written in [a], so it can only mean [w]'s
-[Lib]. In [Early], [M.X] comes from [A] at link time, and its canonical path
-should be resolved among the libraries [a] recorded, not those of [b].
+The author of [a] means [w]'s [Lib]. But the root of a canonical path is looked
+up in every library, like the root of a reference, so [Lib] is ambiguous: odoc
+says so, and takes one. The current release does the same. In [Early], [M.X]
+comes from [A] at link time.
 
   $ odoc link h/b/early.odoc -L b:h/b -L a:h/a -L w:h/w -L y:h/y
+  File "Lib":
+  Ambiguous lookup. Possible files: Lib
+  Lib
   $ canonical h/b/early.odocl
-  ["w/Lib"]
+  ["y/Lib"]
 
-In [Late], the canonical path is part of [Late]'s own content, like any name
-compile copies from another unit, so it is resolved among [b]'s libraries.
+In [Late], the canonical path is part of [Late]'s own content, copied by
+compile. It is ambiguous in the same way.
 
   $ odoc link h/b/late.odoc -L b:h/b -L a:h/a -L w:h/w -L y:h/y
+  File "Lib":
+  Ambiguous lookup. Possible files: Lib
+  Lib
   $ canonical h/b/late.odocl
   ["y/Lib"]
