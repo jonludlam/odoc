@@ -28,8 +28,7 @@ comes from [A] at link time.
 
   $ odoc link h/b/early.odoc -L b:h/b -L a:h/a -L w:h/w -L y:h/y
   File "Lib":
-  Ambiguous lookup. Possible files: Lib
-  Lib
+  Ambiguous lookup. Possible units: y/Lib, w/Lib
   $ canonical h/b/early.odocl
   ["y/Lib"]
 
@@ -38,8 +37,7 @@ compile. It is ambiguous in the same way.
 
   $ odoc link h/b/late.odoc -L b:h/b -L a:h/a -L w:h/w -L y:h/y
   File "Lib":
-  Ambiguous lookup. Possible files: Lib
-  Lib
+  Ambiguous lookup. Possible units: y/Lib, w/Lib
   $ canonical h/b/late.odocl
   ["y/Lib"]
 

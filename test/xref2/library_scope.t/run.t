@@ -19,8 +19,7 @@ and odoc says the lookup was ambiguous.
   $ odoc compile --output-dir i --parent-id pkg all.mld
   $ odoc link -P pkg:i/pkg -L client:i/pkg/client -L server:i/pkg/server -L x:i/pkg/x -L y:i/pkg/y i/pkg/page-all.odoc
   File "A":
-  Ambiguous lookup. Possible files: A
-  A
+  Ambiguous lookup. Possible units: pkg/y/A, pkg/x/A
   $ refs() { odoc_print $1 | jq -c '[.. | objects | select(has("`Reference")) | .["`Reference"][0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique | join(" ")]'; }
   $ refs i/pkg/page-all.odocl
   ["client/Content y/A","server/Content y/A"]

@@ -29,11 +29,9 @@ Both libraries are in the reference scope of every unit, with [-L]. The
   >   done
   > done
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
 
 Which library the root modules named in each unit come from. The alias [Html]
 and the alias [C] mean a module of the unit's own library, so these lookups
@@ -67,23 +65,17 @@ each library, one by plain name, and a submodule of each.
   $ odoc compile --output-dir h --parent-id pkg all.mld
   $ odoc link -P pkg:h/pkg $L h/pkg/page-all.odoc
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   $ refs() { odoc_print $1 | jq -c '[.. | objects | select(has("`Reference")) | .["`Reference"][0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique | join(" ")]'; }
 Where each reference on the page points, in the order they are written. The
 first two name a root module one library at a time, and a path reference says

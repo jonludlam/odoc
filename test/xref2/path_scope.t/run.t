@@ -60,8 +60,7 @@ mean, so odoc should say the lookup is ambiguous and take one.
   ["y","z","x"]
   $ odoc link h2/y/b.odoc -o h2/y/b.odocl -L y:h2/y -L x:h/x -L z:h/z -L w:h/w --custom-layout
   File "A":
-  Ambiguous lookup. Possible files: A
-  A
+  Ambiguous lookup. Possible units: z/A, x/A
   $ alias_target h2/y/b.odocl
   [{"`Resolved":{"`Identifier":{"`Root":[{"Some":{"`Page":["None","z"]}},"A"]}}}]
 
@@ -73,7 +72,6 @@ libraries. [C] records [x], but [z]'s [A] is on the search path too, so its
   $ odoc compile --output-dir h --parent-id y -L y:h/y -L x:h/x y/c.cmti
   $ odoc link h/y/c.odoc -o h/y/c.odocl -L y:h/y -L x:h/x -L z:h/z -L w:h/w --custom-layout
   File "A":
-  Ambiguous lookup. Possible files: A
-  A
+  Ambiguous lookup. Possible units: z/A, x/A
   $ reference h/y/c.odocl
   [{"`Resolved":{"`Identifier":{"`Root":[{"Some":{"`Page":["None","z"]}},"A"]}}}]

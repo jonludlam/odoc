@@ -25,7 +25,6 @@ prefix, as in [@canonical /server/Content.Html], would name the library.
 
   $ odoc link -L client:h/pkg/client -L server:h/pkg/server h/pkg/client/content.odoc
   File "Content":
-  Ambiguous lookup. Possible files: Content
-  Content
+  Ambiguous lookup. Possible units: pkg/server/Content, pkg/client/Content
   $ refs h/pkg/client/content.odocl
   ["server/Content server/Content__Html"]
