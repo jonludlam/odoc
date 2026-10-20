@@ -89,11 +89,9 @@ names the hidden unit itself. The link shows [X__Hid]'s expansion on
   $ cat ext2/ext.mli
   type t = B
   $ link h/pkg/z/hidden.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ show h/pkg/z/hidden.odocl
   module M/0 = resolved(hidden(root(pkg/x/X__Hid)))
-    => sig module E/1 = resolved(root(pkg/ext2/Ext)) end
+    => sig module E/1 = resolved(root(pkg/ext1/Ext)) end
 
 O.2. Expand an alias to a self-canonical module. [Ycan] has the canonical
 path [Canon.M], and [Canon] has [M = Ycan], so the link shows [Ycan]'s
@@ -107,12 +105,10 @@ written in [y], so [E] should be [ext1]'s [Ext], with no warning:
   
   module E = Ext
   $ link h/pkg/z/canon.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ show h/pkg/z/canon.odocl
   module M/0 =
     resolved(canonical(root(pkg/y/Ycan),resolved(root(pkg/z/Canon).M)))
-    => sig module E/1 = resolved(root(pkg/ext2/Ext)) end
+    => sig module E/1 = resolved(root(pkg/ext1/Ext)) end
 
 O.3. Recompute an [include]. [Incl] has [include module type of X.Inc].
 odoc recomputes the signature from [x]'s unit, so the [Ext] in it has the
@@ -128,11 +124,9 @@ So [Incl]'s table cannot give the root a meaning. [E] should be [ext1]'s [Ext], 
 no warning:
 
   $ link h/pkg/z/incl.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ show h/pkg/z/incl.odocl
   include module type of resolved(canonical(root(pkg/x/X).Inc,resolved(root(pkg/x/X).Inc)))
-    => sig module E/0 = resolved(root(pkg/ext2/Ext)) end
+    => sig module E/0 = resolved(root(pkg/ext1/Ext)) end
 
 O.4. Recompute [module type of]. [Typeof] has [M : module type of X.Mt]. The
 [Ext]s in [M]'s signature, in a module and in a module type, have the origin
@@ -141,15 +135,11 @@ O.4. Recompute [module type of]. [Typeof] has [M : module type of X.Mt]. The
   $ cat z/typeof.mli
   module M : module type of X.Mt
   $ link h/pkg/z/typeof.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ show h/pkg/z/typeof.odocl
   module M/0 : module type of resolved(canonical(root(pkg/x/X).Mt,resolved(root(pkg/x/X).Mt)))
     => sig
-      module E/1 = resolved(root(pkg/ext2/Ext))
-      module type S/2 = sig module E/3 = resolved(root(pkg/ext2/Ext)) end
+      module E/1 = resolved(root(pkg/ext1/Ext))
+      module type S/2 = sig module E/3 = resolved(root(pkg/ext1/Ext)) end
      end
 
 O.5. Expand a module type path. [Mtpath] has [M : X.Mt.S]. odoc expands
@@ -159,11 +149,9 @@ O.5. Expand a module type path. [Mtpath] has [M : X.Mt.S]. odoc expands
   $ cat z/mtpath.mli
   module M : X.Mt.S
   $ link h/pkg/z/mtpath.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ show h/pkg/z/mtpath.odocl
   module M/0 : r(canonical(root(pkg/x/X).Mt,resolved(root(pkg/x/X).Mt)).S)
-    => sig module E/1 = resolved(root(pkg/ext2/Ext)) end
+    => sig module E/1 = resolved(root(pkg/ext1/Ext)) end
 
 O.13. A recomputation that fails. Library [std] stands for the standard
 library, which dune does not document: [Nodoc] is built against it with

@@ -2036,6 +2036,8 @@ module Of_Lang = struct
       origin;
     }
 
+  let of_unit libraries = empty (Library_scope.of_libraries libraries)
+
   let map_of_idents ids map =
     let open Paths.Identifier in
     (* New types go into [types_new] and [path_types_new]

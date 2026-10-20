@@ -77,14 +77,6 @@ Linking with no warning would be wrong.
   >     odoc link -I h/pkg/$lib $L h/pkg/$lib/$m.odoc
   >   done
   > done
-  File "Content__Html":
-  Ambiguous lookup. Possible units: pkg/client/Content__Html, pkg/server/Content__Html
-  File "Content":
-  Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
-  File "Content__Html":
-  Ambiguous lookup. Possible units: pkg/client/Content__Html, pkg/server/Content__Html
-  File "Content":
-  Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
 
 Each line of the output below lists the resolved roots named in one unit,
 as [library/Unit], with no repeats. Through its aliases, each unit should
@@ -109,9 +101,9 @@ linked, because it adds no new name.
 
   $ roots() { odoc_print $1 | jq -c '[.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
   $ roots h/pkg/client/content.odocl
-  ["client/Content","server/Content__Html"]
+  ["client/Content","client/Content__Html"]
   $ roots h/pkg/client/wrap.odocl
-  ["client/Wrap","server/Content"]
+  ["client/Content","client/Wrap"]
   $ roots h/pkg/server/content.odocl
   ["server/Content","server/Content__Html"]
   $ roots h/pkg/server/wrap.odocl
@@ -141,20 +133,14 @@ the references in the module list's paragraphs.
   $ odoc link -P pkg:h/pkg $L h/pkg/page-all.odoc
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
-  File "Content__Html":
-  Ambiguous lookup. Possible units: pkg/client/Content__Html, pkg/server/Content__Html
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
-  File "Content__Html":
-  Ambiguous lookup. Possible units: pkg/client/Content__Html, pkg/server/Content__Html
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
-  File "Content__Html":
-  Ambiguous lookup. Possible units: pkg/client/Content__Html, pkg/server/Content__Html
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
 
@@ -204,7 +190,7 @@ Resolving either paragraph's [{!Content.Html}] would be wrong.
   r(root(pkg/client/Content))
   r(root(pkg/server/Content))
   r(root(pkg/server/Content))
-  r(alias(canonical(hidden(root(pkg/server/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/client/Content).Html))
+  r(alias(canonical(hidden(root(pkg/client/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/client/Content).Html))
   r(alias(canonical(hidden(root(pkg/server/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/server/Content).Html))
   modules: r(root(pkg/client/Content))
     r(alias(canonical(hidden(root(pkg/server/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/server/Content).Html))

@@ -72,8 +72,6 @@ records what odoc does, at compile and at link with every library.
   module X/0 : module type of resolved(root(pkg/a/A))
     => sig module M/1 = unresolvedroot(Ext) end
   $ odoc link -L n:h/pkg/n -L a:h/pkg/a -L ext1:h/pkg/ext1 -L ext2:h/pkg/ext2 h/pkg/n/n.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ odoc_print --short --long-paths --show-root-parents --show-expansions h/pkg/n/n.odocl
   module X/0 : module type of resolved(root(pkg/a/A))
-    => sig module M/1 = resolved(root(pkg/ext2/Ext)) end
+    => sig module M/1 = resolved(root(pkg/ext1/Ext)) end

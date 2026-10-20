@@ -825,6 +825,10 @@ module Of_Lang : sig
   (** [empty origin] is the map for reading something with no local identifiers
       yet. The root names it contains are resolved in [origin]. *)
 
+  val of_unit : string list -> map
+  (** [of_unit libraries] is the map for reading a unit that recorded
+      [libraries]: the root names it contains are resolved among them. *)
+
   val identifier :
     ('a -> 'b -> 'c) -> 'b -> 'a -> [> `Identifier of 'a | `Local of 'c ]
 

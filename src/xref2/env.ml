@@ -418,7 +418,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty Library_scope.any) m) in
+      let ty = Component.Of_Lang.(module_ (of_unit unit.libraries) m) in
       ty
   | Pack _p ->
       let m =
@@ -440,7 +440,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty Library_scope.any) m) in
+      let ty = Component.Of_Lang.(module_ (of_unit unit.libraries) m) in
       ty
 
 let lookup_root_module_in scope name env =

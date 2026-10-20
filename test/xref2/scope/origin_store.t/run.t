@@ -67,12 +67,8 @@ should mean [x]'s [X__Hid], with no warning:
 
   $ link() { odoc link -L ext1:h/pkg/ext1 -L ext2:h/pkg/ext2 -L x:h/pkg/x -L xv:h/pkg/xv -L z:h/pkg/z -L a:h/pkg/a -L b:h/pkg/b -L w:h/pkg/w "$@"; }
   $ link h/pkg/x/x.odoc
-  File "X__Hid":
-  Ambiguous lookup. Possible units: pkg/x/X__Hid, pkg/xv/X__Hid
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ odoc_print --short --long-paths --show-root-parents h/pkg/x/x.odocl
-  module Hid/0 = resolved(hidden(root(pkg/xv/X__Hid))) 
+  module Hid/0 = resolved(hidden(root(pkg/x/X__Hid))) 
 
 [z]'s link reads [X]'s [.odoc] file, not the linked one, to resolve
 [X.Hid]. The root [X__Hid] in it still has the origin [X], so [M] should be
@@ -84,8 +80,6 @@ write tags with a library yet.
 A resolved tag, to either library's [X.Hid], would be wrong.
 
   $ link h/pkg/z/z.odoc
-  File "X__Hid":
-  Ambiguous lookup. Possible units: pkg/x/X__Hid, pkg/xv/X__Hid
   $ odoc_print --short --long-paths --show-root-parents h/pkg/z/z.odocl
   module M/0 =
     resolved(canonical(root(pkg/x/X).Hid,resolved(root(pkg/x/X).Hid)))
@@ -116,8 +110,6 @@ odoc. Each root follows section 3 with its own origin, so [A.E.t] should be
 [ext1]'s [Ext.t], and [B.E.t] should be [ext2]'s, with no warning:
 
   $ link h/pkg/w/w.odoc
-  File "Ext":
-  Ambiguous lookup. Possible units: pkg/ext1/Ext, pkg/ext2/Ext
   $ odoc_print --refs --long-paths --show-root-parents h/pkg/w/w.odocl
-  r(alias(root(pkg/ext2/Ext),root(pkg/a/A).E).t)
+  r(alias(root(pkg/ext1/Ext),root(pkg/a/A).E).t)
   r(alias(root(pkg/ext2/Ext),root(pkg/b/B).E).t)

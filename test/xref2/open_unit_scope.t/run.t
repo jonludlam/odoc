@@ -43,7 +43,5 @@ file, as [library/Unit], with no repeats. The only alias there is [H], met
 while resolving [{!H.t}].
 
   $ odoc link h/z/z.odoc -L z:h/z -L x:h/x -L y:h/y --open Op
-  File "Inner":
-  Ambiguous lookup. Possible units: x/Inner, y/Inner
   $ odoc_print h/z/z.odocl | jq -c '[.. | objects | .["`Alias"]? | select(. != null) | .[0]["`Identifier"]["`Root"] | .[0].Some["`Page"][1] + "/" + .[1]] | unique'
   ["y/Inner"]

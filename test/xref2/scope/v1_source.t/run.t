@@ -94,8 +94,6 @@ no link into any [clock.ml]. Here [grep] finds no such link, and exits with
 1.
 
   $ odoc link $L h/pkg/vlib/vlib.odoc
-  File "Vlib__Clock":
-  Ambiguous lookup. Possible units: pkg/impl_a/Vlib__Clock, pkg/impl_b/Vlib__Clock, pkg/vlib/Vlib__Clock
   $ odoc html-generate -o html h/pkg/vlib/vlib.odocl
   $ grep -o 'href="[^"]*"' html/pkg/vlib/Vlib/Clock/index.html | grep src
   [1]

@@ -831,8 +831,11 @@ end = struct
     let doc =
       "Specifies a library called libname containing the modules in directory \
        DIR. Modules can be referenced both using the flat module namespace \
-       {!Module} and the absolute reference {!/libname/Module}. All the trees \
-       specified by this option and -P must be disjoint."
+       {!Module} and the absolute reference {!/libname/Module}. A path in the \
+       input with no digest is looked up among the libraries the unit it was \
+       read from recorded at compile time, so give a $(b,-L) for each of them. \
+       A digest the input imports decides first. No two directories given by \
+       this option may be nested or shared."
     in
     Arg.(
       value
