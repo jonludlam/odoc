@@ -803,12 +803,14 @@ let open_class_signature : Lang.ClassSignature.t -> t -> t =
         | _ -> env)
       env s.items
 
-let rec open_signature : Lang.Signature.t -> t -> t =
+(* [origin] is where the root names in [s] are resolved: the libraries of the
+   unit [s] was read from. *)
+let rec open_signature_in : Library_scope.t -> Lang.Signature.t -> t -> t =
   let open Component in
   let open Of_Lang in
   let module L = Lang in
-  fun s e ->
-    let ident_map = empty e.scope in
+  fun origin s e ->
+    let ident_map = empty origin in
     List.fold_left
       (fun env orig ->
         match ((orig : L.Signature.item), env.linking) with
@@ -835,11 +837,12 @@ let rec open_signature : Lang.Signature.t -> t -> t =
         | L.Signature.ClassType (_, c), _ ->
             let ty = class_type ident_map c in
             add_class_type c.id ty env
-        | L.Signature.Include i, _ -> open_signature i.expansion.content env
-        | L.Signature.Open o, false -> open_signature o.expansion env
+        | L.Signature.Include i, _ ->
+            open_signature_in origin i.expansion.content env
+        | L.Signature.Open o, false -> open_signature_in origin o.expansion env
         (* The following are only added when linking *)
         | L.Signature.Open o, true ->
-            add_comment (`Docs o.doc) (open_signature o.expansion env)
+            add_comment (`Docs o.doc) (open_signature_in origin o.expansion env)
         | Comment c, true -> add_comment c env
         | TypExt te, true ->
             let doc = docs ident_map te.doc in
@@ -863,6 +866,8 @@ let rec open_signature : Lang.Signature.t -> t -> t =
         | Comment _, false -> env
         | L.Signature.Value _, false -> env)
       e s.items
+
+let open_signature s e = open_signature_in e.scope s e
 
 let open_type_substitution : Odoc_model.Lang.TypeDecl.t -> t -> t =
  fun t env ->
@@ -909,7 +914,10 @@ let open_units resolver env =
       match resolver.lookup_unit_by_name ~scope:Library_scope.any m with
       | Ok (Found unit) -> (
           match unit.content with
-          | Module sg -> open_signature sg env
+          | Module sg ->
+              open_signature_in
+                (Library_scope.of_libraries unit.libraries)
+                sg env
           | _ -> env)
       | _ -> env)
     env resolver.open_units
