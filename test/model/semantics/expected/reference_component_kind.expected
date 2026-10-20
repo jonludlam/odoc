@@ -1121,11 +1121,11 @@
 --- input ---
 @canonical val-foo
 --- output ---
-{"value":[],"warnings":["File \"f.ml\", line 1, characters 0-18:\nUnexpected tag '@canonical' at this location."]}
+{"value":[],"warnings":["File \"f.ml\", line 1, characters 11-18:\nExpected a valid path."]}
 --- input ---
 @canonical bar.page-foo
 --- output ---
-{"value":[],"warnings":["File \"f.ml\", line 1, characters 0-23:\nUnexpected tag '@canonical' at this location."]}
+{"value":[],"warnings":["File \"f.ml\", line 1, characters 11-23:\nExpected a valid path."]}
 --- input ---
 @canonical .Foo
 --- output ---

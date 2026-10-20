@@ -56,6 +56,7 @@ let render_path : Path.t -> string =
     match x with
     | `Identifier (id, _) -> Identifier.name id
     | `Root root -> ModuleName.to_string root
+    | `LibraryRoot (lib, root) -> "/" ^ lib ^ "/" ^ ModuleName.to_string root
     | `Dot (p, s) -> dot p (ModuleName.to_string s)
     | `DotT (p, s) -> dot p (TypeName.to_string s)
     | `DotMT (p, s) -> dot p (ModuleTypeName.to_string s)

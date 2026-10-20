@@ -69,7 +69,7 @@ let rec shape_of_module_path env : _ -> Shape.t option =
   fun (path : Odoc_model.Paths.Path.Module.t) ->
     match path with
     | `Resolved _ -> None
-    | `Root name -> (
+    | `Root name | `LibraryRoot (_, name) -> (
         match Env.lookup_impl (ModuleName.to_string name) env with
         | Some impl -> (
             match impl.shape_info with
@@ -111,6 +111,7 @@ let rec shape_of_kind_path env kind :
     | `Unbox t -> shape_of_kind_path env kind (t :> Odoc_model.Paths.Path.t)
     | `Dot _
     | `Root _
+    | `LibraryRoot _
     | `Apply _
     | `ApplyParam _ -> None
     

@@ -152,7 +152,7 @@ tag as a reference, and R3 restricts [{!/library/N}] to that library. So the
 tag should resolve to [z]'s [Z.L], and [l]'s path should be shown as [Z.L].
 
   $ show l
-  val l/7 : resolved(canonical(root(pkg/x/X).L,root((/z/Z)).L).t)
+  val l/7 : resolved(canonical(root(pkg/x/X).L,resolved(root(pkg/z/Z).L)).t)
 
 S3.1. Hidden units are not linked to. [h]'s path [X.H] is an alias of the
 hidden unit [X__H] with no tag, and [h2]'s path names [X__H] itself. Neither

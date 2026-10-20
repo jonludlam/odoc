@@ -228,6 +228,9 @@ module rec Path : sig
     | `Identifier of Identifier.path_module * bool
     | `Substituted of module_
     | `Root of ModuleName.t
+    | `LibraryRoot of string * ModuleName.t
+      (** [`LibraryRoot (lib, name)]: the root module [name] of library [lib],
+          as a canonical path written [/lib/Name] names it. *)
     | `Dot of module_ * ModuleName.t
     | `Apply of module_ * module_
     | `ApplyParam of instance * ModuleName.t * instance
@@ -270,6 +273,9 @@ module rec Path : sig
     | `SubstitutedCT of class_type
     | `Identifier of Identifier.path_any * bool
     | `Root of ModuleName.t
+    | `LibraryRoot of string * ModuleName.t
+      (** [`LibraryRoot (lib, name)]: the root module [name] of library [lib],
+          as a canonical path written [/lib/Name] names it. *)
     | `Dot of module_ * ModuleName.t
     | `DotT of module_ * TypeName.t
     | `DotMT of module_ * ModuleTypeName.t
