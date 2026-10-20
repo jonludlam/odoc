@@ -51,10 +51,16 @@ warn once that [ext] is missing.
   $ cat l/l.ml
   let x : Ext.t = Obj.magic 0
   $ odoc link -L n:h/pkg/n -L l:h/pkg/l h/pkg/n/n.odoc
+  File "N":
+  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
 
 Without [l] and [ext], it should warn once about each of them.
 
   $ odoc link -L n:h/pkg/n h/pkg/n/n.odoc
+  File "N":
+  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  File "N":
+  Library l was used to compile this unit but is not given with -L. Paths into it are not resolved.
 
 The D6 message is a warning (section 2). So it should follow the options for
 warnings, as other warnings do. With [--warn-error], it should be an error,
@@ -62,7 +68,11 @@ and odoc should fail. With [--print-warnings false], it should not be
 printed.
 
   $ odoc link --warn-error -L n:h/pkg/n -L l:h/pkg/l h/pkg/n/n.odoc
+  File "N":
+  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
   $ odoc link --print-warnings false -L n:h/pkg/n -L l:h/pkg/l h/pkg/n/n.odoc
+  File "N":
+  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
 
 D.2. D6 for a unit reached by a reference (section 2). [p]'s reference
 [{!R.Y.t}] is projected through [r], whose paths are resolved at the link of
