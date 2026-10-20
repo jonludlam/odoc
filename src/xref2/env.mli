@@ -31,6 +31,10 @@ type resolver = {
   lookup_page : path_query -> (Lang.Page.t, lookup_error) result;
   lookup_asset : path_query -> (Lang.Asset.t, lookup_error) result;
   lookup_impl : string -> Lang.Implementation.t option;
+      (** Finds an implementation by name, among the libraries of the unit being
+          linked. The names come from shapes, which only name units in the
+          compiler's dependency closure of that unit: its recorded libraries
+          hold them all, and a closure has one unit of each name. *)
   shape_reducer : Shape_reducer.t;
 }
 
