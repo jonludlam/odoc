@@ -1361,7 +1361,7 @@ module Fmt = struct
         wrap2 c "identifier" model_identifier bool ppf (id :> id) b
     | `Local (id, b) -> wrap2 c "local" ident_fmt bool ppf id b
     | `Substituted p -> wrap c "substituted" module_path ppf p
-    | `Root r -> wrap c "unresolvedroot" str ppf (ModuleName.to_string r)
+    | `Root (r, _) -> wrap c "unresolvedroot" str ppf (ModuleName.to_string r)
 
   and resolved_module_type_path :
       config -> Format.formatter -> Cpath.Resolved.module_type -> unit =
@@ -2018,9 +2018,11 @@ module Of_Lang = struct
     path_class_types : Ident.type_ Paths.Identifier.Maps.Path.ClassType.t;
     classes : Ident.type_ Paths.Identifier.Maps.Class.t;
     class_types : Ident.type_ Paths.Identifier.Maps.ClassType.t;
+    origin : Library_scope.t;
+        (** Where the root names of what is read are resolved. *)
   }
 
-  let empty () =
+  let empty origin =
     let open Paths.Identifier.Maps in
     {
       modules = Module.empty;
@@ -2031,6 +2033,7 @@ module Of_Lang = struct
       path_class_types = Path.ClassType.empty;
       classes = Class.empty;
       class_types = ClassType.empty;
+      origin;
     }
 
   let map_of_idents ids map =
@@ -2097,6 +2100,7 @@ module Of_Lang = struct
       class_types;
       path_types;
       path_class_types;
+      origin = map.origin;
     }
 
   let option conv ident_map x =
@@ -2222,7 +2226,7 @@ module Of_Lang = struct
     | `Apply (p1, p2) ->
         `Apply (module_path ident_map p1, module_path ident_map p2)
     | `ApplyParam (p1, p2, p3) -> `ApplyParam (p1, p2, p3)
-    | `Root str -> `Root str
+    | `Root str -> `Root (str, ident_map.origin)
 
   and module_type_path :
       _ -> Odoc_model.Paths.Path.ModuleType.t -> Cpath.module_type =
@@ -2648,7 +2652,9 @@ module Of_Lang = struct
           | StructInclude p -> StructInclude (module_path ident_map p)
         in
         (* see comment in module_type_expr below *)
-        let t_original_path = module_path (empty ()) t_original_path in
+        let t_original_path =
+          module_path (empty ident_map.origin) t_original_path
+        in
         TypeOf (t_desc, t_original_path)
     | Strengthen (e, p, a) ->
         let e = u_module_type_expr ident_map e in
@@ -2709,10 +2715,13 @@ module Of_Lang = struct
         in
         let t_expansion = option simple_expansion ident_map t_expansion in
         (* Nb, we _never_ want to relativize this path, because this should always be
-           the _original_ path. That's why we're passing in (empty()) rather than
-           ident_map. We don't leave it as a Lang path because we'll occasionally
-           _create_ a `TypeOf` expression as part of fragmap *)
-        let t_original_path = module_path (empty ()) t_original_path in
+           the _original_ path. That's why we're passing in an empty map rather
+           than ident_map. We don't leave it as a Lang path because we'll
+           occasionally _create_ a `TypeOf` expression as part of fragmap.
+           Its root names still come from the unit being read. *)
+        let t_original_path =
+          module_path (empty ident_map.origin) t_original_path
+        in
         ModuleType.(TypeOf { t_desc; t_original_path; t_expansion })
     | Lang.ModuleType.Strengthen s ->
         let s' =

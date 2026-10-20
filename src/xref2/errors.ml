@@ -250,7 +250,7 @@ let rec kind_of_instance : Paths.Path.Instance.t -> _ = function
       | None -> kind_of_instance b)
 
 let rec kind_of_module_cpath = function
-  | `Root name -> Some (`Root (ModuleName.to_string name))
+  | `Root (name, _) -> Some (`Root (ModuleName.to_string name))
   | `Substituted p' | `Dot (p', _) -> kind_of_module_cpath p'
   | `Apply (a, b) -> (
       match kind_of_module_cpath a with

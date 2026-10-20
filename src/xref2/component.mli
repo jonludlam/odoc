@@ -821,7 +821,9 @@ end
 module Of_Lang : sig
   type map
 
-  val empty : unit -> map
+  val empty : Library_scope.t -> map
+  (** [empty origin] is the map for reading something with no local identifiers
+      yet. The root names it contains are resolved in [origin]. *)
 
   val identifier :
     ('a -> 'b -> 'c) -> 'b -> 'a -> [> `Identifier of 'a | `Local of 'c ]

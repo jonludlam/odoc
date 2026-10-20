@@ -211,6 +211,10 @@ let prefix_signature (path, sg) =
 
 open Errors.Tools_error
 
+(* The root of a canonical path is looked up in every library for now, as the
+   root of a reference is. A later change lets the path name a library. *)
+let canonical_scope = Library_scope.any
+
 type resolve_module_result =
   ( Cpath.Resolved.module_ * Component.Module.t Component.Delayed.t,
     simple_module_lookup_error )
@@ -971,8 +975,9 @@ and resolve_module : Env.t -> Cpath.module_ -> resolve_module_result =
     | `Substituted s ->
         resolve_module env s |> map_error (fun e -> `Parent (`Parent_module e))
         >>= fun (p, m) -> Ok (`Substituted p, m)
-    | `Root r -> (
-        match Env.lookup_root_module r env with
+    | `Root (r, origin) -> (
+        let root = Env.lookup_root_module_in origin r env in
+        match root with
         | Some (Env.Resolved (_, p, m)) ->
             let p =
               `Gpath
@@ -1218,7 +1223,7 @@ and reresolve_module_gpath :
         Odoc_model.Paths.Path.Resolved.Module.is_hidden
           ~weak_canonical_test:false dest'
       then
-        let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
+        let cp2 = Component.Of_Lang.(module_path (empty canonical_scope) p2) in
         match resolve_module env cp2 with
         | Ok (`Alias (_, _, Some p3), _) ->
             let p = reresolve_module env p3 in
@@ -1296,7 +1301,9 @@ and reresolve_module : Env.t -> Cpath.Resolved.module_ -> Cpath.Resolved.module_
       let p' = reresolve_module env p in
       `Hidden p'
   | `Canonical (p, `Resolved p2) ->
-      let cp2 = Component.Of_Lang.(resolved_module_path (empty ()) p2) in
+      let cp2 =
+        Component.Of_Lang.(resolved_module_path (empty canonical_scope) p2)
+      in
       let cp2' = reresolve_module env cp2 in
       let p2' = Lang_of.(Path.resolved_module (empty ()) cp2') in
       `Canonical (reresolve_module env p, `Resolved p2')
@@ -1364,7 +1371,9 @@ and handle_canonical_module_real env p2 =
       :> Odoc_model.Paths.Path.Resolved.t)
   in
 
-  let cp2 = Component.Of_Lang.(module_path (empty ()) p2) in
+  let cp2 =
+    Component.Of_Lang.module_path (Component.Of_Lang.empty canonical_scope) p2
+  in
   match canonical_helper env resolve lang_of c_mod_poss cp2 with
   | None -> p2
   | Some (rp, m) ->
@@ -1433,7 +1442,11 @@ and handle_canonical_module env p2 =
   HandleCanonicalModuleMemo.memoize handle_canonical_module_real env p2
 
 and handle_canonical_module_type env p2 =
-  let cp2 = Component.Of_Lang.(module_type_path (empty ()) p2) in
+  let cp2 =
+    Component.Of_Lang.module_type_path
+      (Component.Of_Lang.empty canonical_scope)
+      p2
+  in
   let rec strip : Cpath.Resolved.module_type -> Cpath.Resolved.module_type =
     function
     | `AliasModuleType (_, p) -> strip p
@@ -1455,7 +1468,9 @@ and handle_canonical_module_type env p2 =
   | Some (rp, _) -> `Resolved Lang_of.(Path.resolved_module_type (empty ()) rp)
 
 and handle_canonical_type env p2 =
-  let cp2 = Component.Of_Lang.(type_path (empty ()) p2) in
+  let cp2 =
+    Component.Of_Lang.type_path (Component.Of_Lang.empty canonical_scope) p2
+  in
   let lang_of cpath =
     (Lang_of.(Path.resolved_type (empty ()) cpath)
       :> Odoc_model.Paths.Path.Resolved.t)

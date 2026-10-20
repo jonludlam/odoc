@@ -418,7 +418,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty ()) m) in
+      let ty = Component.Of_Lang.(module_ (empty Library_scope.any) m) in
       ty
   | Pack _p ->
       let m =
@@ -440,7 +440,7 @@ let module_of_unit : Lang.Compilation_unit.t -> Component.Module.t =
             hidden = unit.hidden;
           }
       in
-      let ty = Component.Of_Lang.(module_ (empty ()) m) in
+      let ty = Component.Of_Lang.(module_ (empty Library_scope.any) m) in
       ty
 
 let lookup_root_module_in scope name env =
@@ -721,7 +721,7 @@ let add_functor_parameter : Lang.FunctorParameter.t -> t -> t =
       let id = (n.id :> Paths.Identifier.Path.Module.t) in
       let m =
         let open Component.Of_Lang in
-        mk_functor_parameter (module_type_expr (empty ()) n.expr)
+        mk_functor_parameter (module_type_expr (empty t.scope) n.expr)
       in
       add_module id
         (Component.Delayed.put_val m)
@@ -736,7 +736,7 @@ let add_module_arg : Lang.TypeExpr.Module.t -> t -> t =
       Lang.ModuleType.Path { p_path = p.package.path; p_expansion = None }
     in
     let open Component.Of_Lang in
-    mk_functor_parameter (module_type_expr (empty ()) expr)
+    mk_functor_parameter (module_type_expr (empty t.scope) expr)
   in
   add_module id
     (Component.Delayed.put_val m)
@@ -798,7 +798,7 @@ let open_class_signature : Lang.ClassSignature.t -> t -> t =
       (fun env orig ->
         match orig with
         | Lang.ClassSignature.Method m ->
-            let ty = method_ (empty ()) m in
+            let ty = method_ (empty env.scope) m in
             add_method m.Lang.Method.id ty env
         | _ -> env)
       env s.items
@@ -808,7 +808,7 @@ let rec open_signature : Lang.Signature.t -> t -> t =
   let open Of_Lang in
   let module L = Lang in
   fun s e ->
-    let ident_map = empty () in
+    let ident_map = empty e.scope in
     List.fold_left
       (fun env orig ->
         match ((orig : L.Signature.item), env.linking) with
@@ -868,7 +868,7 @@ let open_type_substitution : Odoc_model.Lang.TypeDecl.t -> t -> t =
  fun t env ->
   let open Component in
   let open Of_Lang in
-  let ty = type_decl (empty ()) t in
+  let ty = type_decl (empty env.scope) t in
   add_type t.Lang.TypeDecl.id ty env
 
 let open_module_substitution : Odoc_model.Lang.ModuleSubstitution.t -> t -> t =
@@ -876,13 +876,13 @@ let open_module_substitution : Odoc_model.Lang.ModuleSubstitution.t -> t -> t =
   let open Component in
   let open Of_Lang in
   let _id = Ident.Of_Identifier.module_ m.id in
-  let doc = docs (empty ()) m.doc in
+  let doc = docs (empty env.scope) m.doc in
   let ty =
     Component.Delayed.put (fun () ->
         Of_Lang.(
           module_of_module_substitution
             (*                  { empty with modules = [ (m.id, id) ] } *)
-            (empty ())
+            (empty env.scope)
             m))
   in
   add_module (m.id :> Identifier.Path.Module.t) ty doc env
@@ -892,7 +892,7 @@ let open_module_type_substitution : Lang.ModuleTypeSubstitution.t -> t -> t =
   let open Component in
   let open Of_Lang in
   let ty =
-    module_type (empty ())
+    module_type (empty env.scope)
       {
         id = t.id;
         source_loc = None;

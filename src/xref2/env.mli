@@ -62,19 +62,18 @@ val set_resolver : t -> resolver -> t
 
 val scope : t -> Library_scope.t
 (** The scope the env was created with ({!env_of_unit}, {!env_of_impl}): the
-    libraries the unit being compiled or linked recorded. The root names read
-    from that unit are resolved in it. Resolution that has reached another unit
-    continues in that unit's libraries, since those are what the compiler could
-    see when the unit was built.
+    libraries the unit being compiled or linked recorded.
 
-    The scope limits one kind of lookup only: the root module of a path, looked
-    up by name ({!lookup_root_module}). The compiler wrote the path, so it can
-    only mean a module the unit could see. The scope does not limit the root of
-    a reference ({!lookup_by_name}), which an author may write for anything on
-    the search path, nor the root of a canonical path, which is looked up as a
-    reference's is, nor a lookup by identifier ({!lookup_by_id}), which names
-    its unit. A reference that goes into a unit and meets a path there, such as
-    an alias, resolves that path in the unit's scope. *)
+    The root name of a path carries the scope it is resolved in, which is the
+    libraries of the unit it was read from, and its root module is looked up in
+    that scope ({!lookup_root_module_in}). The compiler wrote the path, so it
+    can only mean a module that unit could see. This scope is what a root name
+    read from the env's own unit is given when it is converted.
+
+    The scope does not limit the root of a reference ({!lookup_by_name}), which
+    an author may write for anything on the search path, nor the root of a
+    canonical path, which is looked up as a reference's is, nor a lookup by
+    identifier ({!lookup_by_id}), which names its unit. *)
 
 val has_resolver : t -> bool
 
@@ -154,9 +153,9 @@ val lookup_root_module_in :
     module by name in that unit's libraries. *)
 
 val lookup_root_module : Odoc_model.Names.ModuleName.t -> t -> root option
-(** For a path: looks up its root module by name, in the current library scope
-    (see {!scope}). A reference's root is looked up by {!lookup_by_name}
-    instead. *)
+(** Looks up a root module by name in the env's own scope (see {!scope}). A path
+    uses {!lookup_root_module_in} with the scope its root name carries, and a
+    reference's root is looked up by {!lookup_by_name}. *)
 
 type 'a scope constraint 'a = [< Component.Element.any ]
 (** Target of a lookup *)
