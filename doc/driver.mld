@@ -243,6 +243,12 @@ alone, so link must be given [-L] for each of them: a module they do not have
 is reported as missing, not taken from another library. The same goes for the
 implementations behind source links.
 
+A unit also records the digest of each module it imports. When the unit being
+linked imports a module with a digest, link takes the module with that digest
+for its name. This is also true for a path that link reads from another unit.
+It is the module that the compiler used, because the compiler resolves a module
+alias made with [-no-alias-deps] where the alias is used.
+
 {2 The indexing phase}
 
 The indexing phase refers to the "crunching" of information split in several
