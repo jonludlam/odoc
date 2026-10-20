@@ -49,8 +49,8 @@ The author of [a] can name the library of the canonical path with a prefix.
 ambiguity. The roots of the canonical paths as [a] stores them:
 
   $ odoc_print h/a/a.odoc | jq -c '[.. | objects | .canonical? | select(. != null and . != "None") | .Some | .. | objects | (.["`Root"]? // (.["`LibraryRoot"]? | select(. != null) | "/" + .[0] + "/" + .[1])) | select(. != null)]'
-  ["Lib","(/w/Lib)"]
+  ["Lib","/w/Lib"]
 
   $ odoc link h/b/prefixed.odoc -L b:h/b -L a:h/a -L w:h/w -L y:h/y
   $ canonical h/b/prefixed.odocl
-  []
+  ["w/Lib"]

@@ -1,4 +1,9 @@
-type path = [ `Root of string | `Dot of path * string ]
+type path =
+  [ `Root of string
+  | `LibraryRoot of string * string
+    (** [`LibraryRoot (lib, name)]: the root [name] in library [lib], written
+        [/lib/name]. *)
+  | `Dot of path * string ]
 
 let expected_err :
     (Format.formatter -> 'a -> unit) -> 'a -> Location_.span -> Error.t =
@@ -591,8 +596,31 @@ let read_path_longident location s =
       let name = String.sub s 0 (pos + 1) in
       if String.length name = 0 then None else Some (`Root name)
   in
+  (* A leading [/lib/] names the library of the root. The library name may
+     contain dots, so it is split off before the rest is split at dots. *)
+  let rec in_library lib : path -> path option = function
+    | `Root name -> Some (`LibraryRoot (lib, name))
+    | `Dot (p, name) -> (
+        match in_library lib p with
+        | Some p -> Some (`Dot (p, name))
+        | None -> None)
+    | `LibraryRoot _ -> None
+  in
+  let parsed =
+    if String.length s > 0 && s.[0] = '/' then
+      match String.rindex_opt s '/' with
+      | Some i when i > 1 && not (String.contains (String.sub s 1 (i - 1)) '/')
+        -> (
+          let lib = String.sub s 1 (i - 1) in
+          let rest = String.sub s (i + 1) (String.length s - i - 1) in
+          match loop rest (String.length rest - 1) with
+          | Some p -> in_library lib p
+          | None -> None)
+      | _ -> None
+    else loop s (String.length s - 1)
+  in
   Error.catch_warnings (fun () ->
-      match loop s (String.length s - 1) with
+      match parsed with
       | Some r -> Ok (r :> path)
       | None -> Error (expected_err_str "a valid path" location))
 
