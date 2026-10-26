@@ -71,15 +71,17 @@ pages of [pz] only, so neither name should resolve: another package's pages
 need a path. The two paths should resolve to [pa/index] and [pz/zonly].
 
   $ odoc link -P pa:h/pa -P pz:h/pz -L alib:h/pa/alib -L zlib:h/pz/zlib --current-package pa h/pa/page-other.odoc
+  File "page-index":
+  Ambiguous lookup. Possible pages: pa/alib/index, pa/index, pa/sub/index
   File "pa/other.mld", line 3, characters 52-65:
   Warning: Failed to resolve reference unresolvedroot(znote) Couldn't find page "znote"
   File "pa/other.mld", line 3, characters 34-47:
   Warning: Failed to resolve reference unresolvedroot(zonly) Couldn't find page "zonly"
-  File "pa/other.mld", line 3, characters 4-17:
-  Warning: Failed to resolve reference unresolvedroot(guide) Couldn't find page "guide"
+  File "pa/other.mld", line 3, characters 19-32:
+  Warning: Failed to resolve reference unresolvedroot(index) Couldn't find page "index"
   $ odoc_print --refs --show-root-parents h/pa/page-other.odocl
-  unresolvedroot(guide)
-  r(pa/index)
+  r(pa/sub/guide)
+  unresolvedroot(index)
   unresolvedroot(zonly)
   unresolvedroot(znote)
   r(pa/index)
@@ -92,10 +94,8 @@ another package's library directory, should not resolve.
   $ odoc link -P pa:h/pa -P pz:h/pz -L alib:h/pa/alib -L zlib:h/pz/zlib --current-package pa h/pa/alib/m.odoc
   File "pa/alib/m.mli", line 1, characters 26-39:
   Warning: Failed to resolve reference unresolvedroot(znote) Couldn't find page "znote"
-  File "pa/alib/m.mli", line 1, characters 8-21:
-  Warning: Failed to resolve reference unresolvedroot(guide) Couldn't find page "guide"
   $ odoc_print --refs --show-root-parents h/pa/alib/m.odocl
-  unresolvedroot(guide)
+  r(pa/sub/guide)
   unresolvedroot(znote)
 
 Without [-P], there is no current package. odoc should then do what it has

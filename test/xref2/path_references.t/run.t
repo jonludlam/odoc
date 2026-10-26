@@ -22,11 +22,7 @@
   Warning: Failed to resolve reference ./Test Path 'Test' not found
   File "doc/foo.mld", line 12, characters 0-9:
   Warning: Failed to resolve reference //Test Path '//Test' not found
-  File "doc/foo.mld", line 6, characters 35-41:
-  Warning: Failed to resolve reference unresolvedroot(bar) Couldn't find "bar"
   $ odoc link -P pkg:h/pkg -L libname:h/pkg/libname h/pkg/libname/test.odoc
-  File "test.ml", line 6, characters 38-44:
-  Warning: Failed to resolve reference unresolvedroot(bar) Couldn't find "bar"
 
 Helper that extracts references in a compact way. Headings help to interpret the result.
 
@@ -42,7 +38,7 @@ Helper that extracts references in a compact way. Headings help to interpret the
   ["Page subdir/bar"]
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
-  {"`Reference":[{"`Root":["bar","`TUnknown"]},[]]}
+  {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
   ["Page dup"]
@@ -98,7 +94,7 @@ Helper that extracts references in a compact way. Headings help to interpret the
   ["Page subdir/bar"]
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
-  {"`Reference":[{"`Root":["bar","`TUnknown"]},[]]}
+  {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":[{"Some":{"`Page":["None","pkg"]}},"subdir"]}},"bar"]}}},[]]}
   ["Page dup"]
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":["None","pkg"]}},"dup"]}}},[]]}
   {"`Reference":[{"`Resolved":{"`Identifier":{"`LeafPage":[{"Some":{"`Page":["None","pkg"]}},"dup"]}}},[]]}

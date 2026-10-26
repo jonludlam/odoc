@@ -135,8 +135,6 @@ end = struct
     | None -> Error NoPackage
 end
 
-let () = ignore Named_roots.find_by_name [@warning "-5"]
-
 module Accessible_paths : sig
   type t
 
@@ -349,20 +347,63 @@ let lookup_unit_by_name ~important_digests ~imports_map ap target_name =
       if important_digests then Error `Not_found
       else of_option (lookup_unit_by_name ap target_name)
 
-(** Lookup a page.
-
-    TODO: Warning on ambiguous lookup. *)
-let lookup_page_by_name ap target_name =
+(** Look up a page by name. With a current package, the name means a page of
+    that package, wherever it is in the package: a name that several of its
+    pages have means none of them, and is warned about. Another package's pages
+    need a path. Without a current package, the first page of that name along
+    the search path. *)
+let lookup_page_by_name ap ~pages target_name =
   let target_name = "page-" ^ target_name in
   let is_page u =
     match u with
     | Odoc_file.Page_content p -> Some p
     | Impl_content _ | Unit_content _ | Asset_content _ -> None
   in
-  let units = load_units_from_name ap target_name in
-  match find_map is_page units with
-  | Some (p, _) -> Ok p
-  | None -> Error `Not_found
+  let in_current_package =
+    match pages with
+    | Some pages when Named_roots.current_root pages <> None -> (
+        match Named_roots.find_by_name pages ~name:(target_name ^ ".odoc") with
+        | Ok files -> Some files
+        | Error (NoPackage | NoRoot) -> None)
+    | Some _ | None -> None
+  in
+  match in_current_package with
+  | Some files -> (
+      let read file =
+        match load_unit_from_file file with
+        | Ok u -> is_page u
+        | Error (`Msg msg) ->
+            let warning =
+              Odoc_model.Error.filename_only "%s" msg (Fs.File.to_string file)
+            in
+            prerr_endline (Odoc_model.Error.to_string warning);
+            None
+      in
+      match List.filter_map read files with
+      | [] -> Error `Not_found
+      | [ p ] -> Ok p
+      | pages ->
+          (* Pages are named with their parents, which tell them apart. *)
+          let name (p : Odoc_model.Lang.Page.t) =
+            String.concat ~sep:"/" (Odoc_model.Paths.Identifier.fullname p.name)
+          in
+          let warning =
+            Odoc_model.Error.filename_only
+              "Ambiguous lookup. Possible pages: %a"
+              Format.(
+                pp_print_list
+                  ~pp_sep:(fun ppf () -> fprintf ppf ", ")
+                  pp_print_string)
+              (List.sort String.compare (List.map name pages))
+              target_name
+          in
+          prerr_endline (Odoc_model.Error.to_string warning);
+          Error `Not_found)
+  | None -> (
+      let units = load_units_from_name ap target_name in
+      match find_map is_page units with
+      | Some (p, _) -> Ok p
+      | None -> Error `Not_found)
 
 (* The unit [id] names, if exactly one file on the search path holds a unit
    with that identifier. Units compiled without [--parent-id] can share an
@@ -486,7 +527,7 @@ let lookup_unit ~important_digests ~imports_map ap ~libs ~hierarchy = function
 
 let lookup_page ap ~pages ~hierarchy = function
   | `Path p -> lookup_page_by_path ~pages ~hierarchy p
-  | `Name n -> lookup_page_by_name ap n
+  | `Name n -> lookup_page_by_name ap ~pages n
 
 let lookup_asset ~pages ~hierarchy = function
   | `Path p -> lookup_asset_by_path ~pages ~hierarchy p
@@ -649,7 +690,7 @@ let build_env_for_reference t =
   Env.env_for_reference resolver
 
 let lookup_page t target_name =
-  match lookup_page_by_name t.ap target_name with
+  match lookup_page_by_name t.ap ~pages:t.pages target_name with
   | Ok p -> Some p
   | Error `Not_found -> None
 
