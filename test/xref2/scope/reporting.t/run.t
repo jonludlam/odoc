@@ -71,14 +71,14 @@ is missing (D6). It should not report the root itself.
   val v : int
   $ odoc link -L l:h/pkg/l h/pkg/l/l.odoc
   File "L":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
 
 With [--enable-missing-root-warning], odoc should also report that it could
 not find [Ext].
 
   $ odoc link -L l:h/pkg/l --enable-missing-root-warning h/pkg/l/l.odoc
   File "L":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   File "h/pkg/l/l.odoc":
   Warning: Couldn't find the following modules:
     Ext
@@ -95,7 +95,7 @@ unresolved.
 
   $ odoc link -L l:h/pkg/l -I h/pkg/ext h/pkg/l/l.odoc
   File "L":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   $ odoc_print --short --long-paths --show-root-parents h/pkg/l/l.odocl
   module M/0 = unresolvedroot(Ext)
 
@@ -105,7 +105,7 @@ candidate (P2, section 8).
 
   $ odoc link -L l:h/pkg/l -L old_ext:h/pkg/old_ext h/pkg/l/l.odoc
   File "L":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   $ odoc_print --short --long-paths --show-root-parents h/pkg/l/l.odocl
   module M/0 = unresolvedroot(Ext)
 
@@ -137,10 +137,10 @@ should also say that it could not find [Ext], and nothing about [F].
 
   $ odoc link -L e2:h/pkg/e2 -L f:h/pkg/f h/pkg/e2/e2.odoc
   File "E2":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   $ odoc link -L e2:h/pkg/e2 -L f:h/pkg/f --enable-missing-root-warning h/pkg/e2/e2.odoc
   File "E2":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   File "h/pkg/e2/e2.odoc":
   Warning: Couldn't find the following modules:
     Ext
@@ -172,10 +172,10 @@ that [g] is missing, and, with the flag, that it could not find [G].
 
   $ odoc link -L e3:h/pkg/e3 h/pkg/e3/e3.odoc
   File "E3":
-  Library g was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library g was used to compile this unit but is not given with -L.
   $ odoc link -L e3:h/pkg/e3 --enable-missing-root-warning h/pkg/e3/e3.odoc
   File "E3":
-  Library g was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library g was used to compile this unit but is not given with -L.
   File "h/pkg/e3/e3.odoc":
   Warning: Couldn't find the following modules:
     G
@@ -188,7 +188,7 @@ and each should get a warning. [ext] should also be reported as missing
 
   $ odoc link -L r:h/pkg/r h/pkg/r/r.odoc
   File "R":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   File "r/r.mli", line 1, characters 21-28:
   Warning: Failed to resolve reference unresolvedroot(Nope) Couldn't find "Nope"
   File "r/r.mli", line 1, characters 8-16:
@@ -198,7 +198,7 @@ The flag should not change the reference warnings. It covers paths only.
 
   $ odoc link -L r:h/pkg/r --enable-missing-root-warning h/pkg/r/r.odoc
   File "R":
-  Library ext was used to compile this unit but is not given with -L. Paths into it are not resolved.
+  Warning: Library ext was used to compile this unit but is not given with -L.
   File "r/r.mli", line 1, characters 21-28:
   Warning: Failed to resolve reference unresolvedroot(Nope) Couldn't find "Nope"
   File "r/r.mli", line 1, characters 8-16:

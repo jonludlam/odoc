@@ -684,18 +684,50 @@ let build_compile_env_for_unit
   in
   Env.env_of_unit m ~linking:false ~scope:Env.Library_scope.any resolver
 
+(* A path with no digest is looked up among the libraries its unit recorded, so
+   a library link was not given leaves the paths that can only mean its modules
+   unresolved. Say so once for each such library, for the unit being linked and
+   for each unit link reads to resolve it. *)
+let warned_libraries = Hashtbl.create 7
+
+let warn_missing_libraries t ~file libraries =
+  match t.libs with
+  | None -> ()
+  | Some libs ->
+      List.iter
+        (fun lib ->
+          if
+            (not (Named_roots.mem libs lib))
+            && not (Hashtbl.mem warned_libraries (file, lib))
+          then (
+            Hashtbl.add warned_libraries (file, lib) ();
+            Odoc_model.Error.raise_warning
+              (Odoc_model.Error.filename_only
+                 "Library %s was used to compile this unit but is not given \
+                  with -L."
+                 lib file)))
+        (List.sort_uniq String.compare libraries)
+
 (** [important_digests] and [imports_map] only apply to modules. *)
 let build ?(imports_map = StringMap.empty) ?hierarchy_roots
-    ?(scope = Env.Library_scope.any)
-    {
-      important_digests;
-      ap;
-      page_ap;
-      open_modules = open_units;
-      pages;
-      libs;
-      current_dir;
-    } =
+    ?(scope = Env.Library_scope.any) ?(check_libraries = false)
+    ({
+       important_digests;
+       ap;
+       page_ap;
+       open_modules = open_units;
+       pages;
+       libs;
+       current_dir;
+     } as t) =
+  (* A unit read to resolve another must have its libraries given too (D6). *)
+  let checked = function
+    | Ok (Env.Found (m : Odoc_model.Lang.Compilation_unit.t)) as r ->
+        if check_libraries then
+          warn_missing_libraries t ~file:(root_name m.root) m.libraries;
+        r
+    | r -> r
+  in
   let hierarchy =
     let open OptionMonad in
     current_dir >>= fun current_dir ->
@@ -718,7 +750,7 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
     let imports_map =
       if own_scope scope then imports_map else StringMap.empty
     in
-    lookup_unit_by_name ~important_digests ~imports_map ~scope ap name
+    checked (lookup_unit_by_name ~important_digests ~imports_map ~scope ap name)
   and lookup_unit_by_path = lookup_unit_by_path ~libs ~hierarchy
   and lookup_page = lookup_page page_ap ~pages ~hierarchy
   and lookup_asset = lookup_asset ~pages ~hierarchy
@@ -742,25 +774,6 @@ let build_compile_env_for_impl t i =
   let resolver = build ~imports_map t in
   Env.env_of_impl i ~scope:Env.Library_scope.any resolver
 
-(* A path with no digest is looked up among the libraries its unit recorded, so
-   a library link was not given leaves the paths that can only mean its modules
-   unresolved. Say so once for each such library. *)
-let warn_missing_libraries t ~file libraries =
-  match t.libs with
-  | None -> ()
-  | Some libs ->
-      List.iter
-        (fun lib ->
-          if not (Named_roots.mem libs lib) then
-            let warning =
-              Odoc_model.Error.filename_only
-                "Library %s was used to compile this unit but is not given \
-                 with -L. Paths into it are not resolved."
-                lib file
-            in
-            prerr_endline (Odoc_model.Error.to_string warning))
-        (List.sort_uniq String.compare libraries)
-
 let build_link_env_for_unit t m =
   add_unit_to_cache (Odoc_file.Unit_content m);
   warn_missing_libraries t
@@ -770,7 +783,9 @@ let build_link_env_for_unit t m =
   let scope =
     Env.Library_scope.of_libraries m.Odoc_model.Lang.Compilation_unit.libraries
   in
-  let resolver = build ~imports_map ?hierarchy_roots:t.libs ~scope t in
+  let resolver =
+    build ~imports_map ?hierarchy_roots:t.libs ~scope ~check_libraries:true t
+  in
   Env.env_of_unit m ~linking:true ~scope resolver
 
 let build_link_env_for_impl t i =
@@ -783,7 +798,7 @@ let build_link_env_for_impl t i =
   let scope =
     Env.Library_scope.of_libraries i.Odoc_model.Lang.Implementation.libraries
   in
-  let resolver = build ~imports_map ~scope t in
+  let resolver = build ~imports_map ~scope ~check_libraries:true t in
   Env.env_of_impl i ~scope resolver
 
 let build_env_for_page t p =
