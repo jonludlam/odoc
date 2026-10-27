@@ -134,6 +134,8 @@ compile as at link.
 A link that accepts it would be wrong.
 
   $ odoc compile --output-dir h --parent-id pkg/l -L l:h/pkg/l -L ext:h/pkg/ext -L ext:h/pkg/ext2 l/l.cmti
+  ERROR: Library ext is given with -L for two directories
+  [1]
   $ odoc link -L l:h/pkg/l -L ext:h/pkg/ext -L ext:h/pkg/ext2 h/pkg/l/l.odoc
 
 The spec does not say what odoc should do with one directory given under
