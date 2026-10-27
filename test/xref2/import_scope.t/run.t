@@ -61,6 +61,6 @@ target of the alias [M] only.
   $ odoc link h/z/z.odoc -L z:h/z -L y:h/y -L x:h/x
   $ roots() { odoc_print $1 | jq -c '[.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'; }
   $ roots h/z/z.odocl
-  ["x/X","y/Inner","z/Z"]
+  ["x/Inner","x/X","y/Inner","z/Z"]
   $ odoc_print h/z/z.odocl | jq -c '.content.Module.items[] | .Module? | select(. != null) | select(.[1].id["`Module"][1] == "M") | .[1].type_.Alias[0] | [.. | objects | .["`Root"]? | select(type == "array") | select(.[0] | type == "object") | .[0].Some["`Page"][1] + "/" + .[1]] | unique'
-  ["x/X","y/Inner"]
+  ["x/Inner","x/X"]

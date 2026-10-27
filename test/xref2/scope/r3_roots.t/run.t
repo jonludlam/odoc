@@ -121,8 +121,10 @@ should be the same: odoc should warn, and leave [{!Dup}] unresolved.
 As for [Ambiguous], resolving it to either library's [Dup] would be wrong.
 
   $ odoc link $ALL h/pkg/l/ambiguous_used.odoc
+  File "Dup":
+  Ambiguous lookup. Possible units: pkg/dup1/Dup, pkg/dup2/Dup
   $ odoc_print --refs --long-paths --show-root-parents h/pkg/l/ambiguous_used.odocl
-  r(root(pkg/dup1/Dup))
+  r(root(pkg/dup2/Dup))
 
 Rule R3.4: [Picked] has [{!/dup1/Dup}] and [{!/dup2/Dup}]. Each should mean
 the [Dup] of the library it names, with no warning.
@@ -187,7 +189,7 @@ of [p2]'s [P].
 
   $ odoc link $ALL h/pkg/l/project_used.odoc
   $ odoc_print --refs --long-paths --show-root-parents h/pkg/l/project_used.odocl
-  r(alias(root(pkg/p1/P),root(pkg/c/C).N).t)
+  r(alias(root(pkg/p2/P),root(pkg/c/C).N).t)
 
 Rule R3.8: a comment shown on two pages. In [A], the module type [S] has a
 [val v], whose comment has [{!W}]. [B] has [module X : A.S], so the comment

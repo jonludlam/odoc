@@ -702,7 +702,22 @@ let build ?(imports_map = StringMap.empty) ?hierarchy_roots
     hierarchy_roots >>= Named_roots.current_root >>= fun hierarchy_root ->
     Some (Hierarchy.make ~hierarchy_root ~current_dir)
   in
+  (* The digests the unit records are about the names it was compiled with.
+     A root read from another library is looked up in that library's scope
+     alone: the scope holds one unit of its name, so it needs no digest. A
+     legacy unit records no scope, and uses its digests for every root. *)
+  let own_scope root_scope =
+    match (scope, root_scope) with
+    | Env.Library_scope.Any, _ -> true
+    | Env.Library_scope.Scoped libs, Env.Library_scope.Scoped root_libs ->
+        List.sort_uniq String.compare libs
+        = List.sort_uniq String.compare root_libs
+    | Env.Library_scope.Scoped _, Env.Library_scope.Any -> false
+  in
   let lookup_unit_by_name ~scope name =
+    let imports_map =
+      if own_scope scope then imports_map else StringMap.empty
+    in
     lookup_unit_by_name ~important_digests ~imports_map ~scope ap name
   and lookup_unit_by_path = lookup_unit_by_path ~libs ~hierarchy
   and lookup_page = lookup_page page_ap ~pages ~hierarchy

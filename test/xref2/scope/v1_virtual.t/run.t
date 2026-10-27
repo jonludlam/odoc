@@ -92,6 +92,8 @@ libraries hold no copy, so it should mean [vlib]'s unit too.
   
   val now : unit -> t
   $ odoc link -L vlib:h/pkg/vlib -L impl_a:h/pkg/impl_a -L impl_b:h/pkg/impl_b -L user:h/pkg/user -L tool:h/pkg/tool h/pkg/user/user.odoc
+  File "Vlib__Clock":
+  Ambiguous lookup. Possible units: pkg/impl_a/Vlib__Clock, pkg/impl_b/Vlib__Clock, pkg/vlib/Vlib__Clock
   $ odoc_print --short --long-paths --show-root-parents h/pkg/user/user.odocl
   val stamp/0 : resolved(unit) -> resolved(canonical(root(pkg/vlib/Vlib).Clock,resolved(root(pkg/vlib/Vlib).Clock)).t)
   val direct/1 : resolved(hidden(root(pkg/vlib/Vlib__Clock)).t)
@@ -170,10 +172,14 @@ three would be wrong.
   r(alias(hidden(root(pkg/vlib/Vlib__Clock)),root(pkg/vlib/Vlib).Clock))
   r(hidden(root(pkg/vlib/Vlib__Clock)))
   $ odoc link -L impl_b:h/pkg/impl_b -L impl_a:h/pkg/impl_a -L vlib:h/pkg/vlib -L user:h/pkg/user h/pkg/user/user.odoc
+  File "Vlib__Clock":
+  Ambiguous lookup. Possible units: pkg/impl_a/Vlib__Clock, pkg/impl_b/Vlib__Clock, pkg/vlib/Vlib__Clock
   $ odoc_print --refs --long-paths --show-root-parents h/pkg/user/user.odocl
   r(alias(hidden(root(pkg/vlib/Vlib__Clock)),root(pkg/vlib/Vlib).Clock))
   r(hidden(root(pkg/vlib/Vlib__Clock)))
   $ odoc link -L impl_a:h/pkg/impl_a -L vlib:h/pkg/vlib -L impl_b:h/pkg/impl_b -L user:h/pkg/user h/pkg/user/user.odoc
+  File "Vlib__Clock":
+  Ambiguous lookup. Possible units: pkg/impl_a/Vlib__Clock, pkg/impl_b/Vlib__Clock, pkg/vlib/Vlib__Clock
   $ odoc_print --refs --long-paths --show-root-parents h/pkg/user/user.odocl
   r(alias(hidden(root(pkg/vlib/Vlib__Clock)),root(pkg/vlib/Vlib).Clock))
   r(hidden(root(pkg/vlib/Vlib__Clock)))
