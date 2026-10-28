@@ -37,7 +37,13 @@
   odoc_print_refs
   sibling_libraries
   self_name
-  shared_identifier)
+  shared_identifier
+  alias_scope
+  module_type_scope
+  module_type_alias_scope
+  hidden_alias_scope
+  import_scope
+  canonical_scope)
  (enabled_if
   (>= %{ocaml_version} 4.14.0)))
 
