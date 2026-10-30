@@ -581,12 +581,24 @@ let parse_asset whole_reference_location s :
   let path = parse_path whole_reference_location s in
   Error.catch_errors_and_warnings (fun () -> `Asset_path path)
 
+(* TEMPORARY: remove when dune writes the library in its canonical tags, as
+   [@canonical /lib/Name.X]. dune's tags name no library, so they are
+   ambiguous when two libraries have the same main module. dune writes a tag
+   naming [N] only in the units [N], [N__] and [N__Foo] of [N]'s library. *)
+let own_library = ref None
+
 let read_path_longident location s =
   (* A canonical tag uses the reference syntax, so that [/lib/Name.X] names the
      library of its root as in [{!/lib/Name.X}]. Only a module path, with an
      optional library, is a valid tag. *)
   let rec to_path : Paths.Reference.t -> path option = function
-    | `Root (name, (`TUnknown | `TModule)) -> Some (`Root name)
+    | `Root (name, (`TUnknown | `TModule)) -> (
+        match !own_library with
+        | Some (unit, lib)
+          when unit = name || Astring.String.is_prefix ~affix:(name ^ "__") unit
+          ->
+            Some (`LibraryRoot (lib, name))
+        | _ -> Some (`Root name))
     | `Module_path (`TAbsolutePath, [ lib; name ])
     | `Any_path (`TAbsolutePath, [ lib; name ]) ->
         Some (`LibraryRoot (lib, name))

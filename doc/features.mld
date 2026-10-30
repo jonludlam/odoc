@@ -550,7 +550,10 @@ library can be given explicitly:
 
 This happens most often with wrapped [dune] libraries: [dune] adds a canonical
 tag to each module of a wrapped library, naming the library's main module, and
-two libraries may have main modules of the same name.
+two libraries may have main modules of the same name. Until [dune] names the
+library in its tags, [odoc compile] reads a tag [Lib.X] written in the module
+[Lib], [Lib__] or [Lib__Foo] as naming the library that module is in, given by
+the [-L] whose directory holds the output. So [dune]'s tags are not ambiguous.
 
 Note that canonical tags are only used when resolving {e paths}, not 
 fragments (which are relative anyway) nor references. Since they are

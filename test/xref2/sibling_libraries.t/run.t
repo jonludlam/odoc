@@ -15,13 +15,16 @@ library is compiled with [-L] for itself only, so no Λc holds both modules
 P2 looks for the target of an alias with no digest in Λc(o), where [o] is
 the unit the alias was written in. So each alias should mean a unit of its
 own library. R3 looks for the root of a reference in Λl, which holds both
-libraries. A canonical tag is a reference too (S1). So a reference or a
-canonical tag whose root is a plain [Content] is ambiguous. It should not
-resolve, and odoc should warn (section 4.5). A canonical tag that does not
-resolve leaves the path shown as it is (S2). The author removes the
-ambiguity by naming the library, as in [{!/client/Content}]. A canonical tag
-can name its library in the same way (S1), but dune does not write tags like
-that yet.
+libraries. So a reference whose root is a plain [Content] is ambiguous. It
+should not resolve, and odoc should warn (section 4.5). The author removes
+the ambiguity by naming the library, as in [{!/client/Content}].
+
+A canonical tag is a reference too (S1), and can name its library in the
+same way, but dune does not write tags like that yet. Until it does,
+a tag naming [N] that is written in a unit dune names after [N] ([N],
+[N__], or [N__] followed by a module name) means [N] in that unit's own
+library (S2). So each [Content__Html]'s tag [Content.Html] should mean its own
+library's [Content.Html], with no warning.
 
 The source files:
 
@@ -65,11 +68,9 @@ The source files:
 Each unit is linked with both libraries in Λl, and with [-I] for its own
 library only.
 
-Linking each [Content] should warn: its alias [Html] is shown through the
-canonical tag [Content.Html] of [Content__Html], whose root [Content] is
-ambiguous. The aliases [Html] and [C] should not be ambiguous.
-
-Linking with no warning would be wrong.
+Linking should give no warning. The aliases [Html] and [C] are not
+ambiguous, and the canonical tag of each [Content__Html] names its own
+library's [Content].
 
   $ L="-L client:h/pkg/client -L server:h/pkg/server"
   $ for lib in client server; do
@@ -80,8 +81,8 @@ Linking with no warning would be wrong.
 
 Each line of the output below lists the resolved roots named in one unit,
 as [library/Unit], with no repeats. Through its aliases, each unit should
-name only units of its own library. The root of a canonical tag should not
-resolve, so it should add nothing.
+name only units of its own library. The root of a canonical tag should be
+its own library's [Content], so it should add nothing new.
 
 Each [Content] also has the comment [{!Content.Html}], written inside
 [Content], where [Content] is ambiguous in Λl. By R3, a reference whose
@@ -116,8 +117,9 @@ and a submodule of each. Its module list names the [Content] of each
 library.
 
 Linking the page should warn for each lookup of [Content] that does not name
-a library: the plain [{!Content}], and the roots of the canonical paths and of
-the references in the module list's paragraphs.
+a library: the plain [{!Content}], and the references in the module list's
+paragraphs. The canonical tags should not warn, as each names its own
+library's [Content].
 
   $ cat all.mld
   {0 Both libraries}
@@ -131,12 +133,6 @@ the references in the module list's paragraphs.
   {!modules: /client/Content /server/Content}
   $ odoc compile --output-dir h --parent-id pkg all.mld
   $ odoc link -P pkg:h/pkg $L h/pkg/page-all.odoc
-  File "Content":
-  Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
-  File "Content":
-  Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
-  File "Content":
-  Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
   File "Content":
   Ambiguous lookup. Possible units: pkg/client/Content, pkg/server/Content
   File "Content":
@@ -167,15 +163,16 @@ Resolving it to either library's [Content] would be wrong.
 The fourth is [{!/client/Content.Html}]. It should resolve to
 [pkg/client/Content__Html]: projection has reached the client's [Content],
 and the alias [Html] in it follows P2 over the client's Λc. Its canonical
-tag should not resolve, so it should be shown as it is.
+tag, written in the client's [Content__Html], should resolve to the client's
+[Content.Html].
 
-A resolved canonical tag, to either library's [Content.Html], would be
-wrong.
+A canonical tag resolved to the server's [Content.Html] would be wrong.
 
 The fifth is [{!/server/Content.Html}]. It should resolve to
-[pkg/server/Content__Html]. Its canonical tag should not resolve either.
+[pkg/server/Content__Html]. Its canonical tag should resolve to the
+server's [Content.Html].
 
-A resolved canonical tag would be wrong here too.
+A canonical tag resolved to the client's [Content.Html] would be wrong.
 
 The last entries are the module list. Each entry should be the [Content] it
 names, the client's and then the server's. Below each entry is the first
@@ -190,7 +187,7 @@ Resolving either paragraph's [{!Content.Html}] would be wrong.
   r(root(pkg/client/Content))
   r(root(pkg/server/Content))
   r(root(pkg/server/Content))
-  r(alias(canonical(hidden(root(pkg/client/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/client/Content).Html))
+  r(alias(canonical(hidden(root(pkg/client/Content__Html)),resolved(root(pkg/client/Content).Html)),root(pkg/client/Content).Html))
   r(alias(canonical(hidden(root(pkg/server/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/server/Content).Html))
   modules: r(root(pkg/client/Content))
     r(alias(canonical(hidden(root(pkg/server/Content__Html)),resolved(root(pkg/server/Content).Html)),root(pkg/server/Content).Html))

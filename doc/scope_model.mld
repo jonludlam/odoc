@@ -504,7 +504,14 @@ refers to.
 
     Known limit: dune's tags name no library, so if two libraries in [Λl]
     have the same main module, the tags are ambiguous (see
-    {{!page-features.canonical_paths}Canonical Paths}).}
+    {{!page-features.canonical_paths}Canonical Paths}). Until dune names
+    the library, [odoc compile] reads a tag [N.X] written in a unit [u] as
+    [/lib(u)/N.X] if dune names [u] after [N]: [u] is [N], [N__], or [N__]
+    followed by a module name. This is where dune writes the tags that
+    name its own main module. Other tags, such as one naming a module of a
+    library that depends on [lib(u)], follow S1. [odoc compile] knows
+    [lib(u)] from the [-L] whose directory holds its output. This exception
+    will be removed when dune writes the library.}
 {li {b S3 (hidden).} Hidden units, such as [Foo__Bar], are not linked to,
     and do not appear in the search index or the sidebar.}}
 

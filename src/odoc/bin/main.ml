@@ -312,8 +312,20 @@ end = struct
     in
     cli_spec >>= fun cli_spec ->
     Fs.Directory.mkdir_p (Fs.File.dirname output);
+    (* TEMPORARY: see [Odoc_model.Reference.own_library]. The library whose
+       directory holds the output. *)
+    let own_library output =
+      let o = Antichain.absolute_normalization output in
+      Odoc_utils.List.find_map
+        (fun (lib, dir) ->
+          let dir =
+            Antichain.absolute_normalization (Fs.Directory.to_fpath dir)
+          in
+          if Fpath.is_prefix dir o then Some lib else None)
+        lib_roots
+    in
     Compile.compile ~resolver ~cli_spec ~hidden ~warnings_options ~short_title
-      ~libraries input
+      ~libraries ~own_library input
 
   let input =
     let doc = "Input $(i,.cmti), $(i,.cmt), $(i,.cmi) or $(i,.mld) file." in

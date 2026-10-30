@@ -143,7 +143,7 @@ with the [-L] order.
 
   $ odoc compile --output-dir h --parent-id pkg/tool -L tool:h/pkg/tool -L vlib:h/pkg/vlib -L impl_a:h/pkg/impl_a tool/tool.cmti
   $ odoc_print --short --long-paths --show-root-parents h/pkg/tool/tool.odoc
-  val stamp/0 : resolved(unit) -> resolved(canonical(root(pkg/vlib/Vlib).Clock,root(Vlib).Clock).t)
+  val stamp/0 : resolved(unit) -> resolved(canonical(root(pkg/vlib/Vlib).Clock,root(/vlib/Vlib).Clock).t)
   val direct/1 : resolved(hidden(root(pkg/impl_a/Vlib__Clock)).t)
   $ odoc compile --output-dir h --parent-id pkg/impl_a -L vlib:h/pkg/vlib -L impl_a:h/pkg/impl_a impl_a/vlib__impl_a__Extra.cmti
   $ odoc_print --short --long-paths --show-root-parents h/pkg/impl_a/vlib__impl_a__Extra.odoc
@@ -205,7 +205,7 @@ has no doc comments, would lose the canonical tag too.
   $ odoc compile --output-dir h --parent-id pkg/impl_a -L impl_a:h/pkg/impl_a -L vlib:h/pkg/vlib impl_a/vlib.cmi
   $ odoc compile --output-dir h --parent-id pkg/tool -L tool:h/pkg/tool -L impl_a:h/pkg/impl_a -L vlib:h/pkg/vlib tool/tool.cmti
   $ odoc_print --short --long-paths --show-root-parents h/pkg/tool/tool.odoc
-  val stamp/0 : resolved(unit) -> resolved(canonical(root(pkg/vlib/Vlib).Clock,root(Vlib).Clock).t)
+  val stamp/0 : resolved(unit) -> resolved(canonical(root(pkg/vlib/Vlib).Clock,root(/vlib/Vlib).Clock).t)
   val direct/1 : resolved(hidden(root(pkg/vlib/Vlib__Clock)).t)
   $ odoc compile --output-dir h --parent-id pkg/tool -L tool:h/pkg/tool -L vlib:h/pkg/vlib -L impl_a:h/pkg/impl_a tool/tool.cmti
   $ odoc_print --short --long-paths --show-root-parents h/pkg/tool/tool.odoc
