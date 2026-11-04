@@ -44,6 +44,8 @@
   which makes `.odoc` and `.odocl` files substantially smaller (@jonludlam, #1487)
 
 ### Fixed
+- `.odoc` and `.odocl` files are written to a temporary file and renamed, so
+  a parallel build never reads one that is partly written (@jonludlam)
 - `odoc compile` resolves an import only to a unit with the digest the import
   records (@jonludlam, #1502)
 - `odoc compile` and `odoc link` look up a unit that an identifier names by
