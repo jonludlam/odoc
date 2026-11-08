@@ -43,6 +43,9 @@ let generate_status ~html_dir pkg =
 let run package_name blessed actions odoc_dir odocl_dir
     ({ Common_args.html_dir; nb_workers; _ } as common) =
   Common_args.setup common;
+  Logs.app (fun m ->
+    m "odoc_driver_voodoo starting (version %%VERSION%%): processing package %s"
+      package_name);
   let index_dir = Fpath.v "_index" in
   let mld_dir = Fpath.v "_mld" in
   Eio_main.run @@ fun env ->
