@@ -58,6 +58,12 @@ jobs:
           opam install --deps-only --with-test ./odoc.opam ./odoc-parser.opam \
             ${{ matrix.test-sherlodoc && './sherlodoc.opam' }}
 
+      # odoc-md (built for odoc and odoc-driver tests) needs cmarkit, which is
+      # not a dep of odoc.opam/odoc-parser.opam. cmarkit requires OCaml >= 4.14.
+      - name: Install cmarkit
+        if: matrix.ocaml-compiler != '4.11' && matrix.ocaml-compiler != '4.12'
+        run: opam install cmarkit
+
       - name: dune runtest
         if: matrix.test-sherlodoc == true
         # Run all tests
