@@ -6,4 +6,6 @@
 
 (cram
  (package odoc)
- (deps %{bin:odoc} %{bin:odoc_print} %{bin:print_index}))
+ (deps %{bin:odoc} %{bin:odoc-md} %{bin:odoc_print} %{bin:print_index})
+ (enabled_if
+  (>= %{ocaml_version} 4.14.0)))

@@ -65,8 +65,9 @@ jobs:
 
       - name: dune runtest
         if: matrix.test-sherlodoc != true
-        # Run the tests for odoc and odoc-parser only
-        run: opam exec -- dune runtest -p odoc,odoc-parser
+        # Run the tests for odoc and odoc-parser only. odoc-md is included
+        # because some odoc tests (test/parent_id) invoke its binary.
+        run: opam exec -- dune runtest -p odoc,odoc-parser,odoc-md
 
       - name: Send coverage stats to Coveralls
         if: matrix.send-coverage == true

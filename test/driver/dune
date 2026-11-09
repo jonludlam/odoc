@@ -9,6 +9,7 @@
  (package odoc-driver)
  (deps
   %{bin:odoc}
+  %{bin:odoc-md}
   %{bin:odoc_driver_voodoo}
   %{bin:odoc_driver}
   %{bin:odoc_print})

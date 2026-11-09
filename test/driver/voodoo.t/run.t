@@ -54,6 +54,7 @@ so its directory is made empty instead.
 
   $ mkdir -p _odoc/lib/ocaml
   $ odoc_driver_voodoo --odoc-dir _odoc pd
+  odoc_driver_voodoo starting (version %VERSION%): processing package pd
 
 Case 1 (D6). At the link of a unit, every library the unit recorded should
 be given with [-L]. [U] recorded [pc.alias]: it was compiled against it.
@@ -64,7 +65,9 @@ should give no warning that a library is missing.
 A "Library pc.alias ... is not given with -L" warning would be wrong.
 
   $ odoc_driver_voodoo --odoc-dir _odoc pc
+  odoc_driver_voodoo starting (version %VERSION%): processing package pc
   $ odoc_driver_voodoo --odoc-dir _odoc pa
+  odoc_driver_voodoo starting (version %VERSION%): processing package pa
 
 Case 2 (D6). At the link of a unit or a page, every library of each unit
 whose paths are resolved should be given with [-L]. [pb]'s page has
@@ -76,6 +79,7 @@ should give no warning that a library is missing. [pd] has no modules, but
 A "Library ... is not given with -L" warning would be wrong.
 
   $ odoc_driver_voodoo --odoc-dir _odoc pb
+  odoc_driver_voodoo starting (version %VERSION%): processing package pb
 
 Case 3 (D1, D2). A unit records the libraries it was compiled with: its own,
 and the closure of what that library requires. So [B] should record [pa], [pb],
@@ -101,6 +105,7 @@ A list with [pd] and not [pc] would be wrong, and so would a warning that
   requires(-ppx_driver) = "pd"
   archive(byte) = "e.cma"
   $ odoc_driver_voodoo --odoc-dir _odoc pe
+  odoc_driver_voodoo starting (version %VERSION%): processing package pe
   $ odoc_print _odoc/lib/pe/e.odoc | jq -c .libraries
   ["pc","pe","stdlib"]
 
@@ -116,6 +121,10 @@ A warning, or a list that differs from case 3's, would be wrong.
   $ export OCAMLFIND_CONF=$PWD/no-findlib.conf
   $ mkdir -p _odoc2/lib/ocaml
   $ for p in pd pc pa pb; do odoc_driver_voodoo --odoc-dir _odoc2 $p; done
+  odoc_driver_voodoo starting (version %VERSION%): processing package pd
+  odoc_driver_voodoo starting (version %VERSION%): processing package pc
+  odoc_driver_voodoo starting (version %VERSION%): processing package pa
+  odoc_driver_voodoo starting (version %VERSION%): processing package pb
   $ odoc_print _odoc2/lib/pb/b.odoc | jq -c .libraries
   ["pa","pb","pc","pd","stdlib"]
 
@@ -135,6 +144,7 @@ An [.odoc] file anywhere else, or none, would be wrong.
   >   mkdir -p $root/lib/ocaml/ps && cp src/ps/s.cm* src/ps/s.mli $root/lib/ocaml/ && cp src/ps/META $root/lib/ocaml/ps/
   > done
   $ CAMLLIB=$PWD/inst/_build/install/default/lib/ocaml odoc_driver_voodoo --odoc-dir _odoc6 ps
+  odoc_driver_voodoo starting (version %VERSION%): processing package ps
   $ find _odoc6 -name 's.odoc'
   _odoc6/lib/ocaml/s.odoc
 
@@ -151,6 +161,7 @@ A warning that [E] is not found would be wrong.
   $ printf '{0 pg}\n\nSee {!E.y}.\n' > prep/universes/u/pg/1.0/doc/pg/odoc-pages/index.mld
   $ printf '(packages pe)\n' > prep/universes/u/pg/1.0/doc/pg/odoc-config.sexp
   $ odoc_driver_voodoo --odoc-dir _odoc --html-dir _html pg
+  odoc_driver_voodoo starting (version %VERSION%): processing package pg
 
 Case 8. Two libraries may claim one archive, by its name without the
 extension: [compiler-libs.toplevel] has [ocamltoplevel.cma], and
@@ -171,6 +182,7 @@ library with the bytecode archive.
   $ (cd src/pi && ocamlc -bin-annot -c i.mli i.ml && ocamlc -a -o i.cma i.cmo)
   $ mkdir -p prep/universes/u/pi/1.0/lib/pi && cp src/pi/META src/pi/i.cm* src/pi/i.mli prep/universes/u/pi/1.0/lib/pi/
   $ odoc_driver_voodoo --odoc-dir _odoc --html-dir _html pi
+  odoc_driver_voodoo starting (version %VERSION%): processing package pi
   $ ls _html/u/u/pi/1.0/doc | grep '^pi'
   pi
 
@@ -187,5 +199,6 @@ A library called [t_top] would be wrong.
   $ (cd src/pt && ocamlc -bin-annot -c t.mli t.ml && ocamlc -a -o t_top.cma t.cmo)
   $ mkdir -p prep/universes/u/pt/1.0/lib/pt && cp src/pt/META src/pt/t.cm* src/pt/t_top.cma src/pt/t.mli prep/universes/u/pt/1.0/lib/pt/
   $ odoc_driver_voodoo --odoc-dir _odoc --html-dir _html pt
+  odoc_driver_voodoo starting (version %VERSION%): processing package pt
   $ ls _html/u/u/pt/1.0/doc | grep '^\(pt\|t_top\)$'
   pt
